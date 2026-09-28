@@ -53,7 +53,7 @@ Service: `backend/services/communities/publications/moderate.mts` (lines 39–11
 
 Any signed-in user can submit a report against a post. Reports are trust-tier rate-limited and create a `moderation_reports` row. Reports are reviewable at `/reports` by global admins and in community moderation queues for community-scoped post/comment reports. Admins and community moderators can mark scoped reports reviewed or dismissed; enforcement still happens through the existing post, user, and hostname moderation surfaces.
 
-See [REPORTING.md](./REPORTING.md) for the full report submission flow, rate limits, and schema.
+See [REPORTING.md](REPORTING.md) for the full report submission flow, rate limits, and schema.
 
 ### Pin (≤3 per community)
 

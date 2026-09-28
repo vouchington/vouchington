@@ -17,3 +17,7 @@ hand-built path templates. Enforced by `web-no-inline-entity-href`. Signatures a
 
 - [README.md](README.md)
 - [ENTITIES.md](../../../docs/requirements/ENTITIES.md)
+
+## Relocated reference navigation
+
+- [README.md](../../../docs/overview/architecture/web/lib/links/README.md)

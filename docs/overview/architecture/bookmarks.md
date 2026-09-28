@@ -48,7 +48,7 @@ Implemented in `backend/services/bookmarks/upsert.mts` via the `IMPLICIT_UNFOLLO
 ## Implicit Vouch
 
 Following a **user** auto-casts a Like (`+1`) for that user (issue #7257), mirroring how Disavow
-auto-mutes and auto-unfollows (see [`backend/services/elections-votes/user-vouch/README.md`](../../../backend/services/elections-votes/user-vouch/README.md)).
+auto-mutes and auto-unfollows (see [`backend/services/elections-votes/user-vouch/README.md`](services/elections-votes/user-vouch/README.md)).
 This is one-directional: unfollowing does not retract the vouch. The vouch cast is best-effort — a
 failure is logged via `onError` and does not fail the follow.
 
@@ -109,7 +109,7 @@ When a bloom filter is not ready, a background job (`enqueueBackfillUserBookmark
 - [Backend rules](../../../backend/AGENTS.md) — service and data conventions
 - [Web rules](../../../web/AGENTS.md) — UI and routing conventions
 
-- [backend/services/bookmarks/README.md](../../../backend/services/bookmarks/README.md) -- upsert, get, bloom filter, counts
-- [backend/services/entity-relations/README.md](../../../backend/services/entity-relations/README.md) -- underlying relation storage
-- [backend/queues/bloom-filters/README.md](../../../backend/queues/bloom-filters/README.md) -- backfill job queue
-- [backend/api/v1/entity-relations/README.md](../../../backend/api/v1/entity-relations/README.md) -- bookmark API endpoints
+- [backend/services/bookmarks/README.md](services/bookmarks/README.md) -- upsert, get, bloom filter, counts
+- [backend/services/entity-relations/README.md](services/entity-relations/README.md) -- underlying relation storage
+- [backend/queues/bloom-filters/README.md](queues/bloom-filters/README.md) -- backfill job queue
+- [backend/api/v1/entity-relations/README.md](../../requirements/api/v1/entity-relations/README.md) -- bookmark API endpoints

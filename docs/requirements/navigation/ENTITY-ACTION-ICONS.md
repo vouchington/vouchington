@@ -2,7 +2,7 @@
 
 Canonical icon reference for user-facing entity actions. This page complements
 [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md), which defines where actions
-appear, and [Actions](./ACTIONS.md), which defines placement and tooltip rules.
+appear, and [Actions](ACTIONS.md), which defines placement and tooltip rules.
 
 Use the semantic action icon below whenever an action is rendered with an icon,
 whether the action appears inline, in a card footer, in an aside, or in a
@@ -63,8 +63,8 @@ Implementation source: `web/components/shared/entity-action-icons.ts`.
 
 ## Related
 
-- [Actions](./ACTIONS.md)
+- [Actions](ACTIONS.md)
 - [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md)
 - [Entity × Lifecycle Flow Matrix](../ENTITY-LIFECYCLE-MATRIX.md)
-- [Signed-out Actions](./SIGNED_OUT_ACTIONS.md)
+- [Signed-out Actions](SIGNED_OUT_ACTIONS.md)
 - [Web rules](../../../web/AGENTS.md)

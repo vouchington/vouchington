@@ -11,7 +11,7 @@ Claude Code and Codex load `vouchington-workflow:static-analysis-checklist`; Gro
 
 ## Vouchington additions
 
-Treat [`static-code-analysis/README.md`](../../../static-code-analysis/README.md) as canonical.
+Treat [`static-code-analysis/README.md`](../../../docs/development/quality/static-code-analysis/README.md) as canonical.
 Read its rule-placement, guard-authoring, migration-cleanup, and rollout sections before choosing
 an implementation. Add positive and negative fixtures, run the focused fixture test and scanner,
 then the owning aggregate check. For participating invariants, run `pnpm run no-mistakes` and

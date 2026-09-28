@@ -3,7 +3,7 @@
 [Back to Merge Authority](merge-authority.md#see-also)
 
 - [CI Reference](ci.md) — Codex project-hook and sandbox wiring.
-- [Auto Harness automation security boundary](../../.github/workflows/reference-harness-automation-accepted-risk.md)
+- [Auto Harness automation security boundary](ci/workflows/reference-harness-automation-accepted-risk.md)
   — the canonical accepted-risk statement and revisit triggers.
 - [Git And PRs](../../.agents/skills/agent-workflow/git-and-prs.md) — the human-approval rule this
   hook enforces mechanically, including `gh stack merge`.

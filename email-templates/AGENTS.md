@@ -14,3 +14,7 @@ The package exports prebuilt `dist/index.mjs` for `@email-templates/core` consum
 ## Template Guidance
 
 - Recommendation-style emails must mirror an existing aside or recommendation source in the app before you write the email copy.
+
+## Relocated reference navigation
+
+- [template docs](../docs/overview/architecture/email-templates/README.md)

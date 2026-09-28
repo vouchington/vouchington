@@ -14,3 +14,7 @@ packages contain only `queues.mts`, `enqueues.mts`, optional `types.mts`, and `p
 - [Queue packages](../queues/AGENTS.md)
 - [Worker packages](../workers/AGENTS.md)
 - [Backend context](../AGENTS.md)
+
+## Relocated reference navigation
+
+- [core docs](../../docs/overview/architecture/queues/flows/core/README.md)

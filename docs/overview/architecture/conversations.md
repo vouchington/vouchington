@@ -49,7 +49,7 @@ Conversations can be linked to entities for contextual lookup:
 - [Backend rules](../../../backend/AGENTS.md) — service and data conventions
 - [Web rules](../../../web/AGENTS.md) — UI and routing conventions
 
-- [backend/services/conversations-messages/README.md](../../../backend/services/conversations-messages/README.md) -- CRUD, streaming, agentic run queries
-- [backend/agents/chat/README.md](../../../backend/agents/chat/README.md) -- chat agent that processes messages and executes tool calls
-- [backend/api/v1/conversations/README.md](../../../backend/api/v1/conversations/README.md) -- API endpoints
-- [backend/queues/psql/README.md](../../../backend/queues/psql/README.md) -- partition cleanup jobs
+- [backend/services/conversations-messages/README.md](services/conversations-messages/README.md) -- CRUD, streaming, agentic run queries
+- [backend/agents/chat/README.md](ai-agents/chat/README.md) -- chat agent that processes messages and executes tool calls
+- [backend/api/v1/conversations/README.md](../../requirements/api/v1/conversations/README.md) -- API endpoints
+- [backend/queues/psql/README.md](queues/psql/README.md) -- partition cleanup jobs

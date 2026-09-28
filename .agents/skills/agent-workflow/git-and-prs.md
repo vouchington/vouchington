@@ -59,7 +59,7 @@ flowchart TD
   credentials and a repository-pinned `pr-shepherd` command; it must treat PR content as untrusted,
   revalidate the exact command, authorization, and head ref/SHA immediately before mutation, push
   with an exact lease, and never merge or arm auto-merge. See the canonical
-  [activation security boundary](../../../.github/workflows/reference-harness-automation-accepted-risk.md).
+  [activation security boundary](../../../docs/development/ci/workflows/reference-harness-automation-accepted-risk.md).
 - **Disputed pr-shepherd syntax**: if a flag, subcommand, or placeholder form is disputed, resolve it by running both candidate forms live against the pinned CLI and diffing `pnpm exec pr-shepherd <form> --help` output directly. Never overturn a prior live-verified Shepherd Journal entry on documentation absence alone — the CLI's real behavior outranks a doc gap.
 
 ### Reading the four refs

@@ -4,7 +4,7 @@ Moderation appeals allow any signed-in member to formally contest a moderation d
 targets are community bans, user warnings, post removals (clearance rejections), and platform
 suspensions.
 
-See also: [Moderation Flows](./MODERATION-FLOWS.md) · [Review Disputes](./REVIEW-DISPUTES.md) ·
+See also: [Moderation Flows](MODERATION-FLOWS.md) · [Review Disputes](REVIEW-DISPUTES.md) ·
 [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md) · [Entity × Lifecycle Matrix](../ENTITY-LIFECYCLE-MATRIX.md)
 
 ## Actors
@@ -173,8 +173,8 @@ from one traversal cannot be used in the other; clients must restart at page one
 
 ## Related Documentation
 
-- [Review Disputes](./REVIEW-DISPUTES.md) — narrower legal-dispute flow for verified topic claimants
-- [Community Bans](./COMMUNITY-BANS.md) — ban creation and enforcement
-- [User Warnings](./USER-WARNINGS.md) — warning issuance
-- [Post Moderation](./POST-MODERATION.md) — post clearance and removal
-- [Moderation Flows](./MODERATION-FLOWS.md) — full moderation subsystem map
+- [Review Disputes](REVIEW-DISPUTES.md) — narrower legal-dispute flow for verified topic claimants
+- [Community Bans](COMMUNITY-BANS.md) — ban creation and enforcement
+- [User Warnings](USER-WARNINGS.md) — warning issuance
+- [Post Moderation](POST-MODERATION.md) — post clearance and removal
+- [Moderation Flows](MODERATION-FLOWS.md) — full moderation subsystem map

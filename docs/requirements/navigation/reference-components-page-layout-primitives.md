@@ -61,7 +61,7 @@ Rules:
 - `className` applies to the outer bordered shell; `inputClassName` applies to the inner `<input>`.
 - For list pages that inline the search inside a single-row filter bar, set `className='min-w-0 flex-1'` on the `SearchInput` (or on `SearchInputShell` when wrapping a custom input), and set `flex flex-1 min-w-48 gap-2` on the surrounding `<form>` so the input shares the row with the visible submit button without overflow.
 - Search forms that submit on Enter must also render a visible submit button with accessible name `Search`. Space-constrained list pages may use an icon-only Search button, but it must keep a mobile-safe touch target, e.g. `className='h-11 w-11 sm:h-9 sm:w-9'`.
-- Post, news, feed, topic-scoped, and community-scoped list pages use a combined text/topic search field with placeholder `Search by text or #topic`. Typing `#` opens topic autocomplete; selecting a topic appends `#topic-slug` to the query. See [Feed And List Filters](./FEED-LIST-FILTERS.md).
+- Post, news, feed, topic-scoped, and community-scoped list pages use a combined text/topic search field with placeholder `Search by text or #topic`. Typing `#` opens topic autocomplete; selecting a topic appends `#topic-slug` to the query. See [Feed And List Filters](FEED-LIST-FILTERS.md).
 - Do not key or remount search inputs from query-string values. Pressing Enter to submit search must leave focus on the input after the URL updates.
 
 ### Topic Chip Filter
@@ -80,7 +80,7 @@ import { TopicChipFilter } from '@/components/shared/topic-chip-filter'
 
 Rules:
 
-- Do not use on public post/news/feed/topic/community list pages covered by [Feed And List Filters](./FEED-LIST-FILTERS.md).
+- Do not use on public post/news/feed/topic/community list pages covered by [Feed And List Filters](FEED-LIST-FILTERS.md).
 - `initialSelectedTopics` must be resolved server-side (pass name + id) so the UI hydrates correctly without a client round-trip.
 - `paramName` defaults to `'topics'` (CSV of topic IDs). Always reset `?after=` on change (built-in).
 - Selected topics render as removable `<Badge variant='secondary'>` chips + "Clear all" below the input row.
@@ -103,7 +103,7 @@ List pages with sort controls (Hot/New) and view controls must render all contro
 
 `ListFilters` (`web/components/shared/list-filters.tsx`) arranges search + child filters + optional sort in one `flex-wrap` row; the page-level row adds the view toggle on the right. Use `showSort={false}` for search/filter-only pages such as `/news` instead of copying the search form. Sort options must be a `Select` dropdown, not inline buttons, and the trigger must keep a 44px mobile touch target, e.g. `className='h-11 ... sm:h-9'`. Do not add a `space-y-*` wrapper between search and sort.
 
-Feed and post-type list titles that switch between sibling routes must use compact natural-width dropdowns without borders. Feed headers are title-only; the All/Friends/Sources/Topics dropdown belongs in the page filter row and defaults to All on canonical feed routes. Feed subfilters and Card/Compact view selection are dropdowns, not tab strips or paired icon buttons. See [Feed And List Filters](./FEED-LIST-FILTERS.md).
+Feed and post-type list titles that switch between sibling routes must use compact natural-width dropdowns without borders. Feed headers are title-only; the All/Friends/Sources/Topics dropdown belongs in the page filter row and defaults to All on canonical feed routes. Feed subfilters and Card/Compact view selection are dropdowns, not tab strips or paired icon buttons. See [Feed And List Filters](FEED-LIST-FILTERS.md).
 
 ### URL-Updating Search/Filter Forms
 
@@ -117,7 +117,7 @@ Rules:
 - Use `ClientSearchForm` from `web/components/shared/client-search-form.tsx` for simple single-query forms such as topic alias and URL search.
 - Do not use `<form method='get'>` in `web/app/**` or `web/components/**`.
 
-See [web-agent-rules.md](../../../docs/development/web-agent-rules.md) for the workspace rule.
+See [web-agent-rules.md](../../development/web-agent-rules.md) for the workspace rule.
 
 ### Checkbox & Radio Rows
 
@@ -143,8 +143,8 @@ Visual spec: `flex items-start gap-3 rounded-md border p-4 cursor-pointer hover:
 Rules:
 
 - The `description` prop is optional; omit it for bare label-only rows.
-- Touch targets must be ≥ 44×44px per [Mobile Responsiveness](./MOBILE.md).
+- Touch targets must be ≥ 44×44px per [Mobile Responsiveness](MOBILE.md).
 - `has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60` reflects disabled state to the wrapper automatically.
 - No `RadioGroup` component is installed — ad-hoc `role='radio'` rows (e.g. star ratings) must apply the same "full row is the click target" rule by wrapping the entire row in a `<label>`.
 
-See [web-agent-rules.md](../../../docs/development/web-agent-rules.md) for the authoritative rule.
+See [web-agent-rules.md](../../development/web-agent-rules.md) for the authoritative rule.

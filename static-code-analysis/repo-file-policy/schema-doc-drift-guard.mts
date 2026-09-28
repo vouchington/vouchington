@@ -18,7 +18,7 @@ import {
 const REPORTING_DOC_PATHS = new Set([
   'docs/requirements/moderation/REPORTING.md',
   'docs/requirements/moderation/MODERATION-FLOWS.md',
-  'backend/services/moderation-reports/README.md',
+  'docs/overview/architecture/services/moderation-reports/README.md',
 ])
 
 const LEGACY_REPORTING_PATTERNS = [

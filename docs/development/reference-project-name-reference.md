@@ -72,7 +72,7 @@ preflight each smaller batch, and investigate the smallest reproducer with Vites
 `--reporter=hanging-process` diagnostics.
 
 Use `pnpm exec vitest run --project <name>` to run a single project directly. The complete
-project-to-workflow ownership map is [`.github/workflows/VITEST.md`](../../.github/workflows/VITEST.md);
+project-to-workflow ownership map is [`.github/workflows/VITEST.md`](ci/workflows/VITEST.md);
 the table below highlights the projects most often used for local diagnosis.
 
 | Project name                       | Test glob (`include`)                                                                                                                   | DB `globalSetup`? | Typical use                                                  |

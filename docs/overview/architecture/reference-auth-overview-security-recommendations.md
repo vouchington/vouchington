@@ -88,6 +88,6 @@ User logs out
 
 - [Backend rules](../../../backend/AGENTS.md) — service conventions and auth patterns
 - [Cloudflare Worker rules](../../../cloudflare-worker/AGENTS.md) — edge auth, cookie handling, and cache policy
-- [Session JWT service](../../../backend/services/jwt-session/README.md) — JWT signing, verification, cookie management
-- [Shared session JWT](../../../ts-shared/session-jwt/README.md) — Shared JWT types and helpers
+- [Session JWT service](services/jwt-session/README.md) — JWT signing, verification, cookie management
+- [Shared session JWT](typescript-shared/session-jwt/README.md) — Shared JWT types and helpers
 - [App Attest](app-attestation.md) — how a device earns the `dc: 'attested'` claim and its 30-day session

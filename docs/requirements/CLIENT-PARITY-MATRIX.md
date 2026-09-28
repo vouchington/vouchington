@@ -2,7 +2,7 @@
 
 This document summarizes **rendered, functional UI parity** across web, Swift, and .NET. The
 machine-readable source of truth is
-[client-feature-parity.json](./client-feature-parity.json); every summary row below maps to one or
+[client-feature-parity.json](client-feature-parity.json); every summary row below maps to one or
 more capability records in that contract.
 
 A route, endpoint, response type, or navigation catalog entry is not UI evidence. A rendered native
@@ -22,22 +22,22 @@ or implying a public destination for predecessor issues or milestones.
 
 Lifecycle parity is additionally executable through the stable scenario IDs in
 [`api-fixtures/v1/lifecycle-scenarios.json`](../../api-fixtures/v1/lifecycle-scenarios.json). The
-[fixture authoring guide](../../backend/test-helpers/api-fixtures/README.md#lifecycle-scenario-contract)
+[fixture authoring guide](../development/testing/backend/api-fixtures.md#lifecycle-scenario-contract)
 defines the required claim and adapter workflow. Moderation operations, integrity actions, and
 saved/bookmark capabilities cite platform runners that consume that shared contract.
 
 See also:
 
 - [Native Client Strategy](../overview/architecture/native-clients.md)
-- [Client Intent Parity](./navigation/CLIENT-INTENT-PARITY.md)
+- [Client Intent Parity](navigation/CLIENT-INTENT-PARITY.md)
 - [Native Parity Interactions](../checklists/native-parity-interactions.md)
-- [Entity × Action Matrix](./ENTITY-ACTION-MATRIX.md)
-- [Entity × Lifecycle Flow Matrix](./ENTITY-LIFECYCLE-MATRIX.md)
-- [User profiles and friend recommendations](./users/USERS.md)
-- [User settings and financial workflows](./users/USER_SETTINGS.md)
-- [Notification behavior and preferences](./navigation/NOTIFICATIONS.md)
-- [Localization](./users/LOCALIZATION.md)
-- [Bookmarks Catalog](./content/BOOKMARKS-CATALOG.md)
+- [Entity × Action Matrix](ENTITY-ACTION-MATRIX.md)
+- [Entity × Lifecycle Flow Matrix](ENTITY-LIFECYCLE-MATRIX.md)
+- [User profiles and friend recommendations](users/USERS.md)
+- [User settings and financial workflows](users/USER_SETTINGS.md)
+- [Notification behavior and preferences](navigation/NOTIFICATIONS.md)
+- [Localization](users/LOCALIZATION.md)
+- [Bookmarks Catalog](content/BOOKMARKS-CATALOG.md)
 
 ## Contents
 

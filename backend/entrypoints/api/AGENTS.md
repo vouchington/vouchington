@@ -4,7 +4,7 @@ Entry point for the API container. Registers routes, middleware, and context hel
 
 ## Rules
 
-- All context helpers must be added in [`backend/api/context/`](../../api/context/) using `app.extend()`.
+- All context helpers must be added in [`backend/api/context/`](../../api/context) using `app.extend()`.
 - Request handling order: check authentication & authorization → check entities from URL params → check and parse request body → perform actions.
 - Prefer `ctx.assert` over `if (x) throw createHttpError(...)`.
 - `urlencoded` and `multipart` request bodies are not allowed except the signed unsubscribe routes.
@@ -19,10 +19,14 @@ Entry point for the API container. Registers routes, middleware, and context hel
 
 ## Route Groups (`backend/api/v1/index.mts`)
 
-Use the candidate sub-app grouping in [README.md § Route Groups](README.md#route-groups) when moving
+Use the candidate sub-app grouping in [README.md § Route Groups](../../../docs/overview/architecture/backend/entrypoints/api/README.md#route-groups) when moving
 or splitting route registration. Keep the entrypoint import boundary lightweight.
 
 ## See Also
 
 - API routes: [../../api/AGENTS.md](../../api/AGENTS.md)
 - Backend context: [../../AGENTS.md](../../AGENTS.md)
+
+## Relocated reference navigation
+
+- [`backend/api/context`](../../api/context/)

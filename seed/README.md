@@ -34,4 +34,4 @@ Seed data is idempotent — re-running will not create duplicate topics.
 ## Related
 
 - Seed script: [../backend/scripts/seeds/dev-seed.mts](../backend/scripts/seeds/dev-seed.mts)
-- PostgreSQL data store: [../backend/data-stores/psql/README.md](../backend/data-stores/psql/README.md)
+- PostgreSQL data store: [../backend/data-stores/psql/README.md](../docs/development/postgresql/README.md)

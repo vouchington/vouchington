@@ -1,6 +1,6 @@
 # API Routes
 
-Agent-only rules for editing `backend/api/**`. Reference material lives in [README.md](./README.md)
+Agent-only rules for editing `backend/api/**`. Reference material lives in [README.md](README.md)
 and the route-local `README.md` files and, where present, linked `reference-*.md` leaves under
 `v1/**`.
 
@@ -17,7 +17,7 @@ of the handler.
 - The canonical 401 message is `'Unauthorized'` — do not use `'User not logged in'`, `'Not authenticated'`, or `'Authentication required'`.
 - Use service-layer `currentUserCan*` authorization helpers rather than route-local permission logic.
 - New mutation routes (`POST`/`DELETE`/`PATCH`) must apply the domain's full guard set, not just `requireAuth` — call `assertNotSuspended` from `@services/users`, then the domain's `currentUserCan*` gate, and enforce domain limits (caps, target-user existence, block/mute). For messaging routes, follow the cross-file contract summary in [backend/services/messaging/authorization.mts](../services/messaging/authorization.mts) and verify a rejection-path integration test exists for each guard.
-- Return wrapped responses matching patterns in [README.md](./README.md). Return election summaries as top-level sidecars, never nested inside entity payloads.
+- Return wrapped responses matching patterns in [README.md](README.md). Return election summaries as top-level sidecars, never nested inside entity payloads.
 - Set logged-out `Cache-Control` headers for public, non-personalized GET endpoints.
 - Use `@services/entity-cache` getters for entity reads; use cached search wrappers for logged-out list/search endpoints.
 - Use batch functions (`*CachedBatch()`, `*Batch()`) for list endpoints — never single-entity lookups in a loop.
@@ -41,7 +41,7 @@ of the handler.
 ## Route Helpers (`response-helpers.mts`)
 
 Use the canonical helper inventory and return contracts in
-[README.md § Route Helpers](README.md#route-helpers). Do not duplicate their implementation or
+[README.md § Route Helpers](../../docs/requirements/api/README.md#route-helpers). Do not duplicate their implementation or
 hand-roll equivalent authentication, rate-limit, UUID, or JSON-body preambles.
 
 ## RESTful API Design
@@ -51,6 +51,10 @@ Route paths use resource nouns, not action verbs. Model actions as sub-resource 
 ## See Also
 
 - Route package catalog: [catalog/README.md](catalog/README.md)
-- API reference: [README.md](./README.md)
+- API reference: [README.md](README.md)
 - Backend context: [../AGENTS.md](../AGENTS.md)
 - Services: [../services/AGENTS.md](../services/AGENTS.md)
+
+## Relocated reference navigation
+
+- [route inventory](../../docs/requirements/api/catalog/README.md)

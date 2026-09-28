@@ -121,5 +121,5 @@ Cards on the tab view are organized by priority group with section headers.
 
 ## Related
 
-- [topic](./topic.md) — referral-program topics that host these links
-- [post](./post.md) — review posts coupled with referral links via `review_post_id`
+- [topic](topic.md) — referral-program topics that host these links
+- [post](post.md) — review posts coupled with referral links via `review_post_id`

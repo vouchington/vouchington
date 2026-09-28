@@ -7,7 +7,7 @@ agent-only rules beyond [../AGENTS.md](../AGENTS.md) and [../../AGENTS.md](../..
 ## Rules
 
 - Define vote tables, their columns, indexes, and triggers through the config-driven generators
-  under [`data-stores/psql/config-driven/`](../../data-stores/psql/config-driven/). Columns on the
+  under [`data-stores/psql/config-driven/`](../../data-stores/psql/config-driven). Columns on the
   six entity tables that persist derived vote aggregates follow the repository's normal schema
   placement policy; before launch, fold them into each entity table's original migration.
 - When changing topic vote behavior, remember topic rating stats depend on topic votes as well as
@@ -25,3 +25,8 @@ agent-only rules beyond [../AGENTS.md](../AGENTS.md) and [../../AGENTS.md](../..
 - Service architecture and usage: [README.md](README.md)
 - Services conventions: [../AGENTS.md](../AGENTS.md)
 - Backend rules: [../../AGENTS.md](../../AGENTS.md)
+
+## Relocated reference navigation
+
+- [config-driven generators](../../data-stores/psql/config-driven/)
+- [README.md](../../../docs/overview/architecture/services/elections-votes/README.md)

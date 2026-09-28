@@ -36,3 +36,7 @@ examples, shared vocabulary, and validation commands.
   `playwright/…`, `cloudflare-worker/…`) — a pinned title or timeout digit count has no automated
   scanner at all, which is exactly why pinning either is disallowed outright rather than merely
   discouraged.
+
+## Relocated reference navigation
+
+- [README.md](../../docs/development/ci/transient-retry/README.md)

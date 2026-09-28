@@ -63,7 +63,7 @@ export const webApiFixtureCases: ApiFixtureCase[] = [
     status: 200,
     body: growthMetricsBody,
     consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
-    migratedFrom: ['backend/api/v1/admin/growth-metrics/README.md'],
+    migratedFrom: ['docs/requirements/api/v1/admin/growth-metrics/README.md'],
   },
   {
     id: 'web.topics.search.default',

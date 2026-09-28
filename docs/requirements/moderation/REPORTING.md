@@ -10,11 +10,11 @@ See also:
 - [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md) — Report listed in Table A and Table B for all four entities
 - [Actions](../navigation/ACTIONS.md) — Report placement principles and per-entity tables
 - [Signed-out Actions](../navigation/SIGNED_OUT_ACTIONS.md) — Report is auth-only, not rendered for signed-out users
-- [Post Moderation rules](./POST-MODERATION.md) — authorization matrix, roles, and all moderation actions
-- [Moderation Flows](./MODERATION-FLOWS.md) — full automated moderation pipeline that runs before and after user reports
+- [Post Moderation rules](POST-MODERATION.md) — authorization matrix, roles, and all moderation actions
+- [Moderation Flows](MODERATION-FLOWS.md) — full automated moderation pipeline that runs before and after user reports
 - [How Moderation Works](../../../articles/how-moderation-works.md) — public-facing overview of the moderation system
-- [Moderation Policy Matrix](./MODERATION-POLICY-MATRIX.md) — canonical policy registry (severity, appealEligible, recommendedAction) from which report reasons and AI content-policy categories both derive
-- [Moderation Analytics](./MODERATION-ANALYTICS.md) — paid transparency releases delayed, suppressed, rounded report aggregates only
+- [Moderation Policy Matrix](MODERATION-POLICY-MATRIX.md) — canonical policy registry (severity, appealEligible, recommendedAction) from which report reasons and AI content-policy categories both derive
+- [Moderation Analytics](MODERATION-ANALYTICS.md) — paid transparency releases delayed, suppressed, rounded report aggregates only
 
 ---
 

@@ -3,8 +3,8 @@
 Load the [github-actions-checklist skill](../../.agents/skills/github-actions-checklist/SKILL.md)
 before editing a workflow or composite action. Its canonical checklist covers runner selection and
 capacity, action pinning, concurrency, portability, security migrations, and validation. Use
-[JOBS.md](JOBS.md) for exact runner labels and job inventory, [AUTHORING.md](AUTHORING.md)
-for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest project mapping.
+[JOBS.md](../../docs/development/ci/workflows/JOBS.md) for exact runner labels and job inventory, [AUTHORING.md](../../docs/development/ci/workflows/AUTHORING.md)
+for workflow structure, and [.github/workflows/VITEST.md](../../docs/development/ci/workflows/VITEST.md) for Vitest project mapping.
 
 ## Scoped invariants
 
@@ -12,11 +12,11 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
   selectors. Arch/OS-independent jobs use `ubuntu-latest` (or `ubuntu-slim` where a smaller image
   suffices); jobs needing Linux+ARM64 use `ubuntu-24.04-arm` (see
   [`runner-policy-classify.mts`](runner-policy-classify.mts) for the closed allowlist of accepted
-  labels); macOS-specific jobs use `macos-latest`. See [Job & runner inventory](JOBS.md) for the
+  labels); macOS-specific jobs use `macos-latest`. See [Job & runner inventory](../../docs/development/ci/workflows/JOBS.md) for the
   exact `runs-on` resolved for every job.
 - When adding, removing, or changing a workflow, keep the relevant grouped inventory reference and
   the matching Always run, Pull requests, or Main diagram linked from the canonical
-  [Workflow automation map](reference-workflow-automation-map.md) synchronized. Update [README.md](README.md) and [WORKFLOWS.md](WORKFLOWS.md) navigation when
+  [Workflow automation map](../../docs/development/ci/workflows/reference-workflow-automation-map.md) synchronized. Update [README.md](README.md) and [WORKFLOWS.md](../../docs/development/ci/workflows/WORKFLOWS.md) navigation when
   adding or removing a focused reference leaf or group.
 - When a workflow gains, loses, or renames an unrestricted `push` trigger or a direct `push` trigger
   on `main`, update `fix-main.yml`; its subscription regression test must pass.

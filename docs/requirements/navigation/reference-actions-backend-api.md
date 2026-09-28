@@ -15,11 +15,11 @@ Supported predicates: `follow`, `mute`, `block`, `subscribe`, `subscribe_posts`,
 ## Related
 
 - [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md) — cross-cut table of every entity × surface × action, plus Table B descriptions and known gaps
-- [Entity × Action Icons](./ENTITY-ACTION-ICONS.md) — canonical icon choices for user-facing entity/action controls
+- [Entity × Action Icons](ENTITY-ACTION-ICONS.md) — canonical icon choices for user-facing entity/action controls
 - [Entity × Lifecycle Flow Matrix](../ENTITY-LIFECYCLE-MATRIX.md) — Create, Edit, Delete, Archive, Approve flows per entity with authorization tiers and entry-point components
-- [Signed-out Actions](./SIGNED_OUT_ACTIONS.md) — auth-state × entity × action visibility policy
+- [Signed-out Actions](SIGNED_OUT_ACTIONS.md) — auth-state × entity × action visibility policy
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
-- [docs/requirements/navigation/ACCESSIBILITY.md](./ACCESSIBILITY.md)
+- [docs/requirements/navigation/ACCESSIBILITY.md](ACCESSIBILITY.md)
 - [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../users/ACCOUNT-DELETION-DATA-REQUEST.md)

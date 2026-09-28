@@ -39,4 +39,4 @@ Penalty revocation is a separate backend lifecycle and is not part of the mapped
 surface. Vote-integrity resolution follows the same native queue boundary; see the
 [Client Parity Matrix](../CLIENT-PARITY-MATRIX.md).
 
-See also: [Penalties](../trust-safety/PENALTIES.md), [Reporting](./REPORTING.md).
+See also: [Penalties](../trust-safety/PENALTIES.md), [Reporting](REPORTING.md).

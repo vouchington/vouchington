@@ -92,8 +92,8 @@ For an auto-retried username precondition, extract the API call into a `submitPo
 
 ## Related
 
-- [docs/overview/architecture/ai-agents.md](./ai-agents.md)
-- [docs/overview/architecture/auth-overview.md](./auth-overview.md)
-- [Bluesky OAuth callback](../../../backend/api/v1/auth/README.md#get-apiv1authblueskycallback)
+- [docs/overview/architecture/ai-agents.md](ai-agents.md)
+- [docs/overview/architecture/auth-overview.md](auth-overview.md)
+- [Bluesky OAuth callback](../../requirements/api/v1/auth/README.md#get-apiv1authblueskycallback)
 - [web/AGENTS.md](../../../web/AGENTS.md)
 - [Native client rules](https://github.com/vouchington/vouchington-clients)

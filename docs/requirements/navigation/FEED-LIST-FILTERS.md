@@ -96,4 +96,4 @@ Each backend parser maps `#topic-slug` tokens to the correct SQL filter dimensio
 - Changes to these surfaces must update or add Vitest coverage for shared components and server-rendered list page composition.
 - Changes to these surfaces must update or add Playwright coverage for route-level behavior, including mobile responsiveness where layout changes affect filter rows.
 - Changes to these surfaces must update Storybook stories for shared dropdown/search controls, representative post/news/feed list states, and each feed/post-type page top section.
-- Documentation updates must keep this file, [Components](./COMPONENTS.md), [Routes](./ROUTES.md), [Mobile](./MOBILE.md), and [web/AGENTS.md](../../../web/AGENTS.md) in sync when behavior changes.
+- Documentation updates must keep this file, [Components](COMPONENTS.md), [Routes](ROUTES.md), [Mobile](MOBILE.md), and [web/AGENTS.md](../../../web/AGENTS.md) in sync when behavior changes.

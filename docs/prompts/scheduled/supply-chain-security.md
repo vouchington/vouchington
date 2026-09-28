@@ -7,7 +7,7 @@ Review supply-chain and CI/CD security. Pick exactly one concrete, bounded impro
   closed GitHub-hosted runner allowlist it draws from, keep fan-out bounded, and prefer the
   smallest runner that fits the workload.
 - Least-privilege secret exposure for install/build steps is tracked in #7572's history; see
-  [Secret and Permission Scoping](../../../.github/workflows/ACTIONS.md#secret-and-permission-scoping)
+  [Secret and Permission Scoping](../../development/ci/workflows/ACTIONS.md#secret-and-permission-scoping)
   for the mitigations that remain in place on ephemeral runners.
 - Prefer changes that add or tighten a test or guard so the invariant is enforced rather than fixed once.
 - Before writing any factual claim in the PR body about a pin, a version, or a permission value, fetch and rebase onto the current `main` HEAD immediately before re-reading the source, then cite the exact HEAD SHA the claim was verified against. Do not rely on an earlier read or an earlier fetch, either of which may already be stale if another PR landed on `main` first.

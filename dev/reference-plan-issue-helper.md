@@ -1,6 +1,6 @@
 # Plan Issue Helper
 
-[Back to Dev Environment Reference](README.md#plan-issue-helper)
+[Back to Dev Environment Reference](../docs/development/local-development/README.md)
 
 Use `node dev/plan-issue.mts validate|create --title <title> --body-file <path> [--label <label>] [--repo <owner/repo>]`.
 It accepts only reviewed body files and validates the exact shared planning-skill H2 schema, matching

@@ -41,7 +41,7 @@ outdated without automatically spending another AI run.
 
 Judgements do not remove content or penalize users. Staff review the queue, inspect the target and reports, then take enforcement through the appropriate moderation surface.
 
-See also: [Reporting](./REPORTING.md), [Moderation Flows](./MODERATION-FLOWS.md).
+See also: [Reporting](REPORTING.md), [Moderation Flows](MODERATION-FLOWS.md).
 
 Paid transparency never exposes report-judgement recommendations, prompts, or raw AI output. Its
-aggregate release rules are defined in [Moderation Analytics](./MODERATION-ANALYTICS.md).
+aggregate release rules are defined in [Moderation Analytics](MODERATION-ANALYTICS.md).

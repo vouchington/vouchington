@@ -3,7 +3,7 @@
 `@ts-shared/env-contract` is the typed metadata source of truth for environment variables that
 need shared static-analysis, local setup, or deployment policy checks.
 
-The package lives at [`ts-shared/env-contract/`](../../../ts-shared/env-contract/) and has no
+The package lives at [`ts-shared/env-contract/`](../../../ts-shared/env-contract) and has no
 external npm dependencies. It is safe for Vouchington tooling to import without pulling backend, web,
 Lambda, or Cloudflare Worker runtime packages into static analysis.
 
@@ -30,7 +30,7 @@ Main helpers:
 
 ## Consumers
 
-- [`static-code-analysis/config-inventory/`](../../../static-code-analysis/config-inventory/) loads
+- [`static-code-analysis/config-inventory/`](../../../static-code-analysis/config-inventory) loads
   typed metadata, then asks `vouchington-tooling/config-inventory` to scan tracked files.
   Vouchington supplies file roles and merges that discovery with observed usage from code, docs,
   workflows, Dockerfiles, and package scripts.
@@ -69,6 +69,6 @@ surface:
 
 Related docs:
 
-- [Environment Variables](./environment-variables.md)
+- [Environment Variables](environment-variables.md)
 - [Local Env Vars](../../development/local-env-vars.md)
-- [Static Code Analysis](../../../static-code-analysis/README.md)
+- [Static Code Analysis](../../development/quality/static-code-analysis/README.md)

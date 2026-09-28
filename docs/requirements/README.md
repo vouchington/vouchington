@@ -22,6 +22,10 @@ those pointers. Files in `moderation/` are additionally guard-pinned; see
 
 ## Domain Clusters
 
+### API
+
+- [API route and contract docs](./api/README.md) — endpoint behavior, shared response contracts, validation, and caching
+
 ### Moderation
 
 - [Moderation docs](./moderation/README.md) — pipeline, reports, appeals, bans, warnings, audit log, and AI review
@@ -69,3 +73,69 @@ those pointers. Files in `moderation/` are additionally guard-pinned; see
 - [Documentation index](../README.md) — repo-wide docs index
 - [Web rules](../../web/AGENTS.md) — frontend requirements implementation conventions
 - [Backend rules](../../backend/AGENTS.md) — backend requirements implementation conventions
+
+## Reference index
+
+- [Admin Navigation Matrix reference](reference-admin-navigation-matrix-known-gaps.md)
+- [Admin Navigation Matrix reference](reference-admin-navigation-matrix-post.md)
+- [Admin Navigation Matrix reference](reference-admin-navigation-matrix-table-a-entity-surface-actions-navigation.md)
+- [Admin Navigation Matrix reference](reference-admin-navigation-matrix-table-b-entity-action-description.md)
+- [Admin Navigation Matrix reference](reference-admin-navigation-matrix-topic.md)
+- [Client Parity Matrix reference](reference-client-parity-matrix-legend.md)
+- [Client Parity Matrix reference](reference-client-parity-matrix-table-a-cross-cutting-capabilities.md)
+- [Client Parity Matrix reference](reference-client-parity-matrix-table-b-domain-surfaces.md)
+- [Client Parity Matrix reference](reference-client-parity-matrix-table-c-active-gaps.md)
+- [`comment`](reference-comment.md)
+- [Comments](reference-comments.md)
+- [Communities](reference-communities.md)
+- [Community Lists](reference-community-lists.md)
+- [`community`](reference-community.md)
+- [`community_list`](reference-communitylist.md)
+- [`crawler`](reference-crawler.md)
+- [`curated_aside_item`](reference-curatedasideitem.md)
+- [`domain` (admin tab)](reference-domain-admin-tab.md)
+- [`domain`](reference-domain.md)
+- [Domains / Hostnames](reference-domains-hostnames.md)
+- [`dynamic_config`](reference-dynamicconfig.md)
+- [URL-Routable Entity Catalog reference](reference-entities-covered-elsewhere-ban-new-inline-use.md)
+- [URL-Routable Entity Catalog reference](reference-entities-excluded-not-entity-urls.md)
+- [URL-Routable Entity Catalog reference](reference-entities-how-to-use-this-catalog.md)
+- [URL-Routable Entity Catalog reference](reference-entities-podcast-hub.md)
+- [URL-Routable Entity Catalog reference](reference-entities-post-family.md)
+- [URL-Routable Entity Catalog reference](reference-entities-with-helpers.md)
+- [Entity × Action Matrix reference](reference-entity-action-matrix-table-a-entity-surface-actions.md)
+- [Entity × Action Matrix reference](reference-entity-action-matrix-table-b-entity-action-description.md)
+- [Entity × Action Matrix reference](reference-entity-action-matrix-ui-exposure-gaps.md)
+- [Entity × Lifecycle Flow Matrix reference](reference-entity-lifecycle-matrix-authorization-tiers.md)
+- [Entity × Lifecycle Flow Matrix reference](reference-entity-lifecycle-matrix-known-gaps.md)
+- [Entity × Lifecycle Flow Matrix reference](reference-entity-lifecycle-matrix-staff-ops-tool-flows.md)
+- [Entity × Lifecycle Flow Matrix reference](reference-entity-lifecycle-matrix-table-a-entity-flow-authorization-page-component.md)
+- [Fediverse Instances](reference-fediverse-instances.md)
+- [`growth` (analytics)](reference-growth-analytics.md)
+- [`list`](reference-list.md)
+- [`membership`](reference-membership.md)
+- [Podcast Episodes (rss_feed_item, feed_type='podcast')](reference-podcast-episodes-rssfeeditem-feedtype-podcast.md)
+- [`post`](reference-post.md)
+- [`postgresql` (ops)](reference-postgresql-ops.md)
+- [Posts](reference-posts.md)
+- [`recommendation`](reference-recommendation.md)
+- [Review Disputes](reference-review-disputes.md)
+- [RSS Feed Items](reference-rss-feed-items.md)
+- [`rss_feed`](reference-rssfeed.md)
+- [`rss_feed_item` (podcast episode)](reference-rssfeeditem-podcast-episode.md)
+- [`rss_feed_item`](reference-rssfeeditem.md)
+- [`rss_feed_item_category` (admin-only)](reference-rssfeeditemcategory-admin-only.md)
+- [`rss_feed_item_category`](reference-rssfeeditemcategory.md)
+- [`scheduled_job`](reference-scheduledjob.md)
+- [Sources / RSS Feeds](reference-sources-rss-feeds.md)
+- [Support](reference-support.md)
+- [Topic Claims](reference-topic-claims.md)
+- [`topic`](reference-topic.md)
+- [`topic_recommendation`](reference-topicrecommendation.md)
+- [Topics](reference-topics.md)
+- [`url`](reference-url.md)
+- [User-Owned Content & Account Features](reference-user-owned-content-account-features.md)
+- [`user`](reference-user.md)
+- [Users](reference-users.md)
+- [`valkey` (ops)](reference-valkey-ops.md)
+- [`vote_integrity_flag`](reference-voteintegrityflag.md)

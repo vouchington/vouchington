@@ -72,6 +72,6 @@ flowchart TD
   enqueue --> dispatch[Dispatcher creates per-moderator jobs]
 ```
 
-See [`backend/services/post-clearance/README.md`](../../../backend/services/post-clearance/README.md) for details.
+See [`backend/services/post-clearance/README.md`](services/post-clearance/README.md) for details.
 
 ---

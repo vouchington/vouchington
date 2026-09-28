@@ -100,8 +100,12 @@ describe('repo-file-policy', () => {
     const syncedReportDoc =
       'Entities: rss_feed_item post comment user url_hostname. Reasons: spam harassment misinformation illegal_content vote_manipulation other.\nvote_manipulation is valid only for post reports.\n'
     await track(dir, 'docs/requirements/moderation/MODERATION-FLOWS.md', syncedReportDoc)
-    await track(dir, 'backend/api/v1/reports/README.md', syncedReportDoc)
-    await track(dir, 'backend/services/moderation-reports/README.md', syncedReportDoc)
+    await track(dir, 'docs/requirements/api/v1/reports/README.md', syncedReportDoc)
+    await track(
+      dir,
+      'docs/overview/architecture/services/moderation-reports/README.md',
+      syncedReportDoc,
+    )
     await track(
       dir,
       'docs/requirements/moderation/REPORT-JUDGEMENTS.md',
@@ -132,12 +136,12 @@ describe('repo-file-policy', () => {
     )
     await track(
       dir,
-      'backend/api/v1/reports/README.md',
+      'docs/requirements/api/v1/reports/README.md',
       'Entities: rss_feed_item post comment user url_hostname. Reasons: spam harassment misinformation illegal_content vote_manipulation other.\nvote_manipulation is valid only for post reports.\n',
     )
     await track(
       dir,
-      'backend/services/moderation-reports/README.md',
+      'docs/overview/architecture/services/moderation-reports/README.md',
       'Entities: rss_feed_item post comment user url_hostname. Reasons: spam harassment misinformation illegal_content vote_manipulation other.\nvote_manipulation is valid only for post reports.\n',
     )
 

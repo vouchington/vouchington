@@ -9,7 +9,7 @@
 - [Entity × Lifecycle Flow Matrix — rss_feed_item](../reference-rss-feed-items.md#rss-feed-items)
 - [News & Discussions requirements](../content/NEWS-DISCUSSIONS.md)
 - [Source Stories requirements](../content/news-story-clusters.md)
-- [Backend RSS feed item contract](../../../backend/services/rss-feed-items/README.md)
+- [Backend RSS feed item contract](../../overview/architecture/services/rss-feed-items/README.md)
 
 ## Data Model
 
@@ -39,7 +39,7 @@ topic-relation sources that stack rather than replace one another — adding one
 gate another:
 
 1. **Category mapping** — feed-declared categories mapped to topics; pre-existing, always runs.
-2. **Discoverable-source LLM pass** — the [autotagger agent](../../../backend/agents/autotagger/README.md) (`autotagger` system user) adds topics for items from discoverable sources.
+2. **Discoverable-source LLM pass** — the [autotagger agent](../../overview/architecture/ai-agents/autotagger/README.md) (`autotagger` system user) adds topics for items from discoverable sources.
 3. **Paid-follower collaborative pass** — a no-LLM pass that adds topics favored by the item's plus/pro-plan followers, reusing the same system user and `relation__rss_feed_item__category__topic` table as category mapping.
 
 See the autotagger README and [TAGS.md](../content/TAGS.md#manual-tag-add-limit) for the full mechanics and per-tier caps.
@@ -138,6 +138,6 @@ mobile `...` menu (which requires authentication to render).
 
 ## Related
 
-- [source](./source.md) — the feed that publishes these items
-- [post](./post.md) — discussion posts linked to items via `post → related → url`
-- [url](./url.md) — the canonical URL entity for each item's article link
+- [source](source.md) — the feed that publishes these items
+- [post](post.md) — discussion posts linked to items via `post → related → url`
+- [url](url.md) — the canonical URL entity for each item's article link

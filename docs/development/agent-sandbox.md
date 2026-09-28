@@ -15,7 +15,7 @@ jonathanong/filaments PR #9574 and skip Codex `prefix_rule` after a
 later change (formerly filed as jonathanong/filaments#9578), so Codex `auto_review` sees the
 argv. The checked-in policy is what a reactivated CI Codex session would load; harness dispatch
 is currently fail-closed and does not execute these prefixes. See
-[Auto Harness automation security boundary](../../.github/workflows/reference-harness-automation-accepted-risk.md)
+[Auto Harness automation security boundary](ci/workflows/reference-harness-automation-accepted-risk.md)
 for the accepted risk.
 
 ## Two independent containment layers
@@ -317,4 +317,4 @@ local-only. agent-blackboard stays separate from auto-harness. See
 - [`dev/agent-sandbox-credentials.test.mts`](../../dev/agent-sandbox-credentials.test.mts) — the
   `sandbox.credentials.envVars` deny-list guard.
 - [Agent Harness Parity](agent-harness-parity.md) — Claude vs Codex vs Grok vs Cursor sandbox and hook reuse.
-- [`.cursor/README.md`](../../.cursor/README.md) — Cursor CLI sandbox, hooks, and worktree setup.
+- [`.cursor/README.md`](harnesses/cursor.md) — Cursor CLI sandbox, hooks, and worktree setup.

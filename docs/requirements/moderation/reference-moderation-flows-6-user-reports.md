@@ -174,9 +174,9 @@ backend/services/ai-usage/           — AI usage cost ledger (recordAiUsage, ge
 
 ## Related Documentation
 
-- [Post Moderation](./POST-MODERATION.md) — roles, authorization matrix, all post moderation actions
-- [Reporting & Content Moderation](./REPORTING.md) — user report submission flow and rate limits
-- [Community Moderation](./community-moderation.md) — community agent prompts and slot limits
+- [Post Moderation](POST-MODERATION.md) — roles, authorization matrix, all post moderation actions
+- [Reporting & Content Moderation](REPORTING.md) — user report submission flow and rate limits
+- [Community Moderation](community-moderation.md) — community agent prompts and slot limits
 - [Hostname Blocking](../content/HOSTNAME-BLOCKING.md) — domain blocking effects
 - [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md) — cross-cut entity/action reference
 - [Entity × Lifecycle Matrix](../ENTITY-LIFECYCLE-MATRIX.md) — entity lifecycle flows

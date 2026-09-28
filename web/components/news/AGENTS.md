@@ -1,6 +1,6 @@
 # News Components
 
-Agent rules for [`web/components/news/`](./). Full spec: [NEWS-DISCUSSIONS.md](../../../docs/requirements/content/NEWS-DISCUSSIONS.md).
+Agent rules for [`web/components/news/`](.). Full spec: [NEWS-DISCUSSIONS.md](../../../docs/requirements/content/NEWS-DISCUSSIONS.md).
 
 ## Rules
 

@@ -2,7 +2,7 @@
 
 [Back to Entity × Action Matrix reference](reference-entity-action-matrix-table-b-entity-action-description.md)
 
-Actions are accessible only to users with the `administrator` role via `/rss-feed-categories`. See [Admin Navigation Matrix](./ADMIN-NAVIGATION-MATRIX.md) for full surface details.
+Actions are accessible only to users with the `administrator` role via `/rss-feed-categories`. See [Admin Navigation Matrix](ADMIN-NAVIGATION-MATRIX.md) for full surface details.
 
 | Action             | Predicate | Description                                                                                            | Endpoint                                        | Component                                                    |
 | ------------------ | --------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------ |

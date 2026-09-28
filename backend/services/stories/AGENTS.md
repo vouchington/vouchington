@@ -16,3 +16,8 @@ Agent rules for stories. Full feature spec: [../../../docs/requirements/content/
 - Clearance: [../post-clearance/README.md](../post-clearance/README.md)
 - Parent: [../AGENTS.md](../AGENTS.md)
 - Requirements: [../../../docs/requirements/content/stories.md](../../../docs/requirements/content/stories.md)
+
+## Relocated reference navigation
+
+- [agent](../../../docs/overview/architecture/ai-agents/story-post/README.md)
+- [clearance](../../../docs/overview/architecture/services/post-clearance/README.md)

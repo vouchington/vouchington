@@ -15,6 +15,8 @@ Use [README.md](README.md) for commands, architecture diagrams, code examples, a
 
 - [README.md](README.md) — architecture and patterns
 - Shared helpers: [_shared/README.md](_shared/README.md)
-- Agent package catalog: [../catalogs/README.md#agents](../catalogs/README.md#agents)
+- Agent package catalog: [../catalogs/README.md#agents](../../docs/overview/architecture/backend/catalogs/README.md#agents)
 - Tools: [../tools/AGENTS.md](../tools/AGENTS.md)
 - Backend context: [../AGENTS.md](../AGENTS.md)
+
+- [Agent reference index](../../docs/overview/architecture/ai-agents/README.md).

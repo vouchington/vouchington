@@ -12,7 +12,7 @@
 Every page must have no horizontal scrollbar at any supported viewport width.
 Feed and list filter bars must wrap cleanly at 375px and below; use natural-width dropdown triggers
 for feed title/category/subfilter/view controls so the combined search input remains usable.
-See [Feed And List Filters](./FEED-LIST-FILTERS.md) for the route-level filter requirements.
+See [Feed And List Filters](FEED-LIST-FILTERS.md) for the route-level filter requirements.
 
 ### Touch Targets
 
@@ -172,5 +172,5 @@ await navigateTo(page, '/some-path')
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
-- [docs/requirements/navigation/ACCESSIBILITY.md](./ACCESSIBILITY.md)
+- [docs/requirements/navigation/ACCESSIBILITY.md](ACCESSIBILITY.md)
 - [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../users/ACCOUNT-DELETION-DATA-REQUEST.md)

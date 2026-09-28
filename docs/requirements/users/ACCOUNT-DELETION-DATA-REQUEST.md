@@ -4,7 +4,7 @@
 
 Users can delete their accounts from the account settings page (`/my/data`). This feature satisfies
 GDPR "Right to Erasure" and CCPA "Right to Delete" requirements. Data export has its own
-[requirements](./ACCOUNT-DATA-EXPORT.md); see the [User Privacy Feature Matrix](./USER-PRIVACY-MATRIX.md)
+[requirements](ACCOUNT-DATA-EXPORT.md); see the [User Privacy Feature Matrix](USER-PRIVACY-MATRIX.md)
 for coverage.
 
 ---
@@ -110,7 +110,7 @@ block the internal completion marker while the immediate database privacy fence 
 ## API Endpoints
 
 `DELETE /api/v1/users/:idOrSlug` accepts deletion and returns `202 { logout: true }` after the
-privacy fence commits. The [data-export requirements](./ACCOUNT-DATA-EXPORT.md#api-endpoints)
+privacy fence commits. The [data-export requirements](ACCOUNT-DATA-EXPORT.md#api-endpoints)
 document the request and status routes.
 
 Authorization: Users can only access their own requests; admins can access any user's requests.
@@ -119,8 +119,8 @@ Authorization: Users can only access their own requests; admins can access any u
 
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
-- [User Privacy Feature Matrix](./USER-PRIVACY-MATRIX.md)
-- [Account Data Export](./ACCOUNT-DATA-EXPORT.md)
+- [User Privacy Feature Matrix](USER-PRIVACY-MATRIX.md)
+- [Account Data Export](ACCOUNT-DATA-EXPORT.md)
 
 - [docs/requirements/navigation/ACCESSIBILITY.md](../navigation/ACCESSIBILITY.md)
 - [docs/requirements/navigation/ACTIONS.md](../navigation/ACTIONS.md)

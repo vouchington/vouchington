@@ -14,7 +14,7 @@ Claude Code and Codex load `vouchington-testing:storybook-authoring`; Grok, Curs
 
 Read [`web/storybook/AGENTS.md`](../../../web/storybook/AGENTS.md) before editing. Stories run
 twice: under `web-storybook` (Node, light) and `web-storybook-browser` (Vitest + Playwright
-Chromium). Use [`web/storybook/README.md`](../../../web/storybook/README.md) when diagnosing
+Chromium). Use [`web/storybook/README.md`](../../../docs/development/testing/storybook/README.md) when diagnosing
 browser-runner or Vite failures.
 
 1. Reuse the nearest story and deterministic fixture. Update stories with component prop changes.

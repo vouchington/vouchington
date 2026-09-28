@@ -221,7 +221,7 @@ describe('agent workflow documentation', () => {
   it('documents harness background-task, wakeup-turn-boundary, ready-run, and lease-race gotchas', () => {
     const gitAndPrs = normalizedMarkdown('.agents/skills/agent-workflow/git-and-prs.md')
     const rerunReference = normalizedMarkdown(
-      'ci/transient-retry/reference-how-agents-should-use-this-on-non-main-non-dependabot-pr-branches.md',
+      'docs/development/ci/transient-retry/reference-how-agents-should-use-this-on-non-main-non-dependabot-pr-branches.md',
     )
 
     expect(gitAndPrs).toContain('run_in_background')

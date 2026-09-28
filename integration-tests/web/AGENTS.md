@@ -14,3 +14,7 @@ patterns, and coverage gaps.
 - All worker traffic goes through `WebIntegrationClient.request()` (`helpers/client.mts`); do not `fetch` the worker origin directly — that bypasses the restart-window transport retry that makes a supervised `wrangler dev` restart (#10819) transparent to the suite.
 - Record backend API fan-out for every HTML page load (persisted to the page artifact JSON). Print to stdout only when `WEB_INTEGRATION_VERBOSE=1` is set; leave it unset in CI to reduce noise.
 - Fail on any traced backend `5xx` during page rendering.
+
+## Relocated reference navigation
+
+- [suite docs](../../docs/development/testing/integration-tests/web/README.md)

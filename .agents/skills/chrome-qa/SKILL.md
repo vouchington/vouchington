@@ -65,7 +65,7 @@ Do not reuse tab IDs from a prior session.
 
 ## What to Walk
 
-Use the flow matrices in [docs/requirements/user-flows/](../../../docs/requirements/user-flows/)
+Use the flow matrices in [docs/requirements/user-flows/](../../../docs/requirements/user-flows)
 to pick flows. For each matrix cell record:
 
 | Symbol | Meaning                           |

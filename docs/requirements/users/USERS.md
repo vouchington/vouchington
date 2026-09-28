@@ -1,6 +1,6 @@
 # Users
 
-See also: [Entity × Action Matrix — user](../reference-user.md#user) · [Entity × Lifecycle Flow Matrix — user](../reference-users.md#users) · [User Relation Matrix](./USER-RELATION-MATRIX.md)
+See also: [Entity × Action Matrix — user](../reference-user.md#user) · [Entity × Lifecycle Flow Matrix — user](../reference-users.md#users) · [User Relation Matrix](USER-RELATION-MATRIX.md)
 
 ## Profile Overview
 
@@ -52,7 +52,7 @@ index route `/user/:idOrUsername`. See [User Anatomy — Detail Anatomy](../anat
 
 - `About` renders the user's bio markdown (`users.markdown`) server-rendered to HTML. Owner sees a prompt to add bio when empty; other viewers see nothing.
 - `Activity` sub-pills (Reviews, Discussions, Comments) render below the Menubar when that item is active.
-- Relation items and subpages are documented in the [User Relation Matrix](./USER-RELATION-MATRIX.md).
+- Relation items and subpages are documented in the [User Relation Matrix](USER-RELATION-MATRIX.md).
 - Owner/admin-only relation items and their subpages must behave as not found for unauthorized viewers. Admins can view these lists, but relation action buttons are owner-only.
 - Public activity sub-pills may display `N+` / `0+` when the current viewer can see more items than the logged-out public count.
 
@@ -92,4 +92,4 @@ element breakdown (profile links, RSS icon, Follow/Subscribe buttons).
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
 - [docs/requirements/navigation/ACCESSIBILITY.md](../navigation/ACCESSIBILITY.md)
-- [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](./ACCOUNT-DELETION-DATA-REQUEST.md)
+- [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](ACCOUNT-DELETION-DATA-REQUEST.md)

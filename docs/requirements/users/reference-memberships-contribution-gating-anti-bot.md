@@ -60,7 +60,7 @@ Pass `?action=<action>` to return the action-specific limit status for a create 
 }
 ```
 
-See [backend/services/contribution-gating/](../../../backend/services/contribution-gating/README.md) for the implementation.
+See [backend/services/contribution-gating/](../../overview/architecture/services/contribution-gating/README.md) for the implementation.
 
 See [docs/requirements/trust-safety/trust-system.md](../trust-safety/trust-system.md) for the full trust system design.
 
@@ -85,8 +85,8 @@ authenticated user is eligible to create that post type there.
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
-- Service: [backend/services/memberships/README.md](../../../backend/services/memberships/README.md)
-- Job queue: [backend/queues/memberships/README.md](../../../backend/queues/memberships/README.md)
-- API routes: [backend/api/v1/memberships/README.md](../../../backend/api/v1/memberships/README.md)
-- Stripe service: [backend/services/stripe/README.md](../../../backend/services/stripe/README.md)
+- Service: [backend/services/memberships/README.md](../../overview/architecture/services/memberships/README.md)
+- Job queue: [backend/queues/memberships/README.md](../../overview/architecture/queues/memberships/README.md)
+- API routes: [backend/api/v1/memberships/README.md](../api/v1/memberships/README.md)
+- Stripe service: [backend/services/stripe/README.md](../../overview/architecture/services/stripe/README.md)
 - Database migrations: `backend/data-stores/psql/migrations/0170-*`

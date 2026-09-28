@@ -83,7 +83,7 @@ When an RSS feed item's URL has posts linked via `post -> related -> url` entity
 
 ### Discuss
 
-See [news-story-clusters.md](./news-story-clusters.md) for the authoritative "Both" discussion model: per-item "Discuss" creates a link post; a cluster-level "Discuss the full story" CTA creates a story post via `POST /api/v1/stories/:storyId/discussions`. Discoverability gate and fallback behavior are documented there.
+See [news-story-clusters.md](news-story-clusters.md) for the authoritative "Both" discussion model: per-item "Discuss" creates a link post; a cluster-level "Discuss the full story" CTA creates a story post via `POST /api/v1/stories/:storyId/discussions`. Discoverability gate and fallback behavior are documented there.
 
 `NewsDiscussMenu` is the single dropdown rendered in the action row (and modal footer) for per-item Discuss. It lists, in order: linked posts (every entry in `relatedPosts`), a "Discuss" create action (`canDiscuss = isLoggedIn && !hasStoryPost && !!relatedUrlId`), then "Discuss with Community" (`canDiscussWithCommunity = isLoggedIn && (!!communityDiscussionTarget || viewerHasCommunity)`). `viewerHasCommunity` comes from `useViewerHasCommunity(isLoggedIn)`, which fetches `loadMyCommunities()` and caches the result at module scope for the session.
 
@@ -140,7 +140,7 @@ RSS feed items are grouped into **stories** — first-class entities that repres
 - Feed responses include `story_id`, `stories` (with `published_at`), and `story_member_pages`. Each story preview holds related item IDs only, an opaque cursor, and whether more eligible articles remain. The first direct primary displayed for a story fixes its preview and cursor across later feed pages and same-query refreshes, even when the preview configuration shrinks. A new query or viewer starts a new selection.
 - Expanding a story reveals its prefetched related articles immediately. The explicit Load more action requests up to 25 additional members from `GET /api/v1/stories/:id` with the original primary excluded. Loaded articles, media, and actions remain visible during refresh, loading, and retry; the count stays visible when expanded or collapsed and shows `+` while more pages remain.
 - `NewsItemCluster` renders as a single card with the story title in the header and member items as indented bare `NewsItemCard`s (no own card wrapper) separated by dividers. A story with no `title`/`published_at`/`cluster_reason` and zero `storyItems` collapses to a standalone `NewsItemCard` instead — the story card would otherwise show nothing beyond the lone item. Non-story items (no `story` prop) also render as a standalone `NewsItemCard`. See [Source Item Anatomy — List-Item / Card Anatomy](../anatomy/source-item.md#list-item--card-anatomy) for the header rendering table.
-- See [stories.md](./stories.md) for full details
+- See [stories.md](stories.md) for full details
 
 ## Components
 

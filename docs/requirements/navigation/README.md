@@ -34,3 +34,33 @@ Two files in this folder are pinned by static-analysis guards — edits must kee
 
 - **[ROUTES.md](./ROUTES.md)** — `static-code-analysis/repo-file-policy/route-admin-surface-guard.mts` validates that every admin surface in `ROUTES.md#route-relocation-audit` has a corresponding admin nav entry.
 - **[ACTIONS.md](./ACTIONS.md)** — `static-code-analysis/repo-file-policy/moderation-policy-doc-sync-guard.mts` checks that the report-table entity-type list in `ACTIONS.md` stays in sync with the moderation policy docs (`../moderation/`). This is a cross-cluster dependency: ACTIONS lives here but is validated by the moderation guard.
+
+## Reference index
+
+- [Client Intent Parity](CLIENT-INTENT-PARITY.md)
+- [Action Buttons reference](reference-actions-action-buttons-by-entity.md)
+- [Action Buttons reference](reference-actions-backend-api.md)
+- [Action Buttons reference](reference-actions-component-reference.md)
+- [Action Buttons reference](reference-actions-principles.md)
+- [Asides reference](reference-asides-architecture.md)
+- [Asides reference](reference-asides-aside-inventory.md)
+- [Asides reference](reference-asides-core-rules.md)
+- [Asides reference](reference-asides-page-to-aside-mapping.md)
+- [Asides reference](reference-asides-styling-guidelines.md)
+- [UI Components reference](reference-components-bookmark-buttons.md)
+- [UI Components reference](reference-components-canonical-entity-list-item-components.md)
+- [UI Components reference](reference-components-context-aware-entity-labels.md)
+- [UI Components reference](reference-components-design-principles.md)
+- [UI Components reference](reference-components-entity-reference-inputs.md)
+- [UI Components reference](reference-components-installed-components.md)
+- [UI Components reference](reference-components-page-layout-primitives.md)
+- [UI Components reference](reference-components-rsc-boundary-view-models.md)
+- [Navigation reference](reference-navigation-gap-list-follow-up-issues.md)
+- [Navigation reference](reference-navigation-intent-taxonomy.md)
+- [Navigation reference](reference-navigation-route-intent-resolution.md)
+- [Navigation reference](reference-navigation-rss-media-intent-bookmark-groups.md)
+- [Navigation reference](reference-navigation-special-cases.md)
+- [Navigation reference](reference-navigation-vocabulary.md)
+- [Sidebar reference](reference-sidebar-bookmarks-groups.md)
+- [Sidebar reference](reference-sidebar-buttons.md)
+- [Sidebar reference](reference-sidebar-section-ordering.md)

@@ -10,7 +10,7 @@ post_type: article
 **Company:** Voucha, Inc.
 **Contact:** team@voucha.ai
 
-This Cookie Policy explains what cookies and similar technologies Voucha uses, why we use them, and how you can control them. It supplements our [Privacy Policy](./privacy-policy.md).
+This Cookie Policy explains what cookies and similar technologies Voucha uses, why we use them, and how you can control them. It supplements our [Privacy Policy](privacy-policy.md).
 
 ---
 

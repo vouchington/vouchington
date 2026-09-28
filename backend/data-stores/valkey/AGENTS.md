@@ -17,9 +17,13 @@ See the [Valkey data-store reference](README.md) for package architecture and op
 
 Preserve `bloomValkeyClient` as an isolated named client so rebuilds cannot exhaust the cache client.
 Its ownership, environment variables, and isolation rationale live in
-[README.md § Bloom Client](README.md#bloom-client).
+[README.md § Bloom Client](../../../docs/development/valkey/README.md#bloom-client).
 
 ## Related
 
 - Reference documentation: [README.md](README.md)
 - Backend context: [../../AGENTS.md](../../AGENTS.md)
+
+## Relocated reference navigation
+
+- [per-concern packages](../../../docs/development/valkey/README.md)

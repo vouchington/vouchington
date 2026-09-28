@@ -2,7 +2,7 @@
 
 Users can download a copy of their personal data from account settings (`/my/data`). This feature
 satisfies GDPR "Right to Data Portability" and CCPA "Right to Know" requirements. See
-[account deletion](./ACCOUNT-DELETION-DATA-REQUEST.md) for the separate erasure lifecycle.
+[account deletion](ACCOUNT-DELETION-DATA-REQUEST.md) for the separate erasure lifecycle.
 
 ## Data Export
 

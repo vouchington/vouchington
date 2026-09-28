@@ -7,7 +7,7 @@ Package inventories live in [catalogs/README.md](catalogs/README.md).
 
 ## Commands
 
-See [README.md § Commands](README.md#commands) for the full command catalog: lint/format/typecheck/test targets, EXPLAIN ANALYZE profiling, and db:migrate/db:clean recovery.
+See [README.md § Commands](../docs/overview/architecture/backend/README.md#commands) for the full command catalog: lint/format/typecheck/test targets, EXPLAIN ANALYZE profiling, and db:migrate/db:clean recovery.
 
 ## Module Structure
 
@@ -58,3 +58,10 @@ Canonical predicates, merge semantics, active-topic SQL filters, and the `topic_
 - [Services](services/AGENTS.md)
 - [API routes](api/AGENTS.md)
 - [Queues](queues/AGENTS.md)
+
+## Relocated reference navigation
+
+- [backend docs](../docs/overview/architecture/backend/README.md)
+- [package inventories](../docs/overview/architecture/backend/catalogs/README.md)
+
+- [EXPLAIN reference](../docs/development/postgresql/explain-analyze/README.md).

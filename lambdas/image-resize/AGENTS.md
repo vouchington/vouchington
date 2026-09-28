@@ -28,3 +28,7 @@ fixture, or mock, load the
   `MAX_INPUT_PIXELS`, must 413 on `/images/*` and `/sideload/*` rather than buffering or decoding
   unbounded payloads. `/og/*` applies the same caps at S3 read and Sharp decode, then falls back to
   the initial-letter placeholder (HTTP 200) instead of failing the card. See [README.md](README.md).
+
+## Relocated reference navigation
+
+- [Lambda docs](../../docs/overview/infrastructure/lambdas/image-resize/README.md)

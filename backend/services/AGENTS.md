@@ -22,7 +22,12 @@ before changing service tests or provider mocks.
 
 ## See Also
 
-- Service package catalog: [../catalogs/README.md#services](../catalogs/README.md#services)
+- Service package catalog: [../catalogs/README.md#services](../../docs/overview/architecture/backend/catalogs/README.md#services)
 - [API routes](../api/AGENTS.md)
 - [PostgreSQL](../data-stores/psql/AGENTS.md)
 - [Backend context](../AGENTS.md)
+
+## Relocated reference navigation
+
+- [service architecture](../../docs/overview/architecture/services/README.md)
+- [`@modules/token-secrets`](../../docs/overview/architecture/backend/modules/token-secrets/README.md)

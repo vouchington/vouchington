@@ -37,8 +37,8 @@
 | `rss_feed`               | `source`                 |
 | `fediverse_instance`     | `instance`               |
 
-`rss_feed` topics are described separately in [source.md](./source.md); `fediverse_instance` topics
-are described separately in [fediverse-instance.md](./fediverse-instance.md).
+`rss_feed` topics are described separately in [source.md](source.md); `fediverse_instance` topics
+are described separately in [fediverse-instance.md](fediverse-instance.md).
 
 ## States
 
@@ -125,8 +125,8 @@ Signed-out users clicking vote/follow/join/comment CTAs are redirected to `/logi
 
 ## Related
 
-- [source](./source.md) — `rss_feed` topic type (content sources)
-- [fediverse-instance](./fediverse-instance.md) — `fediverse_instance` topic type (instance directory)
-- [post](./post.md) — reviews, discussions, and data points targeting topics
-- [referral-link](./referral-link.md) — referral links on referral-program topics
-- [community](./community.md) — communities that list this topic
+- [source](source.md) — `rss_feed` topic type (content sources)
+- [fediverse-instance](fediverse-instance.md) — `fediverse_instance` topic type (instance directory)
+- [post](post.md) — reviews, discussions, and data points targeting topics
+- [referral-link](referral-link.md) — referral links on referral-program topics
+- [community](community.md) — communities that list this topic

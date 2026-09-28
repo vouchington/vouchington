@@ -65,6 +65,6 @@ When bumping `next`:
 
 ## See Also
 
-- [SECURITY.md](./SECURITY.md) — overall security architecture
+- [SECURITY.md](SECURITY.md) — overall security architecture
 - [`cloudflare-worker/src/proxy.mts`](../../../cloudflare-worker/src/proxy.mts) — header strip list
 - [`cloudflare-worker/AGENTS.md`](../../../cloudflare-worker/AGENTS.md) — worker rules

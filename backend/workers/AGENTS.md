@@ -19,7 +19,7 @@ tests.
 
 ## See Also
 
-- Worker package catalog: [../catalogs/README.md#workers](../catalogs/README.md#workers)
+- Worker package catalog: [../catalogs/README.md#workers](../../docs/overview/architecture/backend/catalogs/README.md#workers)
 - [Queue packages](../queues/AGENTS.md)
 - [CPU entrypoint](../entrypoints/worker-cpu/AGENTS.md)
 - [IO entrypoint](../entrypoints/worker-io/AGENTS.md)

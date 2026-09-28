@@ -112,7 +112,7 @@ parents are generated from `entityRelationMetadatum`; do not duplicate either li
 uses RANGE by relation ID. Both keys are required for full two-level pruning. Voter-only maintenance
 and export intentionally fan out and rely on local `user_id` indexes.
 
-The [isolated EXPLAIN pruning proof](../../../backend/scripts/explain-analyze/README.md#explicit-range-pruning)
+The [isolated EXPLAIN pruning proof](../../development/postgresql/explain-analyze/README.md#explicit-range-pruning)
 uses a disposable migrated sibling database with two populated explicit ranges and the default
 for review ratings, conversation messages, and relation votes. Actual review, conversation, and
 vote-stat service calls must execute only their target leaves in forced custom and generic plans.
@@ -198,7 +198,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
 - Publication identity snapshots: `post_publication_identity_snapshots` and
   `post_publication_identity_snapshot_keys`. Accepted receipts retain one exact snapshot per post;
   abandoned and superseded attempts are reclaimed by the bounded cyclic sweep in
-  [post-publication](../../../backend/services/post-publication/README.md). Snapshot and native key
+  [post-publication](services/post-publication/README.md). Snapshot and native key
   indexes keep pages selective; revisit partitioning under the registry's growth trigger while
   preserving globally unique receipt pointers and bounded reclamation.
 - Publication repair identities: `post_publication_post_identities` is UUIDv7 range-partitioned
@@ -206,7 +206,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   RSS feed, RSS item, topic alias, and story identity bridge tables retain only active work/key
   references; a cyclic raw-capped sweep reclaims unreferenced bridges. Their selective live-FK,
   work-scope, and retained-impact indexes support deletion and cleanup. See the
-  [publication ownership model](../../../backend/services/post-publication/README.md); reconsider
+  [publication ownership model](services/post-publication/README.md); reconsider
   non-post partitioning if that backlog invariant changes or measured planner/write pressure warrants it.
 - Notification push effects: `notification_push_intents` and
   `notification_push_intent_subscription_receipts`.
@@ -333,7 +333,7 @@ jonathanong/filaments#8750. The retention question is now
 settled too: anonymous (`user_id IS NULL`) rows are deleted after 30 days by
 `deleteOldReferralAttributionBatch()`, while user-linked rows are retained for the life of the
 account — `deleteUser` nulls `user_id`, which drops the row into the same 30-day sweep. See the
-[attribution service README](../../../backend/services/attribution/README.md#retention--dedup) for
+[attribution service README](services/attribution/README.md#retention--dedup) for
 the dedup/move-to-latest design that keeps the anonymous set bounded by traffic as well.
 
 A monthly-partition, partition-drop retention model is permanently off the table for this table:
@@ -352,6 +352,6 @@ partition-status API and `pg_total_relation_size()`.
 
 - [Partition Pruning Hints](partition-pruning-hints.md)
 - [Database Rules](../../../backend/data-stores/psql/AGENTS.md)
-- [PostgreSQL queue](../../../backend/queues/psql/README.md)
+- [PostgreSQL queue](queues/psql/README.md)
 - [RSS feed crawling](../../requirements/content/RSS-FEED-CRAWLING.md)
 - [PostgreSQL EXPLAIN ANALYZE prompt](../../prompts/scheduled/postgresql-explain-analyze.md) — recurring schema-growth classification audit against this policy.

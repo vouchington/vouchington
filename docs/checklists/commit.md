@@ -27,7 +27,7 @@ Before the first push, run these cheap local steps (also covered in [agent-workf
 
 Optional broader check (not a push requirement): run the full suites of the areas you touched —
 `pnpm exec vitest run --project <project-a> --project <project-b>` for each owning project in
-[VITEST.md](../../.github/workflows/VITEST.md), and `pnpm run test:playwright` when
+[VITEST.md](../development/ci/workflows/VITEST.md), and `pnpm run test:playwright` when
 Playwright-relevant paths changed. CI never selects individual test files; it runs the full suite
 of every area whose path filter matches ([area test suites](../development/ci.md#area-test-suites)).
 

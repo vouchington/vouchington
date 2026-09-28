@@ -154,9 +154,9 @@ These tactics are sometimes suggested for "AI SEO" but are **explicitly listed a
 - **No per-query-variation pages** — classified as scaled content abuse.
 - **No FAQPage/HowTo schemas invented for AI** — only add these where the page genuinely is an FAQ or how-to.
 
-See also: [SEO-RESOURCES.md](./SEO-RESOURCES.md)
+See also: [SEO-RESOURCES.md](SEO-RESOURCES.md)
 
-See also: [WEBSITE-SPECIFICATIONS.md](./WEBSITE-SPECIFICATIONS.md)
+See also: [WEBSITE-SPECIFICATIONS.md](WEBSITE-SPECIFICATIONS.md)
 
 ## Related
 

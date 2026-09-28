@@ -30,3 +30,8 @@ ratings, and creation-side-effect architecture are canonical in [README.md](READ
 - [API routes](../../api/v1/posts/README.md)
 - [Search](search/README.md)
 - [Parent service rules](../AGENTS.md)
+
+## Relocated reference navigation
+
+- [README.md](../../../docs/overview/architecture/services/posts/README.md)
+- [search](../../../docs/overview/architecture/services/posts/search/README.md)

@@ -19,3 +19,7 @@ The canonical label vocabulary and priority order live in
 - Producer: `backend/services/rss-feeds/validate.mts → buildSourceTopicName`
 - Entity links: `web/lib/links/AGENTS.md`
 - Topic requirements: [TOPICS.md](../../../docs/requirements/content/TOPICS.md)
+
+## Relocated reference navigation
+
+- [entity link rules](../links/AGENTS.md)

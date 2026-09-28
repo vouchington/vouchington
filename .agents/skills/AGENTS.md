@@ -7,3 +7,7 @@ Every skill must be exposed to Claude Code through that tracked symlink; there i
 Skill entry points are indexed from [the agent catalog](../catalog/README.md). Skills that split into `reference-*.md` leaves also keep a local `AGENTS.md` pointing at their `README.md`.
 
 Do not vendor upstream skills in this repository.
+
+## Relocated reference navigation
+
+- [placement](../../docs/AGENTS.md)

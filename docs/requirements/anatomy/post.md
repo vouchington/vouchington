@@ -149,7 +149,7 @@ Vote control only renders when the post has an election/score. Signed-out users 
 
 ## Related
 
-- [topic](./topic.md) — topics a review or discussion is linked to
-- [referral-link](./referral-link.md) — referral links shown on review posts
-- [source-item](./source-item.md) — discussion posts can be linked to RSS items via related URLs
-- [url](./url.md) — related URLs attached to posts
+- [topic](topic.md) — topics a review or discussion is linked to
+- [referral-link](referral-link.md) — referral links shown on review posts
+- [source-item](source-item.md) — discussion posts can be linked to RSS items via related URLs
+- [url](url.md) — related URLs attached to posts

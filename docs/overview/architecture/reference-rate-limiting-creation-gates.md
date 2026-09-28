@@ -31,6 +31,6 @@ As a complementary anti-scraping measure, unauthenticated API requests are cappe
 
 ## Related
 
-- [User rate limits service](../../../backend/services/user-rate-limits/README.md) — Trust tier algorithm and rate limit categories
+- [User rate limits service](services/user-rate-limits/README.md) — Trust tier algorithm and rate limit categories
 - [Backend rules](../../../backend/AGENTS.md) — workspace service and data conventions
 - [Valkey rate limiter](../../../backend/data-stores/valkey/AGENTS.md) — Rate limiter client configuration

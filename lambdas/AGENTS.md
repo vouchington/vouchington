@@ -6,3 +6,7 @@ in-VPC enqueue-only Lambda vs. public endpoint and requires a Lambda in this pat
 only, never do external IO.
 
 - [Lambda package reference](README.md)
+
+## Relocated reference navigation
+
+- [Lambda package docs](../docs/overview/infrastructure/lambdas/README.md)

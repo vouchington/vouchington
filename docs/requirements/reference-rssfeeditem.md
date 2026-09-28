@@ -7,7 +7,7 @@ story-clustering job. It is a delivery marker, not a record of clustering comple
 change makes an older marker stale. Failed or deduplicated delivery leaves the current input
 pending; the bounded `rss_story_trigger_recovery` scan revisits it from a scheduled cursorless root
 or the `bedrock-embedding-reconciliation` operator backfill. See the
-[stories service](../../backend/services/stories/README.md#trigger-sources).
+[stories service](../overview/architecture/services/stories/README.md#trigger-sources).
 
 [Back to Entity × Action Matrix reference](reference-entity-action-matrix-table-b-entity-action-description.md)
 
