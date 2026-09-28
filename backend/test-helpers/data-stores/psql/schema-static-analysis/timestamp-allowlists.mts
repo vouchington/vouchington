@@ -9,8 +9,8 @@ import {
   ACTIVITY_LOG_MISSING_UPDATED_AT,
   AUDIT_FACT_MISSING_UPDATED_AT,
 } from './audit-fact-timestamp-allowlists.mts'
-import { RETAINED_MISSING_UPDATED_AT } from '../../../../data-stores/psql/schema-growth-retained-identities.mts'
 import { COMMUNITY_APPLICATION_MISSING_UPDATED_AT } from './community-application-allowlists.mts'
+import { RETAINED_MISSING_UPDATED_AT } from '../../../../data-stores/psql/schema-growth-retained-identities.mts'
 
 export const ALLOWED_NON_UUIDV7_CREATED_AT = new Map<string, string>([])
 export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
@@ -84,10 +84,6 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
   ...ALLOWED_MEMBERSHIP_MISSING_UPDATED_AT,
   ...MEDIA_PLACEMENT_MISSING_UPDATED_AT,
   ...COMMUNITY_APPLICATION_MISSING_UPDATED_AT,
-  [
-    'post_admission_quota_consumptions',
-    'Immutable committed-admission quota ledger; rows are inserted once and only later deleted by retention pruning.',
-  ],
   ...AUDIT_FACT_MISSING_UPDATED_AT,
   [
     'moderation_transparency_daily_rollups',
