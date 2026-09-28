@@ -660,6 +660,18 @@
     "fn_guard_copyright_email_review_recommendation_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_review_recommendation_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.copyright_notice_email_intake_recommendation_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_email_intake_recommendations recommendation\n    WHERE recommendation.id = NEW.copyright_notice_email_intake_recommendation_id\n      AND recommendation.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id\n  ) THEN\n    RAISE EXCEPTION 'copyright email review recommendation must belong to the same intake' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_guard_copyright_eu_acknowledgment_attempt": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_eu_acknowledgment_attempt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright acknowledgment obligations are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_eu_notice_receipt_id IS DISTINCT FROM OLD.copyright_eu_notice_receipt_id\n    OR NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.attempt_count < OLD.attempt_count\n    OR (OLD.acknowledged_at IS NOT NULL AND NEW.acknowledged_at IS DISTINCT FROM OLD.acknowledged_at)\n    OR OLD.exhausted_at IS NOT NULL THEN\n    RAISE EXCEPTION 'copyright acknowledgment history cannot be rewritten' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_guard_copyright_eu_escalation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_eu_escalation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.copyright_eu_notice_acknowledgment_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1\n    FROM copyright_eu_notice_acknowledgments acknowledgment\n    JOIN copyright_eu_notice_receipts receipt\n      ON receipt.id = acknowledgment.copyright_eu_notice_receipt_id\n    WHERE acknowledgment.id = NEW.copyright_eu_notice_acknowledgment_id\n      AND receipt.copyright_notice_id = NEW.copyright_notice_id\n  ) THEN\n    RAISE EXCEPTION 'EU escalation acknowledgment belongs to another notice'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_eu_supervised_complaint_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_eu_supervised_complaints complaint\n    WHERE complaint.id = NEW.copyright_eu_supervised_complaint_id\n      AND complaint.copyright_notice_id = NEW.copyright_notice_id\n  ) THEN\n    RAISE EXCEPTION 'EU escalation complaint belongs to another notice'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_guard_copyright_eu_notice_child": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_eu_notice_child()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM copyright_eu_notice_receipts receipt\n    JOIN copyright_notices notice ON notice.id = receipt.copyright_notice_id\n    WHERE receipt.copyright_notice_id = NEW.copyright_notice_id AND notice.jurisdiction = 'eu_dsa'\n  ) THEN\n    RAISE EXCEPTION 'EU copyright contract rows require an EU notice receipt'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_guard_copyright_eu_redress_request": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_eu_redress_request()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM copyright_eu_statements_of_reasons statement\n    WHERE statement.id = NEW.copyright_eu_statement_of_reasons_id\n      AND statement.copyright_notice_id = NEW.copyright_notice_id\n  ) THEN\n    RAISE EXCEPTION 'EU redress must cite a statement of reasons on the same notice'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_guard_copyright_hold_target_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_hold_target_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_legal_hold_assessments assessment\n    JOIN copyright_notice_submissions submission\n      ON submission.id = assessment.copyright_notice_submission_id\n    JOIN copyright_notice_targets target\n      ON target.id = NEW.copyright_notice_target_id\n    WHERE assessment.id = NEW.copyright_notice_legal_hold_assessment_id\n      AND target.copyright_notice_id = submission.copyright_notice_id\n  ) THEN\n    RAISE EXCEPTION 'copyright legal holds may cover only targets in the same case' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -695,6 +707,21 @@
     },
     "fn_guard_copyright_submission_target_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_submission_target_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_submissions submission\n    JOIN copyright_notice_targets target ON target.id = NEW.copyright_notice_target_id\n    WHERE submission.id = NEW.copyright_notice_submission_id\n      AND submission.copyright_notice_id = target.copyright_notice_id\n  ) THEN\n    RAISE EXCEPTION 'copyright submission target must belong to the same notice' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_guard_copyright_territorial_notice_receipt": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_territorial_notice_receipt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  expected text;\n  notice_jurisdiction text;\n  approval_jurisdiction text;\nBEGIN\n  IF TG_TABLE_NAME = 'copyright_eu_notice_receipts' THEN\n    expected := 'eu_dsa';\n  ELSIF TG_TABLE_NAME = 'copyright_uk_notice_receipts' THEN\n    expected := 'uk';\n  ELSE\n    RAISE EXCEPTION 'unexpected territorial receipt table' USING ERRCODE = 'check_violation';\n  END IF;\n  SELECT jurisdiction INTO notice_jurisdiction FROM copyright_notices WHERE id = NEW.copyright_notice_id;\n  SELECT jurisdiction INTO approval_jurisdiction\n    FROM copyright_territorial_policy_approvals\n    WHERE id = NEW.copyright_territorial_policy_approval_id;\n  IF notice_jurisdiction IS DISTINCT FROM expected OR approval_jurisdiction IS DISTINCT FROM expected THEN\n    RAISE EXCEPTION 'territorial receipt jurisdiction does not match the notice and policy'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_guard_copyright_uk_acknowledgment_attempt": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_uk_acknowledgment_attempt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright acknowledgment obligations are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_uk_notice_receipt_id IS DISTINCT FROM OLD.copyright_uk_notice_receipt_id\n    OR NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.attempt_count < OLD.attempt_count\n    OR (OLD.acknowledged_at IS NOT NULL AND NEW.acknowledged_at IS DISTINCT FROM OLD.acknowledged_at)\n    OR OLD.exhausted_at IS NOT NULL THEN\n    RAISE EXCEPTION 'copyright acknowledgment history cannot be rewritten' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_guard_copyright_uk_escalation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_uk_escalation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM copyright_uk_notice_acknowledgments acknowledgment\n    JOIN copyright_uk_notice_receipts receipt\n      ON receipt.id = acknowledgment.copyright_uk_notice_receipt_id\n    WHERE acknowledgment.id = NEW.copyright_uk_notice_acknowledgment_id\n      AND receipt.copyright_notice_id = NEW.copyright_notice_id\n  ) THEN\n    RAISE EXCEPTION 'UK escalation acknowledgment belongs to another notice'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_guard_copyright_uk_notice_child": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_uk_notice_child()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM copyright_uk_notice_receipts receipt\n    JOIN copyright_notices notice ON notice.id = receipt.copyright_notice_id\n    WHERE receipt.copyright_notice_id = NEW.copyright_notice_id AND notice.jurisdiction = 'uk'\n  ) THEN\n    RAISE EXCEPTION 'UK copyright contract rows require a UK notice receipt'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_guard_copyright_uk_redress_request": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_uk_redress_request()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM copyright_uk_reviews review\n    WHERE review.id = NEW.copyright_uk_review_id AND review.copyright_notice_id = NEW.copyright_notice_id\n  ) THEN\n    RAISE EXCEPTION 'UK redress must cite a review on the same notice'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_image_placement": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'image placement bindings are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
@@ -881,6 +908,9 @@
     },
     "fn_reject_classifier_prompt_version_identity_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_prompt_version_identity_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.classifier_id IS DISTINCT FROM OLD.classifier_id\n    OR NEW.prompt IS DISTINCT FROM OLD.prompt\n    OR NEW.model_name IS DISTINCT FROM OLD.model_name\n    OR NEW.model_provider IS DISTINCT FROM OLD.model_provider\n    OR NEW.default_lower_threshold IS DISTINCT FROM OLD.default_lower_threshold\n    OR NEW.default_upper_threshold IS DISTINCT FROM OLD.default_upper_threshold THEN\n    RAISE EXCEPTION 'classifier prompt version identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_reject_copyright_territorial_mutation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'copyright territorial contract rows are immutable'\n    USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
     "fn_reject_membership_administrator_refund_request_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_request_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN RAISE EXCEPTION 'membership administrator refund requests are immutable'; END $function$\n"
@@ -20532,6 +20562,1918 @@
       },
       "uniqueConstraints": {}
     },
+    "copyright_eu_escalations": {
+      "checkConstraints": {
+        "chk_copyright_eu_escalations__source": "CHECK ((num_nonnulls(copyright_eu_notice_acknowledgment_id, copyright_eu_supervised_complaint_id) = 1))"
+      },
+      "columns": {
+        "copyright_eu_notice_acknowledgment_id": {
+          "collation": null,
+          "comment": "Exhausted acknowledgment that caused this escalation. Exactly one source is set.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "copyright_eu_supervised_complaint_id": {
+          "collation": null,
+          "comment": "Supervised complaint that caused this escalation. Exactly one source is set.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "EU notice this escalation belongs to.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "escalated_at": {
+          "collation": null,
+          "comment": "When the escalation was recorded.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Escalation of one EU notice from either an exhausted acknowledgment or a supervised complaint.",
+      "foreignKeys": {
+        "copyright_eu_escalations_copyright_eu_notice_acknowledgmen_fkey": {
+          "columns": ["copyright_eu_notice_acknowledgment_id"],
+          "definition": "FOREIGN KEY (copyright_eu_notice_acknowledgment_id) REFERENCES copyright_eu_notice_acknowledgments(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_eu_notice_acknowledgments",
+          "validated": true
+        },
+        "copyright_eu_escalations_copyright_eu_supervised_complaint_fkey": {
+          "columns": ["copyright_eu_supervised_complaint_id"],
+          "definition": "FOREIGN KEY (copyright_eu_supervised_complaint_id) REFERENCES copyright_eu_supervised_complaints(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_eu_supervised_complaints",
+          "validated": true
+        },
+        "fk_copyright_eu_escalations__notice": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_eu_escalations_copyright_eu_notice_acknowledgment_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_escalations_copyright_eu_notice_acknowledgment_key ON public.copyright_eu_escalations USING btree (copyright_eu_notice_acknowledgment_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_eu_notice_acknowledgment_id",
+              "descending": false,
+              "expression": "copyright_eu_notice_acknowledgment_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_eu_escalations_copyright_eu_supervised_complaint__key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_escalations_copyright_eu_supervised_complaint__key ON public.copyright_eu_escalations USING btree (copyright_eu_supervised_complaint_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_eu_supervised_complaint_id",
+              "descending": false,
+              "expression": "copyright_eu_supervised_complaint_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_eu_escalations_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_escalations_pkey ON public.copyright_eu_escalations USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_eu_escalations__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_eu_escalations__notice ON public.copyright_eu_escalations USING btree (copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_eu_escalations_child": "CREATE TRIGGER trigger_copyright_eu_escalations_child BEFORE INSERT ON public.copyright_eu_escalations FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_eu_notice_child()",
+        "trigger_copyright_eu_escalations_immutable": "CREATE TRIGGER trigger_copyright_eu_escalations_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()",
+        "trigger_copyright_eu_escalations_source": "CREATE TRIGGER trigger_copyright_eu_escalations_source BEFORE INSERT ON public.copyright_eu_escalations FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_eu_escalation()"
+      },
+      "uniqueConstraints": {
+        "copyright_eu_escalations_copyright_eu_notice_acknowledgment_key": {
+          "columns": ["copyright_eu_notice_acknowledgment_id"],
+          "definition": "UNIQUE (copyright_eu_notice_acknowledgment_id)"
+        },
+        "copyright_eu_escalations_copyright_eu_supervised_complaint__key": {
+          "columns": ["copyright_eu_supervised_complaint_id"],
+          "definition": "UNIQUE (copyright_eu_supervised_complaint_id)"
+        }
+      }
+    },
+    "copyright_eu_notice_acknowledgments": {
+      "checkConstraints": {
+        "chk_copyright_eu_notice_acknowledgments__attempt_time": "CHECK (((attempt_count = 0) = (last_attempt_at IS NULL)))",
+        "chk_copyright_eu_notice_acknowledgments__attempts": "CHECK (((attempt_count >= 0) AND (attempt_count <= 5)))",
+        "chk_copyright_eu_notice_acknowledgments__exhaustion": "CHECK (((exhausted_at IS NULL) OR (attempt_count = 5)))",
+        "chk_copyright_eu_notice_acknowledgments__terminal": "CHECK (((acknowledged_at IS NULL) OR (exhausted_at IS NULL)))"
+      },
+      "columns": {
+        "acknowledged_at": {
+          "collation": null,
+          "comment": "When acknowledgment succeeded. Mutually exclusive with exhausted_at.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "attempt_count": {
+          "collation": null,
+          "comment": "How many acknowledgment attempts have been recorded, from 0 through 5.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "integer"
+        },
+        "copyright_eu_notice_receipt_id": {
+          "collation": null,
+          "comment": "EU receipt this acknowledgment obligation belongs to. One row per receipt.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "exhausted_at": {
+          "collation": null,
+          "comment": "When the fifth attempt failed and the obligation was exhausted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "last_attempt_at": {
+          "collation": null,
+          "comment": "When the latest acknowledgment attempt was recorded. Null when attempt_count is 0.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Acknowledgment attempts for one EU notice receipt. There is no statutory due time.",
+      "foreignKeys": {
+        "copyright_eu_notice_acknowled_copyright_eu_notice_receipt__fkey": {
+          "columns": ["copyright_eu_notice_receipt_id"],
+          "definition": "FOREIGN KEY (copyright_eu_notice_receipt_id) REFERENCES copyright_eu_notice_receipts(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_eu_notice_receipts",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_eu_notice_acknowled_copyright_eu_notice_receipt_i_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_notice_acknowled_copyright_eu_notice_receipt_i_key ON public.copyright_eu_notice_acknowledgments USING btree (copyright_eu_notice_receipt_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_eu_notice_receipt_id",
+              "descending": false,
+              "expression": "copyright_eu_notice_receipt_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_eu_notice_acknowledgments_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_notice_acknowledgments_pkey ON public.copyright_eu_notice_acknowledgments USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_eu_notice_acknowledgments_attempt": "CREATE TRIGGER trigger_copyright_eu_notice_acknowledgments_attempt BEFORE DELETE OR UPDATE ON public.copyright_eu_notice_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_eu_acknowledgment_attempt()",
+        "trigger_copyright_eu_notice_acknowledgments_updated_at": "CREATE TRIGGER trigger_copyright_eu_notice_acknowledgments_updated_at BEFORE UPDATE ON public.copyright_eu_notice_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "copyright_eu_notice_acknowled_copyright_eu_notice_receipt_i_key": {
+          "columns": ["copyright_eu_notice_receipt_id"],
+          "definition": "UNIQUE (copyright_eu_notice_receipt_id)"
+        }
+      }
+    },
+    "copyright_eu_notice_receipts": {
+      "checkConstraints": {
+        "chk_copyright_eu_notice_receipts__grounds": "CHECK (((char_length(grounds_ciphertext) >= 1) AND (char_length(grounds_ciphertext) <= 1048576)))",
+        "chk_copyright_eu_notice_receipts__idempotency": "CHECK ((char_length(idempotency_key) = 36))",
+        "chk_copyright_eu_notice_receipts__sha": "CHECK ((octet_length(request_sha256) = 32))",
+        "chk_copyright_eu_notice_receipts__url": "CHECK (((char_length(hosted_use_url) >= 1) AND (char_length(hosted_use_url) <= 2048)))"
+      },
+      "columns": {
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "EU copyright notice this receipt records. One receipt per notice.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_territorial_policy_approval_id": {
+          "collation": null,
+          "comment": "Unwithdrawn eu_dsa policy approval that made this receipt acceptable.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "grounds_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted grounds supplied with the notice. The system does not decide merits.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text"
+        },
+        "hosted_use_url": {
+          "collation": null,
+          "comment": "URL of the hosted use identified in the notice.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "idempotency_key": {
+          "collation": null,
+          "comment": "Caller idempotency key, unique together with requester_user_id.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "received_at": {
+          "collation": null,
+          "comment": "When Voucha stored this EU notice receipt.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "request_sha256": {
+          "collation": null,
+          "comment": "SHA-256 digest of the received request.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "bytea"
+        },
+        "requester_user_id": {
+          "collation": null,
+          "comment": "Signed-in requester. Null for a guest or after account deletion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "EU notice receipt. Administrative facts only; no US restoration clock and no merits decision.",
+      "foreignKeys": {
+        "copyright_eu_notice_receipts_copyright_territorial_policy__fkey": {
+          "columns": ["copyright_territorial_policy_approval_id"],
+          "definition": "FOREIGN KEY (copyright_territorial_policy_approval_id) REFERENCES copyright_territorial_policy_approvals(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_territorial_policy_approvals",
+          "validated": true
+        },
+        "fk_copyright_eu_notice_receipts__notice": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        },
+        "fk_copyright_eu_notice_receipts__requester": {
+          "columns": ["requester_user_id"],
+          "definition": "FOREIGN KEY (requester_user_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_eu_notice_receipts_copyright_notice_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_notice_receipts_copyright_notice_id_key ON public.copyright_eu_notice_receipts USING btree (copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_eu_notice_receipts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_notice_receipts_pkey ON public.copyright_eu_notice_receipts USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_eu_notice_receipts__policy": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_eu_notice_receipts__policy ON public.copyright_eu_notice_receipts USING btree (copyright_territorial_policy_approval_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_territorial_policy_approval_id",
+              "descending": false,
+              "expression": "copyright_territorial_policy_approval_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_eu_notice_receipts__requester": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_eu_notice_receipts__requester ON public.copyright_eu_notice_receipts USING btree (requester_user_id) WHERE (requester_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "requester_user_id",
+              "descending": false,
+              "expression": "requester_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(requester_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_copyright_eu_notice_receipts__idempotency": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_eu_notice_receipts__idempotency ON public.copyright_eu_notice_receipts USING btree (requester_user_id, idempotency_key)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "requester_user_id",
+              "descending": false,
+              "expression": "requester_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "idempotency_key",
+              "descending": false,
+              "expression": "idempotency_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_eu_notice_receipts_immutable": "CREATE TRIGGER trigger_copyright_eu_notice_receipts_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_notice_receipts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()",
+        "trigger_copyright_eu_notice_receipts_jurisdiction": "CREATE TRIGGER trigger_copyright_eu_notice_receipts_jurisdiction BEFORE INSERT ON public.copyright_eu_notice_receipts FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_territorial_notice_receipt()"
+      },
+      "uniqueConstraints": {
+        "copyright_eu_notice_receipts_copyright_notice_id_key": {
+          "columns": ["copyright_notice_id"],
+          "definition": "UNIQUE (copyright_notice_id)"
+        },
+        "uq_copyright_eu_notice_receipts__idempotency": {
+          "columns": ["requester_user_id", "idempotency_key"],
+          "definition": "UNIQUE (requester_user_id, idempotency_key)"
+        }
+      }
+    },
+    "copyright_eu_notice_routings": {
+      "checkConstraints": {
+        "chk_copyright_eu_notice_routings__destination": "CHECK ((destination = 'staff_queue'::text))"
+      },
+      "columns": {
+        "copyright_eu_notice_receipt_id": {
+          "collation": null,
+          "comment": "EU receipt this routing belongs to. One routing per receipt.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "destination": {
+          "collation": null,
+          "comment": "Queue that received the notice. Constrained to staff_queue.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "routed_at": {
+          "collation": null,
+          "comment": "When the receipt was routed to the staff queue.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Staff-queue routing for one EU notice receipt. Routing is administrative, not a merits decision.",
+      "foreignKeys": {
+        "copyright_eu_notice_routings_copyright_eu_notice_receipt_i_fkey": {
+          "columns": ["copyright_eu_notice_receipt_id"],
+          "definition": "FOREIGN KEY (copyright_eu_notice_receipt_id) REFERENCES copyright_eu_notice_receipts(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_eu_notice_receipts",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_eu_notice_routings_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_notice_routings_pkey ON public.copyright_eu_notice_routings USING btree (copyright_eu_notice_receipt_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_eu_notice_receipt_id",
+              "descending": false,
+              "expression": "copyright_eu_notice_receipt_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["copyright_eu_notice_receipt_id"],
+        "definition": "PRIMARY KEY (copyright_eu_notice_receipt_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_eu_notice_routings_immutable": "CREATE TRIGGER trigger_copyright_eu_notice_routings_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_notice_routings FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()"
+      },
+      "uniqueConstraints": {}
+    },
+    "copyright_eu_redress_decisions": {
+      "checkConstraints": {
+        "chk_copyright_eu_redress_decisions__disposition": "CHECK ((staff_disposition = ANY (ARRAY['maintain'::text, 'revoke'::text])))",
+        "chk_copyright_eu_redress_decisions__rationale": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))"
+      },
+      "columns": {
+        "copyright_eu_redress_request_id": {
+          "collation": null,
+          "comment": "Redress request this decision closes. One decision per request.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "decided_at": {
+          "collation": null,
+          "comment": "When staff recorded the redress decision.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "decided_by_id": {
+          "collation": null,
+          "comment": "Staff user who recorded the decision. Null after that account is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "rationale_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted staff-supplied rationale for the disposition.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "staff_disposition": {
+          "collation": null,
+          "comment": "Staff outcome: maintain or revoke. The system does not choose it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Staff disposition of one EU redress request. The system does not choose the rationale.",
+      "foreignKeys": {
+        "copyright_eu_redress_decision_copyright_eu_redress_request_fkey": {
+          "columns": ["copyright_eu_redress_request_id"],
+          "definition": "FOREIGN KEY (copyright_eu_redress_request_id) REFERENCES copyright_eu_redress_requests(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_eu_redress_requests",
+          "validated": true
+        },
+        "fk_copyright_eu_redress_decisions__decided_by": {
+          "columns": ["decided_by_id"],
+          "definition": "FOREIGN KEY (decided_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_eu_redress_decision_copyright_eu_redress_request__key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_redress_decision_copyright_eu_redress_request__key ON public.copyright_eu_redress_decisions USING btree (copyright_eu_redress_request_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_eu_redress_request_id",
+              "descending": false,
+              "expression": "copyright_eu_redress_request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_eu_redress_decisions_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_redress_decisions_pkey ON public.copyright_eu_redress_decisions USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_eu_redress_decisions__decided_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_eu_redress_decisions__decided_by ON public.copyright_eu_redress_decisions USING btree (decided_by_id) WHERE (decided_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "decided_by_id",
+              "descending": false,
+              "expression": "decided_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(decided_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_eu_redress_decisions_immutable": "CREATE TRIGGER trigger_copyright_eu_redress_decisions_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()"
+      },
+      "uniqueConstraints": {
+        "copyright_eu_redress_decision_copyright_eu_redress_request__key": {
+          "columns": ["copyright_eu_redress_request_id"],
+          "definition": "UNIQUE (copyright_eu_redress_request_id)"
+        }
+      }
+    },
+    "copyright_eu_redress_requests": {
+      "checkConstraints": {
+        "chk_copyright_eu_redress_requests__explanation": "CHECK (((char_length(explanation_ciphertext) >= 1) AND (char_length(explanation_ciphertext) <= 1048576)))",
+        "chk_copyright_eu_redress_requests__idempotency": "CHECK ((char_length(idempotency_key) = 36))"
+      },
+      "columns": {
+        "copyright_eu_statement_of_reasons_id": {
+          "collation": null,
+          "comment": "Statement of reasons this redress request cites, on the same notice.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "EU notice this redress request challenges. Must match the cited statement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "explanation_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted explanation supplied by the participant.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "idempotency_key": {
+          "collation": null,
+          "comment": "Caller idempotency key, unique together with submitted_by_user_id.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "received_at": {
+          "collation": null,
+          "comment": "When Voucha stored this redress request.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "submitted_by_user_id": {
+          "collation": null,
+          "comment": "Participant who submitted the redress request. Null after account deletion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Participant redress against one EU statement of reasons. One request per notice.",
+      "foreignKeys": {
+        "copyright_eu_redress_requests_copyright_eu_statement_of_re_fkey": {
+          "columns": ["copyright_eu_statement_of_reasons_id"],
+          "definition": "FOREIGN KEY (copyright_eu_statement_of_reasons_id) REFERENCES copyright_eu_statements_of_reasons(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_eu_statements_of_reasons",
+          "validated": true
+        },
+        "fk_copyright_eu_redress_requests__notice": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        },
+        "fk_copyright_eu_redress_requests__submitter": {
+          "columns": ["submitted_by_user_id"],
+          "definition": "FOREIGN KEY (submitted_by_user_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_eu_redress_requests_copyright_notice_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_redress_requests_copyright_notice_id_key ON public.copyright_eu_redress_requests USING btree (copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_eu_redress_requests_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_redress_requests_pkey ON public.copyright_eu_redress_requests USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_eu_redress_requests__statement": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_eu_redress_requests__statement ON public.copyright_eu_redress_requests USING btree (copyright_eu_statement_of_reasons_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_eu_statement_of_reasons_id",
+              "descending": false,
+              "expression": "copyright_eu_statement_of_reasons_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_eu_redress_requests__submitter": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_eu_redress_requests__submitter ON public.copyright_eu_redress_requests USING btree (submitted_by_user_id) WHERE (submitted_by_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "submitted_by_user_id",
+              "descending": false,
+              "expression": "submitted_by_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(submitted_by_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_copyright_eu_redress_requests__idempotency": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_eu_redress_requests__idempotency ON public.copyright_eu_redress_requests USING btree (submitted_by_user_id, idempotency_key)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "submitted_by_user_id",
+              "descending": false,
+              "expression": "submitted_by_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "idempotency_key",
+              "descending": false,
+              "expression": "idempotency_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_eu_redress_child": "CREATE TRIGGER trigger_copyright_eu_redress_child BEFORE INSERT ON public.copyright_eu_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_eu_notice_child()",
+        "trigger_copyright_eu_redress_immutable": "CREATE TRIGGER trigger_copyright_eu_redress_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()",
+        "trigger_copyright_eu_redress_same_notice": "CREATE TRIGGER trigger_copyright_eu_redress_same_notice BEFORE INSERT ON public.copyright_eu_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_eu_redress_request()"
+      },
+      "uniqueConstraints": {
+        "copyright_eu_redress_requests_copyright_notice_id_key": {
+          "columns": ["copyright_notice_id"],
+          "definition": "UNIQUE (copyright_notice_id)"
+        },
+        "uq_copyright_eu_redress_requests__idempotency": {
+          "columns": ["submitted_by_user_id", "idempotency_key"],
+          "definition": "UNIQUE (submitted_by_user_id, idempotency_key)"
+        }
+      }
+    },
+    "copyright_eu_statements_of_reasons": {
+      "checkConstraints": {
+        "chk_copyright_eu_statements_of_reasons__human": "CHECK ((automation_disclosure = 'human'::text))",
+        "chk_copyright_eu_statements_of_reasons__statement": "CHECK (((char_length(statement_ciphertext) >= 1) AND (char_length(statement_ciphertext) <= 1048576)))"
+      },
+      "columns": {
+        "automation_disclosure": {
+          "collation": null,
+          "comment": "How the statement was produced. Constrained to human.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "EU notice this statement explains. One statement per notice.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "decided_at": {
+          "collation": null,
+          "comment": "When staff recorded the statement of reasons.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "decided_by_id": {
+          "collation": null,
+          "comment": "Staff user who recorded the statement. Null after that account is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "statement_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted staff-supplied statement. The system does not choose the text.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Staff-supplied EU statement of reasons. automation_disclosure is human because the system does not decide merits.",
+      "foreignKeys": {
+        "fk_copyright_eu_statements_of_reasons__decided_by": {
+          "columns": ["decided_by_id"],
+          "definition": "FOREIGN KEY (decided_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "fk_copyright_eu_statements_of_reasons__notice": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_eu_statements_of_reasons_copyright_notice_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_statements_of_reasons_copyright_notice_id_key ON public.copyright_eu_statements_of_reasons USING btree (copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_eu_statements_of_reasons_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_statements_of_reasons_pkey ON public.copyright_eu_statements_of_reasons USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_eu_statements_of_reasons__decided_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_eu_statements_of_reasons__decided_by ON public.copyright_eu_statements_of_reasons USING btree (decided_by_id) WHERE (decided_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "decided_by_id",
+              "descending": false,
+              "expression": "decided_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(decided_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_eu_statements_child": "CREATE TRIGGER trigger_copyright_eu_statements_child BEFORE INSERT ON public.copyright_eu_statements_of_reasons FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_eu_notice_child()",
+        "trigger_copyright_eu_statements_immutable": "CREATE TRIGGER trigger_copyright_eu_statements_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_statements_of_reasons FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()"
+      },
+      "uniqueConstraints": {
+        "copyright_eu_statements_of_reasons_copyright_notice_id_key": {
+          "columns": ["copyright_notice_id"],
+          "definition": "UNIQUE (copyright_notice_id)"
+        }
+      }
+    },
+    "copyright_eu_supervised_complaints": {
+      "checkConstraints": {
+        "chk_copyright_eu_supervised_complaints__explanation": "CHECK (((char_length(explanation_ciphertext) >= 1) AND (char_length(explanation_ciphertext) <= 1048576)))",
+        "chk_copyright_eu_supervised_complaints__reference": "CHECK (((char_length(authority_reference) >= 1) AND (char_length(authority_reference) <= 200)))"
+      },
+      "columns": {
+        "authority_reference": {
+          "collation": null,
+          "comment": "Authority reference for this complaint. Unique per notice.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "EU notice this supervised complaint concerns.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "explanation_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted explanation of the supervised complaint.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "received_at": {
+          "collation": null,
+          "comment": "When Voucha stored this supervised complaint.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "recorded_by_id": {
+          "collation": null,
+          "comment": "Staff user who recorded the complaint. Null after that account is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Supervised complaint recorded against an EU notice. Recording it can escalate the notice.",
+      "foreignKeys": {
+        "fk_copyright_eu_supervised_complaints__notice": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        },
+        "fk_copyright_eu_supervised_complaints__recorded_by": {
+          "columns": ["recorded_by_id"],
+          "definition": "FOREIGN KEY (recorded_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_eu_supervised_complaints_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_supervised_complaints_pkey ON public.copyright_eu_supervised_complaints USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_eu_supervised_complaints__recorded_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_eu_supervised_complaints__recorded_by ON public.copyright_eu_supervised_complaints USING btree (recorded_by_id) WHERE (recorded_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "recorded_by_id",
+              "descending": false,
+              "expression": "recorded_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(recorded_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_copyright_eu_supervised_complaints__reference": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_eu_supervised_complaints__reference ON public.copyright_eu_supervised_complaints USING btree (copyright_notice_id, authority_reference)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "authority_reference",
+              "descending": false,
+              "expression": "authority_reference",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_eu_supervised_child": "CREATE TRIGGER trigger_copyright_eu_supervised_child BEFORE INSERT ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_eu_notice_child()",
+        "trigger_copyright_eu_supervised_immutable": "CREATE TRIGGER trigger_copyright_eu_supervised_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()"
+      },
+      "uniqueConstraints": {
+        "uq_copyright_eu_supervised_complaints__reference": {
+          "columns": ["copyright_notice_id", "authority_reference"],
+          "definition": "UNIQUE (copyright_notice_id, authority_reference)"
+        }
+      }
+    },
+    "copyright_eu_transparency_reports": {
+      "checkConstraints": {
+        "chk_copyright_eu_transparency_reports__counts": "CHECK (((receipt_count >= 0) AND (statement_of_reasons_count >= 0) AND (redress_request_count >= 0) AND (redress_decision_count >= 0) AND (supervised_complaint_count >= 0) AND (escalation_count >= 0)))",
+        "chk_copyright_eu_transparency_reports__period": "CHECK ((period_started_at < period_ended_at))"
+      },
+      "columns": {
+        "copyright_territorial_policy_approval_id": {
+          "collation": null,
+          "comment": "eu_dsa policy approval this report was produced under.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
+        },
+        "escalation_count": {
+          "collation": null,
+          "comment": "Count of stored EU escalations in the period.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "integer"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "period_ended_at": {
+          "collation": null,
+          "comment": "End of the caller-supplied reporting period. Must be after period_started_at.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "period_started_at": {
+          "collation": null,
+          "comment": "Start of the caller-supplied reporting period. Not a statutory clock.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "receipt_count": {
+          "collation": null,
+          "comment": "Count of stored EU notice receipts in the period.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "integer"
+        },
+        "redress_decision_count": {
+          "collation": null,
+          "comment": "Count of stored EU redress decisions in the period.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "integer"
+        },
+        "redress_request_count": {
+          "collation": null,
+          "comment": "Count of stored EU redress requests in the period.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "integer"
+        },
+        "reported_at": {
+          "collation": null,
+          "comment": "When this transparency report was recorded.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "reported_by_id": {
+          "collation": null,
+          "comment": "User who recorded the report. Null after that account is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "uuid"
+        },
+        "statement_of_reasons_count": {
+          "collation": null,
+          "comment": "Count of stored EU statements of reasons in the period.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "integer"
+        },
+        "supervised_complaint_count": {
+          "collation": null,
+          "comment": "Count of stored EU supervised complaints in the period.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "integer"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Counts of stored EU copyright facts for a caller-supplied period. The period is not a statutory clock.",
+      "foreignKeys": {
+        "copyright_eu_transparency_rep_copyright_territorial_policy_fkey": {
+          "columns": ["copyright_territorial_policy_approval_id"],
+          "definition": "FOREIGN KEY (copyright_territorial_policy_approval_id) REFERENCES copyright_territorial_policy_approvals(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_territorial_policy_approvals",
+          "validated": true
+        },
+        "fk_copyright_eu_transparency_reports__reported_by": {
+          "columns": ["reported_by_id"],
+          "definition": "FOREIGN KEY (reported_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_eu_transparency_reports_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_eu_transparency_reports_pkey ON public.copyright_eu_transparency_reports USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_eu_transparency_reports__policy": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_eu_transparency_reports__policy ON public.copyright_eu_transparency_reports USING btree (copyright_territorial_policy_approval_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_territorial_policy_approval_id",
+              "descending": false,
+              "expression": "copyright_territorial_policy_approval_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_eu_transparency_reports__reported_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_eu_transparency_reports__reported_by ON public.copyright_eu_transparency_reports USING btree (reported_by_id) WHERE (reported_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "reported_by_id",
+              "descending": false,
+              "expression": "reported_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(reported_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_eu_transparency_reports_immutable": "CREATE TRIGGER trigger_copyright_eu_transparency_reports_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_transparency_reports FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()"
+      },
+      "uniqueConstraints": {}
+    },
     "copyright_legal_hold_restrictions": {
       "checkConstraints": {},
       "columns": {
@@ -30628,6 +32570,1766 @@
         "trigger_copyright_restrictions_updated_at": "CREATE TRIGGER trigger_copyright_restrictions_updated_at BEFORE UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
+    },
+    "copyright_territorial_policy_approvals": {
+      "checkConstraints": {
+        "chk_copyright_territorial_policy_approvals__jurisdiction": "CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::text, 'uk'::text])))",
+        "chk_copyright_territorial_policy_approvals__version": "CHECK ((policy_version ~ '^[a-z0-9][a-z0-9._-]{0,63}$'::text))"
+      },
+      "columns": {
+        "approved_at": {
+          "collation": null,
+          "comment": "When an operator approved this policy version.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "approved_by_id": {
+          "collation": null,
+          "comment": "Operator who approved this policy version. Null after that account is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "jurisdiction": {
+          "collation": null,
+          "comment": "Contract family this approval activates: eu_dsa or uk.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "policy_version": {
+          "collation": null,
+          "comment": "Identifier of the approved contract text. Unique per jurisdiction.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Operator approval that makes one EU or UK copyright contract applicable. Absence or withdrawal fails closed.",
+      "foreignKeys": {
+        "fk_copyright_territorial_policy_approvals__approved_by": {
+          "columns": ["approved_by_id"],
+          "definition": "FOREIGN KEY (approved_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_territorial_policy_approvals_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_territorial_policy_approvals_pkey ON public.copyright_territorial_policy_approvals USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_territorial_policy_approvals__approved_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_territorial_policy_approvals__approved_by ON public.copyright_territorial_policy_approvals USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "approved_by_id",
+              "descending": false,
+              "expression": "approved_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(approved_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_copyright_territorial_policy_approvals__version": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_territorial_policy_approvals__version ON public.copyright_territorial_policy_approvals USING btree (jurisdiction, policy_version)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "jurisdiction",
+              "descending": false,
+              "expression": "jurisdiction",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "policy_version",
+              "descending": false,
+              "expression": "policy_version",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_territorial_policy_approvals_immutable": "CREATE TRIGGER trigger_copyright_territorial_policy_approvals_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_policy_approvals FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()",
+        "trigger_copyright_territorial_policy_approvals_updated_at": "CREATE TRIGGER trigger_copyright_territorial_policy_approvals_updated_at BEFORE UPDATE ON public.copyright_territorial_policy_approvals FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "uq_copyright_territorial_policy_approvals__version": {
+          "columns": ["jurisdiction", "policy_version"],
+          "definition": "UNIQUE (jurisdiction, policy_version)"
+        }
+      }
+    },
+    "copyright_territorial_policy_withdrawals": {
+      "checkConstraints": {},
+      "columns": {
+        "copyright_territorial_policy_approval_id": {
+          "collation": null,
+          "comment": "Approval this withdrawal retires. One withdrawal per approval.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "withdrawn_at": {
+          "collation": null,
+          "comment": "When an operator withdrew the approval.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "withdrawn_by_id": {
+          "collation": null,
+          "comment": "Operator who withdrew the approval. Null after that account is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        }
+      },
+      "comment": "Withdrawal of one territorial policy approval. A withdrawn approval fails closed.",
+      "foreignKeys": {
+        "copyright_territorial_policy__copyright_territorial_policy_fkey": {
+          "columns": ["copyright_territorial_policy_approval_id"],
+          "definition": "FOREIGN KEY (copyright_territorial_policy_approval_id) REFERENCES copyright_territorial_policy_approvals(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_territorial_policy_approvals",
+          "validated": true
+        },
+        "fk_copyright_territorial_policy_withdrawals__withdrawn_by": {
+          "columns": ["withdrawn_by_id"],
+          "definition": "FOREIGN KEY (withdrawn_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_territorial_policy__copyright_territorial_policy__key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_territorial_policy__copyright_territorial_policy__key ON public.copyright_territorial_policy_withdrawals USING btree (copyright_territorial_policy_approval_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_territorial_policy_approval_id",
+              "descending": false,
+              "expression": "copyright_territorial_policy_approval_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_territorial_policy_withdrawals_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_territorial_policy_withdrawals_pkey ON public.copyright_territorial_policy_withdrawals USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_territorial_policy_withdrawals__withdrawn_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_territorial_policy_withdrawals__withdrawn_by ON public.copyright_territorial_policy_withdrawals USING btree (withdrawn_by_id) WHERE (withdrawn_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "withdrawn_by_id",
+              "descending": false,
+              "expression": "withdrawn_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(withdrawn_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_territorial_policy_withdrawals_immutable": "CREATE TRIGGER trigger_copyright_territorial_policy_withdrawals_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_policy_withdrawals FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()"
+      },
+      "uniqueConstraints": {
+        "copyright_territorial_policy__copyright_territorial_policy__key": {
+          "columns": ["copyright_territorial_policy_approval_id"],
+          "definition": "UNIQUE (copyright_territorial_policy_approval_id)"
+        }
+      }
+    },
+    "copyright_uk_escalations": {
+      "checkConstraints": {},
+      "columns": {
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "UK notice this escalation belongs to.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_uk_notice_acknowledgment_id": {
+          "collation": null,
+          "comment": "Exhausted acknowledgment that caused this escalation, on the same notice.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "escalated_at": {
+          "collation": null,
+          "comment": "When the escalation was recorded.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Escalation of one UK notice from an exhausted acknowledgment.",
+      "foreignKeys": {
+        "copyright_uk_escalations_copyright_uk_notice_acknowledgmen_fkey": {
+          "columns": ["copyright_uk_notice_acknowledgment_id"],
+          "definition": "FOREIGN KEY (copyright_uk_notice_acknowledgment_id) REFERENCES copyright_uk_notice_acknowledgments(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_uk_notice_acknowledgments",
+          "validated": true
+        },
+        "fk_copyright_uk_escalations__notice": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_uk_escalations_copyright_uk_notice_acknowledgment_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_uk_escalations_copyright_uk_notice_acknowledgment_key ON public.copyright_uk_escalations USING btree (copyright_uk_notice_acknowledgment_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_uk_notice_acknowledgment_id",
+              "descending": false,
+              "expression": "copyright_uk_notice_acknowledgment_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_uk_escalations_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_uk_escalations_pkey ON public.copyright_uk_escalations USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_uk_escalations__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_uk_escalations__notice ON public.copyright_uk_escalations USING btree (copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_uk_escalations_child": "CREATE TRIGGER trigger_copyright_uk_escalations_child BEFORE INSERT ON public.copyright_uk_escalations FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_uk_notice_child()",
+        "trigger_copyright_uk_escalations_immutable": "CREATE TRIGGER trigger_copyright_uk_escalations_immutable BEFORE DELETE OR UPDATE ON public.copyright_uk_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()",
+        "trigger_copyright_uk_escalations_source": "CREATE TRIGGER trigger_copyright_uk_escalations_source BEFORE INSERT ON public.copyright_uk_escalations FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_uk_escalation()"
+      },
+      "uniqueConstraints": {
+        "copyright_uk_escalations_copyright_uk_notice_acknowledgment_key": {
+          "columns": ["copyright_uk_notice_acknowledgment_id"],
+          "definition": "UNIQUE (copyright_uk_notice_acknowledgment_id)"
+        }
+      }
+    },
+    "copyright_uk_notice_acknowledgments": {
+      "checkConstraints": {
+        "chk_copyright_uk_notice_acknowledgments__attempt_time": "CHECK (((attempt_count = 0) = (last_attempt_at IS NULL)))",
+        "chk_copyright_uk_notice_acknowledgments__attempts": "CHECK (((attempt_count >= 0) AND (attempt_count <= 5)))",
+        "chk_copyright_uk_notice_acknowledgments__exhaustion": "CHECK (((exhausted_at IS NULL) OR (attempt_count = 5)))",
+        "chk_copyright_uk_notice_acknowledgments__terminal": "CHECK (((acknowledged_at IS NULL) OR (exhausted_at IS NULL)))"
+      },
+      "columns": {
+        "acknowledged_at": {
+          "collation": null,
+          "comment": "When acknowledgment succeeded. Mutually exclusive with exhausted_at.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "attempt_count": {
+          "collation": null,
+          "comment": "How many acknowledgment attempts have been recorded, from 0 through 5.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "integer"
+        },
+        "copyright_uk_notice_receipt_id": {
+          "collation": null,
+          "comment": "UK receipt this acknowledgment obligation belongs to. One row per receipt.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "exhausted_at": {
+          "collation": null,
+          "comment": "When the fifth attempt failed and the obligation was exhausted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "last_attempt_at": {
+          "collation": null,
+          "comment": "When the latest acknowledgment attempt was recorded. Null when attempt_count is 0.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Acknowledgment attempts for one UK notice receipt. There is no statutory due time.",
+      "foreignKeys": {
+        "copyright_uk_notice_acknowled_copyright_uk_notice_receipt__fkey": {
+          "columns": ["copyright_uk_notice_receipt_id"],
+          "definition": "FOREIGN KEY (copyright_uk_notice_receipt_id) REFERENCES copyright_uk_notice_receipts(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_uk_notice_receipts",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_uk_notice_acknowled_copyright_uk_notice_receipt_i_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_uk_notice_acknowled_copyright_uk_notice_receipt_i_key ON public.copyright_uk_notice_acknowledgments USING btree (copyright_uk_notice_receipt_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_uk_notice_receipt_id",
+              "descending": false,
+              "expression": "copyright_uk_notice_receipt_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_uk_notice_acknowledgments_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_uk_notice_acknowledgments_pkey ON public.copyright_uk_notice_acknowledgments USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_uk_notice_acknowledgments_attempt": "CREATE TRIGGER trigger_copyright_uk_notice_acknowledgments_attempt BEFORE DELETE OR UPDATE ON public.copyright_uk_notice_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_uk_acknowledgment_attempt()",
+        "trigger_copyright_uk_notice_acknowledgments_updated_at": "CREATE TRIGGER trigger_copyright_uk_notice_acknowledgments_updated_at BEFORE UPDATE ON public.copyright_uk_notice_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "copyright_uk_notice_acknowled_copyright_uk_notice_receipt_i_key": {
+          "columns": ["copyright_uk_notice_receipt_id"],
+          "definition": "UNIQUE (copyright_uk_notice_receipt_id)"
+        }
+      }
+    },
+    "copyright_uk_notice_receipts": {
+      "checkConstraints": {
+        "chk_copyright_uk_notice_receipts__grounds": "CHECK (((char_length(grounds_ciphertext) >= 1) AND (char_length(grounds_ciphertext) <= 1048576)))",
+        "chk_copyright_uk_notice_receipts__idempotency": "CHECK ((char_length(idempotency_key) = 36))",
+        "chk_copyright_uk_notice_receipts__sha": "CHECK ((octet_length(request_sha256) = 32))",
+        "chk_copyright_uk_notice_receipts__url": "CHECK (((char_length(hosted_use_url) >= 1) AND (char_length(hosted_use_url) <= 2048)))"
+      },
+      "columns": {
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "UK copyright notice this receipt records. One receipt per notice.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_territorial_policy_approval_id": {
+          "collation": null,
+          "comment": "Unwithdrawn uk policy approval that made this receipt acceptable.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "grounds_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted grounds supplied with the notice. The system does not decide merits.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text"
+        },
+        "hosted_use_url": {
+          "collation": null,
+          "comment": "URL of the hosted use identified in the notice.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "idempotency_key": {
+          "collation": null,
+          "comment": "Caller idempotency key, unique together with requester_user_id.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "received_at": {
+          "collation": null,
+          "comment": "When Voucha stored this UK notice receipt.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "request_sha256": {
+          "collation": null,
+          "comment": "SHA-256 digest of the received request.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "bytea"
+        },
+        "requester_user_id": {
+          "collation": null,
+          "comment": "Signed-in requester. Null for a guest or after account deletion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "UK notice receipt. Administrative facts only; no US restoration clock and no merits decision.",
+      "foreignKeys": {
+        "copyright_uk_notice_receipts_copyright_territorial_policy__fkey": {
+          "columns": ["copyright_territorial_policy_approval_id"],
+          "definition": "FOREIGN KEY (copyright_territorial_policy_approval_id) REFERENCES copyright_territorial_policy_approvals(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_territorial_policy_approvals",
+          "validated": true
+        },
+        "fk_copyright_uk_notice_receipts__notice": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        },
+        "fk_copyright_uk_notice_receipts__requester": {
+          "columns": ["requester_user_id"],
+          "definition": "FOREIGN KEY (requester_user_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_uk_notice_receipts_copyright_notice_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_uk_notice_receipts_copyright_notice_id_key ON public.copyright_uk_notice_receipts USING btree (copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_uk_notice_receipts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_uk_notice_receipts_pkey ON public.copyright_uk_notice_receipts USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_uk_notice_receipts__policy": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_uk_notice_receipts__policy ON public.copyright_uk_notice_receipts USING btree (copyright_territorial_policy_approval_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_territorial_policy_approval_id",
+              "descending": false,
+              "expression": "copyright_territorial_policy_approval_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_uk_notice_receipts__requester": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_uk_notice_receipts__requester ON public.copyright_uk_notice_receipts USING btree (requester_user_id) WHERE (requester_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "requester_user_id",
+              "descending": false,
+              "expression": "requester_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(requester_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_copyright_uk_notice_receipts__idempotency": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_uk_notice_receipts__idempotency ON public.copyright_uk_notice_receipts USING btree (requester_user_id, idempotency_key)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "requester_user_id",
+              "descending": false,
+              "expression": "requester_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "idempotency_key",
+              "descending": false,
+              "expression": "idempotency_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_uk_notice_receipts_immutable": "CREATE TRIGGER trigger_copyright_uk_notice_receipts_immutable BEFORE DELETE OR UPDATE ON public.copyright_uk_notice_receipts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()",
+        "trigger_copyright_uk_notice_receipts_jurisdiction": "CREATE TRIGGER trigger_copyright_uk_notice_receipts_jurisdiction BEFORE INSERT ON public.copyright_uk_notice_receipts FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_territorial_notice_receipt()"
+      },
+      "uniqueConstraints": {
+        "copyright_uk_notice_receipts_copyright_notice_id_key": {
+          "columns": ["copyright_notice_id"],
+          "definition": "UNIQUE (copyright_notice_id)"
+        },
+        "uq_copyright_uk_notice_receipts__idempotency": {
+          "columns": ["requester_user_id", "idempotency_key"],
+          "definition": "UNIQUE (requester_user_id, idempotency_key)"
+        }
+      }
+    },
+    "copyright_uk_notice_routings": {
+      "checkConstraints": {
+        "chk_copyright_uk_notice_routings__destination": "CHECK ((destination = 'staff_queue'::text))"
+      },
+      "columns": {
+        "copyright_uk_notice_receipt_id": {
+          "collation": null,
+          "comment": "UK receipt this routing belongs to. One routing per receipt.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "destination": {
+          "collation": null,
+          "comment": "Queue that received the notice. Constrained to staff_queue.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "routed_at": {
+          "collation": null,
+          "comment": "When the receipt was routed to the staff queue.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Staff-queue routing for one UK notice receipt. Routing is administrative, not a merits decision.",
+      "foreignKeys": {
+        "copyright_uk_notice_routings_copyright_uk_notice_receipt_i_fkey": {
+          "columns": ["copyright_uk_notice_receipt_id"],
+          "definition": "FOREIGN KEY (copyright_uk_notice_receipt_id) REFERENCES copyright_uk_notice_receipts(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_uk_notice_receipts",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_uk_notice_routings_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_uk_notice_routings_pkey ON public.copyright_uk_notice_routings USING btree (copyright_uk_notice_receipt_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_uk_notice_receipt_id",
+              "descending": false,
+              "expression": "copyright_uk_notice_receipt_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["copyright_uk_notice_receipt_id"],
+        "definition": "PRIMARY KEY (copyright_uk_notice_receipt_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_uk_notice_routings_immutable": "CREATE TRIGGER trigger_copyright_uk_notice_routings_immutable BEFORE DELETE OR UPDATE ON public.copyright_uk_notice_routings FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()"
+      },
+      "uniqueConstraints": {}
+    },
+    "copyright_uk_redress_decisions": {
+      "checkConstraints": {
+        "chk_copyright_uk_redress_decisions__disposition": "CHECK ((staff_disposition = ANY (ARRAY['maintain'::text, 'revoke'::text])))",
+        "chk_copyright_uk_redress_decisions__rationale": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))"
+      },
+      "columns": {
+        "copyright_uk_redress_request_id": {
+          "collation": null,
+          "comment": "Redress request this decision closes. One decision per request.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "decided_at": {
+          "collation": null,
+          "comment": "When staff recorded the redress decision.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "decided_by_id": {
+          "collation": null,
+          "comment": "Staff user who recorded the decision. Null after that account is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "rationale_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted staff-supplied rationale for the disposition.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "staff_disposition": {
+          "collation": null,
+          "comment": "Staff outcome: maintain or revoke. The system does not choose it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Staff disposition of one UK redress request. The system does not choose the rationale.",
+      "foreignKeys": {
+        "copyright_uk_redress_decision_copyright_uk_redress_request_fkey": {
+          "columns": ["copyright_uk_redress_request_id"],
+          "definition": "FOREIGN KEY (copyright_uk_redress_request_id) REFERENCES copyright_uk_redress_requests(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_uk_redress_requests",
+          "validated": true
+        },
+        "fk_copyright_uk_redress_decisions__decided_by": {
+          "columns": ["decided_by_id"],
+          "definition": "FOREIGN KEY (decided_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_uk_redress_decision_copyright_uk_redress_request__key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_uk_redress_decision_copyright_uk_redress_request__key ON public.copyright_uk_redress_decisions USING btree (copyright_uk_redress_request_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_uk_redress_request_id",
+              "descending": false,
+              "expression": "copyright_uk_redress_request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_uk_redress_decisions_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_uk_redress_decisions_pkey ON public.copyright_uk_redress_decisions USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_uk_redress_decisions__decided_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_uk_redress_decisions__decided_by ON public.copyright_uk_redress_decisions USING btree (decided_by_id) WHERE (decided_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "decided_by_id",
+              "descending": false,
+              "expression": "decided_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(decided_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_uk_redress_decisions_immutable": "CREATE TRIGGER trigger_copyright_uk_redress_decisions_immutable BEFORE DELETE OR UPDATE ON public.copyright_uk_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()"
+      },
+      "uniqueConstraints": {
+        "copyright_uk_redress_decision_copyright_uk_redress_request__key": {
+          "columns": ["copyright_uk_redress_request_id"],
+          "definition": "UNIQUE (copyright_uk_redress_request_id)"
+        }
+      }
+    },
+    "copyright_uk_redress_requests": {
+      "checkConstraints": {
+        "chk_copyright_uk_redress_requests__explanation": "CHECK (((char_length(explanation_ciphertext) >= 1) AND (char_length(explanation_ciphertext) <= 1048576)))",
+        "chk_copyright_uk_redress_requests__idempotency": "CHECK ((char_length(idempotency_key) = 36))"
+      },
+      "columns": {
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "UK notice this redress request challenges. Must match the cited review.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_uk_review_id": {
+          "collation": null,
+          "comment": "UK review this redress request cites, on the same notice.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "explanation_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted explanation supplied by the participant.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "idempotency_key": {
+          "collation": null,
+          "comment": "Caller idempotency key, unique together with submitted_by_user_id.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "received_at": {
+          "collation": null,
+          "comment": "When Voucha stored this redress request.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "submitted_by_user_id": {
+          "collation": null,
+          "comment": "Participant who submitted the redress request. Null after account deletion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Participant redress against one UK review. One request per notice.",
+      "foreignKeys": {
+        "copyright_uk_redress_requests_copyright_uk_review_id_fkey": {
+          "columns": ["copyright_uk_review_id"],
+          "definition": "FOREIGN KEY (copyright_uk_review_id) REFERENCES copyright_uk_reviews(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_uk_reviews",
+          "validated": true
+        },
+        "fk_copyright_uk_redress_requests__notice": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        },
+        "fk_copyright_uk_redress_requests__submitter": {
+          "columns": ["submitted_by_user_id"],
+          "definition": "FOREIGN KEY (submitted_by_user_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_uk_redress_requests_copyright_notice_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_uk_redress_requests_copyright_notice_id_key ON public.copyright_uk_redress_requests USING btree (copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_uk_redress_requests_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_uk_redress_requests_pkey ON public.copyright_uk_redress_requests USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_uk_redress_requests__review": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_uk_redress_requests__review ON public.copyright_uk_redress_requests USING btree (copyright_uk_review_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_uk_review_id",
+              "descending": false,
+              "expression": "copyright_uk_review_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_uk_redress_requests__submitter": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_uk_redress_requests__submitter ON public.copyright_uk_redress_requests USING btree (submitted_by_user_id) WHERE (submitted_by_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "submitted_by_user_id",
+              "descending": false,
+              "expression": "submitted_by_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(submitted_by_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_copyright_uk_redress_requests__idempotency": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_uk_redress_requests__idempotency ON public.copyright_uk_redress_requests USING btree (submitted_by_user_id, idempotency_key)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "submitted_by_user_id",
+              "descending": false,
+              "expression": "submitted_by_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "idempotency_key",
+              "descending": false,
+              "expression": "idempotency_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_uk_redress_child": "CREATE TRIGGER trigger_copyright_uk_redress_child BEFORE INSERT ON public.copyright_uk_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_uk_notice_child()",
+        "trigger_copyright_uk_redress_immutable": "CREATE TRIGGER trigger_copyright_uk_redress_immutable BEFORE DELETE OR UPDATE ON public.copyright_uk_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()",
+        "trigger_copyright_uk_redress_same_notice": "CREATE TRIGGER trigger_copyright_uk_redress_same_notice BEFORE INSERT ON public.copyright_uk_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_uk_redress_request()"
+      },
+      "uniqueConstraints": {
+        "copyright_uk_redress_requests_copyright_notice_id_key": {
+          "columns": ["copyright_notice_id"],
+          "definition": "UNIQUE (copyright_notice_id)"
+        },
+        "uq_copyright_uk_redress_requests__idempotency": {
+          "columns": ["submitted_by_user_id", "idempotency_key"],
+          "definition": "UNIQUE (submitted_by_user_id, idempotency_key)"
+        }
+      }
+    },
+    "copyright_uk_reviews": {
+      "checkConstraints": {
+        "chk_copyright_uk_reviews__human": "CHECK ((automation_disclosure = 'human'::text))",
+        "chk_copyright_uk_reviews__rationale": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))"
+      },
+      "columns": {
+        "automation_disclosure": {
+          "collation": null,
+          "comment": "How the review was produced. Constrained to human.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "UK notice this review explains. One review per notice.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "rationale_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted staff-supplied rationale. The system does not choose the text.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "reviewed_at": {
+          "collation": null,
+          "comment": "When staff recorded the review.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "reviewed_by_id": {
+          "collation": null,
+          "comment": "Staff user who recorded the review. Null after that account is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Staff-supplied UK copyright review. The system does not choose the rationale.",
+      "foreignKeys": {
+        "fk_copyright_uk_reviews__notice": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        },
+        "fk_copyright_uk_reviews__reviewed_by": {
+          "columns": ["reviewed_by_id"],
+          "definition": "FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_uk_reviews_copyright_notice_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_uk_reviews_copyright_notice_id_key ON public.copyright_uk_reviews USING btree (copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_uk_reviews_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_uk_reviews_pkey ON public.copyright_uk_reviews USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_uk_reviews__reviewed_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_uk_reviews__reviewed_by ON public.copyright_uk_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "reviewed_by_id",
+              "descending": false,
+              "expression": "reviewed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(reviewed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_uk_reviews_child": "CREATE TRIGGER trigger_copyright_uk_reviews_child BEFORE INSERT ON public.copyright_uk_reviews FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_uk_notice_child()",
+        "trigger_copyright_uk_reviews_immutable": "CREATE TRIGGER trigger_copyright_uk_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_uk_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_mutation()"
+      },
+      "uniqueConstraints": {
+        "copyright_uk_reviews_copyright_notice_id_key": {
+          "columns": ["copyright_notice_id"],
+          "definition": "UNIQUE (copyright_notice_id)"
+        }
+      }
     },
     "countries": {
       "checkConstraints": {
