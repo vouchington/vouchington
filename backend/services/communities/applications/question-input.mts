@@ -18,6 +18,9 @@ export type ApplicationQuestionInput = {
   required?: boolean
 }
 
+// Zero-based order_index is a signed smallint, so 32767 is the last storable index.
+const MAX_APPLICATION_QUESTION_OPTIONS = 32768
+
 export function assertApplicationQuestionInputs(questions: ApplicationQuestionInput[]): void {
   for (const question of questions) {
     assert(
@@ -43,6 +46,11 @@ export function assertApplicationQuestionInputs(questions: ApplicationQuestionIn
         Array.isArray(question.options) && question.options.length > 0,
         422,
         'select field types require options',
+      )
+      assert(
+        question.options.length <= MAX_APPLICATION_QUESTION_OPTIONS,
+        422,
+        'A question cannot have more than 32768 options',
       )
       for (const label of question.options) {
         assert(
