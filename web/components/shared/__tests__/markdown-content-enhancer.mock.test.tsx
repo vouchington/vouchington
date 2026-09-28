@@ -180,9 +180,9 @@ describe('MarkdownContentEnhancer', () => {
       expect(calls[1]?.loading).toBe('lazy')
     })
 
-    it('appends w= to /sideload/ URLs without an existing w param', async () => {
+    it('appends w= to /sideload/v2/ URLs without an existing w param', async () => {
       mockImage.mockReturnValue(null)
-      const html = '<img src="/sideload/abc" width="800" height="600" alt="sideload" />'
+      const html = '<img src="/sideload/v2/abc" width="800" height="600" alt="sideload" />'
 
       render(
         <MarkdownContentEnhancer
@@ -196,13 +196,13 @@ describe('MarkdownContentEnhancer', () => {
       })
 
       const calls = getImageCalls(mockImage)
-      expect(calls[0]?.src).toBe('/sideload/abc?w=800')
+      expect(calls[0]?.src).toBe('/sideload/v2/abc?w=800')
     })
 
-    it('preserves an existing w= on /sideload/ URLs instead of appending a second', async () => {
+    it('preserves an existing w= on /sideload/v2/ URLs instead of appending a second', async () => {
       mockImage.mockReturnValue(null)
       const html =
-        '<img src="/sideload/abc?w=1200&sig=xyz" width="800" height="600" alt="sideload" />'
+        '<img src="/sideload/v2/abc?w=1200&sig=xyz" width="800" height="600" alt="sideload" />'
 
       render(
         <MarkdownContentEnhancer
@@ -216,14 +216,14 @@ describe('MarkdownContentEnhancer', () => {
       })
 
       const calls = getImageCalls(mockImage)
-      expect(calls[0]?.src).toBe('/sideload/abc?w=1200&sig=xyz')
+      expect(calls[0]?.src).toBe('/sideload/v2/abc?w=1200&sig=xyz')
     })
 
     it('appends w= to an absolute image-origin sideload URL', async () => {
       mockImage.mockReturnValue(null)
       window.__IMAGE_ORIGIN__ = 'https://images.example.com'
       const html =
-        '<img src="https://images.example.com/sideload/abc?sig=xyz" width="800" height="600" alt="sideload" />'
+        '<img src="https://images.example.com/sideload/v2/abc?sig=xyz" width="800" height="600" alt="sideload" />'
 
       render(
         <MarkdownContentEnhancer
@@ -237,7 +237,7 @@ describe('MarkdownContentEnhancer', () => {
       })
 
       const calls = getImageCalls(mockImage)
-      expect(calls[0]?.src).toBe('https://images.example.com/sideload/abc?sig=xyz&w=800')
+      expect(calls[0]?.src).toBe('https://images.example.com/sideload/v2/abc?sig=xyz&w=800')
       delete window.__IMAGE_ORIGIN__
     })
 

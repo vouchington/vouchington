@@ -19,10 +19,6 @@ export {
 export { lockImageDeliveryMutation } from './delivery-lock.mts'
 export { assertImageDeliveryTransaction } from './transaction-contract.mts'
 export { syncImageSurfacePlacement } from './surface-placement-sync.mts'
-export {
-  authorizeOgDependencyManifest,
-  registerOgDependencyManifest,
-} from './og-dependency-manifest.mts'
 export type { ImagePlacementTuple } from '@voucha/types/entities/user'
 export { ensureImagePlacementBinding } from './retained-image-identities.mts'
 export {
