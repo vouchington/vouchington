@@ -2,6 +2,31 @@
 
 [Schema index](README.md).
 
+## `crawl_open_graph_text(meta jsonb, wanted text)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.crawl_open_graph_text(meta jsonb, wanted text)
+ RETURNS text
+ LANGUAGE sql
+ IMMUTABLE
+```
+
+## `fn_admin_import_rss_feed_row_matches_batch`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_admin_import_rss_feed_row_matches_batch()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_admin_import_topic_row_matches_batch`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_admin_import_topic_row_matches_batch()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_ap_inbox_delivery_retention`
 
 ```sql
@@ -34,10 +59,42 @@ CREATE OR REPLACE FUNCTION public.fn_ap_inbox_delivery_storage_after_update()
  LANGUAGE plpgsql
 ```
 
+## `fn_apply_crawl_embed(p_crawl_id uuid, p_embed jsonb)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_apply_crawl_embed(p_crawl_id uuid, p_embed jsonb)
+ RETURNS void
+ LANGUAGE plpgsql
+```
+
 ## `fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric text, p_category text, p_delta integer)`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric text, p_category text, p_delta integer)
+ RETURNS void
+ LANGUAGE plpgsql
+```
+
+## `fn_assert_community_application_answer_from_answer`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_from_answer()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_assert_community_application_answer_from_selection`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_from_selection()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_assert_community_application_answer_selection_state(checked_answer_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_selection_state(checked_answer_id uuid)
  RETURNS void
  LANGUAGE plpgsql
 ```
@@ -50,34 +107,10 @@ CREATE OR REPLACE FUNCTION public.fn_assert_data_point_facts_agree()
  LANGUAGE plpgsql
 ```
 
-## `fn_assert_post_category_finalization_children`
+## `fn_assert_follower_distribution_recipient_bounds`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_post_category_finalization_children()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_assert_post_data_point_vertical_facts`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_post_data_point_vertical_facts()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_assert_review_succession_topics`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_review_succession_topics()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_assert_data_point_facts_agree`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_data_point_facts_agree()
+CREATE OR REPLACE FUNCTION public.fn_assert_follower_distribution_recipient_bounds()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -144,6 +177,40 @@ CREATE OR REPLACE FUNCTION public.fn_capture_notification_push_intent()
 CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_id uuid)
  RETURNS boolean
  LANGUAGE sql
+```
+
+## `fn_crawl_embed_json(c crawls)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_crawl_embed_json(c crawls)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+```
+
+## `fn_crawl_links_json(p_crawl_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_crawl_links_json(p_crawl_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE
+```
+
+## `fn_crawl_links_same_shape`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_crawl_links_same_shape()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_crawls_sync_open_graph`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_crawls_sync_open_graph()
+ RETURNS trigger
+ LANGUAGE plpgsql
 ```
 
 ## `fn_create_topic_metrics_on_insert`
@@ -794,6 +861,15 @@ CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_reports_delete_roll
 CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_reports_insert_rollup()
  RETURNS trigger
  LANGUAGE plpgsql
+```
+
+## `fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE
 ```
 
 ## `fn_post_category_finalization_actor_ids(target_post_id uuid)`
@@ -1472,4 +1548,13 @@ CREATE OR REPLACE FUNCTION public.membership_grant_remaining_duration(grant_id u
 CREATE OR REPLACE FUNCTION public.repair_post_category_finalization_admission_response_on_delete()
  RETURNS trigger
  LANGUAGE plpgsql
+```
+
+## `url_search_params_json(p_url_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.url_search_params_json(p_url_id uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
 ```
