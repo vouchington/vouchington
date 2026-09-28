@@ -76,3 +76,16 @@ export async function readTestDeniedCountryCodes(deliveryKey: string): Promise<s
   `)
   return rows.map(row => row.country_code)
 }
+
+export async function readTestCopyrightRestrictionCountryCodes(
+  restrictionId: string,
+): Promise<string[]> {
+  const { rows } = await read<{
+    country_code: string
+  }>(sql`/* readTestCopyrightRestrictionCountryCodes */
+    SELECT country_code FROM copyright_restriction_countries
+    WHERE copyright_restriction_id = ${restrictionId}
+    ORDER BY country_code
+  `)
+  return rows.map(row => row.country_code)
+}
