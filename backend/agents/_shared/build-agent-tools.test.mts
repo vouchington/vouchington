@@ -50,7 +50,7 @@ describe('build-agent-tools', () => {
     }
 
     const { agentTools } = buildAgentTools(mockUser, [tool])
-    await agentTools[0].executor({})
+    await agentTools[0].executor({} as never)
 
     expect(capturedUser).toBe(mockUser)
   })
@@ -90,7 +90,7 @@ describe('build-agent-tools', () => {
       { tool: toolWithExtras, curryArgs: ['post', 'entity-123'] },
     ])
 
-    await agentTools[0].executor({})
+    await agentTools[0].executor({} as never)
 
     expect(capturedArgs[0]).toBe(mockUser)
     expect(capturedArgs[1]).toBe('post')
@@ -113,7 +113,7 @@ describe('build-agent-tools', () => {
     expect(entry.curryArgs).toEqual(['rss_feed_item', 'feed-456'])
 
     const { agentTools } = buildAgentTools(mockUser, [entry])
-    await agentTools[0].executor({})
+    await agentTools[0].executor({} as never)
 
     expect(capturedArgs[0]).toBe(mockUser)
     expect(capturedArgs[1]).toBe('rss_feed_item')

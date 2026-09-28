@@ -1,13 +1,23 @@
 import { assertToolAllowedForUser, type AgentTool } from '@services/openai-agents'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from '@voucha/tools'
+import type { Tool, ToolCallOutput, ToolInvocationContext } from '@voucha/tools'
 
-// oxlint-disable-next-line typescript/no-explicit-any -- curry tuples stay assignable only through any
-type CurriedToolEntry = { tool: Tool<any, any, readonly any[]>; curryArgs: readonly any[] }
+type ToolExecutor = (
+  args: never,
+  invocationContext?: ToolInvocationContext,
+) => Promise<unknown> | unknown
 
-export type AgentToolEntry =
-  // oxlint-disable-next-line typescript/no-explicit-any -- heterogeneous tools are not assignable to unknown parameters
-  Tool<any, any> | CurriedToolEntry
+type DispatchableTool = {
+  schema: Tool['schema']
+  function: (currentUser: BasicUser, ...curry: readonly never[]) => ToolExecutor
+  formatResult?: (callId: string, result: never) => ToolCallOutput
+  roles?: Tool['roles']
+  meta?: Tool['meta']
+}
+
+type CurriedToolEntry = { tool: DispatchableTool; curryArgs: readonly unknown[] }
+
+export type AgentToolEntry = DispatchableTool | CurriedToolEntry
 
 /**
  * Type-safe helper for binding curry args to a tool.
@@ -50,30 +60,29 @@ function isToolEntry(entry: AgentToolEntry): entry is CurriedToolEntry {
  */
 export function buildAgentTools(
   currentUser: BasicUser,
-  entries: AgentToolEntry[],
+  entries: readonly AgentToolEntry[],
 ): { agentTools: AgentTool[] } {
-  const agentTools: AgentTool[] = entries.map(entry => {
-    if (isToolEntry(entry)) {
-      const { tool, curryArgs } = entry
-      assertToolAllowedForUser(tool, currentUser)
-      const executor = tool.function(currentUser, ...curryArgs)
-      return {
-        schema: tool.schema,
-        executor,
-        ...(tool.formatResult && { formatResult: tool.formatResult }),
-      }
-    }
+  return {
+    agentTools: entries.map(entry =>
+      isToolEntry(entry)
+        ? bindAgentTool(currentUser, entry.tool, entry.curryArgs)
+        : bindAgentTool(currentUser, entry, []),
+    ),
+  }
+}
 
-    const tool = entry
-    assertToolAllowedForUser(tool, currentUser)
-    return {
-      schema: tool.schema,
-      executor: tool.function(currentUser),
-      ...(tool.formatResult && { formatResult: tool.formatResult }),
-    }
-  })
-
-  return { agentTools }
+function bindAgentTool(
+  currentUser: BasicUser,
+  tool: DispatchableTool,
+  curryArgs: readonly unknown[],
+): AgentTool {
+  assertToolAllowedForUser(tool, currentUser)
+  const formatResult = tool.formatResult
+  return {
+    schema: tool.schema,
+    executor: tool.function(currentUser, ...(curryArgs as readonly never[])),
+    ...(formatResult ? { formatResult } : {}),
+  }
 }
 
 /**
