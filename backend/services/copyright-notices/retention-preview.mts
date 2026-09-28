@@ -26,34 +26,48 @@ export async function previewCopyrightEvidenceRetention(
   await using transaction = await beginTransaction()
   const facts = await loadRetentionFacts(transaction, noticeId)
   const { rows } = await transaction<{ id: string }>(sql`/* previewCopyrightEvidenceRetention */
-    INSERT INTO copyright_evidence_retention_previews (
-      copyright_notice_id, copyright_evidence_retention_policy_id, eligible
-    ) VALUES (
-      ${noticeId}, ${facts.policyId}, ${facts.reasons.length === 0}
+    WITH inserted AS (
+      INSERT INTO copyright_evidence_retention_previews (
+        copyright_notice_id, copyright_evidence_retention_policy_id, eligible
+      ) VALUES (
+        ${noticeId}, ${facts.policyId}, ${facts.reasons.length === 0}
+      )
+      RETURNING id
+    ),
+    blocks AS (
+      INSERT INTO copyright_evidence_retention_preview_blocks (
+        copyright_evidence_retention_preview_id, reason
+      )
+      SELECT inserted.id, reason
+      FROM inserted
+      CROSS JOIN unnest(${facts.reasons}::text[]) AS reason
+      RETURNING copyright_evidence_retention_preview_id
+    ),
+    artifacts AS (
+      INSERT INTO copyright_evidence_retention_preview_artifacts (
+        copyright_evidence_retention_preview_id, copyright_notice_evidence_artifact_id
+      )
+      SELECT inserted.id, artifact_id
+      FROM inserted
+      CROSS JOIN unnest(${facts.evidenceArtifactIds}::uuid[]) AS artifact_id
+      RETURNING copyright_evidence_retention_preview_id
+    ),
+    intakes AS (
+      INSERT INTO copyright_evidence_retention_preview_email_intakes (
+        copyright_evidence_retention_preview_id, copyright_notice_email_intake_id
+      )
+      SELECT inserted.id, intake_id
+      FROM inserted
+      CROSS JOIN unnest(${facts.emailIntakeIds}::uuid[]) AS intake_id
+      RETURNING copyright_evidence_retention_preview_id
     )
-    RETURNING id
+    SELECT inserted.id
+    FROM inserted
+    CROSS JOIN (SELECT count(*) FROM blocks) block_count
+    CROSS JOIN (SELECT count(*) FROM artifacts) artifact_count
+    CROSS JOIN (SELECT count(*) FROM intakes) intake_count
   `)
   const previewId = rows[0]!.id
-  await transaction(sql`/* previewCopyrightEvidenceRetention */
-    INSERT INTO copyright_evidence_retention_preview_blocks (
-      copyright_evidence_retention_preview_id, reason
-    )
-    SELECT ${previewId}, reason FROM unnest(${facts.reasons}::text[]) AS reason
-  `)
-  await transaction(sql`/* previewCopyrightEvidenceRetention */
-    INSERT INTO copyright_evidence_retention_preview_artifacts (
-      copyright_evidence_retention_preview_id, copyright_notice_evidence_artifact_id
-    )
-    SELECT ${previewId}, artifact_id
-    FROM unnest(${facts.evidenceArtifactIds}::uuid[]) AS artifact_id
-  `)
-  await transaction(sql`/* previewCopyrightEvidenceRetention */
-    INSERT INTO copyright_evidence_retention_preview_email_intakes (
-      copyright_evidence_retention_preview_id, copyright_notice_email_intake_id
-    )
-    SELECT ${previewId}, intake_id
-    FROM unnest(${facts.emailIntakeIds}::uuid[]) AS intake_id
-  `)
   await transaction.commit()
   return {
     id: previewId,

@@ -93,6 +93,30 @@ CREATE TABLE copyright_evidence_retention_disposition_email_intakes (
   PRIMARY KEY (copyright_evidence_retention_disposition_id, copyright_notice_email_intake_id)
 );
 
+CREATE INDEX copyright_evidence_retention_policies_approved_by_user_id
+  ON copyright_evidence_retention_policies (approved_by_user_id);
+
+CREATE INDEX copyright_notice_closures_closed_by_user_id
+  ON copyright_notice_closures (closed_by_user_id);
+
+CREATE INDEX copyright_evidence_retention_previews_copyright_notice_id
+  ON copyright_evidence_retention_previews (copyright_notice_id);
+
+CREATE INDEX copyright_evidence_retention_previews_policy_id
+  ON copyright_evidence_retention_previews (copyright_evidence_retention_policy_id);
+
+CREATE INDEX copyright_evidence_retention_preview_artifacts_artifact_id
+  ON copyright_evidence_retention_preview_artifacts (copyright_notice_evidence_artifact_id);
+
+CREATE INDEX copyright_evidence_retention_preview_email_intakes_intake_id
+  ON copyright_evidence_retention_preview_email_intakes (copyright_notice_email_intake_id);
+
+CREATE INDEX copyright_evidence_retention_disposition_artifacts_artifact_id
+  ON copyright_evidence_retention_disposition_artifacts (copyright_notice_evidence_artifact_id);
+
+CREATE INDEX copyright_evidence_retention_disposition_email_intakes_intake_id
+  ON copyright_evidence_retention_disposition_email_intakes (copyright_notice_email_intake_id);
+
 COMMENT ON TABLE copyright_evidence_retention_gate IS 'Single server-owned switch for copyright evidence disposition. The inserted row is disabled.';
 COMMENT ON COLUMN copyright_evidence_retention_gate.enabled IS 'Whether a later destruction authority may run. False records no deletion.';
 COMMENT ON TABLE copyright_evidence_retention_policies IS 'Approved evidence-retention policy versions. No duration is stored here.';
