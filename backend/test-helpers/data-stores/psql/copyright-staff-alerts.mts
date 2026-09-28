@@ -17,7 +17,7 @@ export async function insertCopyrightStaffAlertCase(input: {
 }): Promise<CopyrightStaffAlertCase> {
   const workDescription = `work-${randomUUID()}`
   const claimantContactCiphertext = `contact-${randomUUID()}`
-  const placementKey = `post-image:${randomUUID()}`
+  const hostedUseUrl = `https://voucha.ai/posts/${randomUUID()}`
   const { rows } = await write<{ notice_id: string; restriction_id: string }>(
     sql`/* insertCopyrightStaffAlertCase */
       WITH notice AS (
@@ -31,15 +31,20 @@ export async function insertCopyrightStaffAlertCase(input: {
           CASE WHEN ${input.provisional} THEN CURRENT_TIMESTAMP - INTERVAL '1 day' ELSE NULL END,
           ${claimantContactCiphertext}, ${workDescription}, 'test-v1'
         ) RETURNING id
+      ), placement AS (
+        INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family)
+        VALUES (${randomUUID()}, ${input.imageId}, 'post')
+        RETURNING placement_id
       ), target AS (
         INSERT INTO copyright_notice_targets (
-          copyright_notice_id, placement_key, placement_revision, hosted_use_url
+          copyright_notice_id, placement_id, placement_revision, hosted_use_url
         )
-        SELECT id, ${placementKey}, 1, ${`https://voucha.ai/posts/${placementKey}`} FROM notice
-        RETURNING id, copyright_notice_id
+        SELECT notice.id, placement.placement_id, 1, ${hostedUseUrl}
+        FROM notice CROSS JOIN placement
+        RETURNING id, copyright_notice_id, placement_id
       ), linked_image AS (
-        INSERT INTO copyright_notice_target_images (copyright_notice_target_id, image_id)
-        SELECT id, ${input.imageId} FROM target
+        INSERT INTO copyright_notice_target_images (copyright_notice_target_id, placement_id, image_id)
+        SELECT target.id, target.placement_id, ${input.imageId} FROM target
       ), submission AS (
         INSERT INTO copyright_notice_submissions (
           copyright_notice_id, kind, received_at, source_kind, body_ciphertext
