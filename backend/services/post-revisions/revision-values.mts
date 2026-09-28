@@ -2,7 +2,7 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { PostRevisionChanges } from './facts.mts'
-import { asBoolean, asEnum, asIdList, asText, asTimestamp } from './data-point-facts.mts'
+import { asBoolean, asEnum, asIdList, asText, asTimestamp } from './revision-scalars.mts'
 
 type FieldChange = { before: unknown; after: unknown }
 type TextPair = { changed: boolean; before: string | null; after: string | null }

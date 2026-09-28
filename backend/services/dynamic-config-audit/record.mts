@@ -48,13 +48,20 @@ export async function recordDynamicConfigChange(
   await write(query)
 }
 
+const INTEGER_MONEY_FIELD = /_(?:minor_units|microunits)(?:_per_[a-z0-9_]+)?$/
+
 function auditValue(
   name: string,
   type: DynamicConfigAuditFieldType,
   value: unknown,
 ): boolean | number | string {
   if (type === 'boolean' && typeof value === 'boolean') return value
-  if (type === 'number' && typeof value === 'number' && Number.isFinite(value)) return value
+  if (type === 'number' && typeof value === 'number' && Number.isFinite(value)) {
+    if (INTEGER_MONEY_FIELD.test(name) && !Number.isSafeInteger(value)) {
+      throw new Error(`Invalid dynamic config value for ${name}`)
+    }
+    return value
+  }
   if (type === 'string' && typeof value === 'string') return value
   throw new Error(`Invalid dynamic config value for ${name}`)
 }
