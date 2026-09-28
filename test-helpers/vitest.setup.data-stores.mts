@@ -36,7 +36,7 @@ export async function setup() {
   const { warmUpEmbeddingBloomFilter } = await import('@services/bedrock-embeddings')
   const { warmUpUrlBlocklistBloomFilter, warmUpEmailBlocklistBloomFilter } =
     await import('@services/urls-domains-blacklist')
-  const { dynamicConfigRegistry } = await import('@services/dynamic-config-admin')
+  const { dynamicConfigRegistry } = await import('@services/dynamic-config-admin/registry')
   const { persistDynamicConfigTestBaseline } =
     await import('../backend/test-helpers/dynamic-config.mts')
 

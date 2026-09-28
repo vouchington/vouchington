@@ -4,6 +4,7 @@ import {
   renderAuditTable,
 } from '../dynamic-config-audit-schema.mts'
 
+/** @internal */
 export default function dynamicConfigAuditFactsSql(): string {
   const schemas = dynamicConfigAuditSchemas()
   const keys = schemas.map(schema => `'${schema.namespace}'`).join(', ')

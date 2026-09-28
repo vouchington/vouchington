@@ -82,8 +82,4 @@ COMMENT ON COLUMN post_admission_reservations.retention_expires_at IS 'Indexed d
 -- Current indexes for fresh schema bootstrap.
 CREATE INDEX IF NOT EXISTS idx_post_admission_reservations__committed_post_retention
   ON post_admission_reservations (committed_post_id, retention_expires_at)
-  WHERE state = 'committed';
-
-CREATE INDEX IF NOT EXISTS idx_post_admission_reservations__committed_post_id
-  ON post_admission_reservations (committed_post_id)
   WHERE committed_post_id IS NOT NULL;
