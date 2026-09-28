@@ -24,8 +24,14 @@ export async function insertTestPublicationTopicSlugFanout(
     (_, index) => `${prefix}-${index.toString().padStart(6, '0')}`,
   )
   await using query = await beginTransaction()
-  await query(sql`/* insertTestPublicationTopicFanout */ INSERT INTO post_data_point_topics (post_id, topic_id)
-    SELECT ${postId}, id FROM UNNEST(${topicIds}::uuid[]) AS topic(id)`)
+  await query(sql`/* insertTestPublicationTopicFanout */ INSERT INTO post_data_point_topics (post_id, topic_id, order_index)
+    SELECT ${postId}, topic.id, topic.ordinality::int - 1 + base.next_index
+    FROM UNNEST(${topicIds}::uuid[]) WITH ORDINALITY AS topic(id, ordinality)
+    CROSS JOIN (
+      SELECT COALESCE(MAX(order_index) + 1, 0) AS next_index
+      FROM post_data_point_topics
+      WHERE post_id = ${postId}
+    ) base`)
   await query(sql`/* insertTestPublicationSlugFanout */ INSERT INTO post_slugs (post_id, slug)
     SELECT ${postId}, slug FROM UNNEST(${slugs}::text[]) AS source(slug)`)
   await query.commit()
