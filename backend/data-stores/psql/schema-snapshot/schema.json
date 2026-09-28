@@ -62863,7 +62863,7 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 17,
-          "type": "integer"
+          "type": "bigint"
         },
         "cards_opened_24m_presence": {
           "collation": null,
@@ -62984,7 +62984,7 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 15,
-          "type": "integer"
+          "type": "bigint"
         },
         "hard_inquiries_12m_presence": {
           "collation": null,
