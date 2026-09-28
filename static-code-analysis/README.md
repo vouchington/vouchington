@@ -303,7 +303,7 @@ permits reviewed opaque/provider/protocol/replay JSON and nonrelationship UUID t
 existing business JSON, UUID arrays, missing FKs, and scoped encoded keys are recorded in the
 [remediation inventory](repo-file-policy/relational-storage-debt.mts). The inventory is shrink-only
 against `origin/main`. `actions/checkout` does not create that ref, so the static-analysis workflow
-fetches `refs/heads/main` at depth 1 before the check. Every declaration is checked for staleness,
+and the tooling test job each fetch `refs/heads/main` at depth 1 before the check. Every declaration is checked for staleness,
 and new undeclared columns fail the aggregate `repo-file-policy` check. A catalog entry whose column no longer needs the exception
 is stale. Unresolved domain types are rejected before classification. Encoded-key debt stays only
 while the column is still textual. A sole UUID primary key needs a generator, a target FK, or an

@@ -16,7 +16,9 @@ test-support sources; its local configuration and command inventory are in
 base ref, so pull requests, merge groups, and nightly runs agree; see the
 [jscpd clone-size threshold](../../static-code-analysis/jscpd/README.md). Before repo-node static
 checks, the job fetches `refs/heads/main` at depth 1 into `refs/remotes/origin/main` so the
-shrink-only relational-storage debt inventory can run `git show`. That fetch is not a jscpd base.
+shrink-only relational-storage debt inventory can run `git show`. The tooling test job fetches the
+same ref before Vitest, because its hardening test calls that live check on a depth-1 checkout.
+That fetch is not a jscpd base.
 Workspace-owned
 dependency, type, and SQL checks run in their reusable test workflows so they gate that unit's
 main build or deploy. The static-analysis job runs only the centralized tools listed below. Legacy policy rules that are not backed by
