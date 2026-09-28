@@ -1,10 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // Import order matters here -- see the comment in undici-mock.mts.
-import {
-  createCaptchaUndiciMock,
-  mockFetch,
-  TEST_CAPTCHA_TOKEN,
-} from '@voucha/test-helpers/captcha/undici-mock'
+import { createCaptchaUndiciMock, mockFetch } from '@voucha/test-helpers/captcha/undici-mock'
+import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
 import { Response as UndiciResponse } from 'undici'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
 import { CONTRIBUTING_USER_AGE_MS, createTestUserWithAge } from '@voucha/test-helpers'
 import {
   overrideDynamicConfigFieldsForTest,
@@ -62,7 +63,7 @@ describe('POST /api/v1/posts reCAPTCHA capacity ordering', () => {
           post_type: 'discussion',
           title,
           markdown: `${title} body`,
-          cf_turnstile_response: 'mock-captcha-token',
+          cf_turnstile_response: TEST_CAPTCHA_TOKEN,
           recaptcha_token: `recaptcha-${title}`,
         })
 

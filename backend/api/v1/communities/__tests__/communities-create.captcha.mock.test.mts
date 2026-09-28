@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
 import { createTestUserWithAge, createRandomString } from '@voucha/test-helpers'
 import { getContributionActionLimitStatus } from '@services/contribution-gating/limits'
 import { Response as UndiciResponse } from 'undici'
@@ -13,7 +14,6 @@ vi.mock<typeof import('undici')>(import('undici'), async importOriginal => {
 })
 
 const EIGHT_DAYS_MS = 8 * 24 * 60 * 60 * 1000
-const TEST_CAPTCHA_TOKEN = 'mock-captcha-token'
 
 describe('POST /api/v1/communities CAPTCHA', () => {
   beforeEach(() => {
