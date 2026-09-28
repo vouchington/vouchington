@@ -1,5 +1,6 @@
+import '@/test-helpers/components/news/news-item-card.mock-support'
+
 import { describe, it, expect, vi } from 'vitest'
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
 import {
   makeRssFeedItem,
   makeRssFeedItemCategory,
@@ -10,99 +11,6 @@ import { NewsItemCard } from '../news-item-card'
 import type { RssFeedItem } from '@/types/rss-feed-items'
 
 vi.mock(
-  import('next/navigation'),
-  () => navMockModule as unknown as typeof import('next/navigation'),
-)
-
-const mockNav = createNavMock()
-mockNav.setPathname('/news')
-mockNav.setSearchParams('topics=travel')
-
-const nextDynamicMock = vi.hoisted(() => {
-  const React = require('react')
-  return {
-    default: (loader: () => Promise<unknown>) =>
-      function MockDynamic(props: Record<string, unknown>) {
-        const [dynamicComponent, setDynamicComponent] = React.useState(null)
-        React.useEffect(() => {
-          let active = true
-          void loader().then((mod: unknown) => {
-            if (active)
-              setDynamicComponent(() =>
-                typeof mod === 'function' ? mod : (mod as Record<string, unknown>).default,
-              )
-          })
-          return () => {
-            active = false
-          }
-        }, [])
-        return dynamicComponent ? React.createElement(dynamicComponent, props) : null
-      },
-  }
-})
-vi.mock(import('next/dynamic'), () => nextDynamicMock as unknown as typeof import('next/dynamic'))
-
-vi.mock(
-  import('@/lib/auth/context'),
-  () =>
-    ({
-      useAuth: () => ({ isAuthenticated: true }),
-      useOptionalAuth: () => null,
-    }) as unknown as typeof import('@/lib/auth/context'),
-)
-
-vi.mock(
-  import('next/link'),
-  () =>
-    ({
-      default: ({
-        children,
-        href,
-        ...props
-      }: {
-        children: React.ReactNode
-        href: string
-        [k: string]: unknown
-      }) => (
-        <a
-          href={href}
-          {...props}
-        >
-          {children}
-        </a>
-      ),
-    }) as unknown as typeof import('next/link'),
-)
-
-vi.mock(import('next/image'), () => {
-  const Img = 'img' as const
-
-  return {
-    default: ({
-      src,
-      alt,
-      width,
-      height,
-      className,
-    }: {
-      src: string
-      alt: string
-      width: number
-      height: number
-      className?: string
-    }) => (
-      <Img
-        src={src}
-        alt={alt}
-        width={width}
-        height={height}
-        className={className}
-      />
-    ),
-  } as unknown as typeof import('next/image')
-})
-
-vi.mock(
   import('@/components/feed/manage-categories-menu-item'),
   () =>
     ({
@@ -110,24 +18,6 @@ vi.mock(
     }) as unknown as typeof import('@/components/feed/manage-categories-menu-item'),
 )
 
-vi.mock(import('@/components/shared/follower-share-actions'), () => ({
-  FollowerShareActions: ({ className }: { className?: string }) => (
-    <div
-      data-testid='follower-share-actions'
-      className={className}
-    />
-  ),
-}))
-
-vi.mock(import('@/components/shared/shared-byline'), () => ({
-  SharedByline: ({ sharedByUser }: { sharedByUser?: { username?: string } }) =>
-    sharedByUser?.username ? (
-      <div>
-        <span>Shared by</span>{' '}
-        <a href={`/user/${sharedByUser.username}`}>@{sharedByUser.username}</a>
-      </div>
-    ) : null,
-}))
 const mockItem: RssFeedItem = makeRssFeedItem({
   id: 'item-1',
   published_at: '2025-01-15T10:00:00Z',
