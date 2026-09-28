@@ -205,11 +205,28 @@ CREATE OR REPLACE FUNCTION public.fn_create_user_metrics_on_insert()
  LANGUAGE plpgsql
 ```
 
+## `fn_dynamic_config_change_fields(p_change_id uuid, p_config_key text, p_side text)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_dynamic_config_change_fields(p_change_id uuid, p_config_key text, p_side text)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+```
+
 ## `fn_enforce_membership_provider_evidence_immutability`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_enforce_membership_provider_evidence_immutability()
  RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_ensure_audit_retained_identity(root regclass, identity_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_ensure_audit_retained_identity(root regclass, identity_id uuid)
+ RETURNS void
  LANGUAGE plpgsql
 ```
 
@@ -743,6 +760,15 @@ CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_reports_insert_roll
  LANGUAGE plpgsql
 ```
 
+## `fn_moderator_action_metadata(p_action_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_moderator_action_metadata(p_action_id uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+```
+
 ## `fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)`
 
 ```sql
@@ -750,6 +776,15 @@ CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_ent
  RETURNS jsonb
  LANGUAGE sql
  IMMUTABLE
+```
+
+## `fn_post_moderation_disposition_evidence(p_disposition_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_post_moderation_disposition_evidence(p_disposition_id uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
 ```
 
 ## `fn_preserve_notification_publication_target`
@@ -872,10 +907,42 @@ CREATE OR REPLACE FUNCTION public.fn_refresh_rss_feed_item_unmapped_category_cou
  LANGUAGE plpgsql
 ```
 
+## `fn_register_retained_community_agent_prompt_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_retained_community_agent_prompt_identity()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_register_retained_community_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_retained_community_identity()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_register_retained_community_restriction_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_retained_community_restriction_identity()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_register_retained_image_identity`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_register_retained_image_identity()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_register_retained_post_admission_reservation_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_retained_post_admission_reservation_identity()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -896,10 +963,34 @@ CREATE OR REPLACE FUNCTION public.fn_register_retained_rss_feed_item_identity()
  LANGUAGE plpgsql
 ```
 
+## `fn_register_retained_topic_alias_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_retained_topic_alias_identity()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_register_retained_topic_identity`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_register_retained_topic_identity()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_register_retained_url_hostname_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_retained_url_hostname_identity()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_register_retained_url_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_retained_url_identity()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1038,6 +1129,15 @@ CREATE OR REPLACE FUNCTION public.fn_release_moderation_transparency_daily_rollu
 CREATE OR REPLACE FUNCTION public.fn_release_next_moderation_transparency_daily_rollup(p_community_id uuid, p_before date, p_cutoff timestamp with time zone)
  RETURNS void
  LANGUAGE plpgsql
+```
+
+## `fn_report_integrity_flag_details(p_flag_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_report_integrity_flag_details(p_flag_id uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
 ```
 
 ## `fn_require_classifier_activation_lifecycle`
@@ -1393,6 +1493,15 @@ CREATE OR REPLACE FUNCTION public.fn_validate_admin_import_row_target()
 CREATE OR REPLACE FUNCTION public.fn_validate_user_landing_page_group_member_item_type()
  RETURNS trigger
  LANGUAGE plpgsql
+```
+
+## `fn_vote_integrity_flag_details(p_flag_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_vote_integrity_flag_details(p_flag_id uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
 ```
 
 ## `fn_wilson_score_lower_bound(pos double precision, tot double precision)`

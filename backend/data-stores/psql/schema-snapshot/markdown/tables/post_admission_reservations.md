@@ -19,8 +19,8 @@ Not partitioned — growth: bounded.
 | `policy_revision`      | `text`                     | no       |                                  |          |           |           | Contribution-policy revision evaluated for this request.                                                       |
 | `state`                | `text`                     | no       | `'in_progress'::text`            |          |           |           | Admission lifecycle: in_progress, committed, retryable_failed, or expired.                                     |
 | `response`             | `jsonb`                    | yes      |                                  |          |           |           | Serialized successful response retained for exact idempotent replay.                                           |
-| `replay_metadata`      | `jsonb`                    | yes      |                                  |          |           |           | Bounded route and scope metadata paired with the replay response.                                              |
-| `committed_post_id`    | `uuid`                     | yes      |                                  |          |           |           | Created post UUID retained in the replay record after the post may be deleted.                                 |
+| `replay_finalization`  | `text`                     | yes      |                                  |          |           |           | Owned admission finalization state paired with the exact replay response: pending or complete.                 |
+| `committed_post_id`    | `uuid`                     | yes      |                                  |          |           |           | Created post identity retained in the replay record after the live post may be deleted.                        |
 | `committed_status`     | `text`                     | yes      |                                  |          |           |           | Successful response status retained with the exact replay payload.                                             |
 | `retryable_failure`    | `jsonb`                    | yes      |                                  |          |           |           | Serialized transient failure retained while the request can be retried.                                        |
 | `created_at`           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`     |          | virtual   |           |                                                                                                                |
@@ -38,20 +38,24 @@ Not partitioned — growth: bounded.
 **Check constraints:**
 
 - `post_admission_reservations_intent_sha256_check`: `CHECK (((char_length(intent_sha256) = 64) AND (intent_sha256 = lower(intent_sha256))))`
-- `post_admission_reservations_metadata_bounds_check`: `CHECK ((((char_length(route) >= 1) AND (char_length(route) <= 128)) AND ((char_length(scope) >= 1) AND (char_length(scope) <= 256)) AND ((char_length(source) >= 1) AND (char_length(source) <= 64)) AND ((char_length(post_type) >= 1) AND (char_length(post_type) <= 64)) AND ((char_length(policy_revision) >= 1) AND (char_length(policy_revision) <= 128)) AND ((response IS NULL) OR (octet_length((response)::text) <= 2097152)) AND ((replay_metadata IS NULL) OR ((jsonb_typeof(replay_metadata) = 'object'::text) AND (octet_length((replay_metadata)::text) <= 8192)))))`
+- `post_admission_reservations_metadata_bounds_check`: `CHECK ((((char_length(route) >= 1) AND (char_length(route) <= 128)) AND ((char_length(scope) >= 1) AND (char_length(scope) <= 256)) AND ((char_length(source) >= 1) AND (char_length(source) <= 64)) AND ((char_length(post_type) >= 1) AND (char_length(post_type) <= 64)) AND ((char_length(policy_revision) >= 1) AND (char_length(policy_revision) <= 128)) AND ((response IS NULL) OR (octet_length((response)::text) <= 2097152))))`
+- `post_admission_reservations_replay_finalization_check`: `CHECK (((replay_finalization IS NULL) OR (replay_finalization = ANY (ARRAY['pending'::text, 'complete'::text]))))`
 - `post_admission_reservations_state_check`: `CHECK ((state = ANY (ARRAY['in_progress'::text, 'committed'::text, 'retryable_failed'::text, 'expired'::text])))`
-- `post_admission_reservations_state_payload_check`: `CHECK ((((state = 'committed'::text) AND (response IS NOT NULL) AND (replay_metadata IS NOT NULL) AND (committed_post_id IS NOT NULL) AND (committed_status IS NOT NULL) AND (expires_at IS NOT NULL) AND (expires_at = retention_expires_at)) OR ((state = ANY (ARRAY['in_progress'::text, 'retryable_failed'::text])) AND (response IS NULL) AND (replay_metadata IS NULL) AND (committed_post_id IS NULL) AND (committed_status IS NULL) AND (expires_at IS NULL)) OR ((state = 'expired'::text) AND (response IS NULL) AND (replay_metadata IS NULL) AND (committed_post_id IS NULL) AND (committed_status IS NULL) AND (expires_at IS NULL))))`
+- `post_admission_reservations_state_payload_check`: `CHECK ((((state = 'committed'::text) AND (response IS NOT NULL) AND (replay_finalization IS NOT NULL) AND (committed_post_id IS NOT NULL) AND (committed_status IS NOT NULL) AND (expires_at IS NOT NULL) AND (expires_at = retention_expires_at)) OR ((state = ANY (ARRAY['in_progress'::text, 'retryable_failed'::text])) AND (response IS NULL) AND (replay_finalization IS NULL) AND (committed_post_id IS NULL) AND (committed_status IS NULL) AND (expires_at IS NULL)) OR ((state = 'expired'::text) AND (response IS NULL) AND (replay_finalization IS NULL) AND (committed_post_id IS NULL) AND (committed_status IS NULL) AND (expires_at IS NULL))))`
 
 **Foreign keys:**
 
 - `post_admission_reservations_actor_id_fkey`: `FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE`
+- `post_admission_reservations_committed_post_id_fkey`: `FOREIGN KEY (committed_post_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT`
+- `post_admission_reservations_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_post_admission_reservation_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `idx_post_admission_reservations__committed_post_retention`: `CREATE INDEX idx_post_admission_reservations__committed_post_retention ON public.post_admission_reservations USING btree (committed_post_id, retention_expires_at) WHERE (state = 'committed'::text)`
+- `idx_post_admission_reservations__committed_post_retention`: `CREATE INDEX idx_post_admission_reservations__committed_post_retention ON public.post_admission_reservations USING btree (committed_post_id, retention_expires_at) WHERE (committed_post_id IS NOT NULL)`
 - `idx_post_admission_reservations__retention`: `CREATE INDEX idx_post_admission_reservations__retention ON public.post_admission_reservations USING btree (retention_expires_at, id)`
 - `post_admission_reservations_actor_key_unique`: `CREATE UNIQUE INDEX post_admission_reservations_actor_key_unique ON public.post_admission_reservations USING btree (actor_id, idempotency_key)`
 - `post_admission_reservations_pkey`: `CREATE UNIQUE INDEX post_admission_reservations_pkey ON public.post_admission_reservations USING btree (id)`
 
 **Triggers:**
-_none_
+
+- `trigger_register_retained_post_admission_reservation_identity`: `CREATE TRIGGER trigger_register_retained_post_admission_reservation_identity BEFORE INSERT ON public.post_admission_reservations FOR EACH ROW EXECUTE FUNCTION fn_register_retained_post_admission_reservation_identity()`

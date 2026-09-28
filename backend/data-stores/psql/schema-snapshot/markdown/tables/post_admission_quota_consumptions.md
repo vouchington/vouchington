@@ -8,7 +8,7 @@ Not partitioned — growth: bounded.
 
 | Column             | Type                       | Nullable | Default               | Identity | Generated | Collation | Comment                                                                                                                                         |
 | ------------------ | -------------------------- | -------- | --------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `reservation_id`   | `uuid`                     | no       |                       |          |           |           | Admission reservation that committed and consumed quota exactly once.                                                                           |
+| `reservation_id`   | `uuid`                     | no       |                       |          |           |           | Retained admission reservation identity that consumed quota exactly once and outlives the replay row.                                           |
 | `actor_id`         | `uuid`                     | no       |                       |          |           |           | Actor whose contribution quota was consumed.                                                                                                    |
 | `source`           | `text`                     | no       |                       |          |           |           | Contribution-policy source whose quota was consumed.                                                                                            |
 | `committed_at`     | `timestamp with time zone` | no       | `now()`               |          |           |           | Clock timestamp at which the quota-consuming admission committed.                                                                               |
@@ -26,6 +26,7 @@ _none_
 **Foreign keys:**
 
 - `post_admission_quota_consumptions_actor_id_fkey`: `FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE`
+- `post_admission_quota_consumptions_reservation_id_fkey`: `FOREIGN KEY (reservation_id) REFERENCES retained_post_admission_reservation_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 

@@ -6,22 +6,29 @@ Append-only unified log of moderator/admin actions.
 
 Not partitioned — growth: unbounded.
 
-| Column                                 | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                 |
-| -------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------- |
-| `id`                                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                         |
-| `community_id`                         | `uuid`                     | yes      |                              |          |           |           | Community scope; NULL for global/platform-level actions.                                |
-| `moderation_transparency_community_id` | `uuid`                     | yes      |                              |          |           |           | Immutable community scope stamped at action creation for global-transparency exclusion. |
-| `actor_id`                             | `uuid`                     | yes      |                              |          |           |           | Moderator/admin who took the action (ON DELETE SET NULL for audit persistence).         |
-| `action_type`                          | `moderator_action_types`   | no       |                              |          |           |           | Type of moderation action taken.                                                        |
-| `post_id`                              | `uuid`                     | yes      |                              |          |           |           | Target post or comment (ON DELETE SET NULL for audit persistence).                      |
-| `target_user_id`                       | `uuid`                     | yes      |                              |          |           |           | Target user for bans, suspensions, warnings, member actions.                            |
-| `report_id`                            | `uuid`                     | yes      |                              |          |           |           | Target moderation report for resolve/dismiss actions.                                   |
-| `review_dispute_id`                    | `uuid`                     | yes      |                              |          |           |           | Target review dispute for dispute-resolution actions.                                   |
-| `moderation_appeal_id`                 | `uuid`                     | yes      |                              |          |           |           | Target moderation appeal for resolve_appeal/dismiss_appeal actions.                     |
-| `community_application_id`             | `uuid`                     | yes      |                              |          |           |           | Target community application for approve/reject actions.                                |
-| `reason`                               | `text`                     | yes      |                              |          |           |           | Optional free-text reason for the action.                                               |
-| `metadata`                             | `jsonb`                    | no       | `'{}'::jsonb`                |          |           |           | Structured context snapshot (e.g. role change target role, topic slugs for tags).       |
-| `created_at`                           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                         |
+| Column                                 | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                    |
+| -------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                            |
+| `community_id`                         | `uuid`                     | yes      |                              |          |           |           | Community scope; NULL for global/platform-level actions.                                                                   |
+| `moderation_transparency_community_id` | `uuid`                     | yes      |                              |          |           |           | Retained community identity stamped for global-transparency exclusion. It does not authorize the community.                |
+| `actor_id`                             | `uuid`                     | yes      |                              |          |           |           | Moderator/admin who took the action (ON DELETE SET NULL for audit persistence).                                            |
+| `action_type`                          | `moderator_action_types`   | no       |                              |          |           |           | Type of moderation action taken.                                                                                           |
+| `post_id`                              | `uuid`                     | yes      |                              |          |           |           | Target post or comment (ON DELETE SET NULL for audit persistence).                                                         |
+| `target_user_id`                       | `uuid`                     | yes      |                              |          |           |           | Target user for bans, suspensions, warnings, member actions.                                                               |
+| `report_id`                            | `uuid`                     | yes      |                              |          |           |           | Target moderation report for resolve/dismiss actions.                                                                      |
+| `review_dispute_id`                    | `uuid`                     | yes      |                              |          |           |           | Target review dispute for dispute-resolution actions.                                                                      |
+| `moderation_appeal_id`                 | `uuid`                     | yes      |                              |          |           |           | Target moderation appeal for resolve_appeal/dismiss_appeal actions.                                                        |
+| `community_application_id`             | `uuid`                     | yes      |                              |          |           |           | Target community application for approve/reject actions.                                                                   |
+| `reason`                               | `text`                     | yes      |                              |          |           |           | Optional free-text reason for the action.                                                                                  |
+| `metadata_role`                        | `community_member_roles`   | yes      |                              |          |           |           | Community role after a change_role action.                                                                                 |
+| `metadata_previous_role`               | `community_member_roles`   | yes      |                              |          |           |           | Community role before a change_role action.                                                                                |
+| `metadata_expires_at`                  | `text`                     | yes      |                              |          |           |           | ISO expiry captured when a restriction was activated. Null with metadata_expires_at_present means an explicit null expiry. |
+| `metadata_expires_at_present`          | `boolean`                  | no       | `false`                      |          |           |           | True when restriction activation included expires_at.                                                                      |
+| `metadata_reason`                      | `text`                     | yes      |                              |          |           |           | Image auto-removal reason stored separately from the action reason.                                                        |
+| `metadata_image_id`                    | `uuid`                     | yes      |                              |          |           |           | Retained image identity removed by automated image moderation. It does not authorize delivery.                             |
+| `metadata_source_key`                  | `text`                     | yes      |                              |          |           |           | Automod source key when the action came from moderation training.                                                          |
+| `metadata_moderation_training`         | `boolean`                  | yes      |                              |          |           |           | True when moderation training recorded this action. Null when that key was absent.                                         |
+| `created_at`                           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                            |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -29,8 +36,7 @@ Not partitioned — growth: unbounded.
 _none_
 
 **Check constraints:**
-
-- `moderator_actions_metadata_check`: `CHECK ((jsonb_typeof(metadata) = 'object'::text))`
+_none_
 
 **Foreign keys:**
 
@@ -38,6 +44,8 @@ _none_
 - `moderator_actions_actor_id_fkey`: `FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL`
 - `moderator_actions_community_application_id_fkey`: `FOREIGN KEY (community_application_id) REFERENCES community_applications(id) ON DELETE SET NULL`
 - `moderator_actions_community_id_fkey`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE SET NULL`
+- `moderator_actions_metadata_image_id_fkey`: `FOREIGN KEY (metadata_image_id) REFERENCES retained_image_identities(id) ON DELETE RESTRICT`
+- `moderator_actions_moderation_transparency_community_id_fkey`: `FOREIGN KEY (moderation_transparency_community_id) REFERENCES retained_community_identities(id) ON DELETE RESTRICT`
 - `moderator_actions_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL`
 - `moderator_actions_report_id_fkey`: `FOREIGN KEY (report_id) REFERENCES moderation_reports(id) ON DELETE SET NULL`
 - `moderator_actions_review_dispute_id_fkey`: `FOREIGN KEY (review_dispute_id) REFERENCES review_disputes(id) ON DELETE SET NULL`
@@ -49,11 +57,13 @@ _none_
 - `idx_moderator_actions__community__id`: `CREATE INDEX idx_moderator_actions__community__id ON public.moderator_actions USING btree (community_id, id DESC)`
 - `idx_moderator_actions__community_application_id`: `CREATE INDEX idx_moderator_actions__community_application_id ON public.moderator_actions USING btree (community_application_id) WHERE (community_application_id IS NOT NULL)`
 - `idx_moderator_actions__id`: `CREATE INDEX idx_moderator_actions__id ON public.moderator_actions USING btree (id DESC)`
+- `idx_moderator_actions__metadata_image_id`: `CREATE INDEX idx_moderator_actions__metadata_image_id ON public.moderator_actions USING btree (metadata_image_id) WHERE (metadata_image_id IS NOT NULL)`
 - `idx_moderator_actions__moderation_appeal_id`: `CREATE INDEX idx_moderator_actions__moderation_appeal_id ON public.moderator_actions USING btree (moderation_appeal_id) WHERE (moderation_appeal_id IS NOT NULL)`
 - `idx_moderator_actions__post_id`: `CREATE INDEX idx_moderator_actions__post_id ON public.moderator_actions USING btree (post_id) WHERE (post_id IS NOT NULL)`
 - `idx_moderator_actions__report_id`: `CREATE INDEX idx_moderator_actions__report_id ON public.moderator_actions USING btree (report_id) WHERE (report_id IS NOT NULL)`
 - `idx_moderator_actions__review_dispute_id`: `CREATE INDEX idx_moderator_actions__review_dispute_id ON public.moderator_actions USING btree (review_dispute_id) WHERE (review_dispute_id IS NOT NULL)`
 - `idx_moderator_actions__target_user_id`: `CREATE INDEX idx_moderator_actions__target_user_id ON public.moderator_actions USING btree (target_user_id) WHERE (target_user_id IS NOT NULL)`
+- `idx_moderator_actions__transparency_community_id`: `CREATE INDEX idx_moderator_actions__transparency_community_id ON public.moderator_actions USING btree (moderation_transparency_community_id) WHERE (moderation_transparency_community_id IS NOT NULL)`
 - `moderator_actions_pkey`: `CREATE UNIQUE INDEX moderator_actions_pkey ON public.moderator_actions USING btree (id)`
 
 **Triggers:**

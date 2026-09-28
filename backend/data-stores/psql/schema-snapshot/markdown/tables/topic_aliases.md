@@ -32,6 +32,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `topic_aliases_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `topic_aliases_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_topic_alias_identities(id) ON DELETE RESTRICT`
 - `topic_aliases_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE RESTRICT`
 - `topic_aliases_updated_by_id_fkey`: `FOREIGN KEY (updated_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
@@ -47,5 +48,6 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_register_retained_topic_alias_identity`: `CREATE TRIGGER trigger_register_retained_topic_alias_identity BEFORE INSERT ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_register_retained_topic_alias_identity()`
 - `trigger_topic_aliases_mark_category_mapping_dirty`: `CREATE TRIGGER trigger_topic_aliases_mark_category_mapping_dirty AFTER INSERT OR DELETE OR UPDATE OF topic_id ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_mark_topic_alias_category_mapping_dirty()`
 - `trigger_topic_aliases_updated_at`: `CREATE TRIGGER trigger_topic_aliases_updated_at BEFORE UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

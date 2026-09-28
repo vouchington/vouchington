@@ -34,6 +34,7 @@ _none_
 
 - `community_restrictions_activated_by_id_fkey`: `FOREIGN KEY (activated_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `community_restrictions_community_id_fkey`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE`
+- `community_restrictions_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_community_restriction_identities(id) ON DELETE RESTRICT`
 - `community_restrictions_lifted_by_id_fkey`: `FOREIGN KEY (lifted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
@@ -45,3 +46,4 @@ _none_
 **Triggers:**
 
 - `trigger_community_restrictions_updated_at`: `CREATE TRIGGER trigger_community_restrictions_updated_at BEFORE UPDATE ON public.community_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_register_retained_community_restriction_identity`: `CREATE TRIGGER trigger_register_retained_community_restriction_identity BEFORE INSERT ON public.community_restrictions FOR EACH ROW EXECUTE FUNCTION fn_register_retained_community_restriction_identity()`

@@ -19,7 +19,7 @@ _none_
 
 **Check constraints:**
 
-- `retained_identity_cleanup_progress_family_check`: `CHECK ((family = ANY (ARRAY['user'::text, 'topic'::text, 'post'::text, 'rss_feed_item'::text, 'image'::text, 'image_placement_binding'::text])))`
+- `retained_identity_cleanup_progress_family_check`: `CHECK ((family = ANY (ARRAY['user'::text, 'topic'::text, 'post'::text, 'rss_feed_item'::text, 'image'::text, 'image_placement_binding'::text, 'url_hostname'::text, 'url'::text, 'topic_alias'::text, 'community'::text, 'community_agent_prompt'::text, 'community_restriction'::text, 'post_admission_reservation'::text])))`
 
 **Foreign keys:**
 _none_

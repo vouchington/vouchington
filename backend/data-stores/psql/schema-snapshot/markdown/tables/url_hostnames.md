@@ -65,6 +65,7 @@ Not partitioned — growth: unbounded.
 
 - `fk_url_hostnames_topic_id`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE RESTRICT`
 - `url_hostnames_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `url_hostnames_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_url_hostname_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
@@ -84,4 +85,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_register_retained_url_hostname_identity`: `CREATE TRIGGER trigger_register_retained_url_hostname_identity BEFORE INSERT ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_register_retained_url_hostname_identity()`
 - `trigger_url_hostnames_updated_at`: `CREATE TRIGGER trigger_url_hostnames_updated_at BEFORE UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
