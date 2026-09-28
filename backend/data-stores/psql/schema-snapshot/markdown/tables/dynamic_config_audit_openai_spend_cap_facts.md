@@ -6,13 +6,14 @@ Typed previous and next values for openai-spend-cap dynamic config audits.
 
 Not partitioned — growth: unbounded.
 
-| Column                          | Type               | Nullable | Default | Identity | Generated | Collation | Comment                                                                               |
-| ------------------------------- | ------------------ | -------- | ------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------- |
-| `change_id`                     | `uuid`             | no       |         |          |           |           | Dynamic config audit row these field values belong to.                                |
-| `previous_enabled`              | `boolean`          | yes      |         |          |           |           | Previous enabled value; null when the audited snapshot omitted that key.              |
-| `next_enabled`                  | `boolean`          | yes      |         |          |           |           | Next enabled value; null when the audited snapshot omitted that key.                  |
-| `previous_daily_cap_microunits` | `double precision` | yes      |         |          |           |           | Previous daily_cap_microunits value; null when the audited snapshot omitted that key. |
-| `next_daily_cap_microunits`     | `double precision` | yes      |         |          |           |           | Next daily_cap_microunits value; null when the audited snapshot omitted that key.     |
+| Column                          | Type      | Nullable | Default       | Identity | Generated | Collation | Comment                                                                               |
+| ------------------------------- | --------- | -------- | ------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------- |
+| `change_id`                     | `uuid`    | no       |               |          |           |           | Dynamic config audit row these field values belong to.                                |
+| `previous_enabled`              | `boolean` | yes      |               |          |           |           | Previous enabled value; null when the audited snapshot omitted that key.              |
+| `next_enabled`                  | `boolean` | yes      |               |          |           |           | Next enabled value; null when the audited snapshot omitted that key.                  |
+| `previous_daily_cap_microunits` | `bigint`  | yes      |               |          |           |           | Previous daily_cap_microunits value; null when the audited snapshot omitted that key. |
+| `next_daily_cap_microunits`     | `bigint`  | yes      |               |          |           |           | Next daily_cap_microunits value; null when the audited snapshot omitted that key.     |
+| `currency_code`                 | `text`    | no       | `'USD'::text` |          |           |           | ISO currency for the integer money columns on this audit row.                         |
 
 **Primary key:** `PRIMARY KEY (change_id)`
 

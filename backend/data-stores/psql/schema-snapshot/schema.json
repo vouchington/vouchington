@@ -39273,6 +39273,17 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
+        "currency_code": {
+          "collation": null,
+          "comment": "ISO currency for the integer money columns on this audit row.",
+          "defaultExpression": "'USD'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
         "next_daily_cap_microunits": {
           "collation": null,
           "comment": "Next daily_cap_microunits value; null when the audited snapshot omitted that key.",
@@ -39282,7 +39293,7 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 5,
-          "type": "double precision"
+          "type": "bigint"
         },
         "next_enabled": {
           "collation": null,
@@ -39304,7 +39315,7 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 4,
-          "type": "double precision"
+          "type": "bigint"
         },
         "previous_enabled": {
           "collation": null,
