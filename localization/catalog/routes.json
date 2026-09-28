@@ -13962,6 +13962,7 @@
 {"consumer":"web","pattern":"/copyright/notices/[id]"},
 {"alias":"extracted.shared.turnstileField.verificationFailedToLoadPleaseRefresh_0639fdb3","consumer":"web","pattern":"/copyright/notices/[id]/appeal"},
 {"alias":"extracted.shared.turnstileField.verificationFailedToLoadPleaseRefresh_0639fdb3","consumer":"web","pattern":"/copyright/notices/[id]/counter-notice"},
+{"alias":"extracted.shared.turnstileField.verificationFailedToLoadPleaseRefresh_0639fdb3","consumer":"web","pattern":"/copyright/notices/[id]/guest"},
 {"alias":"extracted.shared.turnstileField.verificationFailedToLoadPleaseRefresh_0639fdb3","consumer":"web","pattern":"/copyright/notices/new"},
 {"consumer":"web","pattern":"/copyright/repeat-infringer-policy"},
 {"consumer":"web","pattern":"/copyright/review-queue"},

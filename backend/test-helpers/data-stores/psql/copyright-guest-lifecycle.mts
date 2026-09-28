@@ -85,6 +85,13 @@ export async function readCopyrightCorrespondenceCiphertext(messageId: string): 
   return rows[0].body_ciphertext
 }
 
+export async function readCopyrightGuestCapabilityExpiresAt(capabilityId: string): Promise<Date> {
+  const { rows } = await read<{ expires_at: Date }>(sql`/* readCopyrightGuestCapabilityExpiresAt */
+    SELECT expires_at FROM copyright_notice_guest_capabilities WHERE id = ${capabilityId}`)
+  if (!rows[0]) throw new Error(`Copyright guest capability not found: ${capabilityId}`)
+  return rows[0].expires_at
+}
+
 export async function countCopyrightGuestCapabilities(noticeId: string): Promise<number> {
   const { rows } = await read<{ count: string }>(sql`/* countCopyrightGuestCapabilities */
     SELECT count(*)::text AS count FROM copyright_notice_guest_capabilities

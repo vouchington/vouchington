@@ -100,6 +100,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/copyright/notices/[id]", selectorId: "web.route.ce896f0462e5bd7d.cbf29ce484222325", hasMembership: false },
   { pattern: "/copyright/notices/[id]/appeal", selectorId: "web.route.14f2acedc20361a5.18a6f38661bfd2ec", hasMembership: true },
   { pattern: "/copyright/notices/[id]/counter-notice", selectorId: "web.route.d3ec16e74db8658d.18a6f38661bfd2ec", hasMembership: true },
+  { pattern: "/copyright/notices/[id]/guest", selectorId: "web.route.70f15876d7ee5fc2.18a6f38661bfd2ec", hasMembership: true },
   { pattern: "/copyright/notices/new", selectorId: "web.route.33bc31725bbf9188.18a6f38661bfd2ec", hasMembership: true },
   { pattern: "/copyright/repeat-infringer-policy", selectorId: "web.route.3e1923115d812a61.cbf29ce484222325", hasMembership: false },
   { pattern: "/copyright/review-queue", selectorId: "web.route.cfd5a705607388d2.cbf29ce484222325", hasMembership: false },

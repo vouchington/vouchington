@@ -1,4 +1,7 @@
-import { read } from '@data-stores/psql'
+import {
+  countCopyrightUrgentFilings,
+  readCopyrightGuestCapabilityExpiresAt,
+} from '@voucha/test-helpers/data-stores/psql/copyright-guest-lifecycle'
 import {
   createTestUserDirect,
   getTestPostImagePlacement,
@@ -6,7 +9,6 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import sql from 'sql-template-strings'
 import { describe, expect, it } from 'vitest'
 import {
   appendCopyrightGuestFiling,
@@ -119,10 +121,7 @@ describe('copyright guest capabilities', () => {
       'supplement',
     )
     expect(aggregate?.deadlines).toEqual([])
-    const { rows } = await read<{ count: string }>(
-      sql`SELECT count(*)::text AS count FROM copyright_notice_urgent_filings WHERE copyright_notice_submission_id = ${filing.id}`,
-    )
-    expect(rows[0]?.count).toBe('0')
+    expect(await countCopyrightUrgentFilings(filing.id)).toBe(0)
   })
 
   it('records a withdrawal without lifting another notice and marks a court filing urgent', async () => {
@@ -155,10 +154,7 @@ describe('copyright guest capabilities', () => {
         event => event.copyright_notice_submission_id === withdrawal.id,
       )?.event_type,
     ).toBe('withdrawal_received')
-    const { rows } = await read<{ count: string }>(
-      sql`SELECT count(*)::text AS count FROM copyright_notice_urgent_filings WHERE copyright_notice_submission_id = ${court.id}`,
-    )
-    expect(rows[0]?.count).toBe('1')
+    expect(await countCopyrightUrgentFilings(court.id)).toBe(1)
   })
 
   it('lets staff request information without extending the guest capability', async () => {
@@ -185,9 +181,8 @@ describe('copyright guest capabilities', () => {
       capabilityId: capability.id,
       statement: `more-${crypto.randomUUID()}`,
     })
-    const { rows } = await read<{ expires_at: Date }>(
-      sql`SELECT expires_at FROM copyright_notice_guest_capabilities WHERE id = ${capability.id}`,
+    expect(await readCopyrightGuestCapabilityExpiresAt(capability.id)).toEqual(
+      new Date('2026-07-03T12:00:00.000Z'),
     )
-    expect(rows[0]?.expires_at).toEqual(new Date('2026-07-03T12:00:00.000Z'))
   })
 })
