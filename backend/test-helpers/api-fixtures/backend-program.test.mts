@@ -178,4 +178,66 @@ describe('PostgreSQL row type contracts', () => {
     const id = idProperty && checker.getTypeOfSymbolAtLocation(idProperty, projectedRead)
     expect(id && checker.typeToString(id)).toBe('string')
   })
+
+  function writeReturningRow(path: string): { row: ts.Type; at: ts.TypeNode } {
+    const file = source(path)
+    let typeArgument: ts.TypeNode | undefined
+    function visit(node: ts.Node): void {
+      if (
+        ts.isCallExpression(node) &&
+        ts.isIdentifier(node.expression) &&
+        node.expression.text === 'write' &&
+        node.typeArguments?.[0]
+      ) {
+        if (typeArgument) throw new Error(`Multiple write type arguments in ${path}`)
+        typeArgument = node.typeArguments[0]
+      }
+      ts.forEachChild(node, visit)
+    }
+    visit(file)
+    if (!typeArgument) throw new Error(`Missing write type argument in ${path}`)
+    return { row: checker.getTypeFromTypeNode(typeArgument), at: typeArgument }
+  }
+
+  function rowProperty(row: ts.Type, at: ts.Node, name: string): string | undefined {
+    const property = checker.getPropertyOfType(row, name)
+    if (!property) return undefined
+    return checker.typeToString(checker.getTypeOfSymbolAtLocation(property, at))
+  }
+
+  it.each([
+    'backend/services/posts/create/insert-post.mts',
+    'backend/services/posts/create-story-post.mts',
+  ])('%s types INSERT RETURNING * as a posts table row', path => {
+    const { row, at } = writeReturningRow(path)
+    const post = declarationType('backend/types/entities/post.mts', 'Post')
+    expect(row.flags & ts.TypeFlags.Any).toBe(0)
+    expect(checker.isTypeAssignableTo(row, post)).toBe(false)
+    for (const name of ['clearance_status', 'clearance_reason', 'clearance_updated_at']) {
+      expect(rowProperty(row, at, name)).toBeUndefined()
+    }
+    const consumed = {
+      id: 'string',
+      root_id: 'string | null',
+      community_id: 'string | null',
+      title: 'string',
+      markdown: 'string',
+      ai_summary_markdown: 'string',
+      broadcast: 'PostBroadcast',
+      privacy: 'PostPrivacy',
+      is_anonymous: 'boolean',
+      created_by_id: 'string | null',
+      structured_data: 'unknown',
+      data_point_vertical: 'string | null',
+      declared_language: 'string | null',
+      deleted_at: 'Date | null',
+      archived_at: 'Date | null',
+      created_via: 'ContentCreationChannel | null',
+      llm_moderation_content_sha256: 'Buffer<ArrayBufferLike>',
+      search_vector: 'string | null',
+    }
+    for (const [name, expected] of Object.entries(consumed)) {
+      expect({ name, type: rowProperty(row, at, name) }).toEqual({ name, type: expected })
+    }
+  })
 })
