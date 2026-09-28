@@ -9,7 +9,7 @@ import {
   stringArrayValue,
   stringValue,
   type LifecycleAdapter,
-} from './adapters'
+} from './lifecycle-values'
 
 interface LifecyclePage extends PaginatedData {
   results: Array<{ id: string }>

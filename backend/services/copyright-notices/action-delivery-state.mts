@@ -7,6 +7,7 @@ import {
 } from './sweep-id-pages.mts'
 import type { CopyrightActionIntentRecord } from './types.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
+export type { CopyrightActionDeliveryOutcome } from './action-delivery-state-types.mts'
 export {
   completeCopyrightActionIntentInTransaction,
   getCopyrightActionPlacementKey,
@@ -26,8 +27,6 @@ export type CopyrightClaimedActionIntent = CopyrightActionIntentRecord & {
   placement_id: string
   image_id: string
 }
-
-export type CopyrightActionDeliveryOutcome = 'completed' | 'stale' | 'blocked'
 
 export async function claimCopyrightActionIntent(
   intentId: string,

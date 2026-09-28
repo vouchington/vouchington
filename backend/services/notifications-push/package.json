@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@types/web-push": "^3.6.4",
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "vitest": "^5.0.2"
   }
 }

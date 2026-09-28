@@ -14,7 +14,7 @@ import {
   markMyNotificationReadKeepalive,
 } from '@/lib/api/client/my'
 import { navigateToTarget, resolveNotificationTarget } from './utils'
-import type { NotificationListNotification } from './notification-list'
+import type { NotificationListNotification } from './notification-list-notification'
 import { toast } from 'sonner'
 import { PushNotificationsPanel } from './push-notifications-panel'
 import { mergeNotificationPages } from './merged-notifications'
@@ -23,7 +23,8 @@ import { NotificationsListPanel } from './notifications-list-panel'
 import { useNotificationPushActions } from './use-notification-push-actions'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 
-export type NotificationPushSubscription = Pick<WebPushSubscription, 'id' | 'endpoint'>
+import type { NotificationPushSubscription } from './notification-push-subscription'
+export type { NotificationPushSubscription } from './notification-push-subscription'
 
 export function NotificationsPage({
   initialNotifications,

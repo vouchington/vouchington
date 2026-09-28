@@ -4,7 +4,7 @@ import {
   encodeScopedPreciseTimestampCursor,
 } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
-import type { SearchRssFeedItemsOptions } from './search.mts'
+import type { SearchRssFeedItemsOptions } from './search-types.mts'
 
 export function getRssFeedItemSearchCursorScope(options: SearchRssFeedItemsOptions): string {
   const scope = {

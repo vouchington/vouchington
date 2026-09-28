@@ -14,7 +14,7 @@ import {
   finalizeVerified,
   getMapping,
 } from './verification-persistence.mts'
-import type { Context } from './process-verification.mts'
+import type { Context } from './process-verification-types.mts'
 import type { GooglePlayVerifiedMembershipObservation } from './types.mts'
 
 type GooglePlayTransaction = Awaited<ReturnType<typeof beginTransaction>>

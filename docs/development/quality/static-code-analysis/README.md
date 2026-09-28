@@ -431,6 +431,11 @@ prunes it and the process throws `ERR_MODULE_NOT_FOUND` at runtime. A `dependenc
 `dependencyTypes: ['npm-dev']` rule cannot express this: pnpm symlinks resolve to in-repo realpaths,
 so `isExternalModule()` never returns true and classification falls through to `undetermined` — see
 the header comment in [`backend/.dependency-cruiser.cjs`](../../../../backend/.dependency-cruiser.cjs).
+The backend and [web](../../../../web/.dependency-cruiser.cjs) headers also record why cycle and
+resolution rules are copied into `forbidden`: dependency-cruiser merges `extends` by reading
+`.forbidden` only, and those presets export a bare rule. Backend inlines `no-circular`,
+`not-to-unresolvable`, and `no-non-package-json`. Web inlines `no-circular` and
+`not-to-unresolvable`.
 
 PostgreSQL final-state inventories in `repo-file-policy` load the tracked, versioned
 [`schema.json`](../../../../backend/data-stores/psql/schema-snapshot/schema.json) once and fail closed when it

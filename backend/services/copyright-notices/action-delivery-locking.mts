@@ -1,7 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { copyrightTargetRestoreIsBlocked } from './court-hold-assessment-gate.mts'
-import type { CopyrightActionDeliveryOutcome } from './action-delivery-state.mts'
+import type { CopyrightActionDeliveryOutcome } from './action-delivery-state-types.mts'
 import {
   copyrightActionDeliveryFacts,
   lockCopyrightActionDeadline,

@@ -4,9 +4,12 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 
-import type { NativeProductSource } from './native-consumer-usage.mts'
-
 const execFileAsync = promisify(execFile)
+
+export type NativeProductSource = Readonly<{
+  path: string
+  content: string
+}>
 
 export async function readNativeProductSources(root: string): Promise<NativeProductSource[]> {
   const { stdout } = await execFileAsync(

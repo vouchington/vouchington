@@ -2,7 +2,7 @@ import type {
   ModerationReportEntityType,
   ModerationReportReason,
 } from '@ts-shared/utils/moderation-reports'
-import type { CommunityBanEvasionContext } from '@/types/api-responses'
+import type { CommunityBanEvasionContext } from '@/types/api-responses/community-ban-evasion-context'
 
 export type ReportReason = ModerationReportReason
 export type ReportableEntityType = ModerationReportEntityType

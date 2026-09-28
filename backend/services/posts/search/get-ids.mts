@@ -13,15 +13,9 @@ import { buildPostRankingScoreExpression } from './query-builder-utils.mts'
 import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
 import { buildPostSearchPageInfo, decodePostSearchCursor } from './get-ids-page-info.mts'
+import type { PostSearchRow } from './get-ids-types.mts'
+export type { PostSearchRow } from './get-ids-types.mts'
 
-export type PostSearchRow = {
-  id: string
-  post_type: string
-  vote_score?: string | number
-  ranking_score?: string | number
-  following_rank?: string | number
-  hot_score?: string | number
-}
 type PostSearchResponse = {
   results: PostSearchResult[]
   page_info: ReturnType<typeof buildPostSearchPageInfo>

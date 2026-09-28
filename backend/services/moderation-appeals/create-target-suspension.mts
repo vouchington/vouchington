@@ -4,7 +4,7 @@ import assert from 'http-assert'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { getModerationAppealById } from './get.mts'
 import { openOrGetOpenCase } from '@services/moderation-cases'
-import type { AppealTargetContext } from './create-target.mts'
+import type { AppealTargetContext } from './create-target-types.mts'
 
 /** Resolves a suspension appeal target for the current user's most recent active suspension. */
 export async function resolveAppealTargetSuspension(

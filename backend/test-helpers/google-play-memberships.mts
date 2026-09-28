@@ -3,7 +3,7 @@ import { beginTransaction, write } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { acceptObservation } from '../services/memberships/google/verification-persistence.mts'
-import type { Context } from '../services/memberships/google/process-verification.mts'
+import type { Context } from '../services/memberships/google/process-verification-types.mts'
 import type { GooglePlayMembershipObservation } from '../services/memberships/google/types.mts'
 
 export async function getTestGooglePlayAcknowledgementId(

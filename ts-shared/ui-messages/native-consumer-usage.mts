@@ -3,14 +3,12 @@ import {
   isDotnetCsharpProductSource,
   isDotnetXamlProductSource,
   isSwiftProductSource,
+  type NativeProductSource,
 } from './native-consumer-source-discovery.mts'
 import { stripCodeCommentsAndStrings } from './native-source-code-mask.mts'
 import { xamlMessageKeys } from './native-xaml-message-keys.mts'
 
-export type NativeProductSource = Readonly<{
-  path: string
-  content: string
-}>
+export type { NativeProductSource }
 
 const SWIFT_IDENTIFIER_PREFIX = '(?:common|extracted|native|nav|settings|shared)'
 const INTERNAL_VARIANT_SUFFIX = /\.(?:__plural\.(?:one|other)|__select\.[^.]+\.(?:one|other))$/

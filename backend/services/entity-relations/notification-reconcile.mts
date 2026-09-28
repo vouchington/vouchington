@@ -1,7 +1,8 @@
 import { registerPostCommitAction, type OwnedTransaction } from '@data-stores/psql'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { EntityRelationMetadata } from './metadata.mts'
-import type { EntityRelation, EntityIdentifier, UpsertEntityTypes } from './upsert-helpers.mts'
+import type { EntityIdentifier, UpsertEntityTypes } from './upsert-helpers.mts'
+import type { EntityRelation } from './upsert-helpers-types.mts'
 import {
   enqueueBulkReconcilePostNotifications,
   enqueueBulkReconcileRssFeedItemNotifications,

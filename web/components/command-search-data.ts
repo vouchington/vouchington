@@ -56,30 +56,8 @@ export type PageShortcut = { label: MessageKey; href: string; dataPw: string }
 /** Bound `t()` translator, as returned by `useTranslations()` / `getTranslations()`. */
 export type Translator = ReturnType<typeof createTranslator>
 
-export type SearchResults = {
-  topics: Topic[]
-  posts: CommandSearchPost[]
-  news: RssFeedItem[]
-  domains: Hostname[]
-  communities: Community[]
-  fediverse: FediverseSearchResult[]
-}
-
-type FullPostSearchResult = Pick<
-  Post,
-  'id' | 'post_type' | 'title' | 'markdown' | 'declared_language' | 'lingua_rs_detected_language'
->
-
-/** The combined endpoint keeps authored text distinct from its UI display fallback. */
-type CombinedPostSearchResult = Pick<
-  Post,
-  'id' | 'post_type' | 'declared_language' | 'lingua_rs_detected_language'
-> & {
-  title: string
-  authored_title: string | null
-}
-
-export type CommandSearchPost = FullPostSearchResult | CombinedPostSearchResult
+import type { SearchResults } from './command-search-results'
+export type { CommandSearchPost, SearchResults } from './command-search-results'
 
 export const EMPTY_RESULTS: SearchResults = {
   topics: [],

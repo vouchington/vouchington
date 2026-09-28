@@ -18,13 +18,10 @@ import {
   prepareLockedPostImageUpdate,
   lockPostImageAdmission,
 } from './prepare-locked-image-update.mts'
-export { getPostImages } from './post-image-read.mts'
+import type { PostImageInput } from './images-types.mts'
+export type { PostImageInput } from './images-types.mts'
 
-export type PostImageInput = {
-  image_id: string
-  order_index: number
-  caption?: string
-}
+export { getPostImages } from './post-image-read.mts'
 type PostImage = PostImagePlacement
 type PersistedPostImage = Pick<PostImage, 'image_id' | 'order_index' | 'caption'>
 export async function setPostImages(

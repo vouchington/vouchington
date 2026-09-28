@@ -24,8 +24,8 @@ interface Props {
   hideDownCount?: boolean
 }
 
-export type TopicRecommendationTablePost = TopicRecommendationEditablePost &
-  Pick<Post, 'id' | 'updated_at' | 'created_at' | 'created_by' | 'created_by_id'>
+import type { TopicRecommendationTablePost } from './topic-recommendation-table-post'
+export type { TopicRecommendationTablePost } from './topic-recommendation-table-post'
 
 export function TopicRecommendationsTable({ data, isAdmin, hideDownCount = false }: Props) {
   const t = useTranslations()

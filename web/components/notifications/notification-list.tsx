@@ -5,11 +5,8 @@ import type { Notification, NotificationsResponseBody } from '@/types/api-respon
 import { NotificationRow } from './notification-row'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
-export type NotificationListNotification = Pick<
-  Notification,
-  'id' | 'entity_type' | 'title' | 'body' | 'read_at' | 'created_at' | 'target_path'
-> &
-  Partial<Pick<Notification, 'target_entity' | 'target_intent'>>
+import type { NotificationListNotification } from './notification-list-notification'
+export type { NotificationListNotification } from './notification-list-notification'
 
 interface NotificationListProps {
   notifications: {

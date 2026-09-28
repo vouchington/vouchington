@@ -6,7 +6,7 @@ import {
 } from './config.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { ModerationReportSort } from './sort-sql.mts'
-import type { PendingModerationReport } from './get.mts'
+import type { PendingModerationReport } from './pending-moderation-report.mts'
 import type { ModerationReportTargetContent } from './target-metadata.mts'
 import type {
   ClusterRow,

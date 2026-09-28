@@ -4,7 +4,7 @@ import {
   stringArrayValue,
   stringValue,
   type LifecycleAdapter,
-} from './adapters'
+} from './lifecycle-values'
 import type { LifecycleJson } from './manifest'
 import {
   hasNewIntegrityPenalty,

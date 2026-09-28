@@ -13,21 +13,17 @@ import { parseCommunitySearchCursor } from './search/cursor.mts'
 import { buildCommunityImagePlacementSelect } from './search/image-placements.mts'
 import { communityColumns } from './columns.mts'
 import type { CommunityRootPostType } from './post-type-settings.mts'
-
-export type CommunitySortMode = 'name' | 'members' | 'virtual_subscriptions'
-export type CommunityFeedCategory = 'posts' | 'news' | 'news_sources' | 'news_topics'
-
-export type CommunityOwner = {
-  id: string
-  username: string | null
-}
-
-export type SearchCommunitiesResult = {
-  results: Community[]
-  users: Record<string, CommunityOwner>
-  page_info: ReturnType<typeof buildPageInfo>
-  community_metrics: Record<string, CommunityMetrics>
-}
+import type {
+  CommunitySortMode,
+  CommunityFeedCategory,
+  SearchCommunitiesResult,
+} from './search-types.mts'
+export type {
+  CommunitySortMode,
+  CommunityFeedCategory,
+  CommunityOwner,
+  SearchCommunitiesResult,
+} from './search-types.mts'
 
 export async function searchCommunities(
   options?: QueryOptions & {

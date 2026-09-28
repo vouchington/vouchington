@@ -15,18 +15,36 @@
  *
  * Web source must stay acyclic so route and component dependencies remain
  * easy to reason about.
+ *
+ * `no-circular` and `not-to-unresolvable` are copied into `forbidden`.
+ * dependency-cruiser merges `extends` by reading `.forbidden` only, and those
+ * presets export a bare rule, so extending them adds nothing.
  */
 
 const path = require('node:path')
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
-  extends: [
-    'dependency-cruiser/configs/rules/not-to-unresolvable',
-    'dependency-cruiser/configs/rules/no-circular',
-  ],
-
   forbidden: [
+    {
+      name: 'not-to-unresolvable',
+      comment: 'web imports must resolve to source files or installed packages.',
+      severity: 'error',
+      from: {},
+      to: {
+        couldNotResolve: true,
+      },
+    },
+    {
+      name: 'no-circular',
+      comment:
+        'web source should stay acyclic so route and component dependencies remain easy to reason about.',
+      severity: 'error',
+      from: {},
+      to: {
+        circular: true,
+      },
+    },
     {
       name: 'web-api-no-direct-request-clients',
       comment:

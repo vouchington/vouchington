@@ -3,7 +3,7 @@ import type { Post } from './types.mts'
 import { currentUserCanUpdatePost } from './authorization.mts'
 import { assertCommunityNoLinksAllowed } from '@services/communities/restrictions/enforce'
 import { validatePostImageInputs } from './image-input-validation.mts'
-import type { PostImageInput } from './images.mts'
+import type { PostImageInput } from './images-types.mts'
 import assert from 'http-assert'
 
 export async function assertPostImagesCanBeUpdated(

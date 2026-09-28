@@ -11,7 +11,7 @@ import { finalizeCreatedTopic } from '@services/topics/create'
 import { enableReferralProgram } from '@services/topics/referral-programs'
 import { updateCardAttributes } from '@services/topics/cards'
 import { getRegisteredRecommendationApprovedHandler } from './recommendation-approved-handler-registry.mts'
-import type { TopicRecommendationApprovalTransactionResult } from './approve-topic-recommendation.mts'
+import type { TopicRecommendationApprovalTransactionResult } from './approve-topic-recommendation-types.mts'
 
 const landingPageRelation = getEntityRelationMetadataOrThrow({
   subjectType: 'topic',

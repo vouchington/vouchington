@@ -6,30 +6,8 @@ import type { ReportIntegrityFlagsState } from './use-report-integrity-flags'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { ReportIntegrityFlagRow } from './report-integrity-flag-row'
 
-export type ReportIntegrityFlagsTableProps = Pick<
-  ReportIntegrityFlagsState,
-  | 'actionLoading'
-  | 'actionErrors'
-  | 'applyPenaltyWithConfirmation'
-  | 'endCursor'
-  | 'clearError'
-  | 'fetchError'
-  | 'flags'
-  | 'handleLoadMore'
-  | 'handleResolve'
-  | 'hasNextPage'
-  | 'isPending'
-  | 'loadingMore'
-  | 'penaltyConfirm'
-  | 'penaltyResults'
-  | 'resetKey'
-  | 'resolutions'
-  | 'reconciliationRequired'
-  | 'retryReconciliation'
-  | 'updateResolution'
-> & {
-  initialStatus: StatusFilter
-}
+import type { ReportIntegrityFlagsTableProps } from './report-integrity-flags-table-props'
+export type { ReportIntegrityFlagsTableProps } from './report-integrity-flags-table-props'
 
 export function ReportIntegrityFlagsTable(props: ReportIntegrityFlagsTableProps) {
   const t = useTranslations()

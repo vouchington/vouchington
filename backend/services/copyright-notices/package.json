@@ -41,6 +41,7 @@
     "uuid": "^14.0.2"
   },
   "devDependencies": {
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "vitest": "^5.0.2"
   }
 }

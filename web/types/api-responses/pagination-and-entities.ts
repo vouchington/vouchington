@@ -126,13 +126,5 @@ export type NotificationResult = Serialized<BackendNotificationResult>
 
 export type WebPushSubscription = Serialized<WebPushSubscriptionRecord>
 
-/**
- * Base paginated response structure shared by all API endpoints
- */
-
-export interface PaginatedResponse<TResult extends PaginatedResult> {
-  results: TResult[]
-  page_info: PageInfo
-  bookmarks?: Record<string, Record<string, boolean>>
-  election_votes?: Record<string, ElectionVote>
-}
+import type { PaginatedResponse } from './paginated-response'
+export type { PaginatedResponse } from './paginated-response'

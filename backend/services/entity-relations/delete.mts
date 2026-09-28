@@ -2,11 +2,8 @@ import type { PrivateUser } from '@voucha/types/entities/user'
 import { getEntityRelationMetadataOrThrow, type EntityRelationMetadata } from './metadata.mts'
 import { enqueueNotificationReconcileAfterDelete } from './notification-reconcile.mts'
 import { appendManyEntitiesWhereClause, appendSingleEntityWhereClause } from './sql-clauses.mts'
-import type {
-  UpsertEntityTypes,
-  EntityIdentifier,
-  EntityRelationOrigin,
-} from './upsert-helpers.mts'
+import type { UpsertEntityTypes, EntityIdentifier } from './upsert-helpers.mts'
+import type { EntityRelationOrigin } from './upsert-helpers-types.mts'
 import type { QueryOptions } from '@data-stores/psql'
 import { enqueueUndoFollowSideEffects } from './enqueue-undo-follow-side-effects.mts'
 import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-discoverability/enqueues'

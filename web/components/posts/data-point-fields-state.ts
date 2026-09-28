@@ -1,7 +1,7 @@
 import type { FinancialProfile } from '@/types/my'
 import type { CurrencyCode } from '@ts-shared/money'
 import type { DataPointVertical } from '@voucha/types/entities/data-point'
-import type { StructuredDataState } from './data-point-fields'
+export type StructuredDataState = Record<string, unknown>
 
 const CREDIT_CARD_ONLY_KEYS = new Set([
   'hard_inquiries_12m',

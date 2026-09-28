@@ -10,31 +10,8 @@ import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import { VoteIntegrityFlagActions } from './vote-integrity-flag-row-actions'
 
-export type VoteIntegrityFlagsTableProps = Pick<
-  VoteIntegrityFlagsState,
-  | 'actionLoading'
-  | 'actionErrors'
-  | 'applyPenaltyWithConfirmation'
-  | 'endCursor'
-  | 'clearError'
-  | 'fetchError'
-  | 'flags'
-  | 'handleLoadMore'
-  | 'handleResolve'
-  | 'hasNextPage'
-  | 'isPending'
-  | 'loadingMore'
-  | 'penaltyApplied'
-  | 'resetKey'
-  | 'penaltyConfirm'
-  | 'penaltyResults'
-  | 'resolutions'
-  | 'reconciliationRequired'
-  | 'retryReconciliation'
-  | 'updateResolution'
-> & {
-  initialStatus: StatusFilter
-}
+import type { VoteIntegrityFlagsTableProps } from './vote-integrity-flags-table-props'
+export type { VoteIntegrityFlagsTableProps } from './vote-integrity-flags-table-props'
 
 export function VoteIntegrityFlagsTable(props: VoteIntegrityFlagsTableProps) {
   const t = useTranslations()

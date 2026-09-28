@@ -4,7 +4,7 @@ import { getPostIdsCached, searchRssFeedItemsCached } from '@services/entity-fet
 import { getPostIds } from '@services/posts/search/get-ids'
 import { getPublicPostIds } from '@services/posts'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
-import type { OmnisearchNewsItem, OmnisearchOptions, OmnisearchPost } from './omnisearch.mts'
+import type { OmnisearchNewsItem, OmnisearchOptions, OmnisearchPost } from './omnisearch-types.mts'
 
 const DEFAULT_LIMIT = 3
 

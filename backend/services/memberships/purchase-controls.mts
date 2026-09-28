@@ -1,5 +1,5 @@
 import { DynamicConfig } from '@data-stores/valkey'
-import type { MembershipPurchaseProvider } from './purchase-intents.mts'
+import type { MembershipPurchaseProvider } from './purchase-intent-launches.mts'
 
 export const membershipBillingControls = new DynamicConfig({
   key: 'membership-billing',

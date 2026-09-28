@@ -1,6 +1,6 @@
 import { getRegisteredBookmarkBloomHandler } from './bookmark-bloom-handler-registry.mts'
 import type { EntityRelationMetadata } from './metadata.mts'
-import type { EntityRelation } from './upsert-helpers.mts'
+import type { EntityRelation } from './upsert-helpers-types.mts'
 
 export async function maintainBookmarkBloomForRelations(
   relation: EntityRelationMetadata,

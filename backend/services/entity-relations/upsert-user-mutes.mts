@@ -1,6 +1,6 @@
 import type { QueryOptions } from '@data-stores/psql/types'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
-import type { EntityRelation } from './upsert-helpers.mts'
+import type { EntityRelation } from './upsert-helpers-types.mts'
 import { writeEntityRelations } from './write-relations.mts'
 
 const USER_MUTE_RELATION = getEntityRelationMetadataOrThrow({
