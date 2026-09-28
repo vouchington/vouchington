@@ -10,10 +10,7 @@ import {
 } from './court-hold-restore-replay.mts'
 import { lockCopyrightNoticeHoldPlacements } from './hold-placement-locks.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
-import {
-  activateLateCopyrightLegalHoldRestrictions,
-  lockLateHoldPlacements,
-} from './holds-late-restrictions.mts'
+import { activateLateCopyrightLegalHoldRestrictions } from './holds-late-restrictions.mts'
 import { isQualifyingCopyrightLegalHold } from './holds-qualification.mts'
 import { encryptSecret } from '@modules/token-secrets'
 import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
