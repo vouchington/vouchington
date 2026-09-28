@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { randomBytes } from 'node:crypto'
 import {
   createTestUserDirect,
+  deleteTestReportIntegrityReporter,
   insertTestReportIntegrityFlag,
   getTestReportAbusePenaltiesByFlagId,
   getTestReportAbusePenaltiesByUserId,
@@ -59,13 +60,15 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
   it('skips reporters whose accounts no longer exist', async () => {
     const targetUser = await createTestUserDirect({ username: randomUsername() })
     const reporter = await createTestUserDirect({ username: randomUsername() })
-    // A reporter captured at detection but hard-deleted before actioning. Use a
-    // v7 UUID that does not exist in users — the FK JOIN must skip it, not fail.
-    const missingReporterId = '01923456-789a-7bcd-8ef0-123456789abc'
-
+    const removedReporter = await createTestUserDirect({ username: randomUsername() })
+    // Account deletion cascades the reporter row, so rebuilt details omit them.
     const flagId = await insertTestReportIntegrityFlag({
       reportedUserId: targetUser.id,
-      reporterUserIds: [reporter.id, missingReporterId],
+      reporterUserIds: [reporter.id, removedReporter.id],
+    })
+    await deleteTestReportIntegrityReporter({
+      flagId,
+      reporterUserId: removedReporter.id,
     })
 
     const result = await applyReportAbusePenalty(adminUser.id, flagId)

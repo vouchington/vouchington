@@ -43,9 +43,7 @@ describe('resolve-flag', () => {
   describe('resolveVoteIntegrityFlag', () => {
     it('sets resolved_at, resolved_by_id, and resolution on the flag', async () => {
       const postId = await makePost(randomSlug())
-      const flag = await createVoteIntegrityFlag('post', postId, 'velocity_spike', {
-        test: true,
-      })
+      const flag = await createVoteIntegrityFlag('post', postId, 'velocity_spike', {})
       expect(flag).not.toBeNull()
 
       const resolved = await resolveVoteIntegrityFlag(flag!.id, adminUser.id, 'dismissed')

@@ -141,9 +141,7 @@ describe('flags', () => {
 
     it('returns the flag for a valid ID', async () => {
       const entityId = await makePost(randomSlug())
-      const flag = await createVoteIntegrityFlag('post', entityId, 'ip_correlation', {
-        test: 'get-by-id',
-      })
+      const flag = await createVoteIntegrityFlag('post', entityId, 'ip_correlation', {})
 
       const request = createRequest()
       await request.authenticateAs(admin)
