@@ -36,9 +36,7 @@ const {
 } = services
 
 export async function runFeedAndMetricScenarios() {
-  await runAndCapture('post-feed', () =>
-    getPostFeedIds(seedUser as any, { limit: 25, time_range: '1w' }),
-  )
+  await runAndCapture('post-feed', () => getPostFeedIds(seedUser, { limit: 25, time_range: '1w' }))
   await runAndCapture('trending-topics', () => getTrendingTopics({ timeRange: 'week', limit: 25 }))
   await runAndCapture('rss-feed-search', () => searchRssFeeds({ limit: 25 }))
 
@@ -52,7 +50,7 @@ export async function runFeedAndMetricScenarios() {
     searchRssFeeds({ text_search_query: 'seed', limit: 25 }),
   )
   await runAndCapture('friend-recommendations', () =>
-    getFriendRecommendations(seedUser as any, { limit: 25 }),
+    getFriendRecommendations(seedUser, { limit: 25 }),
   )
 
   // Comment ancestors — use a known seeded post id that exists; if not found it throws 422 which is caught above
@@ -74,20 +72,20 @@ export async function runFeedAndMetricScenarios() {
     `${SEED_PREFIX}-0300-7000-8000-000000000000`,
     `${SEED_PREFIX}-0300-7000-8000-000000000001`,
   ]
-  await runAndCapture('posts-by-url-ids', () => getPostIdsByUrlIds(seedUser as any, seedUrlIds))
-  await runRssFeedFirstAndContinuationScenarios('rss-feed-item-feed', seedUser as any, {
+  await runAndCapture('posts-by-url-ids', () => getPostIdsByUrlIds(seedUser, seedUrlIds))
+  await runRssFeedFirstAndContinuationScenarios('rss-feed-item-feed', seedUser, {
     limit: 25,
     time_range: '1w',
   })
   await runAndCapture('rss-feed-item-feed-follow-rss-feeds', () =>
-    getRssFeedItemFeedIds(seedUser as any, {
+    getRssFeedItemFeedIds(seedUser, {
       limit: 25,
       time_range: '1w',
       feed_type: 'follow_rss_feeds',
     }),
   )
   await runAndCapture('rss-feed-item-feed-follow-topics', () =>
-    getRssFeedItemFeedIds(seedUser as any, {
+    getRssFeedItemFeedIds(seedUser, {
       limit: 25,
       time_range: '1w',
       feed_type: 'follow_topics',
@@ -95,7 +93,7 @@ export async function runFeedAndMetricScenarios() {
   )
   await runRssFeedFirstAndContinuationScenarios(
     'rss-feed-item-feed-sparse-source-filter',
-    seedUser as any,
+    seedUser,
     {
       limit: 25,
       time_range: '1w',
@@ -108,16 +106,16 @@ export async function runFeedAndMetricScenarios() {
     searchRssFeedItems({ topic_ids: seedTopicIds, limit: 25 }),
   )
   await runAndCapture('post-search-new', () =>
-    getPostIds(seedUser as any, { limit: 25, time_range: '1w' }),
+    getPostIds(seedUser, { limit: 25, time_range: '1w' }),
   )
   await runAndCapture('post-search-best', () =>
-    getPostIds(seedUser as any, { sort: 'best', limit: 25, time_range: '1w' }),
+    getPostIds(seedUser, { sort: 'best', limit: 25, time_range: '1w' }),
   )
   await runAndCapture('post-search-hot', () =>
-    getPostIds(seedUser as any, { sort: 'hot', limit: 25, time_range: '1w' }),
+    getPostIds(seedUser, { sort: 'hot', limit: 25, time_range: '1w' }),
   )
   await runAndCapture('rss-feed-item-feed-related-posts', () =>
-    getRssFeedItemFeedIds(seedUser as any, {
+    getRssFeedItemFeedIds(seedUser, {
       limit: 25,
       time_range: '1w',
       has_related_posts: true,
@@ -183,9 +181,7 @@ export async function runFeedAndMetricScenarios() {
   await runAndCapture('url-hostname-search-by-topic', () =>
     searchUrlHostnames({ topic_ids: [seedTopicId], limit: 25 }),
   )
-  await runAndCapture('topic-viewer-counts', () =>
-    getTopicViewerCounts(seedUser as any, seedTopicId),
-  )
+  await runAndCapture('topic-viewer-counts', () => getTopicViewerCounts(seedUser, seedTopicId))
   await runAndCapture('topic-search-text', () =>
     getTopicIds({ text_search_query: 'seed', limit: 25 }),
   )

@@ -2,9 +2,12 @@ import { assertToolAllowedForUser, type AgentTool } from '@services/openai-agent
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from '@voucha/tools'
 
+// oxlint-disable-next-line typescript/no-explicit-any -- curry tuples stay assignable only through any
+type CurriedToolEntry = { tool: Tool<any, any, readonly any[]>; curryArgs: readonly any[] }
+
 export type AgentToolEntry =
-  | Tool<any, any>
-  | { tool: Tool<any, any, readonly any[]>; curryArgs: readonly any[] }
+  // oxlint-disable-next-line typescript/no-explicit-any -- heterogeneous tools are not assignable to unknown parameters
+  Tool<any, any> | CurriedToolEntry
 
 /**
  * Type-safe helper for binding curry args to a tool.
@@ -24,9 +27,7 @@ export function withCurry<TArgs, TResult, TCurry extends readonly unknown[]>(
   return { tool, curryArgs }
 }
 
-function isToolEntry(
-  entry: AgentToolEntry,
-): entry is { tool: Tool<any, any, readonly any[]>; curryArgs: readonly any[] } {
+function isToolEntry(entry: AgentToolEntry): entry is CurriedToolEntry {
   return 'tool' in entry && 'curryArgs' in entry
 }
 

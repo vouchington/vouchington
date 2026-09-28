@@ -8,10 +8,11 @@ import type { RunEventWriter } from '@services/conversations-messages'
 
 export type AgentTool = {
   schema: { name: string; [key: string]: unknown }
-  // `any` is intentional: the boundary where typed tool functions meet the generic
-  // dispatch loop. JSON.parse produces `unknown` at runtime; `any` here avoids
-  // requiring `as never` casts at every agent call site.
+  // Erased bridge where typed tool functions meet the generic dispatch loop.
+  // JSON.parse produces `unknown`; a specific argument type is not assignable to `unknown`.
+  // oxlint-disable-next-line typescript/no-explicit-any -- preserved dispatch bridge, not a new cast
   executor: (args: any) => AsyncGenerator<unknown, unknown> | Promise<unknown> | unknown
+  // oxlint-disable-next-line typescript/no-explicit-any -- preserved result-format bridge
   formatResult?: (callId: string, result: any) => OpenAIFunctionCallOutput
 }
 

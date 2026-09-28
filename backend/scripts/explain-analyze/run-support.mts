@@ -9,6 +9,7 @@ import {
   type ExplainPlanCacheMode,
   type ExplainResult,
 } from '@data-stores/psql'
+import type { PrivateUser } from '@services/users/types'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { assertRequiredPlanShape } from './plan-gates.mts'
@@ -22,14 +23,14 @@ export const seedUser = {
   id: `${SEED_PREFIX}-0100-7000-8000-000000000000`,
   username: 'seeduser0',
   roles: [] as readonly string[],
-}
+} as PrivateUser
 
 export const heavyFollowUser = {
   __entity_type: 'user' as const,
   id: `${SEED_PREFIX}-0100-7000-8000-000000000001`,
   username: 'seeduser1',
   roles: [] as readonly string[],
-}
+} as PrivateUser
 
 export const seedSessionId = `${SEED_PREFIX}-1100-7000-8000-000000000000`
 // posts moved off the fixed SEED_PREFIX instant onto a per-day real-clock timestamp (see

@@ -123,5 +123,6 @@ export type EmailJobs = EmailSendJobs | EmailDispatcherJobs
 
 export type EmailJobsTemplates = Record<
   Exclude<EmailSendJobs, 'processSendCopyrightNoticeEmail'>,
+  // oxlint-disable-next-line typescript/no-explicit-any -- specific template parameters are not assignable to unknown
   (...args: any[]) => Promise<unknown>
 >

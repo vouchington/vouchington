@@ -4,6 +4,7 @@ import {
   getOAuthAccountByProviderUserId,
   runOAuthAccountConnectionPostCommitEffects,
 } from '@services/oauth-accounts'
+import { isHttpError } from 'http-errors'
 import assert from 'http-assert'
 import {
   enqueueOnUserCreated,
@@ -65,7 +66,7 @@ export const upsertUser = async ({
         await runOAuthAccountConnectionPostCommitEffects(existingUser.id)
       } catch (error) {
         // Handle race condition: account was connected to another user in parallel request
-        if ((error as any).status === 409) {
+        if (isHttpError(error) && error.status === 409) {
           const currentAccount = await getOAuthAccountByProviderUserId(
             oauthAccount.provider,
             oauthAccount.account.provider_user_id,
