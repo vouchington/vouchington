@@ -1,4 +1,4 @@
-// Proves the sentinel (vitest-fork-exit-sentinel.mts) and the diagnostics reporter
+// Proves the published fork-exit sentinel and the diagnostics reporter
 // (vitest-worker-exit-diagnostics-reporter.mts) actually behave as designed under each of the
 // five ways a fork can die plus the clean-exit case — not just that their formatters produce the
 // right string for a hand-built input. Unit-testing the formatters alone (as the other specs in

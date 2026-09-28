@@ -10,9 +10,10 @@ import {
   registerForkExitSentinel,
   setCurrentForkExitModule,
   setCurrentForkExitProject,
-} from './vitest-fork-exit-sentinel.mts'
+} from 'vouchington-tooling/vitest-diagnostics'
+import { forkExitSentinelDirectory } from './vitest-fork-exit-directory.mts'
 
-registerForkExitSentinel()
+registerForkExitSentinel({ recordDirectory: forkExitSentinelDirectory })
 
 beforeEach(context => {
   setCurrentForkExitModule(context.task.file.filepath)
