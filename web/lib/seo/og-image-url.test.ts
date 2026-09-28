@@ -5,6 +5,7 @@ import {
   buildGenericOgImageUrl,
   buildLandingOgImageUrl,
   extractTopCategories,
+  landingOgDependencies,
   OG_RENDERER_VERSION,
 } from './og-image-url'
 import type { LandingPageItem, PublicLandingPage } from '@/types/landing-pages'
@@ -66,6 +67,13 @@ function topicGroupItem(id: string, name: string): LandingPageItem {
     entries: [],
   }
 }
+
+describe('landingOgDependencies', () => {
+  it('returns no dependencies when the landing placement is absent', () => {
+    expect(landingOgDependencies(null)).toEqual([])
+    expect(landingOgDependencies(undefined)).toEqual([])
+  })
+})
 
 describe('buildGenericOgImageUrl / buildLandingOgImageUrl', () => {
   beforeEach(() => {
