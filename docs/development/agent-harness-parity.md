@@ -134,12 +134,11 @@ source would double-fire.
 
 Claude `permissions.deny` strings are also prefix-matched by Grok with no word
 boundary. A deny must not be a prefix of a sanctioned command:
-`Bash(git push --force)` matches the documented
-`git push --force-with-lease` rebase push. Use a space-terminated pattern such
-as `Bash(git push --force *)` for raw force-push with arguments, and a
-leading-glob `Bash(*git push --force)` for the no-arg form. Leave
-`--force-with-lease` itself un-denied so the PreToolUse hook can allow it.
-`dev/claude-settings-grok-bash-deny.test.mts` locks this.
+`Bash(git push --force)` matches `git push --force-with-lease`. Plain force
+pushes stay out of that deny list for that reason. `.husky/pre-push` rejects
+`--force`, `-f`, and a `+` refspec, and it allows `--force-with-lease`. The
+PreToolUse hook still blocks the same push for harness agents.
+`dev/claude-settings-grok-bash-deny.test.mts` locks the deny-list absence.
 
 The shared runner still has to read Grok's hook dialect:
 
