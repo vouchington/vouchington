@@ -54,7 +54,7 @@ async function getStoryPageViewerSidecars(
 ) {
   const [bookmarks, votes, rss_feed_bookmarks] = await Promise.all([
     getBookmarksForEntities(currentUser, 'rss_feed_item', itemIds),
-    getRssFeedItemElectionVotesByUser(currentUser.id, itemIds),
+    itemIds.length === 0 ? [] : getRssFeedItemElectionVotesByUser(currentUser.id, itemIds),
     getBookmarksForEntities(currentUser, 'rss_feed', feedIds),
   ])
   return {
