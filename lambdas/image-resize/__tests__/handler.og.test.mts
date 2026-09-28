@@ -74,6 +74,9 @@ describe('handler.og', () => {
           new Error('unreachable: fetchImageFromUrl should not run for OG requests'),
         ),
       captureCacheWriteError: vi.fn<(error: unknown) => void>(),
+      authorizeDependencies: vi.fn<LambdaHandlerDependencies['authorizeDependencies']>(
+        async dependencies => dependencies.map(() => 'unknown'),
+      ),
     }
 
     handler = createLambdaHandler(

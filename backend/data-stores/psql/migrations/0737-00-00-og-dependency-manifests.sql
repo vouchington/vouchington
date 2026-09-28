@@ -1,7 +1,7 @@
 -- Explicit OG dependency manifests. Each entry is a placement the rendered card may embed.
 CREATE TABLE og_dependency_manifests (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 
 CREATE TABLE og_dependency_manifest_placements (

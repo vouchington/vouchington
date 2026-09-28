@@ -1,4 +1,4 @@
-import { isRemovedSideloadRoute } from '@ts-shared/url-signing'
+import { isRemovedSideloadRoute } from '@ts-shared/url-signing/media-source-policy'
 import { edgeErrorResponse } from './error-response.mts'
 import { getMarkdownAliasOriginPath } from './markdown-aliases.mts'
 import { getOAuthBrokerCallbackOriginPath } from './oauth-broker-callback-routing.mts'

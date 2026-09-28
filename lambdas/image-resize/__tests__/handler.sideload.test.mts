@@ -69,6 +69,9 @@ describe('handler.sideload', () => {
           .fn<NonNullable<LambdaHandlerDependencies['fetchImageFromUrl']>>()
           .mockRejectedValue(new HttpOperationError('Mock sideload fetch failure', 500)),
         captureCacheWriteError: vi.fn<(error: unknown) => void>(),
+        authorizeDependencies: vi.fn<LambdaHandlerDependencies['authorizeDependencies']>(
+          async dependencies => dependencies.map(() => 'unknown'),
+        ),
       }
 
       handler = createLambdaHandler(
