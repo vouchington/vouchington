@@ -310,13 +310,29 @@ primary id query — the feed (`GET /api/v1/feeds/posts/:feed_type`), post detai
   `countUserMemberCommunities` (the post-facet and bookmark-count sub-queries are already covered
   by the search and metrics scenarios)
 
-**User search** (`run-scenarios/entities-and-communities.mts`): `searchUsers` / `searchAdminUsers` —
-public and admin user search (prefix match and admin UUID lookup). The two admin scenario
-identities (`search-admin-users`, `search-admin-users-uuid`) exist because admin search accepts
-either a name prefix or an exact id — a second lookup path public search does not have. Admin search
-also accepts an exact email address (a third `EXISTS` branch over `user_email_addresses` in
-`searchAdminUsers`, `backend/services/users/search.mts`); that shape has no scenario here and is not
-covered by the two documented identities above.
+**User search** (`run-scenarios/admin-user-search.mts`): `searchUsers` / `searchAdminUsers` —
+public and admin search cover prefix, UUID, and exact primary-email lookups. The email scenario
+seeds a selective address, checks the returned user, and requires the executing
+`idx_user_email_addresses_email_primary` probe in custom and generic plans.
+
+**Explicit-range pruning** (`pruning/run.mts`): The normal idempotent seed keeps the production
+default-only layout. This separate runner creates a random, local, migrated sibling database,
+attaches two explicit UUIDv7 ranges alongside each migrated DEFAULT child, and verifies nonempty
+placement through `tableoid`. It calls `getPostByAny`,
+`getConversationMessagesByConversationId`, and
+`updateEntityRelationElectionVoteStatsFromPrimaryBatch` with real review ratings, messages, and
+votes. Each forced custom/generic plan must execute only its target RANGE leaf under the matching
+vote LIST branch; the two-target vote call must execute exactly two. Vote updates and EXPLAIN replay
+both roll back, and cache/queue side effects are disabled. The runner closes pools and removes only
+its owned sibling in `finally`, including failure paths. Partial and passing plans are retained in
+`output/pruning-proof-*.json`. Run locally with:
+
+```bash
+source .env && node backend/scripts/explain-analyze/pruning/run.mts
+```
+
+The EXPLAIN workflow runs this proof after the ordinary plan gates and uploads its artifact on
+failure. It does not change production partition creation or the normal seed.
 
 ## CI
 
