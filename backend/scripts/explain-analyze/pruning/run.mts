@@ -3,6 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import type { ExplainResult } from '@data-stores/psql/explain-analyze'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import {
   createOwnedPruningDatabase,
   createPruningDatabaseName,
@@ -95,7 +96,7 @@ async function runPruningProof(): Promise<void> {
     console.log(`Pruning proof passed ${results.length} forced custom/generic plans`)
   } catch (error) {
     failure = error
-    evidence.error = error instanceof Error ? error.message : String(error)
+    evidence.error = error instanceof Error ? error.message : stringFromUnknown(error)
   } finally {
     try {
       try {
@@ -114,7 +115,8 @@ async function runPruningProof(): Promise<void> {
       process.off('SIGTERM', interrupt)
     }
   }
-  if (failure) throw failure
+  if (failure instanceof Error) throw failure
+  if (failure !== undefined) throw new Error(stringFromUnknown(failure))
 }
 
 if (libpqOverrideKeys.some(key => process.env[key] !== undefined)) {
