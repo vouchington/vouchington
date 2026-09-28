@@ -74,6 +74,38 @@ CREATE OR REPLACE FUNCTION public.fn_assert_review_succession_topics()
  LANGUAGE plpgsql
 ```
 
+## `fn_assert_data_point_facts_agree`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_assert_data_point_facts_agree()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_assert_post_category_finalization_children`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_assert_post_category_finalization_children()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_assert_post_data_point_vertical_facts`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_assert_post_data_point_vertical_facts()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_assert_review_succession_topics`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_assert_review_succession_topics()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_assert_web_push_endpoint_owner_subscription`
 
 ```sql
