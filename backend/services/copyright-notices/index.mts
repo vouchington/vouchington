@@ -131,10 +131,6 @@ export {
   listCopyrightStaffAlertAcknowledgements,
   listOpenCopyrightStaffAlerts,
 } from './staff-alerts-read.mts'
-export type {
-  CopyrightStaffAlert,
-  CopyrightStaffAlertAcknowledgement,
-} from './staff-alerts-read.mts'
 export {
   approveCopyrightStaffAlertPolicy,
   revokeCopyrightStaffAlertPolicy,

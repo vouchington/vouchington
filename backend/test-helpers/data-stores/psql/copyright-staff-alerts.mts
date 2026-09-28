@@ -13,6 +13,7 @@ export async function insertCopyrightStaffAlertCase(input: {
   imageId: string
   actorUserId: string
   provisional: boolean
+  noticeId?: string
 }): Promise<CopyrightStaffAlertCase> {
   const workDescription = `work-${randomUUID()}`
   const claimantContactCiphertext = `contact-${randomUUID()}`
@@ -21,10 +22,11 @@ export async function insertCopyrightStaffAlertCase(input: {
     sql`/* insertCopyrightStaffAlertCase */
       WITH notice AS (
         INSERT INTO copyright_notices (
-          jurisdiction, legal_basis, received_at, accepted_at, provisional_withholding_at,
+          id, jurisdiction, legal_basis, received_at, accepted_at, provisional_withholding_at,
           claimant_contact_ciphertext, work_description, policy_version
         ) VALUES (
-          'us_dmca', 'copyright', CURRENT_TIMESTAMP - INTERVAL '2 days',
+          COALESCE(${input.noticeId ?? null}::uuid, uuidv7()), 'us_dmca', 'copyright',
+          CURRENT_TIMESTAMP - INTERVAL '2 days',
           CASE WHEN ${input.provisional} THEN CURRENT_TIMESTAMP - INTERVAL '1 day' ELSE NULL END,
           CASE WHEN ${input.provisional} THEN CURRENT_TIMESTAMP - INTERVAL '1 day' ELSE NULL END,
           ${claimantContactCiphertext}, ${workDescription}, 'test-v1'

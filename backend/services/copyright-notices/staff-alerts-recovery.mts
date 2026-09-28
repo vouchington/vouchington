@@ -20,36 +20,46 @@ export function searchCopyrightStaffAlertNoticeIds(
     sql`/* searchCopyrightStaffAlertNoticeIds */
       SELECT id
       FROM copyright_notices
-      WHERE EXISTS (
-        SELECT 1 FROM copyright_restrictions restriction
-        JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-        WHERE target.copyright_notice_id = copyright_notices.id
-          AND restriction.lifted_at IS NULL AND restriction.human_reviewed_at IS NULL
-      ) OR EXISTS (
-        SELECT 1 FROM copyright_notice_deadlines deadline
-        WHERE deadline.copyright_notice_id = copyright_notices.id
-          AND deadline.resolved_at IS NULL AND deadline.cancelled_at IS NULL
-          AND deadline.restoration_deadline_at <= CURRENT_TIMESTAMP
-      ) OR EXISTS (
-        SELECT 1 FROM copyright_notice_delivery_intents intent
-        WHERE intent.copyright_notice_id = copyright_notices.id
-          AND (intent.state IN ('failed', 'bounced')
-            OR (intent.state IN ('pending', 'claimed') AND intent.delivery_attempt_count > 0))
-      ) OR EXISTS (
-        SELECT 1 FROM copyright_staff_alerts alert
-        WHERE alert.copyright_notice_id = copyright_notices.id AND alert.resolved_at IS NULL
+      WHERE (
+        EXISTS (
+          SELECT 1 FROM copyright_restrictions restriction
+          JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+          WHERE target.copyright_notice_id = copyright_notices.id
+            AND restriction.lifted_at IS NULL AND restriction.human_reviewed_at IS NULL
+        ) OR EXISTS (
+          SELECT 1 FROM copyright_notice_deadlines deadline
+          WHERE deadline.copyright_notice_id = copyright_notices.id
+            AND deadline.resolved_at IS NULL AND deadline.cancelled_at IS NULL
+            AND deadline.restoration_deadline_at <= CURRENT_TIMESTAMP
+        ) OR EXISTS (
+          SELECT 1 FROM copyright_notice_delivery_intents intent
+          WHERE intent.copyright_notice_id = copyright_notices.id
+            AND (intent.state IN ('failed', 'bounced')
+              OR (intent.state IN ('pending', 'claimed') AND intent.delivery_attempt_count > 0))
+        ) OR EXISTS (
+          SELECT 1 FROM copyright_staff_alerts alert
+          WHERE alert.copyright_notice_id = copyright_notices.id AND alert.resolved_at IS NULL
+        )
       )`,
     statement => read(statement),
   )
 }
 
-/** Refreshes alert episodes from current facts. No-ops until an approval row exists. */
-export async function syncCopyrightStaffAlertsFromRecovery(): Promise<void> {
+/**
+ * Refreshes alert episodes from current facts. Starts at `options.after` when a caller resumes a
+ * keyset; otherwise walks from the first matching case. No-ops until an approval row exists.
+ */
+export async function syncCopyrightStaffAlertsFromRecovery(
+  options: CopyrightSweepPageOptions = {},
+): Promise<void> {
   if (!(await copyrightStaffAlertPolicyActive())) return
-  let after: string | undefined
+  let after = options.after
   for (;;) {
     // oxlint-disable-next-line no-await-in-loop -- advance only after this page is synced
-    const page = await searchCopyrightStaffAlertNoticeIds(after ? { after } : {})
+    const page = await searchCopyrightStaffAlertNoticeIds({
+      ...(options.limit === undefined ? {} : { limit: options.limit }),
+      ...(after === undefined ? {} : { after }),
+    })
     if (page.results.length > 0) {
       // oxlint-disable-next-line no-await-in-loop -- sync this page before reading the next cursor
       await syncCopyrightStaffAlerts({ noticeIds: page.results })

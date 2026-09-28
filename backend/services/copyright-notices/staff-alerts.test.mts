@@ -14,32 +14,21 @@ import {
   insertErasableCopyrightStaffActor,
   readCopyrightStaffAlertPolicy,
 } from '@voucha/test-helpers/data-stores/psql/copyright-staff-alert-actors'
-import type { PrivateUser } from '@voucha/types/entities/user'
 import {
   acknowledgeCopyrightStaffAlert,
-  approveCopyrightStaffAlertPolicy,
   listCopyrightStaffAlertAcknowledgements,
   listOpenCopyrightStaffAlerts,
   replayFailedCopyrightDeliveryIntent,
-  revokeCopyrightStaffAlertPolicy,
   syncCopyrightStaffAlerts,
   syncCopyrightStaffAlertsFromRecovery,
 } from './index.mts'
-
-async function withApprovedPolicy(actorId: string, body: () => Promise<void>): Promise<void> {
-  await approveCopyrightStaffAlertPolicy({ approvedByUserId: actorId })
-  try {
-    await body()
-  } finally {
-    await revokeCopyrightStaffAlertPolicy()
-  }
-}
-
-function moderator(user: PrivateUser): PrivateUser {
-  return { ...user, roles: ['moderator'] }
-}
+import {
+  copyrightStaffAlertModerator as moderator,
+  syncTrailingCopyrightStaffAlertPage,
+  withApprovedCopyrightStaffAlertPolicy as withApprovedPolicy,
+} from './staff-alerts-fixtures.mts'
 describe('copyright staff alerts', () => {
-  let actor: PrivateUser
+  let actor: Awaited<ReturnType<typeof createTestUser>>
   let imageId: string
 
   beforeAll(async () => {
@@ -296,5 +285,16 @@ describe('copyright staff alerts', () => {
       )
     })
     expect(await readCopyrightDeliveryObligation(intentId)).toMatchObject({ state: 'failed' })
+  })
+
+  it('syncs the next page of matching cases while the policy is active', async () => {
+    const synced = await withApprovedPolicy(actor.id, () =>
+      syncTrailingCopyrightStaffAlertPage({
+        imageId,
+        actorUserId: actor.id,
+        currentUser: moderator(actor),
+      }),
+    )
+    expect(synced.openNoticeIds).toEqual(synced.noticeIds)
   })
 })

@@ -11,11 +11,6 @@ import type {
   CopyrightStaffAlertAcknowledgement,
 } from './staff-alerts-types.mts'
 
-export type {
-  CopyrightStaffAlert,
-  CopyrightStaffAlertAcknowledgement,
-} from './staff-alerts-types.mts'
-
 /** Open episodes for these cases. Private legal fields stay empty unless the caller may review and a policy is active. */
 export async function listOpenCopyrightStaffAlerts(
   currentUser: PrivateUser,
