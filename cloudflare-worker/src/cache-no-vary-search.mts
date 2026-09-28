@@ -3,9 +3,11 @@
 // normalization (the old `no-vary-search` HTTP header only applied to the
 // classic `caches.default` API) — instead, the gateway must pre-normalize the
 // URL it dispatches with, since (entrypoint, canonical URL, ctx.props) is the
-// entire cache key. Named marketing/tracking params never change response
-// content, so collapsing them here is what lets e.g. `?utm_source=a` and
-// `?utm_source=b` share one cached entry instead of fragmenting the cache.
+// entire cache key. Named marketing params and ad click ids do not change
+// response content, and no application reader consumes those click ids.
+// Collapsing them lets `?utm_source=a` and `?srsltid=unique` share one cached
+// entry. Referral and `/@` requests bypass cache dispatch, so they still reach
+// the origin with the original query string.
 export const NO_VARY_SEARCH_PARAM_NAMES = [
   'utm_source',
   'utm_medium',
@@ -13,8 +15,17 @@ export const NO_VARY_SEARCH_PARAM_NAMES = [
   'utm_term',
   'utm_content',
   'gclid',
+  'gbraid',
+  'wbraid',
+  'dclid',
   'fbclid',
   'msclkid',
+  'ttclid',
+  'twclid',
+  'srsltid',
+  'igshid',
+  'igsh',
+  '_gl',
   'mc_cid',
   'mc_eid',
 ]

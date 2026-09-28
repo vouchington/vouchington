@@ -24,11 +24,14 @@ downstream shared cache to target with `s-maxage`, so `max-age` carries the TTL 
 
 Workers Cache has no response-header-based cache-key normalization (the classic `No-Vary-Search`
 header only applied to `caches.default`). Instead, the gateway pre-normalizes the URL it dispatches
-with — `cloudflare-worker/src/cache-no-vary-search.mts`'s `normalizeCacheUrl()` strips marketing/
-tracking params (`utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`, `gclid`,
-`fbclid`, `msclkid`, `mc_cid`, `mc_eid`) and sorts remaining params, so e.g. `?utm_source=a` and
-`?utm_source=b` — or `?a=1&b=2` vs. `?b=2&a=1` — collapse to the same cache entry. Meaningful
-params (search, filters, pagination, `apikey`, `referrer`, `next`) are preserved.
+with — `cloudflare-worker/src/cache-no-vary-search.mts`'s `normalizeCacheUrl()` strips
+`NO_VARY_SEARCH_PARAM_NAMES` (campaign parameters such as `utm_source`, ad click ids such as
+`gclid`, `fbclid`, and `srsltid`, and Mailchimp `mc_cid` / `mc_eid`) and sorts remaining params,
+so `?utm_source=a` and `?utm_source=b` — or `?a=1&b=2` vs. `?b=2&a=1` — collapse to the same
+cache entry. Web Speculation Rules use that same name list for `expects_no_vary_search`.
+Meaningful params (search, filters, pagination, `apikey`, `referrer`, `next`) are preserved.
+Cache-bypassed requests, including `referrer` and `/@` landing traffic, still reach the origin
+with their original query string.
 
 CSP is no longer stripped on writeback/added after lookup — `CachedOrigin` stamps every cacheable
 web HTML response with a fixed placeholder nonce (instead of a real one) in both the body and the
