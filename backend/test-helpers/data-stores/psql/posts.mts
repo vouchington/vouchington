@@ -57,10 +57,10 @@ export async function recordLocalTestPostOpenAIModerationDisposition(
       RETURNING id
     )
     INSERT INTO post_moderation_dispositions (
-      version_id, source, disposition, reason_code, evidence
+      version_id, source, disposition, reason_code
     )
     SELECT version.id, 'openai_omni', ${disposition}::post_moderation_disposition_types,
-      'test_provider_result', '{}'::jsonb
+      'test_provider_result'
     FROM version
   `)
 }
