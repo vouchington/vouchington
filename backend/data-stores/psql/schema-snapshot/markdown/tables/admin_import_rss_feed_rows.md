@@ -6,11 +6,12 @@ Typed RSS-feed import input for one admin import row. NULL follow means the call
 
 Not partitioned — growth: unbounded.
 
-| Column                | Type      | Nullable | Default | Identity | Generated | Collation | Comment                                                                  |
-| --------------------- | --------- | -------- | ------- | -------- | --------- | --------- | ------------------------------------------------------------------------ |
-| `admin_import_row_id` | `uuid`    | no       |         |          |           |           |                                                                          |
-| `url`                 | `text`    | no       |         |          |           |           |                                                                          |
-| `follow`              | `boolean` | yes      |         |          |           |           | Whether to follow the imported feed. NULL when the input omitted follow. |
+| Column                | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                  |
+| --------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------ |
+| `admin_import_row_id` | `uuid`                     | no       |                     |          |           |           | Admin import row that owns this RSS feed input.                          |
+| `url`                 | `text`                     | no       |                     |          |           |           | RSS feed URL to import.                                                  |
+| `follow`              | `boolean`                  | yes      |                     |          |           |           | Whether to follow the imported feed. NULL when the input omitted follow. |
+| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                          |
 
 **Primary key:** `PRIMARY KEY (admin_import_row_id)`
 
@@ -32,3 +33,4 @@ _none_
 **Triggers:**
 
 - `trigger_admin_import_rss_feed_rows_match_batch`: `CREATE TRIGGER trigger_admin_import_rss_feed_rows_match_batch BEFORE INSERT OR UPDATE ON public.admin_import_rss_feed_rows FOR EACH ROW EXECUTE FUNCTION fn_admin_import_rss_feed_row_matches_batch()`
+- `trigger_admin_import_rss_feed_rows_updated_at`: `CREATE TRIGGER trigger_admin_import_rss_feed_rows_updated_at BEFORE UPDATE ON public.admin_import_rss_feed_rows FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -6,12 +6,13 @@ Ordered selector and HTML removal values for one boilerplate removal. Zero rows 
 
 Not partitioned — growth: unbounded.
 
-| Column                   | Type                               | Nullable | Default | Identity | Generated | Collation | Comment                                                             |
-| ------------------------ | ---------------------------------- | -------- | ------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
-| `boilerplate_removal_id` | `uuid`                             | no       |         |          |           |           |                                                                     |
-| `kind`                   | `boilerplate_removal_result_kinds` | no       |         |          |           |           | css_selector or html fragment, matching the extractor result lists. |
-| `ordinal`                | `integer`                          | no       |         |          |           |           | Zero-based order within that result list.                           |
-| `value`                  | `text`                             | no       |         |          |           |           | Selector or HTML fragment to remove.                                |
+| Column                   | Type                               | Nullable | Default             | Identity | Generated | Collation | Comment                                                             |
+| ------------------------ | ---------------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
+| `boilerplate_removal_id` | `uuid`                             | no       |                     |          |           |           | Boilerplate removal whose ordered result list owns this value.      |
+| `kind`                   | `boilerplate_removal_result_kinds` | no       |                     |          |           |           | css_selector or html fragment, matching the extractor result lists. |
+| `ordinal`                | `integer`                          | no       |                     |          |           |           | Zero-based order within that result list.                           |
+| `value`                  | `text`                             | no       |                     |          |           |           | Selector or HTML fragment to remove.                                |
+| `updated_at`             | `timestamp with time zone`         | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
 
 **Primary key:** `PRIMARY KEY (boilerplate_removal_id, kind, ordinal)`
 
@@ -32,4 +33,5 @@ _none_
 - `boilerplate_removal_results_pkey`: `CREATE UNIQUE INDEX boilerplate_removal_results_pkey ON public.boilerplate_removal_results USING btree (boilerplate_removal_id, kind, ordinal)`
 
 **Triggers:**
-_none_
+
+- `trigger_boilerplate_removal_results_updated_at`: `CREATE TRIGGER trigger_boilerplate_removal_results_updated_at BEFORE UPDATE ON public.boilerplate_removal_results FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

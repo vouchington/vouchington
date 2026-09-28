@@ -6,11 +6,12 @@ Ordered category strings copied onto the reconciliation outbox. Zero rows is an 
 
 Not partitioned — growth: bounded.
 
-| Column             | Type      | Nullable | Default | Identity | Generated | Collation | Comment                                          |
-| ------------------ | --------- | -------- | ------- | -------- | --------- | --------- | ------------------------------------------------ |
-| `rss_feed_item_id` | `uuid`    | no       |         |          |           |           |                                                  |
-| `ordinal`          | `integer` | no       |         |          |           |           | Zero-based position in the outbox snapshot.      |
-| `category_text`    | `text`    | no       |         |          |           |           | Normalized category text in the outbox snapshot. |
+| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                 |
+| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------- |
+| `rss_feed_item_id` | `uuid`                     | no       |                     |          |           |           | RSS feed item whose outbox snapshot owns this category. |
+| `ordinal`          | `integer`                  | no       |                     |          |           |           | Zero-based position in the outbox snapshot.             |
+| `category_text`    | `text`                     | no       |                     |          |           |           | Normalized category text in the outbox snapshot.        |
+| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                         |
 
 **Primary key:** `PRIMARY KEY (rss_feed_item_id, ordinal)`
 
@@ -31,4 +32,5 @@ _none_
 - `rss_feed_item_category_snapshot_reconciliation_categories_pkey`: `CREATE UNIQUE INDEX rss_feed_item_category_snapshot_reconciliation_categories_pkey ON public.rss_feed_item_category_snapshot_reconciliation_categories USING btree (rss_feed_item_id, ordinal)`
 
 **Triggers:**
-_none_
+
+- `trigger_rss_recon_category_rows_updated_at`: `CREATE TRIGGER trigger_rss_recon_category_rows_updated_at BEFORE UPDATE ON public.rss_feed_item_category_snapshot_reconciliation_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

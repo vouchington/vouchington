@@ -6,14 +6,15 @@ Ordered link facts parsed from a crawl. An empty link graph is a crawl with zero
 
 RANGE partitioned on `crawl_id` (children: monthly, retention owner `cleanupPartitions`, access class: retention-window, growth: unbounded).
 
-| Column     | Type                | Nullable | Default    | Identity | Generated | Collation | Comment                                                                          |
-| ---------- | ------------------- | -------- | ---------- | -------- | --------- | --------- | -------------------------------------------------------------------------------- |
-| `crawl_id` | `uuid`              | no       |            |          |           |           |                                                                                  |
-| `rel`      | `text`              | no       |            |          |           |           | Top-level link relation or element name from the HTML parser.                    |
-| `shape`    | `crawl_link_shapes` | no       |            |          |           |           | How this relation's values reconstruct: string, string list, or typed map.       |
-| `subtype`  | `text`              | no       | `''::text` |          |           |           | Second-level map key such as an alternate MIME type; empty for top-level values. |
-| `ordinal`  | `integer`           | no       |            |          |           |           | Zero-based order of this href within its relation or subtype.                    |
-| `href`     | `text`              | no       |            |          |           |           | Link target as parsed from the page.                                             |
+| Column       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                              |
+| ------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------ |
+| `crawl_id`   | `uuid`                     | no       |                     |          |           |           | Crawl that owns this link. Rows follow that crawl partition and are removed with it. |
+| `rel`        | `text`                     | no       |                     |          |           |           | Top-level link relation or element name from the HTML parser.                        |
+| `shape`      | `crawl_link_shapes`        | no       |                     |          |           |           | How this relation's values reconstruct: string, string list, or typed map.           |
+| `subtype`    | `text`                     | no       | `''::text`          |          |           |           | Second-level map key such as an alternate MIME type; empty for top-level values.     |
+| `ordinal`    | `integer`                  | no       |                     |          |           |           | Zero-based order of this href within its relation or subtype.                        |
+| `href`       | `text`                     | no       |                     |          |           |           | Link target as parsed from the page.                                                 |
+| `updated_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                      |
 
 **Primary key:** `PRIMARY KEY (crawl_id, rel, subtype, ordinal)`
 
@@ -38,3 +39,4 @@ _none_
 **Triggers:**
 
 - `trigger_crawl_links_same_shape`: `CREATE TRIGGER trigger_crawl_links_same_shape BEFORE INSERT OR UPDATE ON public.crawl_links FOR EACH ROW EXECUTE FUNCTION fn_crawl_links_same_shape()`
+- `trigger_crawl_links_updated_at`: `CREATE TRIGGER trigger_crawl_links_updated_at BEFORE UPDATE ON public.crawl_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

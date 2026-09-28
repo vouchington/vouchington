@@ -6,11 +6,12 @@ Normalized recipient addresses owned by one SES bounce, complaint, or delivery e
 
 Not partitioned — growth: unbounded.
 
-| Column                | Type      | Nullable | Default | Identity | Generated | Collation | Comment                                                                                   |
-| --------------------- | --------- | -------- | ------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------- |
-| `ses_bounce_event_id` | `uuid`    | no       |         |          |           |           |                                                                                           |
-| `ordinal`             | `integer` | no       |         |          |           |           | Zero-based position after trim and lowercase normalization, before dedup-key sorting.     |
-| `email`               | `text`    | no       |         |          |           |           | Lowercased trimmed recipient address. Repeated addresses in one event stay separate rows. |
+| Column                | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                   |
+| --------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------- |
+| `ses_bounce_event_id` | `uuid`                     | no       |                     |          |           |           | SES notification that owns this recipient address.                                        |
+| `ordinal`             | `integer`                  | no       |                     |          |           |           | Zero-based position after trim and lowercase normalization, before dedup-key sorting.     |
+| `email`               | `text`                     | no       |                     |          |           |           | Lowercased trimmed recipient address. Repeated addresses in one event stay separate rows. |
+| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                           |
 
 **Primary key:** `PRIMARY KEY (ses_bounce_event_id, ordinal)`
 
@@ -32,4 +33,5 @@ _none_
 - `ses_bounce_event_recipients_pkey`: `CREATE UNIQUE INDEX ses_bounce_event_recipients_pkey ON public.ses_bounce_event_recipients USING btree (ses_bounce_event_id, ordinal)`
 
 **Triggers:**
-_none_
+
+- `trigger_ses_bounce_event_recipients_updated_at`: `CREATE TRIGGER trigger_ses_bounce_event_recipients_updated_at BEFORE UPDATE ON public.ses_bounce_event_recipients FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

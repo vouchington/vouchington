@@ -6,12 +6,13 @@ Ordered category strings for one feed-owned snapshot. No rows means an explicit 
 
 Not partitioned — growth: bounded.
 
-| Column             | Type      | Nullable | Default | Identity | Generated | Collation | Comment                                                    |
-| ------------------ | --------- | -------- | ------- | -------- | --------- | --------- | ---------------------------------------------------------- |
-| `rss_feed_id`      | `uuid`    | no       |         |          |           |           |                                                            |
-| `rss_feed_item_id` | `uuid`    | no       |         |          |           |           |                                                            |
-| `ordinal`          | `integer` | no       |         |          |           |           | Zero-based position of this category in the feed snapshot. |
-| `category_text`    | `text`    | no       |         |          |           |           | Normalized category text supplied by this feed.            |
+| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                      |
+| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------ |
+| `rss_feed_id`      | `uuid`                     | no       |                     |          |           |           | RSS feed that supplied this category in its source snapshot. |
+| `rss_feed_item_id` | `uuid`                     | no       |                     |          |           |           | Shared RSS feed item described by this source category.      |
+| `ordinal`          | `integer`                  | no       |                     |          |           |           | Zero-based position of this category in the feed snapshot.   |
+| `category_text`    | `text`                     | no       |                     |          |           |           | Normalized category text supplied by this feed.              |
+| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                              |
 
 **Primary key:** `PRIMARY KEY (rss_feed_id, rss_feed_item_id, ordinal)`
 
@@ -32,4 +33,5 @@ _none_
 - `rss_feed_item_source_category_snapshot_categories_pkey`: `CREATE UNIQUE INDEX rss_feed_item_source_category_snapshot_categories_pkey ON public.rss_feed_item_source_category_snapshot_categories USING btree (rss_feed_id, rss_feed_item_id, ordinal)`
 
 **Triggers:**
-_none_
+
+- `trigger_rss_source_category_rows_updated_at`: `CREATE TRIGGER trigger_rss_source_category_rows_updated_at BEFORE UPDATE ON public.rss_feed_item_source_category_snapshot_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

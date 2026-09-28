@@ -1667,7 +1667,7 @@
       "columns": {
         "admin_import_row_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Admin import row that owns this RSS feed input.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1687,9 +1687,20 @@
           "ordinalPosition": 3,
           "type": "boolean"
         },
-        "url": {
+        "updated_at": {
           "collation": null,
           "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "url": {
+          "collation": null,
+          "comment": "RSS feed URL to import.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1742,7 +1753,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_admin_import_rss_feed_rows_match_batch": "CREATE TRIGGER trigger_admin_import_rss_feed_rows_match_batch BEFORE INSERT OR UPDATE ON public.admin_import_rss_feed_rows FOR EACH ROW EXECUTE FUNCTION fn_admin_import_rss_feed_row_matches_batch()"
+        "trigger_admin_import_rss_feed_rows_match_batch": "CREATE TRIGGER trigger_admin_import_rss_feed_rows_match_batch BEFORE INSERT OR UPDATE ON public.admin_import_rss_feed_rows FOR EACH ROW EXECUTE FUNCTION fn_admin_import_rss_feed_row_matches_batch()",
+        "trigger_admin_import_rss_feed_rows_updated_at": "CREATE TRIGGER trigger_admin_import_rss_feed_rows_updated_at BEFORE UPDATE ON public.admin_import_rss_feed_rows FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },
@@ -1753,7 +1765,7 @@
       "columns": {
         "admin_import_row_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Admin import row that owns this topic input.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1764,7 +1776,7 @@
         },
         "aliases": {
           "collation": null,
-          "comment": null,
+          "comment": "Pipe-separated topic aliases from the import input.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1775,7 +1787,7 @@
         },
         "extensions": {
           "collation": null,
-          "comment": null,
+          "comment": "Pipe-separated topic extensions from the import input.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1786,7 +1798,7 @@
         },
         "feed_type": {
           "collation": null,
-          "comment": null,
+          "comment": "Optional RSS feed type stored with an rss_feed topic input.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1797,7 +1809,7 @@
         },
         "markdown": {
           "collation": null,
-          "comment": null,
+          "comment": "Optional topic markdown from the import input.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1808,7 +1820,7 @@
         },
         "name": {
           "collation": null,
-          "comment": null,
+          "comment": "Optional topic display name from the import input.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1819,7 +1831,7 @@
         },
         "notes": {
           "collation": null,
-          "comment": null,
+          "comment": "Optional operator note stored with the topic import input.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1830,7 +1842,7 @@
         },
         "parent_slugs": {
           "collation": null,
-          "comment": null,
+          "comment": "Pipe-separated parent topic slugs from the import input.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1841,7 +1853,7 @@
         },
         "referral_company_slug": {
           "collation": null,
-          "comment": null,
+          "comment": "Referral program company topic slug from the import input.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1852,7 +1864,7 @@
         },
         "referral_example_url": {
           "collation": null,
-          "comment": null,
+          "comment": "Referral program example URL from the import input.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1863,7 +1875,7 @@
         },
         "referral_hostname": {
           "collation": null,
-          "comment": null,
+          "comment": "Referral program hostname from the import input.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1874,7 +1886,7 @@
         },
         "referral_pathname": {
           "collation": null,
-          "comment": null,
+          "comment": "Referral program pathname from the import input.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1885,7 +1897,7 @@
         },
         "referral_user_help_text": {
           "collation": null,
-          "comment": null,
+          "comment": "Referral program help text from the import input.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1896,7 +1908,7 @@
         },
         "referral_validation_slug": {
           "collation": null,
-          "comment": null,
+          "comment": "Referral program validation slug for topic_type=referral_program.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1907,7 +1919,7 @@
         },
         "rss_feed_title": {
           "collation": null,
-          "comment": null,
+          "comment": "Optional RSS feed title attached to an rss_feed topic.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1918,7 +1930,7 @@
         },
         "rss_feed_url": {
           "collation": null,
-          "comment": null,
+          "comment": "Optional RSS feed URL attached to an rss_feed topic.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1929,7 +1941,7 @@
         },
         "slug": {
           "collation": null,
-          "comment": null,
+          "comment": "Topic slug to create or update.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1940,7 +1952,7 @@
         },
         "topic_type": {
           "collation": null,
-          "comment": null,
+          "comment": "Optional topic type from the import input.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -1948,6 +1960,17 @@
           "nullable": true,
           "ordinalPosition": 4,
           "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 19,
+          "type": "timestamp with time zone"
         }
       },
       "comment": "Typed topic-import input for one admin import row.",
@@ -1993,7 +2016,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_admin_import_topic_rows_match_batch": "CREATE TRIGGER trigger_admin_import_topic_rows_match_batch BEFORE INSERT OR UPDATE ON public.admin_import_topic_rows FOR EACH ROW EXECUTE FUNCTION fn_admin_import_topic_row_matches_batch()"
+        "trigger_admin_import_topic_rows_match_batch": "CREATE TRIGGER trigger_admin_import_topic_rows_match_batch BEFORE INSERT OR UPDATE ON public.admin_import_topic_rows FOR EACH ROW EXECUTE FUNCTION fn_admin_import_topic_row_matches_batch()",
+        "trigger_admin_import_topic_rows_updated_at": "CREATE TRIGGER trigger_admin_import_topic_rows_updated_at BEFORE UPDATE ON public.admin_import_topic_rows FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },
@@ -8190,7 +8214,7 @@
       "columns": {
         "boilerplate_removal_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Boilerplate removal whose ordered result list owns this value.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -8220,6 +8244,17 @@
           "nullable": false,
           "ordinalPosition": 3,
           "type": "integer"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
         },
         "value": {
           "collation": null,
@@ -8289,7 +8324,9 @@
         "definition": "PRIMARY KEY (boilerplate_removal_id, kind, ordinal)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_boilerplate_removal_results_updated_at": "CREATE TRIGGER trigger_boilerplate_removal_results_updated_at BEFORE UPDATE ON public.boilerplate_removal_results FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
       "uniqueConstraints": {}
     },
     "boilerplate_removal_urls": {
@@ -29443,7 +29480,7 @@
       "columns": {
         "crawl_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Crawl that owns this link. Rows follow that crawl partition and are removed with it.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -29506,6 +29543,17 @@
           "nullable": false,
           "ordinalPosition": 4,
           "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
         }
       },
       "comment": "Ordered link facts parsed from a crawl. An empty link graph is a crawl with zero rows.",
@@ -29581,7 +29629,8 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
-        "trigger_crawl_links_same_shape": "CREATE TRIGGER trigger_crawl_links_same_shape BEFORE INSERT OR UPDATE ON public.crawl_links FOR EACH ROW EXECUTE FUNCTION fn_crawl_links_same_shape()"
+        "trigger_crawl_links_same_shape": "CREATE TRIGGER trigger_crawl_links_same_shape BEFORE INSERT OR UPDATE ON public.crawl_links FOR EACH ROW EXECUTE FUNCTION fn_crawl_links_same_shape()",
+        "trigger_crawl_links_updated_at": "CREATE TRIGGER trigger_crawl_links_updated_at BEFORE UPDATE ON public.crawl_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },
@@ -29957,7 +30006,7 @@
         },
         "embed_author_name": {
           "collation": null,
-          "comment": null,
+          "comment": "Embed author name. NULL when embed_has_author is false.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -29968,7 +30017,7 @@
         },
         "embed_author_url": {
           "collation": null,
-          "comment": null,
+          "comment": "Embed author URL. NULL when embed_has_author is false.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -29979,7 +30028,7 @@
         },
         "embed_description": {
           "collation": null,
-          "comment": null,
+          "comment": "Normalized embed description. NULL when the source omitted it.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -29990,7 +30039,7 @@
         },
         "embed_has_author": {
           "collation": null,
-          "comment": null,
+          "comment": "Whether the embed source supplied an author object.",
           "defaultExpression": "false",
           "generated": null,
           "generatedExpression": null,
@@ -30001,7 +30050,7 @@
         },
         "embed_has_player": {
           "collation": null,
-          "comment": null,
+          "comment": "Whether the embed source supplied a player.",
           "defaultExpression": "false",
           "generated": null,
           "generatedExpression": null,
@@ -30012,7 +30061,7 @@
         },
         "embed_has_provider": {
           "collation": null,
-          "comment": null,
+          "comment": "Whether the embed source supplied a provider object.",
           "defaultExpression": "false",
           "generated": null,
           "generatedExpression": null,
@@ -30023,7 +30072,7 @@
         },
         "embed_has_thumbnail": {
           "collation": null,
-          "comment": null,
+          "comment": "Whether the embed source supplied a thumbnail.",
           "defaultExpression": "false",
           "generated": null,
           "generatedExpression": null,
@@ -30067,7 +30116,7 @@
         },
         "embed_player_height": {
           "collation": null,
-          "comment": null,
+          "comment": "Player height in pixels. NULL when the source omitted it.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30078,7 +30127,7 @@
         },
         "embed_player_url": {
           "collation": null,
-          "comment": null,
+          "comment": "Player URL. Required when embed_has_player is true.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30089,7 +30138,7 @@
         },
         "embed_player_width": {
           "collation": null,
-          "comment": null,
+          "comment": "Player width in pixels. NULL when the source omitted it.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30100,7 +30149,7 @@
         },
         "embed_provider_key": {
           "collation": null,
-          "comment": null,
+          "comment": "Stable provider key. NULL when embed_has_provider is false.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30111,7 +30160,7 @@
         },
         "embed_provider_name": {
           "collation": null,
-          "comment": null,
+          "comment": "Provider display name. NULL when embed_has_provider is false.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30122,7 +30171,7 @@
         },
         "embed_provider_resource_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Provider resource id. NULL when embed_has_provider is false.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30133,7 +30182,7 @@
         },
         "embed_provider_url": {
           "collation": null,
-          "comment": null,
+          "comment": "Provider URL. NULL when embed_has_provider is false.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30144,7 +30193,7 @@
         },
         "embed_requested_url": {
           "collation": null,
-          "comment": null,
+          "comment": "URL originally requested for unfurl or oEmbed metadata.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30155,7 +30204,7 @@
         },
         "embed_resolved_url": {
           "collation": null,
-          "comment": null,
+          "comment": "Final URL after unfurl or oEmbed resolution.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30166,7 +30215,7 @@
         },
         "embed_thumbnail_height": {
           "collation": null,
-          "comment": null,
+          "comment": "Thumbnail height in pixels. NULL when the source omitted it.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30177,7 +30226,7 @@
         },
         "embed_thumbnail_url": {
           "collation": null,
-          "comment": null,
+          "comment": "Thumbnail URL. Required when embed_has_thumbnail is true.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30188,7 +30237,7 @@
         },
         "embed_thumbnail_width": {
           "collation": null,
-          "comment": null,
+          "comment": "Thumbnail width in pixels. NULL when the source omitted it.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30199,7 +30248,7 @@
         },
         "embed_title": {
           "collation": null,
-          "comment": null,
+          "comment": "Normalized embed title. NULL when the source omitted it.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30386,7 +30435,7 @@
         },
         "og_audio": {
           "collation": null,
-          "comment": null,
+          "comment": "Case-insensitive string og:audio consumed by embed reads.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30397,7 +30446,7 @@
         },
         "og_description": {
           "collation": null,
-          "comment": null,
+          "comment": "Case-insensitive string og:description consumed by embed reads.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30430,7 +30479,7 @@
         },
         "og_site_name": {
           "collation": null,
-          "comment": null,
+          "comment": "Case-insensitive string og:site_name consumed by embed reads.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30441,7 +30490,7 @@
         },
         "og_title": {
           "collation": null,
-          "comment": null,
+          "comment": "Case-insensitive string og:title consumed by embed reads.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30507,7 +30556,7 @@
         },
         "twitter_description": {
           "collation": null,
-          "comment": null,
+          "comment": "Case-insensitive string twitter:description consumed by embed reads.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30518,7 +30567,7 @@
         },
         "twitter_image": {
           "collation": null,
-          "comment": null,
+          "comment": "Case-insensitive string twitter:image consumed by embed reads.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30529,7 +30578,7 @@
         },
         "twitter_image_exact": {
           "collation": null,
-          "comment": null,
+          "comment": "Exact twitter:image text projection consumed by crawl image fallbacks.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -30540,7 +30589,7 @@
         },
         "twitter_title": {
           "collation": null,
-          "comment": null,
+          "comment": "Case-insensitive string twitter:title consumed by embed reads.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -91255,7 +91304,7 @@
         },
         "rss_feed_item_id": {
           "collation": null,
-          "comment": null,
+          "comment": "RSS feed item whose outbox snapshot owns this category.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -91263,6 +91312,17 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
         }
       },
       "comment": "Ordered category strings copied onto the reconciliation outbox. Zero rows is an explicit empty desired snapshot.",
@@ -91314,7 +91374,9 @@
         "definition": "PRIMARY KEY (rss_feed_item_id, ordinal)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_rss_recon_category_rows_updated_at": "CREATE TRIGGER trigger_rss_recon_category_rows_updated_at BEFORE UPDATE ON public.rss_feed_item_category_snapshot_reconciliation_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
       "uniqueConstraints": {}
     },
     "rss_feed_item_category_snapshot_reconciliations": {
@@ -91962,7 +92024,7 @@
         },
         "rss_feed_id": {
           "collation": null,
-          "comment": null,
+          "comment": "RSS feed that supplied this category in its source snapshot.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -91973,7 +92035,7 @@
         },
         "rss_feed_item_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Shared RSS feed item described by this source category.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -91981,6 +92043,17 @@
           "nullable": false,
           "ordinalPosition": 2,
           "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
         }
       },
       "comment": "Ordered category strings for one feed-owned snapshot. No rows means an explicit empty snapshot.",
@@ -92039,7 +92112,9 @@
         "definition": "PRIMARY KEY (rss_feed_id, rss_feed_item_id, ordinal)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_rss_source_category_rows_updated_at": "CREATE TRIGGER trigger_rss_source_category_rows_updated_at BEFORE UPDATE ON public.rss_feed_item_source_category_snapshot_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
       "uniqueConstraints": {}
     },
     "rss_feed_item_source_category_snapshots": {
@@ -94159,7 +94234,7 @@
         },
         "ses_bounce_event_id": {
           "collation": null,
-          "comment": null,
+          "comment": "SES notification that owns this recipient address.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -94167,6 +94242,17 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
         }
       },
       "comment": "Normalized recipient addresses owned by one SES bounce, complaint, or delivery event.",
@@ -94238,7 +94324,9 @@
         "definition": "PRIMARY KEY (ses_bounce_event_id, ordinal)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_ses_bounce_event_recipients_updated_at": "CREATE TRIGGER trigger_ses_bounce_event_recipients_updated_at BEFORE UPDATE ON public.ses_bounce_event_recipients FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
       "uniqueConstraints": {}
     },
     "ses_bounce_events": {
@@ -102599,6 +102687,17 @@
           "ordinalPosition": 4,
           "type": "text"
         },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
         "url_id": {
           "collation": null,
           "comment": "URL that owns this query parameter.",
@@ -102660,7 +102759,9 @@
         "definition": "PRIMARY KEY (url_id, ordinal)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_url_search_params_updated_at": "CREATE TRIGGER trigger_url_search_params_updated_at BEFORE UPDATE ON public.url_search_params FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
       "uniqueConstraints": {}
     },
     "urls": {

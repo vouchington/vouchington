@@ -6,26 +6,27 @@ Typed topic-import input for one admin import row.
 
 Not partitioned — growth: unbounded.
 
-| Column                     | Type   | Nullable | Default | Identity | Generated | Collation | Comment |
-| -------------------------- | ------ | -------- | ------- | -------- | --------- | --------- | ------- |
-| `admin_import_row_id`      | `uuid` | no       |         |          |           |           |         |
-| `slug`                     | `text` | no       |         |          |           |           |         |
-| `name`                     | `text` | yes      |         |          |           |           |         |
-| `topic_type`               | `text` | yes      |         |          |           |           |         |
-| `markdown`                 | `text` | yes      |         |          |           |           |         |
-| `rss_feed_url`             | `text` | yes      |         |          |           |           |         |
-| `rss_feed_title`           | `text` | yes      |         |          |           |           |         |
-| `feed_type`                | `text` | yes      |         |          |           |           |         |
-| `aliases`                  | `text` | yes      |         |          |           |           |         |
-| `parent_slugs`             | `text` | yes      |         |          |           |           |         |
-| `extensions`               | `text` | yes      |         |          |           |           |         |
-| `notes`                    | `text` | yes      |         |          |           |           |         |
-| `referral_validation_slug` | `text` | yes      |         |          |           |           |         |
-| `referral_user_help_text`  | `text` | yes      |         |          |           |           |         |
-| `referral_hostname`        | `text` | yes      |         |          |           |           |         |
-| `referral_pathname`        | `text` | yes      |         |          |           |           |         |
-| `referral_example_url`     | `text` | yes      |         |          |           |           |         |
-| `referral_company_slug`    | `text` | yes      |         |          |           |           |         |
+| Column                     | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                           |
+| -------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------- |
+| `admin_import_row_id`      | `uuid`                     | no       |                     |          |           |           | Admin import row that owns this topic input.                      |
+| `slug`                     | `text`                     | no       |                     |          |           |           | Topic slug to create or update.                                   |
+| `name`                     | `text`                     | yes      |                     |          |           |           | Optional topic display name from the import input.                |
+| `topic_type`               | `text`                     | yes      |                     |          |           |           | Optional topic type from the import input.                        |
+| `markdown`                 | `text`                     | yes      |                     |          |           |           | Optional topic markdown from the import input.                    |
+| `rss_feed_url`             | `text`                     | yes      |                     |          |           |           | Optional RSS feed URL attached to an rss_feed topic.              |
+| `rss_feed_title`           | `text`                     | yes      |                     |          |           |           | Optional RSS feed title attached to an rss_feed topic.            |
+| `feed_type`                | `text`                     | yes      |                     |          |           |           | Optional RSS feed type stored with an rss_feed topic input.       |
+| `aliases`                  | `text`                     | yes      |                     |          |           |           | Pipe-separated topic aliases from the import input.               |
+| `parent_slugs`             | `text`                     | yes      |                     |          |           |           | Pipe-separated parent topic slugs from the import input.          |
+| `extensions`               | `text`                     | yes      |                     |          |           |           | Pipe-separated topic extensions from the import input.            |
+| `notes`                    | `text`                     | yes      |                     |          |           |           | Optional operator note stored with the topic import input.        |
+| `referral_validation_slug` | `text`                     | yes      |                     |          |           |           | Referral program validation slug for topic_type=referral_program. |
+| `referral_user_help_text`  | `text`                     | yes      |                     |          |           |           | Referral program help text from the import input.                 |
+| `referral_hostname`        | `text`                     | yes      |                     |          |           |           | Referral program hostname from the import input.                  |
+| `referral_pathname`        | `text`                     | yes      |                     |          |           |           | Referral program pathname from the import input.                  |
+| `referral_example_url`     | `text`                     | yes      |                     |          |           |           | Referral program example URL from the import input.               |
+| `referral_company_slug`    | `text`                     | yes      |                     |          |           |           | Referral program company topic slug from the import input.        |
+| `updated_at`               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                   |
 
 **Primary key:** `PRIMARY KEY (admin_import_row_id)`
 
@@ -47,3 +48,4 @@ _none_
 **Triggers:**
 
 - `trigger_admin_import_topic_rows_match_batch`: `CREATE TRIGGER trigger_admin_import_topic_rows_match_batch BEFORE INSERT OR UPDATE ON public.admin_import_topic_rows FOR EACH ROW EXECUTE FUNCTION fn_admin_import_topic_row_matches_batch()`
+- `trigger_admin_import_topic_rows_updated_at`: `CREATE TRIGGER trigger_admin_import_topic_rows_updated_at BEFORE UPDATE ON public.admin_import_topic_rows FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -6,12 +6,13 @@ Ordered query-string pairs for a canonical URL, including repeated keys.
 
 Not partitioned — growth: unbounded.
 
-| Column        | Type      | Nullable | Default | Identity | Generated | Collation | Comment                                                         |
-| ------------- | --------- | -------- | ------- | -------- | --------- | --------- | --------------------------------------------------------------- |
-| `url_id`      | `uuid`    | no       |         |          |           |           | URL that owns this query parameter.                             |
-| `ordinal`     | `integer` | no       |         |          |           |           | Zero-based position of this pair in the canonical query string. |
-| `param_name`  | `text`    | no       |         |          |           |           | Query parameter name as parsed, not a separate entity.          |
-| `param_value` | `text`    | no       |         |          |           |           | Query parameter value as parsed.                                |
+| Column        | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                         |
+| ------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------- |
+| `url_id`      | `uuid`                     | no       |                     |          |           |           | URL that owns this query parameter.                             |
+| `ordinal`     | `integer`                  | no       |                     |          |           |           | Zero-based position of this pair in the canonical query string. |
+| `param_name`  | `text`                     | no       |                     |          |           |           | Query parameter name as parsed, not a separate entity.          |
+| `param_value` | `text`                     | no       |                     |          |           |           | Query parameter value as parsed.                                |
+| `updated_at`  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                 |
 
 **Primary key:** `PRIMARY KEY (url_id, ordinal)`
 
@@ -33,4 +34,5 @@ _none_
 - `url_search_params_pkey`: `CREATE UNIQUE INDEX url_search_params_pkey ON public.url_search_params USING btree (url_id, ordinal)`
 
 **Triggers:**
-_none_
+
+- `trigger_url_search_params_updated_at`: `CREATE TRIGGER trigger_url_search_params_updated_at BEFORE UPDATE ON public.url_search_params FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
