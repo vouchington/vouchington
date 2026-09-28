@@ -27,6 +27,14 @@ const defaults = {
   removeOnFail: BEDROCK_EMBEDDINGS_BATCH_DEFAULTS.removeOnFail,
 } satisfies Partial<JobOptions>
 
+export {
+  reconciliationJobOptions,
+  enqueueReconcileExistingEmbeddings,
+  enqueuePostEmbeddingTriggerRecovery,
+  enqueueRssStoryTriggerRecovery,
+  enqueueAllEmbeddingReconciliationRoots,
+} from './enqueues/reconciliation.mts'
+
 function createCreationBatchEnqueue(jobName: CreationJobName, deduplicationId: string) {
   const enqueue = createEnqueueFunction<Record<string, never>, CreationJobName>({
     queue: bedrock_embeddings_batch,

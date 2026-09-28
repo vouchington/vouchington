@@ -37,10 +37,10 @@ END $$;`),
       // A DO UPDATE whose self-reference is shielded by COALESCE/GREATEST re-applies
       // to the same steady state on every boot, so it is convergent.
       findFirstUnguardedInsertViolation(
-        'INSERT INTO crawls (id, activated_at, score) VALUES (1, now(), 1) ' +
+        'INSERT INTO currencies (id, activated_at, score) VALUES (1, now(), 1) ' +
           'ON CONFLICT (id) DO UPDATE SET ' +
-          'activated_at = COALESCE(crawls.activated_at, CURRENT_TIMESTAMP), ' +
-          'score = GREATEST(crawls.score, EXCLUDED.score);',
+          'activated_at = COALESCE(currencies.activated_at, CURRENT_TIMESTAMP), ' +
+          'score = GREATEST(currencies.score, EXCLUDED.score);',
       ),
     ).toBeNull()
     expect(
@@ -59,7 +59,7 @@ END $$;`),
       // A subscript index that is a plain literal has no self-reference, so the same
       // subscripted-assignment shape is convergent once the index no longer reads the row.
       findFirstUnguardedInsertViolation(
-        'INSERT INTO crawls (id, values) VALUES (1, ARRAY[1, 0]) ON CONFLICT (id) ' +
+        'INSERT INTO currencies (id, values) VALUES (1, ARRAY[1, 0]) ON CONFLICT (id) ' +
           'DO UPDATE SET values[1] = 2;',
       ),
     ).toBeNull()

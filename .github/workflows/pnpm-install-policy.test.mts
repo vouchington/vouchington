@@ -63,6 +63,7 @@ const scriptFreeInstallCallers = new Set([
   '.github/workflows/fix-main.yml#related-candidates',
   '.github/workflows/fix-main.yml#render-prompt',
   '.github/workflows/fix-main.yml#triage-and-rerun',
+  '.github/workflows/plan-completion.yml#audit',
 ])
 
 function callerId(call: SetupCall) {

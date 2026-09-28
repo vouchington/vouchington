@@ -12,9 +12,9 @@ on:
     types: [completed]
 
 concurrency:
-  # The latest CI completion for a Dependabot branch is authoritative. GitHub coalesces pending
-  # events for the branch; exact-head revalidation suppresses any older run that already started.
-  group: fix-dependabot-${{ github.event.workflow_run.head_branch }}
+  # Retain the active run and coalesce pending completions only from the same source workflow
+  # on this Dependabot branch. Source and PR-head revalidation suppress stale runs that start.
+  group: fix-dependabot-${{ github.event.workflow_run.head_branch }}-${{ github.event.workflow_run.workflow_id }}
   cancel-in-progress: false
 
 permissions:

@@ -6,6 +6,7 @@ export const BEDROCK_EMBEDDINGS_BATCH_ORDERING = {
   creation: { key: 'creation', concurrency: 1 },
   polling: { key: 'polling', concurrency: 10, rateLimit: { max: 10, duration: 1000 } },
   dispatcher: { key: 'dispatcher', concurrency: 1 },
+  reconciliation: { key: 'reconciliation', concurrency: 1 },
 } as const
 
 export const BEDROCK_EMBEDDINGS_BATCH_DEFAULTS = {

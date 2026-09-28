@@ -2435,7 +2435,49 @@
       "ConversationMessage": {
         "additionalProperties": false,
         "properties": {
-          "content": {},
+          "content": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "const": "user"
+                  }
+                },
+                "required": ["content", "role"],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "content": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "error": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "const": "assistant"
+                  }
+                },
+                "required": ["content", "role"],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "conversation_id": {
             "type": "string"
           },
@@ -6853,7 +6895,7 @@
           "metadata": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/ImportBatchMetadata"
               },
               {
                 "type": "null"
@@ -6879,6 +6921,18 @@
           "total_rows",
           "updated_at"
         ],
+        "type": "object"
+      },
+      "ImportBatchMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
         "type": "object"
       },
       "ImportRow": {

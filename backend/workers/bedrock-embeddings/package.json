@@ -24,6 +24,7 @@
     "@services/communities": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
+    "@services/stories": "workspace:^",
     "@services/topics": "workspace:^",
     "glide-mq": "^0.15.5"
   },

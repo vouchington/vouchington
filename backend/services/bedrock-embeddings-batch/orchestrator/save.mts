@@ -12,11 +12,9 @@ import {
 import { addEmbeddingHashesToBloomFilter } from '@services/bedrock-embeddings/bloom-filter/bloom-filter'
 import { from as copyFrom } from 'pg-copy-streams'
 import type { BatchUpdateItem } from '@services/bedrock-embeddings/batch/types'
-import { lockExistsClause } from '@services/bedrock-embeddings/batch/lock-targets'
 import { csvEscape } from './csv.mts'
 
 type EmbeddingTable = (typeof EMBEDDING_TABLES)[number]
-
 export async function applyBatchUpdates(
   tableName: EmbeddingTable,
   items: BatchUpdateItem[],
@@ -97,84 +95,5 @@ async function* generateEntityCsvRows(items: BatchUpdateItem[]): AsyncGenerator<
   for (const item of items) {
     const tokenCount = item.input_token_count ?? ''
     yield `${csvEscape(item.entity_id)},\\x${item.content_sha256.toString('hex')},"[${item.embedding.join(',')}]",${tokenCount}\n`
-  }
-}
-
-export async function copyExistingEmbeddings(
-  tableName: EmbeddingTable,
-  filters?: { excludeDeleted?: boolean },
-): Promise<string[]> {
-  if (!EMBEDDING_TABLES.includes(tableName)) {
-    throw new Error(`Invalid table name: ${tableName}`)
-  }
-
-  const clauses: string[] = []
-  if (filters?.excludeDeleted) clauses.push(`${tableName}.deleted_at IS NULL`)
-  const lockClause = copyExistingLockClause(tableName)
-  const filterSQL = clauses.length > 0 ? `AND ${clauses.join(' AND ')}` : ''
-
-  let updatedIds: string[] = []
-  await using query = await beginTransaction()
-
-  const { rows: lockedRows } = await query<{ id: string }>(
-    `/* copyExistingEmbeddings lockRows */
-      SELECT ${tableName}.id
-      FROM ${tableName}
-      JOIN ${EMBEDDINGS_TABLE} existing
-        ON ${tableName}.${EMBEDDING_COLUMNS.content_sha256} = existing.content_sha256
-      WHERE (
-        ${tableName}.${EMBEDDING_COLUMNS.input_sha256} IS NULL
-        OR ${tableName}.${EMBEDDING_COLUMNS.input_sha256} != ${tableName}.${EMBEDDING_COLUMNS.content_sha256}
-      )
-      ${lockClause}
-      ${filterSQL}
-      ORDER BY ${tableName}.id
-      /* deadlock-safe: SKIP LOCKED plus ORDER BY id */
-      FOR UPDATE OF ${tableName} SKIP LOCKED`,
-    [],
-  )
-  const lockedIds = lockedRows.map(row => row.id)
-  if (lockedIds.length === 0) {
-    await query.commit()
-    return updatedIds
-  }
-
-  const { rows } = await write<{ id: string }>(
-    `/* copyExistingEmbeddings */
-      UPDATE ${tableName}
-      SET ${EMBEDDING_COLUMNS.input_sha256} = existing.content_sha256,
-        ${EMBEDDING_COLUMNS.embedding} = existing.embedding,
-        ${EMBEDDING_COLUMNS.created_at} = NOW(),
-        ${EMBEDDING_COLUMNS.input_token_count} = existing.input_token_count
-      FROM ${EMBEDDINGS_TABLE} existing
-      WHERE ${tableName}.${EMBEDDING_COLUMNS.content_sha256} = existing.content_sha256
-        AND ${tableName}.id = ANY($1::uuid[])
-        AND (
-          ${tableName}.${EMBEDDING_COLUMNS.input_sha256} IS NULL
-          OR ${tableName}.${EMBEDDING_COLUMNS.input_sha256} != ${tableName}.${EMBEDDING_COLUMNS.content_sha256}
-        )
-        ${lockClause}
-        ${filterSQL}
-      RETURNING ${tableName}.id
-    `,
-    [lockedIds],
-    { query },
-  )
-  updatedIds = rows.map((r: { id: string }) => r.id)
-
-  await query.commit()
-  return updatedIds
-}
-
-export function copyExistingLockClause(tableName: EmbeddingTable): string {
-  switch (tableName) {
-    case 'topics':
-      return `AND NOT ${lockExistsClause('topics', 'topics.id')}`
-    case 'posts':
-      return `AND NOT ${lockExistsClause('posts', 'posts.id')}`
-    case 'rss_feed_items':
-      return `AND NOT ${lockExistsClause('rss_feed_items', 'rss_feed_items.id')}`
-    case 'crawl_chunks':
-      return `AND NOT ${lockExistsClause('crawl_chunks', '(crawl_chunks.crawl_id, crawl_chunks.order_index)')}`
   }
 }

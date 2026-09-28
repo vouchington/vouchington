@@ -1,3 +1,4 @@
+import { compileVouchaScopeCatalog } from './scope-graph.mts'
 import { userResourceDefinitions } from './user-resource-definitions.mts'
 
 export type ScopeAudience = 'admin' | 'api' | 'user'
@@ -129,17 +130,7 @@ export function parseApiScope(value: string): ApiScope | null {
 }
 
 export function hasScope(scopes: readonly ApiScope[], requiredScope: ApiScope): boolean {
-  if (scopes.includes(requiredScope)) return true
-
-  const required = SCOPE_DEFINITIONS[requiredScope]
-  if (required.requiresExactGrant) return false
-  if (required.audience === 'user') {
-    return scopes.includes(`mcp.user:${required.action}` as ApiScope)
-  }
-  if (required.audience === 'admin') {
-    return scopes.includes(`mcp.admin:${required.action}` as ApiScope)
-  }
-  return false
+  return compileVouchaScopeCatalog(SCOPE_DEFINITIONS).hasScope(scopes, requiredScope)
 }
 
 export function validateScopeSet(
@@ -149,33 +140,22 @@ export function validateScopeSet(
     allowMixedAudiences: boolean
   },
 ): ScopeSetValidationResult {
-  if (input.length === 0) return { valid: false, code: 'empty-scope-set' }
-
-  const scopeSet = new Set<string>()
-  for (const value of input) {
-    if (!isApiScope(value)) return { valid: false, code: 'unknown-scope', scope: value }
-    if (scopeSet.has(value)) return { valid: false, code: 'duplicate-scope', scope: value }
-    if (!SCOPE_DEFINITIONS[value].surfaces.includes(options.surface)) {
-      return { valid: false, code: 'unsupported-surface', scope: value }
-    }
-    scopeSet.add(value)
-  }
-
-  const scopes = [...scopeSet].sort() as ApiScope[]
-  for (const scope of scopes) {
-    const definition = SCOPE_DEFINITIONS[scope]
-    const requiredScope = 'requires' in definition ? (definition.requires as ApiScope) : undefined
-    if (requiredScope && !scopeSet.has(requiredScope)) {
-      return { valid: false, code: 'missing-prerequisite', scope, requiredScope }
+  const result = compileVouchaScopeCatalog(SCOPE_DEFINITIONS).validateScopeSet(input, options)
+  if (!result.valid) {
+    const requiredScope =
+      result.requiredScope !== undefined && isApiScope(result.requiredScope)
+        ? result.requiredScope
+        : undefined
+    return {
+      valid: false,
+      code: result.code,
+      ...(result.scope === undefined ? {} : { scope: result.scope }),
+      ...(requiredScope === undefined ? {} : { requiredScope }),
     }
   }
-
-  const audiences = [
-    ...new Set(scopes.map(scope => SCOPE_DEFINITIONS[scope].audience)),
-  ].sort() as ScopeAudience[]
-  if (!options.allowMixedAudiences && audiences.length > 1) {
-    return { valid: false, code: 'mixed-audiences' }
+  return {
+    valid: true,
+    scopes: result.scopes as ApiScope[],
+    audiences: result.audiences as ScopeAudience[],
   }
-
-  return { valid: true, scopes, audiences }
 }

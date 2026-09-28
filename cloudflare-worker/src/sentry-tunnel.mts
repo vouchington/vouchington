@@ -5,9 +5,10 @@
 // References:
 //   https://docs.sentry.io/platforms/javascript/troubleshooting/#using-the-tunnel-option
 
-import { edgeErrorResponse, withFailureNoStoreHeaders } from './error-response.mts'
 import { getSentryDsnConfig, type SentryDsnConfig } from '@ts-shared/utils/sentry-deployment-gate'
-import { getSentryEnvelopeDiagnostics } from './sentry-envelope-diagnostics.mts'
+
+import { edgeErrorResponse, withFailureNoStoreHeaders } from './error-response.mts'
+import { readSentryEnvelopeDiagnostics } from './sentry-envelope-policy.mts'
 import {
   logSentryTunnelForwardFailure,
   logSentryTunnelRejection,
@@ -172,7 +173,12 @@ export async function handleSentryTunnel(request: Request, env: Env): Promise<Re
       headers: { 'content-type': 'application/x-sentry-envelope' },
     })
   } catch (error) {
-    logSentryTunnelForwardFailure(request, projectId, error, getSentryEnvelopeDiagnostics(envelope))
+    logSentryTunnelForwardFailure(
+      request,
+      projectId,
+      error,
+      readSentryEnvelopeDiagnostics(envelope, MAX_ENVELOPE_BYTES),
+    )
     return edgeErrorResponse(502, 'Bad Gateway', 'BAD_GATEWAY')
   }
   if (sentryRes.status < 200 || sentryRes.status >= 300) {
@@ -180,7 +186,7 @@ export async function handleSentryTunnel(request: Request, env: Env): Promise<Re
       request,
       projectId,
       sentryRes.status,
-      getSentryEnvelopeDiagnostics(envelope),
+      readSentryEnvelopeDiagnostics(envelope, MAX_ENVELOPE_BYTES),
     )
   }
   return withFailureNoStoreHeaders(new Response(null, { status: sentryRes.status }))

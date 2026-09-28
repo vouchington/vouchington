@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS follower_distributions (
   audience follower_distribution_audiences NOT NULL,
   post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
   rss_feed_item_id UUID REFERENCES rss_feed_items(id) ON DELETE CASCADE,
-  selected_recipient_user_ids UUID[],
   last_processed_recipient_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   completed_at TIMESTAMPTZ,
   failed_at TIMESTAMPTZ,
@@ -38,19 +37,6 @@ CREATE TABLE IF NOT EXISTS follower_distributions (
         action IN ('rss_feed_item_share', 'rss_feed_item_send')
         AND post_id IS NULL
         AND rss_feed_item_id IS NOT NULL
-      )
-    ),
-  CONSTRAINT chk_follower_distributions__audience_selection
-    CHECK (
-      (
-        audience = 'all_followers'
-        AND selected_recipient_user_ids IS NULL
-      )
-      OR (
-        audience = 'selected_followers'
-        AND selected_recipient_user_ids IS NOT NULL
-        AND cardinality(selected_recipient_user_ids) > 0
-        AND cardinality(selected_recipient_user_ids) <= 100
       )
     ),
   CONSTRAINT chk_follower_distributions__terminal_state
@@ -114,7 +100,6 @@ COMMENT ON COLUMN follower_distributions.action IS 'Manual follower distribution
 COMMENT ON COLUMN follower_distributions.audience IS 'Whether the distribution targets all followers or a selected subset.';
 COMMENT ON COLUMN follower_distributions.post_id IS 'Post target for post share/send distributions.';
 COMMENT ON COLUMN follower_distributions.rss_feed_item_id IS 'RSS feed item target for RSS share/send distributions.';
-COMMENT ON COLUMN follower_distributions.selected_recipient_user_ids IS 'Bounded selected follower ids for selected_followers distributions.';
 COMMENT ON COLUMN follower_distributions.last_processed_recipient_user_id IS 'Keyset cursor for chunk continuation.';
 COMMENT ON COLUMN follower_distributions.completed_at IS 'When all intended recipients have been processed.';
 COMMENT ON COLUMN follower_distributions.failed_at IS 'When processing stopped because the distribution target became invalid.';
@@ -123,3 +108,91 @@ COMMENT ON TABLE follower_distribution_deliveries IS 'Per-recipient delivery ids
 COMMENT ON COLUMN follower_distribution_deliveries.distribution_id IS 'Distribution intent this delivery belongs to.';
 COMMENT ON COLUMN follower_distribution_deliveries.recipient_user_id IS 'Follower receiving the distribution delivery.';
 COMMENT ON COLUMN follower_distribution_deliveries.delivery_id IS 'Stable id reused for the final feed share or notification row.';
+
+CREATE TABLE IF NOT EXISTS follower_distribution_selected_recipients (
+  distribution_id UUID NOT NULL,
+  recipient_user_id UUID NOT NULL,
+  PRIMARY KEY (distribution_id, recipient_user_id),
+  CONSTRAINT fk_fd_selected_recipients__distribution
+    FOREIGN KEY (distribution_id) REFERENCES follower_distributions(id) ON DELETE CASCADE,
+  CONSTRAINT fk_fd_selected_recipients__user
+    FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_fd_selected_recipients__recipient_user_id
+ON follower_distribution_selected_recipients (recipient_user_id);
+
+COMMENT ON TABLE follower_distribution_selected_recipients IS 'Distribution-owned selected recipient snapshot. Delivery identity stays on follower_distribution_deliveries.';
+COMMENT ON COLUMN follower_distribution_selected_recipients.distribution_id IS 'Selected-followers distribution that owns this recipient.';
+COMMENT ON COLUMN follower_distribution_selected_recipients.recipient_user_id IS 'User selected at acceptance. Later unfollows do not remove the row; hard deletion does.';
+
+CREATE OR REPLACE FUNCTION fn_assert_follower_distribution_recipient_bounds()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  distribution_ids UUID[] := ARRAY[]::UUID[];
+  checked_distribution_id UUID;
+  audience_value follower_distribution_audiences;
+  recipient_count INTEGER;
+BEGIN
+  IF TG_TABLE_NAME = 'follower_distributions' THEN
+    distribution_ids := ARRAY[COALESCE(NEW.id, OLD.id)];
+  ELSE
+    distribution_ids := ARRAY[COALESCE(NEW.distribution_id, OLD.distribution_id)];
+    IF TG_OP = 'UPDATE' AND OLD.distribution_id IS DISTINCT FROM NEW.distribution_id THEN
+      distribution_ids := distribution_ids || OLD.distribution_id;
+    END IF;
+  END IF;
+
+  FOREACH checked_distribution_id IN ARRAY distribution_ids LOOP
+    SELECT audience INTO audience_value
+    FROM follower_distributions
+    WHERE id = checked_distribution_id;
+    IF NOT FOUND THEN
+      CONTINUE;
+    END IF;
+
+    SELECT COUNT(*) INTO recipient_count
+    FROM follower_distribution_selected_recipients
+    WHERE follower_distribution_selected_recipients.distribution_id = checked_distribution_id;
+
+    IF audience_value = 'all_followers' AND recipient_count <> 0 THEN
+      RAISE EXCEPTION 'all_followers distributions cannot store selected recipients'
+        USING ERRCODE = '23514';
+    END IF;
+
+    IF audience_value = 'selected_followers' AND recipient_count > 100 THEN
+      RAISE EXCEPTION 'selected_followers distributions require between 1 and 100 recipients'
+        USING ERRCODE = '23514';
+    END IF;
+
+    IF audience_value = 'selected_followers'
+      AND recipient_count < 1
+      AND NOT (
+        TG_TABLE_NAME = 'follower_distribution_selected_recipients'
+        AND TG_OP = 'DELETE'
+      ) THEN
+      RAISE EXCEPTION 'selected_followers distributions require between 1 and 100 recipients'
+        USING ERRCODE = '23514';
+    END IF;
+  END LOOP;
+
+  RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION fn_assert_follower_distribution_recipient_bounds() IS
+  'Keeps selected-followers membership between 1 and 100 at acceptance and rejects selected rows on all-followers distributions. Recipient deletion may shrink the snapshot so user hard-deletion is not blocked.';
+
+CREATE CONSTRAINT TRIGGER trigger_fd_distributions_recipient_bounds
+AFTER INSERT OR UPDATE OF audience ON follower_distributions
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE FUNCTION fn_assert_follower_distribution_recipient_bounds();
+
+CREATE CONSTRAINT TRIGGER trigger_fd_selected_recipients_bounds
+AFTER INSERT OR UPDATE OR DELETE ON follower_distribution_selected_recipients
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE FUNCTION fn_assert_follower_distribution_recipient_bounds();

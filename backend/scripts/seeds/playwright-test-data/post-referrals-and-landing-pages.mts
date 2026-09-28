@@ -15,13 +15,13 @@ async function seedPlaywrightReferralsAndLandingPages(query: TransactionQuery): 
     `INSERT INTO topics__referral_programs (topic_id) SELECT id FROM topics WHERE slug = 'chase-sapphire-referral-picks' ON CONFLICT (topic_id) DO NOTHING`,
   )
   await query(
-    `INSERT INTO urls (id, url, hostname_id, pathname, search_params) VALUES ( '019c64e6-b500-7000-8000-000000000001', 'https://example.com/referral/test-friend', '019c64e6-1000-7000-b000-000000000001', '/referral/test-friend', '{}'::JSONB ) ON CONFLICT (url) DO NOTHING`,
+    `INSERT INTO urls (id, url, hostname_id, pathname) VALUES ( '019c64e6-b500-7000-8000-000000000001', 'https://example.com/referral/test-friend', '019c64e6-1000-7000-b000-000000000001', '/referral/test-friend' ) ON CONFLICT (url) DO NOTHING`,
   )
   await query(
     `INSERT INTO user_referral_program_links (id, user_id, referral_program_id, url_id, label, activated_at) SELECT '019c64e6-b500-7000-8000-000000000002', '00000000-0000-0000-0000-000000000001', id, '019c64e6-b500-7000-8000-000000000001', 'Test Friend Referral', CURRENT_TIMESTAMP FROM topics WHERE slug = 'chase-sapphire-referral' ON CONFLICT (id) DO UPDATE SET referral_program_id = EXCLUDED.referral_program_id, url_id = EXCLUDED.url_id, label = EXCLUDED.label, activated_at = EXCLUDED.activated_at`,
   )
   await query(
-    `INSERT INTO urls (id, url, hostname_id, pathname, search_params, created_by_id) VALUES ( '019c64e6-b510-7000-b000-000000000001', 'https://example.com/tests-profile', '019c64e6-1000-7000-b000-000000000001', '/tests-profile', '{}'::JSONB, '019f0000-0000-7000-8000-000000000000' ), ( '019c64e6-b510-7000-b000-000000000002', 'https://example.com/tests-referral', '019c64e6-1000-7000-b000-000000000001', '/tests-referral', '{}'::JSONB, '019f0000-0000-7000-8000-000000000000' ) ON CONFLICT (url) DO UPDATE SET created_by_id = EXCLUDED.created_by_id`,
+    `INSERT INTO urls (id, url, hostname_id, pathname, created_by_id) VALUES ( '019c64e6-b510-7000-b000-000000000001', 'https://example.com/tests-profile', '019c64e6-1000-7000-b000-000000000001', '/tests-profile', '019f0000-0000-7000-8000-000000000000' ), ( '019c64e6-b510-7000-b000-000000000002', 'https://example.com/tests-referral', '019c64e6-1000-7000-b000-000000000001', '/tests-referral', '019f0000-0000-7000-8000-000000000000' ) ON CONFLICT (url) DO UPDATE SET created_by_id = EXCLUDED.created_by_id`,
   )
   await query(
     `INSERT INTO user_profile_links (id, user_id, link_type, sort_order, url_id, name) VALUES ( '019c64e6-b520-7000-b000-000000000001', '019f0000-0000-7000-8000-000000000000', 'url', 0, '019c64e6-b510-7000-b000-000000000001', 'Test profile link' ) ON CONFLICT (id) DO UPDATE SET user_id = EXCLUDED.user_id, sort_order = EXCLUDED.sort_order, url_id = EXCLUDED.url_id, name = EXCLUDED.name`,

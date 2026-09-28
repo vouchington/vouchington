@@ -71,9 +71,16 @@ export const addUrls = async (
     uniqueUrls.map(url => url.toString()),
     uniqueUrls.map(url => hostnames.get(url.hostname)!),
     uniqueUrls.map(url => url.pathname),
-    uniqueUrls.map(url => Object.fromEntries(url.searchParams)),
     uniqueUrls.map(() => userId || null),
   ]
+  const searchParams = uniqueUrls.flatMap(url =>
+    [...url.searchParams.entries()].map(([name, value], ordinal) => ({
+      url: url.toString(),
+      ordinal,
+      name,
+      value,
+    })),
+  )
 
   let mimeTypeId: string | null = null
   if (content_type) {
@@ -83,6 +90,7 @@ export const addUrls = async (
   const rows = await upsertUrlRows(
     values,
     mimeTypeId === null ? null : uniqueUrls.map(() => mimeTypeId),
+    searchParams,
     queryOptions,
   )
 

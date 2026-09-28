@@ -2,20 +2,20 @@ import type { Job } from 'glide-mq'
 import type { StoryClusteringJobData } from '@queues/ai-agents/types'
 import { clusterRssFeedItem } from '@services/stories/cluster'
 import { hasRssFeedItemEmbedding } from '@services/bedrock-embeddings'
-import { enqueueStoryClustering } from '@queues/ai-agents/enqueues/story-clustering'
+import { enqueueStoryClusteringBestEffort } from '@queues/ai-agents/enqueues/story-clustering'
 
 const MAX_EMBEDDING_RETRIES = 10
 
 type ProcessMiscDeps = {
   clusterRssFeedItem: typeof clusterRssFeedItem
   hasRssFeedItemEmbedding: typeof hasRssFeedItemEmbedding
-  enqueueStoryClustering: typeof enqueueStoryClustering
+  enqueueStoryClustering: typeof enqueueStoryClusteringBestEffort
 }
 
 const defaultDeps: ProcessMiscDeps = {
   clusterRssFeedItem,
   hasRssFeedItemEmbedding,
-  enqueueStoryClustering,
+  enqueueStoryClustering: enqueueStoryClusteringBestEffort,
 }
 
 export async function processStoryClustering(

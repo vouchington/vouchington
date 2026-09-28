@@ -42,6 +42,7 @@ stops notifications for later entities.
 ## Reconciliation
 
 - Flagged or deleted posts and deleted RSS feed items do not notify
+- `publication_post_id` and `publication_rss_feed_item_id` reference retained post and RSS identities so reconciliation can find a row after the live display FK is cleared. A retained identity does not make deleted content visible
 - Reconcile jobs run multiple times as topic/tag classification completes asynchronously
 - Same entity appears at most once per subscription delivery, while each manual-send event may
   coexist with subscription-driven notifications for the same entity

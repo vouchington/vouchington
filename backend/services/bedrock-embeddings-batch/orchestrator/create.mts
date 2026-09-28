@@ -41,27 +41,17 @@ export const createBatch = async (
       entityCount,
       entityIdsFilePath,
       createdAt,
-      data: {
-        status: 'Preparing',
-        inputS3Uri,
-        outputS3Uri,
-        modelId: BEDROCK_NOVA_MULTIMODAL_MODEL_ID,
-        metadata: batchMetadata,
-      },
+      inputS3Uri,
+      outputS3Uri,
+      inputSizeMb: batchMetadata.inputSizeMB ?? 0,
+      urlId: batchMetadata.url_id ?? null,
+      crawlId: batchMetadata.crawl_id ?? null,
     })
     batchPersisted = true
     await uploadBatchInput(filePath, inputKey)
     const job = await createBedrockBatchJob(batchId, inputS3Uri, outputS3Uri, routingEnvironment)
     submittedJobArn = job.jobArn
-    const data = {
-      status: 'Submitted',
-      jobArn: submittedJobArn,
-      inputS3Uri,
-      outputS3Uri,
-      modelId: BEDROCK_NOVA_MULTIMODAL_MODEL_ID,
-      metadata: batchMetadata,
-    }
-    await markBatchSubmittedForPolling(batchId, submittedJobArn, data)
+    await markBatchSubmittedForPolling(batchId, submittedJobArn)
   } catch (error) {
     let canReleaseLocks = !submittedJobArn
     if (submittedJobArn) {
@@ -70,15 +60,7 @@ export const createBatch = async (
         canReleaseLocks = true
       } catch (stopError) {
         onError(stopError instanceof Error ? stopError : new Error(String(stopError)))
-        await markBatchSubmittedForPolling(batchId, submittedJobArn, {
-          status: 'Submitted',
-          jobArn: submittedJobArn,
-          inputS3Uri,
-          outputS3Uri,
-          modelId: BEDROCK_NOVA_MULTIMODAL_MODEL_ID,
-          metadata: batchMetadata,
-          cleanup: { stopFailedAt: new Date().toISOString() },
-        }).catch(onError)
+        await markBatchSubmittedForPolling(batchId, submittedJobArn, new Date()).catch(onError)
       }
     }
     if (canReleaseLocks && batchPersisted) {
@@ -98,17 +80,17 @@ export const createBatch = async (
 async function markBatchSubmittedForPolling(
   batchId: string,
   jobArn: string | undefined,
-  data: Record<string, unknown>,
+  stopFailedAt: Date | null = null,
 ): Promise<void> {
   await write(
     `/* createBatch:markSubmitted */
     UPDATE bedrock_embeddings_batches
     SET job_arn = $2,
         submitted_at = COALESCE(submitted_at, CURRENT_TIMESTAMP),
-        data = $3
+        stop_failed_at = COALESCE($3, stop_failed_at)
     WHERE id = $1
   `,
-    [batchId, jobArn || null, JSON.stringify(data)],
+    [batchId, jobArn || null, stopFailedAt],
   )
 }
 async function insertBatchAndLockRows(params: {
@@ -117,19 +99,30 @@ async function insertBatchAndLockRows(params: {
   entityCount: number
   entityIdsFilePath: string
   createdAt: Date
-  data: Record<string, unknown>
+  inputS3Uri: string
+  outputS3Uri: string
+  inputSizeMb: number
+  urlId: string | null
+  crawlId: string | null
 }): Promise<void> {
   await using query = await beginTransaction()
 
   await query(
     `/* createBatch:insertPreparing */
-      INSERT INTO bedrock_embeddings_batches (id, job_arn, model_id, job_type, data, records, created_at)
-      VALUES ($1, NULL, $2, $3, $4, $5, $6)`,
+      INSERT INTO bedrock_embeddings_batches (
+        id, job_arn, model_id, job_type, input_s3_uri, output_s3_uri,
+        input_size_mb, url_id, crawl_id, records, created_at
+      )
+      VALUES ($1, NULL, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
     [
       params.batchId,
       BEDROCK_NOVA_MULTIMODAL_MODEL_ID,
       params.jobType,
-      JSON.stringify(params.data),
+      params.inputS3Uri,
+      params.outputS3Uri,
+      params.inputSizeMb,
+      params.urlId,
+      params.crawlId,
       params.entityCount,
       params.createdAt,
     ],

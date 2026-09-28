@@ -22,7 +22,7 @@ async function* streamPendingCrawlEmbedBatches(): AsyncGenerator<
     sql`/* streamPendingCrawlEmbedBatches */
       SELECT id, embed_oembed_url AS oembed_url
       FROM crawls
-      WHERE embed_metadata IS NOT NULL
+      WHERE embed_kind IS NOT NULL
         AND embed_oembed_url IS NOT NULL
         AND embed_oembed_resolved_at IS NULL
       ORDER BY id

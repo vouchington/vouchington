@@ -18,7 +18,7 @@ describe('schema-snapshot-facts (backend real schema.json singleton)', () => {
   })
 
   it('returns an empty array for a known table with no triggers', () => {
-    expect(triggerTextsForTable('crawls')).toEqual([])
+    expect(triggerTextsForTable('currencies')).toEqual([])
   })
 
   it('fails closed (undefined) for a table absent from the schema snapshot', () => {

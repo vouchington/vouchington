@@ -45,6 +45,11 @@ caller's per-target workflow concurrency prevents duplicate sessions for one iss
 SHA. The Harness scheduler keeps each session queued until a host has capacity, ordered by
 `HARNESS_PRIORITY` and expiring after `HARNESS_QUEUE_TTL_SECONDS`, so GitHub adds no global
 admission cap.
+
+Fix Dependabot's [concurrency lock](../../.github/workflows/reference-github-actions-concurrency-locks.md)
+is documented with the other workflow locks. Its [source-run revalidation](#source-run-revalidation)
+and PR-head checks suppress stale work before mutation.
+
 The callee receives `HARNESS_API_KEY` as a repository secret that only its own `dispatch` job
 forwards by explicit name through `workflow_call`; caller checkouts do not receive it. That job
 still declares the `auto-harness` GitHub Environment, which permits only `main`, purely for

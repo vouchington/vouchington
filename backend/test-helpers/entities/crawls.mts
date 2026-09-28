@@ -125,9 +125,6 @@ export async function insertTestCrawl(data: {
   if (data.htmlSnapshotUploadedAt !== undefined) {
     query.append(sql`, html_snapshot_uploaded_at`)
   }
-  if (data.embedMetadata !== undefined) {
-    query.append(sql`, embed_metadata`)
-  }
   if (data.embedOEmbedUrl !== undefined) {
     query.append(sql`, embed_oembed_url`)
   }
@@ -158,9 +155,6 @@ export async function insertTestCrawl(data: {
   if (data.htmlSnapshotUploadedAt !== undefined) {
     query.append(sql`, ${data.htmlSnapshotUploadedAt}`)
   }
-  if (data.embedMetadata !== undefined) {
-    query.append(sql`, ${JSON.stringify(data.embedMetadata)}`)
-  }
   if (data.embedOEmbedUrl !== undefined) {
     query.append(sql`, ${data.embedOEmbedUrl}`)
   }
@@ -178,5 +172,12 @@ export async function insertTestCrawl(data: {
   `)
 
   const result = await write(query)
-  return { id: result.rows[0].id }
+  const id = result.rows[0].id as string
+  if (data.embedMetadata !== undefined) {
+    await write(`/* insertTestCrawl:embed */ SELECT fn_apply_crawl_embed($1, $2::jsonb)`, [
+      id,
+      JSON.stringify(data.embedMetadata),
+    ])
+  }
+  return { id }
 }

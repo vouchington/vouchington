@@ -60,13 +60,15 @@ export async function seedConversations(messageCount = 100): Promise<void> {
       for (let j = 0; j < batch; j++) {
         const idx = i + j
         const msgCreatedById = seedUuid(idx % 2 === 0 ? 0 : 1, '01')
-        const content = JSON.stringify({ text: `Seed message ${idx}` })
-        values.push(conversationId, msgCreatedById, content)
-        const base = values.length - 2
-        rows.push(`($${base}, $${base + 1}, $${base + 2}::jsonb)`)
+        const role = idx % 2 === 0 ? 'user' : 'assistant'
+        values.push(conversationId, msgCreatedById, role, `Seed message ${idx}`)
+        const base = values.length - 3
+        rows.push(
+          `($${base}, $${base + 1}, $${base + 2}::conversation_message_chat_roles, $${base + 3})`,
+        )
       }
       await query(
-        `/* seedExplainData */ INSERT INTO conversation_messages (conversation_id, created_by_id, content) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
+        `/* seedExplainData */ INSERT INTO conversation_messages (conversation_id, created_by_id, chat_role, chat_text) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )
     }

@@ -11,6 +11,7 @@ import {
   QUEUE_NAME,
 } from '../config.mts'
 import type { BedrockEmbeddingsBatchDispatcherJob } from '../types.mts'
+import { reconciliationScheduleEntries } from './reconciliation-schedules.mts'
 import {
   enqueueEmbeddingsBatchBacklogDispatcher,
   enqueueEmbeddingsBatchCreationDispatcher,
@@ -28,6 +29,7 @@ const DISPATCHER_OPTIONS = {
 } satisfies JobOptions
 
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+  ...reconciliationScheduleEntries,
   {
     schedulerId: 'poll_dispatcher',
     registration: 'sequential',

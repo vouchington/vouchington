@@ -114,6 +114,61 @@ describe('processFollowerDistributionChunk', () => {
     expect((await sharePostWithFollowers(sender, post.id)).status).toBe('accepted')
   })
 
+  it('delivers to selected recipients who unfollow after acceptance', async () => {
+    const sender = await createTestUser()
+    const creator = await createTestUser()
+    const follower = await createTestUser()
+    await followUser(follower, sender)
+    const post = await createTestPost({ user: creator, privacy: 'public' })
+    const distribution = await sendPostToFollowers(sender, post.id, {
+      audience: 'selected_followers',
+      recipient_user_ids: [follower.id],
+    })
+    await markUserFollowDeletedBeforeNowForTest({
+      followerId: follower.id,
+      followingId: sender.id,
+    })
+
+    const result = await processFollowerDistributionChunk(distribution.distribution_id)
+    expect(result).toMatchObject({ completed: true, processed: 1 })
+    expect(
+      await getManualSendNotificationRowsForTest({
+        sentByUserId: sender.id,
+        postId: post.id,
+      }),
+    ).toEqual([{ user_id: follower.id, title: expect.any(String) }])
+  })
+
+  it('retries a partly delivered selected chunk without duplicate sends', async () => {
+    const sender = await createTestUser()
+    const creator = await createTestUser()
+    const followers = await Promise.all([createTestUser(), createTestUser()])
+    for (const follower of followers) await followUser(follower, sender)
+    const post = await createTestPost({ user: creator, privacy: 'public' })
+    const distribution = await sendPostToFollowers(sender, post.id, {
+      audience: 'selected_followers',
+      recipient_user_ids: followers.map(follower => follower.id),
+    })
+
+    const first = await processFollowerDistributionChunk(distribution.distribution_id, {
+      chunkSize: 1,
+      deferCursorUpdate: true,
+    })
+    const retry = await processFollowerDistributionChunk(distribution.distribution_id, {
+      chunkSize: 1,
+      deferCursorUpdate: true,
+    })
+
+    expect(first.processed).toBe(1)
+    expect(retry.notificationsToDeliver).toEqual(first.notificationsToDeliver)
+    expect(
+      await getManualSendNotificationRowsForTest({
+        sentByUserId: sender.id,
+        postId: post.id,
+      }),
+    ).toHaveLength(1)
+  })
+
   it('does not include followers who refollow after distribution creation', async () => {
     const sender = await createTestUser()
     const creator = await createTestUser()

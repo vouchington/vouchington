@@ -13,7 +13,6 @@ Not partitioned — growth: unbounded.
 | `updated_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                   |
 | `batch_id`      | `uuid`                     | no       |                              |          |           |           | The import batch this row belongs to.             |
 | `row_index`     | `integer`                  | no       |                              |          |           |           | Zero-based position of this row within the batch. |
-| `input_data`    | `jsonb`                    | no       |                              |          |           |           | The raw input data for this row as JSON.          |
 | `topic_id`      | `uuid`                     | yes      |                              |          |           |           | Topic created or updated by this import row.      |
 | `rss_feed_id`   | `uuid`                     | yes      |                              |          |           |           | RSS feed created or updated by this import row.   |
 | `completed_at`  | `timestamp with time zone` | yes      |                              |          |           |           | When this row was successfully imported.          |

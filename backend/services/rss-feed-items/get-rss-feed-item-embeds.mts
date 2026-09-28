@@ -47,13 +47,10 @@ export async function getRssFeedItemEmbedsByItems(
       SELECT DISTINCT ON (cu.rss_feed_item_id)
         cu.rss_feed_item_id,
         NULLIF(TRIM(c.title), '') AS crawl_title,
-        NULLIF(TRIM(c.meta_tags->>'og:image'), '') AS og_image,
-        (SELECT NULLIF(TRIM(tag.value #>> '{}'), '')
-          FROM jsonb_each(COALESCE(c.meta_tags, '{}'::jsonb)) AS tag(key, value)
-          WHERE LOWER(tag.key) = 'og:audio' AND jsonb_typeof(tag.value) = 'string'
-          LIMIT 1) AS og_audio,
+        c.og_image_exact AS og_image,
+        c.og_audio AS og_audio,
         CASE WHEN ${access === 'administrator'} THEN NULLIF(c.markdown, '') ELSE NULL END AS markdown,
-        CASE WHEN ${access === 'administrator'} THEN c.embed_metadata ELSE NULL END AS embed_metadata,
+        CASE WHEN ${access === 'administrator'} THEN fn_crawl_embed_json(c) ELSE NULL END AS embed_metadata,
         CASE WHEN ${access === 'administrator'} THEN c.meta_tags ELSE NULL END AS meta_tags,
         CASE WHEN ${access === 'administrator'} THEN c.embed_oembed_url ELSE NULL END AS embed_oembed_url,
         CASE WHEN ${access === 'administrator'} THEN c.embed_oembed_resolved_at ELSE NULL END AS embed_oembed_resolved_at
@@ -66,76 +63,40 @@ export async function getRssFeedItemEmbedsByItems(
     embed_crawl AS (
       SELECT DISTINCT ON (cu.rss_feed_item_id)
         cu.rss_feed_item_id,
-        NULLIF(TRIM(c.embed_metadata #>> '{thumbnail,url}'), '') AS embed_thumbnail_url,
-        NULLIF(TRIM(c.embed_metadata->>'title'), '') AS embed_title,
-        NULLIF(TRIM(c.embed_metadata->>'description'), '') AS embed_description,
-        NULLIF(TRIM(c.embed_metadata #>> '{provider,name}'), '') AS embed_provider_name,
-        (SELECT NULLIF(TRIM(tag.value #>> '{}'), '')
-          FROM jsonb_each(COALESCE(c.meta_tags, '{}'::jsonb)) AS tag(key, value)
-          WHERE LOWER(tag.key) = 'og:image' AND jsonb_typeof(tag.value) = 'string'
-          LIMIT 1) AS og_image,
-        (SELECT NULLIF(TRIM(tag.value #>> '{}'), '')
-          FROM jsonb_each(COALESCE(c.meta_tags, '{}'::jsonb)) AS tag(key, value)
-          WHERE LOWER(tag.key) = 'twitter:image' AND jsonb_typeof(tag.value) = 'string'
-          LIMIT 1) AS twitter_image,
-        (SELECT NULLIF(TRIM(tag.value #>> '{}'), '')
-          FROM jsonb_each(COALESCE(c.meta_tags, '{}'::jsonb)) AS tag(key, value)
-          WHERE LOWER(tag.key) = 'og:audio' AND jsonb_typeof(tag.value) = 'string'
-          LIMIT 1) AS og_audio,
-        (SELECT NULLIF(TRIM(tag.value #>> '{}'), '')
-          FROM jsonb_each(COALESCE(c.meta_tags, '{}'::jsonb)) AS tag(key, value)
-          WHERE LOWER(tag.key) = 'og:title' AND jsonb_typeof(tag.value) = 'string'
-          LIMIT 1) AS og_title,
-        (SELECT NULLIF(TRIM(tag.value #>> '{}'), '')
-          FROM jsonb_each(COALESCE(c.meta_tags, '{}'::jsonb)) AS tag(key, value)
-          WHERE LOWER(tag.key) = 'twitter:title' AND jsonb_typeof(tag.value) = 'string'
-          LIMIT 1) AS twitter_title,
-        (SELECT NULLIF(TRIM(tag.value #>> '{}'), '')
-          FROM jsonb_each(COALESCE(c.meta_tags, '{}'::jsonb)) AS tag(key, value)
-          WHERE LOWER(tag.key) = 'og:description' AND jsonb_typeof(tag.value) = 'string'
-          LIMIT 1) AS og_description,
-        (SELECT NULLIF(TRIM(tag.value #>> '{}'), '')
-          FROM jsonb_each(COALESCE(c.meta_tags, '{}'::jsonb)) AS tag(key, value)
-          WHERE LOWER(tag.key) = 'twitter:description' AND jsonb_typeof(tag.value) = 'string'
-          LIMIT 1) AS twitter_description,
-        (SELECT NULLIF(TRIM(tag.value #>> '{}'), '')
-          FROM jsonb_each(COALESCE(c.meta_tags, '{}'::jsonb)) AS tag(key, value)
-          WHERE LOWER(tag.key) = 'og:site_name' AND jsonb_typeof(tag.value) = 'string'
-          LIMIT 1) AS og_provider_name,
-        CASE c.embed_metadata->>'kind'
-          WHEN 'article' THEN 'article'
-          WHEN 'player' THEN 'player'
-          ELSE NULL
-        END AS display_embed_kind,
-        NULLIF(TRIM(c.embed_metadata #>> '{provider,key}'), '') AS display_provider_key,
-        NULLIF(TRIM(c.embed_metadata #>> '{provider,resourceId}'), '')
+        CASE WHEN c.embed_has_thumbnail THEN NULLIF(TRIM(c.embed_thumbnail_url), '') ELSE NULL END AS embed_thumbnail_url,
+        NULLIF(TRIM(c.embed_title), '') AS embed_title,
+        NULLIF(TRIM(c.embed_description), '') AS embed_description,
+        CASE WHEN c.embed_has_provider THEN NULLIF(TRIM(c.embed_provider_name), '') ELSE NULL END AS embed_provider_name,
+        c.og_image,
+        c.twitter_image,
+        c.og_audio,
+        c.og_title,
+        c.twitter_title,
+        c.og_description,
+        c.twitter_description,
+        c.og_site_name AS og_provider_name,
+        c.embed_kind AS display_embed_kind,
+        CASE WHEN c.embed_has_provider THEN NULLIF(TRIM(c.embed_provider_key), '') ELSE NULL END AS display_provider_key,
+        CASE WHEN c.embed_has_provider THEN NULLIF(TRIM(c.embed_provider_resource_id), '') ELSE NULL END
           AS display_provider_resource_id,
-        NULLIF(TRIM(c.embed_metadata #>> '{player,url}'), '') AS display_player_url,
-        CASE WHEN jsonb_typeof(c.embed_metadata #> '{player,width}') = 'number'
-          THEN (c.embed_metadata #>> '{player,width}')::double precision
-          ELSE NULL
-        END AS display_player_width,
-        CASE WHEN jsonb_typeof(c.embed_metadata #> '{player,height}') = 'number'
-          THEN (c.embed_metadata #>> '{player,height}')::double precision
-          ELSE NULL
-        END AS display_player_height,
+        CASE WHEN c.embed_has_player THEN NULLIF(TRIM(c.embed_player_url), '') ELSE NULL END AS display_player_url,
+        CASE WHEN c.embed_has_player THEN c.embed_player_width ELSE NULL END AS display_player_width,
+        CASE WHEN c.embed_has_player THEN c.embed_player_height ELSE NULL END AS display_player_height,
         (c.embed_oembed_resolved_at IS NOT NULL) AS display_embed_metadata_resolved
       FROM canonical_urls cu
       JOIN crawls c ON c.url_id = cu.canonical_id
       WHERE c.completed_at IS NOT NULL AND c.network_error IS NULL
         AND c.response_status_code BETWEEN 200 AND 299
         AND (
-          c.embed_metadata IS NOT NULL
-          OR EXISTS (
-            SELECT 1
-            FROM jsonb_each(COALESCE(c.meta_tags, '{}'::jsonb)) AS tag(key, value)
-            WHERE LOWER(tag.key) IN (
-              'og:image', 'twitter:image', 'og:audio', 'og:title', 'twitter:title',
-              'og:description', 'twitter:description', 'og:site_name'
-            )
-              AND jsonb_typeof(tag.value) = 'string'
-              AND NULLIF(TRIM(tag.value #>> '{}'), '') IS NOT NULL
-          )
+          c.embed_kind IS NOT NULL
+          OR c.og_image IS NOT NULL
+          OR c.twitter_image IS NOT NULL
+          OR c.og_audio IS NOT NULL
+          OR c.og_title IS NOT NULL
+          OR c.twitter_title IS NOT NULL
+          OR c.og_description IS NOT NULL
+          OR c.twitter_description IS NOT NULL
+          OR c.og_site_name IS NOT NULL
           OR c.embed_oembed_resolved_at IS NOT NULL
         )
       ORDER BY cu.rss_feed_item_id, c.id DESC

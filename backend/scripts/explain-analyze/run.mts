@@ -19,6 +19,7 @@ import { runTopicImportAttemptScenarios } from './run-scenarios/topic-import-att
 import { runSearchAndFacetScenarios } from './run-scenarios/search-and-facets.mts'
 import { runOAuthClientVerificationScenarios } from './run-scenarios/oauth-client-verification.mts'
 import { runPostFeedShareScenarios } from './run-scenarios/post-feed-shares.mts'
+import { runEmbeddingReconciliationScenarios } from './run-scenarios/embedding-reconciliation.mts'
 
 async function main() {
   prepareOutputDir()
@@ -36,6 +37,7 @@ async function main() {
     await runMembershipRefundScenarios()
     await runRemoteFollowerScenarios()
     await runReviewSuccessionScenarios()
+    await runEmbeddingReconciliationScenarios()
     assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
   } finally {
     writeResults()

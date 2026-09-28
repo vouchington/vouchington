@@ -254,6 +254,9 @@ CREATE TABLE IF NOT EXISTS rss_feed_items (
   bedrock_nova_multimodal_v1_embedding_created_at TIMESTAMPTZ,
   bedrock_nova_multimodal_v1_input_token_count INT,
   CHECK (bedrock_nova_multimodal_v1_input_token_count IS NULL OR bedrock_nova_multimodal_v1_input_token_count >= 0),
+  story_clustering_embedding_input_sha256 BYTEA,
+  CONSTRAINT rss_feed_items_story_clustering_embedding_input_sha256_length
+    CHECK (story_clustering_embedding_input_sha256 IS NULL OR OCTET_LENGTH(story_clustering_embedding_input_sha256) = 32),
 
   -- full text search vector; trigger-maintained by fn_sync_rss_feed_items_search_vector so
   -- unrelated updates (embeddings, language detection) skip the tsvector rebuild
@@ -382,6 +385,17 @@ WHERE (
   OR (bedrock_nova_multimodal_v1_input_sha256 != bedrock_nova_multimodal_v1_content_sha256)
 );
 
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__story_clustering_embedding_pending
+ON rss_feed_items (id)
+WHERE deleted_at IS NULL
+  AND bedrock_nova_multimodal_v1_embedding IS NOT NULL
+  AND bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL
+  AND bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256
+  AND (
+    story_clustering_embedding_input_sha256 IS NULL
+    OR story_clustering_embedding_input_sha256 != bedrock_nova_multimodal_v1_input_sha256
+  );
+
 -- for filtering by media type
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__media_type__pub
 ON rss_feed_items (media_type, published_at DESC, id DESC)
@@ -433,6 +447,7 @@ COMMENT ON COLUMN rss_feed_items.video_platform IS 'Video hosting platform name 
 COMMENT ON COLUMN rss_feed_items.published_at IS 'Computed publication timestamp: earliest of feed dates and fetch time.';
 COMMENT ON COLUMN rss_feed_items.story_id IS 'FK to the story this item belongs to.';
 COMMENT ON COLUMN rss_feed_items.story_locked_at IS 'When set by admin, auto-clustering will not override the story assignment.';
+COMMENT ON COLUMN rss_feed_items.story_clustering_embedding_input_sha256 IS 'Exact current embedding input SHA-256 for which story-clustering enqueue was accepted. NULL means delivery is pending; this marker does not indicate clustering completed.';
 COMMENT ON COLUMN rss_feed_items.votes_snapshot_xmax IS 'Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.';
 COMMENT ON COLUMN rss_feed_items.votes_snapshot_xip_count IS 'Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.';
 
@@ -560,20 +575,34 @@ COMMENT ON COLUMN rss_feed_item_unmapped_category_counts.updated_at IS 'When thi
 -- write, so a post-commit queue enqueue failure cannot strand category state indefinitely.
 CREATE TABLE IF NOT EXISTS rss_feed_item_category_snapshot_reconciliations (
   rss_feed_item_id UUID PRIMARY KEY REFERENCES rss_feed_items ON DELETE CASCADE,
-  categories JSONB NOT NULL,
   generation BIGINT NOT NULL DEFAULT 1 CHECK (generation > 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (jsonb_typeof(categories) = 'array')
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS rss_feed_item_category_snapshot_reconciliation_categories (
+  rss_feed_item_id UUID NOT NULL REFERENCES rss_feed_item_category_snapshot_reconciliations ON DELETE CASCADE,
+  ordinal INT NOT NULL CHECK (ordinal >= 0),
+  category_text TEXT NOT NULL CHECK (char_length(category_text) BETWEEN 1 AND 4096),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (rss_feed_item_id, ordinal)
+);
+
+CREATE TRIGGER trigger_rss_recon_category_rows_updated_at
+BEFORE UPDATE ON rss_feed_item_category_snapshot_reconciliation_categories
+FOR EACH ROW
+EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_category_snapshot_reconciliations__updated_at
 ON rss_feed_item_category_snapshot_reconciliations (updated_at, rss_feed_item_id);
 
 COMMENT ON TABLE rss_feed_item_category_snapshot_reconciliations IS 'One coalesced durable desired category snapshot per RSS item; exact-generation acknowledgement deletes successfully reconciled work.';
 COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.rss_feed_item_id IS 'RSS feed item whose complete category snapshot must be reconciled.';
-COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.categories IS 'Normalized desired RSS category strings, including an empty array when all categories were removed.';
 COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.generation IS 'Monotonic per-item generation fence; stale workers cannot acknowledge newer snapshots.';
+COMMENT ON TABLE rss_feed_item_category_snapshot_reconciliation_categories IS 'Ordered category strings copied onto the reconciliation outbox. Zero rows is an explicit empty desired snapshot.';
+COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliation_categories.rss_feed_item_id IS 'RSS feed item whose outbox snapshot owns this category.';
+COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliation_categories.ordinal IS 'Zero-based position in the outbox snapshot.';
+COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliation_categories.category_text IS 'Normalized category text in the outbox snapshot.';
 COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.created_at IS 'When this item first entered the durable category snapshot backlog.';
 COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.updated_at IS 'When this item category snapshot was most recently replaced.';
 

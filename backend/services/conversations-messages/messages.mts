@@ -1,5 +1,6 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { appendConversationMessageContent } from './chat-content.mts'
 import type { ConversationMessage } from './types.mts'
 
 type SimpleCursor = { id: string }
@@ -33,11 +34,13 @@ async function fetchConversationMessagesByConversationId(
       updated_by_id,
       deleted_at,
       deleted_by_id,
-      content
+  `
+  appendConversationMessageContent(query)
+  query.append(sql`
     FROM conversation_messages
     WHERE conversation_id = ${conversationId}
       AND deleted_at IS NULL
-  `
+  `)
   if (options?.after) query.append(sql` AND id < ${options.after.id}`)
   query.append(sql` ORDER BY id DESC`)
   if (options?.limit !== undefined) {

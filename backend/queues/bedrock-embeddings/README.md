@@ -18,11 +18,11 @@ For the dedup contract, centralized table semantics, race outcomes, and bloom fi
 
 ## Processors
 
-| Job Name        | Entity Type     | Description                                                                                                                                                                    |
-| --------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `post`          | `post`          | Fetches post, calls `upsertPostEmbedding`, short-circuits if already up-to-date; then enqueues ban-evasion detection when the embedded post is the user's first community post |
-| `topic`         | `topic`         | Fetches topic, calls `upsertTopicEmbedding`, short-circuits if already up-to-date                                                                                              |
-| `rss_feed_item` | `rss_feed_item` | Fetches RSS feed item, calls `upsertRssFeedItemEmbedding`, short-circuits if already up-to-date; then enqueues `story-clustering` via `enqueueStoryClustering`                 |
+| Job Name        | Entity Type     | Description                                                                                                                                                                                         |
+| --------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `post`          | `post`          | Fetches post, calls `upsertPostEmbedding`, short-circuits if already up-to-date; then enqueues ban-evasion detection when the embedded post is the user's first community post                      |
+| `topic`         | `topic`         | Fetches topic, calls `upsertTopicEmbedding`, short-circuits if already up-to-date                                                                                                                   |
+| `rss_feed_item` | `rss_feed_item` | Fetches RSS feed item, calls `upsertRssFeedItemEmbedding`, short-circuits if already up-to-date; then calls `triggerStoryClusteringForCurrentEmbeddings` to enqueue and mark exact-input acceptance |
 
 Each processor delegates to `createSingleEmbedding` in `@services/bedrock-embeddings/single/`, which:
 

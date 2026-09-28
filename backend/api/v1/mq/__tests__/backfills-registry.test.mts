@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { getPublicBaseTableNamesForTest } from '@voucha/test-helpers'
+import {
+  getPublicBaseTableNamesForTest,
+  isDeduplicatedEnqueue,
+  readEnqueuedJob,
+} from '@voucha/test-helpers'
+import { bedrock_embeddings_batch } from '@queues/bedrock-embeddings-batch/queues'
+import { scheduledJobManifest as embeddingReconciliationManifest } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
 import { EXISTING_DISPATCHER_BACKFILLS } from '../backfills-existing-dispatchers.mts'
 import { BACKFILL_REGISTRY } from '../backfills-registry.mts'
 
@@ -12,6 +18,7 @@ const EXPECTED_EXISTING_DISPATCHER_BACKFILL_IDS = new Set([
   'sitemaps-weekly-month',
   'sitemaps-monthly-archive',
   'bedrock-embeddings-poll-dispatch',
+  'bedrock-embedding-reconciliation',
   'bloom-filters-posts',
   'bloom-filters-topics',
   'bloom-filters-users',
@@ -25,6 +32,33 @@ const EXPECTED_EXISTING_DISPATCHER_BACKFILL_IDS = new Set([
 ])
 
 describe('BACKFILL_REGISTRY', () => {
+  it('starts all five embedding reconciliation roots from its operator entry', async () => {
+    const entry = BACKFILL_REGISTRY.find(
+      candidate => candidate.id === 'bedrock-embedding-reconciliation',
+    )
+    if (!entry) throw new Error('Embedding reconciliation backfill missing')
+    const enqueued = await entry.trigger()
+    if (!Array.isArray(enqueued)) throw new Error('Expected all five root enqueues')
+    const expected = [
+      { name: 'reconcile_existing', data: { entityType: 'topics' } },
+      { name: 'reconcile_existing', data: { entityType: 'posts' } },
+      { name: 'reconcile_existing', data: { entityType: 'rss_feed_items' } },
+      { name: 'post_trigger_recovery', data: {} },
+      { name: 'rss_story_trigger_recovery', data: {} },
+    ]
+    expect(enqueued).toHaveLength(expected.length)
+    expect(
+      embeddingReconciliationManifest.jobs
+        .filter(job => expected.some(root => root.name === job.template.name))
+        .map(job => ({ name: job.template.name, data: job.template.data })),
+    ).toEqual(expected)
+    for (const [index, result] of enqueued.entries()) {
+      if (isDeduplicatedEnqueue(result)) continue
+      await expect(readEnqueuedJob(bedrock_embeddings_batch, result)).resolves.toMatchObject(
+        expected[index]!,
+      )
+    }
+  })
   it('registers every existing self-healing dispatcher backfill', () => {
     const existingDispatcherIds = new Set(
       EXISTING_DISPATCHER_BACKFILLS.map(backfill => backfill.id),

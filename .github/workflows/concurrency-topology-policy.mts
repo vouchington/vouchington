@@ -36,7 +36,7 @@ export const concurrencyTopologyPolicy = {
   '.github/workflows/cloudflare-worker.yml': conditional(['event', 'pull-request', 'sha']),
   '.github/workflows/dispatch-completed-deploy.yml': retained(['event']),
   '.github/workflows/docs-publish.yml': retained(['run']),
-  '.github/workflows/fix-dependabot.yml': retained(['ref']),
+  '.github/workflows/fix-dependabot.yml': retained(['ref', 'event']),
   '.github/workflows/fix-issue.yml': retained(['event']),
   '.github/workflows/fix-main-self-retry.yml': retained(['run']),
   '.github/workflows/fix-main.yml': cancelling(['event', 'sha']),

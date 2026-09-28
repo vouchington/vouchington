@@ -1,5 +1,9 @@
 # Systems Summary
 
+The [Bedrock batch queue](bedrock-embeddings-batch/README.md) also runs five provider-free
+reconciliation roots. They copy reusable text embeddings and recover post/RSS follow-up delivery
+in bounded pages, independent of Bedrock capacity.
+
 Media-registry recovery in the [notifications queue](notifications/README.md) dispatches bounded
 pages through cutoff-scoped continuation jobs. Its durable registry terminalizes abandoned final
 claims for operator replay; continuation retries preserve the same cursor and cutoff. See the

@@ -1,8 +1,13 @@
 import { read, write } from '@data-stores/psql'
 import { enqueueBulkDetectBanEvasionAfterPostEmbeddings } from '@queues/ban-evasion/enqueues'
+import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import sql from 'sql-template-strings'
 
 const EMBEDDED_FIRST_COMMUNITY_POSTS_CHUNK_SIZE = 1000
+const DEFAULT_RECOVERY_PAGE_SIZE = 100
+const RECOVERY_CURSOR_SCOPE = 'ban-evasion:post-embedding:pending:id-asc'
+
+type RecoveryPage = { enqueuedCount: number; scannedCount: number; nextCursor: string | null }
 
 /** Returns true when this post is the user's first non-deleted post in the community. */
 export async function isFirstCommunityPost(
@@ -17,7 +22,7 @@ export async function isFirstCommunityPost(
       WHERE created_by_id = ${userId}
         AND community_id = ${communityId}
         AND deleted_at IS NULL
-      ORDER BY created_at ASC, id ASC
+      ORDER BY id ASC
       LIMIT 1
     ) = ${postId} AS is_first
   `)
@@ -40,29 +45,61 @@ export async function enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts(
   }, Promise.resolve())
 }
 
-export async function enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts(): Promise<void> {
-  let enqueuedCount = 0
-  do {
-    /* oxlint-disable-next-line no-await-in-loop -- chunks are intentionally sequential for DB and Valkey backpressure */
-    enqueuedCount = await enqueueBanEvasionDetectionForEmbeddedFirstCommunityPostChunk(null)
-  } while (enqueuedCount === EMBEDDED_FIRST_COMMUNITY_POSTS_CHUNK_SIZE)
+export async function enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts(
+  options: { after?: string; limit?: number } = {},
+): Promise<RecoveryPage> {
+  const requestedLimit = options.limit ?? DEFAULT_RECOVERY_PAGE_SIZE
+  if (!Number.isSafeInteger(requestedLimit) || requestedLimit < 1) {
+    throw new Error('Invalid ban-evasion recovery page size')
+  }
+  const limit = Math.min(requestedLimit, 100)
+  const afterId =
+    options.after !== undefined
+      ? decodeScopedUuidCursor(options.after, RECOVERY_CURSOR_SCOPE, 'Invalid ban-evasion cursor')
+          .id
+      : null
+  const candidateQuery = sql`/* enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts */
+    SELECT id FROM posts
+    WHERE community_id IS NOT NULL
+      AND created_by_id IS NOT NULL
+      AND deleted_at IS NULL
+      AND bedrock_nova_multimodal_v1_embedding IS NOT NULL
+      AND bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL
+      AND bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256
+      AND (
+        ban_evasion_post_embedding_input_sha256 IS NULL
+        OR ban_evasion_post_embedding_input_sha256 != bedrock_nova_multimodal_v1_input_sha256
+      )
+  `
+  if (afterId) candidateQuery.append(sql` AND id > ${afterId}::uuid`)
+  candidateQuery.append(sql`
+    ORDER BY id
+    LIMIT ${limit}
+  `)
+  const { rows: candidates } = await write<{ id: string }>(candidateQuery)
+  const scannedCount = candidates.length
+  const nextCursor =
+    scannedCount === limit
+      ? encodeScopedUuidCursor(candidates[scannedCount - 1]!.id, RECOVERY_CURSOR_SCOPE)
+      : null
+  if (scannedCount === 0) return { enqueuedCount: 0, scannedCount, nextCursor }
+
+  const enqueuedCount = await enqueueBanEvasionDetectionForEmbeddedFirstCommunityPostChunk(
+    candidates.map(row => row.id),
+  )
+  return { enqueuedCount, scannedCount, nextCursor }
 }
 
 async function enqueueBanEvasionDetectionForEmbeddedFirstCommunityPostChunk(
-  postIds: string[] | null,
+  postIds: string[],
 ): Promise<number> {
-  const postIdFilter = postIds ? sql`AND p.id = ANY(${postIds}::uuid[])` : sql``
-  const limit = postIds ? sql`` : sql`LIMIT ${EMBEDDED_FIRST_COMMUNITY_POSTS_CHUNK_SIZE}`
   const query = sql`/* enqueueBanEvasionDetectionForEmbeddedFirstCommunityPostChunk */
     SELECT p.id AS post_id,
       p.community_id,
       p.created_by_id AS user_id,
       p.bedrock_nova_multimodal_v1_input_sha256 AS input_sha256
     FROM posts p
-    WHERE TRUE
-  `
-    .append(postIdFilter)
-    .append(sql`
+    WHERE p.id = ANY(${postIds}::uuid[])
       AND p.community_id IS NOT NULL
       AND p.created_by_id IS NOT NULL
       AND p.deleted_at IS NULL
@@ -79,12 +116,11 @@ async function enqueueBanEvasionDetectionForEmbeddedFirstCommunityPostChunk(
         WHERE first_post.created_by_id = p.created_by_id
           AND first_post.community_id = p.community_id
           AND first_post.deleted_at IS NULL
-        ORDER BY first_post.created_at ASC, first_post.id ASC
+        ORDER BY first_post.id ASC
         LIMIT 1
       )
     ORDER BY p.id
-  `)
-    .append(limit)
+  `
   const { rows } = await write<{
     post_id: string
     community_id: string
@@ -123,6 +159,7 @@ async function markBanEvasionPostEmbeddingTriggerEnqueued(
     FROM (VALUES `.append(updates).append(sql`) AS enqueued(post_id, input_sha256)
     WHERE p.id = enqueued.post_id
       AND p.bedrock_nova_multimodal_v1_input_sha256 = enqueued.input_sha256
+      AND p.bedrock_nova_multimodal_v1_content_sha256 = enqueued.input_sha256
   `),
   )
 }

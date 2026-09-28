@@ -19,7 +19,15 @@ export async function insertTestEmbeddingsBatch(data: {
   jobType?: string
   jobArn?: string | null
   bedrockStatus?: string
-  batchData?: unknown
+  batchData?: {
+    outputS3Uri?: string
+    metadata?: { inputSizeMB?: number; url_id?: string; crawl_id?: string }
+  }
+  inputS3Uri?: string
+  outputS3Uri?: string
+  inputSizeMB?: number
+  urlId?: string | null
+  crawlId?: string | null
   records?: number
   completedAt?: Date | null
   createdAt?: Date
@@ -29,11 +37,15 @@ export async function insertTestEmbeddingsBatch(data: {
   const model = data.model || 'amazon.nova-2-multimodal-embeddings-v1:0'
   const jobType = data.jobType || 'topics'
   const bedrockStatus = data.bedrockStatus || 'Submitted'
-  const batchData = {
-    status: bedrockStatus,
-    ...((data.batchData ?? {}) as Record<string, unknown>),
-  }
+  const batchData = data.batchData ?? {}
   const records = data.records || 0
+  const inputS3Uri = data.inputS3Uri ?? 's3://test-bucket/bedrock-embeddings-input/input.jsonl'
+  const outputS3Uri =
+    data.outputS3Uri ?? batchData.outputS3Uri ?? 's3://test-bucket/bedrock-embeddings-output/'
+  const inputSizeMb =
+    data.inputSizeMB !== undefined ? data.inputSizeMB : (batchData.metadata?.inputSizeMB ?? 0)
+  const urlId = data.urlId !== undefined ? data.urlId : (batchData.metadata?.url_id ?? null)
+  const crawlId = data.crawlId !== undefined ? data.crawlId : (batchData.metadata?.crawl_id ?? null)
 
   const column = lifecycleColumnForBedrockStatus(bedrockStatus)
   const now = new Date()
@@ -60,13 +72,17 @@ export async function insertTestEmbeddingsBatch(data: {
 
   await write(sql`
     INSERT INTO bedrock_embeddings_batches
-      (id, model_id, job_type, job_arn, data, records, submitted_at, in_progress_at, completed_at, failed_at, cancelled_at, created_at)
+      (id, model_id, job_type, job_arn, input_s3_uri, output_s3_uri, input_size_mb, url_id, crawl_id, records, submitted_at, in_progress_at, completed_at, failed_at, cancelled_at, created_at)
     VALUES (
       ${data.id},
       ${model},
       ${jobType},
       ${job_arn},
-      ${JSON.stringify(batchData)},
+      ${inputS3Uri},
+      ${outputS3Uri},
+      ${inputSizeMb},
+      ${urlId},
+      ${crawlId},
       ${records},
       ${submitted_at},
       ${in_progress_at},

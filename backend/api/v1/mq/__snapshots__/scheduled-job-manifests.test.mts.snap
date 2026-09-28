@@ -298,6 +298,226 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Copy reusable topic embeddings from the centralized table",
+        "id": "reconcile_existing_topics",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "bedrock-embedding-reconciliation",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "bedrock-embeddings-batch",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "reconcile_existing_topics",
+    "template": {
+      "data": {
+        "entityType": "topics",
+      },
+      "name": "reconcile_existing",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "bedrock-embedding-reconciliation:copy:topics",
+          "mode": "throttle",
+          "ttl": 60000,
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "reconciliation",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Copy reusable post embeddings from the centralized table",
+        "id": "reconcile_existing_posts",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "bedrock-embeddings-batch",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "reconcile_existing_posts",
+    "template": {
+      "data": {
+        "entityType": "posts",
+      },
+      "name": "reconcile_existing",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "bedrock-embedding-reconciliation:copy:posts",
+          "mode": "throttle",
+          "ttl": 60000,
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "reconciliation",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Copy reusable RSS item embeddings from the centralized table",
+        "id": "reconcile_existing_rss_feed_items",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "bedrock-embeddings-batch",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "reconcile_existing_rss_feed_items",
+    "template": {
+      "data": {
+        "entityType": "rss_feed_items",
+      },
+      "name": "reconcile_existing",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "bedrock-embedding-reconciliation:copy:rss_feed_items",
+          "mode": "throttle",
+          "ttl": 60000,
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "reconciliation",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recover ban-evasion delivery for current first-community-post embeddings",
+        "id": "post_trigger_recovery",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "bedrock-embeddings-batch",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "post_trigger_recovery",
+    "template": {
+      "data": {},
+      "name": "post_trigger_recovery",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "bedrock-embedding-reconciliation:post-trigger",
+          "mode": "throttle",
+          "ttl": 60000,
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "reconciliation",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recover story-clustering delivery for current RSS item embeddings",
+        "id": "rss_story_trigger_recovery",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "bedrock-embeddings-batch",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "rss_story_trigger_recovery",
+    "template": {
+      "data": {},
+      "name": "rss_story_trigger_recovery",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "deduplication": {
+          "id": "bedrock-embedding-reconciliation:rss-story-trigger",
+          "mode": "throttle",
+          "ttl": 60000,
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "reconciliation",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Poll Bedrock batch embeddings status",
         "id": "poll_dispatcher",
         "kind": "scheduled-jobs",
@@ -3162,6 +3382,46 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "bedrock-embeddings-batch",
     "schedule": "0 * * * *",
     "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Copy reusable topic embeddings from the centralized table",
+    "id": "reconcile_existing_topics",
+    "job_name": "reconcile_existing",
+    "queue_name": "bedrock-embeddings-batch",
+    "schedule": "* * * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Copy reusable post embeddings from the centralized table",
+    "id": "reconcile_existing_posts",
+    "job_name": "reconcile_existing",
+    "queue_name": "bedrock-embeddings-batch",
+    "schedule": "* * * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Copy reusable RSS item embeddings from the centralized table",
+    "id": "reconcile_existing_rss_feed_items",
+    "job_name": "reconcile_existing",
+    "queue_name": "bedrock-embeddings-batch",
+    "schedule": "* * * * *",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Recover ban-evasion delivery for current first-community-post embeddings",
+    "id": "post_trigger_recovery",
+    "job_name": "post_trigger_recovery",
+    "queue_name": "bedrock-embeddings-batch",
+    "schedule": "* * * * *",
+    "triggerName": "enqueuePostEmbeddingTriggerRecovery",
+  },
+  {
+    "description": "Recover story-clustering delivery for current RSS item embeddings",
+    "id": "rss_story_trigger_recovery",
+    "job_name": "rss_story_trigger_recovery",
+    "queue_name": "bedrock-embeddings-batch",
+    "schedule": "* * * * *",
+    "triggerName": "enqueueRssStoryTriggerRecovery",
   },
   {
     "description": "Dispatch hostname crawl jobs (daily)",

@@ -177,6 +177,10 @@
       "reason": "new story has no story-post projection until the separately captured story-post writer runs"
     },
     {
+      "path": "backend/services/stories/embedding-trigger.mts",
+      "reason": "records exact embedding-input story-clustering queue acceptance only; it does not change story assignment or publication eligibility"
+    },
+    {
       "path": "backend/services/topic-recommendations/create-topic-recommendation.mts",
       "reason": "private topic-recommendation is explicitly excluded from public publication"
     },

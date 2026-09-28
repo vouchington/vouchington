@@ -25,7 +25,6 @@ const lifecycleConstraints = [
   'admin_import_batches.chk_admin_import_batches__lifecycle',
   'admin_import_rows.chk_admin_import_rows__lifecycle',
   'bedrock_embeddings_batches.chk_bedrock_embeddings_batches__lifecycle',
-  'follower_distributions.chk_follower_distributions__audience_selection',
   'images.chk_images__upload_lifecycle',
   'moderation_training_feedbacks.chk_moderation_training_feedbacks__targets',
   'user_data_requests.chk_user_data_requests__lifecycle',
@@ -102,9 +101,9 @@ describe('PostgreSQL lifecycle integrity', () => {
   })
 
   it('bounds selected follower distribution recipients in the database', async () => {
-    expect(await getFollowerDistributionAudienceConstraint()).toContain(
-      'cardinality(selected_recipient_user_ids) <= 100',
-    )
+    const definition = await getFollowerDistributionAudienceConstraint()
+    expect(definition).toContain('recipient_count > 100')
+    expect(definition).toContain('recipient_count < 1')
   })
 
   it('binds moderation feedback source-specific targets', async () => {

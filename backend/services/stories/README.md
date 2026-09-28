@@ -55,6 +55,7 @@ post__stories (junction table)
 | `story-post-related-url-projection.mts` | Generation-fenced, lease-based reconciliation of every eligible active story-member URL in bounded source, prune, and stale-state cleanup pages. Durable least-recently-claimed ordering rotates large continuations across pending posts, while generation-scoped mutation fences preserve manually re-confirmed links and copy into each restarted generation under the post-publication lock. Hostname ancestry uses indexed suffix equality rather than a leading-wildcard scan. Receipts make relation and crawl effects replayable; a five-minute schedule recovers missed enqueues. |
 | `get-or-create-for-item.mts`            | `getOrCreateStoryForItem` — get or create a story for an item (for story post creation)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `authorization.mts`                     | `currentUserCanCreateStoryPost` — any authenticated user                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `embedding-trigger.mts`                 | Strict queue acceptance and exact-input marker for story clustering; bounded recovery of pending RSS items                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 ## Clustering Algorithm
 
@@ -73,13 +74,18 @@ Candidates include items **both with and without existing stories**. An item may
 
 ### Trigger Sources
 
-`enqueueStoryClustering` is called from three places:
+The strict story-clustering enqueue and exact-input marker are used by three embedding paths:
 
 1. **Single-path embedding worker** ([`backend/workers/bedrock-embeddings/workers/bedrock-embeddings-nova-multimodal-v1-single.mts`](../../workers/bedrock-embeddings/workers/bedrock-embeddings-nova-multimodal-v1-single.mts)) — immediately after `upsertRssFeedItemEmbedding` writes the embedding vector.
 2. **Batch-path save** ([`backend/services/bedrock-embeddings-batch/entities/rss-feed-items.mts`](../bedrock-embeddings-batch/entities/rss-feed-items.mts)) — for each item id returned by `applyRssFeedItemBatchUpdates` after a Bedrock batch result is applied.
-3. **Batch-path copy-existing** (same file) — for each item hydrated from the centralized `bedrock_nova_multimodal_v1_embeddings` table by `copyExistingRssFeedItemEmbeddings` during batch creation.
+3. **Reusable-copy reconciliation** (same file) — for each item hydrated from the centralized `bedrock_nova_multimodal_v1_embeddings` table by `copyExistingRssFeedItemEmbeddings` in the independent reconciliation lane.
 
-All three paths use the same `debounce` dedup key (`story_clustering_${id}`, 60 s TTL), so rapid re-enqueues for the same item coalesce.
+Queue acceptance is marked with `story_clustering_embedding_input_sha256` only when the accepted
+job's embedding input and current content still match. This records delivery to GlideMQ, not
+completion of the clustering agent. A failed or deduplicated enqueue leaves the marker pending.
+`rss_story_trigger_recovery` scans pending current embeddings in pages of at most 100 and retries
+delivery; its cursorless root runs each minute in production (hourly on staging). Operators can
+restart all five embedding reconciliation roots through `bedrock-embedding-reconciliation`.
 
 ### Embedding Retry
 
