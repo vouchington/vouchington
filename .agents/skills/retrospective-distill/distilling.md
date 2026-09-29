@@ -97,10 +97,10 @@ and may misclassify their own work.
 - Journal-only evidence has no `## Verifiable Facts` section. Verify any factual claim it makes
   against `origin/main` before it appears in an issue body — do not propagate an agent's own
   in-session narration unverified.
-- Journal entries are raw, unminimized notes and automatic checkpoints, not the retrospective
-  skill's redacted prose — an automatic failure checkpoint embeds a verbatim failed command and its
-  stderr head (`dev/journal-checkpoint/note.mts`'s `renderFailureNote`), which can carry credentials
-  or other sensitive local context. Before quoting journal content in an issue body, summarize the
+- Journal entries are raw, unminimized notes, not the retrospective skill's redacted prose. A
+  historic hook-written failure checkpoint (no hook appends these anymore) embeds a verbatim failed
+  command and its stderr head, and an agent's own note can paste the same, so either can carry
+  credentials or other sensitive local context. Before quoting journal content in an issue body, summarize the
   finding in your own words instead of pasting raw command/stderr text, and strip any long opaque
   token, `VAR=value` assignment, or credential-bearing URL. Verifying a claim against `origin/main`
   (above) checks accuracy; it does not sanitize the text.

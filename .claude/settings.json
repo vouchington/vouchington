@@ -50,8 +50,6 @@
       "Bash(node dev/check-blackboard.mts *)",
       "Bash(node dev/codex-hooks/persist-session-id.mts)",
       "Bash(node dev/codex-hooks/persist-session-id.mts *)",
-      "Bash(node dev/journal-checkpoint.mts)",
-      "Bash(node dev/journal-checkpoint.mts *)",
       "Bash(node dev/codex-hooks/post-tool-use-command.mts)",
       "Bash(node dev/codex-hooks/post-tool-use-command.mts *)",
       "Bash(node dev/pr-description.mts)",
@@ -326,10 +324,6 @@
           {
             "type": "command",
             "command": "node \"$(git rev-parse --show-toplevel)/dev/check-blackboard.mts\""
-          },
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/dev/journal-checkpoint.mts\" compact claude"
           }
         ]
       }
@@ -472,8 +466,6 @@
       "node dev/check-blackboard.mts *",
       "node dev/codex-hooks/persist-session-id.mts",
       "node dev/codex-hooks/persist-session-id.mts *",
-      "node dev/journal-checkpoint.mts",
-      "node dev/journal-checkpoint.mts *",
       "node dev/codex-hooks/post-tool-use-command.mts",
       "node dev/codex-hooks/post-tool-use-command.mts *",
       "node dev/pr-description.mts",

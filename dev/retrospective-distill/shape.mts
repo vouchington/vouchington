@@ -2,8 +2,8 @@ import { isDeepStrictEqual } from 'node:util'
 import type { Session, SessionEntry } from 'agent-blackboard'
 import { validateFeedbackEnvelope } from 'vouchington-tooling/agent-blackboard'
 
-import { isCheckpointEntry } from '../journal-checkpoint/checkpoint-entry.mts'
 import { isRetrospectiveEntry } from '../retrospective-save/retrospective-entry.mts'
+import { isCheckpointEntry } from './checkpoint-entry.mts'
 
 // Mirrors .agents/skills/retrospective-distill/SKILL.md's classification paragraph exactly —
 // keep these two in step; a mismatch means an inspector's hand classification and this command's

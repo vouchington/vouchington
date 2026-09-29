@@ -9,10 +9,6 @@ import { makeTestTempDirSync } from './test-temp-root.mts'
 const scriptPath = path.join(import.meta.dirname, '..', 'codex-hooks', 'post-tool-use-command.mts')
 const worktreeRoot = path.resolve(import.meta.dirname, '..', '..')
 
-// SANDBOX_RUNTIME=1 is the documented skip guard checked first in
-// dev/journal-checkpoint/append.mts, before any credential check or network attempt — using it
-// keeps these subprocess tests fully offline and deterministic regardless of whatever real
-// AGENT_BLACKBOARD_URL/AGENT_BLACKBOARD_TOKEN happen to be set in the ambient environment.
 const testDirs: string[] = []
 
 function makeTempDir(): string {
@@ -29,7 +25,7 @@ function runScript({
   const tmpEnv = makeTempDir()
   return spawnSync('node', [scriptPath, ...args], {
     encoding: 'utf8',
-    env: { ...process.env, SANDBOX_RUNTIME: '1', TMPDIR: tmpEnv, ...env },
+    env: { ...process.env, TMPDIR: tmpEnv, ...env },
     input,
     timeout: 10_000,
   })
@@ -82,55 +78,42 @@ describe('dev/codex-hooks/post-tool-use-command.mts (merged PostToolUse hook sub
     expect(result.stdout).toBe('')
   })
 
-  it('runs the full failure-checkpoint pipeline and stays silent under SANDBOX_RUNTIME', () => {
-    const payload = JSON.stringify({
-      session_id: `e2e-post-tool-use-command-failure-${randomUUID()}`,
-      tool_input: { command: 'npx vitest run some.test.mts' },
-      tool_response: 'Error: Exit code 1: boom',
+  // Calls the hook once journaled on the agent's behalf (a repeated test failure, a PR-create or
+  // push milestone) are now ordinary: no journal side effect and nothing on stdout outside tmux.
+  it.each([
+    [
+      'claude',
+      { command: 'npx vitest run some.test.mts' },
+      'Error: Exit code 1: boom',
+      { repeat: 3 },
+    ],
+    [
+      'claude',
+      { command: 'gh pr create --title x --body y' },
+      { stderr: '', stdout: 'https://github.com/vouchington/vouchington/pull/9358\n' },
+      { repeat: 1 },
+    ],
+    [
+      'codex',
+      { command: 'git push origin my-branch' },
+      'To github.com:vouchington/vouchington.git\n   abc123..def456  my-branch -> my-branch\n',
+      { repeat: 1 },
+    ],
+  ])('stays silent for %s %j', (runtime, toolInput, toolResponse, { repeat }) => {
+    const input = JSON.stringify({
+      session_id: `e2e-post-tool-use-command-${randomUUID()}`,
+      tool_input: toolInput,
+      tool_response: toolResponse,
     })
-    for (let i = 0; i < 3; i += 1) {
-      const result = runScript({ args: ['claude'], env: { TMUX_PANE: undefined }, input: payload })
+    for (let attempt = 0; attempt < repeat; attempt += 1) {
+      const result = runScript({ args: [runtime], env: { TMUX_PANE: undefined }, input })
       expect(result.status).toBe(0)
       expect(result.stderr).toBe('')
       expect(result.stdout).toBe('')
     }
   })
 
-  it('runs the full milestone-checkpoint pipeline and stays silent under SANDBOX_RUNTIME', () => {
-    const result = runScript({
-      args: ['claude'],
-      env: { TMUX_PANE: undefined },
-      input: JSON.stringify({
-        session_id: `e2e-post-tool-use-command-milestone-${randomUUID()}`,
-        tool_input: { command: 'gh pr create --title x --body y' },
-        tool_response: {
-          stderr: '',
-          stdout: 'https://github.com/vouchington/vouchington/pull/9358\n',
-        },
-      }),
-    })
-    expect(result.status).toBe(0)
-    expect(result.stderr).toBe('')
-    expect(result.stdout).toBe('')
-  })
-
-  it('recognizes a Codex-shaped payload for the journal-checkpoint milestone pipeline too', () => {
-    const result = runScript({
-      args: ['codex'],
-      env: { TMUX_PANE: undefined },
-      input: JSON.stringify({
-        session_id: `e2e-post-tool-use-command-codex-milestone-${randomUUID()}`,
-        tool_input: { command: 'git push origin my-branch' },
-        tool_response:
-          'To github.com:vouchington/vouchington.git\n   abc123..def456  my-branch -> my-branch\n',
-      }),
-    })
-    expect(result.status).toBe(0)
-    expect(result.stderr).toBe('')
-    expect(result.stdout).toBe('')
-  })
-
-  it('emits only the tmux reminder on stdout, even when the same call also fires a journal milestone', () => {
+  it('emits only the tmux reminder on stdout for a PR-create call', () => {
     const tmuxCommand = writeFakeTmux('old-task')
     const result = runScript({
       args: ['claude'],
@@ -199,6 +182,43 @@ describe('dev/codex-hooks/post-tool-use-command.mts (merged PostToolUse hook sub
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
     expect(result.stdout).toBe('')
+  })
+
+  // Agents write their own Blackboard journal entries (docs/development/agent-blackboard.md), so
+  // no module this hook can load may reach the Blackboard writer. The scan follows static and
+  // dynamic relative imports, because the hook loads every side effect lazily with `import()`.
+  it('never reaches the Blackboard journal writer through its static or dynamic imports', () => {
+    const writerDirs = ['blackboard', 'agent-session-id'].map(dir =>
+      path.join(worktreeRoot, 'dev', dir, path.sep),
+    )
+    const pending = [scriptPath]
+    const reachable = new Set<string>()
+    for (let file = pending.pop(); file !== undefined; file = pending.pop()) {
+      if (reachable.has(file)) continue
+      reachable.add(file)
+      const source = readFileSync(file, 'utf8')
+      for (const match of source.matchAll(/(?:from\s+|import\()\s*['"](\.[^'"]+)['"]/g)) {
+        pending.push(path.resolve(path.dirname(file), match[1] as string))
+      }
+    }
+    expect(reachable.size).toBeGreaterThan(3)
+    expect([...reachable].filter(file => writerDirs.some(dir => file.startsWith(dir)))).toEqual([])
+  })
+
+  it('registers no hook command that appends journal entries in either config', () => {
+    const claude = JSON.parse(
+      readFileSync(path.join(worktreeRoot, '.claude/settings.json'), 'utf8'),
+    )
+    const claudeCommands = Object.values<{ hooks: { command: string }[] }[]>(claude.hooks).flatMap(
+      groups => groups.flatMap(group => group.hooks.map(hook => hook.command)),
+    )
+    const codex = readFileSync(path.join(worktreeRoot, '.codex/config.toml'), 'utf8')
+    const codexCommands = [...codex.matchAll(/^command = (.+)$/gm)].map(match => match[1] as string)
+    expect(claudeCommands.length).toBeGreaterThan(0)
+    expect(codexCommands.length).toBeGreaterThan(0)
+    for (const command of [...claudeCommands, ...codexCommands]) {
+      expect(command).not.toMatch(/journal/i)
+    }
   })
 
   it('ships the merged entrypoint in both configs with an explicit runtime argv', () => {
