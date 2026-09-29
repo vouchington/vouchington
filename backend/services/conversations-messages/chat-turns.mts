@@ -32,9 +32,9 @@ export async function lockConversationAndAssertNoActiveChatTurn(
     FROM conversation_messages cm
     WHERE cm.conversation_id = ${conversationId}
       AND cm.deleted_at IS NULL
-      AND cm.chat_role = 'assistant'
-      AND cm.chat_text IS NULL
-      AND cm.chat_error IS NULL
+      AND cm.content->>'role' = 'assistant'
+      AND cm.content->>'content' IS NULL
+      AND cm.content->>'error' IS NULL
       AND NOT EXISTS (
         SELECT 1
         FROM conversation_message_agentic_runs cmar
@@ -59,19 +59,15 @@ export async function createHostedChatTurn(params: {
   await lockConversationAndAssertNoActiveChatTurn(query, conversationId)
 
   const userInsert = sql`/* createHostedChatTurnUser */
-    INSERT INTO conversation_messages (
-      conversation_id, created_by_id, chat_role, chat_text, chat_error
-    )
-    VALUES (${conversationId}, ${createdById}, 'user', ${message}, NULL)
+    INSERT INTO conversation_messages (conversation_id, created_by_id, content)
+    VALUES (${conversationId}, ${createdById}, ${JSON.stringify({ role: 'user', content: message })})
     RETURNING
   `
   appendConversationMessageReturning(userInsert)
   const userMessageResult = await query<ConversationMessage>(userInsert)
   const assistantInsert = sql`/* createHostedChatTurnAssistant */
-    INSERT INTO conversation_messages (
-      conversation_id, created_by_id, chat_role, chat_text, chat_error
-    )
-    VALUES (${conversationId}, ${createdById}, 'assistant', NULL, NULL)
+    INSERT INTO conversation_messages (conversation_id, created_by_id, content)
+    VALUES (${conversationId}, ${createdById}, ${JSON.stringify({ role: 'assistant', content: null })})
     RETURNING
   `
   appendConversationMessageReturning(assistantInsert)

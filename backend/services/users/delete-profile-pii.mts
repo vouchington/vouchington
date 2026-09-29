@@ -7,6 +7,10 @@ import sql from 'sql-template-strings'
  * Returns the affected row count (0 if the user is already soft-deleted).
  * The caller is responsible for asserting > 0 and raising an appropriate error.
  *
+ * `deleted_by_id` is a foreign key to `users`, so this UPDATE takes `KEY SHARE` on the actor row.
+ * The caller must already hold the ordered `users` row locks from `lockUserDeletionRows`; locking
+ * the actor here instead would reintroduce the reciprocal-deletion deadlock.
+ *
  * Extracted from `deleteUser` to keep `delete.mts` under the 200-line oxlint cap.
  * Mirrors the `delete-oauth-pii.mts` precedent for encapsulating deletion-time scrubs.
  */

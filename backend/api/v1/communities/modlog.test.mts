@@ -143,4 +143,47 @@ describe('GET /api/v1/communities/:idOrSlug/modlog', () => {
     expect(action.community_id).toBe(community.id)
     expect(action.action_type).toBe('lock')
   })
+
+  it('lists the activated and the lifted restriction ids in action metadata', async () => {
+    const restrictionCommunity = await insertTestCommunity({
+      createdById: owner.id,
+      slug: `modlog-restrictions-${createRandomString(8)}`,
+    })
+    await insertTestCommunityMember({
+      communityId: restrictionCommunity.id,
+      userId: owner.id,
+      role: 'owner',
+    })
+    const request = createRequest()
+    await request.authenticateAs(owner)
+    const activated = await request
+      .post(`/api/v1/communities/${restrictionCommunity.slug}/restrictions`)
+      .send({ restriction_types: ['require_post_approval', 'no_links'] })
+      .expect(201)
+    const restrictions = Object.values(activated.body.community_restrictions) as { id: string }[]
+    await request
+      .delete(
+        `/api/v1/communities/${restrictionCommunity.slug}/restrictions/${restrictions[1]!.id}`,
+      )
+      .expect(204)
+
+    const response = await request
+      .get(`/api/v1/communities/${restrictionCommunity.slug}/modlog`)
+      .expect(200)
+
+    const actions = Object.values(response.body.moderator_actions) as {
+      action_type: string
+      metadata: Record<string, unknown>
+    }[]
+    const metadataOf = (type: string) =>
+      actions.find(action => action.action_type === type)?.metadata
+    expect(metadataOf('activate_restriction')).toMatchObject({
+      restriction_ids: restrictions.map(restriction => restriction.id),
+      restriction_types: ['require_post_approval', 'no_links'],
+    })
+    expect(metadataOf('lift_restriction')).toEqual({
+      restriction_id: restrictions[1]!.id,
+      restriction_type: 'no_links',
+    })
+  })
 })

@@ -18,7 +18,7 @@ describe('post admission reservation indexes', () => {
     expect(rows).toEqual([
       {
         indexdef:
-          "CREATE INDEX idx_post_admission_reservations__committed_post_retention ON public.post_admission_reservations USING btree (committed_post_id, retention_expires_at) WHERE (state = 'committed'::text)",
+          'CREATE INDEX idx_post_admission_reservations__committed_post_retention ON public.post_admission_reservations USING btree (committed_post_id, retention_expires_at) WHERE (committed_post_id IS NOT NULL)',
       },
     ])
   })

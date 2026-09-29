@@ -65,9 +65,11 @@ export async function finalizeChatAgenticRun(options: {
   }
   const messageResult = await query(sql`/* finalizeChatAgenticRunMessage */
       UPDATE conversation_messages
-      SET chat_role = 'assistant',
-        chat_text = ${options.content},
-        chat_error = ${options.error ?? null}
+      SET content = ${JSON.stringify({
+        role: 'assistant',
+        content: options.content,
+        ...(options.error ? { error: options.error } : {}),
+      })}
       WHERE conversation_id = ${options.conversationId}
         AND id = ${options.conversationMessageId}
         AND deleted_at IS NULL
@@ -95,7 +97,7 @@ export async function finalizeChatAgenticRun(options: {
  * (backend/services/ai-usage/spend-cap-guard.mts) can be deferred via job.moveToDelayed() instead
  * of permanently failing the request. Soft-deletes the run row rather than finalizing it:
  * claimChatConversationMessageAgenticRun (backend/services/conversations-messages/create.mts) never
- * mutates the assistant chat columns, so the message's pending placeholder is untouched
+ * mutates conversation_messages.content itself, so the message's pending placeholder is untouched
  * and a retried job can re-claim it. Same advisory-lock key as the claim, so this cannot race a
  * concurrent claim/finalize on the same message.
  */
@@ -166,13 +168,17 @@ export async function failChatEnqueue(options: {
   }
   const messageResult = await query(sql`/* failChatEnqueueMessage */
       UPDATE conversation_messages
-      SET chat_error = ${options.error}
+      SET content = ${JSON.stringify({
+        role: 'assistant',
+        content: null,
+        error: options.error,
+      })}
       WHERE conversation_id = ${options.conversationId}
         AND id = ${options.conversationMessageId}
         AND deleted_at IS NULL
-        AND chat_role = 'assistant'
-        AND chat_text IS NULL
-        AND chat_error IS NULL
+        AND content->>'role' = 'assistant'
+        AND content->>'content' IS NULL
+        AND content->>'error' IS NULL
     `)
   if (messageResult.rowCount !== 1 && transitionedRun.rows[0]) {
     throw new Error('Chat assistant message was unavailable during enqueue failure')

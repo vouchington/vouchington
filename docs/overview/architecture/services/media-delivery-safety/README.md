@@ -23,6 +23,15 @@ sequence. This prevents a deny published before a rolled-back
 transaction from being overwritten by a reused generation; retries of the same persisted state keep
 the same generation, while the edge rejects a conflicting state at that generation.
 
+That ordering holds only within one continuous database history. A restore rewinds the sequence
+and rows while an edge that survived keeps its higher generations, and the retired integer-range
+offset never guaranteed monotonicity across a restore. The edge's conditional write rejects a stale
+generation instead of overwriting, but rejection does not converge: replay reopens a failed record at
+the same generation, reconciliation never reads the edge, and a completed record is not written
+again. Coordinated PostgreSQL, edge, and cache recovery therefore follows the
+[reset and restore runbook](../../../../runbooks/media-delivery-reset-restore.md), which fences the
+sequence above the edge high-water mark before reopening records and lets withhold win.
+
 The publisher reads the committed exact tuple, retains its placement fence, locks relevant legal
 cases before the registry row, and proves current byte safety, typed owner binding, revision,
 restriction, and court/CCB eligibility before any allow. The outbox worker, marker repair, and

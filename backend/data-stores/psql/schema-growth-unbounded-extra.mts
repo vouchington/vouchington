@@ -23,9 +23,7 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'boilerplate_removal_urls',
   'boilerplate_removals',
   'community_agent_prompts',
-  'community_application_answer_selections',
   'community_application_answers',
-  'community_application_question_options',
   'community_application_questions',
   'community_applications',
   'community_auto_tagger_agents',
@@ -159,5 +157,6 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'moderation_training_feedbacks',
   'moderation_transparency_daily_rollups',
   'moderation_transparency_released_daily_rollups',
+  'moderator_action_community_restrictions',
   ...EXTRA_UNBOUNDED_TABLES_CONTINUED,
 ] as const
