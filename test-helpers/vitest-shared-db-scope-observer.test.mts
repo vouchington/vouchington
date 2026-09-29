@@ -16,6 +16,35 @@ describe('shared database scope observer', () => {
     expect(() =>
       observeSharedDbScope('listAvailableNotificationPushIntents', { kind: 'global' }),
     ).not.toThrow()
+    expect(() =>
+      observeSharedDbScope('cleanupRetainedIdentityRoots', sharedDbIdsScope()),
+    ).not.toThrow()
+    expect(() =>
+      observeSharedDbScope('cleanupRetainedRelationIdentities', sharedDbIdsScope()),
+    ).not.toThrow()
+  })
+
+  it('registers both retained cleanup boundaries with their shared cursor tables', () => {
+    const events: SharedDbScopeEvent[] = []
+    const dispose = installSharedDbScopeObserver(event => events.push(event))
+    try {
+      observeSharedDbScope('cleanupRetainedIdentityRoots', sharedDbIdsScope(['root']))
+      observeSharedDbScope('cleanupRetainedRelationIdentities', sharedDbIdsScope())
+      expect(events).toEqual([
+        {
+          operation: 'cleanupRetainedIdentityRoots',
+          table: 'retained_identity_cleanup_progress',
+          scope: { kind: 'ids', ids: ['root'] },
+        },
+        {
+          operation: 'cleanupRetainedRelationIdentities',
+          table: 'retained_relation_identity_cleanup_progress',
+          scope: { kind: 'global' },
+        },
+      ])
+    } finally {
+      dispose()
+    }
   })
 
   it('reports bound ids and keyset cursors to a registered observer', () => {
