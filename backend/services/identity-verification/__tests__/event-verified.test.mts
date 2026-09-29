@@ -2,7 +2,6 @@ import {
   makePreGuardResult,
   makeQueryResult,
   mockBeginTransaction,
-  mockEnqueueElectionUpdates,
   mockFingerprint,
   mockGetVerificationResult,
   mockInvalidateUsers,

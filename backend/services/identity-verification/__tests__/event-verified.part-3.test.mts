@@ -2,11 +2,7 @@ import {
   makePreGuardResult,
   makeQueryResult,
   mockBeginTransaction,
-  mockEnqueueElectionUpdates,
-  mockFingerprint,
-  mockGetVerificationResult,
   mockInvalidateUsers,
-  mockRecalculateVoteWeight,
   onVerificationSessionVerifiedForTest,
   resetEventVerifiedDoubles,
 } from '../../../test-helpers/services/identity-verification/event-verified-fixtures.mts'

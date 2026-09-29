@@ -2,16 +2,18 @@ import { createTransactionResource } from './transaction-resource.mts'
 import { vi } from 'vitest'
 
 import type { beginTransaction } from '@voucha/test-helpers'
-import type { stripeIdentityProvider } from '@modules/stripe/identity'
 import type { computeIdentityFingerprint } from '../../../services/identity-verification/fingerprint.mts'
 
 import { onVerificationSessionVerified } from '../../../services/identity-verification/event-completion.mts'
+
+type EventVerifiedDependencies = NonNullable<Parameters<typeof onVerificationSessionVerified>[2]>
 
 const mockBeginTransaction = vi.fn<typeof beginTransaction>()
 
 const mockInvalidateUsers = vi.fn<(userId: string) => Promise<void>>()
 
-const mockGetVerificationResult = vi.fn<typeof stripeIdentityProvider.getVerificationResult>()
+const mockGetVerificationResult =
+  vi.fn<NonNullable<EventVerifiedDependencies['getVerificationResult']>>()
 
 const mockFingerprint = vi.fn<typeof computeIdentityFingerprint>()
 const mockRecalculateVoteWeight =

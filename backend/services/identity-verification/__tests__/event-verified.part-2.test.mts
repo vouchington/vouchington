@@ -3,7 +3,6 @@ import {
   makeQueryResult,
   mockBeginTransaction,
   mockEnqueueElectionUpdates,
-  mockFingerprint,
   mockGetVerificationResult,
   mockInvalidateUsers,
   mockRecalculateVoteWeight,
