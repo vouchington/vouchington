@@ -8,6 +8,7 @@
 // and never throw, so they never reach captureWorkerException().
 
 import { captureException, type CloudflareOptions } from '@sentry/cloudflare'
+import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
 import { resolveSentryDsnEnablement } from '@ts-shared/utils/sentry-deployment-gate'
 import {
   composeSentryBeforeSend,
@@ -32,6 +33,8 @@ export function createSentryOptions(env: Env): CloudflareOptions {
     release: env.GIT_COMMIT ?? undefined,
     enabled,
     tracesSampleRate: 0.1,
+    // No request/response bodies or gen-AI prompts and completions (see sentry-data-collection.mts).
+    dataCollection: createSentryDataCollection(),
     beforeSend: composeSentryBeforeSend(),
     // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).
     beforeSendSpan: scrubSentrySpan,

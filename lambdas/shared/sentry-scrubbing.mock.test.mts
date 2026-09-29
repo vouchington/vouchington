@@ -21,7 +21,7 @@ describe('initSentry event scrubbing', () => {
     process.env.NODE_ENV = originalNodeEnv
   })
 
-  it('scrubs sensitive fields from events and breadcrumbs by default', async () => {
+  it('scrubs sensitive fields and drops the request body by default', async () => {
     process.env.NODE_ENV = 'test'
     initSentry({ lambdaName: 'test-lambda' })
     const result = await getBeforeSend(vi.mocked(Sentry.init))(
@@ -33,11 +33,12 @@ describe('initSentry event scrubbing', () => {
             cookie: 'session=abc',
             'x-request-id': 'request-1',
           },
-          data: {
-            nested: {
-              token: 'secret-token',
-              message: 'contact tests+ops@voucha.ai with token=abc123',
-            },
+          data: '{"legalName":"Claimant"}',
+        },
+        extra: {
+          nested: {
+            token: 'secret-token',
+            message: 'contact tests+ops@voucha.ai with token=abc123',
           },
         },
         breadcrumbs: [
@@ -58,11 +59,11 @@ describe('initSentry event scrubbing', () => {
           cookie: '[Filtered]',
           'x-request-id': 'request-1',
         },
-        data: {
-          nested: {
-            token: '[Filtered]',
-            message: 'contact [Filtered email] with token=[Filtered token]',
-          },
+      },
+      extra: {
+        nested: {
+          token: '[Filtered]',
+          message: 'contact [Filtered email] with token=[Filtered token]',
         },
       },
       breadcrumbs: [
@@ -72,6 +73,7 @@ describe('initSentry event scrubbing', () => {
         },
       ],
     })
+    expect(result?.request).not.toHaveProperty('data')
   })
 
   it('scrubs request URLs after a custom beforeSend hook', async () => {
