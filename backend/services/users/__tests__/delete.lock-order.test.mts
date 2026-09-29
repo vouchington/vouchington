@@ -24,7 +24,7 @@ async function createAdministratorsByAscendingId(): Promise<{
 describe('deleteUser user-row lock order', () => {
   it('locks a lower-id actor before waiting on a higher-id target', async () => {
     const { lower: actor, higher: target } = await createAdministratorsByAscendingId()
-    const holder = await holdTestUserRowLock(target.id, 'update')
+    const holder = await holdTestUserRowLock(target.id)
     const deletion = deleteUser(actor, target)
     try {
       await waitForTestPostgresLockWaiter(holder.holderProcessId, '/* deleteUser:lockUserRow */')
@@ -38,7 +38,7 @@ describe('deleteUser user-row lock order', () => {
 
   it('locks a lower-id target before waiting on a higher-id actor', async () => {
     const { lower: target, higher: actor } = await createAdministratorsByAscendingId()
-    const holder = await holdTestUserRowLock(actor.id, 'update')
+    const holder = await holdTestUserRowLock(actor.id)
     const deletion = deleteUser(actor, target)
     try {
       await waitForTestPostgresLockWaiter(

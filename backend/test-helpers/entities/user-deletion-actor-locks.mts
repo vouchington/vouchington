@@ -18,19 +18,10 @@ async function holdTestLock(
   return { ...paused, holderProcessId }
 }
 
-/** Holds a row lock on a live `users` row until released: `update` is FOR UPDATE. */
-export async function holdTestUserRowLock(
-  userId: string,
-  mode: 'update' | 'key-share',
-): Promise<HeldTestLock> {
+/** Holds `FOR UPDATE` on a live `users` row until released. */
+export async function holdTestUserRowLock(userId: string): Promise<HeldTestLock> {
   return holdTestLock(async query => {
-    await (mode === 'update'
-      ? query(
-          sql`/* holdTestUserRowLock:update */ SELECT id FROM users WHERE id = ${userId} FOR UPDATE`,
-        )
-      : query(
-          sql`/* holdTestUserRowLock:keyShare */ SELECT id FROM users WHERE id = ${userId} FOR KEY SHARE`,
-        ))
+    await query(sql`/* holdTestUserRowLock */ SELECT id FROM users WHERE id = ${userId} FOR UPDATE`)
   })
 }
 
