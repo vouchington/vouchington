@@ -19,7 +19,9 @@ and crawler analytics.
 
 `clean.mts` converts parsed entries into stored feed items. Atom text fields may arrive as
 `{ value, type }` objects; the adapter extracts `value` for title, summary, and content while
-keeping string fields from RSS and JSON Feed unchanged.
+keeping string fields from RSS unchanged. JSON Feed `content_html` is stored as `content`, and
+`content_text` is stored as `description`, when those shared fields are absent. Sanitization and
+embeddings then see the item body through the same fields as RSS and Atom.
 `rss-feeds/validate.mts` applies the same normalization when naming an Atom feed.
 
 Malformed feed bodies emit failed RSS crawler analytics with `error_type='ParseFeedError'`; valid parsed feeds emit success only after parsing completes.
