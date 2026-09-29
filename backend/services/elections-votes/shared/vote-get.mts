@@ -13,14 +13,23 @@ import { toElectionVoteChoice } from './vote-route-utils.mts'
  * @param config - Entity election configuration
  * @param userId - User ID to get votes for
  * @param entityIds - Optional array of entity IDs to filter by
+ * @param relationTable - Relation votes only: restrict to one concrete relation table
  * @returns Array of current election votes
  */
 export async function getElectionVotesByUser(
   config: EntityElectionConfig,
   userId: string,
   entityIds?: string[],
+  relationTable?: string,
 ): Promise<ElectionVote[]> {
-  const rows = await fetchElectionVoteRowsByUser(config, userId, entityIds, read)
+  const rows = await fetchElectionVoteRowsByUser(
+    config,
+    userId,
+    entityIds,
+    read,
+    undefined,
+    relationTable,
+  )
   return mapCurrentVotes(config, rows)
 }
 
