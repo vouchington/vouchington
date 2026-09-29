@@ -1,71 +1,17 @@
 import { it, expect, beforeEach, describe } from 'vitest'
-
 import { upsertRssFeedItemCategories, getRssFeedItemCategories } from '../categories.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
-
 import { createTopic } from '@services/topics'
-
 import { createTopicAliases } from '@services/topics/aliases'
-
-import { upsertRssFeedItems } from '../upsert.mts'
-
-import { v4 as uuid } from 'uuid'
-
-import {
-  createTestTopic,
-  createTestUser,
-  softDeleteTopic,
-  insertTestRssFeedDirect,
-} from '@voucha/test-helpers'
+import { createTestUser, softDeleteTopic } from '@voucha/test-helpers'
+import { createRssFeedItemCategoryTestFixture } from '../../../test-helpers/services/rss-feed-items/category-test-fixture.mts'
 
 describe('categories', () => {
-  type Category = { category_text: string; topic_id: string | null }
-
-  const filterCategories = (categories: Category[], categoryTexts: string[]) =>
-    categories.filter(c => categoryTexts.includes(c.category_text))
-
-  let testTopicId: string
-
-  let testRssFeedId: string
-
   let testRssFeedItemId: string
 
-  let testAliases: string[]
-
-  let testCategories: string[]
-
   beforeEach(async () => {
-    // Create a test user and topic with aliases
-    const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTestTopic({
-      name: `Test Topic ${random}`,
-      slug: `test-topic-${random}`,
-      hostname: `categories-${random}.example.com`,
-    })
-    testTopicId = topic.id
-    // Use unique aliases per test to avoid conflicts
-    testAliases = [`technology-${random}`, `tech-${random}`, `computers-${random}`]
-    await createTopicAliases(testTopicId, testAliases)
-
-    // Use unique category names per test to avoid conflicts
-    testCategories = [`science-${random}`, `politics-${random}`]
-
-    // Create a test RSS feed and item
-    const feed = await insertTestRssFeedDirect({
-      rssFeedUrl: `https://categories-${random}.example.com/feed-${random}.xml`,
-      topicId: testTopicId,
-      title: `Test Feed ${random}`,
-    })
-    testRssFeedId = feed.id
-    const items = await upsertRssFeedItems(testRssFeedId, [
-      {
-        link: `https://test-${uuid()}.example.com/item1`,
-        guid: `test-item-${uuid()}`,
-        title: 'Test Item',
-        categories: [testAliases[0], ...testCategories],
-      },
-    ])
-    testRssFeedItemId = items[0].id
+    const fixture = await createRssFeedItemCategoryTestFixture()
+    testRssFeedItemId = fixture.testRssFeedItemId
   })
 
   it('upsertRssFeedItemCategories matches category to topic by name (no alias needed)', async () => {
@@ -216,6 +162,4 @@ describe('categories', () => {
     const matched = allCategories.find(c => c.category_text === slug)
     expect(matched?.topic_id).toBe(topic.id)
   })
-  // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof filterCategories)
 })
