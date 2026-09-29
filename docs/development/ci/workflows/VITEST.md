@@ -22,9 +22,8 @@ Reporter policy:
 - CI Vitest commands set `VITEST_CI_REPORTERS: run` and `VITEST_JUNIT_OUTPUT_FILE`; do not pass
   reporter or output-file CLI flags.
 - `vitest.config.mts` owns the CI reporter list: `minimal`, configured `github-actions`, `junit`,
-  `hanging-process`, and the CI-only worker-exit diagnostics reporter. The diagnostics reporter
-  prints bounded worker-exit context, including recent modules, stderr tail, process resources,
-  and serialized unhandled errors.
+  `hanging-process`, and the CI-only teardown-overrun reporter, which prints process and
+  active-resource context when Vitest's exit watchdog fires at `teardownTimeout`.
 - The `github-actions` reporter must keep job summaries disabled and file links configured from GitHub environment variables.
 
 <!-- BEGIN GENERATED: vitest-ownership -->

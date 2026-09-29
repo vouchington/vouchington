@@ -36,20 +36,14 @@ Review Vitest tests. Pick at most one concrete, bounded improvement that is safe
   `git log` / `git blame` on the failing test file, `vitest.config.mts`, and
   `test-helpers/vitest-config/**`. A signature with
   multiple prior patches needs the fix that closes the pattern, not another partial instance of it.
-- Honor a documented stopping condition before opening a new instrumentation pass. If
-  [Vitest Worker Exit Diagnostics § Stopping condition](../../development/reference-vitest-worker-exit-diagnostics.md#stopping-condition)
-  already names this signature and its condition is met, perform the escalation it names instead of
-  adding another diagnostic pass.
+- Honor a documented stopping condition before opening a new instrumentation pass. The
+  worker-exit crash diagnostics were removed, and the
+  [Vitest workflow reference](../../development/ci/workflows/reference-vitest.md) records when they
+  may come back (only after a hosted worker exit is actually reproduced) and the escalation to take
+  instead of adding another diagnostic pass.
 - For a post-assertion worker exit (the test passes, then its worker crashes during teardown),
-  consult the `signature → cause` table in
-  [Vitest Worker Exit Diagnostics](../../development/reference-vitest-worker-exit-diagnostics.md).
-  The `[vitest-fork-exit]` sentinel's _absence_ from a crash's own log is diagnostic only when the
-  failing project actually registers `test-helpers/vitest.setup.fork-exit-sentinel.mts` in its
-  `setupFiles` — currently only `backend-data-projects.mts`'s sub-projects and the
-  `backend-real-glide-mq` project in the root `vitest.config.mts` do; `backend-core-projects.mts`,
-  `web-projects.mts`, and `tooling-projects.mts` never register it, so a missing sentinel line
-  there is not evidence of anything. Check per-shard RSS/heap and the `[vitest-teardown]` /
-  `[vitest-teardown-overrun]` output before assuming a leak regardless. The
+  the failure is Vitest's own `Worker exited unexpectedly` error. Check per-shard RSS/heap and the
+  `[vitest-teardown]` / `[vitest-teardown-overrun]` output before assuming a leak.
   Per-project `pool` / `isolate` values are recorded in
   [Pools, Isolation, and Vitest 5](../../development/reference-tests-vitest-projects.md#pools-isolation-and-vitest-5).
   Forks-pool projects have no per-project `poolOptions` / `maxForks` / `singleFork`; concurrency is

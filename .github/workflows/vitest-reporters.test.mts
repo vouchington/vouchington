@@ -94,6 +94,9 @@ describe('Vitest CI reporters', () => {
         ],
       ]),
     )
+    expect(reporters).toEqual(
+      expect.arrayContaining([expect.objectContaining({ onProcessTimeout: expect.any(Function) })]),
+    )
     expect(reporters).toHaveLength(5)
   })
 

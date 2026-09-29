@@ -15,13 +15,28 @@ API, and full-stack web-integration suites, both Playwright suites, and Docker v
 once `static-code-analysis` and their area static checks succeed or intentionally skip. Grouped main
 workflows fan out the same way after their static checks.
 
-Backend Uncredentialed Docker Tests (`tests-backend-unit.yml`) carries failure-only fork-exit
-sentinel and diagnostic-report steps for the recurring backend unit post-pass worker-exit
-signature (formerly filed as
-jonathanong/filaments#8940). See
-[Vitest Worker-Exit Diagnostics](../../reference-vitest-worker-exit-diagnostics.md)
-for the sentinel line format, the `VITEST_FORK_CRASH_INJECT` fault-injection allowlist, and the
-signature-to-cause decision table.
+**Worker-exit crash diagnostics were removed.** The self-hosted-era fork-exit sentinel, Node
+diagnostic-report capture and summary, worker-exit reporter, and saturation fd-2 sentinel are gone.
+They targeted a post-pass worker-exit flake seen on self-hosted runners (a CPU-contention race whose
+transient-retry rule was already removed). None of the 49 failed GitHub-hosted runs checked after
+the 2026-09-16 runner switch was a worker exit, and the sentinel's only output was its routine
+`mode=signal:SIGTERM code=143` line. That is a short window, so removal is supported rather than
+proven safe. A hosted worker exit still fails loudly through Vitest's own
+`Worker exited unexpectedly` error, and `hanging-process`, the `[vitest-teardown-overrun]` reporter,
+and fork-leak detection remain.
+
+- **Restore rule:** bring crash diagnostics back only after a worker exit is actually reproduced on a
+  hosted runner. Revision `4b8fc08f8` is the last one that has them; restore from it instead of
+  writing another instrumentation pass. A SIGTERM listener in a fork removes Node's default
+  terminate-on-SIGTERM, so a restored sentinel must exit explicitly.
+- **If it recurs unexplained:** file the captured exit code and signal on
+  [vitest-dev/vitest#8766](https://github.com/vitest-dev/vitest/issues/8766), the datum that got
+  [#9762](https://github.com/vitest-dev/vitest/issues/9762) closed as not planned, and propose a
+  scoped `pool: 'threads'` migration. Threads are not a drop-in for the backend projects (see
+  [Pools, Isolation, and Vitest 5](../../reference-tests-vitest-projects.md#pools-isolation-and-vitest-5)).
+- **Do not conflate look-alikes:** the earlier #9088 post-pass exit was `worker-io`'s prewarm serve
+  path binding an un-closeable TCP listener on a fallback port. It is fixed by binding only when
+  `NODE_PREWARM_PORT` is set. Check a new occurrence is not that before calling it this flake.
 
 | Workflow                                                                                    | Type     | Runner                             | Docker | Purpose                                                                                                                                                             |
 | ------------------------------------------------------------------------------------------- | -------- | ---------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

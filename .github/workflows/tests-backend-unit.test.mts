@@ -148,45 +148,19 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(jobSection('backend-tests')).toContain('IMAGE_ORIGIN: http://127.0.0.1:3100')
   })
 
-  it('runs fork-crash diagnostics only on failure, without changing the test command (#8940)', () => {
+  it('runs the shard directly, with no self-hosted-era diagnostics or heavy-slot wrapper', () => {
     const backendJob = jobSection('backend-tests')
-    const testStepIndex = backendJob.indexOf('name: Run backend tests')
-    const reportSummaryIndex = backendJob.indexOf('name: Vitest fork diagnostic report summary')
-    const uploadIndex = backendJob.indexOf(
-      'name: vitest-fork-diagnostics-backend-shard-${{ matrix.shard }}',
-    )
+    const steps = stepsWorkflow.jobs?.['backend-tests']?.steps ?? []
 
-    // Ordering: diagnostics run after the test step and before full LCOV publication.
-    expect(testStepIndex).toBeGreaterThanOrEqual(0)
-    expect(reportSummaryIndex).toBeGreaterThan(testStepIndex)
-    expect(uploadIndex).toBeGreaterThan(reportSummaryIndex)
-    expect(
-      backendJob.indexOf(
-        'name: Upload full backend-shard-${{ matrix.shard }} LCOV to GitHub (attempt 1)',
-      ),
-    ).toBeGreaterThan(uploadIndex)
-
-    // The test step's run command is unchanged by this env-var-only addition.
     expect(runBackendTestsScript).toContain(
       'pnpm exec ./ci/with-node-test-options vitest run --bail=3',
     )
-    expect(jobSection('backend-tests')).toContain(
-      'VITEST_FORK_DIAGNOSTIC_DIR: .vitest-reports/fork-diagnostics-${{ matrix.shard }}',
-    )
-
-    const steps = stepsWorkflow.jobs?.['backend-tests']?.steps ?? []
-    const reportSummaryStep = steps.find(
-      step => step.name === 'Vitest fork diagnostic report summary',
-    ) as { env?: Record<string, string>; if?: string; ['continue-on-error']?: boolean } | undefined
-
     expect(steps.some(step => step.name === 'Host pressure diagnostics')).toBe(false)
+    expect(steps.some(step => step.name === 'Vitest fork diagnostic report summary')).toBe(false)
     expect(backendJob).not.toContain('host-pressure-diagnostics.sh')
-    expect(reportSummaryStep?.if).toBe('failure()')
-    expect(reportSummaryStep?.['continue-on-error']).toBe(true)
-    expect(reportSummaryStep?.env?.VITEST_FORK_DIAGNOSTIC_DIR).toBe(
-      '.vitest-reports/fork-diagnostics-${{ matrix.shard }}',
-    )
-
+    expect(backendJob).not.toContain('vitest-diagnostic-report-summary')
+    expect(backendJob).not.toContain('VITEST_FORK_DIAGNOSTIC_DIR')
+    expect(backendJob).not.toContain('vitest-fork-diagnostics')
     expect(backendJob).not.toContain('with-heavy-slot.sh')
   })
 
