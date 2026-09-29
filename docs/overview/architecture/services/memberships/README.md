@@ -19,7 +19,9 @@ Business logic for user memberships (plans, billing, admin grants).
 - Recipient and actor ids on `membership_sources`, `membership_changes`, grants, refunds, and
   administrator refund requests are restrictive foreign keys to `retained_user_identities`, so
   lineage and audit rows survive account deletion without authorizing the deleted user; the
-  identity root stays until no membership row references it
+  identity root stays until no membership row references it. A grant's recipient reaches the root
+  through its composite foreign key to `membership_sources (id, user_id)`; only its
+  `granted_by_id` and `revoked_by_id` reference the root directly
 
 ## Public benefit catalog
 
