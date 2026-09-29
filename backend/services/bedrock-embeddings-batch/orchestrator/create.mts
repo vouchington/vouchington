@@ -10,7 +10,7 @@ import onError from '@modules/on-error'
 import { mintUUIDv7 } from '@modules/utils/ids'
 import { BEDROCK_NOVA_MULTIMODAL_MODEL_ID } from '@services/bedrock-embeddings/config'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
-import type { BatchMetadata } from './shared.mts'
+import type { BatchMetadata, BatchSource } from './shared.mts'
 import { cleanupBatchLocks, stopBedrockBatch } from './cleanup.mts'
 import {
   batchDocument,
@@ -25,6 +25,7 @@ export const createBatch = async (
   entityCount: number,
   entityIdsFilePath: string,
   metadata?: BatchMetadata,
+  source: BatchSource = {},
 ): Promise<string> => {
   const batchId = mintUUIDv7()
   const inputKey = `bedrock-embeddings-input/${batchId}/input.jsonl`
@@ -47,8 +48,8 @@ export const createBatch = async (
       entityIdsFilePath,
       createdAt,
       data: batchDocument('Preparing', inputS3Uri, outputS3Uri, batchMetadata),
-      urlId: batchMetadata.url_id ?? null,
-      crawlId: batchMetadata.crawl_id ?? null,
+      urlId: source.urlId ?? null,
+      crawlId: source.crawlId ?? null,
     })
     batchPersisted = true
     await uploadBatchInput(filePath, inputKey)

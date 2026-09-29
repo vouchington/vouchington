@@ -35,23 +35,8 @@ export async function insertTestEmbeddingsBatch(data: {
     status: bedrockStatus,
     ...((data.batchData ?? {}) as Record<string, unknown>),
   }
-  const metadata = batchData.metadata
-  const metadataIds =
-    metadata !== null && typeof metadata === 'object'
-      ? (metadata as { url_id?: unknown; crawl_id?: unknown })
-      : {}
-  const urlId =
-    data.urlId !== undefined
-      ? data.urlId
-      : typeof metadataIds.url_id === 'string'
-        ? metadataIds.url_id
-        : null
-  const crawlId =
-    data.crawlId !== undefined
-      ? data.crawlId
-      : typeof metadataIds.crawl_id === 'string'
-        ? metadataIds.crawl_id
-        : null
+  const urlId = data.urlId === undefined ? null : data.urlId
+  const crawlId = data.crawlId === undefined ? null : data.crawlId
   const records = data.records || 0
 
   const column = lifecycleColumnForBedrockStatus(bedrockStatus)
@@ -155,6 +140,23 @@ export async function getTestBatchEntities(
     entity_id: String(row.entity_id),
     entity_type: String(row.entity_type),
   }))
+}
+
+export async function getTestBatchSourceColumns(batchId: string): Promise<{
+  url_id: string | null
+  crawl_id: string | null
+  metadata: unknown
+} | null> {
+  const { rows } = await read<{
+    url_id: string | null
+    crawl_id: string | null
+    metadata: unknown
+  }>(sql`
+    SELECT url_id, crawl_id, data -> 'metadata' AS metadata
+    FROM bedrock_embeddings_batches
+    WHERE id = ${batchId}
+  `)
+  return rows[0] ?? null
 }
 
 export async function getTestBatchSummary(

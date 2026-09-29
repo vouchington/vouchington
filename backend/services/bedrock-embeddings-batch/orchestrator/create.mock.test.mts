@@ -12,6 +12,7 @@ import { createCrawlChunkEntityId } from '@services/bedrock-embeddings-batch/ent
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import {
   getTestBatchEntities,
+  getTestBatchSourceColumns,
   getTestBatchSummary,
   insertTestEmbeddingsBatch,
 } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
@@ -105,6 +106,30 @@ describe('createBatch', () => {
     expect(await getTestBatchEntities(batchId)).toEqual([
       { entity_type: 'topics', entity_id: entityId },
     ])
+  })
+
+  it('stores the source url and crawl only in their foreign-key columns', async () => {
+    const user = await createTestUserDirect()
+    const entityId = await createLockedEntityId('topics', user.id)
+    const urlId = await createTestUrlWithHostname()
+    const crawl = await insertTestCrawl({ urlId, statusCode: 200, markdown: 'Crawl markdown' })
+    const inputFile = await writeTempFile('input.jsonl', 'irrelevant for this test')
+    const entityIdsFile = await writeTempFile('entity-ids.csv', `${entityId}\n`)
+
+    const batchId = await createBatch(
+      inputFile,
+      'topics',
+      1,
+      entityIdsFile,
+      { inputSizeMB: 2 },
+      { urlId, crawlId: crawl.id },
+    )
+
+    expect(await getTestBatchSourceColumns(batchId)).toEqual({
+      url_id: urlId,
+      crawl_id: crawl.id,
+      metadata: { inputSizeMB: 2 },
+    })
   })
 
   it('closes the upload input stream when the S3 client returns without consuming it', async () => {
