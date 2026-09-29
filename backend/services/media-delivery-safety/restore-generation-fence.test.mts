@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  beginTransaction,
   getTestMediaDeliveryRecord,
   getTestMediaDeliveryRecordSnapshot,
   markTestMediaDeliveryRecordFailed,
 } from '@voucha/test-helpers'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
+import { advanceTestDeliveryPlacementRevision } from '@voucha/test-helpers/entities/media-delivery-repair'
 import { fenceTestMediaDeliveryRegistry } from '@voucha/test-helpers/media-delivery-recovery'
 import { createTestDeliverySurface } from '@voucha/test-helpers/media-delivery-surface'
 import {
@@ -101,33 +103,53 @@ describe('coordinated reset and restore generation safety', () => {
     })
   })
 
-  it('leaves a held key at its retained edge denial while a sibling converges', async () => {
+  it('holds a withheld edge denial only while paused: a later fresh generation republishes the restored allow', async () => {
     const edge = installTestMediaDeliveryEdge()
-    const [held, sibling] = [await publishedSurface(), await publishedSurface()]
+    const held = await publishedSurface()
     const denial = await retainEdgeAhead(edge, held.deliveryKey, 'withheld')
-    const lead = await retainEdgeAhead(edge, sibling.deliveryKey, 'allow')
-    const edgeHighWater =
-      BigInt(lead.generation) > BigInt(denial.generation) ? lead.generation : denial.generation
-
     await fenceTestMediaDeliveryRegistry({
-      edgeHighWater,
-      reopenDeliveryKeys: [sibling.deliveryKey],
+      edgeHighWater: denial.generation,
+      reopenDeliveryKeys: [],
     })
-    await expect(processMediaDeliveryRegistryRecord(sibling.deliveryKey)).resolves.toBe('completed')
-    expect(BigInt(edge.records.get(sibling.deliveryKey)!.generation)).toBeGreaterThan(
-      BigInt(edgeHighWater),
-    )
 
-    // The restored row still says allow, but neither reconciliation nor the worker reopens it.
+    // Restored authority still says allow, yet nothing reopens the completed row while paused.
     await expect(
       stageCurrentImagePlacementDeliveryRecordsForImageIds([held.tuple.imageId]),
     ).resolves.toBe(0)
     await expect(processMediaDeliveryRegistryRecord(held.deliveryKey)).resolves.toBe('not_claimed')
     expect(edge.records.get(held.deliveryKey)).toEqual(denial)
-    expect(await getTestMediaDeliveryRecord(held.deliveryKey)).toMatchObject({
-      desired_state: 'allow',
-      state: 'completed',
+
+    // Any later fresh generation (repair marker, owner change, republish) now beats the lifted fence.
+    await fenceTestMediaDeliveryRegistry({ reopenDeliveryKeys: [held.deliveryKey] })
+    await expect(processMediaDeliveryRegistryRecord(held.deliveryKey)).resolves.toBe('completed')
+    expect(edge.records.get(held.deliveryKey)?.state).toBe('allow')
+  })
+
+  it('keeps a held key withheld through republish once authority withholds it again', async () => {
+    const edge = installTestMediaDeliveryEdge()
+    const held = await publishedSurface()
+    const denial = await retainEdgeAhead(edge, held.deliveryKey, 'withheld')
+    await fenceTestMediaDeliveryRegistry({
+      edgeHighWater: denial.generation,
+      reopenDeliveryKeys: [],
     })
+
+    // Re-apply the lost takedown through authority, then let reconciliation stage the result.
+    await using transaction = await beginTransaction()
+    await advanceTestDeliveryPlacementRevision(transaction, held.tuple.placementId)
+    await transaction.commit()
+    await expect(
+      stageCurrentImagePlacementDeliveryRecordsForImageIds([held.tuple.imageId]),
+    ).resolves.toBeGreaterThan(0)
+    await expect(processMediaDeliveryRegistryRecord(held.deliveryKey)).resolves.toBe('completed')
+
+    const published = edge.records.get(held.deliveryKey)
+    expect(published?.state).toBe('withheld')
+    expect(BigInt(published!.generation)).toBeGreaterThan(BigInt(denial.generation))
+
+    await fenceTestMediaDeliveryRegistry({ reopenDeliveryKeys: [held.deliveryKey] })
+    await expect(processMediaDeliveryRegistryRecord(held.deliveryKey)).resolves.toBe('completed')
+    expect(edge.records.get(held.deliveryKey)?.state).toBe('withheld')
   })
 
   it('needs an explicit reopen before a rebuilt empty edge serves a completed row', async () => {

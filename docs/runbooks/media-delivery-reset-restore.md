@@ -38,7 +38,9 @@ evidence below).
 - **Withhold wins.** Reconciliation may tighten (allow to withheld) without approval. Loosening
   (withheld to allow) needs the legal/trust-and-safety owner's recorded sign-off whenever the
   PostgreSQL side could predate the withhold, because a restore can lose a takedown that the edge
-  still remembers. A held key keeps its edge denial.
+  still remembers. A key held this way is temporary: its edge denial survives only while workers
+  are paused, because any later fresh generation (repair marker, owner change, republish) publishes
+  the restored allow over it. Resolve every hold before workers resume.
 - **Quiesce before restore, inventory before resume.** Pause the outbox worker, the root
   reconciler and periodic staging, repair-marker processing, and operator replay. Resume them only
   after the evidence below is recorded.
@@ -57,7 +59,7 @@ evidence below).
 - Rolling the edge back to an older backup than PostgreSQL without reconciling every differing key.
 - Invalidating the cache instead of reconciling the edge. The cache refills from the edge, so an
   invalidation cannot change what the edge enforces.
-- Resuming workers before the evidence is recorded.
+- Resuming workers while any hold is unresolved or before the evidence is recorded.
 
 ## Supported workflows
 
@@ -73,7 +75,7 @@ The edge may be ahead of the restored rows, and it may remember takedowns the re
    | Edge versus PostgreSQL desired state         | Action                                                                                                                  |
    | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
    | Edge allow, PostgreSQL withheld              | Tighten: fence, then reopen.                                                                                            |
-   | Edge withheld, PostgreSQL allow              | Hold: keep the edge denial, request owner sign-off, never reopen or replay.                                             |
+   | Edge withheld, PostgreSQL allow              | Hold: leave the row and edge denial untouched while paused, then resolve it in step 5.                                  |
    | Same state, edge generation ahead            | Fence, then reopen.                                                                                                     |
    | Same state, edge generation equal or behind  | None.                                                                                                                   |
    | Edge record absent, PostgreSQL row completed | Reopen. The edge denies until it is rewritten and remembers no withhold.                                                |
@@ -96,9 +98,18 @@ The edge may be ahead of the restored rows, and it may remember takedowns the re
    `generation + 1` is the republish marker that makes the trigger draw a fresh value. Never include
    a held key.
 
-5. Resume workers. The publisher re-proves authority before any allow, writes the edge, invalidates
+5. Resolve every hold. Either re-apply the lost takedown or restriction through the normal legal
+   action flow (see [Copyright Notice Operations](copyright-notices.md)) so PostgreSQL authority
+   withholds the placement, which needs no sign-off, or record the owner's sign-off and reopen the
+   key like any other. A re-applied takedown advances the placement revision, so the held revision
+   becomes historical and is staged withheld at a fresh generation above the edge, and every later
+   republish stays withheld. The hold list must be empty before step 6. This repository has no
+   operation that pins an edge denial independently of PostgreSQL authority. If a takedown cannot be
+   re-applied, workers stay paused and the owner decides.
+6. Resume workers. The publisher re-proves authority before any allow, writes the edge, invalidates
    the exact route, and marks the row completed.
-6. For each tightened or orphaned key, confirm invalidation completed, then record the evidence.
+7. For each tightened, held, or orphaned key, confirm invalidation completed, then record the
+   evidence.
 
 ### B. Edge registry rebuild with PostgreSQL intact
 
@@ -135,9 +146,10 @@ Attach these to the change record before workers resume, and again after.
 
 - Before: restore point, sequence value, highest PostgreSQL generation, edge inventory export with
   count and highest generation, and the paused-worker list.
-- Classification counts for every table row above, with each hold naming its owner sign-off.
-- After the fence: the sequence value is at least the highest edge generation, and no key outside
-  the hold list has an edge generation above its PostgreSQL generation.
+- Classification counts for every table row above, and for each hold its resolution: authority
+  withholds the key again, or the owner's sign-off.
+- After the fence: the sequence value is at least the highest edge generation, and no key has an
+  edge generation above its PostgreSQL generation unless it is a resolved hold.
 - Every reopened row reached `completed` with both `projected_at` and `invalidated_at` set. Any
   failed row is either a hold or investigated, never replayed.
 - Invalidation completed for every tightened, orphaned, and rebuilt route.
@@ -148,11 +160,13 @@ Attach these to the change record before workers resume, and again after.
 
 [`restore-generation-fence.test.mts`](../../backend/services/media-delivery-safety/restore-generation-fence.test.mts)
 runs these against real PostgreSQL and a strict-generation edge double, using the same fence SQL
-restricted to owned keys:
+with its reopen scoped to owned keys because the shared test database is parallel:
 
 - an edge record above a restored generation is never overwritten, and replay does not fix it
 - a tightened state publishes above the retained generation only after the fence
-- a held key stays at its edge denial while reconciliation and the worker leave it untouched
+- a held key keeps its edge denial only while paused, and a later fresh generation republishes the
+  restored allow over it
+- a held key stays withheld through republish once authority withholds it again
 - a rebuilt empty edge is written only after an explicit reopen
 - a retained pre-reset allow stays in force beside independent fresh keys, which is why workflow C
   withholds it

@@ -75,9 +75,10 @@ export async function setTestMediaRecoveryState(
 }
 
 /**
- * The restore fence from the media-delivery reset/restore runbook, restricted to owned keys because
- * the shared test database is parallel: lift the generation sequence to the observed edge
- * high-water mark (never below its current value), then reopen the rows at fresh generations.
+ * The restore fence from the media-delivery reset/restore runbook: lift the generation sequence to
+ * the observed edge high-water mark (never below its current value), then reopen the listed rows at
+ * fresh generations. The sequence lift is global, which is harmless because generations only need to
+ * increase; only the reopen is scoped to owned keys, because the shared test database is parallel.
  * Omit `edgeHighWater` for an empty edge, where any generation is accepted.
  */
 export async function fenceTestMediaDeliveryRegistry(input: {
