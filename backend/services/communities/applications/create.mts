@@ -4,8 +4,9 @@ import assert from 'http-assert'
 import { getCommunity } from '../get.mts'
 import { getCommunityMember } from '../members/get.mts'
 import { lockAndAssertNotBanned } from '../bans/lock.mts'
+import { insertApplicationAnswers } from './answer-rows.mts'
 import { assertApplicationAnswers } from './answers.mts'
-import { communityApplicationColumns } from './columns.mts'
+import { getApplication } from './get.mts'
 import { getPendingApplicationForUser } from './pending.mts'
 import { getApplicationQuestions } from './questions.mts'
 import type { CommunityApplication } from '../types.mts'
@@ -39,17 +40,15 @@ export async function createApplication(
 
   const { rows } = await write(
     sql`/* createApplication */
-      INSERT INTO community_applications (community_id, user_id, answers, message)
-      VALUES (
-        ${communityId},
-        ${currentUserId},
-        ${JSON.stringify(answers)}::jsonb,
-        ${message ?? null}
-      )
-      RETURNING `.append(communityApplicationColumns),
+      INSERT INTO community_applications (community_id, user_id, message)
+      VALUES (${communityId}, ${currentUserId}, ${message ?? null})
+      RETURNING id`,
     options,
   )
-  const application = rows[0] as CommunityApplication
+  const applicationId = (rows[0] as { id: string }).id
+  await insertApplicationAnswers(applicationId, communityId, answers, options)
+  // Read back so the response carries the answers object rebuilt from the stored rows.
+  const application = (await getApplication(applicationId, options))!
   await query.commit()
   return application
 }

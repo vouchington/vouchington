@@ -1,3 +1,4 @@
+import { read, write } from '@data-stores/psql'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -48,6 +49,43 @@ describe('application answers', () => {
     expect(application.answers).not.toHaveProperty(byQuestion.get('Skipped')!.id)
     const listed = await searchApplications(community.id)
     expect(listed.results[0]?.answers).toEqual(answers)
+  })
+
+  it('stores one row per answered question, keeps explicit null, and cascades with the application', async () => {
+    const owner = await createTestUser()
+    const applicant = await createTestUser()
+    const community = await ownedCommunity(owner)
+    const [short, long, skipped] = await setApplicationQuestions(owner.id, community.id, [
+      { question: 'Short', field_type: 'short_text', required: false },
+      { question: 'Long', field_type: 'long_text', required: false },
+      { question: 'Skipped', field_type: 'short_text', required: false },
+    ])
+    const application = await createApplication(applicant.id, community.id, {
+      [short!.id]: 'text',
+      [long!.id]: null,
+    })
+
+    const stored = async () =>
+      (
+        await read(
+          `/* readStoredAnswers */
+          SELECT question_id, value FROM community_application_answers
+          WHERE application_id = $1 ORDER BY question_id`,
+          [application.id],
+        )
+      ).rows
+    expect(await stored()).toEqual(
+      [
+        { question_id: short!.id, value: 'text' },
+        { question_id: long!.id, value: null },
+      ].sort((a, b) => a.question_id.localeCompare(b.question_id)),
+    )
+    expect(application.answers).not.toHaveProperty(skipped!.id)
+
+    await write(`/* deleteApplication */ DELETE FROM community_applications WHERE id = $1`, [
+      application.id,
+    ])
+    expect(await stored()).toEqual([])
   })
 
   it('preserves multi-select input order and required checkbox false', async () => {

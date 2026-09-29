@@ -86,9 +86,11 @@ the unfiltered first page and are excluded from the normal paginated result list
 
 ## Join Applications
 
-Private communities accept join applications. Owners replace the active question set by soft-deleting the previous questions. Select labels are the JSON array `community_application_questions.options`. Submitted answers are the JSON object `community_applications.answers`, keyed by question id. Those keys are not foreign keys: option labels and answer values are documents, not entity ids. Replacing questions does not rewrite stored answers, so review still shows the submitted document.
+Private communities accept join applications. Owners replace the active question set by soft-deleting the previous questions. Select labels are the JSON array `community_application_questions.options`; a label is data, not an entity id.
 
-An omitted key, explicit `null`, empty string, empty multi-select, and checkbox `false` stay distinct in that object. Array order is the submitted selection order. Unknown questions, unknown options, duplicate option labels, and non-string multi-select elements are rejected. Deleting a community cascades its applications and questions.
+Each answered question is one `community_application_answers` row: `(application_id, question_id)` is its key and `value` is a JSON string, boolean, explicit `null`, or array of option-label strings. Question ids are entity ids, so answers reference them by foreign key, and composite `(community_id, …)` foreign keys to the application and to the question keep an answer from crossing communities. A soft-deleted question keeps its answers, so review still shows what the applicant submitted after the questions are replaced.
+
+The API returns the same `answers` object keyed by question id, rebuilt from those rows. An omitted key has no row, and explicit `null`, empty string, empty multi-select, and checkbox `false` stay distinct. Array order is the submitted selection order. Unknown questions, unknown options, duplicate option labels, and non-string multi-select elements are rejected. Deleting an application or its community cascades its answer rows.
 
 ## Auto-Archiving Rules
 

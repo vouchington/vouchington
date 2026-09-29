@@ -26,6 +26,7 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'boilerplate_removal_urls',
   'boilerplate_removals',
   'community_agent_prompts',
+  'community_application_answers',
   'community_application_questions',
   'community_applications',
   'community_auto_tagger_agents',

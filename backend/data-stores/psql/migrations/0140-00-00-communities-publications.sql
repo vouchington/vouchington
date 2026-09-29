@@ -213,13 +213,11 @@ CREATE TABLE IF NOT EXISTS community_application_questions (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   deleted_at TIMESTAMPTZ,
   CHECK (question = TRIM(question)),
-  CHECK (char_length(question) BETWEEN 1 AND 500)
+  CHECK (char_length(question) BETWEEN 1 AND 500),
+  CONSTRAINT community_application_questions_identity_key UNIQUE (community_id, id)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_app_q__comm_order ON community_application_questions (community_id, order_index) WHERE deleted_at IS NULL;
-
--- RI-usable index for the community_id FK (the unique index above carries a predicate, so it isn't RI-usable)
-CREATE INDEX IF NOT EXISTS idx_community_application_questions__community_id ON community_application_questions (community_id);
 
 COMMENT ON TABLE community_application_questions IS 'Configurable questions shown to users applying to join a community.';
 COMMENT ON COLUMN community_application_questions.community_id IS 'The community this question belongs to.';
@@ -237,7 +235,6 @@ CREATE TABLE IF NOT EXISTS community_applications (
   CONSTRAINT community_applications_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
-  answers JSONB NOT NULL,
   reviewed_at TIMESTAMPTZ,
   reviewed_by_id UUID REFERENCES users ON DELETE SET NULL,
   approved_at TIMESTAMPTZ,
@@ -250,7 +247,8 @@ CREATE TABLE IF NOT EXISTS community_applications (
   CHECK (NOT (approved_at IS NOT NULL AND rejected_at IS NOT NULL)),
   CHECK ((approved_at IS NULL AND rejected_at IS NULL) OR reviewed_at IS NOT NULL),
   CHECK (rejection_reason IS NULL OR char_length(rejection_reason) <= 1000),
-  CHECK (rejection_reason IS NULL OR rejection_reason = TRIM(rejection_reason))
+  CHECK (rejection_reason IS NULL OR rejection_reason = TRIM(rejection_reason)),
+  CONSTRAINT community_applications_identity_key UNIQUE (community_id, id)
 );
 
 CREATE OR REPLACE TRIGGER trigger_community_applications_updated_at
@@ -260,20 +258,50 @@ CREATE OR REPLACE TRIGGER trigger_community_applications_updated_at
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_apps__pending ON community_applications (community_id, user_id) WHERE approved_at IS NULL AND rejected_at IS NULL;
 
--- RI-usable indexes for the community_id/user_id FKs (the unique index above carries a predicate, so it isn't RI-usable)
-CREATE INDEX IF NOT EXISTS idx_community_applications__community_id ON community_applications (community_id);
+-- RI-usable index for the user_id FK. community_applications_identity_key already leads with community_id;
+-- the pending unique index is partial, so it is not RI-usable.
 CREATE INDEX IF NOT EXISTS idx_community_applications__user_id ON community_applications (user_id);
 
 COMMENT ON TABLE community_applications IS 'Membership applications submitted by users to join a community.';
 COMMENT ON COLUMN community_applications.community_id IS 'The community being applied to.';
 COMMENT ON COLUMN community_applications.user_id IS 'The user who submitted the application.';
-COMMENT ON COLUMN community_applications.answers IS 'JSON object with answers keyed by question ID.';
 COMMENT ON COLUMN community_applications.reviewed_at IS 'When a moderator reviewed the application.';
 COMMENT ON COLUMN community_applications.reviewed_by_id IS 'Moderator who reviewed the application.';
 COMMENT ON COLUMN community_applications.approved_at IS 'When the application was approved. Mutually exclusive with rejected_at.';
 COMMENT ON COLUMN community_applications.rejected_at IS 'When the application was rejected. Mutually exclusive with approved_at.';
 COMMENT ON COLUMN community_applications.rejection_reason IS 'Optional reason provided to the applicant on rejection.';
 COMMENT ON COLUMN community_applications.message IS 'Optional freeform message from the applicant when submitting an application.';
+
+-- community_application_answers
+CREATE TABLE IF NOT EXISTS community_application_answers (
+  application_id UUID NOT NULL,
+  community_id UUID NOT NULL,
+  question_id UUID NOT NULL,
+  value JSONB NOT NULL,
+  CONSTRAINT community_application_answers_pkey PRIMARY KEY (application_id, question_id),
+  CONSTRAINT community_application_answers_application_fkey
+    FOREIGN KEY (community_id, application_id)
+    REFERENCES community_applications (community_id, id) ON DELETE CASCADE,
+  CONSTRAINT community_application_answers_question_fkey
+    FOREIGN KEY (community_id, question_id)
+    REFERENCES community_application_questions (community_id, id) ON DELETE CASCADE,
+  CONSTRAINT community_application_answers_value_check CHECK (
+    jsonb_typeof(value) IN ('string', 'boolean', 'null')
+    OR (
+      jsonb_typeof(value) = 'array'
+      AND NOT jsonb_path_exists(value, '$[*] ? (@.type() != "string")')
+    )
+  )
+);
+
+CREATE INDEX IF NOT EXISTS idx_comm_app_answers__question
+  ON community_application_answers (community_id, question_id);
+
+COMMENT ON TABLE community_application_answers IS 'One answer per question supplied with a community application; an omitted question has no row.';
+COMMENT ON COLUMN community_application_answers.application_id IS 'Application that supplied this answer.';
+COMMENT ON COLUMN community_application_answers.community_id IS 'Community that owns both the application and the question, so an answer cannot cross communities.';
+COMMENT ON COLUMN community_application_answers.question_id IS 'Question this answer responds to, including a soft-deleted historical question.';
+COMMENT ON COLUMN community_application_answers.value IS 'Submitted answer document: a JSON string, boolean, explicit null, or array of option-label strings in submitted order.';
 
 -- community_invites
 CREATE TABLE IF NOT EXISTS community_invites (

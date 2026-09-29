@@ -43,8 +43,9 @@ Archived communities are read-only: no new members, no member role changes, no m
 - `communities` — core entity; `archived_at`/`archived_by_id` track archival state; `deleted_at` is a soft-delete
 - `community_members` — role assignments (`owner`, `moderator`, `member`) with `removed_at` for soft-removal
 - `community_invites` — invite links with `accepted_at`, `declined_at`, `revoked_at` lifecycle columns
-- `community_applications` — join applications with `approved_at`/`rejected_at` review flow; `answers` is a JSON object keyed by question id
+- `community_applications` — join applications with `approved_at`/`rejected_at` review flow
 - `community_application_questions` — active form questions; `options` is a JSON array of select labels; replacement soft-deletes the previous set
+- `community_application_answers` — one row per answered question, keyed by `(application_id, question_id)`; composite `(community_id, …)` FKs to the application and the question keep an answer in one community; `value` is a JSON string, boolean, explicit null, or array of option-label strings; the API `answers` object is rebuilt with `jsonb_object_agg`
 - `community_post_reviews` — one review/moderation row for each community-scoped post
 - `view_memberships` (read-only, cross-service) — plan/status lookup for slot eligibility checks
 
