@@ -47,9 +47,10 @@ the hosted-runner test-step time per spec with three Playwright workers, and the
 shard for the seven-to-eight-minute job target. The current full suite resolves to six shards. See
 the derivation in
 [`ci/playwright/shard-total.mts`](../../../../ci/playwright/shard-total.mts). The execution budget
-leaves room for fixed per-shard build/startup overhead inside the whole job's ~10-minute ceiling
-(build + migrate + compile + test, not just the test step), plus a per-shard warm-up/variance
-buffer, rounded up to a whole minute, reflected in that job's step `timeout-minutes`.
+leaves room for fixed per-shard build/startup overhead inside the job target (build + migrate +
+compile + test, not just the test step). The `Run Playwright tests` step's 12-minute
+`timeout-minutes` is a ceiling, not the target: it adds a slow-runner tail over the ~6-minute
+budget so a shard that is still passing tests finishes instead of ejecting the merge queue (#1185).
 
 Each sharded workflow includes a lightweight job that generates its matrix before the test job
 runs. Web shards run symmetrically — no shard owns a singleton duty; the pages-router check,
