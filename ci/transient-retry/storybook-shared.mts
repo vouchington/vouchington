@@ -14,8 +14,6 @@ export const matchesStorybookSingleJob = (ctx: WorkflowRunContext): boolean =>
     jobName => jobName === ciStorybookJobName || isAreaGateJob(ctx.workflowName, jobName),
   )
 
-export const storybookLogJobName = (ctx: WorkflowRunContext): string => ciStorybookJobName
-
 export const failedStorybookJobName = (ctx: WorkflowRunContext): string | undefined => {
   if (ctx.workflowName !== 'Web') return undefined
   const jobName = ciStorybookJobName

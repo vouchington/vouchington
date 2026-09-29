@@ -118,13 +118,12 @@ describe('CI fixture documentation classifier', () => {
   })
 
   it.each(['README.md', 'views.md', 'tables/widgets.md', 'nested/schema.md'])(
-    'keeps generated Markdown fixture %s out of docs-only skipping and selects main tooling checks',
+    'keeps generated Markdown fixture %s out of docs-only skipping and selects the tooling area',
     file => {
       const path = `docs/development/postgresql/schema-snapshot/markdown/${file}`
       expect(docsOnly([path])).toBe(false)
       expect(docsOnly([path, 'docs/development/tests.md'])).toBe(false)
-      expect(mainChecksPushPaths().some(glob => picomatch.isMatch(path, glob))).toBe(true)
-      expect(mainChecksToolingFilter().some(glob => picomatch.isMatch(path, glob))).toBe(true)
+      expect(toolingFilter().some(glob => picomatch.isMatch(path, glob))).toBe(true)
     },
   )
 

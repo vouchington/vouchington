@@ -1,6 +1,6 @@
 import { hasPlaywrightSetupAptLockFailure } from './playwright-log-fingerprints.mts'
 import { isAreaGateJob } from './ci-aggregate-jobs.mts'
-import type { TransientRetryRule, WorkflowRunContext } from './types.mts'
+import type { TransientRetryRule } from './types.mts'
 
 const setupPlaywrightWorkflowNames = new Set(['Web'])
 const storybookSetupJobNames = new Set(['storybook / storybook'])
