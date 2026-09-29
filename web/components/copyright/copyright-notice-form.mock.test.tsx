@@ -66,8 +66,8 @@ describe('CopyrightNoticeForm', () => {
     render(<CopyrightNoticeForm />)
 
     const warning = screen.getByRole('note')
-    expect(warning).toHaveTextContent(/512\(f\).*that material is infringing.*attorneys' fees/i)
-    expect(warning).toHaveTextContent(/fair use/i)
+    expect(warning.textContent).toMatch(/512\(f\).*that material is infringing.*attorneys' fees/i)
+    expect(warning.textContent).toMatch(/fair use/i)
     expect(screen.getByRole('link', { name: 'How copyright complaints work' })).toHaveAttribute(
       'href',
       '/article/copyright-complaints',

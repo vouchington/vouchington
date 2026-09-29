@@ -110,7 +110,7 @@ describe('copyright response forms', () => {
     )
 
     const warning = screen.getByRole('note')
-    expect(warning).toHaveTextContent(
+    expect(warning.textContent).toMatch(
       /512\(f\).*removed or disabled by mistake or misidentification.*attorneys' fees/i,
     )
     expect(screen.getByRole('link', { name: 'How copyright complaints work' })).toHaveAttribute(
