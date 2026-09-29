@@ -1,6 +1,5 @@
 -- Coalesced pre-launch domain baseline.
 -- edited-in-place: pre-launch, never deployed to production
--- edited-in-place: chat role, text, and error are typed columns; the message envelope is derived
 -- Merged from: 0100-00-00-conversations.sql, 0320-00-00-agentic-run-parent-id.sql
 
 -- ==========================================================================
@@ -21,12 +20,6 @@ END $$;
 
 DO $$ BEGIN
   CREATE TYPE conversation_message_directions AS ENUM ('inbound', 'outbound');
-EXCEPTION
-  WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-  CREATE TYPE conversation_message_chat_roles AS ENUM ('user', 'assistant');
 EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
@@ -167,12 +160,10 @@ CREATE TABLE IF NOT EXISTS conversation_messages (
   deleted_at TIMESTAMPTZ,
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL,
 
-  -- Chat messages use typed role/text/error columns; email messages use body_text/body_html
+  -- Chat messages use content JSONB; email messages use body_text/body_html
   kind conversation_message_kinds NOT NULL DEFAULT 'chat',
   direction conversation_message_directions,
-  chat_role conversation_message_chat_roles,
-  chat_text TEXT,
-  chat_error TEXT,
+  content JSONB,
   body_text TEXT,
   body_html TEXT,
 
@@ -209,28 +200,9 @@ CREATE TABLE IF NOT EXISTS conversation_messages (
     ),
   CONSTRAINT chk_conversation_messages__kind_content
     CHECK (
-      (
-        kind = 'chat'
-        AND chat_role IS NOT NULL
-        AND (
-          (chat_role = 'user' AND chat_text IS NOT NULL AND chat_error IS NULL)
-          OR chat_role = 'assistant'
-        )
-      )
-      OR (
-        kind IN ('email', 'note')
-        AND chat_role IS NULL
-        AND chat_text IS NULL
-        AND chat_error IS NULL
-        AND (body_text IS NOT NULL OR body_html IS NOT NULL)
-      )
-      OR (
-        kind = 'message'
-        AND chat_role IS NULL
-        AND chat_text IS NULL
-        AND chat_error IS NULL
-        AND body_text IS NOT NULL
-      )
+      (kind = 'chat' AND content IS NOT NULL) OR
+      (kind IN ('email', 'note') AND (body_text IS NOT NULL OR body_html IS NOT NULL)) OR
+      (kind = 'message' AND body_text IS NOT NULL)
     ),
   CONSTRAINT chk_conversation_messages__direction
     CHECK (
@@ -255,14 +227,12 @@ CREATE INDEX IF NOT EXISTS idx_conv_messages__email_message_id
 ON conversation_messages (email_message_id)
 WHERE email_message_id IS NOT NULL;
 
-COMMENT ON TABLE conversation_messages IS 'Individual messages within a conversation, range-partitioned by conversation UUIDv7. Chat messages store role, text, and error in typed columns; email-channel messages use body_text/body_html.';
+COMMENT ON TABLE conversation_messages IS 'Individual messages within a conversation, range-partitioned by conversation UUIDv7. Chat messages use content JSONB; email-channel messages use body_text/body_html.';
 COMMENT ON COLUMN conversation_messages.conversation_id IS 'The conversation this message belongs to; also the partition key.';
 COMMENT ON COLUMN conversation_messages.created_by_id IS 'The registered user who sent this message. NULL when the sender is unavailable.';
 COMMENT ON COLUMN conversation_messages.kind IS 'Message kind: chat, email, or internal note.';
 COMMENT ON COLUMN conversation_messages.direction IS 'Email/note direction. inbound = external contact, outbound = internal/admin authored.';
-COMMENT ON COLUMN conversation_messages.chat_role IS 'Chat speaker. user or assistant for kind chat; NULL for email, note, and direct messages.';
-COMMENT ON COLUMN conversation_messages.chat_text IS 'Chat message text. NULL while an assistant placeholder is pending or failed before output.';
-COMMENT ON COLUMN conversation_messages.chat_error IS 'Chat assistant error text. NULL when the turn has not failed.';
+COMMENT ON COLUMN conversation_messages.content IS 'Message content stored as JSONB. Used for chat messages.';
 COMMENT ON COLUMN conversation_messages.body_text IS 'Plain text message body. Used for email-channel messages.';
 COMMENT ON COLUMN conversation_messages.body_html IS 'HTML message body. Used for email-channel messages.';
 COMMENT ON COLUMN conversation_messages.email_message_id IS 'Email Message-ID header for threading inbound replies.';
