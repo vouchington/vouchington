@@ -29,8 +29,8 @@ test.describe('News full-story discussion CTA', () => {
       const articleUrl = `https://${feed.hostname}/full-story-discussion-${suffix}-${index}`
       const urlResult = await write(
         `/* full-story-discussion.spec insert url */
-         INSERT INTO urls (url, hostname_id, pathname)
-         VALUES ($1, $2, $3)
+         INSERT INTO urls (url, hostname_id, pathname, search_params)
+         VALUES ($1, $2, $3, '{}'::JSONB)
          ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
          RETURNING id`,
         [articleUrl, feed.hostnameId, `/full-story-discussion-${suffix}-${index}`],

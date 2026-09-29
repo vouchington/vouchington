@@ -43,7 +43,6 @@ This block is rendered from the typed registry, and its normalized rows are chec
 | `conversation_message_agentic_runs_events`              | RANGE         | `conversation_message_agentic_run_id`  | monthly            | cleanupPartitions | retention-window   |
 | `conversation_messages`                                 | RANGE         | `conversation_id`                      | default            | none              | target-scoped      |
 | `crawl_chunks`                                          | RANGE         | `crawl_id`                             | monthly            | cleanupPartitions | retention-window   |
-| `crawl_links`                                           | RANGE         | `crawl_id`                             | monthly            | cleanupPartitions | retention-window   |
 | `crawls`                                                | RANGE         | `id`                                   | monthly            | cleanupPartitions | retention-window   |
 | `entity_relation_votes`                                 | LIST -> RANGE | `relation_table -> entity_relation_id` | list-default-range | none              | intentional-fanout |
 | `hostname_votes`                                        | RANGE         | `hostname_id`                          | default            | none              | target-scoped      |
@@ -139,7 +138,6 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   through UUID primary keys and bounded orphan cleanup; reconsider partitioning at the registry's
   documented growth threshold rather than introducing partition overhead before measurement.
 - Audit and workflow history: `admin_import_batches`, `admin_import_rows`,
-  `admin_import_rss_feed_rows`, `admin_import_topic_rows`,
   `activitypub_distribution_checkpoints`, `ap_inbox_activities`,
   `community_activity_digest_dispatch_windows`, `community_agent_prompt_changes`,
   `copyright_eu_escalations`, `copyright_eu_notice_acknowledgments`,
@@ -205,8 +203,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `moderation_transparency_daily_rollups`, `moderation_transparency_released_daily_rollups`,
   `moderator_actions`, `oauth_authorization_server_events`, `report_integrity_flags`,
   `review_dispute_lifecycle_changes`, `review_successions`,
-  `review_disputes`, `ses_bounce_events`, `ses_bounce_event_recipients`, `stripe_events`,
-  `support_agent_runs`,
+  `review_disputes`, `ses_bounce_events`, `stripe_events`, `support_agent_runs`,
   `support_message_lifecycle_changes`, `support_messages`, `support_thread_lifecycle_changes`,
   `user_data_request_attempts`, `user_data_requests`, `user_deletion_audit_logs`,
   `user_deletion_external_works`,
@@ -276,8 +273,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `bedrock_embeddings_batch_entities`, `bedrock_embeddings_batches`,
   `bedrock_nova_multimodal_v1_embeddings`, `bedrock_nova_multimodal_v1_image_embeddings`,
   `bluesky_link_authorizations`, `bluesky_link_completions`, `bluesky_linked_accounts`,
-  `boilerplate_removal_results`, `boilerplate_removal_urls`, `boilerplate_removals`,
-  `classifier_candidate_community_overrides`,
+  `boilerplate_removal_urls`, `boilerplate_removals`, `classifier_candidate_community_overrides`,
   `classifier_candidate_thresholds`, `classifier_candidates`, `classifier_decision_batches`, `classifier_decision_calls`,
   `classifier_prompt_versions`, `classifier_topic_vote_applications`, `classifiers`, `community_agent_prompts`,
   `community_application_answers`, `community_application_questions`, `community_applications`,
@@ -318,7 +314,6 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `topics__referral_program_link_validations`,
   `topics__referral_programs`, `topics__retailers`, `topics__rewards_program_statuses`,
   `topics__rewards_programs`, `topics__spending_categories`, `url_hostname_blocks`,
-  `url_search_params`,
   `user_aside_preferences`, `user_consents`, `user_email_addresses`,
   `user_landing_page_group_members`, `user_landing_page_items`, `user_landing_pages`,
   `user_metrics`, `user_mod_notes`, `user_passkeys`, `user_permissions`, `user_phone_numbers`,

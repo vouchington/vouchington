@@ -2,31 +2,6 @@
 
 [Schema index](README.md).
 
-## `crawl_open_graph_text(meta jsonb, wanted text)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.crawl_open_graph_text(meta jsonb, wanted text)
- RETURNS text
- LANGUAGE sql
- IMMUTABLE
-```
-
-## `fn_admin_import_rss_feed_row_matches_batch`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_admin_import_rss_feed_row_matches_batch()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_admin_import_topic_row_matches_batch`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_admin_import_topic_row_matches_batch()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_ap_inbox_delivery_retention`
 
 ```sql
@@ -56,14 +31,6 @@ CREATE OR REPLACE FUNCTION public.fn_ap_inbox_delivery_storage_after_insert()
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_ap_inbox_delivery_storage_after_update()
  RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_apply_crawl_embed(p_crawl_id uuid, p_embed jsonb)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_apply_crawl_embed(p_crawl_id uuid, p_embed jsonb)
- RETURNS void
  LANGUAGE plpgsql
 ```
 
@@ -121,40 +88,6 @@ CREATE OR REPLACE FUNCTION public.fn_capture_notification_push_intent()
 CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_id uuid)
  RETURNS boolean
  LANGUAGE sql
-```
-
-## `fn_crawl_embed_json(c crawls)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_crawl_embed_json(c crawls)
- RETURNS jsonb
- LANGUAGE sql
- STABLE
-```
-
-## `fn_crawl_links_json(p_crawl_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_crawl_links_json(p_crawl_id uuid)
- RETURNS jsonb
- LANGUAGE plpgsql
- STABLE
-```
-
-## `fn_crawl_links_same_shape`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_crawl_links_same_shape()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_crawls_sync_open_graph`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_crawls_sync_open_graph()
- RETURNS trigger
- LANGUAGE plpgsql
 ```
 
 ## `fn_create_topic_metrics_on_insert`
@@ -1516,13 +1449,4 @@ CREATE OR REPLACE FUNCTION public.membership_grant_remaining_duration(grant_id u
 CREATE OR REPLACE FUNCTION public.repair_post_category_finalization_admission_response_on_delete()
  RETURNS trigger
  LANGUAGE plpgsql
-```
-
-## `url_search_params_json(p_url_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.url_search_params_json(p_url_id uuid)
- RETURNS jsonb
- LANGUAGE sql
- STABLE
 ```

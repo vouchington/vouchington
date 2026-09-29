@@ -19,17 +19,14 @@ export const createTestBatch = async (
   // Create the batch first
   await write(
     `
-    INSERT INTO bedrock_embeddings_batches (
-      id, model_id, job_type, input_s3_uri, output_s3_uri, records, submitted_at
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+    INSERT INTO bedrock_embeddings_batches (id, model_id, job_type, data, records, submitted_at)
+    VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
   `,
     [
       batchId,
       'amazon.nova-2-multimodal-embeddings-v1:0',
       jobType,
-      `s3://test-bucket/bedrock-embeddings-input/${batchId}/input.jsonl`,
-      `s3://test-bucket/bedrock-embeddings-output/${batchId}/`,
+      JSON.stringify({ status: 'Submitted' }),
       records,
     ],
   )
