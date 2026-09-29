@@ -99,9 +99,6 @@
     "conversation_message_agentic_runs_termination_reasons": {
       "values": ["no_tool_calls", "max_topics", "max_iterations", "stalled", "error", "superseded"]
     },
-    "conversation_message_chat_roles": {
-      "values": ["user", "assistant"]
-    },
     "conversation_message_directions": {
       "values": ["inbound", "outbound"]
     },
@@ -19108,7 +19105,7 @@
         "chk_conversation_messages__direction": "CHECK ((((kind = 'chat'::conversation_message_kinds) AND (direction IS NULL)) OR ((kind = ANY (ARRAY['email'::conversation_message_kinds, 'note'::conversation_message_kinds])) AND (direction IS NOT NULL)) OR ((kind = 'message'::conversation_message_kinds) AND (direction IS NULL))))",
         "chk_conversation_messages__discarded": "CHECK (((sent_at IS NULL) OR (discarded_at IS NULL)))",
         "chk_conversation_messages__edited": "CHECK ((((edited_at IS NULL) AND (edited_by_id IS NULL)) OR ((edited_at IS NOT NULL) AND (edited_by_id IS NOT NULL))))",
-        "chk_conversation_messages__kind_content": "CHECK ((((kind = 'chat'::conversation_message_kinds) AND (chat_role IS NOT NULL) AND (((chat_role = 'user'::conversation_message_chat_roles) AND (chat_text IS NOT NULL) AND (chat_error IS NULL)) OR (chat_role = 'assistant'::conversation_message_chat_roles))) OR ((kind = ANY (ARRAY['email'::conversation_message_kinds, 'note'::conversation_message_kinds])) AND (chat_role IS NULL) AND (chat_text IS NULL) AND (chat_error IS NULL) AND ((body_text IS NOT NULL) OR (body_html IS NOT NULL))) OR ((kind = 'message'::conversation_message_kinds) AND (chat_role IS NULL) AND (chat_text IS NULL) AND (chat_error IS NULL) AND (body_text IS NOT NULL))))"
+        "chk_conversation_messages__kind_content": "CHECK ((((kind = 'chat'::conversation_message_kinds) AND (content IS NOT NULL)) OR ((kind = ANY (ARRAY['email'::conversation_message_kinds, 'note'::conversation_message_kinds])) AND ((body_text IS NOT NULL) OR (body_html IS NOT NULL))) OR ((kind = 'message'::conversation_message_kinds) AND (body_text IS NOT NULL))))"
       },
       "columns": {
         "ai_generated_at": {
@@ -19119,7 +19116,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "ai_prompt": {
@@ -19130,7 +19127,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 22,
           "type": "text"
         },
         "approved_at": {
@@ -19141,7 +19138,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 27,
           "type": "timestamp with time zone"
         },
         "approved_by_id": {
@@ -19152,7 +19149,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 28,
           "type": "uuid"
         },
         "body_html": {
@@ -19163,7 +19160,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 13,
           "type": "text"
         },
         "body_text": {
@@ -19174,7 +19171,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 12,
           "type": "text"
         },
         "bounced_at": {
@@ -19185,41 +19182,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
-        "chat_error": {
+        "content": {
           "collation": null,
-          "comment": "Chat assistant error text. NULL when the turn has not failed.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 13,
-          "type": "text"
-        },
-        "chat_role": {
-          "collation": null,
-          "comment": "Chat speaker. user or assistant for kind chat; NULL for email, note, and direct messages.",
+          "comment": "Message content stored as JSONB. Used for chat messages.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
           "ordinalPosition": 11,
-          "type": "conversation_message_chat_roles"
-        },
-        "chat_text": {
-          "collation": null,
-          "comment": "Chat message text. NULL while an assistant placeholder is pending or failed before output.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 12,
-          "type": "text"
+          "type": "jsonb"
         },
         "conversation_id": {
           "collation": null,
@@ -19284,7 +19259,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "direction": {
@@ -19306,7 +19281,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "drafted_at": {
@@ -19317,7 +19292,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 24,
           "type": "timestamp with time zone"
         },
         "edited_at": {
@@ -19328,7 +19303,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         },
         "edited_by_id": {
@@ -19339,7 +19314,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 26,
           "type": "uuid"
         },
         "email_from": {
@@ -19350,7 +19325,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 16,
           "type": "text"
         },
         "email_message_id": {
@@ -19361,7 +19336,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "email_subject": {
@@ -19372,7 +19347,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 15,
           "type": "text"
         },
         "email_to": {
@@ -19383,7 +19358,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 17,
           "type": "text"
         },
         "id": {
@@ -19416,7 +19391,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "sent_at": {
@@ -19427,7 +19402,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 29,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -19453,7 +19428,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Individual messages within a conversation, range-partitioned by conversation UUIDv7. Chat messages store role, text, and error in typed columns; email-channel messages use body_text/body_html.",
+      "comment": "Individual messages within a conversation, range-partitioned by conversation UUIDv7. Chat messages use content JSONB; email-channel messages use body_text/body_html.",
       "foreignKeys": {
         "conversation_messages_approved_by_id_fkey": {
           "columns": ["approved_by_id"],
