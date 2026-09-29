@@ -1,0 +1,193 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  createCopyrightNoticeAggregate,
+  receiveEuCopyrightNotice,
+  receiveUkCopyrightNotice,
+} from '@services/copyright-notices'
+import { counterNoticeBody } from '@services/copyright-notices/route-test-fixtures'
+import {
+  createTestUser,
+  getTestPostImagePlacement,
+  insertTestImage,
+  insertTestPost,
+  insertTestPostImage,
+} from '@voucha/test-helpers'
+import { createRequest } from '@voucha/test-helpers/api/server'
+import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+// Cases already open before intake was switched off, created below the HTTP intake routes.
+async function openUsCase() {
+  const poster = await createTestUser()
+  const imageId = await insertTestImage(poster.id)
+  const postId = await insertTestPost({
+    title: `kill switch case ${crypto.randomUUID()}`,
+    slug: `kill-switch-case-${crypto.randomUUID()}`,
+    createdById: poster.id,
+    markdown: 'image',
+  })
+  await insertTestPostImage({ postId, imageId })
+  const placement = await getTestPostImagePlacement(postId, imageId)
+  if (!placement) throw new Error('fixture image placement disappeared')
+  const notice = await createCopyrightNoticeAggregate({
+    jurisdiction: 'us_dmca',
+    receivedAt: new Date(),
+    claimantUserId: null,
+    claimantDisplayName: null,
+    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
+    workDescription: `work-${crypto.randomUUID()}`,
+    policyVersion: 'test-v1',
+    initialSubmission: {
+      kind: 'notice',
+      sourceKind: 'guest_form',
+      bodyCiphertext: `notice-${crypto.randomUUID()}`,
+    },
+    targets: [
+      {
+        placementId: placement.placement_id,
+        placementRevision: placement.placement_revision,
+        imageId,
+        hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
+      },
+    ],
+  })
+  return { noticeId: notice.id, poster }
+}
+
+function territorialNotice() {
+  const suffix = crypto.randomUUID()
+  return {
+    contact: `claimant-${suffix}@example.test`,
+    contentDescription: `Work ${suffix}`,
+    grounds: `Grounds ${suffix}`,
+    hostedUseUrl: `https://example.test/${suffix}`,
+  }
+}
+
+async function signedIn(user: Awaited<ReturnType<typeof createTestUser>>) {
+  const request = createRequest()
+  await request.authenticateAs(user)
+  return request
+}
+
+describe('copyright in-case responses with intake switched off', () => {
+  useCopyrightIntakeEnvironment({ enabled: false })
+  beforeEach(() => {
+    installTestMediaDeliveryEdge()
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('accepts poster appeals and counter-notices on an existing case', async () => {
+    const { noticeId, poster } = await openUsCase()
+    const targetId = await readCopyrightNoticeTargetId(noticeId)
+    const request = await signedIn(poster)
+    await request
+      .post('/api/v1/copyright-notices')
+      .set('Idempotency-Key', crypto.randomUUID())
+      .send({})
+      .expect(503)
+    const appeal = await request
+      .post(`/api/v1/copyright-notices/${noticeId}/appeals`)
+      .set('Idempotency-Key', crypto.randomUUID())
+      .send({ reason: 'This is my hosted material.', target_ids: [targetId] })
+      .expect(201)
+    expect(appeal.body.is_duplicate).toBe(false)
+    const counterNotice = await request
+      .post(`/api/v1/copyright-notices/${noticeId}/counter-notices`)
+      .set('Idempotency-Key', crypto.randomUUID())
+      .send(counterNoticeBody(targetId))
+      .expect(201)
+    expect(counterNotice.body.is_duplicate).toBe(false)
+  })
+
+  it('accepts staff capabilities and guest court, supplement, and withdrawal filings', async () => {
+    const { noticeId } = await openUsCase()
+    const staff = await signedIn(await createTestUser({ extraRoles: ['moderator'] }))
+    const issued = await staff
+      .post(`/api/v1/copyright-notices/${noticeId}/guest-capabilities`)
+      .send({ expires_at: new Date(Date.now() + 7 * DAY_MS).toISOString() })
+      .expect(201)
+    const guest = createRequest()
+    for (const kind of ['supplement', 'court_or_ccb_hold', 'withdrawal']) {
+      const filed = await guest
+        .post(`/api/v1/copyright-notices/${noticeId}/guest-filings`)
+        .set('Copyright-Guest-Capability', issued.body.copyright_guest_capability.token)
+        .send({ kind, statement: `Guest ${kind} filing ${crypto.randomUUID()}` })
+        .expect(201)
+      expect(filed.body.copyright_submission.kind).toBe(kind)
+    }
+  })
+
+  it('accepts EU and UK redress and staff decisions on existing territorial notices', async () => {
+    const [claimant, moderator, administrator] = await Promise.all([
+      createTestUser(),
+      createTestUser({ extraRoles: ['moderator'] }),
+      createTestUser({ administrator: true }),
+    ])
+    const admin = await signedIn(administrator)
+    for (const [jurisdiction, prefix] of [
+      ['eu_dsa', 'eu'],
+      ['uk', 'uk'],
+    ]) {
+      await admin
+        .post('/api/v1/copyright-territorial-policies')
+        .send({
+          jurisdiction,
+          policy_version: `${prefix}-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
+        })
+        .expect(201)
+    }
+    const claimantRequest = await signedIn(claimant)
+    const staff = await signedIn(moderator)
+    for (const route of ['/api/v1/copyright-eu-notices', '/api/v1/copyright-uk-notices']) {
+      await claimantRequest
+        .post(route)
+        .set('Idempotency-Key', crypto.randomUUID())
+        .send({})
+        .expect(503)
+    }
+
+    const eu = await receiveEuCopyrightNotice(claimant, crypto.randomUUID(), territorialNotice())
+    const euNotice = `/api/v1/copyright-eu-notices/${eu.notice_id}`
+    await staff
+      .post(`${euNotice}/statements-of-reasons`)
+      .send({ statement: 'Staff statement of reasons' })
+      .expect(201)
+    const euRedress = await claimantRequest
+      .post(`${euNotice}/redress-requests`)
+      .set('Idempotency-Key', crypto.randomUUID())
+      .send({ explanation: 'Please review the restriction' })
+      .expect(201)
+    await staff
+      .post(
+        `${euNotice}/redress-requests/${euRedress.body.copyright_eu_redress_request.id}/decisions`,
+      )
+      .send({ staff_disposition: 'maintain', rationale: 'Staff kept the statement' })
+      .expect(201)
+    await claimantRequest
+      .post(`${euNotice}/supervised-complaints`)
+      .send({
+        authority_reference: `dsc-${crypto.randomUUID()}`,
+        explanation: 'Complaint filed with the authority',
+      })
+      .expect(201)
+
+    const uk = await receiveUkCopyrightNotice(claimant, crypto.randomUUID(), territorialNotice())
+    const ukNotice = `/api/v1/copyright-uk-notices/${uk.notice_id}`
+    await staff
+      .post(`${ukNotice}/reviews`)
+      .send({ rationale: 'Staff review rationale' })
+      .expect(201)
+    const ukRedress = await claimantRequest
+      .post(`${ukNotice}/redress-requests`)
+      .set('Idempotency-Key', crypto.randomUUID())
+      .send({ explanation: 'Please review this notice' })
+      .expect(201)
+    expect(ukRedress.body.copyright_uk_redress_request.is_duplicate).toBe(false)
+  })
+})
