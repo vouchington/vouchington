@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { receiveUkCopyrightNotice } from '@services/copyright-notices'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 
 function noticeBody() {
   const suffix = crypto.randomUUID()
@@ -14,6 +15,8 @@ function noticeBody() {
 }
 
 describe('UK copyright notice routes', () => {
+  useCopyrightIntakeEnvironment()
+
   it('records acknowledgment, review, and redress handlers after policy approval', async () => {
     const [claimant, staff, administrator] = await Promise.all([
       createTestUser(),

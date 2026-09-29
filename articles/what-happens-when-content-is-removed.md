@@ -24,6 +24,12 @@ A community moderator can reject a pending post or unpublish an approved post fr
 
 Moderators can issue warnings when a user needs notice but their content doesn't need to be removed. Community moderators can also ban a user from their community. A community ban does not automatically suspend your global Voucha account — it only affects participation in that community.
 
+## Copyright Notices
+
+If a copyright owner sends us a notice about an image in your post, a moderator reviews it before we act. If we accept it, that image is hidden in your post for everyone, and the rest of the post stays up. We email you, and the case appears at `/copyright/notices`.
+
+Copyright cases have their own options, separate from the appeals below. You can appeal to a moderator, or file a legal counter-notice to have the image restored. [How Copyright Complaints Work](./copyright-complaints.md) explains both, and [Copyright and the DMCA on Voucha](./copyright-and-dmca.md) covers the policy.
+
 ## Contacting Moderators
 
 For community-scoped removals, you can reach out to moderators through modmail if that community has modmail available.

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
-import { render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { vi } from 'vitest'
 
 const { mockGetCurrentUser, mockGetRssFeedItems } = vi.hoisted(() => ({
   mockGetCurrentUser: vi.fn<VitestLooseMock>(),
@@ -20,11 +19,11 @@ vi.mock(
   () =>
     ({
       getListSearchErrorMessage: vi.fn<VitestLooseMock>().mockReturnValue(null),
-      isListSearchErrorResult: (v: unknown) =>
-        v != null &&
-        typeof v === 'object' &&
-        'error' in v &&
-        typeof (v as { error: unknown }).error === 'string',
+      isListSearchErrorResult: (value: unknown) =>
+        value != null &&
+        typeof value === 'object' &&
+        'error' in value &&
+        typeof (value as { error: unknown }).error === 'string',
     }) as unknown as typeof import('@/lib/api/list-search-error'),
 )
 
@@ -89,16 +88,17 @@ vi.mock(import('@/components/shared/page-header'), () => ({
 }))
 
 vi.mock(import('@/components/sources/add-source-button'), () => ({
-  AddSourceButton: () => <button type='button'>mock-add-source</button>,
+  AddSourceButton: () => (
+    // ast-grep-ignore: web-no-raw-form-elements -- test double replaces AddSourceButton with a button the feed page tests query
+    <button type='button'>mock-add-source</button>
+  ),
 }))
 
 vi.mock(import('@/components/shared/list-search-error'), () => ({
   ListSearchError: ({ message }: { message: string }) => <p data-pw='search-error'>{message}</p>,
 }))
 
-import PodcastEpisodesPage from './page'
-
-function makeEmptyResponse() {
+function makeEmptyFeedPageResponse() {
   return {
     results: [],
     page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
@@ -107,30 +107,11 @@ function makeEmptyResponse() {
   }
 }
 
-describe('PodcastEpisodesPage', () => {
-  beforeEach(() => {
-    mockGetCurrentUser.mockReset()
-    mockGetRssFeedItems.mockReset()
-    mockGetCurrentUser.mockResolvedValue(null)
-    mockGetRssFeedItems.mockResolvedValue(makeEmptyResponse())
-  })
+function resetFeedPageDoubles() {
+  mockGetCurrentUser.mockReset()
+  mockGetRssFeedItems.mockReset()
+  mockGetCurrentUser.mockResolvedValue(null)
+  mockGetRssFeedItems.mockResolvedValue(makeEmptyFeedPageResponse())
+}
 
-  it('renders the page header', async () => {
-    const ui = await PodcastEpisodesPage({ searchParams: Promise.resolve({}) })
-    render(ui)
-    expect(screen.getByText('Podcast Episodes')).toBeDefined()
-  })
-
-  it('calls getRssFeedItems with media_type=audio', async () => {
-    await PodcastEpisodesPage({ searchParams: Promise.resolve({}) })
-    expect(mockGetRssFeedItems).toHaveBeenCalledWith({
-      searchParams: expect.objectContaining({ media_type: 'audio' }),
-    })
-  })
-
-  it('renders the feed view toggle', async () => {
-    const ui = await PodcastEpisodesPage({ searchParams: Promise.resolve({}) })
-    render(ui)
-    expect(screen.getByText('feed view toggle')).toBeDefined()
-  })
-})
+export { mockGetRssFeedItems, resetFeedPageDoubles }

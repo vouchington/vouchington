@@ -11,6 +11,14 @@ eligible for provisional restriction. The recommendation is not a legal merits
 assessment and cannot fill a statutory field. A moderator must subsequently review every
 provisional restriction.
 
+`COPYRIGHT_INTAKE_ENABLED` is the intake kill switch. While it is off, or while the evidence
+bucket, copyright sender and reply-to addresses, or media-delivery enforcement is unconfigured,
+`POST /api/v1/copyright-notices`, `POST /api/v1/copyright-eu-notices`, and
+`POST /api/v1/copyright-uk-notices` return `503` before authentication. New EU and UK notices need
+this switch in addition to the territorial policy approval. In-case responses (appeals,
+counter-notices, guest filings, EU and UK redress, EU supervised complaints) and every staff route
+stay available so existing cases keep their statutory paths.
+
 Browser clients must send a Cloudflare Turnstile token in `cf_turnstile_response` for every
 copyright notice, appeal, and counter-notice submission. Native iOS clients may instead use the
 equivalent verified App Attest assertion path with the endpoint's action tag; browser clients do
