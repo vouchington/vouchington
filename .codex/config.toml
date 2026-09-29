@@ -93,12 +93,6 @@ command = 'node "$(git rev-parse --show-toplevel)/dev/check-blackboard.mts"'
 timeout = 15
 statusMessage = "Checking agent-blackboard availability"
 
-[[hooks.SessionStart.hooks]]
-type = "command"
-command = 'node "$(git rev-parse --show-toplevel)/dev/journal-checkpoint.mts" compact codex'
-timeout = 30
-statusMessage = "Journaling post-compaction checkpoint"
-
 [[hooks.UserPromptSubmit]]
 
 [[hooks.UserPromptSubmit.hooks]]
@@ -113,7 +107,7 @@ matcher = "ExitPlanMode|Bash"
 type = "command"
 command = 'node "$(git rev-parse --show-toplevel)/dev/codex-hooks/post-tool-use-command.mts" codex 2>/dev/null || true'
 timeout = 30
-statusMessage = "Recording session checkpoints"
+statusMessage = "Recording session friction"
 
 [[hooks.PostToolUse]]
 matcher = "Edit|Write|apply_patch"

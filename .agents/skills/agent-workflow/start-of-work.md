@@ -27,7 +27,7 @@
   pnpm stores, Docker, or edit-helper failures. A sandbox error is not evidence that credentials are
   missing. Do not inspect or print secrets. Retry only the authorized action with the needed access.
 - Keep the tmux title current with `./dev/tmux-name <topic>` outside the sandbox; add `-pr<number>`
-  after PR creation. Follow checkpoint hook reminders rather than duplicating their state.
+  after PR creation. Follow the tmux reminder hook rather than duplicating its state.
 - Keep large logs and analysis results in private temporary artifacts and return bounded summaries.
   For CI diagnosis use [review-ci-logs](../review-ci-logs/SKILL.md).
 - Use `rg` for text, `fd` for paths, and structural tools when needed. For TypeScript impact use
