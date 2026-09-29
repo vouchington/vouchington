@@ -16,6 +16,10 @@ Business logic for user memberships (plans, billing, admin grants).
 - `membership_sources`, grants, and activation periods — immutable entitlement lineages with one effective projection per user
 - `memberships` / `membership_changes` — live lifecycle projection and append-only canonical-product audit history; `projection_ended_at` retires a projection without deleting its retained historical ID
 - `membership_refunds` and `stripe_events` remain retained Stripe-adapter tables while their active callers are migrated; they are not the final provider-neutral ledger
+- Recipient and actor ids on `membership_sources`, `membership_changes`, grants, refunds, and
+  administrator refund requests are restrictive foreign keys to `retained_user_identities`, so
+  lineage and audit rows survive account deletion without authorizing the deleted user; the
+  identity root stays until no membership row references it
 
 ## Public benefit catalog
 
