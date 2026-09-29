@@ -54,56 +54,71 @@ CREATE INDEX IF NOT EXISTS idx_post_publication_dirty_work__lease_expires_at_id
 CREATE TABLE IF NOT EXISTS post_publication_dirty_work_keys (
   id UUID NOT NULL DEFAULT uuidv7(),
   dirty_work_id UUID NOT NULL REFERENCES post_publication_dirty_work (id) ON DELETE CASCADE,
-  kind TEXT NOT NULL CHECK (kind IN (
-    'impact_post', 'impact_topic', 'impact_community', 'impact_rss_feed_item',
-    'identity_author', 'identity_author_username',
-    'identity_community', 'identity_rss_feed', 'identity_post_slug', 'identity_community_slug',
-    'identity_topic_alias',
-    'sitemap_target'
-  )),
-  uuid_value UUID,
-  text_value TEXT,
   post_type post_types,
   day DATE,
+  impact_post_identity_id UUID,
+  impact_community_identity_id UUID,
+  impact_rss_feed_item_identity_id UUID,
+  topic_key UUID,
+  author_key UUID,
+  community_key UUID,
+  rss_feed_key UUID,
+  author_username TEXT,
+  post_slug TEXT,
+  community_slug TEXT,
+  topic_alias TEXT,
   PRIMARY KEY (dirty_work_id, id),
-  CHECK (
-    (kind IN (
-      'impact_post', 'impact_topic', 'impact_community', 'impact_rss_feed_item', 'identity_author',
-      'identity_community', 'identity_rss_feed'
-    )
-      AND uuid_value IS NOT NULL AND text_value IS NULL AND post_type IS NULL AND day IS NULL)
-    OR
-    (kind IN ('identity_author_username', 'identity_post_slug', 'identity_community_slug', 'identity_topic_alias')
-      AND uuid_value IS NULL AND text_value IS NOT NULL
-      AND char_length(text_value) BETWEEN 1 AND 255
-      AND post_type IS NULL AND day IS NULL)
-    OR
-    (kind = 'sitemap_target'
-      AND uuid_value IS NULL AND text_value IS NULL AND post_type IS NOT NULL AND day IS NOT NULL)
+  CONSTRAINT chk_post_publication_dirty_work_keys__concrete_payload CHECK (
+    num_nonnulls(
+      impact_post_identity_id,
+      impact_community_identity_id,
+      impact_rss_feed_item_identity_id,
+      topic_key,
+      author_key,
+      community_key,
+      rss_feed_key,
+      author_username,
+      post_slug,
+      community_slug,
+      topic_alias,
+      post_type
+    ) = 1
+    AND ((post_type IS NULL) = (day IS NULL))
   )
 ) PARTITION BY RANGE (dirty_work_id);
 
-CREATE UNIQUE INDEX IF NOT EXISTS uq_post_publication_dirty_work_keys__uuid_value
-  ON post_publication_dirty_work_keys (dirty_work_id, kind, uuid_value)
-  WHERE uuid_value IS NOT NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS uq_post_publication_dirty_work_keys__text_value
-  ON post_publication_dirty_work_keys (dirty_work_id, kind, text_value)
-  WHERE text_value IS NOT NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS uq_post_publication_dirty_work_keys__sitemap_target
-  ON post_publication_dirty_work_keys (dirty_work_id, kind, post_type, day)
-  WHERE post_type IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_post_publication_dirty_work_keys__concrete_payload
+  ON post_publication_dirty_work_keys (
+    dirty_work_id,
+    impact_post_identity_id,
+    impact_community_identity_id,
+    impact_rss_feed_item_identity_id,
+    topic_key,
+    author_key,
+    community_key,
+    rss_feed_key,
+    author_username,
+    post_slug,
+    community_slug,
+    topic_alias,
+    post_type,
+    day
+  ) NULLS NOT DISTINCT;
+CREATE INDEX IF NOT EXISTS idx_post_publication_dirty_work_keys__topic_key
+  ON post_publication_dirty_work_keys (dirty_work_id, topic_key)
+  WHERE topic_key IS NOT NULL;
 
 CREATE OR REPLACE TRIGGER trigger_post_publication_dirty_work_updated_at
 BEFORE UPDATE ON post_publication_dirty_work
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE post_publication_dirty_work IS 'One de-duplicated current-state publication repair scope. A generation and lease token fence stale workers; exact acknowledgement deletes completed work.';
-COMMENT ON COLUMN post_publication_dirty_work.post_id IS 'Post scope retained without an FK so deletion cannot erase pending repair work.';
-COMMENT ON COLUMN post_publication_dirty_work.author_user_id IS 'Author scope retained without an FK so account deletion cannot erase pending repair work.';
-COMMENT ON COLUMN post_publication_dirty_work.community_id IS 'Community scope retained without an FK so deletion cannot erase pending repair work.';
-COMMENT ON COLUMN post_publication_dirty_work.rss_feed_id IS 'RSS feed scope retained without an FK so deletion cannot erase pending repair work.';
-COMMENT ON COLUMN post_publication_dirty_work.topic_alias_id IS 'Topic alias scope retained without an FK so reassignment cannot erase pending repair work.';
-COMMENT ON COLUMN post_publication_dirty_work.story_id IS 'Story scope retained without an FK so source deletion cannot erase pending repair work.';
+COMMENT ON COLUMN post_publication_dirty_work.post_id IS 'Exact post repair scope, referencing durable post identity rather than the nullable live entity.';
+COMMENT ON COLUMN post_publication_dirty_work.author_user_id IS 'Exact author repair scope, referencing durable author identity rather than the nullable live entity.';
+COMMENT ON COLUMN post_publication_dirty_work.community_id IS 'Exact community repair scope, referencing durable community identity rather than the nullable live entity.';
+COMMENT ON COLUMN post_publication_dirty_work.rss_feed_id IS 'Exact rss_feed repair scope, referencing durable rss_feed identity rather than the nullable live entity.';
+COMMENT ON COLUMN post_publication_dirty_work.topic_alias_id IS 'Exact topic_alias repair scope, referencing durable topic_alias identity rather than the nullable live entity.';
+COMMENT ON COLUMN post_publication_dirty_work.story_id IS 'Exact story repair scope, referencing durable story identity rather than the nullable live entity.';
 COMMENT ON COLUMN post_publication_dirty_work.reasons IS 'Finite set of coalesced eligibility-change reasons requiring the same current-state repair.';
 COMMENT ON COLUMN post_publication_dirty_work.generation IS 'Monotonic compare-and-set generation incremented whenever the scope becomes dirty again.';
 COMMENT ON COLUMN post_publication_dirty_work.cursor_post_id IS 'Last post UUID completed by the current generation; NULL starts or restarts post expansion.';
@@ -115,8 +130,16 @@ COMMENT ON COLUMN post_publication_dirty_work.lease_expires_at IS 'Timestamp aft
 COMMENT ON COLUMN post_publication_dirty_work.cursor_updated_at IS 'Timestamp of the latest generation-fenced cursor checkpoint.';
 COMMENT ON TABLE post_publication_dirty_work_keys IS 'Typed retained tombstone keys for pending publication repair. Rows cascade on exact-generation acknowledgement.';
 COMMENT ON COLUMN post_publication_dirty_work_keys.dirty_work_id IS 'Owning repair scope; exact acknowledgement cascades removal of its retained keys.';
-COMMENT ON COLUMN post_publication_dirty_work_keys.kind IS 'Discriminator that determines which one of the typed key payload shapes is valid.';
-COMMENT ON COLUMN post_publication_dirty_work_keys.uuid_value IS 'Retained impacted-entity or public-identity UUID selected by kind; no source FK preserves deletion repair.';
-COMMENT ON COLUMN post_publication_dirty_work_keys.text_value IS 'Retained public cache identity selected by kind, including deleted slugs.';
 COMMENT ON COLUMN post_publication_dirty_work_keys.post_type IS 'Exact sitemap post type retained for a sitemap target.';
 COMMENT ON COLUMN post_publication_dirty_work_keys.day IS 'Exact UTC sitemap day retained for a sitemap target.';
+COMMENT ON COLUMN post_publication_dirty_work_keys.impact_post_identity_id IS 'Concrete durable repair identity relationship.';
+COMMENT ON COLUMN post_publication_dirty_work_keys.impact_community_identity_id IS 'Concrete durable repair identity relationship.';
+COMMENT ON COLUMN post_publication_dirty_work_keys.impact_rss_feed_item_identity_id IS 'Concrete durable repair identity relationship.';
+COMMENT ON COLUMN post_publication_dirty_work_keys.topic_key IS 'Immutable topic key projection value, never joined to a live entity.';
+COMMENT ON COLUMN post_publication_dirty_work_keys.author_key IS 'Immutable author key projection value, never joined to a live entity.';
+COMMENT ON COLUMN post_publication_dirty_work_keys.community_key IS 'Immutable community key projection value, never joined to a live entity.';
+COMMENT ON COLUMN post_publication_dirty_work_keys.rss_feed_key IS 'Immutable rss feed key projection value, never joined to a live entity.';
+COMMENT ON COLUMN post_publication_dirty_work_keys.author_username IS 'Immutable author username projection value, never joined to a live entity.';
+COMMENT ON COLUMN post_publication_dirty_work_keys.post_slug IS 'Immutable post slug projection value, never joined to a live entity.';
+COMMENT ON COLUMN post_publication_dirty_work_keys.community_slug IS 'Immutable community slug projection value, never joined to a live entity.';
+COMMENT ON COLUMN post_publication_dirty_work_keys.topic_alias IS 'Immutable topic alias projection value, never joined to a live entity.';

@@ -1,4 +1,5 @@
 import picomatch from 'picomatch'
+import { backendCredentialedOpenRouterMarkerGroups } from './backend-credentialed-openrouter-markers.mts'
 
 const vitestFailureLinePattern = /\bFAIL\s+\S+\s+\S+\.(?:c|m)?tsx?\b/
 
@@ -161,28 +162,22 @@ const backendCredentialedOpenAIServerErrorMarkers = [
   'Error: 500 The server had an error processing your request',
   'OpenAI.makeStatusError',
 ]
-const backendCredentialedOpenRouterServerErrorMarkers = [
-  'Structured-decision provider returned HTTP 5',
-]
-const backendCredentialedOpenRouterRateLimitMarkers = [
-  'Structured-decision provider returned HTTP 429',
-]
 
 const backendCredentialedSingleFailureMarkerGroups = [
   backendCredentialedTimeoutMarkers,
   backendCredentialedAwsSdkAbortTimeoutMarkers,
   backendCredentialedBedrockServerErrorMarkers,
   backendCredentialedOpenAIRateLimitMarkers,
-  backendCredentialedOpenRouterRateLimitMarkers,
-  backendCredentialedOpenRouterServerErrorMarkers,
+  ...backendCredentialedOpenRouterMarkerGroups,
 ]
 
 /**
  * True when the log's failure is a credentialed provider probe carrying a known provider-transport
- * marker: either the sole failing test (timeout, AWS-SDK request abort/timeout, Bedrock 500, or
- * OpenAI 429), or — uniquely for the OpenAI 500 case — every simultaneously failing test, since a
- * shared-provider 500 can take out more than one probe in the same run at once (see the dual-block
- * fixture in `backend-credentialed-openai-server-rules.test.mts`).
+ * marker: either the sole failing test (timeout, AWS-SDK request abort/timeout, Bedrock 500,
+ * OpenAI 429, or OpenRouter 429/5xx/flex-tier unavailability), or — uniquely for the OpenAI 500
+ * case — every simultaneously failing test, since a shared-provider 500 can take out more than one
+ * probe in the same run at once (see the dual-block fixture in
+ * `backend-credentialed-openai-server-rules.test.mts`).
  *
  * Callers must gate `hasBackendCredentialedProviderSmokeTestEnvelope` first.
  */

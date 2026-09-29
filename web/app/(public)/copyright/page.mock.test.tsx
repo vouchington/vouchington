@@ -98,6 +98,24 @@ describe('copyright pages', () => {
     expect(screen.getByText('layout child')).toBeInTheDocument()
   })
 
+  it('links the copyright articles from the policy and counter-notice pages', () => {
+    const { unmount } = render(<CopyrightPage />)
+    expect(screen.getByRole('link', { name: 'Copyright and the DMCA on Voucha' })).toHaveAttribute(
+      'href',
+      '/article/copyright-and-dmca',
+    )
+    expect(screen.getByRole('link', { name: 'How copyright complaints work' })).toHaveAttribute(
+      'href',
+      '/article/copyright-complaints',
+    )
+    unmount()
+    render(<CounterNoticePage />)
+    expect(screen.getByRole('link', { name: 'How copyright complaints work' })).toHaveAttribute(
+      'href',
+      '/article/copyright-complaints',
+    )
+  })
+
   it('loads signed-in notice list, create, and staff queues', async () => {
     mockList.mockResolvedValue({
       copyright_notices: [
