@@ -1,3 +1,8 @@
+import {
+  mockPostCardUser,
+  resetPostCardRenderingDoubles,
+} from '@/test-helpers/components/posts/post-card-rendering.mock-support'
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { fireEvent, render, screen } from '@testing-library/react'
@@ -8,113 +13,31 @@ import type { Post, PostElection } from '@/types/posts'
 
 import type { PublicUser, User } from '@/types/user'
 
-let mockCurrentUser: User | null = null
-
-vi.mock(
-  import('next/dynamic'),
-  () =>
-    ({
-      default: (loader: () => Promise<unknown>) => {
-        const src = loader.toString()
-        if (src.includes('follower-share-actions'))
-          return () => <div data-testid='follower-share-actions' />
-        if (src.includes('report-menu-item'))
-          return ({ 'data-pw': dataPw }: { 'data-pw'?: string }) => (
-            <button
-              type='button'
-              data-pw={dataPw}
-            >
-              Report
-            </button>
-          )
-        return () => null
-      },
-    }) as unknown as typeof import('next/dynamic'),
-)
-
-vi.mock(import('@/components/admin/admin-moderation-button'), () => ({
-  default: () => <div data-testid='admin-moderation-button' />,
-}))
-
-vi.mock(import('@/components/shared/entity-bookmark-button'), () => ({
-  EntityBookmarkButton: () => <button type='button'>Save</button>,
-}))
-vi.mock(import('@/components/shared/post-image'), () => {
-  const Img = 'img' as const
-  return {
-    PostImage: ({ alt, priority }: { alt?: string; priority?: boolean }) => (
-      <Img
-        alt={alt}
-        data-priority={String(Boolean(priority))}
-      />
-    ),
-  }
-})
-vi.mock(import('@/lib/api/client/elections'), async importOriginal => ({
-  ...(await importOriginal()),
-  clearPostVote: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
-  submitPostVote: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
-}))
-
-const mockUseEmblaCarousel = vi.hoisted(() => vi.fn<VitestLooseMock>())
-
-vi.mock(
-  import('embla-carousel-react'),
-  () =>
-    ({
-      default: mockUseEmblaCarousel,
-    }) as unknown as typeof import('embla-carousel-react'),
-)
-
-vi.mock(import('@/components/shared/follower-share-actions'), () => ({
-  FollowerShareActions: () => <div data-testid='follower-share-actions' />,
-}))
-
 vi.mock(
   import('@/lib/auth/context'),
   () =>
     ({
       useAuth: () => ({
-        currentUser: mockCurrentUser,
-        isAuthenticated: mockCurrentUser !== null,
+        currentUser: mockPostCardUser.current,
+        isAuthenticated: mockPostCardUser.current !== null,
         logout: vi.fn<() => Promise<void>>(),
-        setUser: vi.fn<(user: typeof mockCurrentUser) => void>(),
+        setUser: vi.fn<(user: typeof mockPostCardUser.current) => void>(),
       }),
       useOptionalAuth: () =>
-        mockCurrentUser
+        mockPostCardUser.current
           ? {
-              currentUser: mockCurrentUser,
+              currentUser: mockPostCardUser.current,
               isAuthenticated: true,
               logout: vi.fn<() => Promise<void>>(),
-              setUser: vi.fn<(user: typeof mockCurrentUser) => void>(),
+              setUser: vi.fn<(user: typeof mockPostCardUser.current) => void>(),
             }
           : null,
     }) as unknown as typeof import('@/lib/auth/context'),
 )
 
-vi.mock(import('@/components/shared/shared-byline'), () => ({
-  SharedByline: ({ className }: { className?: string }) => (
-    <div
-      data-testid='shared-byline'
-      data-class={className ?? ''}
-    />
-  ),
-}))
-
 describe('PostCard', () => {
   beforeEach(() => {
-    mockCurrentUser = null
-    mockUseEmblaCarousel.mockReturnValue([
-      vi.fn<VitestLooseMock>(),
-      {
-        canScrollPrev: () => false,
-        canScrollNext: () => false,
-        scrollPrev: vi.fn<VitestLooseMock>(),
-        scrollNext: vi.fn<VitestLooseMock>(),
-        on: vi.fn<VitestLooseMock>(),
-        off: vi.fn<VitestLooseMock>(),
-      },
-    ])
+    resetPostCardRenderingDoubles()
   })
 
   const mockPost: Post = {
@@ -148,7 +71,7 @@ describe('PostCard', () => {
   }
 
   it('renders the semantic vote chooser for an authenticated viewer', () => {
-    mockCurrentUser = { id: 'user-2' } as User
+    mockPostCardUser.current = { id: 'user-2' } as User
     render(
       <PostCard
         post={mockPost}
@@ -223,12 +146,12 @@ describe('PostCard', () => {
 
   describe('floating kebab and title padding', () => {
     it('card view: title gets pr-14 for authenticated non-owner on shareable post', () => {
-      mockCurrentUser = { id: 'user-2' } as User
+      mockPostCardUser.current = { id: 'user-2' } as User
       const { container } = render(<PostCard post={mockPost} />)
       expect(container.querySelector('h3')?.className).toContain('pr-14')
     })
     it('card view: title has no pr-14 for post owner', () => {
-      mockCurrentUser = { id: 'user-1' } as User
+      mockPostCardUser.current = { id: 'user-1' } as User
       const { container } = render(<PostCard post={mockPost} />)
       expect(container.querySelector('h3')?.className).not.toContain('pr-14')
     })
@@ -241,12 +164,12 @@ describe('PostCard', () => {
       expect(screen.queryByTestId('follower-share-actions')).toBeNull()
     })
     it('card view: renders follower share actions for authenticated non-owner', () => {
-      mockCurrentUser = { id: 'user-2' } as User
+      mockPostCardUser.current = { id: 'user-2' } as User
       render(<PostCard post={mockPost} />)
       expect(screen.getByTestId('follower-share-actions')).toBeDefined()
     })
     it('compact view: title has no pr-14 even for authenticated non-owner', () => {
-      mockCurrentUser = { id: 'user-2' } as User
+      mockPostCardUser.current = { id: 'user-2' } as User
       const { container } = render(
         <PostCard
           post={mockPost}
@@ -256,7 +179,7 @@ describe('PostCard', () => {
       expect(container.querySelector('h3')?.className).not.toContain('pr-14')
     })
     it('card view: shared byline gets pr-14 for authenticated non-owner', () => {
-      mockCurrentUser = { id: 'user-3' } as User
+      mockPostCardUser.current = { id: 'user-3' } as User
       const sharedByUser: PublicUser = { id: 'user-2', username: 'sharer' }
       const { container } = render(
         <PostCard
@@ -269,7 +192,7 @@ describe('PostCard', () => {
       ).toBe('pr-14')
     })
     it('card view: shared byline has no pr-14 for post owner', () => {
-      mockCurrentUser = { id: 'user-1' } as User
+      mockPostCardUser.current = { id: 'user-1' } as User
       const sharedByUser: PublicUser = { id: 'user-2', username: 'sharer' }
       const { container } = render(
         <PostCard
