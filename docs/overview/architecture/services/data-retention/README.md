@@ -23,7 +23,10 @@ retention is 90 days and never selects pending delivery work.
 - `cleanupRetainedIdentityRoots()` — one cursor-bounded, `SKIP LOCKED` page per concrete user,
   topic, post, RSS-item, and image owner family on each scheduled run. A root is deleted only when its
   live row and all durable request, audit, publication, notification, or retained-relation references are absent; this is separate
-  from publication-bridge cleanup and does not expire audit history.
+  from publication-bridge cleanup and does not expire audit history. Every foreign key that targets a
+  retained root, including the staff actor on post clearance changes and moderation dispositions and
+  the grant owner on OAuth server events, must be listed in `ROOT_FAMILIES`; a catalog-backed test
+  fails when one is missing. OAuth server events are append-only, so they keep their user root for good.
 - `cleanupRetainedMediaBindings()` — one separate cursor-bounded page of immutable image placement
   bindings before image-root cleanup. It locks image roots then bindings with `SKIP LOCKED` and
   removes only bindings with no live placement, registry row, or repair marker. The image-root

@@ -105,8 +105,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'moderation_report_judgements.rerun_by_id',
     'Optional FK to moderator who requested re-run; audit snapshot survives user deletion.',
   ],
-  ['post_clearance_changes.changed_by_id', 'Audit records intentionally survive user deletion.'],
-  ['post_moderation_dispositions.actor_user_id', 'Staff audit snapshot survives user deletion.'],
   [
     'session_referral_attributions.session_id',
     'Session attribution UUID from the auth cookie, not a persisted table key.',
@@ -147,7 +145,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'user_deletion_audit_logs.user_id',
     'Compliance audit records intentionally survive user deletion.',
   ],
-  ['user_referral_program_links.last_crawl_id', 'Optional pointer to latest crawl record.'],
 ])
 export const COMMENT_EXEMPT_COLUMN_NAMES = [
   'id',

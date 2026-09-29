@@ -41,6 +41,13 @@ export const ALLOWED_OPAQUE_JSON = new Set([
   'x_accounts.x_user_data',
 ])
 
+// Two further reviewed categories carry one reason per entry: token, cursor or protocol
+// identifiers, and audit snapshot identifiers. Both are defined in the schema rules.
+export {
+  ALLOWED_AUDIT_SNAPSHOT_ID,
+  ALLOWED_TOKEN_CURSOR_PROTOCOL_ID,
+} from './relational-storage-reviewed-ids.mts'
+
 // Tokens, traversal cursors, and a retained table's own primary identity are not foreign references.
 export const ALLOWED_NONRELATION_UUID = new Set([
   'ap_inbox_deliveries.processing_attempt_id',

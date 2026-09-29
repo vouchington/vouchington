@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS oauth_authorization_server_events (
   authorization_request_id UUID,
   access_token_id UUID,
   refresh_token_family_id UUID,
-  user_id UUID NOT NULL,
+  user_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   client_id UUID NOT NULL,
   grant_id UUID,
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
@@ -370,7 +370,7 @@ COMMENT ON COLUMN oauth_authorization_server_events.event_type IS 'Immutable con
 COMMENT ON COLUMN oauth_authorization_server_events.authorization_request_id IS 'Short-lived authorization request that produced a consent event; intentionally not a foreign key.';
 COMMENT ON COLUMN oauth_authorization_server_events.access_token_id IS 'Short-lived access token affected by a revocation event; intentionally not a foreign key.';
 COMMENT ON COLUMN oauth_authorization_server_events.refresh_token_family_id IS 'Short-lived refresh family affected by revocation or reuse; intentionally not a foreign key.';
-COMMENT ON COLUMN oauth_authorization_server_events.user_id IS 'Grant owner at event time; intentionally not a foreign key so hard deletion preserves the audit record.';
+COMMENT ON COLUMN oauth_authorization_server_events.user_id IS 'Grant owner at event time; references the retained user identity so hard deletion preserves the audit record.';
 COMMENT ON COLUMN oauth_authorization_server_events.client_id IS 'Client internal identifier at event time; intentionally not a foreign key so client deletion preserves the audit record.';
 COMMENT ON COLUMN oauth_authorization_server_events.grant_id IS 'Grant internal identifier at event time; intentionally not a foreign key so grant deletion preserves the audit record.';
 COMMENT ON COLUMN oauth_authorization_server_events.resource IS 'Protected resource audience affected by the event.';

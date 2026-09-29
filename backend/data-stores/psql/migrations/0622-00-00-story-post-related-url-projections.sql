@@ -75,6 +75,10 @@ BEGIN
 END;
 $$;
 
+-- Serves the composite foreign key to relation__post__related__url (subject_id, id), which is
+-- added by the config-driven entity-relation step because that table does not exist yet.
+CREATE INDEX IF NOT EXISTS idx_story_post_related_url_projection_relation_mutations__relation
+  ON story_post_related_url_projection_relation_mutations (post_id, relation_id);
 CREATE INDEX IF NOT EXISTS idx_story_post_related_url_projection_receipts__url_id
   ON story_post_related_url_projection_receipts (url_id);
 CREATE INDEX IF NOT EXISTS idx_story_post_related_url_projection_receipts__source_item_id
@@ -130,7 +134,7 @@ COMMENT ON TABLE story_post_related_url_projection_receipts IS 'Per-generation U
 COMMENT ON TABLE story_post_related_url_projection_relation_mutations IS 'Post-capture active related URL confirmations that this projection generation must not prune.';
 COMMENT ON COLUMN story_post_related_url_projection_relation_mutations.post_id IS 'Story post whose active related URL relation was confirmed after projection capture.';
 COMMENT ON COLUMN story_post_related_url_projection_relation_mutations.generation IS 'Exact projection generation that observed the post-capture relation confirmation.';
-COMMENT ON COLUMN story_post_related_url_projection_relation_mutations.relation_id IS 'Active related URL relation protected from pruning by this projection generation.';
+COMMENT ON COLUMN story_post_related_url_projection_relation_mutations.relation_id IS 'Active related URL relation protected from pruning by this projection generation; deleting the relation removes the fence.';
 COMMENT ON COLUMN story_post_related_url_projection_relation_mutations.updated_at IS 'Time this generation-scoped relation mutation fence was last updated.';
 COMMENT ON COLUMN story_post_related_url_projection_receipts.post_id IS 'Story post owning this projection receipt.';
 COMMENT ON COLUMN story_post_related_url_projection_receipts.generation IS 'Projection generation that owns this receipt.';

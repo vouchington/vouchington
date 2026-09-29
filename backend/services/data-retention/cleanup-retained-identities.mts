@@ -9,7 +9,7 @@ function retainedRelationReferences(subjectType: string): [string, string][] {
   )
 }
 
-const ROOT_FAMILIES = {
+export const ROOT_FAMILIES = {
   user: {
     table: 'retained_user_identities',
     references: [
@@ -19,6 +19,9 @@ const ROOT_FAMILIES = {
       ['user_deletion_audit_logs', 'user_id'],
       ['user_deletion_audit_logs', 'requested_by_id'],
       ['post_publication_author_identities', 'id'],
+      ['oauth_authorization_server_events', 'user_id'],
+      ['post_moderation_dispositions', 'actor_user_id'],
+      ['post_clearance_changes', 'changed_by_id'],
       ...retainedRelationReferences('user'),
     ],
   },

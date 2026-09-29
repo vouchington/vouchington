@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS post_moderation_dispositions (
   disposition post_moderation_disposition_types NOT NULL,
   reason_code TEXT NOT NULL CHECK (char_length(reason_code) BETWEEN 1 AND 100),
   evidence JSONB NOT NULL DEFAULT '{}'::jsonb,
-  actor_user_id UUID,
+  actor_user_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   decided_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (jsonb_typeof(evidence) = 'object'),
   CHECK (octet_length(evidence::text) <= 16384),
@@ -84,6 +84,9 @@ CREATE TABLE IF NOT EXISTS post_moderation_dispositions (
 
 CREATE INDEX IF NOT EXISTS idx_post_moderation_dispositions__version_source_id
 ON post_moderation_dispositions (version_id, source, id DESC);
+CREATE INDEX IF NOT EXISTS idx_post_moderation_dispositions__actor_user_id
+ON post_moderation_dispositions (actor_user_id)
+WHERE actor_user_id IS NOT NULL;
 
 COMMENT ON TABLE post_moderation_versions IS 'Immutable moderation generations keyed by canonical post content and policy revision.';
 COMMENT ON TABLE post_moderation_work_items IS 'Durable current work projection with generation and lease-token fencing for bounded moderation attempts.';
@@ -114,5 +117,5 @@ COMMENT ON COLUMN post_moderation_dispositions.attempt_id IS 'Provider attempt t
 COMMENT ON COLUMN post_moderation_dispositions.disposition IS 'Normalized moderation result: pass, review, reject, or incomplete.';
 COMMENT ON COLUMN post_moderation_dispositions.reason_code IS 'Stable provider-neutral policy or availability reason code.';
 COMMENT ON COLUMN post_moderation_dispositions.evidence IS 'Bounded private evidence for moderation staff; never part of public post contracts.';
-COMMENT ON COLUMN post_moderation_dispositions.actor_user_id IS 'Immutable staff-actor audit snapshot that intentionally survives user deletion.';
+COMMENT ON COLUMN post_moderation_dispositions.actor_user_id IS 'Immutable staff actor; references the retained user identity, which survives user deletion but never authorizes.';
 COMMENT ON COLUMN post_moderation_dispositions.decided_at IS 'UUIDv7-derived clock time at which this immutable disposition was created.';
