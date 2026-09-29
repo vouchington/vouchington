@@ -3,8 +3,6 @@ import { upsertRssFeedItemCategories, getRssFeedItemCategories } from '../catego
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
 import { createTopic } from '@services/topics'
 import { createTopicAliases } from '@services/topics/aliases'
-import { upsertRssFeedItems } from '../upsert.mts'
-import { v4 as uuid } from 'uuid'
 import { createTestUser, softDeleteTopic } from '@voucha/test-helpers'
 import { createRssFeedItemCategoryTestFixture } from '../../../test-helpers/services/rss-feed-items/category-test-fixture.mts'
 
