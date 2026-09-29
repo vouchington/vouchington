@@ -38,7 +38,7 @@ export async function submitRssFeedImport(
 
   const follow = options.follow !== false
 
-  return await createRssFeedImport(currentUser.id, trimmedUrls, follow)
+  return createRssFeedImport(currentUser.id, trimmedUrls, follow)
 }
 
 export async function processRssFeedImportRow(

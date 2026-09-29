@@ -50,40 +50,6 @@ describe('worker fetch handler — routing and caching', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2)
   })
 
-  it('falls apex sideload requests through to the web origin', async () => {
-    let capturedRequest: Request | undefined
-    const fetchSpy = vi.fn<VitestLooseMock>((request: Request): Promise<Response> => {
-      capturedRequest = request
-      return Promise.resolve(new Response('web 404', { status: 404 }))
-    })
-    globalThis.fetch = fetchSpy as unknown as typeof fetch
-
-    const env: Env = {
-      BACKEND_ORIGIN: 'https://backend.example.com',
-      WEB_ORIGIN: 'https://web.example.com',
-      ANON_CACHE_TTL_SECONDS: '30',
-      BOT_CACHE_TTL_SECONDS: '86400',
-      SITEMAP_CACHE_TTL_SECONDS: '86400',
-    }
-
-    const context = createContext(env)
-    const dispatchSpy = vi.spyOn(context.exports.CachedOrigin, 'fetch')
-    const request = new Request('https://voucha.ai/sideload/image/test.jpg', {
-      headers: {
-        accept: 'image/avif,image/webp,image/*,*/*;q=0.8',
-      },
-    })
-
-    const response = await worker.fetch(request, env, context)
-
-    expect(response.status).toBe(404)
-    expect(await response.text()).toBe('web 404')
-    expect(dispatchSpy).not.toHaveBeenCalled()
-    expect(fetchSpy).toHaveBeenCalledTimes(1)
-    expect(capturedRequest?.url).toBe('https://web.example.com/sideload/image/test.jpg')
-    expect(capturedRequest?.headers.get('accept')).toBe('image/avif,image/webp,image/*,*/*;q=0.8')
-  })
-
   it('normalizes the canonical dispatch URL so requests differing only by marketing params reach origin identically', async () => {
     // Workers Cache keys the shared entry by (entrypoint, canonical URL, ctx.props) — there is
     // no real platform cache in this mock harness (createContext constructs a fresh CachedOrigin

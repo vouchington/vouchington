@@ -104,7 +104,8 @@ export function classifyRelationalColumn(
     (columnName === 'uuid_value' &&
       'kind' in table.columns &&
       !coveredByForeignKey(table, columnName)) ||
-    (ENCODED_KEY_NAME.test(columnName) && isEncodedText(type))
+    (ENCODED_KEY_NAME.test(columnName) && isEncodedText(type)) ||
+    key === 'copyright_notice_targets.placement_key'
   ) {
     checkCategory(
       key,

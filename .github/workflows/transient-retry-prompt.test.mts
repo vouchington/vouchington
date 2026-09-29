@@ -12,7 +12,7 @@ import {
 const promptText = readFileSync(TRANSIENT_RETRY_PROMPT_PATH, 'utf8')
 
 const PROTECTED_CONTRACT_FRAGMENTS = [
-  'Review `ci/transient-retry/rules.mts`. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.',
+  'Review `ci/transient-retry/rules.mts`. Pick at most one concrete, bounded improvement that is safe to ship in one PR.',
   'For a bounded repository-owned root cause',
   'For repeated same-cause fingerprint vocabulary',
   'For a rule that demonstrably no longer matches',

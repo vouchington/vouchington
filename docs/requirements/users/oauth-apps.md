@@ -9,7 +9,7 @@ protocol, client types and verification rules live in the
 
 Developers register their own OAuth apps from settings instead of relying only on anonymous dynamic
 registration, so an app that asks users for access has an accountable owner. The
-[OAuth app routes](../../../backend/api/v1/my/reference-oauth-apps.md) list, register, rename or
+[OAuth app routes](../api/v1/my/reference-oauth-apps.md) list, register, rename or
 re-point, revoke, and rotate the secret of the caller's own apps.
 
 Registration goes through the same client-name, redirect-URI and auth-method validators as dynamic
@@ -18,7 +18,7 @@ secret is returned only by registration and rotation, is stored as a hash and is
 afterwards; public apps have no secret, so rotation returns 409. Renaming an app or changing its
 redirect URIs clears staff verification, because staff verified the old name and destinations;
 administrators verify an app's name and redirect URIs from the
-[Admin API](../../../backend/api/v1/admin/README.md).
+[Admin API](../api/v1/admin/README.md).
 Removing a redirect URI also cancels sign-ins still waiting on it: a pending consent request or an
 unexchanged authorization code for that URI is refused.
 Revoking an app stops its access tokens, refresh tokens and authorization codes on their next use and
@@ -74,4 +74,4 @@ the server-rendered row with the current name and redirect URIs for a fresh revi
 - [API keys](api-keys.md) — pasted-key access and the scope catalogue
 - [OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md) — protocol, client types
   and staff verification
-- [OAuth app routes](../../../backend/api/v1/my/reference-oauth-apps.md)
+- [OAuth app routes](../api/v1/my/reference-oauth-apps.md)

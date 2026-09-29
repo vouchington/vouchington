@@ -2,7 +2,7 @@ import { test as base, type Page } from '../../helpers/test.mts'
 import {
   insertScoredPostTopicCategoryRelation,
   softDeleteScoredPostTopicCategoryRelation,
-} from '../../../backend/test-helpers/entities/entity-relations.mts'
+} from '../../../backend/test-helpers/entities/entity-relations-posts.mts'
 import { deleteTestPost, insertTestPost } from '../../../backend/test-helpers/entities/posts.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import {

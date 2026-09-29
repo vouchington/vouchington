@@ -25,7 +25,7 @@ import { runOriginBypass } from './origin-bypass.mts'
 import { isProductionMode } from './production-mode.mts'
 import { withHeaders } from './proxy.mts'
 import { getWorkerRequestConfig } from './request-config.mts'
-import { getCanonicalSitemapUrl, getRouteTarget } from './routing.mts'
+import { getCanonicalSitemapUrl, getRouteTarget, rejectRemovedSideloadRoute } from './routing.mts'
 import { handleSentryTunnel } from './sentry-tunnel.mts'
 import { isNextImageOptimizerPath, isStaticWebAssetPath } from './static-web-assets.mts'
 import { EDGE_CACHE_CANARY_PATH, resolveStagingCanaryControl } from './staging-canary.mts'
@@ -56,6 +56,8 @@ export async function fetchInner(
   const ip = request.headers.get('cf-connecting-ip')
   const method = request.method
   const pathname = url.pathname
+  const removedSideload = rejectRemovedSideloadRoute(pathname)
+  if (removedSideload) return removedSideload
   const isExternalIngress = isExternalServerToServerIngress(method, pathname)
   const basicAuthRateLimit = await getBasicAuthRateLimitRejection(request, env, url, ip)
   if (basicAuthRateLimit.response) return basicAuthRateLimit.response
@@ -80,11 +82,9 @@ export async function fetchInner(
     return getInterceptResponse(() => handleSentryTunnel(request, env))
   }
   if (pathname === '/infra/cache-purge' && method === 'POST') {
-    // Secret-gated (CF_WORKER_SECRET, validated inside handleCachePurgeRequest) internal-only
-    // route driven by the backend's coalesced/deduped purge queue — must not share the
-    // public anonymous-mutating rate limiter's bucket with arbitrary anon POST traffic from
-    // the same IP, or a burst of legitimate purges gets 429'd before the secret check ever
-    // runs, leaving stale Workers Cache entries until TTL/retry recovery.
+    // Secret-gated internal purge route. It must not share the public anonymous POST
+    // rate-limit bucket, or a burst of legitimate purges is 429'd before the secret check
+    // and leaves stale Workers Cache entries until TTL or retry.
     return handleCachePurgeRequest(request, env, context, canaryFault)
   }
   const target = getRouteTarget(url.pathname)

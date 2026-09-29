@@ -34,18 +34,22 @@ async function countCompletedEntityListenerJobs(
 
 type WorkerLike = {
   isDrained: boolean
-  on(event: 'active', cb: (job: { name: string; data: Record<string, unknown> }) => void): void
-  on(event: 'completed', cb: (job: { name: string; data: Record<string, unknown> }) => void): void
+  on(
+    event: 'active' | 'completed',
+    cb: (job: { name: string; data: Record<string, unknown> }) => void,
+  ): void
   on(
     event: 'failed',
     cb: (job: { name: string; data: Record<string, unknown> } | undefined, err: Error) => void,
   ): void
-  off(event: 'completed', cb: (job: { name: string; data: Record<string, unknown> }) => void): void
+  off(
+    event: 'active' | 'completed',
+    cb: (job: { name: string; data: Record<string, unknown> }) => void,
+  ): void
   off(
     event: 'failed',
     cb: (job: { name: string; data: Record<string, unknown> } | undefined, err: Error) => void,
   ): void
-  off(event: 'active', cb: (job: { name: string; data: Record<string, unknown> }) => void): void
 }
 
 export function onceEntityListenerActive(jobName: string, entityId?: string): Promise<void> {

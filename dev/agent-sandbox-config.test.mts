@@ -13,9 +13,6 @@ const claudeSettings = JSON.parse(repoFile('.claude/settings.json')) as {
   sandbox: { excludedCommands: string[]; filesystem: { allowWrite: string[] } }
 }
 const codexRules = repoFile('.codex/rules/default.rules')
-const agentWorkflowBeforePushing = repoFile('.agents/skills/agent-workflow/before-pushing.md')
-const agentWorkflowStartOfWork = repoFile('.agents/skills/agent-workflow/start-of-work.md')
-const impactDiscovery = repoFile('.agents/skills/planning/references/impact-discovery.md')
 
 const codexRuleFor = (pattern: string[]) =>
   `prefix_rule(pattern=${JSON.stringify(pattern).replaceAll(',', ', ')}, decision="allow")`
@@ -189,20 +186,6 @@ describe('agent sandbox configuration', () => {
     }
   })
 
-  it('documents pnpm approval prefixes', () => {
-    for (const content of [agentWorkflowBeforePushing, agentWorkflowStartOfWork]) {
-      for (const prefix of ['["pnpm", "run"]', '["pnpm", "exec"]']) {
-        expect(content.includes(prefix) || content.includes(prefix.replaceAll('"', '\\"'))).toBe(
-          true,
-        )
-      }
-    }
-    expect(agentWorkflowStartOfWork).toContain('["no-mistakes"]')
-    expect(agentWorkflowStartOfWork).toContain('node_modules/.bin')
-    expect(agentWorkflowStartOfWork).toContain('serially')
-    expect(impactDiscovery).toContain('node_modules/.bin')
-  })
-
   it('keeps broad arbitrary pnpm execution forms on the sandboxed path', () => {
     for (const pattern of [
       ['pnpm', 'dlx'],
@@ -236,8 +219,8 @@ describe('agent sandbox configuration', () => {
     )
   })
 
-  it('excludes the pr-description and plan-issue dev scripts from the Claude sandbox and allows them in Codex', () => {
-    const scripts = ['dev/pr-description.mts', 'dev/plan-issue.mts']
+  it('excludes the pr-description dev script from the Claude sandbox and allows them in Codex', () => {
+    const scripts = ['dev/pr-description.mts']
     for (const script of scripts) {
       const excludedCommands = claudeSettings.sandbox.excludedCommands
       expect(excludedCommands).toContain(`node ${script}`)

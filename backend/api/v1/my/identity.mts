@@ -138,7 +138,7 @@ app.route('/api/v1/my/email-addresses').post(async (ctx: Context) => {
   )
 
   ctx.json({ email_address: normalizedEmail })
-  enqueueSendEmailVerificationToken(
+  void enqueueSendEmailVerificationToken(
     { emailAddress: normalizedEmail },
     { token, uiLocale: currentUser.ui_locale ?? null },
   )

@@ -105,8 +105,8 @@ async function seedLinkedAccount(userId: string): Promise<string> {
 describe('disconnectBlueskyAccountAndCleanupFollows', () => {
   beforeEach(() => {
     revokeBlueskySessionMock.mockReset()
-    revokeBlueskySessionMock.mockImplementation(
-      async (_client: NodeOAuthClient, did: string) => await new BlueskySessionStore().del(did),
+    revokeBlueskySessionMock.mockImplementation(async (_client: NodeOAuthClient, did: string) =>
+      new BlueskySessionStore().del(did),
     )
     deleteFollowMock.mockReset()
     deleteFollowMock.mockResolvedValue(undefined)

@@ -1,19 +1,6 @@
-# JWT Sessions
+# JWT sessions
 
-This service owns device/session JWT creation, verification, revocation, staleness invalidation,
-and anonymous-session rotation flows.
-
-Use [README.md](README.md) as the canonical reference for session behavior and Valkey state.
-
-Agent-specific rules:
-
-- Keep token verification, pairing, and rotation rules in this service instead of duplicating them
-  in API routes or request context helpers.
-- Keep JWT key parsing, signing, verification, and rotation behavior in
-  `@ts-shared/session-jwt`. Do not reintroduce backend-local key loaders.
-- Preserve the strict `dt` + `st` pairing guarantee. Do not reintroduce any `st`-only fallback.
-- Per-request auth must verify `dt`/`st` pairing and Valkey revocation before authenticating a
-  uid-bearing session. The request cache and hot/warm/cold refresh paths are canonical in
-  [JWT session architecture](reference-architecture.md#hot--warm--cold-paths-patch-apiv1session).
-- Call `markJwtStale(userId)` after any change to user roles or membership plan so the next
-  PATCH /api/v1/session forces a cold-path DB reload.
+- Keep session verification, pairing, revocation, staleness, and rotation in this service; routes/context helpers do not duplicate it. [README.md](../../../docs/overview/architecture/services/jwt-session/README.md) owns behavior and Valkey state.
+- Key parsing/signing/verification/rotation belongs in `@ts-shared/session-jwt`; never restore backend-local key loaders.
+- Preserve strict `dt`+`st` pairing without `st`-only fallback. Authenticate uid-bearing sessions only after pairing and Valkey revocation checks; follow [hot/warm/cold paths](../../../docs/overview/architecture/services/jwt-session/reference-architecture.md#hot--warm--cold-paths-patch-apiv1session).
+- Call `markJwtStale(userId)` after role or membership-plan changes so the next session PATCH forces cold-path DB reload.

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { findAiUsageRecordForAgent, pollUntilNotNull } from '@voucha/test-helpers'
-import { type OwnedBackgroundResponseLease } from '@services/openai-background-responses'
-import { type OpenAiSpendCapBreach } from '@services/ai-usage'
+import type { OwnedBackgroundResponseLease } from '@services/openai-background-responses'
+import type { OpenAiSpendCapBreach } from '@services/ai-usage'
 import { callRecordingAgentResponseUsage } from '../record-response-usage.mts'
 import { getBackgroundResponseHooks } from '../create-response.mts'
 

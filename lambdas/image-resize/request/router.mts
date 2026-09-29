@@ -1,5 +1,7 @@
 import type { APIGatewayProxyEvent } from 'aws-lambda'
-import { isOgRequest, isSideloadRequest } from './event-path.mts'
+import { isRemovedSideloadRoute } from '@ts-shared/url-signing'
+import { RequestParseError } from '../errors.mts'
+import { getRequestPath, isOgRequest, isSideloadRequest } from './event-path.mts'
 import { parseRequest, type ParsedRequest } from './parse.mts'
 import { parseSideloadRequest, type ParsedSideloadRequest } from './parse-sideload.mts'
 import { parseOgRequest, type ParsedOgRequest } from './parse-og.mts'
@@ -13,9 +15,14 @@ export function parseRouterRequest(
   event: APIGatewayProxyEvent,
   options: { sideloadSigningKeys?: string } = {},
 ): ParsedRouterRequest {
+  // Removed sideload routes fail before signature parsing or any cache lookup.
+  if (isRemovedSideloadRoute(getRequestPath(event))) {
+    throw new RequestParseError('Removed sideload route', 404)
+  }
+
   // Detect route type
   // OG route: /og/{base64url}
-  // Sideload route: /sideload/{base64url}
+  // Sideload route: /sideload/v2/{base64url}
   // Uploaded images require an exact placement path; other paths are rejected below.
   if (isOgRequest(event)) {
     const ogRequest = parseOgRequest(event, options.sideloadSigningKeys)

@@ -41,7 +41,7 @@ describe('backfill trigger helpers', () => {
 
   it('converts synchronous enqueue errors to rejected promises', async () => {
     const error = new Error('sync enqueue failure')
-    const enqueue = vi.fn<() => void>(() => {
+    const enqueue = vi.fn<() => Promise<unknown>>(() => {
       throw error
     })
 

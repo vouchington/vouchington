@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 
 /** Streams profile rows (one row) for the given user. */
 export function streamProfile(userId: string) {
-  return createAsyncGeneratorFromCursor<Record<string, unknown>>(sql`/* streamProfile */
+  return createAsyncGeneratorFromCursor(sql`/* streamProfile */
     SELECT
       id,
       username,
@@ -36,7 +36,7 @@ export function streamProfile(userId: string) {
 
 /** Streams all non-deleted posts for the given user. */
 export function streamPosts(userId: string) {
-  return createAsyncGeneratorFromCursor<Record<string, unknown>>(sql`/* streamPosts */
+  return createAsyncGeneratorFromCursor(sql`/* streamPosts */
     SELECT
       id,
       post_type AS type,
@@ -55,7 +55,7 @@ export function streamPosts(userId: string) {
 
 /** Streams all votes for the given user. */
 export function streamVotes(userId: string) {
-  return createAsyncGeneratorFromCursor<Record<string, unknown>>(sql`/* streamVotes */
+  return createAsyncGeneratorFromCursor(sql`/* streamVotes */
     SELECT 'post' AS entity_type, pv.post_id AS entity_id,
       CASE WHEN pv.score IS NULL THEN 'clear'
         WHEN pv.score = 0 AND NOT pv.score_is_neutral THEN 'clear'
@@ -101,7 +101,7 @@ export function streamVotes(userId: string) {
 
 /** Streams email address rows for the given user. */
 export function streamEmails(userId: string) {
-  return createAsyncGeneratorFromCursor<Record<string, unknown>>(sql`/* streamEmails */
+  return createAsyncGeneratorFromCursor(sql`/* streamEmails */
     SELECT
       email_address,
       is_primary,
@@ -114,7 +114,7 @@ export function streamEmails(userId: string) {
 
 /** Streams phone number rows for the given user. */
 export function streamPhones(userId: string) {
-  return createAsyncGeneratorFromCursor<Record<string, unknown>>(sql`/* streamPhones */
+  return createAsyncGeneratorFromCursor(sql`/* streamPhones */
     SELECT
       phone_number,
       is_primary,
@@ -127,7 +127,7 @@ export function streamPhones(userId: string) {
 
 /** Streams passkey rows for the given user (metadata only, no credential bytes or public key). */
 export function streamPasskeys(userId: string) {
-  return createAsyncGeneratorFromCursor<Record<string, unknown>>(sql`/* streamPasskeys */
+  return createAsyncGeneratorFromCursor(sql`/* streamPasskeys */
     SELECT
       name,
       device_type,

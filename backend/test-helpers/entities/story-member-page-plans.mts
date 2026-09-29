@@ -1,5 +1,6 @@
 import { write } from '@data-stores/psql'
 import { collectPlanNodes, definePlanStatisticsRefresh } from '../query-plans.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export const analyzeStoryMemberPlanTables = definePlanStatisticsRefresh(async () => {
   await write(`/* analyzeStoryMemberPlanTables */ ANALYZE
@@ -28,16 +29,27 @@ export function assertBoundedStoryMemberPlan(
         Number(node['Rows Removed by Filter'] ?? 0) +
         Number(node['Rows Removed by Index Recheck'] ?? 0)) *
       Number(node['Actual Loops'])
-    const indexCondition = String(node['Index Cond'] ?? '')
+    const indexCondition = stringFromUnknown(node['Index Cond'] ?? '')
     if (
       !['Index Scan', 'Index Only Scan'].includes(String(node['Node Type'])) ||
       !indexCondition.includes('story_id =') ||
-      (after && !indexCondition.includes('id <')) ||
+      (after && !hasStoryMembershipContinuationBound(indexCondition)) ||
       work > limit + 1 + Number(excludesPrimary)
-    )
-      throw new Error(`Unbounded story membership work: ${work}`)
+    ) {
+      throw new Error(
+        `Unbounded story membership work: ${work} (${String(node['Node Type'])} ${indexCondition || 'without an index condition'})`,
+      )
+    }
   }
   if (!nodes.some(node => node['Node Type'] === 'Limit' && node['Actual Rows'] === limit + 1)) {
     throw new Error('Story membership lookahead limit missing')
   }
+}
+
+function hasStoryMembershipContinuationBound(indexCondition: string): boolean {
+  return (
+    indexCondition.includes('id <') ||
+    indexCondition.includes('ROW(story_id, id) <') ||
+    indexCondition.includes('(story_id, id) <')
+  )
 }

@@ -71,7 +71,7 @@ frozen install can update:
 
 Living docs name majors or minimums, or point at those owner files. Do not copy a current `x.y.z`,
 commit SHA, or image digest into markdown. A bot PR must not need a docs path to stay accurate.
-Generated inventories follow the same rule: [JOBS.md](../../.github/workflows/JOBS.md) records
+Generated inventories follow the same rule: [JOBS.md](ci/workflows/JOBS.md) records
 reusable-workflow callees without the `@ref` pin so a GitHub Actions Dependabot bump does not
 require a markdown regen. Pins stay in the workflow YAML.
 

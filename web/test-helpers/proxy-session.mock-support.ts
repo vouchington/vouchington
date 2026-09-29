@@ -1,3 +1,4 @@
+import { isbot } from 'isbot'
 import { vi } from 'vitest'
 
 const {
@@ -57,11 +58,74 @@ const consoleSpy = vi.spyOn(console, 'error').mockImplementation((...args: unkno
   originalConsoleError(...args)
 })
 
+const proxySessionData = {
+  dt: 'new-dt',
+  st: 'new-st',
+  uid: 'user-1',
+  dte: 2_592_000,
+  ste: 172_800,
+  secure: false,
+}
+
+const proxyAuthStPayload = { uid: 'user-1', did: 'did-1', sid: 'sid-1' }
+
+function makeRequest({
+  pathname = '/',
+  cookies = {} as Record<string, string>,
+  headers = {} as Record<string, string>,
+  searchParams = {} as Record<string, string>,
+  method = 'GET',
+  body = '',
+} = {}) {
+  const url = new URL(`http://localhost${pathname}`)
+  for (const [key, value] of Object.entries(searchParams)) url.searchParams.set(key, value)
+  return {
+    method,
+    headers: new Headers(headers),
+    nextUrl: {
+      pathname: url.pathname,
+      searchParams: url.searchParams,
+      toString: () => url.toString(),
+    },
+    cookies: {
+      get: (name: string) => (cookies[name] !== undefined ? { value: cookies[name] } : undefined),
+    },
+    text: () => Promise.resolve(body),
+  }
+}
+
+function installProxyTestDoubles() {
+  vi.clearAllMocks()
+  vi.stubEnv('API_BASE_URL', '')
+  vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'http://localhost:2900')
+  vi.stubEnv('CF_WORKER_SECRET', 'test-worker-secret')
+  const fetchMock = vi.fn<() => unknown>().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve({ session: proxySessionData }),
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  vi.mocked(isbot).mockReturnValue(false)
+  mockNextResponseNext.mockReturnValue({ cookies: { set: mockCookiesSet } })
+  mockNextResponseRewrite.mockReturnValue({ cookies: { set: mockCookiesSet } })
+  mockAfter.mockImplementation((fn: () => unknown) => fn())
+  mockDecodeSessionJwt.mockReturnValue(null)
+  return fetchMock
+}
+
+function resetProxyTestDoubles() {
+  vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
+}
+
 export {
   consoleSpy,
+  installProxyTestDoubles,
+  makeRequest,
   mockAfter,
   mockCookiesSet,
   mockDecodeSessionJwt,
   mockNextResponseNext,
   mockNextResponseRewrite,
+  proxyAuthStPayload as AUTH_ST_PAYLOAD,
+  resetProxyTestDoubles,
 }

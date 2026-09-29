@@ -92,8 +92,7 @@ export async function checkBloomFilterRead({
 }: CheckBloomFilterReadOptions): Promise<boolean | null> {
   try {
     const result = await existsIfReady(readyKey, value)
-    const unavailable =
-      result === null || (result === false && (await isUnavailableLiveFilterKey(liveKey)))
+    const unavailable = result === null || (!result && (await isUnavailableLiveFilterKey(liveKey)))
     if (unavailable) {
       await repairUnavailableRead()
       return null

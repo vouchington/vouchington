@@ -3,11 +3,13 @@ import {
   readParenthesizedSubstitution,
 } from './shell-command-substitutions.mts'
 
+export const PLAIN_FORCE_PUSH_REASON = 'Force pushes are banned by repository policy.'
+
 const blockedGitPatterns: Array<{ pattern: RegExp; reason: string }> = [
   {
     pattern:
       /\bgit\s+push\b[^|;&\n]*(?:^|[\s])(?:--force(?!-with-lease(?:\b|=))\b|-[A-Za-z]*f[A-Za-z]*\b|\+[^;&|()\s]+)/,
-    reason: 'Force pushes are banned by repository policy.',
+    reason: PLAIN_FORCE_PUSH_REASON,
   },
   {
     pattern: /\bgit\s+commit\b[^|;&\n]*--amend\b/,

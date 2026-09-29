@@ -12,7 +12,7 @@ formatter with their final render-time attributes:
 
 - external links receive `rel` and `target`
 - unsafe link/image URLs are omitted
-- external images are optionally rewritten to an absolute `IMAGE_ORIGIN/sideload/` URL
+- external images are optionally rewritten to an absolute `IMAGE_ORIGIN/sideload/v2/` URL
 
 Non-admin markdown does not reparse the emitted HTML. Admin markdown still needs
 one HTML parse because raw admin HTML must be allowlist-sanitized. That sanitizer
@@ -36,7 +36,7 @@ flowchart TD
 
 RSS input is untrusted HTML, so Ammonia remains the first pass and owns the
 allowlist policy. The Ammonia attribute filter also captures the first external
-image URL and optionally rewrites image sources to an absolute `IMAGE_ORIGIN/sideload/` URL.
+image URL and optionally rewrites image sources to an absolute `IMAGE_ORIGIN/sideload/v2/` URL.
 
 Empty layout containers are a cleanup concern, not a security boundary. The
 Scraper cleanup pass now runs only when the sanitized HTML contains an empty

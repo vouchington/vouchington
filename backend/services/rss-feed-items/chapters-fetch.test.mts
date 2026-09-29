@@ -189,6 +189,7 @@ describe('getPodcastEpisodeChaptersById', () => {
     const item = makeItem({ chapters_url: 'https://chapters.example.com/episode.json' })
     const safeFetch = vi.fn<ChaptersSafeFetch>(async (_url, options) => {
       await new Promise<void>((_resolve, reject) => {
+        // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- AbortSignal.reason is an arbitrary value owned by the signal.
         options?.signal?.addEventListener('abort', () => reject(options.signal?.reason))
       })
       return { body: null, ok: true, url: String(_url) }
@@ -214,6 +215,7 @@ describe('getPodcastEpisodeChaptersById', () => {
     const readResponseBodyAsBuffer = vi.fn<(options: ReadResponseBodyOptions) => Promise<Buffer>>(
       options =>
         new Promise<Buffer>((_resolve, reject) => {
+          // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Preserve the exact abort reason in this transport fixture.
           options.signal?.addEventListener('abort', () => reject(options.signal?.reason))
         }),
     )

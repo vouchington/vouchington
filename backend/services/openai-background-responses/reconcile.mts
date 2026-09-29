@@ -108,7 +108,7 @@ export async function reconcileExpiredBackgroundResponse(
     // Terminal usage can lag cancellation. Keep the sweeper-owned row until its short lease
     // expires so a later pass can retrieve the settled usage instead of deleting it prematurely.
     if (!error.usage) return 'still-active'
-    return await claimAndRecordWithUncertainty(
+    return claimAndRecordWithUncertainty(
       {
         responseId: row.responseId,
         leaseToken: row.leaseToken,

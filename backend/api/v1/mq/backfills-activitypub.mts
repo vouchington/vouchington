@@ -8,6 +8,6 @@ export const ACTIVITYPUB_BACKFILLS: BackfillEntry[] = [
     job_name: 'rearmFailedDeliveries',
     description: 'Re-arm and enqueue exhausted durable ActivityPub inbox envelopes',
     source_table: 'ap_inbox_deliveries',
-    trigger: async () => await enqueueRearmFailedActivityPubInboxDeliveries(),
+    trigger: async () => enqueueRearmFailedActivityPubInboxDeliveries(),
   },
 ]

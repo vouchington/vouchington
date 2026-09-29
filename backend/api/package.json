@@ -274,11 +274,12 @@
     "@aws-sdk/client-s3": "^3.1141.0",
     "@services/ap-post-likes": "workspace:^",
     "@types/http-errors": "^2.0.5",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.3",
     "@types/supertest": "^7.2.1",
     "@voucha/test-helpers": "workspace:^",
     "@workers/entity-listeners": "workspace:^",
     "node-app-attest": "^1.0.1",
-    "supertest": "^7.3.0"
+    "supertest": "^7.3.0",
+    "vitest": "^5.0.2"
   }
 }

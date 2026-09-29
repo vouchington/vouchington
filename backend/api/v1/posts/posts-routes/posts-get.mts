@@ -98,7 +98,7 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
       ].filter(rootPostId => !postIdSet.has(rootPostId))
       if (rootPostIds.length === 0) return posts
       const rawRootPosts = await getPostByAnyCachedBatch(rootPostIds)
-      const rootPosts = await maskAnonymousPosts(rawRootPosts, currentUser)
+      const rootPosts = maskAnonymousPosts(rawRootPosts, currentUser)
       return [...posts, ...rootPosts]
     },
   )
@@ -122,7 +122,7 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
       })
 
       const adminIds = await getAdminUserIdsFromPosts(posts)
-      return await renderMarkdownBatch(entities, adminIds)
+      return renderMarkdownBatch(entities, adminIds)
     }),
     communities: rawPostsPromise.then(posts => getPostCommunitiesRecord(posts)),
     post_link_embeds: rawPostsPromise.then(async posts => {

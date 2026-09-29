@@ -3,7 +3,7 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { createAgentPrompt, updateAgentPrompt } from '@services/agents'
-import { timestampToUuidv7LowerBound } from '@data-stores/psql/config-driven/utils/partition-utils'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 
 export function createOpenAIPostLLMModerationPrompt(
   currentUser: PrivateUser,

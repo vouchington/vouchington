@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 
 /** Streams followed RSS feeds for the given user with source details. */
 export function streamFollowedRssFeeds(userId: string) {
-  return createAsyncGeneratorFromCursor<Record<string, unknown>>(sql`/* streamFollowedRssFeeds */
+  return createAsyncGeneratorFromCursor(sql`/* streamFollowedRssFeeds */
     SELECT
       rf.id AS rss_feed_id,
       rf.title,

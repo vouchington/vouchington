@@ -4,10 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { reconciliationJobOptions } from './enqueues.mts'
 
-vi.mock<typeof import('glide-mq')>(
-  import('glide-mq'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
 

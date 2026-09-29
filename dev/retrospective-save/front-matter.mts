@@ -1,4 +1,5 @@
 import { parse as load } from 'yaml'
+import type { FeedbackReference } from 'vouchington-tooling/agent-blackboard'
 
 import { isValidSessionId } from '../agent-session-id/valid-id.mts'
 
@@ -6,9 +7,11 @@ const FRONT_MATTER_DELIMITER = '---'
 
 export type FrontMatterFields = {
   date: string
-  issues: unknown[]
-  prs: unknown[]
+  issues: FeedbackReference[]
+  prs: FeedbackReference[]
+  repositories?: unknown
   sessionId?: string
+  feedbackMetadata?: { workOutcome: unknown; feedbackCoverage: unknown }
 }
 
 // description is intentionally not extracted here: per the step-0 UAT baseline's
@@ -36,7 +39,19 @@ export function parseFrontMatter(markdown: string): FrontMatterFields {
     throw new Error('retrospective doc front matter must be a YAML mapping')
   }
 
-  const { date, issues, prs, session_id: sessionId } = parsed as Record<string, unknown>
+  const {
+    date,
+    issues,
+    prs,
+    repositories,
+    session_id: sessionId,
+    work_outcome: workOutcome,
+    feedback_coverage: feedbackCoverage,
+  } = parsed as Record<string, unknown>
+  if ((workOutcome !== undefined) !== (feedbackCoverage !== undefined))
+    throw new Error(
+      'retrospective front matter must provide both work_outcome and feedback_coverage',
+    )
   if (typeof date !== 'string' || date.trim() === '') {
     throw new Error('retrospective doc front matter is missing a non-empty "date" field')
   }
@@ -52,5 +67,23 @@ export function parseFrontMatter(markdown: string): FrontMatterFields {
   if (sessionId !== undefined && !isValidSessionId(sessionId.trim())) {
     throw new Error('retrospective doc front matter "session_id" field must be a valid session id')
   }
-  return { date, issues, prs, sessionId: sessionId?.trim() }
+  const references = (values: unknown[], field: string): FeedbackReference[] =>
+    values.map(value => {
+      if (
+        (typeof value === 'string' && value.trim() !== '') ||
+        (typeof value === 'number' && Number.isSafeInteger(value) && value > 0)
+      )
+        return value
+      throw new Error(
+        `retrospective doc front matter ${field} references must be positive integers or non-empty strings`,
+      )
+    })
+  return {
+    date,
+    issues: references(issues, 'issues'),
+    prs: references(prs, 'prs'),
+    ...(repositories === undefined ? {} : { repositories }),
+    sessionId: sessionId?.trim(),
+    ...(workOutcome === undefined ? {} : { feedbackMetadata: { workOutcome, feedbackCoverage } }),
+  }
 }

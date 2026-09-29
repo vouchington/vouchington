@@ -58,13 +58,7 @@ export async function executeCopyrightActionIntent(
     }
     return finalized ? 'applied' : 'stale'
   } catch (error) {
-    return await compensateCopyrightActionFailure(
-      intent,
-      now,
-      restorePublishedTuple,
-      dependencies,
-      error,
-    )
+    return compensateCopyrightActionFailure(intent, now, restorePublishedTuple, dependencies, error)
   }
 }
 
@@ -86,8 +80,8 @@ async function prepareCopyrightAction(
     }
 > {
   await using transaction = await beginTransaction()
-  const placementKey = await getCopyrightActionPlacementKey(intent.id, transaction)
-  if (placementKey) await lockCopyrightActionPlacement(placementKey, transaction)
+  const placementId = await getCopyrightActionPlacementKey(intent.id, transaction)
+  if (placementId) await lockCopyrightActionPlacement(placementId, transaction)
   const legal = await lockCopyrightActionDelivery(intent.id, transaction)
   if (!legal) return await commitOutcome(transaction, 'not_claimed')
   if (legal.action === 'withhold' && legal.restriction_lifted_at !== null) {
@@ -100,7 +94,7 @@ async function prepareCopyrightAction(
     })
     return await commitOutcome(transaction, 'stale')
   }
-  const current = await dependencies.getImagePlacementForCopyright(legal.placement_key, {
+  const current = await dependencies.getImagePlacementForCopyright(legal.placement_id, {
     query: transaction,
   })
   if (legal.action === 'restore' && current?.deleted) {

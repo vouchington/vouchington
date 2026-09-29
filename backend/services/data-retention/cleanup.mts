@@ -176,37 +176,29 @@ export async function runDataRetentionCleanup(
 export async function cleanupExpiredContributionAdmissions(
   options: ExpiryCleanupOptions = {},
 ): Promise<CleanupResult> {
-  return await runBoundedBatches(
-    options,
-    async batchSize =>
-      await pruneExpiredContributionAdmissions(options.now, batchSize, options.lowerBoundDate),
+  return runBoundedBatches(options, async batchSize =>
+    pruneExpiredContributionAdmissions(options.now, batchSize, options.lowerBoundDate),
   )
 }
 
 export async function cleanupExpiredContributionQuotaConsumptions(
   options: ExpiryCleanupOptions = {},
 ): Promise<CleanupResult> {
-  return await runBoundedBatches(
-    options,
-    async batchSize =>
-      await pruneExpiredContributionAdmissionConsumptions(
-        options.now,
-        batchSize,
-        options.lowerBoundDate,
-      ),
+  return runBoundedBatches(options, async batchSize =>
+    pruneExpiredContributionAdmissionConsumptions(options.now, batchSize, options.lowerBoundDate),
   )
 }
 
 export async function cleanupExpiredTopicImportAttempts(
   options: ExpiryCleanupOptions = {},
 ): Promise<CleanupResult> {
-  return await runBoundedBatches(
+  return runBoundedBatches(
     {
       batchSize: options.batchSize ?? TOPIC_IMPORT_ATTEMPT_DELETION_BATCH_SIZE,
       maxBatches: options.maxBatches,
     },
     async batchSize =>
-      await pruneExpiredTopicImportAttempts(options.now, batchSize, options.lowerBoundDate),
+      pruneExpiredTopicImportAttempts(options.now, batchSize, options.lowerBoundDate),
   )
 }
 
@@ -215,10 +207,8 @@ export async function cleanupSoftDeletedUsers(
 ): Promise<CleanupResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 90)
   const cutoffDate = getRetentionCutoffDate(retentionDays, options.now)
-  return await runBoundedBatches(
-    options,
-    async batchSize =>
-      await cleanupSoftDeletedUserBatch(cutoffDate, batchSize, options.lowerBoundDate),
+  return runBoundedBatches(options, async batchSize =>
+    cleanupSoftDeletedUserBatch(cutoffDate, batchSize, options.lowerBoundDate),
   )
 }
 
@@ -227,16 +217,14 @@ export async function cleanupOldReferralAttributions(
 ): Promise<CleanupResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 30)
   const cutoffDate = getRetentionCutoffDate(retentionDays, options.now)
-  return await runBoundedBatches(
-    options,
-    async batchSize =>
-      await deleteOldReferralAttributionBatch(
-        getMinUUIDv7ForDate(cutoffDate),
-        batchSize,
-        options.lowerBoundDate === undefined
-          ? undefined
-          : getMinUUIDv7ForDate(options.lowerBoundDate),
-      ),
+  return runBoundedBatches(options, async batchSize =>
+    deleteOldReferralAttributionBatch(
+      getMinUUIDv7ForDate(cutoffDate),
+      batchSize,
+      options.lowerBoundDate === undefined
+        ? undefined
+        : getMinUUIDv7ForDate(options.lowerBoundDate),
+    ),
   )
 }
 

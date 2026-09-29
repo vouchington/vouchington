@@ -1,3 +1,4 @@
+import { validateAssessmentSections } from './retrospective-validate-assessments.mts'
 import { validateCiFailureSection } from './retrospective-validate-ci.mts'
 export type ValidationResult = { ok: boolean; errors: string[] }
 
@@ -46,7 +47,7 @@ export function validateRetroDoc(markdown: string): ValidationResult {
   if (!lines.includes(TRANSCRIPT_FACTS_MARKER)) {
     errors.push(`missing "${TRANSCRIPT_FACTS_MARKER}" marker`)
   }
-  errors.push(...validateCiFailureSection(lines))
+  errors.push(...validateCiFailureSection(lines), ...validateAssessmentSections(lines))
 
   return { ok: errors.length === 0, errors }
 }

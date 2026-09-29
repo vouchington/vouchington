@@ -1,5 +1,5 @@
-import type { PageInfo } from '@/types/api-responses'
-import type { PaginatedListParams } from './use-paginated-list'
+import type { PageInfo } from '@voucha/types/pagination'
+import type { PaginatedListParams } from './paginated-query-key'
 
 export interface PaginatedData {
   page_info: Pick<PageInfo, 'has_next_page' | 'end_cursor'>

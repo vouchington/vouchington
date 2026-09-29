@@ -1,4 +1,5 @@
 import { collectPlanNodes, type PlanNode } from './plan-nodes.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export function isBoundedStoryPresentationSort(node: PlanNode, nodes: PlanNode[]): boolean {
   const children =
@@ -9,11 +10,15 @@ export function isBoundedStoryPresentationSort(node: PlanNode, nodes: PlanNode[]
   const nativePage = nodes.find(candidate => candidate['Subplan Name'] === 'CTE items')
   if (!nativePage || !input.some(candidate => candidate['CTE Name'] === 'items')) return false
   if (
-    input.some(candidate => String(candidate['Relation Name'] ?? '').startsWith('rss_feed_items'))
+    input.some(candidate =>
+      stringFromUnknown(candidate['Relation Name'] ?? '').startsWith('rss_feed_items'),
+    )
   )
     return false
   const physicalSourceRows = collectPlanNodes(nativePage)
-    .filter(candidate => String(candidate['Relation Name'] ?? '').startsWith('rss_feed_items'))
+    .filter(candidate =>
+      stringFromUnknown(candidate['Relation Name'] ?? '').startsWith('rss_feed_items'),
+    )
     .reduce(
       (total, candidate) =>
         total +

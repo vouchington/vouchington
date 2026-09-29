@@ -74,6 +74,9 @@ describe('handler.og', () => {
           new Error('unreachable: fetchImageFromUrl should not run for OG requests'),
         ),
       captureCacheWriteError: vi.fn<(error: unknown) => void>(),
+      authorizeDependencies: vi.fn<LambdaHandlerDependencies['authorizeDependencies']>(
+        async dependencies => dependencies.map(() => 'unknown'),
+      ),
     }
 
     handler = createLambdaHandler(
@@ -117,23 +120,64 @@ describe('handler.og', () => {
     expect(dependencies.fetchImageFromUrl).not.toHaveBeenCalled()
   })
 
-  it('renders a landing card with an avatar fetched from the origin bucket', async () => {
+  it('renders a landing card with an avatar fetched from an allowed placement', async () => {
+    const imageId = '22222222-2222-4222-8222-222222222222'
+    const allowing = createLambdaHandler(
+      { source: mockEnvConfig, sideload: mockSideloadConfig },
+      {
+        ...dependencies,
+        authorizeDependencies: async () => ['allow'],
+      },
+    )
     const event = createMockOgEvent({
       type: 'landing',
       displayName: 'Ada Lovelace',
       username: 'ada',
       topCategories: ['math', 'computing'],
-      avatarImageId: 'avatars/ada.png',
+      dependencies: [
+        {
+          placementId: '11111111-1111-4111-8111-111111111111',
+          revision: 1,
+          imageId,
+        },
+      ],
     })
 
-    const result = await handler(event)
+    const result = await allowing(event)
 
     expect(result.statusCode).toBe(200)
     expect(dependencies.fetchImageFromS3).toHaveBeenCalledWith(
       expect.anything(),
       mockEnvConfig.s3_bucket_origin.bucket,
-      'avatars/ada.png',
+      imageId,
     )
+  })
+
+  it('falls back when the default dependency check does not allow the placement', async () => {
+    const withoutAuthorization: Partial<LambdaHandlerDependencies> = { ...dependencies }
+    delete withoutAuthorization.authorizeDependencies
+    const fallback = createLambdaHandler(
+      { source: mockEnvConfig, sideload: mockSideloadConfig },
+      withoutAuthorization,
+    )
+    const event = createMockOgEvent({
+      type: 'landing',
+      displayName: 'Ada Lovelace',
+      username: 'ada',
+      topCategories: ['math'],
+      dependencies: [
+        {
+          placementId: '11111111-1111-4111-8111-111111111111',
+          revision: 1,
+          imageId: '22222222-2222-4222-8222-222222222222',
+        },
+      ],
+    })
+
+    const result = await fallback(event)
+
+    expect(result.statusCode).toBe(200)
+    expect(dependencies.fetchImageFromS3).not.toHaveBeenCalled()
   })
 
   it('falls back to an initial-letter avatar when no avatarImageId is present', async () => {
@@ -154,15 +198,28 @@ describe('handler.og', () => {
     vi.mocked(dependencies.fetchImageFromS3!).mockRejectedValue(
       new S3OperationError('not found', 404),
     )
+    const allowing = createLambdaHandler(
+      { source: mockEnvConfig, sideload: mockSideloadConfig },
+      {
+        ...dependencies,
+        authorizeDependencies: async () => ['allow'],
+      },
+    )
     const event = createMockOgEvent({
       type: 'landing',
       displayName: 'Ada Lovelace',
       username: 'ada',
       topCategories: ['math'],
-      avatarImageId: 'avatars/missing.png',
+      dependencies: [
+        {
+          placementId: '11111111-1111-4111-8111-111111111111',
+          revision: 1,
+          imageId: '22222222-2222-4222-8222-222222222222',
+        },
+      ],
     })
 
-    const result = await handler(event)
+    const result = await allowing(event)
 
     expect(result.statusCode).toBe(200)
   })

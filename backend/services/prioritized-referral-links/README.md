@@ -1,14 +1,3 @@
 # @services/prioritized-referral-links
 
-Retrieves prioritized referral links for display, ordered across six priority groups with authorization checks.
-
-## Key exports
-
-- `getPrioritizedReferralLinks(currentUserId, options)` — returns the ordered list of referral links for a user or context, applying the six-group prioritization algorithm
-- `currentUserCanViewPrioritizedReferralLinks(currentUser, context)` — authorization check
-
-## Related
-
-- Parent: [../AGENTS.md](../AGENTS.md)
-- User referral program links: [../user-referral-program-links/README.md](../user-referral-program-links/README.md)
-- Referral links requirements: [../../../docs/requirements/users/REFERRAL-LINKS.md](../../../docs/requirements/users/REFERRAL-LINKS.md)
+The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/services/prioritized-referral-links/README.md).

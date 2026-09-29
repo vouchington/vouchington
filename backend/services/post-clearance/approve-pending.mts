@@ -1,4 +1,4 @@
-import { type QueryOptions, type TransactionQuery } from '@data-stores/psql'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { lockPostPublication } from '@services/post-publication'

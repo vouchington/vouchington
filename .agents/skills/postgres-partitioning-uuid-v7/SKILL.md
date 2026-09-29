@@ -1,6 +1,6 @@
 ---
 name: postgres-partitioning-uuid-v7
-description: Apply reusable UUIDv7 partitioning guidance with Vouchington schema, migration, and pruning policy.
+description: Design Vouchington UUIDv7 partitions, schema changes, and pruning.
 ---
 
 # Vouchington UUIDv7 Partitioning Adapter

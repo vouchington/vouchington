@@ -1,27 +1,25 @@
-Ultrathink. Prioritise depth over latency.
+Review the final diff against the user's request, accepted plan (wherever stored), and current PR claims.
 
-Scope to read before reviewing the diff:
+Read the PR body, applicable `AGENTS.md` ancestry, relevant decisions in comments, and linked source
+requirements. Follow additional links only when needed to resolve a requirement or dependency; do
+not recursively ingest unrelated issues, PRs, or documentation. A Plan issue is optional.
 
-- Every GitHub issue and PR linked from the PR body, transitively. Source issues typically predate the Plan issue (label: `plan`), which predates this PR. Build one explicit requirement list from all of them — accepted plan requirements and plain source-issue requirements alike — and verify each entry is satisfied here or explicitly deferred with a linked follow-up.
-- The PR's own title and body. Read it as a set of claims to verify, not a summary to trust: every stated behaviour, checklist item, root-cause explanation, and `## Follow-ups` deferral is something the diff must actually support.
-- All comments on the PR, the Plan issue, and the source issue(s).
-- The root `AGENTS.md`, every workspace `AGENTS.md` whose directory the diff touches, and any `docs/**` files those AGENTS.md files link to that are relevant to the change.
+Report concrete findings with file/line evidence:
 
-Review dimensions (call out concrete file:line in inline comments):
+- Correctness and security: authorization, input validation, secrets, races, and failure handling.
+- Performance and cost: query shape, unnecessary external calls, fan-out, and hot-path allocations.
+- Simplicity: obsolete paths, duplication, or indirection that obscures behavior.
+- Prelaunch storage: enforce [One current contract](../../../AGENTS.md), typed relationships, and
+  concrete foreign keys for internal references, including retained identities.
+- Requirements and PR accuracy: identify binding requirements left unmet, unsupported claims,
+  unexplained scope, and incomplete root-cause fixes. Human direction and the accepted plan outrank
+  advisory reviews. Alternative designs are advisory unless they reveal a concrete blocker.
 
-- **Necessity & alternatives** - question whether the change should exist, whether a simpler or better approach solves the underlying problem, and whether the plan or diff reflects tunnel vision; bring an independent fresh perspective.
-- **Correctness & security** - auth/authz boundaries, injection, secret handling, race conditions.
-- **Performance & cost** - N+1 queries, accidental full-table scans, unnecessary LLM calls, oversized fan-out, hot-path allocations.
-- **Simplification** - dead code, unused exports, cruft, and residue from earlier iterations.
-- **Prelaunch storage** - flag violations of [One current contract](../../../AGENTS.md). Also flag business state in JSON, polymorphic/encoded/array relationships, and internal UUID references without target foreign keys (even if primary or unique).
-- **DRY & indirection** - duplication that should be extracted, and over-abstracted indirection that obscures intent.
-- **Plan adherence** - does the diff actually deliver what the Plan issue accepted?
-- **Requirement coverage & description accuracy** - walk the requirement list entry by entry. Flag any requirement the diff leaves unmet with no linked deferral, any claim in the description the diff does not support, any description text a later scope change left stale, and any substantial diff scope the description never mentions. Anchor each finding to the changed line it concerns; when a description claim has no matching diff line, raise it in the review body and quote the corrected wording.
+Do not run tests or lint in this automated review; assess the available validation evidence and
+state its limits. Label correctness, security, and binding-requirement violations **BLOCKING**.
+Keep optional improvements separate and omit cosmetic churn.
 
-Treat premise or alternative-approach observations as advisory unless they reveal a correctness, security, or plan-adherence blocker. The accepted plan remains authoritative under the feedback hierarchy. Treat requirement-coverage and description-accuracy findings as advisory as well: report them, do not block on them; a requirement the accepted plan made binding remains a plan-adherence blocker.
-
-Do not run tests or lint locally. CI will run those checks.
-
-Record every finding in `code-review-payload.json` at the repository root. Do not approve and do not call `gh` — final approval is reserved for human reviewers. Label correctness, security, or plan-adherence blockers as **BLOCKING** in the inline comments.
-
-Write inline comments for every finding — both blockers and suggestions. Prefer inline placement over top-level summary text: a top-level comment without a corresponding inline is a missed opportunity for the author to act directly on the diff. Use GitHub suggestions (`suggestion` code blocks) for any concrete code change you'd recommend, however small.
+Record findings in `code-review-payload.json` at the repository root for the calling workflow.
+Do not call `gh` or submit approval. Place findings inline when a changed line supports them;
+use the review body for description or cross-cutting findings with no honest inline location.
+Use a GitHub suggestion only when the proposed replacement is complete and safe in context.

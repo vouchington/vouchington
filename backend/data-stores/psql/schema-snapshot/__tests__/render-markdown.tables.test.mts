@@ -52,6 +52,10 @@ describe('renderSchemaMarkdown — tables', () => {
     expect(files.get('README.md')).toContain('# PostgreSQL Schema Snapshot')
     expect(files.get('README.md')).toContain('pnpm run db:snapshot:update')
     expect(files.get('README.md')).toContain('[Views](views.md)')
+    expect(files.get('README.md')).toContain('[schema-snapshot/README.md](../README.md)')
+    expect(files.get('README.md')).toContain(
+      '[`schema.json`](../../../../../backend/data-stores/psql/schema-snapshot/schema.json)',
+    )
     expect(files.get('views.md')).toContain('# Views\n\n[Schema index](README.md).\n\n_none_')
     expect(files.get('enums.md')).toContain('_none_')
     expect(files.get('extensions.md')).toContain('| Extension | Version |')

@@ -28,10 +28,7 @@ import {
 } from '@voucha/test-helpers'
 import { getTestGooglePlayAcknowledgementId } from '@voucha/test-helpers/google-play-memberships'
 
-vi.mock<typeof import('glide-mq')>(
-  import('glide-mq'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('Google Play RTDN recovery with real PostgreSQL and GlideMQ', () => {
   afterEach(() => vi.unstubAllEnvs())
@@ -133,7 +130,7 @@ describe('Google Play RTDN recovery with real PostgreSQL and GlideMQ', () => {
     vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL', `tests+google-worker-${randomUUID()}@voucha.ai`)
     vi.stubEnv(
       'GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY',
-      privateKey.export({ format: 'pem', type: 'pkcs8' }).toString(),
+      privateKey.export({ format: 'pem', type: 'pkcs8' }),
     )
 
     await expect(

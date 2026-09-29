@@ -1,50 +1,17 @@
-# Schema Rules
+# PostgreSQL
 
-See [README.md](./README.md) for schema reference and the generated [schema snapshot index](schema-snapshot/markdown/README.md); this file covers agent rules for migrations, views, and SQL callsites. Quality rules (FK indexing, redundant indexes, STORED columns, score typing, replica writes) live in [postgres-schema-rules.md](../../../docs/development/postgres-schema-rules.md).
-
-## Migration Rules
-
-- Write migrations to be as idempotent as possible (`CREATE OR REPLACE`, `CREATE IF NOT EXISTS`). Keep new SQL lintable under `pnpm run squawk`.
-- **All hardcoded UUID literals must be UUIDv7** (version nibble `7`).
-- The app is unlaunched: fold schema changes into canonical creators and rebuild disposable databases. Keep fresh-bootstrap ledger and checksum integrity. Follow [One current contract](../../../AGENTS.md), [Ephemeral worktree databases](../../../AGENTS.md), and [Staging Schema Drift](reference-migrations-views-and-config-driven.md#staging-schema-drift-pre-launch-only).
-- Migration files must not add `ALTER TABLE ADD COLUMN` or `DROP TABLE`. Fold new columns into the original `CREATE TABLE`. The `postgres-no-add-column` exception list in [`.no-mistakes.yml`](../../../.no-mistakes.yml) is empty. Cross-file FKs use `ALTER TABLE ADD CONSTRAINT`.
-- Every foreign key declares `ON DELETE`. Cross-file FK and check constraints use `NOT VALID` then `VALIDATE CONSTRAINT`.
-- Fixed migrations run transactionally with their ledger insert. Do not add manual `BEGIN`/`COMMIT` or online index-upgrade migrations. See [README.md](./README.md#migrations-views-and-config-driven).
-- Vote schema changes are config-driven via [`election-schema-config.mts`](config-driven/utils/election-schema-config.mts).
-- After SQL changes, push the PR head, run `pnpm run db:snapshot:update` to request CI generation
-  for the current branch's open PR, or `pnpm run db:snapshot:update -- --pr <number>` for an explicit
-  PR, and fetch its generated commit before continuing. See [schema-snapshot/README.md](schema-snapshot/README.md).
-
-### Schema Change Placement
-
-Choose among fixed migrations, config-driven objects, and managed views using [Schema Object Buckets](reference-migrations-views-and-config-driven.md#schema-object-buckets).
-
-## Querying Rules
-
-- Do not query by `created_at` for UUIDv7 `id` tables — query by `id`.
-- Never read a non-materialized view _correlated to an outer row_ (a batched-by-id lookup, a scalar subquery inside another view's target list, an `EXISTS` keyed to an outer id) without a restriction reaching its driving relation, at any nesting level — an unfiltered correlated read forces the planner to re-derive the whole view once per outer row instead of an indexed lookup. This does not ban a once-per-query, uncorrelated full-view read (e.g. a platform-wide aggregate); that pays the view's cost once, not per row. See [View Composition and the Eligibility-View Pull-Up Rule](reference-migrations-views-and-config-driven.md#view-composition-and-the-eligibility-view-pull-up-rule).
-- Load [postgres-node-performance-tuning](../../../.agents/skills/postgres-node-performance-tuning/SKILL.md) for set-based IO, replica selection, large datasets, and `psql.pipelineBatch` versus UNNEST. Index changes: follow its [Query → Index Impact recipe](../../../.agents/skills/postgres-node-performance-tuning/SKILL.md#query--index-impact).
-- Every SQL query must start with a `/* functionName */` comment.
-- No `OFFSET` — use cursor-based pagination (`@modules/pagination`).
-- Use `pgvector.toSql()` for PostgreSQL vectors. Query parent tables, not partitions.
-- **Concrete relationships only** — a joined id is a child row or FK column. Primary/unique keys do not replace target FKs. Live rows use live tables; a surviving reference uses that entity's retained-identity row and does not authorize the deleted entity. Structured JSON and change history stay JSON. No type/id pairs, UUID arrays, attribute tables, or encoded keys. See [prelaunch relational storage](../../../docs/development/postgres-schema-rules.md#prelaunch-relational-storage).
-- **Elections are not first-class entities.** They are vote tallies identified by their parent (`election.id === parent.id`). Reference the parent.
-- Numeric filters on aggregates or `GENERATED … STORED` columns must match the SQL type; reuse [buildVoteScoreFilters](../../services/entity-relations/vote-score-filters.mts).
-- Prefer timestamps over booleans. Avoid `status` columns — derive state from lifecycle timestamps.
-- Non-terminal moderation/toggle state is an append-only history table (`lifted_at`), never a mutable parent column. Canonical: `community_bans`. Enforced by `moderation-history-guard.mts`. Details: [postgres-schema-rules.md](../../../docs/development/postgres-schema-rules.md).
-- After relaxing a single-row assumption, re-audit that table's query sites for leftover `LIMIT 1`.
-- Keep SAVEPOINT transaction-state probes on borrowed/caller-supplied clients; do not replace them with `client.getTransactionStatus()`. See [Transactions](reference-transactions.md).
-
-## Partitioning Rules
-
-Load [postgres-partitioning-uuid-v7](../../../.agents/skills/postgres-partitioning-uuid-v7/SKILL.md)
-and follow the [partitioning strategy](../../../docs/overview/architecture/partitioning-strategy.md)
-and [pruning hints](../../../docs/overview/architecture/partition-pruning-hints.md). HASH
-partitioning is forbidden.
-
-## See Also
-
-- Backend context: [../../AGENTS.md](../../AGENTS.md)
-- Schema reference: [README.md](./README.md)
-- Schema quality rules: [postgres-schema-rules.md](../../../docs/development/postgres-schema-rules.md)
-- Services: [../../services/AGENTS.md](../../services/AGENTS.md)
+- Use [schema/reference docs](../../../docs/development/postgresql/README.md), [generated snapshot index](../../../docs/development/postgresql/schema-snapshot/markdown/README.md), and [schema quality rules](../../../docs/development/postgres-schema-rules.md). Choose fixed/config-driven/view placement through [schema object buckets](../../../docs/development/postgresql/reference-migrations-views-and-config-driven.md#schema-object-buckets).
+- Keep creators idempotent where possible and SQL lintable with `pnpm run squawk`. Hardcoded UUIDs are UUIDv7 (version nibble `7`).
+- Apply prelaunch canonical creators and disposable DB rebuilding; preserve fresh-bootstrap ledger/checksum integrity and [staging drift rules](../../../docs/development/postgresql/reference-migrations-views-and-config-driven.md#staging-schema-drift-pre-launch-only).
+- Never add `ALTER TABLE ADD COLUMN` or `DROP TABLE` migrations. Fold columns into their original `CREATE TABLE`. The `postgres-no-add-column` exception list in [`.no-mistakes.yml`](../../../.no-mistakes.yml) is empty. Cross-file FKs use `ALTER TABLE ADD CONSTRAINT`.
+- Every FK declares `ON DELETE`; cross-file FK/check constraints use `NOT VALID` then `VALIDATE CONSTRAINT`. Fixed migrations and ledger inserts are transactional; never add manual `BEGIN`/`COMMIT` or online index-upgrade migrations.
+- Vote schema uses [`election-schema-config.mts`](config-driven/utils/election-schema-config.mts).
+- After SQL changes, push the PR head, request `pnpm run db:snapshot:update` (or `-- --pr <number>`), and fetch CI's generated commit before continuing; follow [snapshot generation](../../../docs/development/postgresql/schema-snapshot/README.md).
+- UUIDv7 tables query `id`, never `created_at`. Queries begin with `/* functionName */`; use cursor pagination, never `OFFSET`. Use `pgvector.toSql()` and query parent tables, never partitions.
+- Correlated non-materialized view reads need restrictions reaching their driving relation at every nesting level. Uncorrelated once-per-query full reads remain allowed; follow [view pull-up rules](../../../docs/development/postgresql/reference-migrations-views-and-config-driven.md#view-composition-and-the-eligibility-view-pull-up-rule).
+- Load [Postgres performance](../../../.agents/skills/postgres-node-performance-tuning/SKILL.md) for set-based IO, replicas, large data, batching, and query→index impact.
+- A joined id is a child row or foreign-key column. Primary/unique keys do not replace target foreign keys. Live rows use live tables; a surviving reference uses that entity's retained-identity row and does not authorize the deleted entity. Structured JSON and change history stay JSON. Follow [relational storage](../../../docs/development/postgres-schema-rules.md#prelaunch-relational-storage).
+- Elections are parent-identified tallies (`election.id === parent.id`); reference the parent. Aggregate/STORED numeric filters match SQL types; reuse [`buildVoteScoreFilters`](../../services/entity-relations/vote-score-filters.mts).
+- Prefer lifecycle timestamps over booleans/status columns. Non-terminal moderation/toggle state uses append-only `lifted_at` history (canonical `community_bans`), never mutable parent state; `moderation-history-guard.mts` enforces it.
+- After relaxing a single-row assumption, audit query sites for stale `LIMIT 1`. Preserve SAVEPOINT probes on borrowed/caller clients; never replace them with `client.getTransactionStatus()`; see [transactions](../../../docs/development/postgresql/reference-transactions.md).
+- Load [UUIDv7 partitioning](../../../.agents/skills/postgres-partitioning-uuid-v7/SKILL.md) and follow [strategy](../../../docs/overview/architecture/partitioning-strategy.md) and [pruning](../../../docs/overview/architecture/partition-pruning-hints.md). HASH partitioning is forbidden.

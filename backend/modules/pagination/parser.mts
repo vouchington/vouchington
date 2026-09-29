@@ -18,6 +18,7 @@ import {
   validateTimeRange,
   validateTopicTypes,
 } from './filters.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 class InvalidCursorParameterError extends Error {
   readonly status = 400
@@ -76,9 +77,9 @@ export class PaginationParser<TConfig extends PaginationConfig> {
     if (filters.sort) setDefined(result, 'sort', validateSort(query.sort, filters.sort))
     if (filters.search) {
       if (query.text_search_query !== undefined)
-        result.text_search_query = String(query.text_search_query)
+        result.text_search_query = stringFromUnknown(query.text_search_query)
       if (query.semantic_search_query !== undefined)
-        result.semantic_search_query = String(query.semantic_search_query)
+        result.semantic_search_query = stringFromUnknown(query.semantic_search_query)
     }
     if (filters.mediaTypes)
       setDefined(result, 'media_types', validateMediaTypes(query.media_type, query.media_types))

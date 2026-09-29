@@ -86,7 +86,9 @@ describe('PostgreSQL snapshot dispatch command', () => {
     await dispatch(env, '--', '--pr', '663')
 
     expect(await readFile(join(root, 'dispatch.log'), 'utf8')).toBe(
-      `${'workflow run postgresql-snapshot-update.yml --repo vouchington/vouchington --ref main -f pr_number=663\n'.repeat(3)}`,
+      'workflow run postgresql-snapshot-update.yml --repo vouchington/vouchington --ref main -f pr_number=663\n'.repeat(
+        3,
+      ),
     )
     expect(pullRequestViewLines(await readFile(join(root, 'gh.log'), 'utf8'))).toEqual([
       'GH_REPO=vouchington/vouchington pr view --json number,headRefOid,headRepositoryOwner,state',

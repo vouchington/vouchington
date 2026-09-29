@@ -1,11 +1,4 @@
-# Moderation docs — sync invariant
+# Moderation documentation
 
-These docs are guard-pinned. When editing any of them, keep the following files in sync:
-
-- `MODERATION-POLICY-MATRIX.md` — policy keys, labels, severity, recommended actions
-- `REPORTING.md` — report entity types, reason codes, moderation queue
-- `MODERATION-FLOWS.md` — canonical pipeline and subsystem index
-- `ACTIONS.md` (in `../navigation/`) — report-table action matrix
-- `REPORT-JUDGEMENTS.md` — AI recommendations and human review
-
-Enforcement: `static-code-analysis/repo-file-policy/moderation-policy-doc-sync-guard.mts`
+- Synchronize guard-pinned `MODERATION-POLICY-MATRIX.md`, `REPORTING.md`, `MODERATION-FLOWS.md`, `../navigation/ACTIONS.md`, and `REPORT-JUDGEMENTS.md` when editing any of them; their contracts include policy keys/labels/severity/actions, report types/reasons/queues, pipeline, and review recommendations.
+- Preserve `static-code-analysis/repo-file-policy/moderation-policy-doc-sync-guard.mts` enforcement.

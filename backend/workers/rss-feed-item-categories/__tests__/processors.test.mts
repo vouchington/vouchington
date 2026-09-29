@@ -5,7 +5,7 @@ import {
   processBackfillRssFeedCategoriesForTopicAlias,
   processReconcileRssFeedItemCategorySnapshots,
 } from '../processors.mts'
-import type { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/categories'
+import type { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/backfill-categories-for-topic-aliases'
 import type { backfillCategoriesForTopicAlias } from '@services/rss-feeds/categories'
 import type { enqueueContinueRssFeedItemCategorySnapshotReconciliation } from '@queues/rss-feed-item-categories/enqueues'
 import type { reconcileRssFeedItemCategorySnapshots } from '@services/rss-feed-items/category-snapshot-reconciliations'

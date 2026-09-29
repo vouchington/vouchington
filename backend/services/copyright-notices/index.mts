@@ -3,6 +3,13 @@ export { assertCopyrightIntakeEnabled, isCopyrightIntakeEnabled } from './activa
 export { createCopyrightNoticeAggregate } from './create.mts'
 export { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 export { createCopyrightFormIntake, createCopyrightGuestIdentity } from './form-intakes.mts'
+export {
+  appendCopyrightGuestFiling,
+  authorizeCopyrightGuestCapability,
+  issueCopyrightGuestCapability,
+  requestCopyrightGuestInformation,
+  revokeCopyrightGuestCapability,
+} from './guest-capabilities.mts'
 export { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 export { reviewCopyrightFormIntake } from './form-reviews.mts'
 export { createCopyrightAppeal, createCopyrightCounterNotice } from './submissions.mts'
@@ -54,7 +61,12 @@ export {
 } from './repeat-infringer-outcomes.mts'
 export type { CopyrightRepeatInfringerReviewDecision } from './repeat-infringer-outcomes.mts'
 export { listCopyrightRepeatInfringerAccountsForNotice } from './repeat-infringer-accounts.mts'
-export { appendCopyrightLegalHoldAssessment, resolveCopyrightLegalHold } from './holds.mts'
+export { appendCopyrightLegalHoldAssessment } from './holds.mts'
+export { resolveCopyrightLegalHold } from './hold-resolution.mts'
+export {
+  searchBlockedCopyrightHoldRestorationNoticeIds,
+  recoverBlockedCopyrightHoldRestorations,
+} from './hold-restoration-recovery.mts'
 export {
   approveCopyrightCorrespondence,
   createOutboundCopyrightCorrespondence,
@@ -102,3 +114,38 @@ export {
   CopyrightDeliveryNotClaimedError,
 } from './delivery-transport.mts'
 export { copyrightAppealRecommendations } from './appeal-recommendations.mts'
+export { closeCopyrightNoticeCase } from './case-closure.mts'
+export {
+  acknowledgeEuCopyrightNotice,
+  recordEuCopyrightAcknowledgmentFailure,
+} from './eu-acknowledgment.mts'
+export { receiveEuCopyrightNotice } from './eu-notice-receipt.mts'
+export { recordEuCopyrightStatementOfReasons } from './eu-reasons.mts'
+export { recordEuCopyrightRedressDecision, submitEuCopyrightRedress } from './eu-redress.mts'
+export { compileEuCopyrightTransparencyReport } from './eu-reporting.mts'
+export { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.mts'
+export { previewCopyrightEvidenceRetention } from './retention-preview.mts'
+export { recordCopyrightEvidenceRetentionDisposition } from './retention-disposition.mts'
+export {
+  acknowledgeCopyrightStaffAlert,
+  listCopyrightStaffAlertAcknowledgements,
+  listOpenCopyrightStaffAlerts,
+} from './staff-alerts-read.mts'
+export {
+  approveCopyrightStaffAlertPolicy,
+  revokeCopyrightStaffAlertPolicy,
+} from './staff-alerts-policy.mts'
+export { syncCopyrightStaffAlertsFromRecovery } from './staff-alerts-recovery.mts'
+export { syncCopyrightStaffAlerts } from './staff-alerts-sync.mts'
+export {
+  currentUserCanApproveCopyrightTerritorialPolicy,
+  recordCopyrightTerritorialPolicyApproval,
+  withdrawCopyrightTerritorialPolicyApproval,
+} from './territorial-policy.mts'
+export {
+  acknowledgeUkCopyrightNotice,
+  recordUkCopyrightAcknowledgmentFailure,
+} from './uk-acknowledgment.mts'
+export { receiveUkCopyrightNotice } from './uk-notice-receipt.mts'
+export { recordUkCopyrightRedressDecision, submitUkCopyrightRedress } from './uk-redress.mts'
+export { recordUkCopyrightReview } from './uk-review.mts'

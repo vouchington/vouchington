@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 import { getMarketingPostalAddress, getSiteUrl } from '@modules/utils'
 import onError from '@modules/on-error'
 import { enqueueSendCommunityModerationSummaryEmail } from '@queues/emails/enqueues'
-import { timestampToUuidv7LowerBound } from '@data-stores/psql/config-driven/utils/partition-utils'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import { createEmailUnsubscribeUrl } from '@services/users'
 import type { CommunityModerationSummaryEmailProps } from '@email-templates/core'
 import pMap from 'p-map'
@@ -106,7 +106,7 @@ export async function isModerationEmailsEnabled(userId: string): Promise<boolean
       LIMIT 1
     `,
   )
-  return rows[0]?.moderation_emails_enabled === true
+  return rows.at(0)?.moderation_emails_enabled ?? false
 }
 
 export async function getModerationEmailTimezone(userId: string): Promise<string> {

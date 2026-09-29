@@ -43,9 +43,16 @@ export async function listCopyrightStaffQueue(
       LEFT JOIN copyright_notice_form_intake_reviews review ON review.copyright_notice_form_intake_id = intake.id
       WHERE intake.copyright_notice_id = notice.id AND review.id IS NULL
         AND (submission.source_kind = 'guest_form' OR NOT EXISTS (
-          SELECT 1 FROM copyright_notice_form_screenings screening
-          WHERE screening.copyright_notice_form_intake_id = intake.id
-            AND screening.recommendation = 'not_obviously_invalid'
+          SELECT 1 FROM copyright_notice_form_screening_executions execution
+          JOIN copyright_notice_submission_assessments assessment
+            ON assessment.copyright_notice_submission_id = submission.id
+              AND assessment.copyright_notice_form_screening_id = execution.copyright_notice_form_screening_id
+          WHERE execution.copyright_notice_form_intake_id = intake.id
+            AND fn_current_copyright_form_screening(submission.id, execution.copyright_notice_form_screening_id)
+            AND assessment.substantially_compliant AND NOT EXISTS (
+              SELECT 1 FROM copyright_notice_submission_assessments newer
+              WHERE newer.supersedes_assessment_id = assessment.id
+            )
         ))
       ) OR EXISTS (
       SELECT 1 FROM copyright_restrictions restriction

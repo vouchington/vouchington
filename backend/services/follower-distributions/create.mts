@@ -10,7 +10,7 @@ import {
   type CreateDistributionInput,
   validateTarget,
 } from './create-guards.mts'
-import { type FollowerDistributionAccepted } from './types.mts'
+import type { FollowerDistributionAccepted } from './types.mts'
 import { parseSendFollowersInput, type SendFollowersInput } from './send-followers-input.mts'
 
 export type FollowerDistributionOptions = SendFollowersInput

@@ -17,10 +17,9 @@ describe('post-cutover deployment documentation', () => {
       /\s+/g,
       ' ',
     )
-    const workflowReference = read('.github/workflows/reference-deploy-and-release.md').replace(
-      /\s+/g,
-      ' ',
-    )
+    const workflowReference = read(
+      'docs/development/ci/workflows/reference-deploy-and-release.md',
+    ).replace(/\s+/g, ' ')
 
     expect(platform).toContain('Live through the private infrastructure deployment receiver')
     expect(platform).not.toContain('receiver disabled during cutover')
@@ -69,9 +68,9 @@ describe('post-cutover deployment documentation', () => {
       ' ',
     )
     const migrationPolicy = read(
-      'backend/data-stores/psql/reference-migrations-views-and-config-driven.md',
+      'docs/development/postgresql/reference-migrations-views-and-config-driven.md',
     ).replace(/\s+/g, ' ')
-    const schemaSnapshot = read('backend/data-stores/psql/schema-snapshot/README.md').replace(
+    const schemaSnapshot = read('docs/development/postgresql/schema-snapshot/README.md').replace(
       /\s+/g,
       ' ',
     )

@@ -13,10 +13,7 @@ import {
   releaseOpenAiSpendCapDelayedJobs,
 } from '@services/ai-usage'
 
-vi.mock<typeof import('glide-mq')>(
-  import('glide-mq'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
 const AI_AGENTS_QUEUE_NAME = 'ai_agents'
@@ -70,15 +67,15 @@ describe('OpenAI spend-cap atomic promotion with real GlideMQ', () => {
     const batchInvocationArgCounts: number[] = []
     const registry = {
       hlen: async (...args: Parameters<typeof workerQueueCommandClient.hlen>) =>
-        await workerQueueCommandClient.hlen(...args),
+        workerQueueCommandClient.hlen(...args),
       hscan: async (...args: Parameters<typeof workerQueueCommandClient.hscan>) =>
-        await workerQueueCommandClient.hscan(...args),
+        workerQueueCommandClient.hscan(...args),
       invokeScript: async (...args: Parameters<typeof workerQueueCommandClient.invokeScript>) => {
         const options = args[1]
         if (!options) throw new Error('Expected Valkey script options')
         batchInvocationKeyCounts.push(options.keys?.length ?? 0)
         batchInvocationArgCounts.push(options.args?.length ?? 0)
-        return await workerQueueCommandClient.invokeScript(...args)
+        return workerQueueCommandClient.invokeScript(...args)
       },
     }
 
@@ -157,15 +154,15 @@ describe('OpenAI spend-cap atomic promotion with real GlideMQ', () => {
     let job: Job<SpendCapTestJobData> | undefined
     const registry = {
       hlen: async (...args: Parameters<typeof workerQueueCommandClient.hlen>) =>
-        await workerQueueCommandClient.hlen(...args),
+        workerQueueCommandClient.hlen(...args),
       hscan: async (...args: Parameters<typeof workerQueueCommandClient.hscan>) =>
-        await workerQueueCommandClient.hscan(...args),
+        workerQueueCommandClient.hscan(...args),
       invokeScript: async (...args: Parameters<typeof workerQueueCommandClient.invokeScript>) => {
         const options = args[1]
         if (options?.keys?.some(key => String(key).endsWith(':scheduled')) && job) {
           await job.updateData({ ...job.data, openAiSpendCapDelayedDay: newerDay })
         }
-        return await workerQueueCommandClient.invokeScript(...args)
+        return workerQueueCommandClient.invokeScript(...args)
       },
     }
 

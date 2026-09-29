@@ -71,21 +71,21 @@ function buildPendingCopyrightAgentDispatchesQuery() {
       UNION ALL
       SELECT 'form-screening'::text AS kind, intake.copyright_notice_submission_id AS id
       FROM copyright_notice_form_intakes intake
-      WHERE NOT EXISTS (
-        SELECT 1 FROM copyright_notice_form_screenings screening
-        WHERE screening.copyright_notice_form_intake_id = intake.id
-      )
+      JOIN copyright_notice_form_screening_executions execution
+        ON execution.copyright_notice_form_intake_id = intake.id
+      WHERE execution.state = 'failed' OR (execution.state = 'pending'
+        AND (execution.claimed_at IS NULL OR execution.claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'))
       UNION ALL
       SELECT 'form-effect'::text AS kind, intake.copyright_notice_submission_id AS id
       FROM copyright_notice_form_intakes intake
       JOIN copyright_notice_submissions submission
         ON submission.id = intake.copyright_notice_submission_id
       JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id
-      JOIN LATERAL (
-        SELECT id, recommendation FROM copyright_notice_form_screenings
-        WHERE copyright_notice_form_intake_id = intake.id
-        ORDER BY id DESC LIMIT 1
-      ) screening ON screening.recommendation = 'not_obviously_invalid'
+      JOIN copyright_notice_form_screening_executions execution
+        ON execution.copyright_notice_form_intake_id = intake.id AND execution.state = 'completed'
+      JOIN copyright_notice_form_screenings screening
+        ON screening.id = execution.copyright_notice_form_screening_id
+          AND fn_current_copyright_form_screening(submission.id, screening.id)
       LEFT JOIN LATERAL (
         SELECT assessment.id
         FROM copyright_notice_submission_assessments assessment
@@ -99,7 +99,7 @@ function buildPendingCopyrightAgentDispatchesQuery() {
           )
       ) assessment ON true
       LEFT JOIN LATERAL (
-        SELECT assessment.id, assessment.assessed_by_id, assessment.substantially_compliant
+        SELECT assessment.id, assessment.copyright_notice_form_screening_id, assessment.substantially_compliant
         FROM copyright_notice_submission_assessments assessment
         WHERE assessment.copyright_notice_submission_id = submission.id
           AND NOT EXISTS (
@@ -134,7 +134,7 @@ function buildPendingCopyrightAgentDispatchesQuery() {
           WHERE review.copyright_notice_form_intake_id = intake.id
         )
         AND (current_assessment.id IS NULL OR (
-          current_assessment.assessed_by_id IS NULL
+          current_assessment.copyright_notice_form_screening_id IS NOT NULL
           AND current_assessment.substantially_compliant
         ))
         AND (
@@ -152,7 +152,7 @@ function buildPendingCopyrightAgentDispatchesQuery() {
                   ON authority.id = restriction.authorizing_assessment_id
                 WHERE restriction.copyright_notice_target_id = target.id
                   AND authority.copyright_notice_submission_id = submission.id
-                  AND authority.assessed_by_id IS NULL
+                  AND authority.copyright_notice_form_screening_id IS NOT NULL
                   AND restriction.lifted_at IS NOT NULL
               )
           )

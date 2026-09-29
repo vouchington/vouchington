@@ -134,12 +134,12 @@ Values](../../overview/architecture/monetary-values.md).
 
 `GET /api/v1/growth-metrics?range=30d`
 
-See [backend/api/v1/admin/growth-metrics/README.md](../../../backend/api/v1/admin/growth-metrics/README.md) for full endpoint reference.
+See [docs/requirements/api/v1/admin/growth-metrics/README.md](../api/v1/admin/growth-metrics/README.md) for full endpoint reference.
 
 ## Related
 
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
-- [Backend service](../../../backend/services/growth-metrics/README.md) — SQL and analytics approach
-- [API endpoint](../../../backend/api/v1/admin/growth-metrics/README.md) — Auth, params, response shape
+- [Backend service](../../overview/architecture/services/growth-metrics/README.md) — SQL and analytics approach
+- [API endpoint](../api/v1/admin/growth-metrics/README.md) — Auth, params, response shape

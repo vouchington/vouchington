@@ -1,5 +1,7 @@
 import type { PsqlPoolMetric, PsqlPoolMetrics } from '@data-stores/psql/pool-metrics'
-import type { ForkLeakGrowthStep, ForkLeakVerdict } from './vitest-fork-leak-detection.mts'
+import type { ForkLeakVerdict } from 'vouchington-tooling/vitest-diagnostics'
+
+type ForkLeakGrowthStep = NonNullable<ForkLeakVerdict['suspectedGrowth']>
 import { formatResourceCounts } from './vitest-process-resources.mts'
 
 export function formatForkLeakDiagnostics(

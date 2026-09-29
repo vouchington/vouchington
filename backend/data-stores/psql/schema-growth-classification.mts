@@ -171,12 +171,12 @@ export function buildUnboundedUnpartitionedTables(
     ...entityRelationMetadatum.flatMap(({ table_name }) =>
       partitionedTables.has(table_name)
         ? []
-        : ([
+        : [
             [
               table_name,
               'Config-generated relationship edges grow with entities but remain index-selective.',
-            ],
-          ] as const),
+            ] as const,
+          ],
     ),
     ...RETAINED_RELATION_GROWTH_POLICIES,
     [

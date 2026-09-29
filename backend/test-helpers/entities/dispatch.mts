@@ -6,7 +6,7 @@ import { write } from '@data-stores/psql'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import sql from 'sql-template-strings'
 
-const robotsTxtCache = new ValkeyCache<string>({
+const robotsTxtCache = new ValkeyCache({
   prefix: 'urls-domains-robots',
   ttlSeconds: 86_400,
 })

@@ -64,7 +64,7 @@ describe('OpenAI response attempt accounting boundary', () => {
         const first = generator.next()
         await vi.runAllTimersAsync()
         await first
-        return await generator.next()
+        return generator.next()
       },
     )
 
@@ -93,7 +93,7 @@ describe('OpenAI response attempt accounting boundary', () => {
     await expect(
       runWithOpenAIResponseAttemptHooks(
         { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => await streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
+        async () => streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
       ),
     ).rejects.toBe(error)
 
@@ -118,7 +118,7 @@ describe('OpenAI response attempt accounting boundary', () => {
 
     const result = runWithOpenAIResponseAttemptHooks(
       { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-      async () => await streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
+      async () => streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
     )
     const resultRejection = result.catch((error: unknown) => error)
     await vi.runAllTimersAsync()
@@ -138,7 +138,7 @@ describe('OpenAI response attempt accounting boundary', () => {
     await expect(
       runWithOpenAIResponseAttemptHooks(
         { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => await streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
+        async () => streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
       ),
     ).rejects.toBe(error)
 
@@ -156,7 +156,7 @@ describe('OpenAI response attempt accounting boundary', () => {
     await expect(
       runWithOpenAIResponseAttemptHooks(
         { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => await streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
+        async () => streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
       ),
     ).rejects.toBe(error)
 
@@ -175,7 +175,7 @@ describe('OpenAI response attempt accounting boundary', () => {
       runWithOpenAIResponseAttemptHooks(
         { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
         async () =>
-          await streamOpenAIResponse(
+          streamOpenAIResponse(
             { model: 'gpt-4.1-mini', input: 'hello' },
             { signal: controller.signal },
           ).next(),

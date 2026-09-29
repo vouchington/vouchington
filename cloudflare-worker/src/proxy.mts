@@ -143,7 +143,7 @@ export const buildOriginRequest = (
     headers.set('x-request-id', requestId)
   }
 
-  const requestInit: RequestInit = {
+  const requestInit: RequestInit & { duplex?: 'half' } = {
     method: request.method,
     headers,
     // Use 'manual' so 3xx responses are forwarded to the client as-is.
@@ -156,7 +156,7 @@ export const buildOriginRequest = (
     requestInit.body = request.body
     // Node.js/undici requires 'duplex: half' when streaming a body.
     // The CF Workers runtime silently ignores this option.
-    ;(requestInit as any).duplex = 'half'
+    requestInit.duplex = 'half'
   }
 
   return new Request(url, requestInit)

@@ -1,22 +1,9 @@
-# News Components
+# News components
 
-Agent rules for [`web/components/news/`](./). Full spec: [NEWS-DISCUSSIONS.md](../../../docs/requirements/content/NEWS-DISCUSSIONS.md).
-
-## Rules
-
-- `NewsDiscussMenu` reads auth from `useAuth()` — do not thread auth through props.
-  `data-pw='news-discuss-button'` must render on every branch.
-- Cluster "Discuss the full story" CTA, visibility, and 403/409 handling: [news-story-clusters.md](../../../docs/requirements/content/news-story-clusters.md).
-- `NewsItemCluster` renders members as bare `NewsItemCard`s with `border-t` — never nested `<Card>`.
-- Official-source badge lives in the matching member header, never the story title wrapper.
-- Filter the story-post out of `relatedPosts` only inside `NewsItemCluster`.
-- Source topic links use `tab='latest'`; category chips keep `tab='news'`.
-- Do not pass `hideDownCount` to `ScoreVote` on RSS item surfaces.
-- Report lives only in the kebab. Action rows scroll horizontally — never `flex-wrap`.
-- RSS item category/tag management is dialog-only.
-- Card-level rendering lives in `web/components/feed/news-item-card.tsx`.
-
-## See Also
-
-- [NEWS-DISCUSSIONS.md](../../../docs/requirements/content/NEWS-DISCUSSIONS.md)
-- [stories service](../../../backend/services/stories/AGENTS.md)
+- Follow [news requirements](../../../docs/requirements/content/NEWS-DISCUSSIONS.md) and [story CTA/visibility/403/409 behavior](../../../docs/requirements/content/news-story-clusters.md).
+- `NewsDiscussMenu` reads `useAuth()`, never auth props; every branch renders `data-pw='news-discuss-button'`.
+- Cluster members are bare `NewsItemCard`s with `border-t`, never nested Cards. Official-source badges belong in matching member headers, never story-title wrappers.
+- Only `NewsItemCluster` filters the story post from `relatedPosts`.
+- Source topic links use `latest`; category chips use `news`. RSS ScoreVote never receives `hideDownCount`.
+- Report is kebab-only; action rows scroll horizontally without `flex-wrap`; RSS category/tag management is dialog-only.
+- Card rendering belongs in `web/components/feed/news-item-card.tsx`; apply [stories service rules](../../../backend/services/stories/AGENTS.md) for creation behavior.

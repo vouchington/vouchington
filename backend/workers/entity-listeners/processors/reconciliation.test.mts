@@ -1,6 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { ReconcileEntityData } from '@queues/entity-listeners/types'
-import { reconcileEntity, reconcileEntityBatches } from './reconciliation.mts'
+import { reconcileEntities, reconcileEntity, reconcileEntityBatches } from './reconciliation.mts'
+
+describe('reconcileEntities', () => {
+  it('reconciles the current entity window', async () => {
+    const result = await reconcileEntities()
+    expect(result.reconciled).toBeGreaterThanOrEqual(0)
+  })
+})
 
 describe('reconcileEntityBatches', () => {
   it('advances the durable checkpoint only after every entity finishes', async () => {

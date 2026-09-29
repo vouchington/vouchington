@@ -44,7 +44,7 @@ export async function addKeyHashToBloomFilter(keyHash: Buffer): Promise<void> {
     onError(err instanceof Error ? err : new Error(String(err)))
     try {
       const removed = await bloomValkeyClient.unlink([BLOOM_READY_KEY])
-      if (Number(removed) > 0) {
+      if (removed > 0) {
         /* c8 ignore next -- lint-only fire-and-forget enqueue disposition. */
         void enqueueRebuildBloomFilter({ filter: 'api-keys' })
       }

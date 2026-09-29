@@ -19,7 +19,7 @@ const failedJobLogs = (log: string) => () => Promise.resolve(new Map([[lintLinks
 describe('lint-links-github-5xx', () => {
   const github500Log = [
     '2026-06-21T05:33:49.8304710Z Issues found in 2 inputs. Find details below.',
-    '2026-06-21T05:33:49.8317150Z [.github/workflows/COVERAGE.md]:',
+    '2026-06-21T05:33:49.8317150Z [docs/development/ci/workflows/COVERAGE.md]:',
     '2026-06-21T05:33:49.8318880Z [500] https://github.com/nalexn/ViewInspector (at 35:62) | Error (cached)',
     '2026-06-21T05:33:49.8323550Z [docs/AGENTS.md]:',
     '2026-06-21T05:33:49.8330930Z [500] https://github.com/nalexn/ViewInspector (at 44:1) | Rejected status code: 500 Internal Server Error',

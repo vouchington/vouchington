@@ -61,8 +61,7 @@ describe('initialize secrets and S3 helpers', () => {
 
     await writeFile(
       join(cwd, '.env'),
-      `export CF_WORKER_${'SECRET'}=existing-test-secret-at-least-32-chars
-  `,
+      ['export CF_WORKER_', 'SECRET', '=existing-test-secret-at-least-32-chars\n  '].join(''),
     )
 
     const output = await runHelper({

@@ -1,3 +1,4 @@
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 /** Normalize guid from feedsmith (handles both object { value } and string formats) */
 export function itemGuid(item: Record<string, unknown>): string | null {
   const guidValue = valueOrString(item.guid)
@@ -55,7 +56,7 @@ function valueOrString(input: unknown): string | null {
     return value === '' ? null : value
   }
   if (input == null) return null
-  const value = String(input).trim()
+  const value = stringFromUnknown(input).trim()
   return value === '' ? null : value
 }
 

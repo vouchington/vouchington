@@ -21,14 +21,8 @@ export async function cleanupTerminalNotificationPushIntents(
 ): Promise<TerminalNotificationPushIntentCleanupResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 90)
   const cutoffDate = getRetentionCutoffDate(retentionDays, options.now)
-  return await runBoundedBatches(
-    options,
-    async batchSize =>
-      await deleteTerminalNotificationPushIntentBatch(
-        cutoffDate,
-        batchSize,
-        options.lowerBoundDate,
-      ),
+  return runBoundedBatches(options, async batchSize =>
+    deleteTerminalNotificationPushIntentBatch(cutoffDate, batchSize, options.lowerBoundDate),
   )
 }
 

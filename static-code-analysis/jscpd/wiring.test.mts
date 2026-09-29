@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 const COMMAND = 'jscpd .'
 const CI_COMMAND = `pnpm exec ${COMMAND}`
-const README = readFileSync('static-code-analysis/jscpd/README.md', 'utf8')
+const README = readFileSync('docs/development/quality/static-code-analysis/jscpd/README.md', 'utf8')
 const config = JSON.parse(readFileSync('.jscpd.json', 'utf8')) as {
   minLines: number
   exitCode: number

@@ -19,13 +19,11 @@ type CleanupResult = {
 export async function cleanupExpiredBlueskyLinkCompletions(
   options: CleanupOptions = {},
 ): Promise<CleanupResult> {
-  return await runBoundedBatches(
-    options,
-    async batchSize =>
-      await deleteExpiredBlueskyHandoffBatch(batchSize, {
-        lowerBoundDate: options.lowerBoundDate,
-        now: options.now,
-      }),
+  return runBoundedBatches(options, async batchSize =>
+    deleteExpiredBlueskyHandoffBatch(batchSize, {
+      lowerBoundDate: options.lowerBoundDate,
+      now: options.now,
+    }),
   )
 }
 
@@ -33,9 +31,7 @@ export async function cleanupAbandonedBlueskyLinkSessions(
   options: CleanupOptions = {},
 ): Promise<CleanupResult> {
   const cutoffDate = options.now ?? new Date()
-  return await runBoundedBatches(
-    options,
-    async batchSize =>
-      await deleteAbandonedBlueskyLinkSessionBatch(cutoffDate, batchSize, options.lowerBoundDate),
+  return runBoundedBatches(options, async batchSize =>
+    deleteAbandonedBlueskyLinkSessionBatch(cutoffDate, batchSize, options.lowerBoundDate),
   )
 }

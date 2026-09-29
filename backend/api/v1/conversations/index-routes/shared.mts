@@ -1,6 +1,7 @@
 import type { ChatTokenSubscription, TokenChunk } from '@data-stores/valkey-pubsub'
 import onError from '@modules/on-error'
 import { CHAT_SSE_CYCLE_EXPIRED } from '@agents/chat/stream-lifecycle'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export const CHAT_ENQUEUE_FAILED_ERROR = 'The response could not start. Please try again.'
 
@@ -158,9 +159,9 @@ function getSignalErrorMessage(err: unknown): string {
   }
   if (err && typeof err === 'object') {
     try {
-      return JSON.stringify(err) ?? String(err)
+      return JSON.stringify(err) ?? stringFromUnknown(err)
     } catch {
-      return String(err)
+      return stringFromUnknown(err)
     }
   }
   return String(err)

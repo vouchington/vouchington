@@ -24,6 +24,26 @@ describe('defaultDependencies.listEnvironmentNames', () => {
     vi.mocked(cp.execFile).mockReset()
   })
 
+  it('preserves native command errors', async () => {
+    const failure = new Error('command failed')
+    vi.mocked(cp.execFile).mockImplementation((_cmd, _args, _opts, cb) => {
+      ;(cb as unknown as ExecCb)(failure)
+      return null as never
+    })
+    await expect(defaultDependencies.listEnvironmentNames('acme/widgets')).rejects.toBe(failure)
+  })
+
+  it('wraps a structural command error with its cause', async () => {
+    const failure = { name: 'Error', message: 'command failed' }
+    vi.mocked(cp.execFile).mockImplementation((_cmd, _args, _opts, cb) => {
+      ;(cb as unknown as ExecCb)(failure)
+      return null as never
+    })
+    const listing = defaultDependencies.listEnvironmentNames('acme/widgets')
+    await expect(listing).rejects.toBeInstanceOf(Error)
+    await expect(listing).rejects.toMatchObject({ message: failure.message, cause: failure })
+  })
+
   it('asks gh to paginate rather than reading only the first page', async () => {
     vi.mocked(cp.execFile).mockImplementation((_cmd, _args, _opts, cb) => {
       ;(cb as unknown as ExecCb)(null, 'staging\n')

@@ -8,6 +8,7 @@ import {
   dispatchHarnessSession,
   type HarnessDispatchEnvironment,
 } from './harness-session-dispatch.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const sessionId = 'sess-0123abcd'
 const sessionUrl = `https://harness.example.com/sessions/${sessionId}`
@@ -25,8 +26,8 @@ function sessionApi(created: boolean) {
   const requests: Array<{ body: unknown; route: string }> = []
   const fetchImplementation = vi.fn<typeof fetch>(async (input, init) => {
     requests.push({
-      body: init?.body === undefined ? undefined : JSON.parse(String(init.body)),
-      route: `${init?.method ?? 'GET'} ${new URL(String(input)).pathname}`,
+      body: init?.body === undefined ? undefined : JSON.parse(stringFromUnknown(init.body)),
+      route: `${init?.method ?? 'GET'} ${new URL(stringFromUnknown(input)).pathname}`,
     })
     return jsonResponse({ created, id: sessionId, url: sessionUrl }, created ? 201 : 200)
   })

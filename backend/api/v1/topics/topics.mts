@@ -116,7 +116,7 @@ app
             : []
         })
 
-        return await renderMarkdownBatch(entities, adminIds)
+        return renderMarkdownBatch(entities, adminIds)
       }),
     }
 

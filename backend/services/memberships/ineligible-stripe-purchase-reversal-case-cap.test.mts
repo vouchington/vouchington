@@ -8,7 +8,7 @@ import {
   claimPersistedIneligiblePurchaseReversalCase,
 } from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from './reconcile-recorded-ineligible-stripe-purchase-reversal.mts'
-import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase.mts'
+import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
 
 describe('ineligible Stripe purchase reversal case cap', () => {
   it('reserves an earlier allocation before a reordered late payment consumes the residual cap', async () => {

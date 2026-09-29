@@ -1,6 +1,7 @@
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { loadScript, registerScript } from '@data-stores/valkey/scripts'
 import type { RecentlyViewedEntityType } from './types.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const NAMESPACE = 'recently-viewed'
 const TTL_SECONDS = 60 * 60 * 24 * 30 // 30 days
@@ -101,7 +102,7 @@ export async function searchRecentlyViewedPage(
 
   const rows: RecentlyViewedPageRow[] = []
   for (let index = 0; index < results.length; index += 2) {
-    rows.push({ id: String(results[index]), score: Number(results[index + 1]) })
+    rows.push({ id: stringFromUnknown(results[index]), score: Number(results[index + 1]) })
   }
   return rows
 }
@@ -116,5 +117,5 @@ export async function countRecentlyViewed(
   userId: string,
 ): Promise<number> {
   const userKey = getUserKey(entityType, userId)
-  return Number(await cacheValkeyClient.zcard(userKey))
+  return cacheValkeyClient.zcard(userKey)
 }

@@ -15,16 +15,16 @@ The `view_community_metrics` view provides aggregate counts per community:
 | `proxy_mute_count`           | Users who proxy-mute this community     |
 | `virtual_subscription_count` | `proxy_follow_count + proxy_mute_count` |
 
-Metrics are returned in `GET /api/v1/communities/:idOrSlug` (always) and unconditionally in `GET /api/v1/communities` regardless of sort or filters. `GET /api/v1/trending-communities` uses the same member, post, and virtual-subscription formulas as set-based aggregates instead of joining this view; see [backend/services/trending-communities/README.md](../../../backend/services/trending-communities/README.md).
+Metrics are returned in `GET /api/v1/communities/:idOrSlug` (always) and unconditionally in `GET /api/v1/communities` regardless of sort or filters. `GET /api/v1/trending-communities` uses the same member, post, and virtual-subscription formulas as set-based aggregates instead of joining this view; see [docs/overview/architecture/services/trending-communities/README.md](../../overview/architecture/services/trending-communities/README.md).
 
 ## Related
 
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
-- Service: [backend/services/communities/list-items/README.md](../../../backend/services/communities/list-items/README.md)
+- Service: [docs/overview/architecture/services/communities/list-items/README.md](../../overview/architecture/services/communities/list-items/README.md)
 - Metrics service: `backend/services/communities/metrics.mts`
-- Trending communities: [backend/services/trending-communities/README.md](../../../backend/services/trending-communities/README.md)
+- Trending communities: [docs/overview/architecture/services/trending-communities/README.md](../../overview/architecture/services/trending-communities/README.md)
 - API routes: `backend/api/v1/communities/list-items-*.mts`
 - Community News API: `backend/api/v1/communities/news.mts`
 - Community feeds: `web/app/(communities)/communities/[slug]/page.tsx` and `web/app/(communities)/communities/[slug]/news/page.tsx`

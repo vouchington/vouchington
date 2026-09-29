@@ -25,6 +25,7 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import { createPostClassifierOpenRouterClient } from './classifier-client.mts'
 import { executePostClassifierOutcomes } from './classifier-execute.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 type Dependencies = Parameters<typeof executePostClassifierOutcomes>[1]
 
@@ -127,7 +128,9 @@ describe('post classifier billing', () => {
       const input = await createPostClassifierExecutionFixture(true, false)
       const responseId = `decision-${randomUUID()}`
       const fetch = vi.fn<StructuredDecisionFetch>(async (_url, init) => {
-        const body = JSON.parse(String(init?.body)) as { questions: Record<string, unknown> }
+        const body = JSON.parse(stringFromUnknown(init?.body)) as {
+          questions: Record<string, unknown>
+        }
         return Response.json(makeBilledOpenRouterResponse(Object.keys(body.questions), responseId))
       })
       const dependencies = createBillingDependencies(input, fetch)

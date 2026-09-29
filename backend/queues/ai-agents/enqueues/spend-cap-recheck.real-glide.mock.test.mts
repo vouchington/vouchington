@@ -5,10 +5,7 @@ import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-gl
 import { OPENAI_SPEND_CAP_RECHECK_JOB_NAME } from '../config.mts'
 import type { OpenAiSpendCapRecheckJobData } from '../types.mts'
 
-vi.mock<typeof import('glide-mq')>(
-  import('glide-mq'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
 

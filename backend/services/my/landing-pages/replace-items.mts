@@ -81,7 +81,7 @@ export async function replaceMyLandingPageItems(
       continue
     }
 
-    assert(item.type === 'topic_group', 400, `Invalid item type: ${String(item.type)}`)
+    assert(item.type === 'topic_group', 400, `Invalid item type: ${item.type}`)
     validateUUID(item.topic_id)
     assert(topicsById.has(item.topic_id), 400, 'Invalid topic_id')
     assertNoDuplicateSelection('topic_group', item.topic_id, seenSelections)
@@ -119,7 +119,7 @@ export async function replaceMyLandingPageItems(
   // Public landing-page GET responses are edge-cached and tagged user:<username> (see
   // ts-shared/cache/cache-tags.mts), so a reorder/replace of items must purge that tag.
   await invalidate.users(userId)
-  return getMyLandingPage(userId, pageId)
+  return await getMyLandingPage(userId, pageId)
 }
 
 async function replaceLandingPageItemRows(

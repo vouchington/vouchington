@@ -1,6 +1,4 @@
-# Integration Tests
+# Integration tests
 
-Use the [integration-test reference](README.md) for suite setup, service boundaries, and execution guidance.
-
-Before adding or changing a Vitest test, fixture, or mock here, load the
-[vitest-test-authoring skill](../.agents/skills/vitest-test-authoring/SKILL.md).
+- Use [suite setup and service boundaries](../docs/development/testing/integration-tests/README.md).
+- Load [Vitest authoring](../.agents/skills/vitest-test-authoring/SKILL.md) before changing tests, fixtures, or mocks.

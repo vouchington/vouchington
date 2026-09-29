@@ -150,6 +150,29 @@ describe('relational storage guard', () => {
     )
   })
 
+  it('rejects the retired copyright placement key without flagging unrelated display keys', () => {
+    expect(
+      checkRelationalStorage(
+        snapshot('copyright_notice_targets', { placement_key: column('text') }),
+        { enforceCatalogFreshness: false },
+      ),
+    ).toEqual([expect.stringContaining('copyright_notice_targets.placement_key')])
+    expect(
+      checkRelationalStorage(snapshot('display_cards', { placement_key: column('text') }), {
+        enforceCatalogFreshness: false,
+      }),
+    ).toEqual([])
+  })
+
+  it('accepts copyright lifecycle JSON', () => {
+    expect(
+      checkRelationalStorage(
+        snapshot('copyright_notice_lifecycle_events', { metadata: column('jsonb') }),
+        { enforceCatalogFreshness: false },
+      ),
+    ).toEqual([])
+  })
+
   it('flags stale catalog entries and accepts exact reviewed opaque JSON', () => {
     const value = snapshot('stripe_events', { payload: column('jsonb') })
     const currentErrors = checkRelationalStorage(value, { enforceCatalogFreshness: false })

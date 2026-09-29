@@ -26,6 +26,7 @@
     "@jongleberry/api-server": "^2.1.0",
     "@modules/on-error": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
+    "@ts-shared/url-signing": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/frontmatter": "0.0.0",

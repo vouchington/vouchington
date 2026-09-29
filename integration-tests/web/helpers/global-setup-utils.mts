@@ -1,5 +1,5 @@
 import { rmSync, writeFileSync } from 'node:fs'
-import { type ReservedPort } from './ports.mts'
+import type { ReservedPort } from './ports.mts'
 import { type ManagedProcess, startManagedProcess } from './processes.mts'
 
 export async function startReservedProcess(

@@ -61,7 +61,11 @@ export type CopyrightStaffQueueItem = {
   form_review: {
     intake_id: string
     source_kind: string
-    screening: { recommendation: string; rationale: string } | null
+    screening: {
+      state: 'pending' | 'failed' | 'completed'
+      recommendation: string | null
+      rationale: string | null
+    } | null
   } | null
   restrictions: Array<{
     id: string

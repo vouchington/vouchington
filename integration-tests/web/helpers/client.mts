@@ -7,6 +7,7 @@ import type { TracedRequest } from './backend-trace-proxy.mts'
 import { printTrace, writePageArtifact } from './client-artifacts.mts'
 import { WebIntegrationCookies } from './client-cookies.mts'
 import { fetchWithTransportRetry, retryOnTransportError } from './fetch-retry.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export interface PageLoadResult {
   response: Response
@@ -98,7 +99,7 @@ export class WebIntegrationClient {
             ? undefined
             : headers.get('Content-Type') === 'application/json'
               ? JSON.stringify(options.body)
-              : String(options.body),
+              : stringFromUnknown(options.body),
         redirect: options.redirect,
       },
       {

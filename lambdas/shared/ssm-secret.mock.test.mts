@@ -30,7 +30,7 @@ vi.mock<typeof import('@aws-sdk/client-ssm')>(
 )
 
 async function loadResolver() {
-  return await import('./ssm-secret.mts')
+  return import('./ssm-secret.mts')
 }
 
 describe('runtime SSM secret resolver', () => {

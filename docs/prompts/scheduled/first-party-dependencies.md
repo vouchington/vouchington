@@ -1,4 +1,4 @@
-Create or update issues for exactly one concrete, bounded first-party dependency workaround root cause; do not change code or open a PR.
+Create or update issues for at most one confirmed first-party dependency workaround root cause; do not change code or open a PR.
 
 <!-- harness-scheduled-completion: issue -->
 
@@ -42,7 +42,7 @@ maintenance or workaround removal.
    policy or extension point.
 6. Reject speculative enhancements, intentional integrations, and findings already fully tracked
    with unchanged evidence. Do not create a ticket merely because an abstraction could be broader.
-7. Select exactly one confirmed root cause. Prefer correctness or security defects, then install or
+7. Select at most one confirmed root cause; stop without changes if none qualifies. Prefer correctness or security defects, then install or
    release failures, then maintenance cleanup. Break ties by the oldest verified local evidence,
    then by the lexical workaround key defined below.
 

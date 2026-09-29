@@ -7,6 +7,7 @@ import {
   dispatchHarnessSession,
   type HarnessDispatchEnvironment,
 } from '../../ci/harness-session-dispatch.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const callerEntries = [
   ['fix-dependabot.yml', 'triage-and-rerun', 'HARNESS_FIX_DEPENDABOT_ENABLED'],
@@ -124,7 +125,7 @@ describe('root Auto Harness migration safety audit', () => {
     await dispatchHarnessSession(environment, fetchImplementation)
     const [url, init] = fetchImplementation.mock.calls[0] ?? []
     expect(url).toBe('https://harness.example.com/api/v1/sessions')
-    const body = JSON.parse(String(init?.body))
+    const body = JSON.parse(stringFromUnknown(init?.body))
     expect(body).toMatchObject({ concurrencyId: 'fix-123' })
     expect(body).not.toHaveProperty('concurrencyKey')
     expect(body).not.toHaveProperty('onConflict')

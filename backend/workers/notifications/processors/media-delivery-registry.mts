@@ -31,7 +31,7 @@ export async function processApplyMediaDeliveryRegistryRecord(
   const process =
     dependencies.processMediaDeliveryRegistryRecord ?? processMediaDeliveryRegistryRecord
   const now = dependencies.now ?? (() => new Date())
-  return await process(data.deliveryKey, now())
+  return process(data.deliveryKey, now())
 }
 
 export async function processReconcileMediaDeliveryRegistry(

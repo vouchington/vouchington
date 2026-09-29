@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { getImagePlacementForCopyright } from '@services/images/placements'
+import { getImagePlacementForCopyright, getImagePlacementKey } from '@services/images/placements'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { noticeHasUnassessedCourtOrCcbFiling } from './court-hold-assessment-gate.mts'
 import type { CopyrightActionIntentRecord, CopyrightLegalHoldAssessmentRecord } from './types.mts'
@@ -57,9 +57,9 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   now: Date
 }): Promise<CopyrightActionIntentRecord> {
   await using transaction = await beginTransaction()
-  const { rows: targetKeys } = await transaction<{ placement_key: string }>(
+  const { rows: targetKeys } = await transaction<{ placement_id: string }>(
     sql`/* createEligibleCopyrightRestoreIntent:findPlacement */
-    SELECT placement_key
+    SELECT placement_id
     FROM copyright_notice_targets
     WHERE id = ${input.targetId} AND copyright_notice_id = ${input.noticeId}
   `,
@@ -67,7 +67,7 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   const target = targetKeys[0]
   assert(target, 404, 'Copyright notice restoration record not found')
   await transaction(sql`/* createEligibleCopyrightRestoreIntent:placementAdvisoryLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${target.placement_key}, 0))
+    SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(target.placement_id)}, 0))
   `)
   const { rows: noticeLocks } = await transaction<{ id: string }>(
     sql`/* createEligibleCopyrightRestoreIntent:lockNotice */
@@ -77,7 +77,7 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   assert(noticeLocks[0], 404, 'Copyright notice restoration record not found')
   const { rows } = await transaction<{
     human_reviewed_at: Date | null
-    placement_key: string
+    placement_id: string
     placement_revision: number
     lifted_at: Date | null
     earliest_restoration_at: Date
@@ -85,7 +85,7 @@ export async function createEligibleCopyrightRestoreIntent(input: {
     resolved_at: Date | null
     cancelled_at: Date | null
   }>(sql`/* createEligibleCopyrightRestoreIntent:lock */
-    SELECT r.human_reviewed_at, t.placement_key, t.placement_revision, r.lifted_at,
+    SELECT r.human_reviewed_at, t.placement_id, t.placement_revision, r.lifted_at,
       d.earliest_restoration_at, d.restoration_deadline_at, d.resolved_at, d.cancelled_at
     FROM copyright_notices n
     JOIN copyright_notice_targets t ON t.copyright_notice_id = n.id
@@ -100,7 +100,7 @@ export async function createEligibleCopyrightRestoreIntent(input: {
       ON counter_notice.id = assessment.copyright_notice_submission_id
     WHERE n.id = ${input.noticeId}
       AND t.id = ${input.targetId}
-      AND t.placement_key = ${target.placement_key}
+      AND t.placement_id = ${target.placement_id}
       AND r.id = ${input.restrictionId}
       AND d.id = ${input.deadlineId}
       AND counter_notice.kind = 'counter_notice'
@@ -169,7 +169,7 @@ export async function createEligibleCopyrightRestoreIntent(input: {
       : null,
   })
   assert(result.eligible, 409, 'Copyright restoration is not eligible')
-  const currentPlacement = await getImagePlacementForCopyright(locked.placement_key, {
+  const currentPlacement = await getImagePlacementForCopyright(locked.placement_id, {
     query: transaction,
   })
   // An unavailable placement still needs a durable, revision-fenced legal disposition. The worker
@@ -187,8 +187,8 @@ export async function createEligibleCopyrightRestoreIntent(input: {
   const intent = intentRows[0]
   assert(intent, 409, 'A restore intent already exists for this placement revision')
   await transaction(sql`/* createEligibleCopyrightRestoreIntent:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, metadata)
-    VALUES (${input.noticeId}, 'restoration_intent_created', ${JSON.stringify({ restrictionId: input.restrictionId })}::jsonb)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_action_intent_id)
+    VALUES (${input.noticeId}, 'restoration_intent_created', ${intent.id})
   `)
   await transaction.commit()
   void enqueueApplyCopyrightAction(intent.id)

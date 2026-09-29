@@ -57,11 +57,12 @@ export async function getAdministratorRefundIdentityState(): Promise<Administrat
   const definition = rows[0]?.definition
   return {
     hasExpectedConstraint: rows.length === 1,
-    requiresAdministratorSource: definition?.includes("source = 'admin'") === true,
-    requiresIssuer: definition?.includes('issued_by_id IS NOT NULL') === true,
-    requiresIdempotencyKey: definition?.includes('stripe_idempotency_key IS NOT NULL') === true,
+    requiresAdministratorSource: definition?.includes("source = 'admin'") ?? false,
+    requiresIssuer: definition?.includes('issued_by_id IS NOT NULL') ?? false,
+    requiresIdempotencyKey: definition?.includes('stripe_idempotency_key IS NOT NULL') ?? false,
     requiresRequestFingerprint:
-      definition?.includes('admin_request_fingerprint IS NOT NULL') === true,
-    excludesRetiredIdempotencyFlag: definition?.includes('idempotent_admin') === false,
+      definition?.includes('admin_request_fingerprint IS NOT NULL') ?? false,
+    excludesRetiredIdempotencyFlag:
+      definition !== undefined && !definition.includes('idempotent_admin'),
   }
 }

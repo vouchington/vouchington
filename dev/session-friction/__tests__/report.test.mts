@@ -1,3 +1,4 @@
+import { UNASSESSED_RETROSPECTIVE_SECTIONS } from '../../test-helpers/blackboard/retrospective-sections.mts'
 import { mkdtempSync, realpathSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -110,6 +111,7 @@ describe('buildReport', () => {
       'turns: 3',
       '',
       report,
+      UNASSESSED_RETROSPECTIVE_SECTIONS,
     ].join('\n')
     expect(validateRetroDoc(document)).toEqual({ ok: true, errors: [] })
   })

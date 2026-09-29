@@ -1,5 +1,6 @@
 import type { ExplainResult } from '@data-stores/psql'
 import { collectPlanNodes } from './plan-nodes.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const RSS_PENDING_INDEX = 'idx_rss_feed_items__story_clustering_embedding_pending'
 const FIRST_POST_INDEX = 'idx_posts__created_by_id__community_id__id'
@@ -11,9 +12,9 @@ const POST_CHILD_INDEX =
 
 function isRelation(node: Record<string, unknown>, parent: string): boolean {
   return (
-    String(node['Relation Name'] ?? '') === parent ||
-    String(node['Relation Name'] ?? '').startsWith(`${parent}__`) ||
-    String(node['Relation Name'] ?? '') === `${parent}_default`
+    stringFromUnknown(node['Relation Name'] ?? '') === parent ||
+    stringFromUnknown(node['Relation Name'] ?? '').startsWith(`${parent}__`) ||
+    stringFromUnknown(node['Relation Name'] ?? '') === `${parent}_default`
   )
 }
 
@@ -33,7 +34,7 @@ function assertRssPendingPagePlan(result: ExplainResult): void {
   const usesPendingIndex = executingScans.some(
     node =>
       node['Index Name'] === RSS_PENDING_INDEX ||
-      RSS_CHILD_INDEX.test(String(node['Index Name'] ?? '')),
+      RSS_CHILD_INDEX.test(stringFromUnknown(node['Index Name'] ?? '')),
   )
   const sourceWork = scans.reduce(
     (count, node) =>
@@ -50,8 +51,8 @@ function assertRssPendingPagePlan(result: ExplainResult): void {
       node =>
         !(
           (node['Index Name'] === RSS_PENDING_INDEX ||
-            RSS_CHILD_INDEX.test(String(node['Index Name'] ?? ''))) &&
-          String(node['Index Cond'] ?? '').includes('id >')
+            RSS_CHILD_INDEX.test(stringFromUnknown(node['Index Name'] ?? ''))) &&
+          stringFromUnknown(node['Index Cond'] ?? '').includes('id >')
         ),
     ) ||
     !nodes.some(node => node['Node Type'] === 'Limit') ||
@@ -73,7 +74,7 @@ function assertFirstCommunityPostPlan(result: ExplainResult): void {
     !scans.some(
       node =>
         node['Index Name'] === FIRST_POST_INDEX ||
-        POST_CHILD_INDEX.test(String(node['Index Name'] ?? '')),
+        POST_CHILD_INDEX.test(stringFromUnknown(node['Index Name'] ?? '')),
     ) ||
     scans.some(node => node['Node Type'] === 'Seq Scan') ||
     nodes.some(node => String(node['Node Type']).includes('Sort'))

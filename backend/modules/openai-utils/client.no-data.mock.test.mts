@@ -11,11 +11,7 @@ import { isFetchSafePort } from '@ts-shared/utils/fetch-ports'
 const openAIConstructorMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
 
 vi.mock<typeof import('openai')>(import('openai'), () => ({
-  default: class MockOpenAI {
-    constructor(options: unknown) {
-      openAIConstructorMock(options)
-    }
-  } as unknown as typeof import('openai').default,
+  default: openAIConstructorMock as unknown as typeof import('openai').default,
 }))
 
 import openaiClient from './client.mts'

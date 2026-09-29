@@ -143,7 +143,11 @@ export function makeDeps(
       },
     },
     writeFileSync: (path, content) => {
-      written.push({ content: String(content), path: String(path) })
+      const text =
+        typeof content === 'string'
+          ? content
+          : Buffer.from(content.buffer, content.byteOffset, content.byteLength).toString()
+      written.push({ content: text, path: String(path) })
     },
     waitForProcessGroupExit:
       options.waitForProcessGroupExit ??

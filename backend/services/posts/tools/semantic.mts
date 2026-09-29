@@ -120,7 +120,7 @@ export async function toolsSearchPostsSemantic(
         contentType: 'user_post',
       }),
       post_type: row.post_type,
-      distance: Number(row.distance),
+      distance: row.distance,
     })),
   )
 }

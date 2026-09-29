@@ -1,16 +1,14 @@
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import type {
-  CopyrightHoldProceedingKind,
-  CopyrightHoldResolutionKind,
-  CopyrightLegalHoldAssessmentRecord,
-  CopyrightLegalHoldResolutionRecord,
-} from './types.mts'
+import type { CopyrightHoldProceedingKind, CopyrightLegalHoldAssessmentRecord } from './types.mts'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
-import { replayCopyrightRestoreActionsForRestrictions } from './action-delivery.mts'
-import { replayRestoresAfterCourtFilingAssessment } from './court-hold-restore-replay.mts'
+import {
+  replayEligibleCopyrightRestoreIntentsInTransaction,
+  selectBlockedCopyrightRestoreIntentIds,
+} from './court-hold-restore-replay.mts'
+import { lockCopyrightNoticeHoldPlacements } from './hold-placement-locks.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { activateLateCopyrightLegalHoldRestrictions } from './holds-late-restrictions.mts'
 import { isQualifyingCopyrightLegalHold } from './holds-qualification.mts'
@@ -43,7 +41,12 @@ export async function appendCopyrightLegalHoldAssessment(input: {
   )
   await using transaction = await beginTransaction()
   let lateHoldIntentIds: string[] = []
-  await lockLateHoldPlacements(input.targetIds, transaction)
+  const { rows: identities } = await transaction<{ copyright_notice_id: string }>(sql`
+    /* appendCopyrightLegalHoldAssessment:identity */
+    SELECT copyright_notice_id FROM copyright_notice_submissions WHERE id = ${input.submissionId}
+  `)
+  assert(identities[0], 404, 'Copyright legal-hold submission not found')
+  await lockCopyrightNoticeHoldPlacements(identities[0].copyright_notice_id, transaction)
   const { rows: submissionRows } = await transaction<{
     kind: string
     copyright_notice_id: string
@@ -110,91 +113,22 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     )
   }
   await transaction(sql`/* appendCopyrightLegalHoldAssessment:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+      copyright_notice_legal_hold_assessment_id)
     VALUES (${submissionRows[0].copyright_notice_id}, 'legal_hold_assessed', ${input.currentUser.id},
-      ${JSON.stringify({ targetIds: input.targetIds })}::jsonb)
+      ${assessment.id})
   `)
+  const replayedIds = await replayEligibleCopyrightRestoreIntentsInTransaction({
+    noticeId: submissionRows[0].copyright_notice_id,
+    intentIds: await selectBlockedCopyrightRestoreIntentIds(
+      submissionRows[0].copyright_notice_id,
+      transaction,
+    ),
+    now: input.assessedAt,
+    query: transaction,
+  })
   await transaction.commit()
-  for (const intentId of lateHoldIntentIds) void enqueueApplyCopyrightAction(intentId)
-  await replayRestoresAfterCourtFilingAssessment(submissionRows[0].copyright_notice_id)
+  for (const intentId of new Set([...lateHoldIntentIds, ...replayedIds]))
+    void enqueueApplyCopyrightAction(intentId)
   return { ...assessment, target_ids: input.targetIds }
-}
-
-async function lockLateHoldPlacements(
-  targetIds: string[],
-  transaction: Parameters<typeof activateLateCopyrightLegalHoldRestrictions>[3],
-): Promise<void> {
-  await transaction(sql`/* appendCopyrightLegalHoldAssessment:placementLocks */
-    SELECT pg_advisory_xact_lock(hashtextextended(placement_key, 0))
-    FROM copyright_notice_targets
-    WHERE id = ANY(${targetIds}::uuid[])
-    ORDER BY placement_key
-  `)
-}
-
-export async function resolveCopyrightLegalHold(input: {
-  currentUser: PrivateUser
-  assessmentId: string
-  resolvedAt: Date
-  resolutionKind: CopyrightHoldResolutionKind
-  rationale: string
-}): Promise<CopyrightLegalHoldResolutionRecord> {
-  assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
-  await using transaction = await beginTransaction()
-  const { rows: assessmentRows } = await transaction<{
-    copyright_notice_id: string
-  }>(sql`/* resolveCopyrightLegalHold:lockAssessment */
-    SELECT submission.copyright_notice_id
-    FROM copyright_notice_legal_hold_assessments assessment
-    JOIN copyright_notice_submissions submission
-      ON submission.id = assessment.copyright_notice_submission_id
-    JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
-    WHERE assessment.id = ${input.assessmentId}
-    FOR UPDATE OF notice, assessment
-  `)
-  const assessment = assessmentRows[0]
-  assert(assessment, 404, 'Copyright legal hold assessment not found')
-  const { rows } = await transaction(sql`/* resolveCopyrightLegalHold */
-    INSERT INTO copyright_notice_legal_hold_resolutions (
-      copyright_notice_legal_hold_assessment_id, resolved_at, resolved_by_id, resolution_kind,
-      rationale_ciphertext
-    ) VALUES (
-      ${input.assessmentId}, ${input.resolvedAt}, ${input.currentUser.id}, ${input.resolutionKind},
-      ${encryptSecret(input.rationale, `copyright-legal-hold-resolution:${input.assessmentId}`)}
-    )
-    ON CONFLICT (copyright_notice_legal_hold_assessment_id) DO NOTHING
-    RETURNING id, copyright_notice_legal_hold_assessment_id, resolved_at, resolved_by_id,
-      resolution_kind, rationale_ciphertext
-  `)
-  const resolution = rows[0] as CopyrightLegalHoldResolutionRecord | undefined
-  assert(resolution, 409, 'Copyright legal hold is already resolved')
-  await transaction(sql`/* resolveCopyrightLegalHold:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
-    VALUES (${assessment.copyright_notice_id}, 'legal_hold_resolved', ${input.currentUser.id}, ${JSON.stringify({ resolutionKind: input.resolutionKind })}::jsonb)
-  `)
-  const { rows: restrictionRows } = await transaction<{ id: string; intent_id: string }>(sql`
-    /* resolveCopyrightLegalHold:affectedRestrictions */
-    WITH hold_restrictions AS (
-      SELECT restriction.id, target.placement_key
-      FROM copyright_legal_hold_restrictions source
-      JOIN copyright_restrictions restriction ON restriction.id = source.copyright_restriction_id
-      JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-      WHERE source.copyright_notice_legal_hold_assessment_id = ${input.assessmentId}
-        AND restriction.lifted_at IS NULL
-    ), intents AS (
-      INSERT INTO copyright_notice_action_intents (
-        copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
-      ) SELECT held.id, NULL, placement.revision, 'restore'
-      FROM hold_restrictions held
-      JOIN media_placements placement ON concat('image-placement:', placement.id) = held.placement_key
-      ON CONFLICT (copyright_restriction_id, expected_placement_revision, action)
-      DO UPDATE SET updated_at = copyright_notice_action_intents.updated_at
-      RETURNING id, copyright_restriction_id
-    ) SELECT held.id, intents.id AS intent_id
-      FROM hold_restrictions held JOIN intents ON intents.copyright_restriction_id = held.id
-  `)
-  await transaction.commit()
-  await replayCopyrightRestoreActionsForRestrictions(restrictionRows.map(row => row.id))
-  for (const restriction of restrictionRows) void enqueueApplyCopyrightAction(restriction.intent_id)
-  return resolution
 }

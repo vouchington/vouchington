@@ -7,13 +7,15 @@ import {
   type SentryMockRegistry,
 } from './sentry.mts'
 import { scrubSentrySpan } from './sentry-scrub.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 function makeEvent(eventId: string): Parameters<typeof filterSentryEvent>[0] {
   return { event_id: eventId } as Parameters<typeof filterSentryEvent>[0]
 }
 
 function makeErrorWithFields(fields: Record<string, unknown>): Error & Record<string, unknown> {
-  const error = new Error(String(fields.message ?? 'error')) as Error & Record<string, unknown>
+  const error = new Error(stringFromUnknown(fields.message ?? 'error')) as Error &
+    Record<string, unknown>
   for (const [key, value] of Object.entries(fields)) error[key] = value
   return error
 }

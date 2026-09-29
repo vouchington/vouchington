@@ -1,3 +1,4 @@
+import { isPlacementSourcePolicy, type PlacementSourcePolicy } from '@ts-shared/url-signing'
 import { RequestParseError } from '../errors.mts'
 
 // Mirrors the discriminated union produced by web/lib/seo/og-image-url.ts.
@@ -16,7 +17,7 @@ export interface OgLandingParams {
   displayName: string
   username: string
   topCategories: string[]
-  avatarImageId?: string
+  dependencies: PlacementSourcePolicy[]
 }
 
 export type OgParams = OgGenericParams | OgLandingParams
@@ -41,13 +42,24 @@ function requireStringArray(obj: Record<string, unknown>, key: string): string[]
   return value.slice(0, MAX_TOP_CATEGORIES)
 }
 
-function readOptionalString(obj: Record<string, unknown>, key: string): string | undefined {
-  const value = obj[key]
-  if (value === undefined) return undefined
-  if (typeof value !== 'string' || value.length === 0) {
-    throw new RequestParseError(`Invalid OG params: "${key}" must be a non-empty string`, 400)
+const MAX_OG_DEPENDENCIES = 4
+
+function readDependencies(obj: Record<string, unknown>): PlacementSourcePolicy[] {
+  const value = obj.dependencies
+  if (value === undefined) return []
+  if (!Array.isArray(value) || value.length > MAX_OG_DEPENDENCIES) {
+    throw new RequestParseError('Invalid OG params: "dependencies" must be a short array', 400)
   }
-  return value
+  return value.map(dependency => {
+    if (!isPlacementSourcePolicy(dependency)) {
+      throw new RequestParseError('Invalid OG params: dependency is not a placement', 400)
+    }
+    return {
+      placementId: dependency.placementId,
+      revision: dependency.revision,
+      imageId: dependency.imageId,
+    }
+  })
 }
 
 // The web payload also carries a `rendererVersion` cache-buster
@@ -73,13 +85,12 @@ export function validateOgParams(value: unknown): OgParams {
   }
 
   if (obj.type === 'landing') {
-    const avatarImageId = readOptionalString(obj, 'avatarImageId')
     return {
       type: 'landing',
       displayName: requireString(obj, 'displayName'),
       username: requireString(obj, 'username'),
       topCategories: requireStringArray(obj, 'topCategories'),
-      ...(avatarImageId !== undefined ? { avatarImageId } : {}),
+      dependencies: readDependencies(obj),
     }
   }
 

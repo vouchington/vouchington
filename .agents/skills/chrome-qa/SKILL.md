@@ -1,9 +1,6 @@
 ---
 name: chrome-qa
-description: |
-  Live browser QA of the Voucha local stack with persona switching. Use when walking
-  user flows from docs/requirements/user-flows/ across different roles (Anon, RU, CM,
-  CO, SM, QA, SA) or verifying UI behavior that Playwright specs don't cover.
+description: Verify Voucha local browser user flows across personas with live QA.
 user-invocable: true
 ---
 

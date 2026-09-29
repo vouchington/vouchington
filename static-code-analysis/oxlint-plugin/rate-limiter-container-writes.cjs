@@ -132,10 +132,10 @@ function createContainerWrites({
       source,
       aliasWrite.identifier,
     )
-    return Boolean(
+    return (
       !aliasWriteBeforeMutation ||
       (aliasWriteBeforeMutation.writeExpr?.type === 'Identifier' &&
-        findVariable(context, aliasWriteBeforeMutation.writeExpr) === variable),
+        findVariable(context, aliasWriteBeforeMutation.writeExpr) === variable)
     )
   }
 

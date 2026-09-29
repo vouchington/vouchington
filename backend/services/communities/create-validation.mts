@@ -1,7 +1,7 @@
 import assert from 'http-assert'
 import { countWords } from '@ts-shared/utils/text-metrics'
 import { validateCommunitySlug } from './slugs.mts'
-import type { CreateCommunityInput } from './create.mts'
+import type { CreateCommunityInput } from './create-types.mts'
 
 export function validateCreateCommunityInput(input: CreateCommunityInput): void {
   assert(input.name, 422, 'Name is required')

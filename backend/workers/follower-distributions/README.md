@@ -6,5 +6,5 @@ Worker package for processing manual follower share/send distribution chunks.
 
 ## Related
 
-- Queue: [../../queues/follower-distributions/README.md](../../queues/follower-distributions/README.md)
-- Worker entrypoint: [../../entrypoints/worker-io/README.md](../../entrypoints/worker-io/README.md)
+- Queue: [../../queues/follower-distributions/README.md](../../../docs/overview/architecture/queues/follower-distributions/README.md)
+- Worker entrypoint: [../../entrypoints/worker-io/README.md](../../../docs/overview/architecture/backend/entrypoints/worker-io/README.md)

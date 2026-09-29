@@ -219,7 +219,7 @@ test.describe('Login Page', () => {
     })
     const hasPublicFacebookConfiguration = [
       hasRuntimeAppId,
-      Boolean(configuration.broker_capabilities.facebook?.modes.web),
+      configuration.broker_capabilities.facebook?.modes.web,
     ].includes(true)
     const expectedVisible = [
       configuration.providers.includes('facebook'),

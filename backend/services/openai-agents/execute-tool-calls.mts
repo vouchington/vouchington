@@ -5,14 +5,12 @@ import {
   type OpenAIFunctionCallOutput,
 } from './tool-calls.mts'
 import type { RunEventWriter } from '@services/conversations-messages'
+import { validateAgentToolArguments } from './validate-tool-arguments.mts'
 
-export type AgentTool = {
+export type AgentTool<TArgs = never, TResult = never> = {
   schema: { name: string; [key: string]: unknown }
-  // `any` is intentional: the boundary where typed tool functions meet the generic
-  // dispatch loop. JSON.parse produces `unknown` at runtime; `any` here avoids
-  // requiring `as never` casts at every agent call site.
-  executor: (args: any) => AsyncGenerator<unknown, unknown> | Promise<unknown> | unknown
-  formatResult?: (callId: string, result: any) => OpenAIFunctionCallOutput
+  executor: (args: TArgs) => AsyncGenerator<unknown, unknown> | Promise<unknown> | unknown
+  formatResult?: (callId: string, result: TResult) => OpenAIFunctionCallOutput
 }
 
 /** Params required for dispatching a batch of tool calls (toolCalls drives the iteration). */
@@ -22,7 +20,7 @@ export type ExecuteToolCallsParams = {
   writeRunEvent?: RunEventWriter
   onBeforeCall?: (toolCall: OpenAIFunctionCall) => { skip: true; skipResult?: unknown } | undefined
   onAfterCall?: (toolCall: OpenAIFunctionCall, result: unknown) => void
-  // Called for any tool call failure: unknown tool, JSON parse error, or executor throw.
+  // Called for every tool call failure: unknown tool, JSON parse error, or executor throw.
   onCallError?: (toolCall: OpenAIFunctionCall, error: Error) => void
 }
 
@@ -93,10 +91,23 @@ export async function* dispatchOneToolCall(
     return formatToolResult(toolCall.call_id, parseError)
   }
 
+  const validationError = validateAgentToolArguments(toolEntry.schema.parameters, args)
+  if (validationError) {
+    const err = createHttpError(
+      422,
+      `Invalid arguments for tool ${toolCall.name}: ${validationError}`,
+    )
+    const invalidArguments = { error: err.message }
+    await writeRunEvent?.('function_call', toolCall, invalidArguments)
+    onCallError?.(toolCall, err)
+    return formatToolResult(toolCall.call_id, invalidArguments)
+  }
+
   let result: unknown
   let executorFailed = false
   try {
-    const executorResult = toolEntry.executor(args)
+    // Parsed tool JSON is `unknown`. Concrete executors stay assignable through `TArgs = never`.
+    const executorResult = toolEntry.executor(args as never)
     if (isAsyncGenerator(executorResult)) {
       result = yield* executorResult
     } else {
@@ -121,7 +132,7 @@ export async function* dispatchOneToolCall(
   // On executor failure, skip custom formatResult and use formatToolResult directly
   // to avoid passing error-shaped results to handlers expecting successful output.
   if (executorFailed) return formatToolResult(toolCall.call_id, result)
-  return (toolEntry.formatResult ?? formatToolResult)(toolCall.call_id, result)
+  return (toolEntry.formatResult ?? formatToolResult)(toolCall.call_id, result as never)
 }
 
 async function drainGenerator<TYield, TReturn>(

@@ -80,7 +80,7 @@ export async function getFamilyMembershipSourceProjectionAdmission(
 export async function prepareMembershipCreation(
   options: CreateMembershipOptions,
   query: QueryExecutor,
-  enqueueEntitlementEffects: () => void,
+  enqueueEntitlementEffects: () => Promise<void>,
   directTermEffectiveAt: Date | undefined,
 ) {
   const productId = await getMembershipProductIdForCreation(options, query)
@@ -149,7 +149,7 @@ async function lockRetainedDirectSourceProjection(sourceId: string, query: Query
 
 function enqueueEntitlementEffectsAfterCommit(
   query: QueryExecutor,
-  enqueueEntitlementEffects: () => void,
+  enqueueEntitlementEffects: () => Promise<void>,
 ): void {
   registerPostCommitAction(query, () => {
     void enqueueEntitlementEffects()

@@ -1,7 +1,7 @@
 import { decodeUuidCursor, isNameCursor, isScoreCursor } from '@modules/pagination'
 import { appendTopicDescendantsCte } from '@voucha/types/entities/topic-descendants'
 import sql from 'sql-template-strings'
-import type { SearchUrlHostnamesOptions } from './search.mts'
+import type { SearchUrlHostnamesOptions } from './search-types.mts'
 
 export function buildSearchUrlHostnamesQuery(options: SearchUrlHostnamesOptions) {
   const { limit, topic_id, topic_ids = [], include_descendants = false, sort } = options

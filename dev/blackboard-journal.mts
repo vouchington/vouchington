@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+import { feedbackOutboxStatus, flushFeedbackOutbox } from 'vouchington-tooling/agent-blackboard'
+import { parseFlagArgs } from './blackboard/parse-flag-args.mts'
 
 import { BlackboardJournalError, runAppend } from './blackboard-journal/append.mts'
 import { runEntries } from './blackboard-journal/entries.mts'
@@ -18,6 +22,7 @@ function printUsage(stream: NodeJS.WritableStream = process.stderr): void {
       '[--outbox-directory <path>] --root-codex [--new-root-codex-session] [--agent codex] ' +
       '[--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]\n' +
       '       node dev/blackboard-journal.mts entries [--session-id <id> | --root-codex [--new-root-codex-session]]\n' +
+      '       node dev/blackboard-journal.mts outbox-status|outbox-flush [--outbox-directory <path>]\n' +
       'Note: entries --root-codex refreshes the worktree-local root identity before reading the server.\n',
   )
 }
@@ -68,6 +73,19 @@ async function main(): Promise<void> {
     (rest[0] === '-h' || rest[0] === '--help')
   ) {
     printUsage(process.stdout)
+    return
+  }
+  if (subcommand === 'outbox-status' || subcommand === 'outbox-flush') {
+    const { parsed, positional } = parseFlagArgs<{ directory?: string }>(rest, {
+      '--outbox-directory': 'directory',
+    })
+    if (positional.length) throw new Error('outbox commands do not accept positional arguments')
+    const directory = parsed.directory ?? join(process.cwd(), '.local', 'blackboard-outbox')
+    const result =
+      subcommand === 'outbox-status'
+        ? feedbackOutboxStatus(directory)
+        : await flushFeedbackOutbox({ directory })
+    process.stdout.write(`${JSON.stringify(result)}\n`)
     return
   }
   if (subcommand === 'entries') {

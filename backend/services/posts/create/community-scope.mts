@@ -13,12 +13,8 @@ import { lockAndAssertNotBanned } from '@services/communities/bans/lock'
 import { getCommunityPostRestrictionDecision } from '@services/communities/restrictions/enforce'
 import assert from 'http-assert'
 import { resolveCommentScope } from './comment-scope.mts'
-
-export type PostScope = {
-  communityId: string | null
-  parentId: string | null
-  rootId: string | null
-}
+import type { PostScope } from './community-scope-types.mts'
+export type { PostScope } from './community-scope-types.mts'
 
 export async function resolvePostScope({
   creator,
@@ -32,10 +28,10 @@ export async function resolvePostScope({
   updates: CreatePostInput
 }): Promise<PostScope> {
   if (defaults.postType === 'comment') {
-    return await resolveCommentScope({ creator, options, updates })
+    return resolveCommentScope({ creator, options, updates })
   }
   if (updates.community_id !== undefined) {
-    return await resolveCommunityPostScope({ creator, defaults, options, updates })
+    return resolveCommunityPostScope({ creator, defaults, options, updates })
   }
   assert(!updates.parent_id, 422, 'parent_id is only allowed for comments or community discussions')
   return { communityId: null, parentId: null, rootId: null }

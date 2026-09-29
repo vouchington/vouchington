@@ -3,7 +3,6 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightNoticeTargetInput } from './types.mts'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
-import { getImagePlacementKey } from '@services/images/placements'
 
 const POST_TYPE_PATHS = {
   article: 'article',
@@ -56,7 +55,7 @@ export async function resolveCopyrightImagePlacement(
   const path = POST_TYPE_PATHS[placement.post_type]
   assert(path, 422, 'Hosted image placement does not have a public post route')
   return {
-    placementKey: getImagePlacementKey(placement.placement_id),
+    placementId: placement.placement_id,
     placementRevision: placement.placement_revision,
     imageId: placement.image_id,
     hostedUseUrl: new URL(

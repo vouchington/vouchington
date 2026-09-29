@@ -28,12 +28,12 @@ These are tracked as follow-up work, not part of this feature:
 
 ## Related
 
-- [App Attestation service](../../../backend/services/app-attestation/README.md) — verification
+- [App Attestation service](services/app-attestation/README.md) — verification
   internals, DB schema, boundary rules
-- [App Attestation API routes](../../../backend/api/v1/app-attestation/README.md) — request/response
+- [App Attestation API routes](../../requirements/api/v1/app-attestation/README.md) — request/response
   shapes, rate limits
 - [Captcha & Bot Protection](captcha.md) — Turnstile/reCAPTCHA and the bypass integration point
 - [Auth Overview](auth-overview.md) — device/session token model
-- [JWT Session service](../../../backend/services/jwt-session/README.md) — `dc` claim and session
+- [JWT Session service](services/jwt-session/README.md) — `dc` claim and session
   expiry mechanics
 - [Dynamic Config](dynamic-config.md) — DynamicConfig namespace pattern

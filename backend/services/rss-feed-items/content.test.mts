@@ -3,7 +3,7 @@ import { createRssFeedItemEmbeddingContent } from './content.mts'
 
 describe('createRssFeedItemEmbeddingContent', () => {
   it('returns content and sha256 for a minimal item', async () => {
-    const result = await createRssFeedItemEmbeddingContent({
+    const result = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
       title: 'Test Title',
@@ -13,13 +13,13 @@ describe('createRssFeedItemEmbeddingContent', () => {
   })
 
   it('handles an empty item gracefully', async () => {
-    const result = await createRssFeedItemEmbeddingContent({ link: '', guid: '' })
+    const result = createRssFeedItemEmbeddingContent({ link: '', guid: '' })
     expect(typeof result.content).toBe('string')
     expect(Buffer.isBuffer(result.content_sha256)).toBe(true)
   })
 
   it('strips HTML link URLs and keeps link text', async () => {
-    const result = await createRssFeedItemEmbeddingContent({
+    const result = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
       'content:encoded': '<p>Hello <a href="https://example.com">world</a></p>',
@@ -29,7 +29,7 @@ describe('createRssFeedItemEmbeddingContent', () => {
   })
 
   it('strips image URLs and keeps alt text', async () => {
-    const result = await createRssFeedItemEmbeddingContent({
+    const result = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
       content: '<img src="https://example.com/img.jpg" alt="A photo">',
@@ -39,7 +39,7 @@ describe('createRssFeedItemEmbeddingContent', () => {
   })
 
   it('includes title and categories in the output', async () => {
-    const result = await createRssFeedItemEmbeddingContent({
+    const result = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
       title: 'My Title',
@@ -54,7 +54,7 @@ describe('createRssFeedItemEmbeddingContent', () => {
   it('strips very long HTML content to lean text', async () => {
     // ~20,000 words wrapped in HTML — verifies HTML stripping produces clean text
     const longContent = `<p>${'word '.repeat(20_000)}</p>`
-    const result = await createRssFeedItemEmbeddingContent({
+    const result = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
       content: longContent,
@@ -64,7 +64,7 @@ describe('createRssFeedItemEmbeddingContent', () => {
   })
 
   it('strips HTML from title', async () => {
-    const result = await createRssFeedItemEmbeddingContent({
+    const result = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
       title: '<b>Bold Title</b>',
@@ -74,7 +74,7 @@ describe('createRssFeedItemEmbeddingContent', () => {
   })
 
   it('strips HTML from categories', async () => {
-    const result = await createRssFeedItemEmbeddingContent({
+    const result = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
       categories: ['<em>Tech</em>', 'News'],
@@ -85,7 +85,7 @@ describe('createRssFeedItemEmbeddingContent', () => {
   })
 
   it('does not truncate short content', async () => {
-    const result = await createRssFeedItemEmbeddingContent({
+    const result = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
       title: 'Short',
@@ -96,12 +96,12 @@ describe('createRssFeedItemEmbeddingContent', () => {
   })
 
   it('sha256 differs when content differs', async () => {
-    const r1 = await createRssFeedItemEmbeddingContent({
+    const r1 = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
       title: 'Title A',
     })
-    const r2 = await createRssFeedItemEmbeddingContent({
+    const r2 = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
       title: 'Title B',
@@ -110,7 +110,7 @@ describe('createRssFeedItemEmbeddingContent', () => {
   })
 
   it('prefers content:encodedSnippet over content:encoded when available', async () => {
-    const result = await createRssFeedItemEmbeddingContent({
+    const result = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
       'content:encodedSnippet': 'snippet text',
@@ -120,7 +120,7 @@ describe('createRssFeedItemEmbeddingContent', () => {
   })
 
   it('falls back to media:description for YouTube items', async () => {
-    const result = await createRssFeedItemEmbeddingContent({
+    const result = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
       'media:description': 'YouTube video description text.',
@@ -129,7 +129,7 @@ describe('createRssFeedItemEmbeddingContent', () => {
   })
 
   it('skips blank stripped content fields before media:description', async () => {
-    const result = await createRssFeedItemEmbeddingContent({
+    const result = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
       description: '<p>&nbsp;</p>',
@@ -139,7 +139,7 @@ describe('createRssFeedItemEmbeddingContent', () => {
   })
 
   it('hashes standard and media descriptions together', async () => {
-    const result = await createRssFeedItemEmbeddingContent({
+    const result = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
       summary: 'RSS summary text.',
@@ -150,7 +150,7 @@ describe('createRssFeedItemEmbeddingContent', () => {
   })
 
   it('preserves escaped angle-bracket text as visible text', async () => {
-    const result = await createRssFeedItemEmbeddingContent({
+    const result = createRssFeedItemEmbeddingContent({
       link: '',
       guid: '',
       description: 'Use &lt;T&gt; when 1 &lt; 2 &gt; 0.',

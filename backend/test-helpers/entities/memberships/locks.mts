@@ -39,7 +39,7 @@ export async function runConcurrentTestMembershipProductValidation<T>(
     releaseFirstValidation.resolve()
     await Promise.all([firstValidation, secondValidation])
   }
-  return await secondValidation
+  return secondValidation
 }
 
 export async function runConcurrentTestRetainedMembershipProductReconciliation<T>(options: {

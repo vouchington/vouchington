@@ -10,10 +10,7 @@ import {
 } from '@services/memberships/apple'
 import { recoverAppleNotifications } from './apple-notification-recovery.mts'
 
-vi.mock<typeof import('glide-mq')>(
-  import('glide-mq'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('Apple notification recovery with real GlideMQ', () => {
   it('restores a lost stable job from PostgreSQL and keeps concurrent recovery deduplicated', async () => {

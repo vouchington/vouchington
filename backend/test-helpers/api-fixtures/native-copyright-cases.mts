@@ -39,7 +39,7 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
           form_review: {
             intake_id: '00000000-0000-7000-8000-000000000806',
             source_kind: 'guest_form',
-            screening: null,
+            screening: { state: 'pending', recommendation: null, rationale: null },
           },
           restrictions: [],
           appeals: [],

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const alwaysRunMap = readFileSync(
-  '.github/workflows/reference-workflow-automation-always-run.md',
+  'docs/development/ci/workflows/reference-workflow-automation-always-run.md',
   'utf8',
 )
 

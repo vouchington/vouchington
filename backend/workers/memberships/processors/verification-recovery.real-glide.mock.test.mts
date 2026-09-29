@@ -11,10 +11,7 @@ import { recoverMembershipVerifications } from './verification-recovery.mts'
 
 // This file exercises the real Valkey transport. The passthrough is required because the dedicated
 // backend-real-glide-mq project routes only .real-glide.mock.test.mts files.
-vi.mock<typeof import('glide-mq')>(
-  import('glide-mq'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('membership verification recovery with real GlideMQ', () => {
   it('restores a lost stable job from PostgreSQL and keeps concurrent recovery deduplicated', async () => {

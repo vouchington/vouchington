@@ -11,7 +11,7 @@ UI callers based on lifecycle timestamps.
 `expired` for those rows as soon as `expires_at <= now()`, without waiting for a lifecycle
 update. A Stripe row keeps `active` / `past_due` / `paused` after period end — the stored
 timestamp is the current billing period, and Stripe events own the status. Entitlement
-helpers in [`@modules/membership-helpers`](../../../backend/modules/membership-helpers/README.md)
+helpers in [`@modules/membership-helpers`](../../overview/architecture/backend/modules/membership-helpers/README.md)
 and `getUserActiveMembership` follow that same split. The view lives in
 [`backend/data-stores/psql/views/2025-01-01-view-memberships.sql`](../../../backend/data-stores/psql/views/2025-01-01-view-memberships.sql).
 

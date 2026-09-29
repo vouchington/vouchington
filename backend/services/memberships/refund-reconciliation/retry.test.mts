@@ -13,7 +13,7 @@ import {
   type RefundReconciliationLease,
   type RefundProviderOperations,
 } from './index.mts'
-import type { RefundReconciliationPolicy } from './reconcile.mts'
+import type { RefundReconciliationPolicy } from './reconcile-types.mts'
 
 describe('refund reconciliation retries', () => {
   it('requires exact attempt metadata before accepting a discovered refund', async () => {

@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { FinancialProfile } from '@/types/my'
-import type { DataPointVertical } from './data-point-fields'
+import type { DataPointVertical } from '@voucha/types/entities/data-point'
 import { CREDIT_SCORE_RANGES } from '@ts-shared/data-points'
 import { DataPointCreditCardProfileFields } from './data-point-credit-card-profile-fields'
 import { useTranslations } from '@/lib/i18n/use-translations'

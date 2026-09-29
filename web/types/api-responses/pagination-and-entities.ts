@@ -1,7 +1,6 @@
 import type * as Api from './shared'
 import type { ModeratorActionType } from '@ts-shared/utils/moderation-catalogs'
 
-type ElectionVote = Api.ElectionVote
 type Serialized<T> = Api.Serialized<T>
 type PublicUser = Api.PublicUser
 type BackendCommunity = Api.BackendCommunity
@@ -126,13 +125,4 @@ export type NotificationResult = Serialized<BackendNotificationResult>
 
 export type WebPushSubscription = Serialized<WebPushSubscriptionRecord>
 
-/**
- * Base paginated response structure shared by all API endpoints
- */
-
-export interface PaginatedResponse<TResult extends PaginatedResult> {
-  results: TResult[]
-  page_info: PageInfo
-  bookmarks?: Record<string, Record<string, boolean>>
-  election_votes?: Record<string, ElectionVote>
-}
+export type { PaginatedResponse } from './paginated-response'

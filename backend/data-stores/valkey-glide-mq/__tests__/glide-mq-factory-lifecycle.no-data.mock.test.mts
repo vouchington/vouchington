@@ -8,7 +8,9 @@ import {
 import { closeAndUnregisterGlideMQInstance } from '../glide-mq-factory.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), () => {
-  class UnusedGlideMQHandle {}
+  function UnusedGlideMQHandle(): never {
+    throw new Error('Unexpected GlideMQ construction in the handle-lifecycle test')
+  }
   return {
     FlowProducer: UnusedGlideMQHandle as unknown as typeof import('glide-mq').FlowProducer,
     Queue: UnusedGlideMQHandle as unknown as typeof import('glide-mq').Queue,

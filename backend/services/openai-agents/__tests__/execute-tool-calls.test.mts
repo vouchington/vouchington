@@ -240,6 +240,7 @@ describe.each(VARIANTS)('%s', (_name, run) => {
     const { toolResults } = await run({
       toolCalls: [call('my_tool')],
       // Rejected promise with a non-Error value exercises the wrapping branch
+      // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- External tool handlers may reject with primitive values.
       tools: [tool('my_tool', () => Promise.reject('raw string error'))],
       onCallError,
     })

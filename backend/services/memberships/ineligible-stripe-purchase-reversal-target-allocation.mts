@@ -87,7 +87,7 @@ export function getQualifyingInvoiceLineAmount(
       line.taxes?.reduce((taxAmount, tax) => {
         if (tax.tax_behavior === 'inclusive') return taxAmount
         if (tax.tax_behavior === 'exclusive') return taxAmount + tax.amount
-        throw new Error(`Unsupported Stripe invoice line tax behavior: ${String(tax.tax_behavior)}`)
+        throw new Error(`Unsupported Stripe invoice line tax behavior: ${tax.tax_behavior}`)
       }, 0) ?? 0
     return amount + line.amount + exclusiveTaxAmount
   }, 0)

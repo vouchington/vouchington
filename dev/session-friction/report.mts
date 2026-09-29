@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 import { fileURLToPath } from 'node:url'
 
-import { buildSessionFrictionReport } from 'vouchington-tooling/session-friction'
+import {
+  buildSessionFrictionReport,
+  type SessionFrictionReportOptions,
+} from 'vouchington-tooling/session-friction'
 
-import { type BlackboardEntriesClient } from '../blackboard/client.mts'
+import type { BlackboardEntriesClient } from '../blackboard/client.mts'
 import { parseFlagArgs, type FlagKey } from '../blackboard/parse-flag-args.mts'
 import { requireSessionId } from '../agent-session-id/resolve.mts'
 import { frictionLogDirectory } from './config.mts'
@@ -13,16 +16,26 @@ import { loadJournalEntries } from './report/journal.mts'
 // for the retrospective skill to paste directly into a session's retro doc. The session id
 // is resolved exactly once by the CLI guard below and threaded through unchanged to both
 // the friction-log lookup and the journal lookup — they must never diverge.
+export function frictionReportOptions(
+  env: NodeJS.ProcessEnv = process.env,
+  entriesClient?: BlackboardEntriesClient,
+): SessionFrictionReportOptions {
+  return {
+    directory: frictionLogDirectory(env),
+    journalLoader: id => loadJournalEntries(id, env, entriesClient),
+  }
+}
+
 export async function buildReport(
   sessionId: string,
   env: NodeJS.ProcessEnv = process.env,
   entriesClient?: BlackboardEntriesClient,
   stderr: { write(chunk: string): unknown } = process.stderr,
 ): Promise<string> {
-  const report = await buildSessionFrictionReport(sessionId, {
-    directory: frictionLogDirectory(env),
-    journalLoader: id => loadJournalEntries(id, env, entriesClient),
-  })
+  const report = await buildSessionFrictionReport(
+    sessionId,
+    frictionReportOptions(env, entriesClient),
+  )
   if (report.diagnostic)
     stderr.write(`session-friction: report unavailable: ${report.diagnostic}\n`)
   return report.markdown

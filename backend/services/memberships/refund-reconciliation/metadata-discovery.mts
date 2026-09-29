@@ -6,25 +6,18 @@ import {
   scanStateFromPage,
 } from './metadata-discovery-page.mts'
 import type { RefundReconciliationAttempt } from './types.mts'
+import type {
+  MetadataDiscoverableRefund,
+  RefundMetadataPage,
+  RefundMetadataScanState,
+} from './metadata-discovery-types.mts'
+export type {
+  MetadataDiscoverableRefund,
+  RefundMetadataPage,
+  RefundMetadataScanState,
+} from './metadata-discovery-types.mts'
 
 const PROVIDER_PAGE_BUDGET = 3
-
-export type MetadataDiscoverableRefund = {
-  id: string
-  metadata?: Record<string, string> | null
-}
-
-export type RefundMetadataPage = {
-  hasMore: boolean
-  nextCursor: string | null
-  refunds: MetadataDiscoverableRefund[]
-}
-
-export type RefundMetadataScanState = {
-  completedAt: Date | null
-  nextProviderRefundId: string | null
-  stableHeadProviderRefundId: string | null
-}
 
 export type RefundMetadataDiscoveryResult =
   | { outcome: 'found'; refund: MetadataDiscoverableRefund }

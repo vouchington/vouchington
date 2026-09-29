@@ -1,6 +1,6 @@
 import { getImageByAny } from './get.mts'
 import { withImageStorageLifecycleLock } from './storage-lifecycle-lock.mts'
-import { deleteImageByIdWhileStorageLocked } from './delete.mts'
+import { deleteImageByIdWhileStorageLocked } from './delete-while-storage-locked.mts'
 
 export async function deleteImageById(
   imageId: string | Buffer,
@@ -9,7 +9,7 @@ export async function deleteImageById(
 ) {
   const image = await getImageByAny(imageId, { includeQuarantinePending })
   if (!image) return
-  return await withImageStorageLifecycleLock(image.id, async () =>
+  return withImageStorageLifecycleLock(image.id, async () =>
     deleteImageByIdWhileStorageLocked(image.id, omitRollback, includeQuarantinePending),
   )
 }

@@ -1,6 +1,6 @@
 ---
 name: organize-github-issues
-description: Organize Vouchington open issues, issue project membership, and pull-request milestones using the portable issue-hygiene workflow and local taxonomy rules.
+description: Organize existing Vouchington issues, project membership, and PR milestones.
 ---
 
 # Vouchington Issue Organization Adapter

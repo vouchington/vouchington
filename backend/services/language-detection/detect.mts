@@ -78,7 +78,7 @@ export async function runDetectionMany(
   opts?: DetectOptions,
   dependencies?: Partial<DetectorDependencies>,
 ): Promise<DetectionOutput[]> {
-  const results: Array<DetectionOutput | undefined> = new Array(inputs.length)
+  const results = new Array<DetectionOutput | undefined>(inputs.length)
   const needDetection: number[] = []
 
   // Pass 1: resolve declared languages and empty texts synchronously

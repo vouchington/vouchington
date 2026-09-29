@@ -91,13 +91,15 @@ function parseCapacityExceeded(error: unknown) {
   if (!error || typeof error !== 'object') return null
   const pgError = error as { code?: string; constraint?: string; detail?: string }
   if (pgError.code !== '23514' || pgError.constraint !== UNVERIFIED_CAPACITY_CONSTRAINT) return null
+  const originalError =
+    error instanceof Error ? error : new Error('Invalid capacity detail', { cause: error })
   let detail: unknown
   try {
     detail = JSON.parse(pgError.detail ?? '')
   } catch {
-    throw error
+    throw originalError
   }
-  if (!isCapacityDetail(detail)) throw error
+  if (!isCapacityDetail(detail)) throw originalError
   const limitingDimensions: ('rows' | 'raw-body-bytes')[] = []
   if (
     detail.unverifiedRows + detail.attemptedRows >

@@ -1,6 +1,6 @@
 import { scheduleRefundReconciliationRetry } from './ledger.mts'
 import { RefundProviderOperationError } from './provider-operations.mts'
-import type { RefundReconciliationPolicy } from './reconcile.mts'
+import type { RefundReconciliationPolicy } from './reconcile-types.mts'
 import type { RefundReconciliationLease } from './types.mts'
 
 export async function handleRefundProviderOutcome<Context>(

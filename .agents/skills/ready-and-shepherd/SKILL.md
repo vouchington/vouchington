@@ -1,13 +1,6 @@
 ---
 name: ready-and-shepherd
-description: |
-  Internal draft-to-shepherded mechanics for the batch-triage skills
-  (`triage-prs`, `triage-security`): light-review a draft PR's diff,
-  optionally steer the Auto Harness shepherd, mark it ready, optionally arm squash
-  auto-merge, and dispatch the external CI-triggered `/shepherd` Auto Harness agent.
-  Only meant to be invoked autonomously by those two triage skills — never
-  invoke it directly for a PR the current agent is itself going to shepherd
-  with the installed plugin or local CLI; those flows own readiness themselves.
+description: Apply draft-to-shepherd mechanics inside authorized PR or security triage.
 argument-hint: '[PR number or URL] [--arm-auto-merge] [--steer-file <path>] [--codex-security-local-handoff]'
 allowed-tools: ['Bash', 'Read', 'Write', 'Grep']
 ---

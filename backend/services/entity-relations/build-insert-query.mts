@@ -1,11 +1,8 @@
 import type { BasicUser } from '@voucha/types/entities/user'
 import type { EntityRelationMetadata } from './metadata.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import type {
-  EntityIdentifier,
-  UpsertEntityRelationsOptions,
-  UpsertEntityTypes,
-} from './upsert-helpers.mts'
+import type { EntityIdentifier, UpsertEntityTypes } from './upsert-helpers.mts'
+import type { UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
 
 function buildRelationColumns(relation: EntityRelationMetadata): {
   columns: string[]

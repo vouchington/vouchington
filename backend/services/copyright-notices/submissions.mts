@@ -115,7 +115,7 @@ async function createAuthenticatedCopyrightSubmission(
     SELECT target.id
     FROM copyright_notice_targets target
     JOIN media_placements placement
-      ON target.placement_key = concat('image-placement:', placement.id)
+      ON target.placement_id = placement.id
     JOIN image_placements image_placement ON image_placement.placement_id = placement.id
     JOIN posts post ON post.id = image_placement.post_id
     WHERE target.copyright_notice_id = ${noticeId} AND target.id = ANY(${input.targetIds})
@@ -153,8 +153,8 @@ async function createAuthenticatedCopyrightSubmission(
       ) VALUES (${submission.id}, ${currentUser.id}, ${idempotencyKey}, ${requestSha256})
     )
     INSERT INTO copyright_notice_lifecycle_events (
-      copyright_notice_id, event_type, actor_user_id, metadata
-    ) VALUES (${noticeId}, ${`${kind}_received`}, ${currentUser.id}, '{}'::jsonb)
+      copyright_notice_id, event_type, actor_user_id, copyright_notice_submission_id
+    ) VALUES (${noticeId}, ${`${kind}_received`}, ${currentUser.id}, ${submission.id})
   `)
   await createCopyrightDeliveryIntent(
     {

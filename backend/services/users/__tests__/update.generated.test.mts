@@ -48,7 +48,7 @@ describe('update.generated', () => {
     const phone_number = createRandomPhoneNumber()
     const token = await createPhoneNumberLoginToken(phone_number)
     await updateUserPhoneNumber(user.id, phone_number, token.token)
-    const updatedUser = await getPrivateUserByAny(await verifyPhoneNumber(phone_number))
+    const updatedUser = await getPrivateUserByAny(verifyPhoneNumber(phone_number))
     assert(updatedUser)
     assert.strictEqual(updatedUser.id, user.id)
   })

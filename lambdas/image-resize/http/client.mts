@@ -1,3 +1,4 @@
+import { isFirstPartyMediaUrl } from '@ts-shared/url-signing'
 import { MAX_INPUT_IMAGE_BYTES } from '../config.mts'
 import { HttpOperationError } from '../errors.mts'
 import { type FetchedImage, type TempImageFile, spoolImageToTempFile } from '../temp-file.mts'
@@ -22,6 +23,9 @@ const MIME_ALIASES = new Map([
 
 type FetchWithPinnedDns = typeof defaultFetchWithPinnedDns
 
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308])
+const MAX_SOURCE_REDIRECTS = 5
+
 export async function fetchImageFromUrl(
   url: string,
   timeoutMs: number = 30000,
@@ -40,7 +44,25 @@ export async function fetchImageFromUrl(
 
   try {
     const fetchWithPinnedDns = dependencies.fetchWithPinnedDns ?? defaultFetchWithPinnedDns
-    const response = await fetchWithPinnedDns(parsedUrl, controller.signal)
+    let currentUrl = parsedUrl
+    let response: Awaited<ReturnType<FetchWithPinnedDns>> | undefined
+    for (let hop = 0; hop <= MAX_SOURCE_REDIRECTS; hop += 1) {
+      if (isFirstPartyMediaUrl(currentUrl)) {
+        throw new HttpOperationError('URL not allowed: first-party media origin', 403)
+      }
+      // oxlint-disable-next-line no-await-in-loop -- each redirect hop is pinned and authorized before the next fetch.
+      response = await fetchWithPinnedDns(currentUrl, controller.signal, { maxRedirects: 0 })
+      if (!REDIRECT_STATUSES.has(response.status)) break
+      if (hop === MAX_SOURCE_REDIRECTS) {
+        response.body?.cancel().catch(() => {})
+        throw new HttpOperationError('URL not allowed: too many redirects', 403)
+      }
+      const location = response.headers.get('location')
+      response.body?.cancel().catch(() => {})
+      if (!location) throw new HttpOperationError('URL not allowed: redirect missing location', 403)
+      currentUrl = new URL(location, currentUrl)
+    }
+    if (!response) throw new HttpOperationError('Failed to fetch image from URL', 500)
 
     if (!response.ok) {
       response.body?.cancel().catch(() => {})

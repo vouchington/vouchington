@@ -24,10 +24,10 @@ export type ValkeySaturationContext = {
 // nothing ties a burst of these back to the fork (pid) that produced it. Under test, mirror
 // a bounded sample to fd 2 via a synchronous write (same rationale as the fork-exit sentinel:
 // async stderr is the channel already losing data under an abrupt fork death). This does not
-// import test-helpers/vitest-fork-exit-sentinel.mts — that module lives outside every workspace
-// package boundary this file's package.json declares, and reaching across it from a production
-// module would invert the dependency direction (production depending on test-only infra) that
-// the rest of this codebase does not do. The pid alone is enough: readers correlate a
+// import vouchington-tooling/vitest-diagnostics. That package is test instrumentation, and
+// reaching it from a production module would invert the dependency direction (production
+// depending on test-only infra) that the rest of this codebase does not do. The pid alone is
+// enough: readers correlate a
 // [valkey-saturation] pid against the same pid's own [vitest-fork-exit] line to recover which
 // test module was running when the storm happened, without this module needing to track it.
 const saturationSentinelSampleSize = 5

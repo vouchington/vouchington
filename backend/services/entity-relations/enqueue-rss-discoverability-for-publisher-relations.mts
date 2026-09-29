@@ -1,7 +1,7 @@
 import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-discoverability/enqueues'
 import { findRssFeedIdsByTopicIds } from './rss-feed-ids-by-topic-ids.mts'
 import type { EntityRelationMetadata } from './metadata.mts'
-import type { EntityRelation } from './upsert-helpers.mts'
+import type { EntityRelation } from './upsert-helpers-types.mts'
 
 export async function enqueueRssFeedDiscoverabilityForPublisherTypeRelations(
   relation: EntityRelationMetadata,

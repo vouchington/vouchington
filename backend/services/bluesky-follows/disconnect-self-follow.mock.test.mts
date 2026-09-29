@@ -50,8 +50,8 @@ async function disconnectBlueskyAccountAndCleanupFollows(userId: string): Promis
 describe('Bluesky self-follow disconnect cleanup', () => {
   beforeEach(() => {
     revokeBlueskySessionMock.mockReset()
-    revokeBlueskySessionMock.mockImplementation(
-      async (_client: NodeOAuthClient, did: string) => await new BlueskySessionStore().del(did),
+    revokeBlueskySessionMock.mockImplementation(async (_client: NodeOAuthClient, did: string) =>
+      new BlueskySessionStore().del(did),
     )
     deleteFollowMock.mockReset()
     deleteFollowMock.mockResolvedValue(undefined)

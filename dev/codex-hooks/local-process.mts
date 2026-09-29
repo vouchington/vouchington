@@ -95,24 +95,6 @@ export function gitConfiguredRemoteDefaults(cwd: string): string | undefined {
   }
 }
 
-// Names of tracked paths that differ between the worktree and `target`. Undefined when the
-// diff helper cannot answer (missing ref, timeout). The helper owns the pathspec list.
-export function gitWorktreeDiffNames(cwd: string, target: string): readonly string[] | undefined {
-  if (target.startsWith('-')) return undefined
-  try {
-    const text = execFileSync(join(cwd, 'dev', 'protected-checkout-diff'), [target], {
-      cwd,
-      encoding: 'utf8',
-      env: gitEnvForCwd(),
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 5_000,
-    })
-    return text.split('\n').filter(line => line !== '')
-  } catch {
-    return undefined
-  }
-}
-
 export function gitHeadPathExists(cwd: string, relativePath: string): boolean {
   try {
     execFileSync('git', ['show', `HEAD:${relativePath}`], {

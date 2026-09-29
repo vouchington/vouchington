@@ -117,13 +117,12 @@ async function getActionIntent(noticeId: string, action: 'withhold' | 'restore')
 }
 
 function currentPlacement(target: {
-  placement_key: string
+  placement_id: string
   placement_revision: number
   image_id: string
 }): CopyrightImagePlacement {
   return {
-    placementKey: target.placement_key,
-    placementId: target.placement_key.replace('image-placement:', ''),
+    placementId: target.placement_id,
     revision: target.placement_revision,
     imageId: target.image_id,
     deleted: false,

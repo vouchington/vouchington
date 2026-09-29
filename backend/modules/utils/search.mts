@@ -35,8 +35,8 @@ export const getTypesFromQuery = (query: string[] | string, typesMap: Record<str
 
 export const getSecondsToDate = (seconds: number | Date) => {
   if (seconds instanceof Date) return seconds
-  assert(!Number.isNaN(Number(seconds)), 422, 'Invalid seconds')
-  const date = new Date(Number(seconds) * 1000)
+  assert(!Number.isNaN(seconds), 422, 'Invalid seconds')
+  const date = new Date(seconds * 1000)
   const now = Date.now()
   assert(date.getTime() < now + 1000, 422, 'Future dates are not allowed')
   assert(date.getTime() > 0, 422, 'Invalid date')

@@ -12,7 +12,8 @@ import { stripType7RawHtmlBlocks } from './type7-html-blocks.mts'
 function isClosingFenceLine(line: string, fence: { character: string; length: number }): boolean {
   const closing = /^ {0,3}(?<rest>.*?)[ \t]*$/.exec(line)?.groups?.rest ?? ''
   return (
-    closing.length >= fence.length && [...closing].every(candidate => candidate === fence.character)
+    closing.length >= fence.length &&
+    Array.from(closing).every(candidate => candidate === fence.character)
   )
 }
 

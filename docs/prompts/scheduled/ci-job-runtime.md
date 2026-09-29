@@ -1,4 +1,4 @@
-Create or update exactly one concrete, bounded CI job runtime issue; do not change code or open a PR.
+Create or update at most one concrete, bounded CI job runtime issue; do not change code or open a PR.
 
 <!-- harness-scheduled-completion: issue -->
 

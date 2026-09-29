@@ -12,8 +12,9 @@ import type { EntityRelationElectionTarget } from '@queues/elections/types'
 import sql from 'sql-template-strings'
 import { entityRelationElectionTables } from './target.mts'
 import { lockEntityRelationVoteStatsPostPublicationScopes } from './vote-stats-batch-publication-locks.mts'
+import { chunkRelationIds } from './vote-target-ids.mts'
 
-export const PRIMARY_REFRESH_BATCH_SIZE = 1_000
+export { PRIMARY_REFRESH_BATCH_SIZE } from './vote-target-ids.mts'
 const topHashtagRelationTables = new Set([
   'relation__post__category__topic_alias',
   'relation__rss_feed_item__category__topic_alias',
@@ -123,12 +124,17 @@ async function refreshChunk(
     entityRelationElectionTables,
     'entityRelationTable',
   )
+  const lowerRelationId = relationIds[0]!
+  const upperRelationId = relationIds.at(-1)!
   const query = sql`/* updateEntityRelationElectionVoteStatsFromPrimaryBatch */
     WITH target_ids AS (SELECT unnest(${relationIds}::uuid[]) AS id),
     current_votes AS (
       SELECT DISTINCT ON (vote.entity_relation_id, vote.user_id) vote.entity_relation_id, vote.user_id, vote.score
       FROM entity_relation_votes vote JOIN target_ids target ON target.id = vote.entity_relation_id
       WHERE vote.relation_table = ${relationTable}
+        AND vote.entity_relation_id = ANY(${relationIds}::uuid[])
+        AND vote.entity_relation_id >= ${lowerRelationId}
+        AND vote.entity_relation_id <= ${upperRelationId}
       ORDER BY vote.entity_relation_id, vote.user_id, vote.id DESC
     ), aggregated AS (
       SELECT vote.entity_relation_id,
@@ -187,11 +193,4 @@ function groupTargetsByTable(
     byTable.set(target.relationTable, ids)
   }
   return byTable
-}
-
-function chunkRelationIds(relationIds: string[]): string[][] {
-  const ids = [...new Set(relationIds)].toSorted()
-  return Array.from({ length: Math.ceil(ids.length / PRIMARY_REFRESH_BATCH_SIZE) }, (_, index) =>
-    ids.slice(index * PRIMARY_REFRESH_BATCH_SIZE, (index + 1) * PRIMARY_REFRESH_BATCH_SIZE),
-  )
 }

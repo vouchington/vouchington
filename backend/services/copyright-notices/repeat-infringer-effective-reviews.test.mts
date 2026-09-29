@@ -201,7 +201,7 @@ async function createTestRepeatInfringerNotice(ownerIds: string[], moderator: Pr
       const placement = await getTestPostImagePlacement(postId, imageId)
       if (!placement) throw new Error('Test placement missing')
       return {
-        placementKey: `image-placement:${placement.placement_id}`,
+        placementId: placement.placement_id,
         placementRevision: placement.placement_revision,
         imageId,
         hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
@@ -232,11 +232,9 @@ async function createTestRepeatInfringerNotice(ownerIds: string[], moderator: Pr
     substantiallyCompliant: true,
   })
   const restrictions = []
-  const targetsByPlacement = new Map(
-    aggregate.targets.map(target => [target.placement_key, target]),
-  )
+  const targetsByPlacement = new Map(aggregate.targets.map(target => [target.placement_id, target]))
   for (const target of targets) {
-    const saved = targetsByPlacement.get(target.placementKey)
+    const saved = targetsByPlacement.get(target.placementId)
     if (!saved) throw new Error('Test target missing')
     const restriction = await acceptCopyrightNoticeAndImposeRestriction({
       noticeId: notice.id,

@@ -7,7 +7,7 @@ import {
   getEntityRelationTableNameOrThrow,
   POST_TOPIC_CATEGORY_RELATION_TABLE,
 } from '@services/entity-relations/metadata'
-import { timestampToUuidv7LowerBound } from '@data-stores/psql/config-driven/utils/partition-utils'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import type { TrendingTopicMetric, TrendingTopicsOptions, TrendingTopicsResult } from './types.mts'
 
 const TIME_RANGE_MS = {

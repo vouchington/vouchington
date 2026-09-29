@@ -295,10 +295,10 @@ export async function replayFailedCopyrightDeliveryIntent(input: {
   if (!rows[0]) return false
   await transaction(sql`/* replayFailedCopyrightDeliveryIntent:event */
     INSERT INTO copyright_notice_lifecycle_events (
-      copyright_notice_id, event_type, actor_user_id, metadata
+      copyright_notice_id, event_type, actor_user_id, copyright_notice_delivery_intent_id
     ) VALUES (
       ${input.noticeId}, 'delivery_intent_replayed', ${input.actorUserId},
-      ${JSON.stringify({ intentId: input.intentId })}::jsonb
+      ${input.intentId}
     )
   `)
   await transaction.commit()

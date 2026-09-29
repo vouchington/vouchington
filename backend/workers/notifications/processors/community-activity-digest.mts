@@ -52,7 +52,7 @@ async function refreshActivityAndCreateBatch(
     dependencies?.refreshCommunityActivityDigestDispatchWindowActivity ??
     refreshCommunityActivityDigestDispatchWindowActivity
   await refreshActivity(new Date(data.windowStart))
-  return await createBatchAndDispatchPushes(data, dependencies)
+  return createBatchAndDispatchPushes(data, dependencies)
 }
 
 async function createBatchAndDispatchPushes(

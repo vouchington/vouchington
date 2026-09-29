@@ -1,32 +1,32 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { getImagePlacementForCopyright } from '@services/images/placements'
+import { getImagePlacementForCopyright, getImagePlacementKey } from '@services/images/placements'
 import type { CopyrightActionIntentRecord } from './types.mts'
 
 export async function createCopyrightRestoreIntentForReversalInTransaction(
   restrictionId: string,
   transaction: TransactionQuery,
 ): Promise<CopyrightActionIntentRecord> {
-  const { rows: placementRows } = await transaction<{ placement_key: string }>(sql`
+  const { rows: placementRows } = await transaction<{ placement_id: string }>(sql`
     /* createCopyrightRestoreIntentForReversalInTransaction:findPlacement */
-    SELECT target.placement_key FROM copyright_restrictions restriction
+    SELECT target.placement_id FROM copyright_restrictions restriction
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     WHERE restriction.id = ${restrictionId}
   `)
   const targetPlacement = placementRows[0]
   assert(targetPlacement, 404, 'Copyright restriction not found')
   await transaction(sql`/* createCopyrightRestoreIntentForReversalInTransaction:placementAdvisoryLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${targetPlacement.placement_key}, 0))
+    SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(targetPlacement.placement_id)}, 0))
   `)
   const { rows } = await transaction<{
     copyright_notice_id: string
-    placement_key: string
+    placement_id: string
     human_review_action: 'confirm' | 'reverse' | null
     reversal_authorized: boolean
     lifted_at: Date | null
   }>(sql`/* createCopyrightRestoreIntentForReversalInTransaction:lock */
-    SELECT notice.id AS copyright_notice_id, target.placement_key, restriction.human_review_action,
+    SELECT notice.id AS copyright_notice_id, target.placement_id, restriction.human_review_action,
       restriction.lifted_at, EXISTS (
         SELECT 1 FROM copyright_notice_appeal_reviews appeal_review
         WHERE appeal_review.copyright_restriction_id = restriction.id AND appeal_review.action = 'reverse'
@@ -45,7 +45,7 @@ export async function createCopyrightRestoreIntentForReversalInTransaction(
     409,
     'Copyright restriction is not awaiting reversal delivery',
   )
-  const placement = await getImagePlacementForCopyright(restriction.placement_key, {
+  const placement = await getImagePlacementForCopyright(restriction.placement_id, {
     query: transaction,
   })
   assert(placement, 409, 'Copyright placement is unavailable')
@@ -62,9 +62,8 @@ export async function createCopyrightRestoreIntentForReversalInTransaction(
   const intent = intentRows[0]
   assert(intent, 500, 'Copyright reversal restore intent was not recorded')
   await transaction(sql`/* createCopyrightRestoreIntentForReversalInTransaction:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, metadata)
-    VALUES (${restriction.copyright_notice_id}, 'reversal_restoration_intent_created',
-      ${JSON.stringify({ restrictionId, intentId: intent.id })}::jsonb)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_action_intent_id)
+    VALUES (${restriction.copyright_notice_id}, 'reversal_restoration_intent_created', ${intent.id})
   `)
   return intent
 }

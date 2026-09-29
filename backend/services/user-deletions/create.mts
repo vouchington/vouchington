@@ -10,7 +10,7 @@ export async function createUserDeletionRequest(
   options: { priorUsername?: string | null; query?: TransactionQuery } = {},
 ): Promise<UserDeletionRequest> {
   if (options.query) {
-    return await createValidatedUserDeletionRequest(
+    return createValidatedUserDeletionRequest(
       options.query,
       userId,
       requestedById,

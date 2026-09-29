@@ -1,4 +1,4 @@
-Review static analysis coverage. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review static analysis coverage. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 References:
 
@@ -21,4 +21,4 @@ When the improvement touches ast-grep rules, include a hygiene pass:
   add fixtures that prove each intended match and near-miss.
 - Add `examples:` fixtures for ignored paths when a rule relies on `ignores:` so drift is caught by the ast-grep example test.
 
-Make linting stricter by enabling or configuring one useful existing lint/static-analysis rule, removing one stale exemption, or tightening coverage in an established tool. Add custom repo-local checks only after the [rule placement decision guide](../../../static-code-analysis/README.md#where-to-put-a-new-rule-priority-order) shows off-the-shelf tools, ast-grep, and no-mistakes cannot express the invariant. Do not remove existing rules or weaken coverage. Fix violations introduced by the selected improvement.
+Make linting stricter by enabling or configuring one useful existing lint/static-analysis rule, removing one stale exemption, or tightening coverage in an established tool. Add custom repo-local checks only after the [rule placement decision guide](../../development/quality/static-code-analysis/README.md#where-to-put-a-new-rule-priority-order) shows off-the-shelf tools, ast-grep, and no-mistakes cannot express the invariant. Do not remove existing rules or weaken coverage. Fix violations introduced by the selected improvement.

@@ -30,6 +30,7 @@
     "openai": "^7.23.0"
   },
   "devDependencies": {
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "vitest": "^5.0.2"
   }
 }

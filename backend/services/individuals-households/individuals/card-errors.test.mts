@@ -11,12 +11,17 @@ describe('individual card constraint errors', () => {
     ],
   ])('maps %s:%s to a precise domain error', async (code, constraint, message) => {
     await expect(
-      mapIndividualCardConstraintError(() => Promise.reject({ code, constraint })),
+      mapIndividualCardConstraintError(() =>
+        Promise.reject(Object.assign(new Error('database constraint'), { code, constraint })),
+      ),
     ).rejects.toMatchObject({ status: 422, message })
   })
 
   it('passes unrelated database errors through unchanged', async () => {
-    const error = { code: '23503', constraint: 'individual_cards_currency_code_fkey' }
+    const error = Object.assign(new Error('database constraint'), {
+      code: '23503',
+      constraint: 'individual_cards_currency_code_fkey',
+    })
 
     await expect(mapIndividualCardConstraintError(() => Promise.reject(error))).rejects.toBe(error)
   })

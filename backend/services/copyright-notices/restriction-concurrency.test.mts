@@ -65,7 +65,7 @@ describe('copyright restriction concurrency', () => {
       },
       targets: [
         {
-          placementKey: `image-placement:${targetPlacement.placement_id}`,
+          placementId: targetPlacement.placement_id,
           placementRevision: targetPlacement.placement_revision,
           imageId,
           hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
@@ -153,7 +153,7 @@ describe('copyright restriction concurrency', () => {
       },
       targets: [
         {
-          placementKey: `image-placement:${placement.placement_id}`,
+          placementId: placement.placement_id,
           placementRevision: placement.placement_revision,
           imageId,
           hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,

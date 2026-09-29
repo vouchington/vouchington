@@ -64,6 +64,7 @@ import { checkpointSeed, printRowCounts, runAnalyze } from './seed-data/maintena
 import { seedPendingStoryEmbeddingTriggers } from './seed-data/embedding-reconciliation.mts'
 import { seedOAuthClientVerification } from './seed-data/oauth-client-verification.mts'
 import { seedPostFeedShares } from './seed-data/post-feed-shares.mts'
+import { seedAdminEmails } from './seed-data/admin-emails.mts'
 import { RSS_FEED_SEED_COUNT, RSS_FEED_ITEM_SEED_COUNT } from './seed-data/common.mts'
 import {
   seedMembershipRefunds,
@@ -73,6 +74,7 @@ import {
 
 async function main() {
   await seedUsers(20_000)
+  await seedAdminEmails()
   await seedTopicImportAttempts()
   await seedMembershipProducts()
   await seedMemberships()

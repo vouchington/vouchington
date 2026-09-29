@@ -120,6 +120,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'rss-feed-text-search',
   'search-admin-users',
   'search-admin-users-uuid',
+  'search-admin-users-email',
   'search-communities',
   'search-communities-has-list-items',
   'search-communities-member',

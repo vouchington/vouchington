@@ -19,6 +19,6 @@ app.route('/api/v1/auth/mfa/re-auth/email/tokens').post(async (ctx: Context) => 
 
   const emailAddress = sanitizeEmailAddress(rawEmail)
   const result = await createEmailAddressLoginToken(emailAddress)
-  enqueueEmailAddressLoginToken(result.emailAddress, result.token, currentUser.ui_locale)
+  void enqueueEmailAddressLoginToken(result.emailAddress, result.token, currentUser.ui_locale)
   ctx.json({ email_address: result.emailAddress })
 })

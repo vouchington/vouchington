@@ -1,5 +1,5 @@
 import type { PublicUser } from '@services/users'
-import type { ProfileLink } from '../profile-links.mts'
+import type { ProfileLink } from '../profile-links-types.mts'
 
 export type LandingPage = {
   id: string

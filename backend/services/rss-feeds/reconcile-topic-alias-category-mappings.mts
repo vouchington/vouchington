@@ -65,7 +65,7 @@ async function reconcileTopicAliasCategoryMappingDirtyRows(
   if (!candidate) return { reconciled, updated, errors }
   try {
     const result = await reconcileTopicAliasCategoryMappingDirtyRow(candidate)
-    return reconcileTopicAliasCategoryMappingDirtyRows(
+    return await reconcileTopicAliasCategoryMappingDirtyRows(
       remaining,
       reconciled + 1,
       updated + result.updated,

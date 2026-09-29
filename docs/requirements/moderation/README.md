@@ -33,3 +33,37 @@ When moderation policy, report entity types, reason codes, or pipeline steps cha
 files in sync: `MODERATION-POLICY-MATRIX.md`, `REPORTING.md`, `MODERATION-FLOWS.md`,
 `../navigation/ACTIONS.md`, and `REPORT-JUDGEMENTS.md`. See `AGENTS.md` in this directory for
 the guard-pinned invariant.
+
+## Reference index
+
+- [Built-In AI Agents](reference-built-in-ai-agents.md)
+- [Community Moderation reference](reference-community-moderation-authorization.md)
+- [Community Moderation reference](reference-community-moderation-moderation-queue.md)
+- [Community Moderation reference](reference-community-moderation-overview.md)
+- [Community Moderation reference](reference-community-moderation-slot-limits.md)
+- [GET /api/v1/communities/:slug/agent-prompts](reference-get-api-v1-communities-slug-agent-prompts.md)
+- [GET /api/v1/communities/:slug/posts/:postId/moderation-results](reference-get-api-v1-communities-slug-posts-postid-moderation-results.md)
+- [Moderation Flows reference](reference-moderation-flows-2-spam-detection.md)
+- [Moderation Flows reference](reference-moderation-flows-4-llm-agent-moderation.md)
+- [Moderation Flows reference](reference-moderation-flows-5-community-moderation.md)
+- [Moderation Flows reference](reference-moderation-flows-6-user-reports.md)
+- [Moderation Flows reference](reference-moderation-flows-native-client-capability-boundary.md)
+- [Moderation Flows reference](reference-moderation-flows-overview.md)
+- [Moderation Flows reference](reference-moderation-flows-public-documentation.md)
+- [Moderation Results](reference-moderation-results.md)
+- [Moderation Flow × Persona × Test Matrix reference](reference-moderation-test-matrix-matrix.md)
+- [Moderation Flow × Persona × Test Matrix reference](reference-moderation-test-matrix-personas-legend.md)
+- [Moderation Flow × Persona × Test Matrix reference](reference-moderation-test-matrix-status-legend.md)
+- [Moderation Flow × Persona × Test Matrix reference](reference-moderation-test-matrix-workstream-key.md)
+- [POST /api/v1/communities/:slug/agent-prompts/:promptId/test](reference-post-api-v1-communities-slug-agent-prompts-promptid-test.md)
+- [POST /api/v1/communities/:slug/agent-prompts](reference-post-api-v1-communities-slug-agent-prompts.md)
+- [POST /api/v1/communities/:slug/automod/simulate](reference-post-api-v1-communities-slug-automod-simulate.md)
+- [Post Moderation reference](reference-post-moderation-api-routes.md)
+- [Post Moderation reference](reference-post-moderation-audit-trail.md)
+- [Post Moderation reference](reference-post-moderation-authorization-matrix.md)
+- [Post Moderation reference](reference-post-moderation-overview.md)
+- [Post Moderation reference](reference-post-moderation-pages.md)
+- [Prompt Management](reference-prompt-management.md)
+- [Reporting & Content Moderation reference](reference-reporting-rate-limiting.md)
+- [Reporting & Content Moderation reference](reference-reporting-report-reasons.md)
+- [Reporting & Content Moderation reference](reference-reporting-reportable-entities.md)

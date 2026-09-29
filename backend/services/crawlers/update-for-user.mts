@@ -15,5 +15,5 @@ export async function updateCrawlerForUser(
   const crawler = await getCrawlerById(crawlerId)
   assert(crawler, 404, 'Crawler not found')
 
-  return await updateCrawler(currentUser!, crawlerId, updates)
+  return updateCrawler(currentUser!, crawlerId, updates)
 }

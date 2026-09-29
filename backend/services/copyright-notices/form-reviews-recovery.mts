@@ -115,21 +115,24 @@ export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string)
     state.reviewed_by_id !== null &&
     (state.substantially_compliant !== false || state.assessed_by_id === null)
   ) {
-    await transaction(sql`/* recoverRejectedCopyrightFormReviewEffect:assessment */
+    const { rows: recoveredAssessment } = await transaction<{
+      id: string
+    }>(sql`/* recoverRejectedCopyrightFormReviewEffect:assessment */
       INSERT INTO copyright_notice_submission_assessments (
         copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant,
         supersedes_assessment_id
       ) VALUES (
         ${state.submission_id}, ${state.reviewed_at}, ${state.reviewed_by_id}, false,
         ${state.assessment_id}
-      )
+      ) RETURNING id
     `)
     await transaction(sql`/* recoverRejectedCopyrightFormReviewEffect:event */
       INSERT INTO copyright_notice_lifecycle_events (
-        copyright_notice_id, event_type, actor_user_id, metadata
+        copyright_notice_id, event_type, actor_user_id,
+        copyright_notice_submission_assessment_id, recovery_source
       ) VALUES (
         ${state.notice_id}, 'submission_assessed', ${state.reviewed_by_id},
-        '{"recovered_from_durable_review":true}'::jsonb
+        ${recoveredAssessment[0]!.id}, 'durable_review'
       )
     `)
   }

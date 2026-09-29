@@ -59,7 +59,7 @@ const globalRef = globalThis as Record<symbol, boolean>
 // Vitest's own SIGTERM at pool-teardown time and was force-killed with SIGKILL ~500ms later
 // (Vitest's SIGKILL_TIMEOUT) — destroying whatever stderr was buffered at the time. Tests never
 // send a real SIGTERM/SIGINT to exercise this path (see the comment above); the fork-exit
-// sentinel (test-helpers/vitest-fork-exit-sentinel.mts) owns SIGTERM in forks instead and exits
+// sentinel (vouchington-tooling/vitest-diagnostics) owns SIGTERM in forks instead and exits
 // explicitly after a synchronous write, so this fires only in real deployed processes.
 if (process.env.NODE_ENV !== 'test' && !globalRef[SIGNAL_LISTENERS_REGISTERED]) {
   globalRef[SIGNAL_LISTENERS_REGISTERED] = true

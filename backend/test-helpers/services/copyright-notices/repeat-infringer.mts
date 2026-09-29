@@ -42,7 +42,7 @@ export async function confirmTestRepeatInfringerNotice(
     },
     targets: [
       {
-        placementKey: `image-placement:${placement.placement_id}`,
+        placementId: placement.placement_id,
         placementRevision: placement.placement_revision,
         imageId,
         hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
@@ -104,7 +104,7 @@ export async function createTestRepeatInfringerRestriction(
     },
     targets: [
       {
-        placementKey: `image-placement:${placement.placement_id}`,
+        placementId: placement.placement_id,
         placementRevision: placement.placement_revision,
         imageId,
         hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,

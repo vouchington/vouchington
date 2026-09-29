@@ -25,7 +25,7 @@ export async function parseOAuthRegistrationBody(ctx: Context): Promise<unknown>
     throw invalidClientMetadata('registration metadata must use application/json')
   }
   try {
-    return await parseJsonBody<unknown>(ctx)
+    return await parseJsonBody(ctx)
   } catch {
     throw invalidClientMetadata('registration metadata must be valid JSON')
   }

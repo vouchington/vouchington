@@ -50,9 +50,9 @@ describe('copyright notice restoration holds', () => {
     const holdWithhold = (await getCopyrightNoticePrivateAggregate(notice.id))?.actionIntents.find(
       intent => intent.action === 'withhold' && intent.id !== initialWithhold.id,
     )
-    await expect(getImagePlacementForCopyright(target.placement_key)).resolves.toEqual(
+    await expect(getImagePlacementForCopyright(target.placement_id)).resolves.toEqual(
       expect.objectContaining({
-        placementId: target.placement_key.replace('image-placement:', ''),
+        placementId: target.placement_id.replace('image-placement:', ''),
         revision: target.placement_revision + 3,
         withheld: true,
       }),

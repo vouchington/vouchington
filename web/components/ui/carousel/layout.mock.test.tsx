@@ -4,14 +4,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { InternalCarouselContent, InternalCarouselItem } from './layout'
 
 vi.mock(
-  import('../carousel'),
+  import('./context'),
   () =>
     ({
       useCarousel: () => ({
         carouselRef: { current: null },
         orientation: 'horizontal' as const,
       }),
-    }) as unknown as typeof import('../carousel'),
+    }) as unknown as typeof import('./context'),
 )
 
 describe('InternalCarouselContent', () => {

@@ -161,7 +161,7 @@ describe('config inventory classification regressions', () => {
         'readPositiveInt(process.env, `${ENV_PREFIX}${normalizeName(name)}`)',
         "parseEnvPositiveInt('OPENAI_RPM', 60)",
       ].join('\n'),
-      'backend/test-helpers/examples.glide-mq-testing.md':
+      'docs/development/testing/backend/glide-mq-testing.md':
         'Deprecated example: `if (process.env.BULLMQ_INLINE_MODE) {}`\n',
       'dev/AGENTS.md': '`WORKER_CONCURRENCY_MAX`\n`WORKER_CONCURRENCY_SCALE`\n',
       'docs/overview/infrastructure/environment-variables.md':

@@ -1,12 +1,3 @@
 # Crawler Worker
 
-Worker package for URL crawl jobs.
-
-## Exports
-
-- `crawlUrls` - worker instance for the `crawl_urls` queue.
-
-## Related
-
-- Queue surface: [../../queues/crawler/README.md](../../queues/crawler/README.md)
-- Worker entrypoint: [../../entrypoints/worker-cpu/README.md](../../entrypoints/worker-cpu/README.md)
+The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/queues/workers/crawler/README.md).

@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 
 /** Streams followed topics for the given user with topic details. */
 export function streamFollowedTopics(userId: string) {
-  return createAsyncGeneratorFromCursor<Record<string, unknown>>(sql`/* streamFollowedTopics */
+  return createAsyncGeneratorFromCursor(sql`/* streamFollowedTopics */
     SELECT
       t.id AS topic_id,
       t.name,

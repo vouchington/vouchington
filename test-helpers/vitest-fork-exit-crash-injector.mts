@@ -1,12 +1,11 @@
-// Split out of vitest-fork-exit-sentinel.mts to keep that file under the repo's 200-line cap. The
-// fault injector is a distinct concern from the sentinel it exercises: registerForkExitSentinel()
-// is the always-on production code every fork runs; everything here only ever runs from
+// Fault injector for the published fork-exit sentinel. registerForkExitSentinel() is the
+// always-on code every fork runs; everything here only ever runs from
 // vitest-fork-exit-sentinel.integration.test.mts's fixture project, gated by
 // VITEST_FORK_CRASH_INJECT.
 //
 // No 'exit' mode: that would mean deliberately calling process.exit(), which is exactly the call
-// Vitest's module runner permanently stubs to throw (see vitest-fork-exit-sentinel.mts's header
-// comment) — there is no way to inject it that isn't either a no-op (reallyExit skips the 'exit'
+// Vitest's module runner permanently stubs to throw — there is no way to inject it that isn't
+// either a no-op (reallyExit skips the 'exit'
 // listener the mode exists to exercise) or a synthesized process.emit('exit', ...), which oxlint's
 // no-restricted-properties rule already bans repo-wide ("Do not synthesize process signals; call
 // the shutdown handler directly."). It also wouldn't model anything real: ForksPoolWorker.stop()

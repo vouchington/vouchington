@@ -3,7 +3,8 @@ import {
   getExistingPsqlPoolMetrics,
   registerPsqlPoolMetricsForTestEnvironment,
 } from '@data-stores/psql/pool-metrics'
-import { createForkLeakDetector, formatForkLeakDiagnostics } from './vitest-fork-leak-detection.mts'
+import { createForkLeakDetector } from 'vouchington-tooling/vitest-diagnostics'
+import { formatForkLeakDiagnostics } from './vitest-fork-leak-diagnostics.mts'
 
 const TYPE = 'TCPSocketWrap'
 

@@ -4,6 +4,7 @@ import { getLongRunningExternalRequestDispatcher } from '@modules/utils/http-dis
 
 import { streamAnthropicChat } from '../anthropic-stream.mts'
 import type { ChatHistoryMessage } from '../build-input.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const originalAnthropicApiKey = process.env.ANTHROPIC_API_KEY
 type Fetch = typeof undiciFetch
@@ -55,7 +56,7 @@ describe('streamAnthropicChat', () => {
     await collectAnthropicEvents(fetch, input)
 
     const [, init] = fetch.mock.calls[0] ?? []
-    expect(JSON.parse(String(init?.body))).toMatchObject({
+    expect(JSON.parse(stringFromUnknown(init?.body))).toMatchObject({
       system: 'System',
       messages: input,
     })
@@ -74,7 +75,7 @@ describe('streamAnthropicChat', () => {
     await collectAnthropicEvents(fetch, input)
 
     const [, init] = fetch.mock.calls[0] ?? []
-    expect(JSON.parse(String(init?.body))).toMatchObject({
+    expect(JSON.parse(stringFromUnknown(init?.body))).toMatchObject({
       messages: [
         { role: 'user', content: 'First retained question' },
         { role: 'assistant', content: 'Retained answer' },
@@ -94,7 +95,7 @@ describe('streamAnthropicChat', () => {
     await collectAnthropicEvents(fetch, input)
 
     const [, init] = fetch.mock.calls[0] ?? []
-    expect(JSON.parse(String(init?.body))).toMatchObject({ messages: input })
+    expect(JSON.parse(stringFromUnknown(init?.body))).toMatchObject({ messages: input })
   })
 
   it('streams text deltas and sends the expected Messages API payload', async () => {
@@ -121,7 +122,7 @@ describe('streamAnthropicChat', () => {
       'x-api-key': 'test-anthropic-key',
       'anthropic-version': '2023-06-01',
     })
-    expect(JSON.parse(String(init?.body))).toMatchObject({
+    expect(JSON.parse(stringFromUnknown(init?.body))).toMatchObject({
       model: 'claude-sonnet-5',
       thinking: { type: 'disabled' },
       stream: true,

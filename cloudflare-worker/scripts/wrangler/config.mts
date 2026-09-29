@@ -52,8 +52,8 @@ const ANSI_ESCAPE_RE = new RegExp(
   `${String.fromCharCode(27)}(?:[@-Z\\\\-_]|\\[[0-?]*[ -/]*[@-~])`,
   'g',
 )
-const WORKERD_BROKEN_PIPE_RE =
-  /kj::getCaughtExceptionAsKj\(\).*::write\(fd, buffer\.begin\(\), buffer\.size\(\)\): Broken pipe/
+const WORKERD_CLIENT_DISCONNECT_WRITE_RE =
+  /kj::getCaughtExceptionAsKj\(\).*(?:(?:::write\(fd, buffer\.begin\(\), buffer\.size\(\)\): Broken pipe)|(?:disconnected: write\(\): (?:Broken pipe|Connection reset by peer)))/
 const WORKERD_STACK_RE = /^\s*stack:\s+\S*workerd\S*/
 
 export function getStaleWranglerCachePaths(options: StaleWranglerCacheOptions): string[] {
@@ -178,7 +178,7 @@ export function filterWranglerStderrConsoleLines(
     const strippedLine = stripAnsi(line)
     if (!strippedLine.trim()) continue
 
-    if (WORKERD_BROKEN_PIPE_RE.test(strippedLine)) {
+    if (WORKERD_CLIENT_DISCONNECT_WRITE_RE.test(strippedLine)) {
       state.suppressNextWorkerdStackLine = true
       continue
     }

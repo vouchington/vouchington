@@ -50,14 +50,7 @@ describe('unprovisionedSecretsWithoutReadinessStep', () => {
       [
         fixtureJob('wf-h#deploy-a', 'wf-h', {
           secretReferences: ['R2_DOCS_ACCESS_KEY_ID'],
-          steps: [
-            {
-              index: 0,
-              kind: 'run',
-              env: { R2_DOCS_ACCESS_KEY_ID: '${{ secrets.R2_DOCS_ACCESS_KEY_ID }}' },
-              run: 'if [ -z "$R2_DOCS_ACCESS_KEY_ID" ]; then echo "::error::missing"; exit 1; fi',
-            },
-          ],
+          steps: [R2_READINESS_STEP],
         }),
         fixtureJob('wf-h#deploy-b', 'wf-h', {
           secretReferences: ['R2_DOCS_ACCESS_KEY_ID'],
@@ -250,9 +243,12 @@ describe('unprovisionedSecretsWithoutReadinessStep', () => {
     ).toEqual([])
   })
 
-  it('does not extend the required:false exemption to a non-declaring workflow', () => {
+  it.each([
+    fixtureWorkflow('wf-e', 'fixture/wf-e.yml'),
+    fixtureCallableWorkflow('wf-e', 'fixture/wf-e.yml', {}),
+  ])('does not extend the required:false exemption to a non-declaring workflow', workflow => {
     const topology = fixtureTopology(
-      [fixtureWorkflow('wf-e', 'fixture/wf-e.yml')],
+      [workflow],
       [fixtureJob('wf-e#review', 'wf-e', { secretReferences: ['PROVIDER_API_TOKEN'] })],
     )
     expect(

@@ -10,7 +10,7 @@ export async function insertTestBankAccount(data: {
 }): Promise<string> {
   const slug = `bank-account-${createRandomString(10)}`
   const name = data.name || `Test Bank Account ${createRandomString(8)}`
-  return await insertTestTopic({
+  return insertTestTopic({
     name,
     slug,
     createdById: data.createdById,

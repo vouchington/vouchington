@@ -57,7 +57,7 @@ describe('copyright action persisted delivery authority', () => {
           throw new Error('Restore finished before publication barrier')
         }),
       ])
-      const current = await getImagePlacementForCopyright(scene.target.placement_key)
+      const current = await getImagePlacementForCopyright(scene.target.placement_id)
       if (!current) throw new Error('Prepared restoration tuple missing')
       await using transaction = await beginTransaction()
       await lockImageDeliveryMutation(transaction, {
@@ -73,7 +73,7 @@ describe('copyright action persisted delivery authority', () => {
         { query: transaction },
       )
       const mutation = await withholdImagePlacementForCopyright(
-        { placementKey: current.placementKey, expectedRevision: current.revision },
+        { placementId: current.placementId, expectedRevision: current.revision },
         { query: transaction },
       )
       expect(mutation.status).toBe('applied')
@@ -133,7 +133,7 @@ describe('copyright action persisted delivery authority', () => {
     await reconcileTestDeliveryRepairMarker(deliveryKey)
     await processMediaDeliveryRegistryRecord(deliveryKey)
     const stableGeneration = edge.records.get(deliveryKey)!.generation
-    const current = await getImagePlacementForCopyright(scene.target.placement_key)
+    const current = await getImagePlacementForCopyright(scene.target.placement_id)
     if (!current) throw new Error('Copyright placement missing')
     await stageAllCurrentImagePlacementDeliveryRecords([current.imageId])
     await expect(processMediaDeliveryRegistryRecord(deliveryKey)).resolves.toBe('not_claimed')
@@ -149,7 +149,7 @@ describe('copyright action persisted delivery authority', () => {
     installTestMediaDeliveryEdge()
     const scene = await openHeldCounterNoticeRestore({})
     const before = await getCopyrightNoticePrivateAggregate(scene.notice.id)
-    const placement = await getImagePlacementForCopyright(scene.target.placement_key)
+    const placement = await getImagePlacementForCopyright(scene.target.placement_id)
     vi.stubEnv(key, 'false')
     await expect(
       processCopyrightActionIntent(scene.restore.id, scene.restorationAt),
@@ -158,7 +158,7 @@ describe('copyright action persisted delivery authority', () => {
     expect(after?.restrictions.find(row => row.id === scene.restriction.id)?.lifted_at).toEqual(
       before?.restrictions.find(row => row.id === scene.restriction.id)?.lifted_at,
     )
-    expect(await getImagePlacementForCopyright(scene.target.placement_key)).toEqual(placement)
+    expect(await getImagePlacementForCopyright(scene.target.placement_id)).toEqual(placement)
     expect(after?.actionIntents.find(row => row.id === scene.restore.id)?.state).not.toBe(
       'completed',
     )
@@ -167,7 +167,7 @@ describe('copyright action persisted delivery authority', () => {
   it('permits replay audit foreign keys while retaining the notice fence against filing admission', async () => {
     installTestMediaDeliveryEdge()
     const scene = await openHeldCounterNoticeRestore({})
-    const current = await getImagePlacementForCopyright(scene.target.placement_key)
+    const current = await getImagePlacementForCopyright(scene.target.placement_id)
     if (!current) throw new Error('Copyright placement missing')
     const tuple = {
       placementId: current.placementId,

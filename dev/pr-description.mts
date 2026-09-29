@@ -15,7 +15,6 @@ import {
 import { createProjectAuditor } from './pr-description/project-audit.mts'
 import {
   createIssueClosureResolver,
-  createClosingIssueReferenceResolver,
   currentRepo,
   parsePullRequestIdentity,
 } from './pr-description/related-issues.mts'
@@ -31,10 +30,8 @@ import {
 } from './pr-description/supersession-hints.mts'
 import { withTempBodyFile } from './pr-description/temp-body-file.mts'
 import { printPrDescriptionUsage } from './pr-description/usage.mts'
-import {
-  type IssueReferenceValidationOptions,
-  validatePrBodyWithIssueReferences,
-} from './pr-description/validate.mts'
+import { validateBody } from './pr-description/runtime-validation.mts'
+import type { IssueReferenceValidationOptions } from './pr-description/validate.mts'
 async function runValidate(argv: string[]): Promise<void> {
   const { bodyFile, remaining } = parseBodyFileArg(argv)
   if (remaining.some(arg => arg.startsWith('-')))
@@ -164,12 +161,6 @@ async function runUpdate(argv: string[]): Promise<void> {
   })
   process.stdout.write('PR description updated.\n')
 }
-const resolveIssueReference = createClosingIssueReferenceResolver(runGh)
-
-async function validateBody(body: string, options: IssueReferenceValidationOptions = {}) {
-  return validatePrBodyWithIssueReferences(body, resolveIssueReference, options)
-}
-
 function main(): Promise<void> {
   const [subcommand, ...rest] = process.argv.slice(2)
   if ((subcommand === '-h' || subcommand === '--help') && rest.length === 0) {

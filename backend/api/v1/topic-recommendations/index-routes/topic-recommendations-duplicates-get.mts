@@ -2,15 +2,16 @@ import type { Context } from '@jongleberry/api-server'
 import { findTopicRecommendationDuplicates } from '@services/topic-recommendations'
 import app from '../../../app.mts'
 import { requireAuth } from '../../../response-helpers.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 app.route('/api/v1/topic-recommendations/duplicates').get(async (ctx: Context) => {
   await requireAuth(ctx, 'GET:/api/v1/topic-recommendations/duplicates')
 
   const query = ctx.query as Record<string, unknown>
-  const topic_title = String(query.topic_title ?? '')
-  const topic_slug = String(query.topic_slug ?? '')
-  const topic_aliases = String(query.topic_aliases ?? '')
-  const topic_markdown = String(query.topic_markdown ?? '')
+  const topic_title = stringFromUnknown(query.topic_title ?? '')
+  const topic_slug = stringFromUnknown(query.topic_slug ?? '')
+  const topic_aliases = stringFromUnknown(query.topic_aliases ?? '')
+  const topic_markdown = stringFromUnknown(query.topic_markdown ?? '')
 
   const result = await findTopicRecommendationDuplicates({
     topic_title: topic_title?.trim() ?? '',

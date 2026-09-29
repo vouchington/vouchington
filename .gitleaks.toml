@@ -19,14 +19,18 @@ paths = ['''^backend/modules/bluesky-oauth/keyset\.mts$''']
 regexes = ['''VOUCHA_BLUESKY_JWT_PRIVATE_KEYS_B64''']
 
 [[allowlists]]
-description = "Initialize tests use fake local env values"
+description = "Initialize tests use exact fake local env values"
 targetRules = ["generic-api-key"]
 condition = "AND"
 regexTarget = "line"
-paths = ['''^dev/initialize\.test\.mts$''']
+paths = [
+  '''^dev/initialize\.test\.mts$''',
+  '''^dev/initialize-tests/__tests__/initialize-secrets-and-s3\.test\.mts$''',
+]
 regexes = [
   '''VALKEY_CONTAINER=voucha-valkey-[a-z0-9-]+''',
   '''CF_WORKER_SECRET=(shared-test-secret|existing-test-secret)-[a-z0-9-]+''',
+  '''^      \['export CF_WORKER_', 'SECRET', '=existing-test-secret-at-least-32-chars\\n  '\]\.join\(''\),$''',
 ]
 
 [[allowlists]]

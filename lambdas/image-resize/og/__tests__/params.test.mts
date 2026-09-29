@@ -63,31 +63,37 @@ describe('validateOgParams', () => {
   })
 
   describe('landing cards', () => {
-    it('accepts a valid landing payload with an avatarImageId', () => {
+    it('accepts a valid landing payload with placement dependencies', () => {
+      const dependency = {
+        placementId: '11111111-1111-4111-8111-111111111111',
+        revision: 3,
+        imageId: '22222222-2222-4222-8222-222222222222',
+      }
       const result = validateOgParams({
         type: 'landing',
         displayName: 'Ada Lovelace',
         username: 'ada',
         topCategories: ['math', 'computing'],
-        avatarImageId: 'avatars/ada.png',
+        dependencies: [dependency],
       })
       expect(result).toEqual({
         type: 'landing',
         displayName: 'Ada Lovelace',
         username: 'ada',
         topCategories: ['math', 'computing'],
-        avatarImageId: 'avatars/ada.png',
+        dependencies: [dependency],
       })
     })
 
-    it('omits avatarImageId entirely (not undefined-valued) when absent', () => {
+    it('defaults missing dependencies to an empty list and ignores a raw image id', () => {
       const result = validateOgParams({
         type: 'landing',
         displayName: 'Ada Lovelace',
         username: 'ada',
         topCategories: [],
+        avatarImageId: 'avatars/ada.png',
       })
-      expect('avatarImageId' in result).toBe(false)
+      expect(result.type === 'landing' && result.dependencies).toEqual([])
     })
 
     it('accepts an empty topCategories array', () => {
@@ -146,14 +152,26 @@ describe('validateOgParams', () => {
       ).toThrow(RequestParseError)
     })
 
-    it('throws when avatarImageId is present but empty', () => {
+    it('throws when dependencies is not a short array', () => {
       expect(() =>
         validateOgParams({
           type: 'landing',
           displayName: 'Ada',
           username: 'ada',
           topCategories: [],
-          avatarImageId: '',
+          dependencies: 'one',
+        }),
+      ).toThrow(RequestParseError)
+    })
+
+    it('throws when a dependency is not a placement tuple', () => {
+      expect(() =>
+        validateOgParams({
+          type: 'landing',
+          displayName: 'Ada',
+          username: 'ada',
+          topCategories: [],
+          dependencies: [{ placementId: 'not-a-placement' }],
         }),
       ).toThrow(RequestParseError)
     })
@@ -171,6 +189,7 @@ describe('validateOgParams', () => {
         displayName: 'Ada Lovelace',
         username: 'ada',
         topCategories: ['math'],
+        dependencies: [],
       })
       expect('rendererVersion' in result).toBe(false)
     })

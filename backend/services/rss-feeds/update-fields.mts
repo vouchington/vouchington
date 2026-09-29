@@ -4,7 +4,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { createRssFeedUrlId } from './rss-feed-url-id.mts'
 import type { RssFeedStateChange } from './update-state-helpers.mts'
-import type { UpdateRssFeedChanges, UpdateRssFeedOptions } from './update.mts'
+import type { UpdateRssFeedChanges, UpdateRssFeedOptions } from './update-types.mts'
 import { isPublicRssFeedUrl } from './url-validation.mts'
 
 export async function buildRssFeedUpdateFields(
