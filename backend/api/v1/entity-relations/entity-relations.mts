@@ -30,7 +30,7 @@ import {
 import {
   getElectionRecordsForRelations,
   getViewerVoteRecordsForRelations,
-} from './election-sidecars.mts'
+} from './election-sidecar-helpers.mts'
 
 const entityRelationsQuery = defineQueryContract({
   after: queryString(),
