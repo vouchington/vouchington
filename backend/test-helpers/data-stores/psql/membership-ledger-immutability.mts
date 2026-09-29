@@ -51,7 +51,7 @@ export function attemptTestMembershipGrantMutation(
       )
     case 'rewriteRevoker':
       return write(
-        sql`/* rewriteTestMembershipGrantRevoker */ UPDATE membership_grants SET revoked_by_id = (SELECT id FROM users ORDER BY id LIMIT 1) WHERE id = ${grantId}`,
+        sql`/* rewriteTestMembershipGrantRevoker */ UPDATE membership_grants SET revoked_by_id = (SELECT id FROM users ORDER BY id DESC LIMIT 1) WHERE id = ${grantId}`,
       )
   }
 }
