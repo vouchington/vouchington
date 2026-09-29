@@ -37,11 +37,6 @@ jobs:
       - name: Verify Gitleaks and Lychee are active for tooling tests
         run: gitleaks version && lychee --version
         timeout-minutes: 1
-      # fetch-depth 1 never creates origin/main. The shrink-only inventory test
-      # runs `git show origin/main:<inventory>`; depth 1 of main is enough.
-      - name: Fetch origin/main remediation inventory
-        run: git fetch --no-tags --depth=1 origin '+refs/heads/main:refs/remotes/origin/main'
-        timeout-minutes: 1
       - name: Run tooling tests
         env:
           VITEST_CI_REPORTERS: run
