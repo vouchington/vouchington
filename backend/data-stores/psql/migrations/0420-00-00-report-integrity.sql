@@ -38,7 +38,10 @@ CREATE TABLE IF NOT EXISTS report_integrity_flags (
   resolution       report_integrity_resolutions,
   created_at       timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at       timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1)
+  CHECK (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1),
+  -- Reporter ids are rows in report_integrity_flag_reporters, never a JSON array.
+  CONSTRAINT report_integrity_flags_details_no_reporter_ids_check
+    CHECK (details -> 'reporter_user_ids' IS NULL)
 );
 
 CREATE OR REPLACE TRIGGER trigger_report_integrity_flags_updated_at
@@ -87,10 +90,26 @@ COMMENT ON COLUMN report_integrity_flags.rss_feed_item_id IS 'Flagged RSS feed i
 COMMENT ON COLUMN report_integrity_flags.flag_type IS 'Type of integrity violation detected.';
 COMMENT ON COLUMN report_integrity_flags.reporter_count IS 'Number of distinct reporters who filed pending reports on this entity within the detection window.';
 COMMENT ON COLUMN report_integrity_flags.new_account_reporter_pct IS 'Percentage (0-1) of those reporters whose accounts are considered new (< NEW_ACCOUNT_AGE_DAYS old).';
-COMMENT ON COLUMN report_integrity_flags.details IS 'JSON details about the detected anomaly including thresholds used.';
+COMMENT ON COLUMN report_integrity_flags.details IS 'JSON details about the detected anomaly including thresholds used. Reporter ids live in report_integrity_flag_reporters.';
 COMMENT ON COLUMN report_integrity_flags.resolved_at IS 'When a moderator resolved this flag.';
 COMMENT ON COLUMN report_integrity_flags.resolved_by_id IS 'Moderator who resolved this flag.';
 COMMENT ON COLUMN report_integrity_flags.resolution IS 'Outcome: dismissed or penalized.';
+
+-- Detection-time reporter set for each flag. Reporters are the users whose pending reports
+-- triggered the flag; apply-penalty penalizes exactly this set. A reporter whose account is
+-- deleted drops out of the set (CASCADE), matching the skip-deleted-reporters behavior.
+CREATE TABLE IF NOT EXISTS report_integrity_flag_reporters (
+  flag_id uuid NOT NULL REFERENCES report_integrity_flags (id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  PRIMARY KEY (flag_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_report_integrity_flag_reporters__user_id
+  ON report_integrity_flag_reporters (user_id);
+
+COMMENT ON TABLE report_integrity_flag_reporters IS 'Reporters captured when a mass-report flag was raised. Penalizing the flag penalizes exactly this set.';
+COMMENT ON COLUMN report_integrity_flag_reporters.flag_id IS 'Integrity flag the reporter belongs to.';
+COMMENT ON COLUMN report_integrity_flag_reporters.user_id IS 'Reporter whose pending report contributed to the flag at detection time.';
 
 -- ============================================================================
 -- Report Abuse Penalties

@@ -8,7 +8,7 @@ const VALID_FIELD_TYPES = [
   'checkbox',
 ] as const
 
-export type ApplicationQuestionFieldType = (typeof VALID_FIELD_TYPES)[number]
+type ApplicationQuestionFieldType = (typeof VALID_FIELD_TYPES)[number]
 const VALID_FIELD_TYPES_SET: ReadonlySet<string> = new Set(VALID_FIELD_TYPES)
 
 export type ApplicationQuestionInput = {
@@ -17,9 +17,6 @@ export type ApplicationQuestionInput = {
   options?: string[] | null
   required?: boolean
 }
-
-// Zero-based order_index is a signed smallint, so 32767 is the last storable index.
-const MAX_APPLICATION_QUESTION_OPTIONS = 32768
 
 export function assertApplicationQuestionInputs(questions: ApplicationQuestionInput[]): void {
   for (const question of questions) {
@@ -46,11 +43,6 @@ export function assertApplicationQuestionInputs(questions: ApplicationQuestionIn
         Array.isArray(question.options) && question.options.length > 0,
         422,
         'select field types require options',
-      )
-      assert(
-        question.options.length <= MAX_APPLICATION_QUESTION_OPTIONS,
-        422,
-        'A question cannot have more than 32768 options',
       )
       for (const label of question.options) {
         assert(

@@ -67,11 +67,20 @@ still exists. The subsequent root sweep also checks all 17 retained-relation ref
 JSON that stays includes structured application documents, change history, exact reviewed opaque
 provider documents, external protocol payloads, and replay envelopes. The
 [relational-storage catalog](../../static-code-analysis/repo-file-policy/relational-storage-catalog.mts)
-records reviewed opaque columns and non-relationship UUID tokens. The
+records reviewed opaque columns, non-relationship UUID tokens, and the two reviewed id categories
+below. The
 [remediation inventory](../../static-code-analysis/repo-file-policy/relational-storage-debt.mts)
 records UUID arrays, missing foreign keys, and encoded keys. It does not record JSON documents.
 That inventory is shrink-only: new keys fail the acceptance check against `origin/main`. A catalog
 entry whose column no longer has the defect is stale and must be removed.
+
+Two reviewed categories need no foreign key, and each catalog entry is an exact `table.column` with
+a one-line reason. A **token, cursor or protocol identifier** is an opaque id with no owning row to
+reference: a client device or session token, an ActivityPub activity id, a traversal cursor, or a
+provider idempotency key. An **audit snapshot identifier** is an id recorded at write time and never
+joined for authorization; it must outlive its source row, so a foreign key would either block the
+source's deletion or erase the record. An id that authorizes, or that can dangle without an audit
+reason, still takes a foreign key. Entering either category needs plan review.
 The
 [schema guard](../../static-code-analysis/repo-file-policy/relational-storage-guard.mts) runs on the
 committed PostgreSQL-generated snapshot. It rejects unresolved domain types before UUID-array and

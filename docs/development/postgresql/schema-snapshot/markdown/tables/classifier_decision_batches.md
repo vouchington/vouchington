@@ -6,18 +6,18 @@ One classified post or RSS item decision, including scope provenance and prompt 
 
 Not partitioned — growth: unbounded.
 
-| Column               | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                              |
-| -------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------- |
-| `id`                 | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                      |
-| `classifier_id`      | `uuid`                     | no       |                              |          |           |           | Classifier used for this logical decision.                                                           |
-| `prompt_version_id`  | `uuid`                     | no       |                              |          |           |           | Exact prompt revision used for this logical decision.                                                |
-| `post_id`            | `uuid`                     | yes      |                              |          |           |           | Classified post subject; mutually exclusive with rss_feed_item_id.                                   |
-| `rss_feed_item_id`   | `uuid`                     | yes      |                              |          |           |           | Classified RSS item subject; mutually exclusive with post_id.                                        |
-| `scope_category`     | `text`                     | no       |                              |          |           |           | Decision scope: global or community_ai.                                                              |
-| `scope_community_id` | `uuid`                     | yes      |                              |          |           |           | Immutable community provenance for community_ai scope; no FK so history survives community deletion. |
-| `completed_at`       | `timestamp with time zone` | yes      |                              |          |           |           | Completion marker set only after every call and result for this batch is durable.                    |
-| `created_at`         | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                      |
-| `updated_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                      |
+| Column               | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                              |
+| -------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------- |
+| `id`                 | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                      |
+| `classifier_id`      | `uuid`                     | no       |                              |          |           |           | Classifier used for this logical decision.                                                                           |
+| `prompt_version_id`  | `uuid`                     | no       |                              |          |           |           | Exact prompt revision used for this logical decision.                                                                |
+| `post_id`            | `uuid`                     | yes      |                              |          |           |           | Classified post subject; mutually exclusive with rss_feed_item_id.                                                   |
+| `rss_feed_item_id`   | `uuid`                     | yes      |                              |          |           |           | Classified RSS item subject; mutually exclusive with post_id.                                                        |
+| `scope_category`     | `text`                     | no       |                              |          |           |           | Decision scope: global or community_ai.                                                                              |
+| `scope_community_id` | `uuid`                     | yes      |                              |          |           |           | Immutable community for community_ai scope; deleting the community cascades to its scoped batches and their results. |
+| `completed_at`       | `timestamp with time zone` | yes      |                              |          |           |           | Completion marker set only after every call and result for this batch is durable.                                    |
+| `created_at`         | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                      |
+| `updated_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                      |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -38,6 +38,7 @@ Not partitioned — growth: unbounded.
 - `classifier_decision_batches_classifier_id_fkey`: `FOREIGN KEY (classifier_id) REFERENCES classifiers(id) ON DELETE RESTRICT`
 - `classifier_decision_batches_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
 - `classifier_decision_batches_rss_feed_item_id_fkey`: `FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE`
+- `classifier_decision_batches_scope_community_id_fkey`: `FOREIGN KEY (scope_community_id) REFERENCES communities(id) ON DELETE CASCADE`
 - `fk_classifier_decision_batches__prompt_classifier`: `FOREIGN KEY (prompt_version_id, classifier_id) REFERENCES classifier_prompt_versions(id, classifier_id) ON DELETE RESTRICT`
 
 **Indexes:**
@@ -47,7 +48,7 @@ Not partitioned — growth: unbounded.
 - `idx_classifier_decision_batches__post`: `CREATE INDEX idx_classifier_decision_batches__post ON public.classifier_decision_batches USING btree (post_id, id)`
 - `idx_classifier_decision_batches__prompt_classifier`: `CREATE INDEX idx_classifier_decision_batches__prompt_classifier ON public.classifier_decision_batches USING btree (prompt_version_id, classifier_id)`
 - `idx_classifier_decision_batches__rss_feed_item`: `CREATE INDEX idx_classifier_decision_batches__rss_feed_item ON public.classifier_decision_batches USING btree (rss_feed_item_id, id)`
-- `idx_classifier_decision_batches__scope`: `CREATE INDEX idx_classifier_decision_batches__scope ON public.classifier_decision_batches USING btree (scope_community_id, id) WHERE (scope_category = 'community_ai'::text)`
+- `idx_classifier_decision_batches__scope`: `CREATE INDEX idx_classifier_decision_batches__scope ON public.classifier_decision_batches USING btree (scope_community_id, id) WHERE (scope_community_id IS NOT NULL)`
 - `uq_classifier_decision_batches__id__classifier`: `CREATE UNIQUE INDEX uq_classifier_decision_batches__id__classifier ON public.classifier_decision_batches USING btree (id, classifier_id)`
 - `uq_classifier_decision_batches__id__post`: `CREATE UNIQUE INDEX uq_classifier_decision_batches__id__post ON public.classifier_decision_batches USING btree (id, post_id)`
 - `uq_classifier_decision_batches__id__prompt`: `CREATE UNIQUE INDEX uq_classifier_decision_batches__id__prompt ON public.classifier_decision_batches USING btree (id, prompt_version_id)`

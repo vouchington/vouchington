@@ -61,7 +61,9 @@ export async function publishEntityRelationElectionVoteStats(
   for (const [relationTable, relationIds] of byTable) {
     for (const ids of chunkRelationIds(relationIds)) {
       // oxlint-disable-next-line no-await-in-loop -- cache delete chunks bound Valkey in-flight work
-      await invalidate.entity_relation_elections(...ids)
+      await invalidate.entity_relation_elections(
+        ...ids.map(entityRelationId => ({ entityRelationId, relationTable })),
+      )
     }
     if (options.enqueueTopHashtagRefresh !== false && topHashtagRelationTables.has(relationTable))
       void enqueueRefreshTopHashtags()

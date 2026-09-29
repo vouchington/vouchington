@@ -9,7 +9,7 @@ function retainedRelationReferences(subjectType: string): [string, string][] {
   )
 }
 
-const ROOT_FAMILIES = {
+export const ROOT_FAMILIES = {
   user: {
     table: 'retained_user_identities',
     references: [
@@ -27,6 +27,9 @@ const ROOT_FAMILIES = {
       ['membership_refunds', 'issued_by_id'],
       ['membership_administrator_refund_operation_requests', 'issued_by_id'],
       ['membership_sources', 'user_id'],
+      ['oauth_authorization_server_events', 'user_id'],
+      ['post_moderation_dispositions', 'actor_user_id'],
+      ['post_clearance_changes', 'changed_by_id'],
       ...retainedRelationReferences('user'),
     ],
   },
@@ -40,6 +43,7 @@ const ROOT_FAMILIES = {
       ['posts', 'id'],
       ['post_publication_post_identities', 'id'],
       ['notifications', 'publication_post_id'],
+      ['post_admission_reservations', 'committed_post_id'],
       ...retainedRelationReferences('post'),
     ],
   },

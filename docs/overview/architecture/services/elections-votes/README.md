@@ -100,6 +100,12 @@ use the cached batch helpers (`getPostElectionByIdCachedBatch`,
 `getRssFeedItemElectionByIdCachedBatch`, etc.) even when returning a singular detail sidecar. Raw
 `get*ElectionById` helpers are for service internals, tests, and cache refresh sources.
 
+Entity-relation elections use `getEntityRelationElectionByTargetCachedBatch`, which is keyed by
+relation table and relation id, because the same UUID can exist in more than one election relation
+table. Routes that receive only a bare relation id resolve it with
+`resolveEntityRelationElectionTargetById`, which returns `409` when the id names rows in more than
+one table rather than choosing one.
+
 Election summaries are response sidecars, not entity fields. List endpoints return keyed maps such
 as `post_elections`, `topic_elections`, `hostname_elections`, or `rss_feed_item_elections`; detail
 endpoints may return a singular sidecar such as `post_election`. Do not add nested `election`

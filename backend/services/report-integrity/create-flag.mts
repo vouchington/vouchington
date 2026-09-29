@@ -2,6 +2,7 @@ import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import createHttpError from 'http-errors'
 import { ENTITY_TYPE_TO_FLAG_FK } from './config.mts'
+import { flagColumns } from './flag-columns.mts'
 import type {
   ReportIntegrityFlagType,
   ReportIntegrityResolution,
@@ -27,27 +28,18 @@ export type ReportIntegrityFlag = {
   created_at: Date
 }
 
-const FLAG_RETURNING = `
-  id,
-  post_id,
-  reported_user_id,
-  hostname_id,
-  rss_feed_item_id,
-  flag_type,
-  reporter_count,
-  new_account_reporter_pct,
-  details,
-  resolved_at,
-  resolved_by_id,
-  resolution,
-  created_at`
-
+/**
+ * Insert one unresolved flag and its detection-time reporter set in a single statement. The
+ * `users` join skips reporters hard-deleted since detection. `details` must not carry the
+ * reporter ids; the returned flag rebuilds `details.reporter_user_ids` from the stored rows.
+ */
 export async function createReportIntegrityFlag(
   entityType: string,
   entityId: string,
   reporterCount: number,
   newAccountReporterPct: number,
   details: Record<string, unknown>,
+  reporterUserIds: string[],
 ): Promise<ReportIntegrityFlag | null> {
   const fkColumn = ENTITY_TYPE_TO_FLAG_FK[entityType]
   if (!fkColumn) throw createHttpError(400, `Unknown entity type: ${entityType}`)
@@ -55,18 +47,31 @@ export async function createReportIntegrityFlag(
   // Partial unique indexes (idx_rif__*_flag_pending) make ON CONFLICT DO NOTHING atomic,
   // preventing duplicate unresolved flags under concurrent inserts.
   const query = sql`/* createReportIntegrityFlag */
-    INSERT INTO report_integrity_flags (`
+    WITH inserted AS (
+      INSERT INTO report_integrity_flags (`
   query.append(fkColumn)
   query.append(sql`, flag_type, reporter_count, new_account_reporter_pct, details)
-    VALUES (${entityId}::uuid, 'mass_report_suspected', ${reporterCount}, ${newAccountReporterPct}, ${JSON.stringify(details)}::jsonb)
-    ON CONFLICT (`)
+      VALUES (${entityId}::uuid, 'mass_report_suspected', ${reporterCount}, ${newAccountReporterPct}, ${JSON.stringify(details)}::jsonb)
+      ON CONFLICT (`)
   query.append(fkColumn)
   query.append(sql`, flag_type) WHERE resolved_at IS NULL AND `)
   query.append(fkColumn)
   query.append(sql` IS NOT NULL
-    DO NOTHING
-    RETURNING`)
-  query.append(FLAG_RETURNING)
+      DO NOTHING
+      RETURNING *
+    ), inserted_reporters AS (
+      INSERT INTO report_integrity_flag_reporters (flag_id, user_id)
+      SELECT DISTINCT inserted.id, reporter.id
+      FROM inserted
+      CROSS JOIN unnest(${reporterUserIds}::uuid[]) AS reporter(id)
+      JOIN users ON users.id = reporter.id
+      ORDER BY reporter.id
+      RETURNING flag_id, user_id
+    )
+    SELECT`)
+  query.append(flagColumns('inserted', 'inserted_reporters'))
+  query.append(sql`
+    FROM inserted`)
 
   const { rows } = await write(query)
   return (rows[0] as ReportIntegrityFlag) ?? null

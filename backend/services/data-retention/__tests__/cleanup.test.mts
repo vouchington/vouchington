@@ -21,10 +21,12 @@ import {
   createTestPost,
   createTestTopic,
   createTestUser,
+  deleteTestAdmissionReservation,
   deleteTestRetainedRelationImpact,
   getEntityRelation,
   hasTestRetainedRelationIdentity,
   insertEntityRelation,
+  insertTestCommittedAdmissionReservation,
   insertTestRetainedRelationImpact,
 } from '@voucha/test-helpers'
 
@@ -109,6 +111,22 @@ describe('retained publication identity cleanup', () => {
     expect(await hasTestRetainedIdentityRoot('post', id)).toBe(true)
     await capture.commit()
     expect(await readTestPublicationIdentityBridge('post', id)).toEqual({ id, live_id: null })
+  })
+
+  it('keeps a post root while a committed admission replay references it', async () => {
+    const user = await createTestUser()
+    const id = v7()
+    await insertTestRetainedIdentityRoot('post', id)
+    const reservationId = await insertTestCommittedAdmissionReservation({
+      actorId: user.id,
+      postId: id,
+    })
+    await cleanupRetainedIdentityRoots(1_000, { post: [id] })
+    expect(await hasTestRetainedIdentityRoot('post', id)).toBe(true)
+
+    await deleteTestAdmissionReservation(reservationId)
+    await cleanupRetainedIdentityRoots(1_000, { post: [id] })
+    expect(await hasTestRetainedIdentityRoot('post', id)).toBe(false)
   })
 })
 

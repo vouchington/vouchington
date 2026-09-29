@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS user_referral_program_links (
   consecutive_crawl_failures SMALLINT NOT NULL DEFAULT 0,
   last_crawl_failure_at TIMESTAMPTZ,
   last_crawl_success_at TIMESTAMPTZ,
-  last_crawl_id UUID,
+  last_crawl_id UUID REFERENCES crawls ON DELETE SET NULL,
 
   -- self-referential: NULL for a normal, manually-added link; set for an unfurled
   -- per-card child. ON DELETE CASCADE means hard-deleting a parent hard-deletes its
@@ -68,6 +68,12 @@ WHERE deleted_at IS NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_referral_program_links__unique
 ON user_referral_program_links (user_id, referral_program_id, url_id)
 WHERE deleted_at IS NULL;
+
+-- referential-integrity-usable leading index for the last_crawl_id FK; crawls partitions are dropped
+-- by retention, which does not fire ON DELETE, so cleanupPartitions clears this column first.
+CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__last_crawl_id
+ON user_referral_program_links (last_crawl_id)
+WHERE last_crawl_id IS NOT NULL;
 
 -- referential-integrity-usable leading index for the parent_link_id FK: cascade/RESTRICT
 -- checks must see soft-deleted children too, so this one carries no deleted_at predicate.
@@ -215,7 +221,7 @@ ALTER TABLE crawlers VALIDATE CONSTRAINT fk_crawlers_referral_program_id;
 
 COMMENT ON COLUMN crawlers.content_selectors IS 'CSS selectors that narrow HTML parsing to specific content areas.';
 COMMENT ON COLUMN crawlers.referral_program_id IS 'Optional FK linking this crawler to a referral program. When set, this crawler overrides the hostname default for that program''s referral link crawling.';
-COMMENT ON COLUMN user_referral_program_links.last_crawl_id IS 'The most recent crawl for this referral link, set on successful crawl.';
+COMMENT ON COLUMN user_referral_program_links.last_crawl_id IS 'The most recent crawl for this referral link, set on successful crawl; cleared when that crawl is deleted or its partition expires.';
 
 CREATE INDEX IF NOT EXISTS idx_crawlers__referral_program_id
 ON crawlers (referral_program_id)

@@ -12,12 +12,9 @@ Not partitioned — growth: unbounded.
 | `job_arn`        | `text`                              | yes      |                     |          |           |           | The Bedrock model invocation job ARN.                                                              |
 | `model_id`       | `text`                              | no       |                     |          |           |           | The Amazon Bedrock model id used for embeddings.                                                   |
 | `job_type`       | `bedrock_embedding_batch_job_types` | no       |                     |          |           |           | Which entity type this batch processes.                                                            |
-| `input_s3_uri`   | `text`                              | no       |                     |          |           |           | S3 URI of the JSONL input object submitted to Bedrock.                                             |
-| `output_s3_uri`  | `text`                              | no       |                     |          |           |           | S3 prefix where Bedrock writes JSONL results.                                                      |
-| `input_size_mb`  | `double precision`                  | no       | `0`                 |          |           |           | Input JSONL size in megabytes used for inflight limits.                                            |
+| `data`           | `jsonb`                             | no       | `'{}'::jsonb`       |          |           |           | JSONB batch document: status, model id, job ARN, S3 URIs, input size, and submission metadata.     |
 | `url_id`         | `uuid`                              | yes      |                     |          |           |           | Optional URL this batch was created for.                                                           |
 | `crawl_id`       | `uuid`                              | yes      |                     |          |           |           | Optional crawl this batch was created for. Cleared before that crawl partition is dropped.         |
-| `stop_failed_at` | `timestamp with time zone`          | yes      |                     |          |           |           | When stopping the Bedrock job failed after submission and locks could not be released.             |
 | `records`        | `integer`                           | no       | `0`                 |          |           |           | Number of records in this batch.                                                                   |
 | `created_at`     | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                    |
 | `updated_at`     | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                    |
@@ -34,9 +31,6 @@ _none_
 
 **Check constraints:**
 
-- `bedrock_embeddings_batches_input_s3_uri_check`: `CHECK ((((char_length(input_s3_uri) >= 1) AND (char_length(input_s3_uri) <= 2048)) AND (input_s3_uri = TRIM(BOTH FROM input_s3_uri))))`
-- `bedrock_embeddings_batches_input_size_mb_check`: `CHECK ((input_size_mb >= (0)::double precision))`
-- `bedrock_embeddings_batches_output_s3_uri_check`: `CHECK ((((char_length(output_s3_uri) >= 1) AND (char_length(output_s3_uri) <= 2048)) AND (output_s3_uri = TRIM(BOTH FROM output_s3_uri))))`
 - `chk_bedrock_embeddings_batches__lifecycle`: `CHECK ((((submitted_at IS NOT NULL) OR (num_nonnulls(in_progress_at, completed_at, failed_at, cancelled_at) = 0)) AND (num_nonnulls(completed_at, failed_at, cancelled_at) <= 1)))`
 
 **Foreign keys:**

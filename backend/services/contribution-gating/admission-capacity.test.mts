@@ -4,7 +4,9 @@ import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
   enableQueryCapture,
+  executeTestAdmittedPost,
   getContributionAdmissionConsumptionModeForTest,
+  insertContributionAdmissionReservationForTest,
   insertLegacyContributionAdmissionConsumptionForTest,
   stopTestQueryCapture,
 } from '@voucha/test-helpers'
@@ -61,7 +63,7 @@ describe('contribution admission capacity status', () => {
         intent: { request: crypto.randomUUID() },
         source: 'topic_recommendation',
         policy: dailyOnlyPolicy,
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toMatchObject({ kind: 'created' })
     await expect(
@@ -82,7 +84,7 @@ describe('contribution admission capacity status', () => {
         intent: { request: crypto.randomUUID() },
         source: 'topic_recommendation',
         policy: standardPolicy,
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toMatchObject({ kind: 'created' })
     await expect(
@@ -106,7 +108,7 @@ describe('contribution admission capacity status', () => {
           },
           type: { short: { limit: -1, windowSeconds: 3_600 }, daily: standardPolicy.type.daily },
         },
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).rejects.toMatchObject({ code: CONTRIBUTION_QUOTA_EXCEEDED, status: 429 })
   })
@@ -120,7 +122,7 @@ describe('contribution admission capacity status', () => {
       intent: { request: crypto.randomUUID() },
       source: 'discussion',
       policy: limits,
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
 
     const exhausted = await getContributionAdmissionCapacityStatus(
@@ -163,7 +165,7 @@ describe('contribution admission capacity status', () => {
       await using query = await beginTransaction()
       await recordContributionAdmissionConsumption(
         query,
-        crypto.randomUUID(),
+        await insertContributionAdmissionReservationForTest({ actorId: user.id }),
         user.id,
         'discussion',
         date,
@@ -174,7 +176,7 @@ describe('contribution admission capacity status', () => {
     await using query = await beginTransaction()
     await recordContributionAdmissionConsumption(
       query,
-      crypto.randomUUID(),
+      await insertContributionAdmissionReservationForTest({ actorId: user.id }),
       user.id,
       'topic_recommendation',
       new Date(now - 10_000),
@@ -211,7 +213,7 @@ describe('contribution admission capacity status', () => {
       intent: { request: crypto.randomUUID() },
       source: 'topic_recommendation',
       policy: dailyOnly,
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     const normalPolicy = {
       ...policy(1, -1),
@@ -230,7 +232,7 @@ describe('contribution admission capacity status', () => {
         intent: { request: crypto.randomUUID() },
         source: 'discussion',
         policy: normalPolicy,
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toMatchObject({ kind: 'created' })
     const exhausted = await getContributionAdmissionCapacityStatus(
@@ -251,7 +253,7 @@ describe('contribution admission capacity status', () => {
       intent: { request: crypto.randomUUID() },
       source: 'topic_recommendation',
       policy: dailyOnlyPolicy(1, 1),
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     await expect(
       runContributionAdmission({
@@ -266,7 +268,7 @@ describe('contribution admission capacity status', () => {
             daily: { limit: 1, windowSeconds: 86_400 },
           },
         },
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).rejects.toMatchObject({ code: 'CONTRIBUTION_QUOTA_EXCEEDED', status: 429 })
   })

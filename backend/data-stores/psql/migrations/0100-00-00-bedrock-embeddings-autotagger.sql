@@ -23,16 +23,9 @@ CREATE TABLE IF NOT EXISTS bedrock_embeddings_batches (
   job_arn TEXT,
   model_id TEXT NOT NULL,
   job_type bedrock_embedding_batch_job_types NOT NULL,
-  input_s3_uri TEXT NOT NULL CHECK (
-    char_length(input_s3_uri) BETWEEN 1 AND 2048 AND input_s3_uri = TRIM(input_s3_uri)
-  ),
-  output_s3_uri TEXT NOT NULL CHECK (
-    char_length(output_s3_uri) BETWEEN 1 AND 2048 AND output_s3_uri = TRIM(output_s3_uri)
-  ),
-  input_size_mb DOUBLE PRECISION NOT NULL DEFAULT 0 CHECK (input_size_mb >= 0),
+  data JSONB NOT NULL DEFAULT '{}',
   url_id UUID REFERENCES urls ON DELETE SET NULL,
   crawl_id UUID REFERENCES crawls ON DELETE SET NULL,
-  stop_failed_at TIMESTAMPTZ,
   records INT NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -83,12 +76,9 @@ COMMENT ON TABLE bedrock_embeddings_batches IS 'Tracks Amazon Bedrock batch embe
 COMMENT ON COLUMN bedrock_embeddings_batches.job_arn IS 'The Bedrock model invocation job ARN.';
 COMMENT ON COLUMN bedrock_embeddings_batches.model_id IS 'The Amazon Bedrock model id used for embeddings.';
 COMMENT ON COLUMN bedrock_embeddings_batches.job_type IS 'Which entity type this batch processes.';
-COMMENT ON COLUMN bedrock_embeddings_batches.input_s3_uri IS 'S3 URI of the JSONL input object submitted to Bedrock.';
-COMMENT ON COLUMN bedrock_embeddings_batches.output_s3_uri IS 'S3 prefix where Bedrock writes JSONL results.';
-COMMENT ON COLUMN bedrock_embeddings_batches.input_size_mb IS 'Input JSONL size in megabytes used for inflight limits.';
+COMMENT ON COLUMN bedrock_embeddings_batches.data IS 'JSONB batch document: status, model id, job ARN, S3 URIs, input size, and submission metadata.';
 COMMENT ON COLUMN bedrock_embeddings_batches.url_id IS 'Optional URL this batch was created for.';
 COMMENT ON COLUMN bedrock_embeddings_batches.crawl_id IS 'Optional crawl this batch was created for. Cleared before that crawl partition is dropped.';
-COMMENT ON COLUMN bedrock_embeddings_batches.stop_failed_at IS 'When stopping the Bedrock job failed after submission and locks could not be released.';
 COMMENT ON COLUMN bedrock_embeddings_batches.records IS 'Number of records in this batch.';
 COMMENT ON COLUMN bedrock_embeddings_batches.submitted_at IS 'When the Bedrock job was successfully submitted (Submitted/Validating/Scheduled).';
 COMMENT ON COLUMN bedrock_embeddings_batches.in_progress_at IS 'When the Bedrock job first reported InProgress or Stopping.';

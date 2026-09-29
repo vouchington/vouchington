@@ -6,13 +6,13 @@ Immutable committed-admission ledger used to enforce contribution quotas.
 
 Not partitioned — growth: bounded.
 
-| Column             | Type                       | Nullable | Default               | Identity | Generated | Collation | Comment                                                                                                                                         |
-| ------------------ | -------------------------- | -------- | --------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `reservation_id`   | `uuid`                     | no       |                       |          |           |           | Admission reservation that committed and consumed quota exactly once.                                                                           |
-| `actor_id`         | `uuid`                     | no       |                       |          |           |           | Actor whose contribution quota was consumed.                                                                                                    |
-| `source`           | `text`                     | no       |                       |          |           |           | Contribution-policy source whose quota was consumed.                                                                                            |
-| `committed_at`     | `timestamp with time zone` | no       | `now()`               |          |           |           | Clock timestamp at which the quota-consuming admission committed.                                                                               |
-| `consumption_mode` | `text`                     | no       | `'all_windows'::text` |          |           |           | Whether this consumption participates in all policy windows or daily windows only; the default preserves old writers as all-window consumption. |
+| Column             | Type                       | Nullable | Default               | Identity | Generated | Collation | Comment                                                                                                                                                                 |
+| ------------------ | -------------------------- | -------- | --------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reservation_id`   | `uuid`                     | no       |                       |          |           |           | Admission reservation that committed and consumed quota exactly once. The consumption is deleted with its reservation, which outlives every contribution-policy window. |
+| `actor_id`         | `uuid`                     | no       |                       |          |           |           | Actor whose contribution quota was consumed.                                                                                                                            |
+| `source`           | `text`                     | no       |                       |          |           |           | Contribution-policy source whose quota was consumed.                                                                                                                    |
+| `committed_at`     | `timestamp with time zone` | no       | `now()`               |          |           |           | Clock timestamp at which the quota-consuming admission committed.                                                                                                       |
+| `consumption_mode` | `text`                     | no       | `'all_windows'::text` |          |           |           | Whether this consumption participates in all policy windows or daily windows only; the default preserves old writers as all-window consumption.                         |
 
 **Primary key:** `PRIMARY KEY (reservation_id)`
 
@@ -26,6 +26,7 @@ _none_
 **Foreign keys:**
 
 - `post_admission_quota_consumptions_actor_id_fkey`: `FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE`
+- `post_admission_quota_consumptions_reservation_id_fkey`: `FOREIGN KEY (reservation_id) REFERENCES post_admission_reservations(id) ON DELETE CASCADE`
 
 **Indexes:**
 

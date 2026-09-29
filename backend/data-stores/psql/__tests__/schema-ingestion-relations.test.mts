@@ -11,54 +11,23 @@ async function rejectionCode(sql: string, values?: unknown[]): Promise<string | 
   return undefined
 }
 
-describe('ingestion relational ownership', () => {
-  it('rejects search params, recipients, categories, selectors, and links without their owners', async () => {
+describe('bedrock embedding batch foreign keys', () => {
+  it('rejects a batch whose url or crawl does not exist', async () => {
     const missing = randomUUID()
     await expect(
       rejectionCode(
-        `INSERT INTO url_search_params (url_id, ordinal, param_name, param_value)
-         VALUES ($1, 0, 'a', '1')`,
-        [missing],
+        `/* schemaIngestionRelations */
+         INSERT INTO bedrock_embeddings_batches (id, model_id, job_type, data, url_id)
+         VALUES ($1, 'amazon.nova-2-multimodal-embeddings-v1:0', 'topics', '{}'::jsonb, $2)`,
+        [`bedrock-fk-url-${missing}`, missing],
       ),
     ).resolves.toBe('23503')
     await expect(
       rejectionCode(
-        `INSERT INTO ses_bounce_event_recipients (ses_bounce_event_id, ordinal, email)
-         VALUES ($1, 0, 'tests+ses-bounce-recipient@voucha.ai')`,
-        [missing],
-      ),
-    ).resolves.toBe('23503')
-    await expect(
-      rejectionCode(
-        `INSERT INTO rss_feed_item_source_category_snapshot_categories
-           (rss_feed_id, rss_feed_item_id, ordinal, category_text)
-         VALUES ($1, $1, 0, 'News')`,
-        [missing],
-      ),
-    ).resolves.toBe('23503')
-    await expect(
-      rejectionCode(
-        `INSERT INTO boilerplate_removal_results
-           (boilerplate_removal_id, kind, ordinal, value)
-         VALUES ($1, 'css_selector', 0, '.nav')`,
-        [missing],
-      ),
-    ).resolves.toBe('23503')
-    await expect(
-      rejectionCode(
-        `INSERT INTO crawl_links (crawl_id, rel, shape, subtype, ordinal, href)
-         VALUES (uuidv7(), 'canonical', 'string', '', 0, 'https://example.com/page')`,
-      ),
-    ).resolves.toBe('23503')
-  })
-
-  it('keeps an explicit empty category snapshot distinct from a missing snapshot', async () => {
-    await expect(
-      rejectionCode(
-        `INSERT INTO rss_feed_item_category_snapshot_reconciliation_categories
-           (rss_feed_item_id, ordinal, category_text)
-         VALUES ($1, 0, 'News')`,
-        [randomUUID()],
+        `/* schemaIngestionRelations */
+         INSERT INTO bedrock_embeddings_batches (id, model_id, job_type, data, crawl_id)
+         VALUES ($1, 'amazon.nova-2-multimodal-embeddings-v1:0', 'topics', '{}'::jsonb, $2)`,
+        [`bedrock-fk-crawl-${missing}`, missing],
       ),
     ).resolves.toBe('23503')
   })
