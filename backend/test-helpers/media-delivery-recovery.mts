@@ -74,6 +74,33 @@ export async function setTestMediaRecoveryState(
   `)
 }
 
+/**
+ * The restore fence from the media-delivery reset/restore runbook, restricted to owned keys because
+ * the shared test database is parallel: lift the generation sequence to the observed edge
+ * high-water mark (never below its current value), then reopen the rows at fresh generations.
+ * Omit `edgeHighWater` for an empty edge, where any generation is accepted.
+ */
+export async function fenceTestMediaDeliveryRegistry(input: {
+  edgeHighWater?: string
+  reopenDeliveryKeys: readonly string[]
+}): Promise<void> {
+  await using transaction = await beginTransaction()
+  if (input.edgeHighWater !== undefined)
+    await transaction(sql`/* fenceTestMediaDeliveryRegistry:sequence */
+      SELECT setval('media_delivery_registry_generation_sequence',
+        GREATEST(${input.edgeHighWater}::bigint,
+          (SELECT last_value FROM media_delivery_registry_generation_sequence)))
+    `)
+  await transaction(sql`/* fenceTestMediaDeliveryRegistry:reopen */
+    UPDATE media_delivery_registry_records
+    SET generation = generation + 1, state = 'pending', delivery_attempt_count = 0,
+      claimed_at = NULL, completed_at = NULL, projected_at = NULL, invalidated_at = NULL,
+      next_attempt_at = NULL, failure_message = NULL
+    WHERE delivery_key = ANY(${input.reopenDeliveryKeys}::text[])
+  `)
+  await transaction.commit()
+}
+
 export async function withLockedTestMediaDeliveryRecord<T>(
   deliveryKey: string,
   run: () => Promise<T>,

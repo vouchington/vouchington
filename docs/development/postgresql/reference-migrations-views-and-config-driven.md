@@ -163,7 +163,8 @@ config-driven repair generators. Instead, reset the staging schema:
 Use the private infrastructure staging database reset runbook (the "Staging database reset" step of
 the first-deploy checklist in the private `vouchington-infra` repository), which requires
 organization access. This is a manual-only operator procedure, not an automatic migration-failure
-action or a receiver rerun.
+action or a receiver rerun. Coordinate it with the retained media-delivery edge registry and CDN cache
+per the [media-delivery reset and restore runbook](../../runbooks/media-delivery-reset-restore.md).
 
 Production has not launched. Rebuild the disposable database. Follow
 [One current contract](../../../AGENTS.md).
