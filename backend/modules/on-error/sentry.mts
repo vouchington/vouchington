@@ -1,5 +1,6 @@
 // Import with `import * as SentrySdk from '@sentry/node'` if you are using ESM
 import * as SentrySdk from '@sentry/node'
+import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
 import { composeSentryBeforeSend } from '@ts-shared/utils/sentry-event-scrubbing'
 import {
   resolveSentryDsnEnablement,
@@ -77,6 +78,9 @@ export function createSentryInitOptions(
     environment: environment ?? nodeEnv,
     enabled,
     release: envVars.GIT_COMMIT || undefined,
+
+    // No request/response bodies or gen-AI prompts and completions (see sentry-data-collection.mts).
+    dataCollection: createSentryDataCollection(),
 
     // Mirror the onError filtering: drop 4xx errors and known noisy connection codes.
     // Applies to any direct Sentry.captureException() calls that bypass onError().

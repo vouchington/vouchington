@@ -3,6 +3,7 @@ import {
   scrubRequestUrlFields,
   scrubSpanUrlAttributes,
 } from './observability-scrubbing.mts'
+import { dropRequestBody, dropSpanRequestBody } from './sentry-data-collection.mts'
 import {
   SENSITIVE_VALUE,
   scrubHeaders as scrubUpstreamHeaders,
@@ -24,6 +25,8 @@ const CREDENTIAL_HEADER_NAMES: readonly string[] = Object.freeze([
   'x-app-attest-challenge-id',
   'stripe-signature',
   'signature',
+  'copyright-guest-capability',
+  'idempotency-key',
   'cookie',
 ])
 const CREDENTIAL_HEADER_ATTRIBUTE_KEYS: readonly string[] = Object.freeze(
@@ -50,7 +53,10 @@ export function scrubSpanCredentialAttributes<TData extends Record<string, unkno
 }
 
 export function scrubSpanAttributes<TData extends Record<string, unknown>>(data: TData): TData {
-  return scrubUpstreamSpanAttributes(scrubSpanUrlAttributes(data), SENTRY_SCRUB_OPTIONS)
+  return scrubUpstreamSpanAttributes(
+    dropSpanRequestBody(scrubSpanUrlAttributes(data)),
+    SENTRY_SCRUB_OPTIONS,
+  )
 }
 
 export function scrubRequestCredentialFields<TRequest extends object>(
@@ -83,7 +89,9 @@ export interface SentryEventLike {
 
 export function scrubSentryEvent<TEvent extends SentryEventLike>(event: TEvent): TEvent {
   const breadcrumbs = scrubEventBreadcrumbs(event.breadcrumbs)
-  const request = scrubRequestCredentialFields(scrubRequestUrlFields(event.request))
+  const request = dropRequestBody(
+    scrubRequestCredentialFields(scrubRequestUrlFields(event.request)),
+  )
   if (breadcrumbs === event.breadcrumbs && request === event.request) return event
   return {
     ...event,
