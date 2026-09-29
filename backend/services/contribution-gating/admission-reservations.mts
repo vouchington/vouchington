@@ -64,8 +64,9 @@ export async function claimContributionAdmission<T>(
   if (!row) throw new Error('Contribution admission reservation was not returned')
   let reservationId = row.id
   if (row.expired) {
-    // The quota ledger intentionally retains the old reservation ID. Replace the expired replay
-    // record so a new committed request cannot collide with that immutable ledger entry.
+    // Replace the expired replay so the actor/key pair can be reused. Its quota consumption is
+    // deleted with it (ON DELETE CASCADE); replay retention outlasts every policy window, so that
+    // consumption can no longer count toward capacity.
     await query(sql`/* claimContributionAdmission.deleteExpired */
         DELETE FROM post_admission_reservations
         WHERE id = ${row.id}`)

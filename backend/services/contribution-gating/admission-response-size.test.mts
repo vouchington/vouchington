@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { CONTRIBUTING_USER_AGE_MS, createTestUserWithAge } from '@voucha/test-helpers'
+import type { TransactionQuery } from '@data-stores/psql'
+import {
+  CONTRIBUTING_USER_AGE_MS,
+  createTestUserWithAge,
+  ensureTestAdmittedPostIdentity,
+} from '@voucha/test-helpers'
 import { runContributionAdmission } from './admission.mts'
 
 describe('contribution admission response storage', () => {
@@ -11,11 +16,17 @@ describe('contribution admission response storage', () => {
       idempotencyKey: crypto.randomUUID(),
       intent: { post_type: 'discussion', title: crypto.randomUUID() },
     }
-    await expect(
-      runContributionAdmission({ ...input, execute: async () => response }),
-    ).resolves.toEqual({ kind: 'created', response })
-    await expect(
-      runContributionAdmission({ ...input, execute: async () => response }),
-    ).resolves.toEqual({ kind: 'replay', response })
+    const execute = async (query: TransactionQuery) => {
+      await ensureTestAdmittedPostIdentity(query, response.post.id)
+      return response
+    }
+    await expect(runContributionAdmission({ ...input, execute })).resolves.toEqual({
+      kind: 'created',
+      response,
+    })
+    await expect(runContributionAdmission({ ...input, execute })).resolves.toEqual({
+      kind: 'replay',
+      response,
+    })
   })
 })

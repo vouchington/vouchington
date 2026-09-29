@@ -52,9 +52,7 @@ export async function liftCommunityRestriction(
   await recordModeratorAction(currentUser.id, {
     actionType: 'lift_restriction',
     communityId,
-    metadata: {
-      restriction_id: restrictionId,
-      restriction_type: restrictionType,
-    },
+    communityRestrictionIds: [restrictionId],
+    metadata: { restriction_type: restrictionType },
   })
 }

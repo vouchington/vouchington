@@ -2,8 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
-  expireContributionAdmissionForTest,
-  getContributionAdmissionConsumptionCountForTest,
+  executeTestAdmittedPost,
   getContributionAdmissionReplayRetentionForTest,
   setContributionAdmissionExpiryForTest,
 } from '@voucha/test-helpers'
@@ -36,7 +35,7 @@ describe('contribution admission retention', () => {
       actorId: user.id,
       idempotencyKey,
       intent,
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     if (first.kind !== 'created') throw new Error('expected initial admission to create')
     const initialRetention = await getContributionAdmissionReplayRetentionForTest({
@@ -56,7 +55,7 @@ describe('contribution admission retention', () => {
         actorId: user.id,
         idempotencyKey,
         intent,
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toEqual({ kind: 'replay', response: first.response })
 
@@ -81,7 +80,7 @@ describe('contribution admission retention', () => {
       actorId: user.id,
       idempotencyKey,
       intent,
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     const preservedRetention = await getContributionAdmissionReplayRetentionForTest({
       actorId: user.id,
@@ -100,7 +99,7 @@ describe('contribution admission retention', () => {
       actorId: user.id,
       idempotencyKey,
       intent: { request: 'original' },
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     await setContributionAdmissionExpiryForTest({
       actorId: user.id,
@@ -113,7 +112,7 @@ describe('contribution admission retention', () => {
         actorId: user.id,
         idempotencyKey,
         intent: { request: 'changed' },
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).rejects.toMatchObject({ code: IDEMPOTENCY_KEY_REUSED, status: 409 })
 
@@ -123,43 +122,6 @@ describe('contribution admission retention', () => {
     })
     expect(retention).toMatchObject({ secondsUntilExpiry: expect.any(Number) })
     expect(retention?.secondsUntilExpiry).toBeLessThan(300)
-  })
-
-  it('replaces an expired replay before its new quota consumption commits', async () => {
-    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-    const key = crypto.randomUUID()
-    await runContributionAdmission({
-      actorId: user.id,
-      idempotencyKey: key,
-      intent: { request: 'first' },
-      source: 'discussion',
-      policy: policy(2),
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
-    })
-    await expireContributionAdmissionForTest({ actorId: user.id, idempotencyKey: key })
-    await expect(
-      runContributionAdmission({
-        actorId: user.id,
-        idempotencyKey: key,
-        intent: { request: 'second' },
-        source: 'discussion',
-        policy: policy(2),
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
-      }),
-    ).resolves.toMatchObject({ kind: 'created' })
-    await expect(
-      getContributionAdmissionConsumptionCountForTest(user.id, 'discussion'),
-    ).resolves.toBe(2)
-    await expect(
-      runContributionAdmission({
-        actorId: user.id,
-        idempotencyKey: crypto.randomUUID(),
-        intent: { request: 'third' },
-        source: 'discussion',
-        policy: policy(2),
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
-      }),
-    ).rejects.toMatchObject({ code: CONTRIBUTION_QUOTA_EXCEEDED, status: 429 })
   })
 
   it('does not retain a failed pre-commit challenge reservation', async () => {
@@ -186,7 +148,7 @@ describe('contribution admission retention', () => {
         actorId: user.id,
         idempotencyKey,
         intent: { request: 'fresh-challenge' },
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toMatchObject({ kind: 'created' })
   })
@@ -199,7 +161,7 @@ describe('contribution admission retention', () => {
       intent: { request: 'capacity-consumer' },
       source: 'discussion',
       policy: policy(1),
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
 
     const rejectedKey = crypto.randomUUID()
@@ -237,7 +199,7 @@ describe('contribution admission retention', () => {
       idempotencyKey,
       intent,
       beforeCommit: async () => undefined,
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     if (first.kind !== 'created') throw new Error('expected first admission to create')
 
@@ -249,7 +211,7 @@ describe('contribution admission retention', () => {
         beforeCommit: async () => {
           throw new Error('replay challenge must not run')
         },
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toEqual({ kind: 'replay', response: first.response })
   })
@@ -261,7 +223,7 @@ describe('contribution admission retention', () => {
       actorId: user.id,
       idempotencyKey,
       intent: { request: 'original' },
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     await setContributionAdmissionExpiryForTest({
       actorId: user.id,
@@ -278,7 +240,7 @@ describe('contribution admission retention', () => {
           actorId: user.id,
           idempotencyKey,
           intent: { request: 'changed' },
-          execute: async () => ({ post: { id: crypto.randomUUID() } }),
+          execute: executeTestAdmittedPost,
         }),
       ).rejects.toMatchObject({ code: 'IDEMPOTENCY_KEY_REUSED', status: 409 })
     } finally {

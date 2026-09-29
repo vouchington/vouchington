@@ -20,6 +20,7 @@ export async function processReportIntegrityCheck(
         result.reporter_count,
         result.new_account_reporter_pct,
         result.details,
+        result.reporter_user_ids,
       )
     }
   } catch (error) {

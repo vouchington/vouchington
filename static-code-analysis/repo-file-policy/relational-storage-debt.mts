@@ -54,9 +54,6 @@ export const EXISTING_RELATIONAL_STORAGE_DEBT = {
     'oauth_authorizations.initiating_session_id',
     'oauth_authorizations.result_device_id',
     'oauth_authorizations.result_session_id',
-    // #823
-    'post_admission_quota_consumptions.reservation_id',
-    'post_admission_reservations.committed_post_id',
     'post_clearance_changes.changed_by_id',
     'post_clearance_changes.moderation_transparency_community_id',
     'post_moderation_dispositions.actor_user_id',

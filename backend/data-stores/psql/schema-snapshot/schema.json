@@ -60065,6 +60065,113 @@
         }
       }
     },
+    "moderator_action_community_restrictions": {
+      "checkConstraints": {},
+      "columns": {
+        "community_restriction_id": {
+          "collation": null,
+          "comment": "Community restriction the moderator action targeted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "moderator_action_id": {
+          "collation": null,
+          "comment": "Moderator action that activated or lifted the restriction.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Community restrictions activated or lifted by a moderator action. Restriction types and expiry stay in the action metadata.",
+      "foreignKeys": {
+        "moderator_action_community_restri_community_restriction_id_fkey": {
+          "columns": ["community_restriction_id"],
+          "definition": "FOREIGN KEY (community_restriction_id) REFERENCES community_restrictions(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "community_restrictions",
+          "validated": true
+        },
+        "moderator_action_community_restriction_moderator_action_id_fkey": {
+          "columns": ["moderator_action_id"],
+          "definition": "FOREIGN KEY (moderator_action_id) REFERENCES moderator_actions(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "moderator_actions",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_moderator_action_community_restrictions__restriction": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_action_community_restrictions__restriction ON public.moderator_action_community_restrictions USING btree (community_restriction_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_restriction_id",
+              "descending": false,
+              "expression": "community_restriction_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "moderator_action_community_restrictions_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderator_action_community_restrictions_pkey ON public.moderator_action_community_restrictions USING btree (moderator_action_id, community_restriction_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "moderator_action_id",
+              "descending": false,
+              "expression": "moderator_action_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_restriction_id",
+              "descending": false,
+              "expression": "community_restriction_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["moderator_action_id", "community_restriction_id"],
+        "definition": "PRIMARY KEY (moderator_action_id, community_restriction_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "moderator_actions": {
       "checkConstraints": {
         "moderator_actions_metadata_check": "CHECK ((jsonb_typeof(metadata) = 'object'::text))"
@@ -66714,7 +66821,7 @@
         },
         "reservation_id": {
           "collation": null,
-          "comment": "Admission reservation that committed and consumed quota exactly once.",
+          "comment": "Admission reservation that committed and consumed quota exactly once. The consumption is deleted with its reservation, which outlives every contribution-policy window.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -66744,6 +66851,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "users",
+          "validated": true
+        },
+        "post_admission_quota_consumptions_reservation_id_fkey": {
+          "columns": ["reservation_id"],
+          "definition": "FOREIGN KEY (reservation_id) REFERENCES post_admission_reservations(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_admission_reservations",
           "validated": true
         }
       },
@@ -66900,7 +67016,7 @@
         },
         "committed_post_id": {
           "collation": null,
-          "comment": "Created post UUID retained in the replay record after the post may be deleted.",
+          "comment": "Retained identity of the created post, kept in the replay record after the live post may be deleted. A retained identity never authorizes the deleted post.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -67107,6 +67223,15 @@
           "referencedColumns": ["id"],
           "referencedTable": "users",
           "validated": true
+        },
+        "post_admission_reservations_committed_post_id_fkey": {
+          "columns": ["committed_post_id"],
+          "definition": "FOREIGN KEY (committed_post_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_post_identities",
+          "validated": true
         }
       },
       "growth": "bounded",
@@ -67114,7 +67239,7 @@
         "idx_post_admission_reservations__committed_post_retention": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_admission_reservations__committed_post_retention ON public.post_admission_reservations USING btree (committed_post_id, retention_expires_at) WHERE (state = 'committed'::text)",
+          "definition": "CREATE INDEX idx_post_admission_reservations__committed_post_retention ON public.post_admission_reservations USING btree (committed_post_id, retention_expires_at) WHERE (committed_post_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -67132,7 +67257,7 @@
               "opclass": "timestamptz_ops"
             }
           ],
-          "predicate": "(state = 'committed'::text)",
+          "predicate": "(committed_post_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -93575,9 +93700,117 @@
       },
       "uniqueConstraints": {}
     },
+    "report_integrity_flag_reporters": {
+      "checkConstraints": {},
+      "columns": {
+        "flag_id": {
+          "collation": null,
+          "comment": "Integrity flag the reporter belongs to.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "user_id": {
+          "collation": null,
+          "comment": "Reporter whose pending report contributed to the flag at detection time.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        }
+      },
+      "comment": "Reporters captured when a mass-report flag was raised. Penalizing the flag penalizes exactly this set.",
+      "foreignKeys": {
+        "report_integrity_flag_reporters_flag_id_fkey": {
+          "columns": ["flag_id"],
+          "definition": "FOREIGN KEY (flag_id) REFERENCES report_integrity_flags(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "report_integrity_flags",
+          "validated": true
+        },
+        "report_integrity_flag_reporters_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_report_integrity_flag_reporters__user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_report_integrity_flag_reporters__user_id ON public.report_integrity_flag_reporters USING btree (user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "report_integrity_flag_reporters_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX report_integrity_flag_reporters_pkey ON public.report_integrity_flag_reporters USING btree (flag_id, user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "flag_id",
+              "descending": false,
+              "expression": "flag_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["flag_id", "user_id"],
+        "definition": "PRIMARY KEY (flag_id, user_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "report_integrity_flags": {
       "checkConstraints": {
         "report_integrity_flags_check": "CHECK ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1))",
+        "report_integrity_flags_details_no_reporter_ids_check": "CHECK (((details -> 'reporter_user_ids'::text) IS NULL))",
         "report_integrity_flags_new_account_reporter_pct_check": "CHECK (((new_account_reporter_pct >= (0)::double precision) AND (new_account_reporter_pct <= (1)::double precision)))"
       },
       "columns": {
@@ -93594,7 +93827,7 @@
         },
         "details": {
           "collation": null,
-          "comment": "JSON details about the detected anomaly including thresholds used.",
+          "comment": "JSON details about the detected anomaly including thresholds used. Reporter ids live in report_integrity_flag_reporters.",
           "defaultExpression": "'{}'::jsonb",
           "generated": null,
           "generatedExpression": null,
