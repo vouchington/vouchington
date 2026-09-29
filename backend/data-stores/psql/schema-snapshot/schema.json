@@ -552,15 +552,6 @@
     "fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric text, p_category text, p_delta integer)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric text, p_category text, p_delta integer)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE p_day date := (p_occurred_at AT TIME ZONE 'UTC')::date;\nBEGIN\n  IF p_delta = 0 THEN RETURN; END IF;\n  -- Source deletes can hold many FK/cascade row locks. Serialize them against\n  -- positive ingestion before either path acquires cohort locks: otherwise two\n  -- multi-cohort deletes can interleave their row and advisory lock order.\n  IF p_delta < 0 THEN\n    PERFORM pg_advisory_xact_lock(hashtextextended('moderation-transparency-rollup-write', 0));\n  ELSE\n    PERFORM pg_advisory_xact_lock_shared(hashtextextended('moderation-transparency-rollup-write', 0));\n  END IF;\n  PERFORM pg_advisory_xact_lock(hashtextextended(\n    'moderation-transparency-rollup:' || p_day::text || ':'\n      || COALESCE(p_community_id::text, 'global') || ':' || p_metric || ':' || p_category,\n    0\n  ));\n  IF EXISTS (\n    SELECT 1 FROM moderation_transparency_released_daily_rollups\n    WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n      AND metric = p_metric AND category = p_category\n  ) THEN RETURN; END IF;\n  IF p_delta < 0 THEN\n    PERFORM fn_release_moderation_transparency_daily_rollup(\n      p_day, p_community_id, p_metric, p_category,\n      date_trunc('day', clock_timestamp() - interval '48 hours') - interval '1 millisecond'\n    );\n  END IF;\n  IF p_delta > 0 THEN\n    INSERT INTO moderation_transparency_daily_rollups(day, community_id, metric, category, count, latest_occurred_at)\n    VALUES (p_day, p_community_id, p_metric, p_category, p_delta, p_occurred_at)\n    ON CONFLICT ON CONSTRAINT moderation_transparency_daily_rollups_key DO UPDATE\n      SET count = moderation_transparency_daily_rollups.count + EXCLUDED.count,\n          latest_occurred_at = GREATEST(moderation_transparency_daily_rollups.latest_occurred_at, EXCLUDED.latest_occurred_at);\n  ELSE\n    DELETE FROM moderation_transparency_daily_rollups\n      WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n        AND metric = p_metric AND category = p_category AND count <= -p_delta;\n    UPDATE moderation_transparency_daily_rollups\n      SET count = count + p_delta\n      WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n        AND metric = p_metric AND category = p_category;\n  END IF;\nEND $function$\n"
     },
-    "fn_assert_community_application_answer_from_answer": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_from_answer()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_assert_community_application_answer_selection_state(COALESCE(NEW.id, OLD.id));\n  RETURN NULL;\nEND;\n$function$\n"
-    },
-    "fn_assert_community_application_answer_from_selection": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_from_selection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN\n    PERFORM fn_assert_community_application_answer_selection_state(NEW.application_answer_id);\n  END IF;\n\n  IF TG_OP = 'DELETE' OR (\n    TG_OP = 'UPDATE'\n    AND NEW.application_answer_id IS DISTINCT FROM OLD.application_answer_id\n  ) THEN\n    PERFORM fn_assert_community_application_answer_selection_state(OLD.application_answer_id);\n  END IF;\n\n  RETURN NULL;\nEND;\n$function$\n"
-    },
-    "fn_assert_community_application_answer_selection_state(checked_answer_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_selection_state(checked_answer_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM community_application_answers answer\n    WHERE answer.id = checked_answer_id\n  ) THEN\n    RETURN;\n  END IF;\n\n  IF EXISTS (\n    SELECT 1\n    FROM community_application_answers answer\n    WHERE answer.id = checked_answer_id\n      AND (\n        (\n          answer.is_null\n          AND EXISTS (\n            SELECT 1\n            FROM community_application_answer_selections selected\n            WHERE selected.application_answer_id = answer.id\n          )\n        )\n        OR (\n          NOT answer.is_null\n          AND answer.question_field_type = 'single_select'\n          AND (\n            SELECT count(*)\n            FROM community_application_answer_selections selected\n            WHERE selected.application_answer_id = answer.id\n          ) <> 1\n        )\n      )\n  ) THEN\n    RAISE EXCEPTION 'invalid community application answer selection state'\n      USING ERRCODE = '23514';\n  END IF;\nEND;\n$function$\n"
-    },
     "fn_assert_follower_distribution_recipient_bounds": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_follower_distribution_recipient_bounds()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  distribution_ids UUID[] := ARRAY[]::UUID[];\n  checked_distribution_id UUID;\n  audience_value follower_distribution_audiences;\n  recipient_count INTEGER;\nBEGIN\n  IF TG_TABLE_NAME = 'follower_distributions' THEN\n    distribution_ids := ARRAY[COALESCE(NEW.id, OLD.id)];\n  ELSE\n    distribution_ids := ARRAY[COALESCE(NEW.distribution_id, OLD.distribution_id)];\n    IF TG_OP = 'UPDATE' AND OLD.distribution_id IS DISTINCT FROM NEW.distribution_id THEN\n      distribution_ids := distribution_ids || OLD.distribution_id;\n    END IF;\n  END IF;\n\n  FOREACH checked_distribution_id IN ARRAY distribution_ids LOOP\n    SELECT audience INTO audience_value\n    FROM follower_distributions\n    WHERE id = checked_distribution_id;\n    IF NOT FOUND THEN\n      CONTINUE;\n    END IF;\n\n    SELECT COUNT(*) INTO recipient_count\n    FROM follower_distribution_selected_recipients\n    WHERE follower_distribution_selected_recipients.distribution_id = checked_distribution_id;\n\n    IF audience_value = 'all_followers' AND recipient_count <> 0 THEN\n      RAISE EXCEPTION 'all_followers distributions cannot store selected recipients'\n        USING ERRCODE = '23514';\n    END IF;\n\n    IF audience_value = 'selected_followers' AND recipient_count > 100 THEN\n      RAISE EXCEPTION 'selected_followers distributions require between 1 and 100 recipients'\n        USING ERRCODE = '23514';\n    END IF;\n\n    IF audience_value = 'selected_followers'\n      AND recipient_count < 1\n      AND NOT (\n        TG_TABLE_NAME = 'follower_distribution_selected_recipients'\n        AND TG_OP = 'DELETE'\n      ) THEN\n      RAISE EXCEPTION 'selected_followers distributions require between 1 and 100 recipients'\n        USING ERRCODE = '23514';\n    END IF;\n  END LOOP;\n\n  RETURN NULL;\nEND;\n$function$\n"
     },
@@ -13198,261 +13189,9 @@
       },
       "uniqueConstraints": {}
     },
-    "community_application_answer_selections": {
-      "checkConstraints": {
-        "community_application_answer_selections_order_check": "CHECK ((order_index >= 0))",
-        "community_application_answer_selections_type_check": "CHECK ((question_field_type = ANY (ARRAY['single_select'::community_application_question_field_types, 'multi_select'::community_application_question_field_types])))"
-      },
-      "columns": {
-        "application_answer_id": {
-          "collation": null,
-          "comment": "Answer whose selected labels these rows reconstruct.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "application_id": {
-          "collation": null,
-          "comment": "Application copied from the answer so the selection cannot move to another application.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "community_id": {
-          "collation": null,
-          "comment": "Community copied from the answer and option so both parents belong to the same community.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "uuid"
-        },
-        "option_id": {
-          "collation": null,
-          "comment": "Option row whose label is returned for this selection, including after that option is soft-deleted.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "uuid"
-        },
-        "order_index": {
-          "collation": null,
-          "comment": "Applicant-supplied selection order for reconstructing multi-select answers.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "smallint"
-        },
-        "question_field_type": {
-          "collation": null,
-          "comment": "Select field type copied from the answer and option.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "community_application_question_field_types"
-        },
-        "question_id": {
-          "collation": null,
-          "comment": "Question copied from the answer and option so a selection cannot use another question's option.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "uuid"
-        }
-      },
-      "comment": "Ordered selected options for select-type community application answers.",
-      "foreignKeys": {
-        "community_application_answer_selections_answer_fkey": {
-          "columns": [
-            "application_answer_id",
-            "application_id",
-            "community_id",
-            "question_id",
-            "question_field_type"
-          ],
-          "definition": "FOREIGN KEY (application_answer_id, application_id, community_id, question_id, question_field_type) REFERENCES community_application_answers(id, application_id, community_id, question_id, question_field_type) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": [
-            "id",
-            "application_id",
-            "community_id",
-            "question_id",
-            "question_field_type"
-          ],
-          "referencedTable": "community_application_answers",
-          "validated": true
-        },
-        "community_application_answer_selections_option_fkey": {
-          "columns": ["option_id", "community_id", "question_id", "question_field_type"],
-          "definition": "FOREIGN KEY (option_id, community_id, question_id, question_field_type) REFERENCES community_application_question_options(id, community_id, question_id, question_field_type) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id", "community_id", "question_id", "question_field_type"],
-          "referencedTable": "community_application_question_options",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "community_application_answer_selections_order_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX community_application_answer_selections_order_key ON public.community_application_answer_selections USING btree (application_answer_id, order_index)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "application_answer_id",
-              "descending": false,
-              "expression": "application_answer_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "order_index",
-              "descending": false,
-              "expression": "order_index",
-              "nullsFirst": false,
-              "opclass": "int2_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "community_application_answer_selections_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX community_application_answer_selections_pkey ON public.community_application_answer_selections USING btree (application_answer_id, option_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "application_answer_id",
-              "descending": false,
-              "expression": "application_answer_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "option_id",
-              "descending": false,
-              "expression": "option_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_comm_app_answer_selections__option": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_comm_app_answer_selections__option ON public.community_application_answer_selections USING btree (option_id, community_id, question_id, question_field_type)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "option_id",
-              "descending": false,
-              "expression": "option_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "community_id",
-              "descending": false,
-              "expression": "community_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "question_id",
-              "descending": false,
-              "expression": "question_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "question_field_type",
-              "descending": false,
-              "expression": "question_field_type",
-              "nullsFirst": false,
-              "opclass": "enum_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_comm_app_answer_selections__single": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_comm_app_answer_selections__single ON public.community_application_answer_selections USING btree (application_answer_id) WHERE (question_field_type = 'single_select'::community_application_question_field_types)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "application_answer_id",
-              "descending": false,
-              "expression": "application_answer_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(question_field_type = 'single_select'::community_application_question_field_types)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["application_answer_id", "option_id"],
-        "definition": "PRIMARY KEY (application_answer_id, option_id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_comm_app_answer_selections_state": "CREATE CONSTRAINT TRIGGER trigger_comm_app_answer_selections_state AFTER INSERT OR DELETE OR UPDATE ON public.community_application_answer_selections DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_community_application_answer_from_selection()"
-      },
-      "uniqueConstraints": {
-        "community_application_answer_selections_order_key": {
-          "columns": ["application_answer_id", "order_index"],
-          "definition": "UNIQUE (application_answer_id, order_index)"
-        }
-      }
-    },
     "community_application_answers": {
       "checkConstraints": {
-        "community_application_answers_typed_value_check": "CHECK (((is_null AND (text_value IS NULL) AND (boolean_value IS NULL)) OR ((NOT is_null) AND (question_field_type = ANY (ARRAY['short_text'::community_application_question_field_types, 'long_text'::community_application_question_field_types])) AND (text_value IS NOT NULL) AND (boolean_value IS NULL)) OR ((NOT is_null) AND (question_field_type = 'checkbox'::community_application_question_field_types) AND (text_value IS NULL) AND (boolean_value IS NOT NULL)) OR ((NOT is_null) AND (question_field_type = ANY (ARRAY['single_select'::community_application_question_field_types, 'multi_select'::community_application_question_field_types])) AND (text_value IS NULL) AND (boolean_value IS NULL))))"
+        "community_application_answers_value_check": "CHECK (((jsonb_typeof(value) = ANY (ARRAY['string'::text, 'boolean'::text, 'null'::text])) OR ((jsonb_typeof(value) = 'array'::text) AND (NOT jsonb_path_exists(value, '$[*]?(@.type() != \"string\")'::jsonpath)))))"
       },
       "columns": {
         "application_id": {
@@ -13463,74 +13202,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "boolean_value": {
-          "collation": null,
-          "comment": "Present boolean value, including false, for checkbox questions.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "boolean"
-        },
-        "community_id": {
-          "collation": null,
-          "comment": "Community that owns both the application and the question.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "is_null": {
+        "community_id": {
           "collation": null,
-          "comment": "Distinguishes an explicit null from omitted answers and from present empty values.",
+          "comment": "Community that owns both the application and the question, so an answer cannot cross communities.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
-          "type": "boolean"
-        },
-        "question_field_type": {
-          "collation": null,
-          "comment": "Question field type copied into the ownership foreign key so the value columns match the question.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "community_application_question_field_types"
+          "ordinalPosition": 2,
+          "type": "uuid"
         },
         "question_id": {
           "collation": null,
@@ -13540,22 +13224,22 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
-        "text_value": {
+        "value": {
           "collation": null,
-          "comment": "Present text value, including the empty string, for short_text and long_text questions.",
+          "comment": "Submitted answer document: a JSON string, boolean, explicit null, or array of option-label strings in submitted order.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "text"
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "jsonb"
         }
       },
-      "comment": "One typed, presence-bearing answer for each question supplied with a community application.",
+      "comment": "One answer per question supplied with a community application; an omitted question has no row.",
       "foreignKeys": {
         "community_application_answers_application_fkey": {
           "columns": ["community_id", "application_id"],
@@ -13567,30 +13251,23 @@
           "validated": true
         },
         "community_application_answers_question_fkey": {
-          "columns": ["community_id", "question_id", "question_field_type"],
-          "definition": "FOREIGN KEY (community_id, question_id, question_field_type) REFERENCES community_application_questions(community_id, id, field_type) ON DELETE CASCADE",
+          "columns": ["community_id", "question_id"],
+          "definition": "FOREIGN KEY (community_id, question_id) REFERENCES community_application_questions(community_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",
           "onUpdate": "no action",
-          "referencedColumns": ["community_id", "id", "field_type"],
+          "referencedColumns": ["community_id", "id"],
           "referencedTable": "community_application_questions",
           "validated": true
         }
       },
       "growth": "unbounded",
       "indexes": {
-        "community_application_answers_identity_key": {
+        "community_application_answers_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX community_application_answers_identity_key ON public.community_application_answers USING btree (id, application_id, community_id, question_id, question_field_type)",
+          "definition": "CREATE UNIQUE INDEX community_application_answers_pkey ON public.community_application_answers USING btree (application_id, question_id)",
           "includedColumns": [],
           "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
             {
               "column": "application_id",
               "descending": false,
@@ -13599,43 +13276,9 @@
               "opclass": "uuid_ops"
             },
             {
-              "column": "community_id",
-              "descending": false,
-              "expression": "community_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
               "column": "question_id",
               "descending": false,
               "expression": "question_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "question_field_type",
-              "descending": false,
-              "expression": "question_field_type",
-              "nullsFirst": false,
-              "opclass": "enum_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "community_application_answers_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX community_application_answers_pkey ON public.community_application_answers USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -13644,66 +13287,12 @@
           "primary": true,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "community_application_answers_question_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX community_application_answers_question_key ON public.community_application_answers USING btree (application_id, question_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "application_id",
-              "descending": false,
-              "expression": "application_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "question_id",
-              "descending": false,
-              "expression": "question_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_comm_app_answers__application": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_comm_app_answers__application ON public.community_application_answers USING btree (community_id, application_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "community_id",
-              "descending": false,
-              "expression": "community_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "application_id",
-              "descending": false,
-              "expression": "application_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "idx_comm_app_answers__question": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_comm_app_answers__question ON public.community_application_answers USING btree (community_id, question_id, question_field_type)",
+          "definition": "CREATE INDEX idx_comm_app_answers__question ON public.community_application_answers USING btree (community_id, question_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -13719,13 +13308,6 @@
               "expression": "question_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
-            },
-            {
-              "column": "question_field_type",
-              "descending": false,
-              "expression": "question_field_type",
-              "nullsFirst": false,
-              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -13738,298 +13320,12 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_comm_app_answers_selection_state": "CREATE CONSTRAINT TRIGGER trigger_comm_app_answers_selection_state AFTER INSERT OR DELETE OR UPDATE ON public.community_application_answers DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_community_application_answer_from_answer()"
-      },
-      "uniqueConstraints": {
-        "community_application_answers_identity_key": {
-          "columns": ["id", "application_id", "community_id", "question_id", "question_field_type"],
-          "definition": "UNIQUE (id, application_id, community_id, question_id, question_field_type)"
-        },
-        "community_application_answers_question_key": {
-          "columns": ["application_id", "question_id"],
-          "definition": "UNIQUE (application_id, question_id)"
-        }
-      }
-    },
-    "community_application_question_options": {
-      "checkConstraints": {
-        "community_application_question_options_label_check": "CHECK (((label = TRIM(BOTH FROM label)) AND ((char_length(label) >= 1) AND (char_length(label) <= 500))))",
-        "community_application_question_options_order_index_check": "CHECK ((order_index >= 0))",
-        "community_application_question_options_select_type_check": "CHECK ((question_field_type = ANY (ARRAY['single_select'::community_application_question_field_types, 'multi_select'::community_application_question_field_types])))"
-      },
-      "columns": {
-        "community_id": {
-          "collation": null,
-          "comment": "Community that owns the question, copied so an option cannot move to another community.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
-        },
-        "deleted_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "label": {
-          "collation": null,
-          "comment": "The label returned by the API and stored by reference in selected answers.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "text"
-        },
-        "order_index": {
-          "collation": null,
-          "comment": "Display order within the owning question.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "smallint"
-        },
-        "question_field_type": {
-          "collation": null,
-          "comment": "Select field type copied into the ownership foreign key so options cannot belong to scalar questions.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "community_application_question_field_types"
-        },
-        "question_id": {
-          "collation": null,
-          "comment": "Question whose active choices include this label.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "uuid"
-        }
-      },
-      "comment": "Ordered selectable labels for a community application question, retained with soft-deleted questions for historical answers.",
-      "foreignKeys": {
-        "community_application_question_options_question_fkey": {
-          "columns": ["community_id", "question_id", "question_field_type"],
-          "definition": "FOREIGN KEY (community_id, question_id, question_field_type) REFERENCES community_application_questions(community_id, id, field_type) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["community_id", "id", "field_type"],
-          "referencedTable": "community_application_questions",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "community_application_question_options_identity_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX community_application_question_options_identity_key ON public.community_application_question_options USING btree (id, community_id, question_id, question_field_type)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "community_id",
-              "descending": false,
-              "expression": "community_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "question_id",
-              "descending": false,
-              "expression": "question_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "question_field_type",
-              "descending": false,
-              "expression": "question_field_type",
-              "nullsFirst": false,
-              "opclass": "enum_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "community_application_question_options_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX community_application_question_options_pkey ON public.community_application_question_options USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_comm_app_question_options__active_label": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_comm_app_question_options__active_label ON public.community_application_question_options USING btree (question_id, label) WHERE (deleted_at IS NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "question_id",
-              "descending": false,
-              "expression": "question_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "label",
-              "descending": false,
-              "expression": "label",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": "(deleted_at IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_comm_app_question_options__active_order": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_comm_app_question_options__active_order ON public.community_application_question_options USING btree (question_id, order_index) WHERE (deleted_at IS NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "question_id",
-              "descending": false,
-              "expression": "question_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "order_index",
-              "descending": false,
-              "expression": "order_index",
-              "nullsFirst": false,
-              "opclass": "int2_ops"
-            }
-          ],
-          "predicate": "(deleted_at IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_comm_app_question_options__owner": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_comm_app_question_options__owner ON public.community_application_question_options USING btree (community_id, question_id, question_field_type)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "community_id",
-              "descending": false,
-              "expression": "community_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "question_id",
-              "descending": false,
-              "expression": "question_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "question_field_type",
-              "descending": false,
-              "expression": "question_field_type",
-              "nullsFirst": false,
-              "opclass": "enum_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
+        "columns": ["application_id", "question_id"],
+        "definition": "PRIMARY KEY (application_id, question_id)"
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {
-        "community_application_question_options_identity_key": {
-          "columns": ["id", "community_id", "question_id", "question_field_type"],
-          "definition": "UNIQUE (id, community_id, question_id, question_field_type)"
-        }
-      }
+      "uniqueConstraints": {}
     },
     "community_application_questions": {
       "checkConstraints": {
@@ -14056,7 +13352,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "deleted_at": {
@@ -14067,7 +13363,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "field_type": {
@@ -14092,6 +13388,17 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
+        "options": {
+          "collation": null,
+          "comment": "JSON array of selectable options for select-type fields.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "jsonb"
+        },
         "order_index": {
           "collation": null,
           "comment": "Display order of this question within the application form.",
@@ -14100,7 +13407,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "smallint"
         },
         "question": {
@@ -14122,7 +13429,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "boolean"
         }
       },
@@ -14143,7 +13450,7 @@
         "community_application_questions_identity_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX community_application_questions_identity_key ON public.community_application_questions USING btree (community_id, id, field_type)",
+          "definition": "CREATE UNIQUE INDEX community_application_questions_identity_key ON public.community_application_questions USING btree (community_id, id)",
           "includedColumns": [],
           "keys": [
             {
@@ -14159,13 +13466,6 @@
               "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
-            },
-            {
-              "column": "field_type",
-              "descending": false,
-              "expression": "field_type",
-              "nullsFirst": false,
-              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -14232,8 +13532,8 @@
       "triggers": {},
       "uniqueConstraints": {
         "community_application_questions_identity_key": {
-          "columns": ["community_id", "id", "field_type"],
-          "definition": "UNIQUE (community_id, id, field_type)"
+          "columns": ["community_id", "id"],
+          "definition": "UNIQUE (community_id, id)"
         }
       }
     },
