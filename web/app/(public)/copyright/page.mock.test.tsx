@@ -85,6 +85,7 @@ describe('copyright pages', () => {
 
   it('renders the public policy pages', () => {
     render(<CopyrightPage />)
+    expect(screen.queryByRole('link', { name: 'Copyright review queue' })).toBeNull()
     expect(screen.getByRole('heading', { name: 'Copyright policy' })).toBeInTheDocument()
     render(<CounterNoticePage />)
     expect(

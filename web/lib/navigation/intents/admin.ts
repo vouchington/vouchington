@@ -65,6 +65,23 @@ export const ADMIN_INTENTS: readonly NavIntent[] = [
         ],
       },
       {
+        label: 'extracted.intents.admin.copyright_8dfc77ab',
+        dataPw: 'sidebar-group-copyright',
+        roles: ['administrator', 'moderator'] as const,
+        items: [
+          {
+            label: 'extracted.intents.admin.caseQueue_61feff77',
+            href: '/copyright/review-queue',
+            dataPw: 'sidebar-link-copyright-review-queue',
+          },
+          {
+            label: 'extracted.intents.admin.emailIntake_6b1eaab7',
+            href: '/copyright/email-review',
+            dataPw: 'sidebar-link-copyright-email-review',
+          },
+        ],
+      },
+      {
         label: 'extracted.intents.admin.myCases_d27ecf6f',
         dataPw: 'sidebar-group-my-moderation',
         requiresAuth: true,

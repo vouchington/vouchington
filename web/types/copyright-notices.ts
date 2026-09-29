@@ -121,7 +121,22 @@ export type CopyrightStaffQueueItem = {
     action: 'admitted' | 'rejected'
     reviewed_at: string
   }>
+  reasons: CopyrightStaffQueueReason[]
+  waiting_since: string
+  next_deadline: { escalation_at: string; restoration_deadline_at: string } | null
 }
+
+export type CopyrightStaffQueueReason =
+  | 'form_intake_review'
+  | 'restriction_review'
+  | 'appeal_review'
+  | 'counter_notice_review'
+  | 'legal_hold_review'
+  | 'action_failed'
+  | 'enforcement_pending'
+  | 'delivery_failed'
+  | 'deadline_due'
+  | 'deadline_missed'
 
 export type CopyrightStaffQueuePage = {
   copyright_notices: CopyrightStaffQueueItem[]

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { CopyrightStaffLinks } from '@/components/copyright/copyright-staff-links'
 import { createPageMetadata } from '@/lib/seo/metadata'
 
 export const dynamic = 'force-dynamic'
@@ -48,12 +49,7 @@ export default function CopyrightPage() {
         >
           Counter-notice and restoration
         </Link>
-        <Link
-          className='block underline'
-          href='/copyright/review-queue'
-        >
-          Copyright review queue
-        </Link>
+        <CopyrightStaffLinks />
       </div>
     </main>
   )

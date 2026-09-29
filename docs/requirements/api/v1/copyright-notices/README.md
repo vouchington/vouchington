@@ -30,8 +30,13 @@ It uses the canonical opaque `after` cursor and bounded `limit` (1–100; defaul
 `page_info` so the member-visible index can continue beyond its first page.
 
 The staff review queue uses the same bounded `after` and `limit` contract. Its cursor is scoped to
-the actionable queue and orders by immutable `(received_at, id)`, so every actionable case,
-including pending statutory deadlines, remains reachable after the first page.
+the actionable queue and orders by `(urgency, waiting_since, id)`: a missed restoration deadline
+first, then a deadline past escalation, then all other open work, each oldest wait first. Every
+queued case, including one whose only open item is a deadline past escalation, remains reachable
+after the first page. Each item adds `reasons` (the distinct open-item kinds), `waiting_since` (the
+oldest open item's time), and `next_deadline` (the earliest open deadline's `escalation_at` and
+`restoration_deadline_at`, or null). Urgency is evaluated against the current time on each request,
+so a case whose deadline passes between pages moves to an earlier tier.
 
 The staff email intake queue, `GET /api/v1/copyright-email-intakes/review-queue`, uses the same
 bounded `after` and `limit` contract with its own cursor scope. It orders unreviewed intakes by

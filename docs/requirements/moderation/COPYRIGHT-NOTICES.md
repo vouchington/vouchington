@@ -220,6 +220,16 @@ evidence metadata and agent recommendations needed to perform human review, but 
 members. All mutation routes remain server-authorized even when an authenticated page renders an
 appeal or counter-notice form.
 
+The staff queue lists a case while it has any open item: an unreviewed form intake, restriction,
+appeal, counter-notice, or qualifying court or CCB filing; a failed action or delivery; an
+incomplete enforcement request; or an open restoration deadline at or past `escalation_at`. An open
+deadline before escalation does not queue a case by itself. Each case carries its distinct
+`reasons`, the `waiting_since` time of its oldest open item, and its earliest open deadline. The
+queue orders cases by urgency: a missed restoration deadline first, then a deadline past escalation,
+then all other work, each oldest wait first. Urgency depends on the clock, so a case can move to an
+earlier tier between pages. The staff pages are reached from the Moderation sidebar's Copyright
+group, and the public policy page shows its staff queue links only to administrators and moderators.
+
 The web uses Turnstile for each notice, appeal, and counter-notice form. Native clients use the
 attestation route described by the CAPTCHA boundary. CAPTCHA is an intake abuse control, not a
 legal-validity or merits assessment.

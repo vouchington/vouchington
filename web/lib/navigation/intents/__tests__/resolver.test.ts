@@ -68,6 +68,15 @@ const cases: Array<{ title: string; checks: ActiveIntentCheck[] }> = [
   },
   { title: 'resolves /my/disputes to moderation (WS2)', checks: [['/my/disputes', 'moderation']] },
   {
+    title: 'resolves copyright staff queues to moderation, leaving public copyright pages alone',
+    checks: [
+      ['/copyright/review-queue', 'moderation'],
+      ['/copyright/email-review', 'moderation'],
+      ['/copyright', 'news'],
+      ['/copyright/notices/new', 'news'],
+    ],
+  },
+  {
     title: 'resolves account settings routes to settings',
     checks: [
       ['/my/identity', 'settings'],

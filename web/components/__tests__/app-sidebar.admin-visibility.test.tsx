@@ -1,6 +1,10 @@
 import { screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { renderSidebar, setMockPathname } from '@/test-helpers/components/app-sidebar-test-helpers'
+import {
+  getSectionLabels,
+  renderSidebar,
+  setMockPathname,
+} from '@/test-helpers/components/app-sidebar-test-helpers'
 import type { User } from '@/types/user'
 
 describe('AppSidebar Admin section visibility', () => {
@@ -27,6 +31,39 @@ describe('AppSidebar Admin section visibility', () => {
     renderSidebar({ id: 'u1', roles: ['administrator'] } as User)
     expect(screen.getAllByText('Moderation').length).toBeGreaterThan(0)
     expect(screen.queryByText('Design')).toBeNull()
+  })
+
+  it.each(['administrator', 'moderator'])('shows the Copyright staff group to a %s', role => {
+    setMockPathname('/copyright/review-queue')
+    const { container } = renderSidebar({ id: 'u1', roles: [role] } as User)
+
+    expect(getSectionLabels(container)).toContain('Copyright')
+    expect(screen.getByRole('link', { name: /^Case Queue$/i })).toHaveAttribute(
+      'href',
+      '/copyright/review-queue',
+    )
+    expect(screen.getByRole('link', { name: /^Email Intake$/i })).toHaveAttribute(
+      'href',
+      '/copyright/email-review',
+    )
+  })
+
+  it('keeps administrator moderation tools out of a moderator Copyright sidebar', () => {
+    setMockPathname('/copyright/email-review')
+    renderSidebar({ id: 'u1', roles: ['moderator'] } as User)
+
+    expect(screen.getByRole('link', { name: /^Email Intake$/i })).toBeDefined()
+    expect(screen.queryByRole('link', { name: /^Review Queue$/i })).toBeNull()
+    expect(screen.queryByRole('link', { name: /^Reports$/i })).toBeNull()
+  })
+
+  it('hides the Copyright staff group from members', () => {
+    setMockPathname('/copyright/review-queue')
+    const { container } = renderSidebar({ id: 'u1', roles: ['user'] } as User)
+
+    expect(getSectionLabels(container)).not.toContain('Copyright')
+    expect(screen.queryByRole('link', { name: /^Case Queue$/i })).toBeNull()
+    expect(screen.queryByRole('link', { name: /^Email Intake$/i })).toBeNull()
   })
 
   it('shows membership administration under Settings for administrators', () => {
