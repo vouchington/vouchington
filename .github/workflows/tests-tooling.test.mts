@@ -116,6 +116,9 @@ describe('tests-tooling.yml setup timing', () => {
     const verifyTools = toolingJob?.steps?.find(
       step => step.name === 'Verify Gitleaks and Lychee are active for tooling tests',
     )
+    const fetchMain = toolingJob?.steps?.find(
+      step => step.name === 'Fetch origin/main remediation inventory',
+    )
     const runToolingTests = toolingJob?.steps?.find(step => step.name === 'Run tooling tests')
 
     const jobTimeout = numberField(toolingJob?.['timeout-minutes'], 'tooling job timeout')
@@ -128,11 +131,33 @@ describe('tests-tooling.yml setup timing', () => {
       verifyTools?.['timeout-minutes'],
       'scanner and matcher tools verify timeout',
     )
+    const fetchMainTimeout = numberField(
+      fetchMain?.['timeout-minutes'],
+      'origin/main inventory fetch timeout',
+    )
     const testTimeout = numberField(runToolingTests?.['timeout-minutes'], 'tooling test timeout')
 
     expect(jobTimeout).toBeGreaterThan(
-      setupTimeout + toolsInstallTimeout + toolsVerifyTimeout + testTimeout,
+      setupTimeout + toolsInstallTimeout + toolsVerifyTimeout + fetchMainTimeout + testTimeout,
     )
+  })
+
+  it('fetches origin/main before the shrink-only debt inventory assertion', () => {
+    const toolingSteps = workflow.jobs?.tooling?.steps ?? []
+    const fetchMain = toolingSteps.find(
+      step => step.name === 'Fetch origin/main remediation inventory',
+    )
+    const fetchIndex = toolingSteps.findIndex(
+      step => step.name === 'Fetch origin/main remediation inventory',
+    )
+    const testIndex = toolingSteps.findIndex(step => step.name === 'Run tooling tests')
+
+    expect(fetchMain?.run).toBe(
+      "git fetch --no-tags --depth=1 origin '+refs/heads/main:refs/remotes/origin/main'",
+    )
+    expect(fetchMain?.['timeout-minutes']).toBeLessThanOrEqual(2)
+    expect(fetchIndex).toBeGreaterThanOrEqual(0)
+    expect(fetchIndex).toBeLessThan(testIndex)
   })
 
   it('allows tooling tests enough time to finish coverage reporting', () => {
