@@ -23,10 +23,7 @@ const urgentReasons = new Set<CopyrightStaffQueueReason>(['deadline_due', 'deadl
 export function CopyrightStaffQueueStatus({ notice }: { notice: CopyrightStaffQueueItem }) {
   const deadline = notice.next_deadline
   return (
-    <div
-      className='mt-2 space-y-1 text-sm'
-      data-pw='copyright-staff-queue-status'
-    >
+    <div className='mt-2 space-y-1 text-sm'>
       <ul
         aria-label='Queue reasons'
         className='flex flex-wrap gap-1'

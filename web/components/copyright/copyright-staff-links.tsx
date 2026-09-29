@@ -13,14 +13,12 @@ export function CopyrightStaffLinks() {
     <>
       <Link
         className='block underline'
-        data-pw='copyright-staff-review-queue-link'
         href='/copyright/review-queue'
       >
         Copyright review queue
       </Link>
       <Link
         className='block underline'
-        data-pw='copyright-staff-email-review-link'
         href='/copyright/email-review'
       >
         Copyright email review
