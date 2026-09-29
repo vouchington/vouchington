@@ -5,7 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 
 /** Staff view of a guest capability. The token and its hash never leave the database. */
-export type CopyrightGuestCapabilitySummary = {
+type CopyrightGuestCapabilitySummary = {
   id: string
   issued_at: Date
   issued_by_id: string | null

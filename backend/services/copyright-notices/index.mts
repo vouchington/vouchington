@@ -14,7 +14,6 @@ export { appendCopyrightGuestFiling } from './guest-filings.mts'
 export {
   copyrightGuestCapabilityCursorScope,
   listCopyrightGuestCapabilities,
-  type CopyrightGuestCapabilitySummary,
 } from './guest-capability-listing.mts'
 export { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 export { reviewCopyrightFormIntake } from './form-reviews.mts'
