@@ -41,7 +41,6 @@ describe('gitleaks workflow', () => {
 
     expect(step.env).toMatchObject({
       EVENT_NAME: '${{ github.event_name }}',
-      HEAD_SHA: '${{ github.sha }}',
       PR_BASE_SHA: '${{ github.event.pull_request.base.sha }}',
       PR_HEAD_SHA: '${{ github.event.pull_request.head.sha }}',
       MERGE_GROUP_BASE_SHA: '${{ github.event.merge_group.base_sha }}',
