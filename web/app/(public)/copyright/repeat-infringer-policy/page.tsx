@@ -14,10 +14,7 @@ export default function RepeatInfringerPolicyPage() {
         infringes copyright.
       </p>
       <h2 className='text-xl font-semibold'>Counting incidents</h2>
-      <ul
-        className='list-disc space-y-1 pl-5'
-        data-pw='repeat-infringer-incident-rules'
-      >
+      <ul className='list-disc space-y-1 pl-5'>
         <li>
           A copyright incident counts against an account when a copyright moderator confirms a
           restriction on that account&apos;s post, including on appeal.
@@ -30,10 +27,7 @@ export default function RepeatInfringerPolicyPage() {
         <li>Restoring material after a counter-notice does not remove an incident.</li>
       </ul>
       <h2 className='text-xl font-semibold'>Review and termination</h2>
-      <ul
-        className='list-disc space-y-1 pl-5'
-        data-pw='repeat-infringer-termination-rules'
-      >
+      <ul className='list-disc space-y-1 pl-5'>
         <li>
           An account&apos;s second counting incident opens a staff review. Opening that review does
           not suspend the account.

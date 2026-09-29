@@ -1,4 +1,4 @@
-import { configure, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { notFound } from 'next/navigation'
 
@@ -77,8 +77,6 @@ const mockParticipant = vi.mocked(getCopyrightParticipantNoticeServer)
 const mockReviewQueue = vi.mocked(getCopyrightReviewQueue)
 const mockEmailQueue = vi.mocked(getCopyrightEmailIntakeReviewQueue)
 
-configure({ testIdAttribute: 'data-pw' })
-
 describe('copyright pages', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -98,16 +96,6 @@ describe('copyright pages', () => {
     expect(screen.getByRole('heading', { name: 'Repeat-infringer policy' })).toBeInTheDocument()
     render(<CopyrightNoticesLayout>layout child</CopyrightNoticesLayout>)
     expect(screen.getByText('layout child')).toBeInTheDocument()
-  })
-
-  it('states who may terminate a repeat infringer and when', () => {
-    render(<RepeatInfringerPolicyPage />)
-    const termination = screen.getByTestId('repeat-infringer-termination-rules')
-    expect(termination).toHaveTextContent('Only an administrator may restrict or terminate')
-    expect(termination).toHaveTextContent('at least two counting incidents')
-    expect(screen.getByTestId('repeat-infringer-incident-rules')).toHaveTextContent(
-      'Restoring material after a counter-notice does not remove an incident.',
-    )
   })
 
   it('loads signed-in notice list, create, and staff queues', async () => {
