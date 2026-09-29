@@ -50,6 +50,13 @@ export interface WebFixtureClientEndpointContext {
     'fetchCommunityModeratorStats'
   >
   readonly currencies: Pick<typeof import('@/lib/api/client/currencies'), 'fetchCurrencies'>
+  readonly copyrightGuest: Pick<
+    typeof import('@/lib/api/client/copyright-guest'),
+    | 'issueCopyrightGuestCapability'
+    | 'requestCopyrightGuestInformation'
+    | 'revokeCopyrightGuestCapability'
+    | 'submitCopyrightGuestFiling'
+  >
   readonly copyrightEmailIntakes: Pick<
     typeof import('@/lib/api/client/copyright-email-intakes'),
     'listCopyrightEmailIntakes'
@@ -167,6 +174,7 @@ export interface WebFixtureClientEndpointContext {
     typeof import('@/lib/api/client/reports'),
     'getCommunityPendingModerationReportsClient'
   >
+  readonly stories: Pick<typeof import('@/lib/api/client/stories'), 'getStoryMemberPage'>
   readonly topics: Pick<typeof import('@/lib/api/client/topics'), 'createTopic' | 'fetchTopics'>
   readonly valkey: Pick<
     typeof import('@/lib/api/client/valkey'),

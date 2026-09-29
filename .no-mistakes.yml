@@ -393,8 +393,18 @@ rules:
     scope: repository
     options:
       maxLines: 180
-      maxChars: 12000
+      maxChars: 6000
       advisoryCharsRemaining: 500
+
+  - name: root agent instructions stay concise
+    rule: agents-md-max-size
+    scope: repository
+    include:
+      - AGENTS.md
+    options:
+      maxLines: 180
+      maxChars: 3000
+      advisoryCharsRemaining: 250
 
   - name: developer Markdown is reachable from agent instructions
     rule: markdown-reachability
@@ -415,8 +425,8 @@ rules:
       - '**/__testcases__/**/*.md'
     options:
       rootFilenames: [AGENTS.md]
-      indexFilenames: [README.md]
-      maxDepth: 2
+      indexFilenames: [README.md, SCHEDULED.md]
+      maxDepth: 3
 
   - name: scheduled job manifests are registered in the API catalog
     rule: required-entrypoint-reachability
@@ -802,6 +812,8 @@ rules:
           reason: First-party PostgreSQL runtime published by the repo author.
         - name: '@vouchington/queue-errors'
           reason: First-party GlideMQ retry-classification runtime published by the repo author.
+        - name: '@vouchington/request-contract-validation'
+          reason: First-party request-contract carrier compiler published by the repo author.
         - name: '@vouchington/rss-crawler'
           reason: First-party transport-injected RSS crawler published by the repo author.
         - name: '@vouchington/rss-parser'
@@ -1185,6 +1197,7 @@ rules:
             - enqueues.mts
           allowedSubdirs:
             - enqueues
+            - payload
         - root: backend/workers
           sourceExtension: .mts
           allowedRootFiles:

@@ -5,7 +5,6 @@ import sql from 'sql-template-strings'
 export { getPostIdForImagePlacementCopyright } from './placement-post.mts'
 
 export type CopyrightImagePlacement = {
-  placementKey: string
   placementId: string
   revision: number
   imageId: string
@@ -64,7 +63,7 @@ export async function restoreImagePlacementsAfterImageDeletion(
 }
 
 export async function getImagePlacementForCopyright(
-  placementKey: string,
+  placementId: string,
   options: QueryOptions = {},
 ): Promise<CopyrightImagePlacement | null> {
   const query = options.query ?? read
@@ -88,7 +87,7 @@ export async function getImagePlacementForCopyright(
     JOIN image_placements image_placement ON image_placement.placement_id = placement.id
     JOIN images image ON image.id = image_placement.image_id
     JOIN posts post ON post.id = image_placement.post_id
-    WHERE ${placementKey} = concat('image-placement:', placement.id)
+    WHERE placement.id = ${placementId}
   `)
   const placement = rows[0]
   if (!placement) return null
@@ -96,21 +95,21 @@ export async function getImagePlacementForCopyright(
 }
 
 export async function withholdImagePlacementForCopyright(
-  input: { placementKey: string; expectedRevision: number },
+  input: { placementId: string; expectedRevision: number },
   options: QueryOptions = {},
 ): Promise<CopyrightImagePlacementMutation> {
-  return await changeImagePlacementCopyrightWithholding(input, true, options)
+  return changeImagePlacementCopyrightWithholding(input, true, options)
 }
 
 export async function restoreImagePlacementForCopyright(
-  input: { placementKey: string; expectedRevision: number },
+  input: { placementId: string; expectedRevision: number },
   options: QueryOptions = {},
 ): Promise<CopyrightImagePlacementMutation> {
-  return await changeImagePlacementCopyrightWithholding(input, false, options)
+  return changeImagePlacementCopyrightWithholding(input, false, options)
 }
 
 async function changeImagePlacementCopyrightWithholding(
-  input: { placementKey: string; expectedRevision: number },
+  input: { placementId: string; expectedRevision: number },
   withhold: boolean,
   options: QueryOptions,
 ): Promise<CopyrightImagePlacementMutation> {
@@ -133,7 +132,7 @@ async function changeImagePlacementCopyrightWithholding(
     JOIN images image ON image.id = image_placement.image_id
     JOIN posts post ON post.id = image_placement.post_id
     WHERE placement.id = image_placement.placement_id
-      AND ${input.placementKey} = concat('image-placement:', placement.id)
+      AND placement.id = ${input.placementId}
       AND placement.revision = ${input.expectedRevision}
       AND placement.retired_at IS NULL
       AND (
@@ -153,7 +152,7 @@ async function changeImagePlacementCopyrightWithholding(
   const updated = rows[0]
   if (updated) return { status: 'applied', placement: toCopyrightImagePlacement(updated) }
 
-  const current = await getImagePlacementForCopyright(input.placementKey, options)
+  const current = await getImagePlacementForCopyright(input.placementId, options)
   if (!current) return { status: 'not_found' }
   if (current.deleted) return { status: 'deleted', placement: current }
   const desiredApplied = withhold ? current.withheld : !current.withheld
@@ -175,7 +174,6 @@ function toCopyrightImagePlacement(placement: {
   image_moderation_flagged: boolean | null
 }): CopyrightImagePlacement {
   return {
-    placementKey: getImagePlacementKey(placement.placement_id),
     placementId: placement.placement_id,
     revision: placement.revision,
     imageId: placement.image_id,

@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import type { PendingModerationReport, CommunityBanEvasionContext } from './get.mts'
+import type { PendingModerationReport } from './pending-moderation-report.mts'
+import type { CommunityBanEvasionContext } from './config.mts'
 
 export async function attachBanEvasionContext(
   reports: PendingModerationReport[],

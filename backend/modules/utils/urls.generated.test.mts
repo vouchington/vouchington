@@ -8,7 +8,7 @@ import {
   validateHttpUrlWithoutFragment,
 } from './urls.mts'
 
-const scriptUrl = `java${'script'}:alert(1)`
+const scriptUrl = `javascript:alert(1)`
 
 describe('isFQDN', () => {
   it('should validate fully qualified domain names', () => {

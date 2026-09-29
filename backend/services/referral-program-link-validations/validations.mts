@@ -169,8 +169,8 @@ export async function getReferralLinkValidation(
 ): Promise<ReferralLinkValidation | null> {
   // Try as UUID first
   if (isUUID(idOrSlug)) {
-    return await getReferralLinkValidationById(idOrSlug, options)
+    return getReferralLinkValidationById(idOrSlug, options)
   }
   // Otherwise treat as slug
-  return await getReferralLinkValidationBySlug(idOrSlug, options)
+  return getReferralLinkValidationBySlug(idOrSlug, options)
 }

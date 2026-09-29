@@ -1,5 +1,5 @@
 import { realpathSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { format } from 'oxfmt'
 import { stableStringify } from '@modules/utils/stable-stringify'
@@ -48,11 +48,15 @@ export async function writeSchemaSnapshot({
   markdown,
   check = false,
   root = __dirname,
+  markdownRoot = root === __dirname
+    ? resolve(__dirname, '../../../../docs/development/postgresql/schema-snapshot/markdown')
+    : undefined,
 }: {
   snapshot: SchemaSnapshot
   markdown: Map<string, string>
   check?: boolean
   root?: string
+  markdownRoot?: string
 }): Promise<void> {
   try {
     await writeFromPostgres({
@@ -60,6 +64,7 @@ export async function writeSchemaSnapshot({
       markdown,
       check,
       root,
+      ...(markdownRoot === undefined ? {} : { markdownRoot }),
       format: formatWithOxfmt,
       stringify: stableStringify,
     })

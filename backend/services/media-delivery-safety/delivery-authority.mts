@@ -13,7 +13,7 @@ export async function lockImageDeliveryLegalAuthority(
       WHERE EXISTS (
         SELECT 1 FROM copyright_notice_targets target
         WHERE target.copyright_notice_id = notice.id
-          AND target.placement_key = concat('image-placement:', ${record.placement_id}::uuid)
+          AND target.placement_id = ${record.placement_id}::uuid
       ) ORDER BY notice.id FOR NO KEY UPDATE
     `)
 }
@@ -77,7 +77,7 @@ export function imageDeliveryAuthorityProof(): ReturnType<typeof sql> {
               )
               AND NOT EXISTS (
                 SELECT 1 FROM copyright_notice_targets target
-                WHERE target.placement_key = concat('image-placement:', placement.id)
+                WHERE target.placement_id = placement.id
                   AND (
                     EXISTS (SELECT 1 FROM copyright_restrictions restriction
                       WHERE restriction.copyright_notice_target_id = target.id AND restriction.lifted_at IS NULL)

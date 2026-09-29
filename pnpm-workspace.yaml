@@ -89,6 +89,7 @@ minimumReleaseAgeExclude:
   - '@vouchington/phone-validation'
   - '@vouchington/postgres'
   - '@vouchington/queue-errors'
+  - '@vouchington/request-contract-validation'
   - '@vouchington/rss-crawler'
   - '@vouchington/rss-parser'
   - '@vouchington/robots'

@@ -154,7 +154,7 @@ export interface Post {
   can_unpublish_from_community?: boolean
   can_lock?: boolean
   /** Present on pending-post mod-queue responses */
-  claim?: import('./api-responses/community-moderation').ModerationQueueClaim | null
+  claim?: import('./api-responses/moderation-queue-claim').ModerationQueueClaim | null
   /** Present on pending-post mod-queue responses when the post has been escalated */
   escalated_at?: string | null
 }

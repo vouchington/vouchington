@@ -1,26 +1,6 @@
-# Worker Packages
+# Worker packages
 
-Each `backend/workers/*` folder owns registrations and processors for the matching
-`@queues/<name>` package. Workers may import enqueue APIs; queues must not import workers.
-
-Before changing processors, concurrency, fan-out, retry classification, backfills, or placement,
-load [voucha-queue-authoring](../../.agents/skills/voucha-queue-authoring/SKILL.md) and follow the
-canonical [backend queue checklist](../../docs/checklists/backend-queues.md). Load
-[backend-vitest-test-authoring](../../.agents/skills/backend-vitest-test-authoring/SKILL.md) for
-tests.
-
-## Scoped invariants
-
-- Worker packages own `workers.mts` or `workers/*.mts`, `processors.mts` or `processors/*.mts`, and
-  optional `types.mts`. Keep processors thin; business logic and durable writes belong in services.
-- In processors that catch OpenAI or Bedrock rate limits, use `return await` inside the `try` so an
-  asynchronous rejection reaches the local rate-limit handler.
-- Update the matching worker README when its behavior or ownership changes.
-
-## See Also
-
-- Worker package catalog: [../catalogs/README.md#workers](../catalogs/README.md#workers)
-- [Queue packages](../queues/AGENTS.md)
-- [CPU entrypoint](../entrypoints/worker-cpu/AGENTS.md)
-- [IO entrypoint](../entrypoints/worker-io/AGENTS.md)
-- [Backend context](../AGENTS.md)
+- Load [queue authoring](../../.agents/skills/voucha-queue-authoring/SKILL.md) and [the queue checklist](../../docs/checklists/backend-queues.md) for processor/concurrency/fan-out/retry/backfill/placement changes; load [backend Vitest authoring](../../.agents/skills/backend-vitest-test-authoring/SKILL.md) for tests.
+- Each domain registers/processes its matching `@queues/<name>` through `workers.mts`/`workers/*.mts`, `processors.mts`/`processors/*.mts`, and optional `types.mts`. Keep processors thin; services own business logic/durable writes. Workers may import enqueue APIs; queues never import workers.
+- Rate-limit-catching OpenAI/Bedrock processors use `return await` inside `try` so async rejection reaches the local handler.
+- Update domain docs for behavior/ownership changes; use [inventory](../../docs/overview/architecture/backend/catalogs/README.md#workers), [queues](../queues/AGENTS.md), [CPU](../entrypoints/worker-cpu/AGENTS.md), and [IO](../entrypoints/worker-io/AGENTS.md) owners.

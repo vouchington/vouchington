@@ -98,5 +98,5 @@ export async function hardDeleteRssFeedByIdAsCurrentUser(
   id: string,
 ): Promise<boolean> {
   assert(currentUserCanDeleteRssFeed(currentUser), 403, 'Forbidden')
-  return await hardDeleteRssFeedById(id)
+  return hardDeleteRssFeedById(id)
 }

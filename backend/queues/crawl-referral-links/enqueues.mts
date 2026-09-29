@@ -60,7 +60,7 @@ export function enqueueBulkCrawlReferralLinks(
   entries: CrawlReferralLinkEntry[],
   options: { hostnameId: string; rateLimitMs?: number },
 ): EnqueueReturnType {
-  if (entries.length === 0) return
+  if (entries.length === 0) return Promise.resolve()
 
   const { hostnameId, rateLimitMs = 1_000 } = options
   return enqueueBulkCrawlReferralLinkJobs(

@@ -137,7 +137,8 @@ RSS feed items are grouped into **stories** — first-class entities that repres
 - Items in the same story are deduplicated in feeds — one item shown per story (official or highest-voted)
 - Each story can have one story post (`post_type='story'`), created by the `@story-teller` system user via API with auto-linked URLs and forwarded category topics. The post is linked via the `post__stories` junction table. Any user can initiate creation.
 - The story-teller generates the post's `title` and `ai_summary_markdown` (no user-authored markdown)
-- Feed responses include `story_id`, `stories` (with `published_at`), and `story_member_ids`
+- Feed responses include `story_id`, `stories` (with `published_at`), and `story_member_pages`. Each story preview holds related item IDs only, an opaque cursor, and whether more eligible articles remain. The first direct primary displayed for a story fixes its preview and cursor across later feed pages and same-query refreshes, even when the preview configuration shrinks. A new query or viewer starts a new selection.
+- Expanding a story reveals its prefetched related articles immediately. The explicit Load more action requests up to 25 additional members from `GET /api/v1/stories/:id` with the original primary excluded. Loaded articles, media, and actions remain visible during refresh, loading, and retry; the count stays visible when expanded or collapsed and shows `+` while more pages remain.
 - `NewsItemCluster` renders as a single card with the story title in the header and member items as indented bare `NewsItemCard`s (no own card wrapper) separated by dividers. A story with no `title`/`published_at`/`cluster_reason` and zero `storyItems` collapses to a standalone `NewsItemCard` instead — the story card would otherwise show nothing beyond the lone item. Non-story items (no `story` prop) also render as a standalone `NewsItemCard`. See [Source Item Anatomy — List-Item / Card Anatomy](../anatomy/source-item.md#list-item--card-anatomy) for the header rendering table.
 - See [stories.md](./stories.md) for full details
 
@@ -148,7 +149,7 @@ RSS feed items are grouped into **stories** — first-class entities that repres
 - `HideButton` — icon-only (`EyeOff`) toggle that calls the bookmark API with the `hide` predicate and dispatches `rss-item-hidden` on success
 - `SaveButton` — icon-only (`Bookmark`/`BookmarkCheck`) toggle that calls the bookmark API with the `save` predicate; no CustomEvent dispatched
 - `NewsItemCluster` — shows story title, same-level story item cards, per-item official badges inside card headers, per-item card footer action rows, and expandable related story members
-- `NewsItemClusterList` — groups items by `story_id`, merges `stories`, `story_member_ids`, and `bookmarks` across pages; listens for `rss-item-hidden` to remove hidden items
+- `NewsItemClusterList` — groups direct items by `story_id`, keeps the first direct primary and preview, merges hydrated sidecars and appended story pages, and listens for `rss-item-hidden` to remove hidden items. Shared deliveries remain standalone.
 - `NewsItemList` — same pattern for flat (non-clustered) topic news lists; also listens for `rss-item-hidden`
 - `PostForm` — accepts `initialRelatedUrls` prop (URL chips + entity relations) and `initialDiscussionCategories` prop (optional pre-populated categories). The **Categories** field on the discussion create form is a multi-row `TopicAutocomplete` powered by `DiscussionFields`. Selecting categories writes `relation__post__category__topic` entity relations after the post is created (mirroring how data-point posts create category relations in `backend/services/posts/create.mts`). Categories are optional — the user can add, remove, or reorder rows before submitting.
 

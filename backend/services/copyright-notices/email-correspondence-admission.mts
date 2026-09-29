@@ -168,9 +168,9 @@ export async function admitCopyrightEmailCorrespondence(input: {
     )
   `)
   await transaction(sql`/* admitCopyrightEmailCorrespondence:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
-    VALUES (${pending.notice_id}, 'email_correspondence_admitted', ${input.currentUser.id},
-      jsonb_build_object('submission_id', ${submission.id}::uuid, 'correspondence_id', ${correspondence.id}::uuid))
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+      copyright_notice_correspondence_id)
+    VALUES (${pending.notice_id}, 'email_correspondence_admitted', ${input.currentUser.id}, ${correspondence.id})
   `)
   await transaction.commit()
   return {
@@ -239,9 +239,9 @@ export async function rejectCopyrightEmailCorrespondence(input: {
       ${input.manualFallbackReason ? encryptSecret(input.manualFallbackReason, copyrightEmailIntakePurpose(pending.ses_message_id)) : null})
   `)
   await transaction(sql`/* rejectCopyrightEmailCorrespondence:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
-    VALUES (${pending.notice_id}, 'email_correspondence_rejected', ${input.currentUser.id},
-      jsonb_build_object('intake_id', ${input.intakeId}::uuid))
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+      copyright_notice_email_intake_id)
+    VALUES (${pending.notice_id}, 'email_correspondence_rejected', ${input.currentUser.id}, ${input.intakeId})
   `)
   await transaction.commit()
   return { noticeId: pending.notice_id, isDuplicate: false }

@@ -2,16 +2,19 @@
 
 import { fileURLToPath } from 'node:url'
 
+import { runCompose } from './retrospective-save/compose.mts'
 import { runCheck } from './retrospective-save/check.mts'
 import { RetrospectiveSaveError, runSave } from './retrospective-save/save.mts'
 
 function printUsage(stream: NodeJS.WritableStream = process.stderr): void {
   stream.write(
-    'Usage: node dev/retrospective-save.mts save --file <path> ' +
+    'Usage: node dev/retrospective-save.mts save --mode interactive|autonomous [--work-outcome <terminal-outcome>] --file <path> ' +
       '[--session-id <id>] [--parent-session-id <id>] [--agent <name>] [--version <version>]\n' +
-      '       node dev/retrospective-save.mts save --file <path> ' +
+      '       node dev/retrospective-save.mts save --mode interactive|autonomous [--work-outcome <terminal-outcome>] --file <path> ' +
       '--root-codex [--new-root-codex-session] [--agent codex] [--version <version>]\n' +
       '       node dev/retrospective-save.mts check [--session-id <id> | --root-codex [--new-root-codex-session]]\n' +
+      '       node dev/retrospective-save.mts compose --input <json-file>\n' +
+      'Note: save preserves composed outcome/coverage metadata; files without it require --work-outcome.\n' +
       'Note: check --root-codex refreshes the worktree-local root identity before reading the server.\n',
   )
 }
@@ -37,6 +40,23 @@ function printReplayCommand(error: RetrospectiveSaveError): void {
   if (error.rootCodex) parts.push('--root-codex')
   if (error.newRootCodexSession) parts.push('--new-root-codex-session')
   if (error.version) parts.push('--version', shellQuote(error.version))
+  for (const [key, flag] of Object.entries({
+    mode: '--mode',
+    sourceEventId: '--source-event-id',
+    workOutcome: '--work-outcome',
+    coverageStatus: '--coverage-status',
+    droppedCount: '--dropped-count',
+    outboxDirectory: '--outbox-directory',
+    category: '--category',
+    timestamp: '--timestamp',
+  })) {
+    const value = error.feedback[key as keyof typeof error.feedback]
+    if (typeof value === 'string') parts.push(flag, shellQuote(value))
+  }
+  for (const source of error.feedback.coverageSources ?? [])
+    parts.push('--coverage-source', shellQuote(source))
+  for (const repository of error.feedback.repositories ?? [])
+    parts.push('--repository', shellQuote(repository))
   process.stderr.write(`Replay with: ${parts.join(' ')}\n`)
 }
 
@@ -47,11 +67,15 @@ async function main(): Promise<void> {
     return
   }
   if (
-    (subcommand === 'save' || subcommand === 'check') &&
+    (subcommand === 'save' || subcommand === 'check' || subcommand === 'compose') &&
     rest.length === 1 &&
     (rest[0] === '-h' || rest[0] === '--help')
   ) {
     printUsage(process.stdout)
+    return
+  }
+  if (subcommand === 'compose') {
+    process.stdout.write(`${await runCompose(rest)}\n`)
     return
   }
   if (subcommand === 'check') {

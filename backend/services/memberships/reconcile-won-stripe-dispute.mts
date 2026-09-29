@@ -16,7 +16,7 @@ import {
   getInvoicesInReversalWindow,
   getRefundableReversalTargets,
 } from './ineligible-stripe-purchase-reversal-targets.mts'
-import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase.mts'
+import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
 
 type WonStripeDisputeOperations = IneligibleStripePurchaseOperations & {
   getWonStripeDisputeInvoice: typeof stripeDisputes.getWonStripeDisputeInvoice

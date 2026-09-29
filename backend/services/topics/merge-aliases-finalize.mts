@@ -17,7 +17,7 @@ export async function finalizeTopicAliasMerge(input: {
   movedAliasIds: string[]
 }) {
   const { merger, sourceTopic, destinationTopic, movedAliases, movedAliasIds } = input
-  entityCacheBloomFilters.topics.add(movedAliases.map(normalizeKey))
+  void entityCacheBloomFilters.topics.add(movedAliases.map(normalizeKey))
   await Promise.all([
     invalidate.topics(
       sourceTopic.id,

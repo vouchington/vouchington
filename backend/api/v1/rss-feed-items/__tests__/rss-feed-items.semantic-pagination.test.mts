@@ -72,8 +72,8 @@ describe('GET /api/v1/rss-feed-items semantic pagination', () => {
     if (!storyResult) throw new Error('Expected a semantic result for the seeded story')
     const storyPage = [page1, page2].find(page => page.body.rss_feed_items[storyResult.id])
     if (!storyPage) throw new Error('Expected the story result to have item sidecars')
-    expect(storyPage.body.story_member_ids[story.id]).toEqual(
-      expect.arrayContaining([items[0].id, items[1].id]),
+    expect(storyPage.body.story_member_pages[story.id].item_ids).toEqual(
+      [items[0].id, items[1].id].filter(id => id !== storyResult.id),
     )
 
     await request

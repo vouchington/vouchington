@@ -55,6 +55,7 @@ const ROOT_FAMILIES = {
     references: [
       ['images', 'id'],
       ['retained_image_placement_bindings', 'image_id'],
+      ['copyright_notice_target_images', 'image_id'],
     ],
   },
 } as const

@@ -24,11 +24,9 @@ import {
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import { upsertSystemAdministrator } from '@services/users/system-users'
 import type { PrivateUser } from '@services/users/types'
-import {
-  backfillCategoriesForTopicAliases,
-  clearCategoriesForUnlinkedTopicAlias,
-  upsertRssFeedItemCategories,
-} from '@services/rss-feed-items/categories'
+import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
+import { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/backfill-categories-for-topic-aliases'
+import { clearCategoriesForUnlinkedTopicAlias } from '@services/rss-feed-items/clear-topic-alias-categories'
 import { createStoryPost } from '../story-posts.mts'
 import { recordTestStoryTopicPublicationChange } from '@services/post-publication/test-fixtures'
 

@@ -7,17 +7,7 @@ import { getTopicSearchState } from './query-builder-state.mts'
 import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
 import { buildTopicSearchPageInfo, decodeTopicSearchCursor } from './get-ids-page-info.mts'
-
-export type TopicSearchRow = {
-  id: string
-  name: string
-  slug: string
-  topic_type: string
-  created_at?: string | Date | null
-  sort_score?: string | number
-  relevance_tier?: number
-  ranking_score?: string | number
-}
+import type { TopicSearchRow } from './get-ids-types.mts'
 
 type TopicSearchResponse = {
   results: TopicSearchResult[]

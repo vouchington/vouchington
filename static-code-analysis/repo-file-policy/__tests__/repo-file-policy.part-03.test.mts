@@ -177,7 +177,7 @@ describe('repo-file-policy', () => {
     await track(dir, 'docs/requirements/moderation/MODERATION-FLOWS.md', syncedReportDoc)
     await track(
       dir,
-      'backend/api/v1/reports/README.md',
+      'docs/requirements/api/v1/reports/README.md',
       [
         'Canonical `entityType` values are `rss_feed_item`, `post`, `comment`, `user`, `url_hostname`, and `old_entity`.',
         '## Endpoints',
@@ -185,7 +185,11 @@ describe('repo-file-policy', () => {
         'Reasons: spam harassment misinformation illegal_content vote_manipulation other.\nvote_manipulation is valid only for post reports.',
       ].join('\n'),
     )
-    await track(dir, 'backend/services/moderation-reports/README.md', syncedReportDoc)
+    await track(
+      dir,
+      'docs/overview/architecture/services/moderation-reports/README.md',
+      syncedReportDoc,
+    )
     await track(
       dir,
       'docs/requirements/moderation/REPORT-JUDGEMENTS.md',

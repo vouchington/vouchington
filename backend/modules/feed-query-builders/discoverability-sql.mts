@@ -16,7 +16,10 @@ export function feedIsEnabledAndDiscoverableSql(feedAlias: string): SQLStatement
   )`)
 }
 
-export function itemHasDiscoverableSourceSql(itemColumnSql: string): SQLStatement {
+export function itemHasDiscoverableSourceSql(
+  itemColumnSql: string,
+  sourceEligibility: SQLStatement = sql``,
+): SQLStatement {
   const stmt = sql`EXISTS (
     SELECT 1
     FROM rss_feed_item_sources rfis
@@ -29,6 +32,7 @@ export function itemHasDiscoverableSourceSql(itemColumnSql: string): SQLStatemen
       AND rf.deleted_at IS NULL
       AND current_state.is_enabled = TRUE
       AND current_state.is_discoverable = TRUE
-  )`)
+  `)
+  stmt.append(sourceEligibility).append(sql`)`)
   return stmt
 }

@@ -7,9 +7,11 @@ import {
   deliverCopyrightInAppNotification,
   searchRecoverableCopyrightDeliveryIntentIds,
   searchRecoverableCopyrightEmailIntakeResponseIds,
+  syncCopyrightStaffAlertsFromRecovery,
 } from '@services/copyright-notices'
 import {
   enqueueEveryCopyrightSweepPage,
+  runCopyrightSweepStage,
   type CopyrightSweepTally,
 } from './copyright-sweep-walk.mts'
 
@@ -23,6 +25,7 @@ export type ReconcileCopyrightDeliveryIntentsDeps = {
   enqueueDeliverCopyrightNotice: typeof enqueueDeliverCopyrightNotice
   enqueueSendCopyrightNoticeEmail: typeof enqueueSendCopyrightNoticeEmail
   enqueueSendCopyrightEmailIntakeResponse: typeof enqueueSendCopyrightEmailIntakeResponse
+  syncStaffAlerts: typeof syncCopyrightStaffAlertsFromRecovery
 }
 
 const defaultDeps: ReconcileCopyrightDeliveryIntentsDeps = {
@@ -31,6 +34,7 @@ const defaultDeps: ReconcileCopyrightDeliveryIntentsDeps = {
   enqueueDeliverCopyrightNotice,
   enqueueSendCopyrightNoticeEmail,
   enqueueSendCopyrightEmailIntakeResponse,
+  syncStaffAlerts: syncCopyrightStaffAlertsFromRecovery,
 }
 
 export async function processDeliverCopyrightNotice(
@@ -41,7 +45,7 @@ export async function processDeliverCopyrightNotice(
 ): Promise<boolean> {
   const deliver =
     dependencies.deliverCopyrightInAppNotification ?? deliverCopyrightInAppNotification
-  return await deliver(data.intentId)
+  return deliver(data.intentId)
 }
 
 /**
@@ -74,6 +78,10 @@ export async function processReconcileCopyrightDeliveryIntents(
       responseId => deps.enqueueSendCopyrightEmailIntakeResponse(responseId),
     ),
   ])
+  await runCopyrightSweepStage(tally, async () => {
+    await deps.syncStaffAlerts()
+    return []
+  })
   if (tally.errors.length > 0) {
     throw new AggregateError(tally.errors, 'Copyright delivery reconciliation failed')
   }

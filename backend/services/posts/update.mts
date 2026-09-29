@@ -17,7 +17,7 @@ import { normalizeContentLanguageTag } from '@ts-shared/languages/content-langua
 import { assertCommunityNoLinksAllowed } from '@services/communities/restrictions/enforce'
 import sql from 'sql-template-strings'
 import { finalizePostUpdateAndDeliver } from './update/post-commit-delivery.mts'
-import { type PostCategoryFinalization } from './post-category-finalizations.mts'
+import type { PostCategoryFinalization } from './post-category-finalizations.mts'
 import { synchronizePostCategoriesInTransaction } from './update/category-synchronization.mts'
 import {
   getPreviousPostPublicationTopicIds,

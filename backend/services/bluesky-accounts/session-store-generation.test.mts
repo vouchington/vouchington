@@ -90,7 +90,7 @@ async function setAuthorizedSession(
   await ensureTestBlueskyLinkAuthorization({ authorizationId, userId })
   await runWithBlueskySessionAuthorization(
     { authorizationId, owner: { kind: 'linking', userId }, callbackMode: 'web' },
-    async () => await store.set(did, fakeSession()),
+    async () => store.set(did, fakeSession()),
   )
   return authorizationId
 }

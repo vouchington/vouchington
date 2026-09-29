@@ -104,6 +104,46 @@ describe.each(VARIANTS)('%s — 422 on invalid JSON', (_name, run) => {
   })
 })
 
+const lookupSchema = {
+  name: 'lookup',
+  parameters: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['id'],
+    properties: { id: { type: 'string' } },
+  },
+}
+
+describe.each(VARIANTS)('%s — schema boundary', (_name, run) => {
+  it('rejects wrong-shaped arguments before the executor', async () => {
+    const executor = spyWith(() => 'ran')
+    const onCallError = spy<[OpenAIFunctionCall, Error]>()
+
+    await run({
+      toolCalls: [call('lookup', { name: 'nope' })],
+      tools: [{ schema: lookupSchema, executor }],
+      onCallError,
+    })
+
+    expect(executor.calls).toHaveLength(0)
+    expect(onCallError.calls).toHaveLength(1)
+    const [, err] = onCallError.calls[0]
+    expect((err as Error & { status?: number }).status).toBe(422)
+  })
+
+  it('runs the executor when arguments match the tool schema', async () => {
+    const executor = spyWith(() => 'ran')
+
+    const { toolResults } = await run({
+      toolCalls: [call('lookup', { id: 'a' })],
+      tools: [{ schema: lookupSchema, executor }],
+    })
+
+    expect(executor.calls).toEqual([[{ id: 'a' }]])
+    expect(toolResults[0]?.output).toBe(JSON.stringify('ran'))
+  })
+})
+
 describe('executeToolCalls', () => {
   it('executes tool calls in parallel', async () => {
     const started: Record<string, boolean> = {}

@@ -273,9 +273,9 @@ async function createProjectablePost(label: string) {
     {},
     {
       dispatchStoryPostRelationEffects: async () => {},
-      enqueueOnPostCreated: () => {},
+      enqueueOnPostCreated: () => Promise.resolve(),
       enqueueStoryPostAgent: async () => {},
-      enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => {},
+      enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => Promise.resolve(),
       invalidateStories: async () => {},
     },
   )

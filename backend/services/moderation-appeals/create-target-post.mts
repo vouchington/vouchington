@@ -7,7 +7,7 @@ import {
   openOrGetOpenCase,
   reopenCase,
 } from '@services/moderation-cases'
-import type { AppealTargetContext } from './create-target.mts'
+import type { AppealTargetContext } from './create-target-types.mts'
 import { getModerationAppealById } from './get.mts'
 import type { CreateModerationAppealInput } from './parse.mts'
 import { selectPostRemovalKind } from './post-removal-kind.mts'

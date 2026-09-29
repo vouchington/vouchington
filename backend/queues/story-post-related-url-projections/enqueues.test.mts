@@ -36,7 +36,7 @@ describe('story post related URL projection enqueues', () => {
   })
 
   it('fires the recovery enqueue without requiring a caller await', async () => {
-    enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort()
+    void enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort()
 
     await expect
       .poll(async () => readAllQueueJobs(storyPostRelatedUrlProjections), { timeout: 5_000 })

@@ -5,7 +5,7 @@
 // service's `getRegistered*()` getter stops throwing a `*_UNREGISTERED` error. No process
 // entrypoint should import a `register-*.mts` file directly — every entrypoint instead imports
 // this package once, so a registry added here is available everywhere unconditionally. See
-// `backend/services/README.md` for the pattern and `.no-mistakes.yml`'s
+// `docs/overview/architecture/services/README.md` for the pattern and `.no-mistakes.yml`'s
 // `required-entrypoint-reachability` rules for the static enforcement.
 //
 // Registers with @services/entity-relations' election-vote-handler registry.

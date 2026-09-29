@@ -1,9 +1,8 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { buildPageInfo } from '@modules/pagination'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import type { Community, CommunityListType, CommunityMetrics } from './types.mts'
+import type { CommunityListType } from './types.mts'
 import type { PrivateUser } from '@services/users/types'
 import { appendFeedCategoryFilter } from './search/feed-category-filter.mts'
 import { appendTopicIdsFilter } from './search/topic-ids-filter.mts'
@@ -13,21 +12,16 @@ import { parseCommunitySearchCursor } from './search/cursor.mts'
 import { buildCommunityImagePlacementSelect } from './search/image-placements.mts'
 import { communityColumns } from './columns.mts'
 import type { CommunityRootPostType } from './post-type-settings.mts'
-
-export type CommunitySortMode = 'name' | 'members' | 'virtual_subscriptions'
-export type CommunityFeedCategory = 'posts' | 'news' | 'news_sources' | 'news_topics'
-
-export type CommunityOwner = {
-  id: string
-  username: string | null
-}
-
-export type SearchCommunitiesResult = {
-  results: Community[]
-  users: Record<string, CommunityOwner>
-  page_info: ReturnType<typeof buildPageInfo>
-  community_metrics: Record<string, CommunityMetrics>
-}
+import type {
+  CommunitySortMode,
+  CommunityFeedCategory,
+  SearchCommunitiesResult,
+} from './search-types.mts'
+export type {
+  CommunitySortMode,
+  CommunityFeedCategory,
+  SearchCommunitiesResult,
+} from './search-types.mts'
 
 export async function searchCommunities(
   options?: QueryOptions & {

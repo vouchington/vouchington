@@ -117,7 +117,7 @@ Rules:
 - Use `ClientSearchForm` from `web/components/shared/client-search-form.tsx` for simple single-query forms such as topic alias and URL search.
 - Do not use `<form method='get'>` in `web/app/**` or `web/components/**`.
 
-See [web-agent-rules.md](../../../docs/development/web-agent-rules.md) for the workspace rule.
+See [web-agent-rules.md](../../development/web-agent-rules.md) for the workspace rule.
 
 ### Checkbox & Radio Rows
 
@@ -147,4 +147,4 @@ Rules:
 - `has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60` reflects disabled state to the wrapper automatically.
 - No `RadioGroup` component is installed — ad-hoc `role='radio'` rows (e.g. star ratings) must apply the same "full row is the click target" rule by wrapping the entire row in a `<label>`.
 
-See [web-agent-rules.md](../../../docs/development/web-agent-rules.md) for the authoritative rule.
+See [web-agent-rules.md](../../development/web-agent-rules.md) for the authoritative rule.

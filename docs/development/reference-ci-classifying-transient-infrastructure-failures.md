@@ -133,7 +133,7 @@ navigation, and orchestrator-WebSocket milestones; they do not refresh the watch
 browser-API and request-failure output is filtered or capped, retry diagnostics add bounded
 `pw:browser*`, and the runner removes raw `pw:protocol*`. On failure,
 `storybook-browser-diagnostics.log` preserves every attempt summary and the bounded output tail
-inside a 1 MiB cap. See the [Storybook diagnosis reference](../../web/storybook/README.md) for
+inside a 1 MiB cap. See the [Storybook diagnosis reference](testing/storybook/README.md) for
 `bootstrapStage` interpretation and the upstream issue-filing evidence checklist.
 
 The leftover-holder `--stop` bind wait in the `test-tooling / tooling` job is #9766.
@@ -151,13 +151,13 @@ tooling teardown artifact-upload timeout,
 Lambda deploy AWS CLI closed connection, Lint Links GitHub 5xx, Main CI checks probe-mise hook timeout,
 runner shutdown of an idempotent leaf job,
 Docker Corepack pnpm registry 5xx, and Storybook rows above are auto-classified by the rule
-catalogue in [`ci/transient-retry/`](../../ci/transient-retry/README.md). Those classified failures
+catalogue in [`ci/transient-retry/`](ci/transient-retry/README.md). Those classified failures
 rerun according to their rows except terminal BuildKit session expiry, which is ignored without a
 retry or Fix Main dispatch. The generic Docker rows are not yet
 fingerprinted (the verbatim log strings from the source incidents are unrecoverable after the 1-day
 artifact retention window); they are documented here for human judgment until a real log fixture is
 captured and added as a code rule. To add a new signature, see
-[`ci/transient-retry/README.md`](../../ci/transient-retry/README.md) — include a real log fingerprint
+[`docs/development/ci/transient-retry/README.md`](ci/transient-retry/README.md) — include a real log fingerprint
 and `exampleRunIds` so the automation and this table stay in sync.
 
 A backend unit shard that fails with `Worker exited unexpectedly` after every test passed (#8259)

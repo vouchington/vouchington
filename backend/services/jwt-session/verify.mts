@@ -108,7 +108,7 @@ async function verifyEdgeAnonymousDeviceAndSessionTokens({
     return verifiedEdgeAnonymousSessionOrFalse(verified)
   }
 
-  return await verifyEdgeAnonymousDeviceAndSessionTokensWithCandidates({
+  return verifyEdgeAnonymousDeviceAndSessionTokensWithCandidates({
     deviceToken,
     sessionToken,
     publicKeyCandidates,

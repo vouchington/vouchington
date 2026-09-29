@@ -7,6 +7,7 @@ import { FLUSH_CONCERNS } from './concerns.mts'
 import {
   assertSingleValkeyTopology,
   collectValkeyDiagnostics,
+  diagnoseValkey,
   parseValkeyMemoryInfo,
   validateFlushTargetPrefixRegistry,
 } from './diagnostics.mts'
@@ -264,5 +265,12 @@ describe('Valkey diagnostics', () => {
     } finally {
       await sessionValkeyClient.unlink(keys)
     }
+  })
+
+  it('diagnoses the configured topology through the session client', async () => {
+    const result = await diagnoseValkey(
+      createFlushTargetPrefixRegistry(getQueueFlushTargetPrefixes('glide')),
+    )
+    expect(result.memory.usedMemoryBytes).toBeGreaterThan(0)
   })
 })

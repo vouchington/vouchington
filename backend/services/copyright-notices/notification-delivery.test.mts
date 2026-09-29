@@ -18,7 +18,7 @@ describe('copyright in-app notification delivery', () => {
       markdown: 'image',
     })
     const imageId = await insertTestImage(user.id)
-    await insertTestPostImage({ postId, imageId })
+    const placementId = await insertTestPostImage({ postId, imageId })
     const notice = await createCopyrightNoticeAggregate({
       jurisdiction: 'us_dmca',
       receivedAt: new Date(),
@@ -34,7 +34,7 @@ describe('copyright in-app notification delivery', () => {
       },
       targets: [
         {
-          placementKey: `post-image:${postId}:${imageId}`,
+          placementId,
           placementRevision: 1,
           imageId,
           hostedUseUrl: `https://voucha.ai/posts/${postId}`,

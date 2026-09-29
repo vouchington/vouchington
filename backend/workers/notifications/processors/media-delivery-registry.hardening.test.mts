@@ -98,7 +98,7 @@ describe('durable media registry recovery hardening', () => {
             failOnce = false
             throw new Error('Owned enqueue failure')
           }
-          return await enqueueApplyMediaDeliveryRegistryRecord(key)
+          return enqueueApplyMediaDeliveryRegistryRecord(key)
         },
         enqueueContinueMediaDeliveryRegistryReconciliation: async (
           next: Extract<ReconcileMediaDeliveryRegistryData, { scanBefore: string }>,

@@ -30,7 +30,7 @@ describe('reconcile-post batches', () => {
 
   async function createUserSubscribers(authorId: string, count: number, createdAt: Date) {
     const subscribers = await Promise.all(
-      Array.from({ length: count }, async () => await createTestUser()),
+      Array.from({ length: count }, async () => createTestUser()),
     )
     await Promise.all(
       subscribers.map(async subscriber => {

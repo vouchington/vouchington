@@ -42,7 +42,7 @@ export async function createOpenRouterResponse(
 ): Promise<OpenAIResponse> {
   const createResponse = deps.createResponse ?? createClientResponse
   const { stream, requestStartedAt } = await createOpenAICompatibleResponseWithRetries(
-    async (request, requestOptions) => await createResponse(request, requestOptions),
+    async (request, requestOptions) => createResponse(request, requestOptions),
     { ...params, stream: true, background: false } as ResponseCreateParamsStreaming,
     options,
   )

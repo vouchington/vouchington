@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 import type { StoredPasskey } from '@vouchington/auth'
 import type { PublicPasskey } from './types.mts'
 
-export type PasskeyCredential = StoredPasskey<string, string>
+export type PasskeyCredential = StoredPasskey
 
 type PasskeyCredentialRow = Omit<PasskeyCredential, 'counter' | 'transports'> & {
   counter: number | string

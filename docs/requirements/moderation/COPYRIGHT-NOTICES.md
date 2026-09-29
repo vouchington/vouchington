@@ -25,6 +25,28 @@ hold, delivery, enforcement, or restoration obligations.
 No caller may update copyright tables directly. In particular, a delivery worker cannot decide that
 a counter-notice is compliant or that a hold is qualifying.
 
+## Current screening authority
+
+One [current execution](../../../backend/services/copyright-notices/form-screening-executions.mts)
+per structured form selects its immutable successful screening result. Intake commits unclaimed
+pending state before enqueue or model work. Starting a new screening immediately blocks new
+automated assessments and restriction admission. Failed attempts keep that block. Duplicate
+wakeups skip live provider claims, expired/failed retries advance the attempt token, and stale
+completion cannot select a result. Identical input and prompt may produce distinct successful
+results; only completion of the current token supplies idempotency.
+
+Automatic authority requires a current completed clear result for the same intake, an exact
+associated current compliant assessment, complete signed-in statutory fields, and no rejected form
+review. The [canonical predicate](../../../backend/data-stores/psql/migrations/0641-00-00-copyright-delivery-transport.sql)
+is checked again under the form fence at enforcement claim and final admission. Pending/failed
+staff projections expose their state with null recommendation and rationale; stale private
+rationale never appears as current. A staff approval during either state creates human authority.
+
+Restriction admission and screening start serialize under the form fence. A restriction admitted
+first stays effective, including before its action delivery runs. A newer pending attempt blocks
+remaining targets in a partially processed request. Re-screening never lifts an existing takedown,
+changes its revision/deadline, or gates its delivery workers.
+
 ## Delivery obligations
 
 Each claimant receipt, poster restriction notice, status update, and counter-notice forwarding is
@@ -51,6 +73,13 @@ placement, the exact image binding, the expected revision, every legal blocker, 
 state before applying an intent. Withholding one placement never deletes the source image or blocks
 another post that independently uses the same image.
 
+Each legal target stores a foreign key to the retained placement binding, and its target-image row
+checks the exact placement, image, and post-family tuple. The observed revision is immutable evidence,
+not a foreign key to the mutable current revision. Legal references pin the retained binding and image
+through bounded orphan cleanup after live media is removed; retained identity alone never grants
+delivery. Staff/email response fields that display `image-placement:<id>` derive that string from the
+UUID at the API boundary. No encoded placement relationship is stored.
+
 Application projections omit retired or withheld placements, and persisted post image URLs use
 `/images/placements/<placement-id>/<revision>/<image-id>`. The resize Lambda validates the route
 shape and keeps the placement segments out of the S3 key. Those application controls do not by
@@ -66,7 +95,7 @@ contain only that key, rotating token, and timestamps, never an uncommitted enti
 Recovery joins the registry's typed tuple and rechecks committed binding authority without borrowing
 another placement's revision. An uncommitted first registry insert cannot publish an allow; its
 rollback creates no repair obligation. The fresh-bootstrap schema and recovery protocol are
-documented in [media-delivery safety](../../../backend/services/media-delivery-safety/README.md).
+documented in [media-delivery safety](../../overview/architecture/services/media-delivery-safety/README.md).
 
 Staff may request image-similarity candidates from existing embeddings. Candidates are advisory,
 exclude unavailable or moderated media, and return placement identifiers and state rather than S3
@@ -105,6 +134,12 @@ replacement, or a court order affecting the same placement. Erasing a staff acco
 foreign key, but cannot erase the decision timestamp, outcome, or lifecycle record.
 If erasure happens after a form rejection but before its effects finish, recovery uses the durable
 rejection to reverse provisional restrictions and close pending automated enforcement requests.
+
+Lifecycle events hold one typed source reference per event (except the case-level initial receipt),
+with a concrete foreign key and database-checked same-case ownership. Action events point to the
+action intent, which owns its restriction; legal-hold target membership remains in the assessment's
+child rows. Review outcomes, encrypted rationale, recovery origin, and replay reason are typed columns,
+not a JSON relationship envelope. Member timelines still project only event type and timestamp.
 
 ## Submission and evidence integrity
 
@@ -171,7 +206,13 @@ US cases and project case identifier, dates, target URL, restriction state, a me
 lifecycle timeline, and the claimant's current public profile when one exists. They never expose
 legal claimant or poster identity, email, mailing address, signature, raw email, evidence artifacts,
 encrypted fields, moderator rationale, or agent recommendation. A guest or erased claimant has no
-member-visible profile link.
+member-visible profile link. A guest who is not signed in acts only with a hashed, expiring,
+revocable capability for one case. Staff issue that token once. The guest sends it in the
+Copyright-Guest-Capability header. Mail, a thread, or a token for another case does not authorize
+a correction, withdrawal, or court filing. A correction does not move the original receipt time
+or an existing restoration deadline. A withdrawal records the filing and leaves existing
+restrictions in place until staff assess it. A court or CCB filing is classified urgent and does
+not itself block restoration. Staff may ask for more information without extending the capability.
 
 Claimants and affected posters receive a participant projection for their own submissions. Copyright
 review staff receive a separate queue and private case projection. Staff-only routes may expose
@@ -250,13 +291,44 @@ final overlapping hold replays a previously blocked restoration. A hold on an or
 restriction blocks restoration while unresolved; resolving that hold does not bypass the ordinary
 counter-notice deadline or human reversal requirement.
 
+Hold assessment or resolution and replay of an existing eligible restore are one transaction,
+fenced across every placement on the case before taking the case lock. Replay retains the original
+intent, restriction, deadline, revision and restoration authority, and rechecks their current
+validity and placement safety. Queue delivery starts only after commit. The existing reconciler
+automatically retries eligible historical blocked restorations after the filing is assessed or
+the final hold resolves. Neither hold transitions nor periodic recovery reopen exhausted provider
+failures; these require explicit operator replay. Unresolved
+or unassessed filings and another independent restriction never lose their protective effect.
+
 ## Jurisdiction and public meaning
 
-US timing does not govern EU or UK cases. The initial intake contract therefore accepts only
-`us_dmca`. EU and UK intake must stay disabled until their distinct schemas, reasons, automation
-disclosures, free human complaint paths, representatives, and jurisdiction-specific review rules
-are implemented and legally reviewed. Conflicting grounds go to qualified staff or counsel, and
-removing one ground cannot remove another.
+US timing does not govern EU or UK cases. The public form and email intake still accept only
+`us_dmca`. EU and UK use separate contracts and stay unavailable until an unwithdrawn territorial
+policy approval exists. That approval is an operator record, not a seeded row and not
+`COPYRIGHT_INTAKE_ENABLED`. Representatives, counsel review, and the activation checklist remain
+required before any live intake is advertised. Conflicting grounds go to qualified staff or
+counsel, and removing one ground cannot remove another.
+
+## EU and UK contracts
+
+The fail-closed flow is diagrammed in the
+[copyright notices service README](../../../backend/services/copyright-notices/README.md).
+
+Receipt stores the notifier's contact, content location, and grounds. It does not resolve a
+placement, write a lifecycle event, or create a US restoration deadline. Acknowledgment is an
+administrative obligation with no due timestamp. A failed attempt can be recorded until the fifth
+failure, the same attempt bound used for copyright delivery, and that fifth failure escalates.
+Success does not invent a response deadline.
+
+A statement of reasons, UK review, and redress decision exist only when an identified staff user
+supplies the text. `automation_disclosure` is `human`. The staff disposition on redress is
+`maintain` or `revoke` as selected by that user. The service does not choose it and does not
+withhold media. A supervised complaint records an external authority reference and escalates that
+record. Transparency reporting counts facts bound to the current EU approval inside a period the
+caller supplies. It does not choose the period.
+
+UK review and redress do not write EU reason, complaint, or report rows. Neither contract imports
+the US counter-notice clock.
 
 A member-visible case records an allegation and, where applicable, a provisional restriction or reviewed
 outcome. It never describes the claimant as the proven owner or the poster as an infringer.
@@ -291,6 +363,24 @@ does not partially enforce and the still-open review can be retried.
 legal hold on a placement whose post author is that account. A qualifying hold is an assessment
 with an original claimant, the same material, a proceeding kind, a commencement time, and a
 designated-agent receipt, and with no resolution row. An open review alone does not block deletion.
+
+## Evidence retention preview
+
+Evidence retention is preview-only. The server gate is inserted disabled, and no table stores a
+retention duration. A preview names the case evidence and every reason it is blocked: the gate,
+an unapproved policy, an open case, an unresolved legal hold, or an open deadline. Recording a
+disposition writes `refused` or `not_destroyed`. Neither outcome deletes an evidence object or a
+preserved email. Actual destruction needs a separate human and legal authority.
+
+## Staff alerts
+
+Review age, urgent provisional filings, missed restoration deadlines, failed or bounced deliveries,
+and deliveries that need reconciliation are staff alerts derived from the notice, deadline, and
+delivery rows. Each source and condition keeps one alert. Staff acknowledgement records that
+episode and stays in history when a later episode reopens the same source. Private work and contact
+fields are returned only to copyright reviewers, and only while an approved alert policy is active.
+No alert destination or operator threshold is stored. A failed alert delivery does not resolve the
+deadline or the delivery obligation.
 
 ## Activation gates
 

@@ -86,6 +86,7 @@ export function NewsItemClusterList({
                 expandedStoryIds={news.expandedStoryIds}
                 feedStyle={feedStyle}
                 onExpandedStoryIdsChange={news.handleExpandedStoryIdsChange}
+                onLoadStoryMore={news.handleLoadStoryMore}
               />
             ))}
           </div>

@@ -49,7 +49,7 @@ export async function sendRawRequest(server: Server, requestText: string): Promi
   let response = ''
   socket.setEncoding('utf8')
   socket.on('data', chunk => {
-    response += chunk
+    response += typeof chunk === 'string' ? chunk : chunk.toString('utf8')
   })
 
   try {
@@ -100,7 +100,9 @@ export function sendHttpRequest(
       request.end()
     } catch (error) {
       request.destroy()
-      reject(error)
+      reject(
+        error instanceof Error ? error : new Error('HTTP request write failed', { cause: error }),
+      )
     }
   })
 }
@@ -141,7 +143,11 @@ export function sendExpectedBody(
       request.flushHeaders()
     } catch (error) {
       request.destroy()
-      reject(error)
+      reject(
+        error instanceof Error
+          ? error
+          : new Error('HTTP request header flush failed', { cause: error }),
+      )
     }
   })
 }

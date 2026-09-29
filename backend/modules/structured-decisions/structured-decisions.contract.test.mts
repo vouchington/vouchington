@@ -5,6 +5,7 @@ import {
   type StructuredDecisionFetch,
   type StructuredDecisionRequest,
 } from './structured-decisions.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const request: StructuredDecisionRequest = {
   state: 'A post about a local bakery.',
@@ -71,7 +72,7 @@ describe('structured-decision transport contracts', () => {
 
     expect(result.provider).toBe('TypeSafe')
     expect(fetch.mock.calls[0]?.[0]).toBe('https://api.typesafe.ai/v1/systemone')
-    const dispatched = JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))
+    const dispatched = JSON.parse(stringFromUnknown(fetch.mock.calls[0]?.[1]?.body))
     expect(dispatched).toMatchObject({
       model: 'jev-latest',
       questions: {
@@ -89,7 +90,7 @@ describe('structured-decision transport contracts', () => {
       apiKey: 'test-key',
       fetch,
     }).decide(request)
-    expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body)).provider).toEqual({
+    expect(JSON.parse(stringFromUnknown(fetch.mock.calls[0]?.[1]?.body)).provider).toEqual({
       only: ['TypeSafe'],
       allow_fallbacks: false,
     })

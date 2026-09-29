@@ -35,6 +35,6 @@ app
 
     const userId = ctx.params.userId!
     await adminClearVoteWeight(userId)
-    enqueueRecalculateUserVoteWeight(userId, true)
+    await enqueueRecalculateUserVoteWeight(userId, true)
     ctx.setStatus(204)
   })

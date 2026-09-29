@@ -19,7 +19,9 @@ import { claimTopicAlias, linkTopicAlias, updateTopicAliasesField } from './alia
 import { invalidatePostsForTopicAliases } from './invalidate-posts-for-topic-aliases.mts'
 
 export function finalizeCreatedTopic(topic: Topic, updates: CreateTopicUpdates): void {
-  entityCacheBloomFilters.topics.add([topic.id, topic.slug, ...topic.aliases].map(normalizeKey))
+  void entityCacheBloomFilters.topics.add(
+    [topic.id, topic.slug, ...topic.aliases].map(normalizeKey),
+  )
   void enqueueOnTopicCreated(topic.id, updates)
   if (updates.source_topic_alias_id)
     void invalidatePostsForTopicAliases([updates.source_topic_alias_id])

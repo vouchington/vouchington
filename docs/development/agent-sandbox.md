@@ -3,7 +3,7 @@
 **The rule:** `git *`, `gh *`, `docker *`, `pnpm exec *`, `pnpm run *`, `pnpm install`,
 `pnpm test`, `pr-shepherd *`, `no-mistakes *`, `ps aux`, and a narrow set of specific
 `npx <tool> *` / `node dev/*.mts` invocations (`pr-shepherd`, `vitest`, `oxlint`, `oxfmt`,
-`no-mistakes`, `pr-description.mts`, `plan-issue.mts`) bypass Claude's
+`no-mistakes`, `pr-description.mts`) bypass Claude's
 OS-level sandbox through `.claude/settings.json`. Codex defaults to `workspace-write`, but
 `decision="allow"` prefixes in `.codex/rules/default.rules` run outside that sandbox without a
 confirmation prompt. Every Codex allow must be covered by Claude `sandbox.excludedCommands`;
@@ -15,7 +15,7 @@ jonathanong/filaments PR #9574 and skip Codex `prefix_rule` after a
 later change (formerly filed as jonathanong/filaments#9578), so Codex `auto_review` sees the
 argv. The checked-in policy is what a reactivated CI Codex session would load; harness dispatch
 is currently fail-closed and does not execute these prefixes. See
-[Auto Harness automation security boundary](../../.github/workflows/reference-harness-automation-accepted-risk.md)
+[Auto Harness automation security boundary](ci/workflows/reference-harness-automation-accepted-risk.md)
 for the accepted risk.
 
 ## Two independent containment layers
@@ -91,7 +91,7 @@ sandboxed auto-review path instead of requiring an unsandboxed allow.
 | `docker *`                                                                                                                                      | Needs the Docker daemon socket and container-volume writes for local services (`valkey`, `otel`) launched by `./dev/*` scripts — both outside what the OS sandbox's write-allow list covers.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `pnpm exec *` / `pnpm run *` / `pnpm install` / `pnpm test`                                                                                     | The local dev loop (unit/integration tests against local Postgres/Valkey, `next build`, Playwright) needs broad filesystem writes and network reach. The matching Claude exclusions and Codex allows bypass the OS sandbox for these families. `pnpm --filter *`, `pnpm --dir *`, `pnpm dlx *`, and `corepack pnpm *` have neither a Claude exclusion nor a Codex allow: a variable filter or directory comes before the subcommand, so either broad prefix can also unsandbox `dlx`/`add`; `dlx` can execute an arbitrary registry package, and `corepack pnpm` covers all pnpm subcommands. They use the ordinary sandboxed path. |
 | `npx pr-shepherd *` / `pr-shepherd *` / `npx vitest *` / `npx oxlint *` / `npx oxfmt *` / `npx no-mistakes *` / `no-mistakes` / `no-mistakes *` | Same tools and same needs as `pnpm exec *` above, invoked via `npx` or a bare binary. Unlike `pnpm exec`, a stale or missing local install lets `npx <tool>` fetch and run that package name from the registry; listing exact tool names bounds which package that fallback can resolve to. A blanket `npx *` or `pnpm dlx *` would allow an arbitrary registry package to execute outside the sandbox, so neither has a Claude exclusion or Codex allow.                                                                                                                                                                           |
-| `node dev/pr-description.mts *` / `node dev/plan-issue.mts *`                                                                                   | Both scripts `execFile('gh', …)`/`execFile('git', …)` directly to open/update PRs and validate issues, which needs the same `~/.config/gh/hosts.yml` credential read as the `gh *` row above — a sandboxed child process can't inherit that read scope.                                                                                                                                                                                                                                                                                                                                                                             |
+| `node dev/pr-description.mts *`                                                                                                                 | The helper calls `execFile('gh', …)`/`execFile('git', …)` directly to open/update PRs and validate issues, which needs the same `~/.config/gh/hosts.yml` credential read as the `gh *` row above — a sandboxed child process can't inherit that read scope.                                                                                                                                                                                                                                                                                                                                                                         |
 | `ps aux` / `ps aux *`                                                                                                                           | Process-table introspection (used to check for stray dev-server/background processes) reads `/proc`-equivalent OS state outside the sandbox's filesystem-scoped read allowlist; a sandboxed `ps aux` fails with a genuine `operation not permitted: ps`, confirmed in `dev/sandbox-command-audit/__tests__/claude-extract-failures.part-2.test.mts` (the sampled invocation was `ps aux` piped into `grep`). Both the bare and wildcard forms are listed so a plain `ps aux` and an argument-bearing `ps aux --sort=-%mem` are each covered.                                                                                        |
 | Mutating/network `git`                                                                                                                          | In a worktree, `commit`/`rebase`/`push`/`stash` write to the **shared** `.git/objects`/`.git/worktrees` store outside the worktree root — not in `filesystem.allowWrite`. `fetch`/`push`/`clone` also need the same credentials as `gh`.                                                                                                                                                                                                                                                                                                                                                                                            |
 
@@ -111,12 +111,12 @@ investigated and rejected for #7669, for three reasons:
    `restore`/`clean`/`tag`/`worktree`/`gc`/`reflog`/…). Missing one silently drops it into the
    sandbox, where it can fail unexpectedly (e.g. a write to the shared `.git/objects` store outside
    the worktree).
-3. **Reintroduces E2BIG friction.** The sandbox profile grows with every registered git worktree
+3. **Historical E2BIG friction.** The sandbox profile grows with every registered git worktree
    (each contributes deny-paths). Once large enough, even read-only commands hit the OS `E2BIG`
    argument-list limit and are forced to escalate anyway — see
    [sandbox-audit.md](../../.agents/skills/retrospective/sandbox-audit.md#why-frequency-isnt-the-signal).
-   Blanket `git *` avoids this entirely today; sandboxing read-only git would reintroduce it as the
-   dominant escalation driver the audit tool already tracks.
+   This historical mechanism needs current diagnostics before it explains a new failure;
+   escalation counts alone do not establish a dominant driver.
 
 Net: narrower git benefits almost nothing here and costs real reliability. `git *` stays excluded.
 
@@ -162,7 +162,7 @@ Claude's OS sandbox unsets every name in [`.claude/settings.json`](../../.claude
 A command in `sandbox.excludedCommands` runs outside that sandbox and still receives the
 variables. `dev/check-blackboard.mts` stays excluded for that reason: a sandboxed probe cannot
 tell a withheld `AGENT_BLACKBOARD_TOKEN` from an outage
-([Stop-work gate](agent-blackboard.md#stop-work-gate)).
+([Advisory availability probe](agent-blackboard.md#advisory-availability-probe)).
 
 Codex `[mcp_servers.agent-blackboard].env_vars` forwards `AGENT_BLACKBOARD_URL` and
 `AGENT_BLACKBOARD_TOKEN` into the MCP server. That pass-through is a separate control. Grok
@@ -265,31 +265,30 @@ full decision criteria on when an escalation is a genuine bypass candidate worth
 Claude's sandbox denies writes to the files it loads configuration from, inside an otherwise
 writable worktree. Cursor denies `.claude/*.json`, `.cursor/*.json`, and a few other paths the
 same way, and sets `CURSOR_SANDBOX` on sandboxed children. `allowWrite` cannot lift those paths.
-A sandboxed `git rebase`, `git reset --hard`, or `git checkout` replaces ordinary files, then
-dies with `unable to unlink old '.claude/settings.json'`, leaving HEAD unchanged and the worktree
-dirty. `git *` in `excludedCommands` does not cover a command shape Claude keeps sandboxed
-(`cd`, a substitution, a redirection, or a chain that is not entirely excluded).
+A sandboxed `git rebase`, `git reset --hard`, or `git checkout` can replace ordinary files and
+then die with `unable to unlink old '.claude/settings.json'`. `HEAD` stays unchanged and the
+worktree is dirty. The commits are intact. `git reset --hard` restores the tracked files. Run the
+same git command again outside the sandbox: a plain `git *` command is already in
+`excludedCommands`, and `./dev/rebase-onto-main` is listed there too. A command shape Claude keeps
+sandboxed (`cd`, a substitution, a redirection, or a chain that is not entirely excluded) is the
+one that can die halfway. Retry that command unsandboxed.
 
-The path list git must be able to replace is [`dev/protected-checkout-paths.txt`](../../dev/protected-checkout-paths.txt).
-It is not the hook Edit/Write list in
-[`dev/codex-hooks/policy/protected-hook-paths.mts`](../../dev/codex-hooks/policy/protected-hook-paths.mts):
-`dev/codex-hooks/**`, `.codex/**`, and `.grok/**` are writable by checkout. The PreToolUse hook
-refuses a cooperative tree update when one of the pathspec paths differs, including `git fetch`
-chained with that update in one command. `git pull`, `git cherry-pick` other than
-`--continue`/`--abort`/`--skip`/`--quit`, `git stash pop`, `git stash apply`, `git stash branch`, and `git restore` of `.`, a directory such as
-`.claude`, or a protected path are refused before a diff: the fetched tree is not what the check
-can see. `git checkout -f` is checked against `HEAD`. `git reset --merge` and `git reset --keep`
-are checked like `--hard`. A quoted ref is classified with the quotes removed by the shell
-tokenizer, and `git rebase <upstream> <branch>` is refused because that checkout is not the
-upstream diff. `git rebase --continue` stays allowed so a conflict can be finished. `gh stack rebase` and `gh stack sync` stay on the stack allowlist. The hook does not guess
-their parent. `./dev/rebase-onto-main --stack` refuses while `SANDBOX_RUNTIME` or `CURSOR_SANDBOX`
-is set, then runs `gh stack rebase` only with both unset. `./dev/rebase-onto-main` fetches,
-repeats the check, and runs `git rebase origin/main` only when those markers are unset. Claude
-lists that script in `sandbox.excludedCommands`. Codex allows the same prefix, which removes its
-OS sandbox for that command. `./dev/reset-worktree` runs the same check after `git fetch` and
-before teardown or `checkout -B`.
-Grok and Cursor writable roots are unchanged. `git rebase --abort` stays allowed so a dirty rebase
-can still be left.
+This is not the Edit/Write list in
+[`dev/codex-hooks/policy/protected-hook-paths.mts`](../../dev/codex-hooks/policy/protected-hook-paths.mts).
+The PreToolUse hook does not refuse a checkout, rebase, merge, reset, cherry-pick, or stash
+because a settings file would change. `./dev/rebase-onto-main` fetches `origin/main` and rebases.
+`./dev/rebase-onto-main --stack` runs `gh stack rebase`. `./dev/reset-worktree` fetches and
+hard-resets. Grok and Cursor writable roots are unchanged. `git rebase --abort` stays allowed so a
+dirty rebase can still be left.
+
+## Feedback evidence boundary
+
+Report consequential tool and sandbox outcomes through the supported Blackboard writer before
+issue filing. Record the command boundary, sanitized diagnostic, work outcome, and evidence coverage
+separately. A refusal, missing credential, network error, Git write denial, and `E2BIG` require
+different remedies; frequency alone does not justify broadening bypasses. Automatic hooks remain
+local-only. agent-blackboard stays separate from auto-harness. See
+[the delivery contract](agent-blackboard.md#interactive-pending-delivery).
 
 ## See also
 
@@ -308,4 +307,4 @@ can still be left.
 - [`dev/agent-sandbox-credentials.test.mts`](../../dev/agent-sandbox-credentials.test.mts) — the
   `sandbox.credentials.envVars` deny-list guard.
 - [Agent Harness Parity](agent-harness-parity.md) — Claude vs Codex vs Grok vs Cursor sandbox and hook reuse.
-- [`.cursor/README.md`](../../.cursor/README.md) — Cursor CLI sandbox, hooks, and worktree setup.
+- [`docs/development/harnesses/cursor.md`](harnesses/cursor.md) — Cursor CLI sandbox, hooks, and worktree setup.

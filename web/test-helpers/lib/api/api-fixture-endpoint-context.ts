@@ -15,6 +15,7 @@ import * as clientCommunitySearch from '../../../lib/api/client/community-search
 import * as clientCommunityModeratorStats from '../../../lib/api/client/community-moderator-stats'
 import * as clientCurrencies from '../../../lib/api/client/currencies'
 import * as clientCopyrightEmailIntakes from '../../../lib/api/client/copyright-email-intakes'
+import * as clientCopyrightGuest from '../../../lib/api/client/copyright-guest'
 import * as clientCopyrightNotices from '../../../lib/api/client/copyright-notices'
 import * as clientDynamicConfig from '../../../lib/api/client/dynamic-config'
 import * as clientEntityRelations from '../../../lib/api/client/entity-relations'
@@ -36,6 +37,7 @@ import * as clientPsql from '../../../lib/api/client/psql'
 import * as clientReferralClicks from '../../../lib/api/client/referral-clicks'
 import * as clientReferralLinks from '../../../lib/api/client/referral-links'
 import * as clientReports from '../../../lib/api/client/reports'
+import * as clientStories from '../../../lib/api/client/stories'
 import * as clientTopics from '../../../lib/api/client/topics'
 import * as clientValkey from '../../../lib/api/client/valkey'
 import * as clientUsers from '../../../lib/api/client/users'
@@ -89,6 +91,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     communityModeratorStats: clientCommunityModeratorStats,
     currencies: clientCurrencies,
     copyrightEmailIntakes: clientCopyrightEmailIntakes,
+    copyrightGuest: clientCopyrightGuest,
     copyrightNotices: clientCopyrightNotices,
     dynamicConfig: clientDynamicConfig,
     entityRelations: clientEntityRelations,
@@ -110,6 +113,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     referralClicks: clientReferralClicks,
     referralLinks: clientReferralLinks,
     reports: clientReports,
+    stories: clientStories,
     topics: clientTopics,
     valkey: clientValkey,
     users: clientUsers,

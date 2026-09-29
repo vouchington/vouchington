@@ -2,7 +2,7 @@
  * Raw route config data for bookmark pages.
  * Imported by bookmark-route-configs.ts — do not import this directly.
  */
-import type { BookmarkRouteConfig } from './bookmark-route-configs'
+import type { BookmarkRouteConfig } from './bookmark-route-config-types'
 import { bookmarkRouteConfigDataMedia } from './bookmark-route-config-data-media'
 import { bookmarkRouteConfigDataUsers } from './bookmark-route-config-data-users'
 

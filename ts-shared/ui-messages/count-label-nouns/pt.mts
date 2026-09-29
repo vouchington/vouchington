@@ -1,4 +1,4 @@
-import type { CountLabelNouns } from '../count-label-nouns.mts'
+import type { CountLabelNouns } from './types.mts'
 
 export const COUNT_LABEL_NOUNS_PT: CountLabelNouns = {
   action: ['ação', 'ações'],

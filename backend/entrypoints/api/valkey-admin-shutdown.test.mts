@@ -237,7 +237,7 @@ describe('Valkey admin result and shutdown contract', () => {
       const runtime = makeRuntime()
       const diagnose = vi.spyOn(runtime, 'diagnose').mockImplementation(async signal => {
         expect(signal).toBe(cancellation.signal)
-        return await operation.promise
+        return operation.promise
       })
       const runtimeShutdown = vi.spyOn(runtime, 'shutdown').mockImplementation(async () => {
         await shutdown.promise

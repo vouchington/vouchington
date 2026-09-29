@@ -116,7 +116,7 @@ export function registerLandingPageAnalyticsTests(options: {
     await flush()
 
     const recordedId = options.privacyId === 'item' ? itemId : landingPageId
-    const rows = await query<Record<string, unknown>>(
+    const rows = await query(
       `SELECT * FROM ${options.privacyTable} WHERE page_kind = 'landing_page' AND ${options.privacyColumn} = '${recordedId}' AND session_id = '${session.sid}'`,
     )
     expect(rows).toHaveLength(0)

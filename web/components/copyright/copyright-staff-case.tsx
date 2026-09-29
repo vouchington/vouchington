@@ -12,6 +12,7 @@ import {
   CopyrightStaffCounterNotices,
   CopyrightStaffIntentRecovery,
 } from './copyright-staff-case-detail'
+import { CopyrightStaffGuestCapability } from './copyright-staff-guest-capability'
 import { CopyrightRepeatInfringerActions } from './copyright-repeat-infringer-actions'
 import { CopyrightStaffLegalHoldReview } from './copyright-staff-case-legal-hold'
 import {
@@ -69,6 +70,7 @@ export function CopyrightStaffCase({
           targets={notice.targets}
         />
       ))}
+      <CopyrightStaffGuestCapability noticeId={notice.id} />
       <CopyrightStaffCorrespondence notice={notice} />
       <CopyrightStaffIntentRecovery {...{ notice, pending, submitRecovery }} />
       <CopyrightRepeatInfringerActions
@@ -104,7 +106,9 @@ function CopyrightStaffFormReview({ canSubmit, notice, pending, rationale, submi
       heading='Pending form review'
       description={
         formReview.screening
-          ? `Agent: ${formReview.screening.recommendation}. ${formReview.screening.rationale}`
+          ? formReview.screening.state === 'completed'
+            ? `Agent: ${formReview.screening.recommendation}. ${formReview.screening.rationale}`
+            : `Screening ${formReview.screening.state}. Moderator review required.`
           : formReview.source_kind
       }
       approveLabel='Approve intake'

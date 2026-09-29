@@ -1,10 +1,7 @@
 import type { BasicUser } from '@voucha/types/entities/user'
 import type { EntityRelationMetadata } from './metadata.mts'
-import type {
-  EntityIdentifier,
-  UpsertEntityRelationsOptions,
-  UpsertEntityTypes,
-} from './upsert-helpers.mts'
+import type { EntityIdentifier, UpsertEntityTypes } from './upsert-helpers.mts'
+import type { UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
 import { assertPostRelatedUrlsAllowed } from './assert-post-related-urls-allowed.mts'
 import { assertPublisherTypeObjectsAreValid } from './assert-publisher-type-relation.mts'
 import { assertTopicParentRelationsAreValid } from './assert-topic-parent-relation.mts'

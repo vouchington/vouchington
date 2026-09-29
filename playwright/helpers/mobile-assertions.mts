@@ -21,7 +21,7 @@ export function getHorizontalOverflowState(): HorizontalOverflowState {
       offenders.push({
         tag: element.tagName,
         id: element.id,
-        cls: (element as HTMLElement).className?.toString().slice(0, 60),
+        cls: (element.getAttribute('class') ?? '').slice(0, 60),
         right: Math.round(rect.right),
       })
     }

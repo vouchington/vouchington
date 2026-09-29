@@ -7,7 +7,7 @@ const mockScrollPrev = vi.hoisted(() => vi.fn<VitestLooseMock>())
 const mockScrollNext = vi.hoisted(() => vi.fn<VitestLooseMock>())
 
 vi.mock(
-  import('../carousel'),
+  import('./context'),
   () =>
     ({
       useCarousel: () => ({
@@ -17,7 +17,7 @@ vi.mock(
         canScrollPrev: true,
         canScrollNext: true,
       }),
-    }) as unknown as typeof import('../carousel'),
+    }) as unknown as typeof import('./context'),
 )
 
 describe('InternalCarouselPrevious', () => {

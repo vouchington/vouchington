@@ -12,7 +12,7 @@ export async function finalizeClaimedTopicAliases(
   if (claimedAliases.length === 0) return
 
   const aliases = claimedAliases.map(alias => alias.alias)
-  entityCacheBloomFilters.topics.add(aliases.map(normalizeKey))
+  void entityCacheBloomFilters.topics.add(aliases.map(normalizeKey))
   await Promise.all([
     invalidate.topics(topicId, aliases),
     invalidate.topic_metrics(topicId),

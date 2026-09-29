@@ -41,7 +41,7 @@ export async function rssFeedNeedsChapterMetadataBackfill(
   const {
     rows: [row],
   } = await read<{ needs_backfill: boolean }>(query)
-  return row?.needs_backfill === true
+  return row?.needs_backfill ?? false
 }
 
 function getChapterReferences(feedItems: RssFeedItemToUpsert[]): ChapterReference[] {

@@ -16,7 +16,7 @@ import { VALID_RSS_FEED_ITEM_FEED_TYPES, type RssFeedItemFeedType } from '@servi
 import { maskAnonymousPosts } from '@services/posts'
 import { getPostIdsByUrlIds } from '@services/posts/search/get-posts-by-url-ids'
 import {
-  getItemIdsByStoryIds,
+  getStoryPreviews,
   getVisiblePostStoryIdsByStoryIds,
   getStoriesByIdBatch,
 } from '@services/stories'
@@ -76,21 +76,21 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
   const storyIds = [
     ...new Set(result.results.flatMap(r => (r.story_id !== null ? [r.story_id] : []))),
   ]
-  const [storiesArr, storyMemberIds, storyPostIds] = await Promise.all([
+  const [storiesArr, storyMemberPages, storyPostIds] = await Promise.all([
     getStoriesByIdBatch(storyIds),
-    getItemIdsByStoryIds(storyIds),
+    getStoryPreviews(currentUser, result.results),
     getVisiblePostStoryIdsByStoryIds(currentUser, storyIds),
   ])
 
   // Fetch story member items not already in primary results
   const primaryIdSet = new Set(rssFeedItemIds)
-  const memberItemIds = [
-    ...new Set(
-      Object.values(storyMemberIds)
-        .flat()
-        .filter(id => !primaryIdSet.has(id)),
-    ),
-  ]
+  const memberItemIdsSet = new Set<string>()
+  for (const page of Object.values(storyMemberPages)) {
+    for (const id of page.item_ids) {
+      if (!primaryIdSet.has(id)) memberItemIdsSet.add(id)
+    }
+  }
+  const memberItemIds = [...memberItemIdsSet]
   const allItemIds = [...rssFeedItemIds, ...memberItemIds]
 
   const sharedByUserIds = [
@@ -124,7 +124,7 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
     results: result.results,
     page_info: result.page_info,
     stories: storiesRecord,
-    story_member_ids: storyMemberIds,
+    story_member_pages: storyMemberPages,
     story_post_ids: storyPostIds,
     rss_feed_items: itemsPromise.then(items =>
       indexById(items.map(item => (item == null ? item : proxyRssFeedItemCoverArt(item)))),

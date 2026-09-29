@@ -1,26 +1,7 @@
-# Feed Components
+# Feed cards
 
-Agent rules for [`web/components/feed/`](./). Layout contracts and call-site narrative live in
-[NEWS-DISCUSSIONS.md § News Item Cards](../../../docs/requirements/content/NEWS-DISCUSSIONS.md#news-item-cards).
-
-## Rules
-
-- Report lives only in the card kebab, never as a standalone action-row button. Discuss lives in
-  `NewsDiscussMenu` in the action row, not the kebab.
-- Never render a summary thumbnail without an excerpt. `thumbnailUrl` must already be a `/sideload/`
-  URL. Omit the thumbnail for video items.
-- `VideoEmbed` `thumbnailUrl` is a `/sideload/` URL or `undefined` — do not fall back to
-  `item.data.thumbnail_url`.
-- Header labels, action rows, and `CategoryChips` scroll horizontally — never `flex-wrap`.
-- RSS item category management is dialog-only. Do not add a full-page tags route.
-
-## Podcast Player
-
-Follow [PODCASTS.md](../../../docs/requirements/content/PODCASTS.md). Call sites must supply
-`showHref: topicHref(item.rss_feed.topic, 'latest')`, episode-first `coverArtUrl`, and
-`episodeId: item.id`.
-
-## See Also
-
-- [NEWS-DISCUSSIONS.md](../../../docs/requirements/content/NEWS-DISCUSSIONS.md)
-- [PODCASTS.md](../../../docs/requirements/content/PODCASTS.md)
+- Follow [news-card contracts](../../../docs/requirements/content/NEWS-DISCUSSIONS.md#news-item-cards).
+- Report appears only in the kebab; Discuss belongs in action-row `NewsDiscussMenu`, never the kebab.
+- Summary thumbnails require excerpts and `/sideload/` URLs; video items omit them. `VideoEmbed.thumbnailUrl` is `/sideload/` or undefined, never raw `item.data.thumbnail_url` fallback.
+- Header labels/action rows/CategoryChips scroll horizontally, never `flex-wrap`. RSS category management is dialog-only, never full-page tags routes.
+- [Podcast players](../../../docs/requirements/content/PODCASTS.md) receive `showHref: topicHref(item.rss_feed.topic, 'latest')`, episode-first `coverArtUrl`, and `episodeId: item.id`.

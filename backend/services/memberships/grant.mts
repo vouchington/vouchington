@@ -1,5 +1,5 @@
 import type { MembershipPlanSlug } from './types.mts'
-import { createMembership } from './create.mts'
+import { createMembership } from './create-membership.mts'
 
 export async function grantMembership(
   currentUserId: string,

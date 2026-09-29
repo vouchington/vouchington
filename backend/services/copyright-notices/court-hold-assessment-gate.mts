@@ -1,7 +1,7 @@
-import { beginTransaction } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
-type CopyrightQuery = Awaited<ReturnType<typeof beginTransaction>>
+type CopyrightQuery = TransactionQuery
 
 /** A court or CCB filing has no target scope until its assessment exists, so the
  * whole case stays unrestorable. The notice lock serializes that check with admission. */

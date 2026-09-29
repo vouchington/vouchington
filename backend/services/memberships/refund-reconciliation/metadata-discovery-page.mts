@@ -2,7 +2,7 @@ import type {
   MetadataDiscoverableRefund,
   RefundMetadataPage,
   RefundMetadataScanState,
-} from './metadata-discovery.mts'
+} from './metadata-discovery-types.mts'
 import type { RefundReconciliationAttempt } from './types.mts'
 
 export function scanStateFromPage(

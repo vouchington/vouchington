@@ -11,6 +11,7 @@ import {
   parseDocument,
   visit,
 } from 'yaml'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export type UploadArtifactBlock = {
   retentionValue: unknown
@@ -176,5 +177,5 @@ export function artifactNameFromBlock(block: UploadArtifactBlock): string {
   if (block.artifactName == null) {
     throw new Error(`No artifact name found in upload-artifact block:\n${block.stepSource}`)
   }
-  return String(block.artifactName).replace(/\$\{\{[^}]*\}\}/g, 'INTERPOLATED')
+  return stringFromUnknown(block.artifactName).replace(/\$\{\{[^}]*\}\}/g, 'INTERPOLATED')
 }

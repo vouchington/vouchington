@@ -1,4 +1,4 @@
-// Design tokens derived from web/DESIGN-SYSTEM.md — light mode palette.
+// Design tokens derived from docs/overview/architecture/web/DESIGN-SYSTEM.md — light mode palette.
 // Email client dark-mode rendering is inconsistent and not reliably controllable, so we use light mode exclusively.
 export const colors = {
   background: '#f5f7f9', // hsl(220 20% 97%)

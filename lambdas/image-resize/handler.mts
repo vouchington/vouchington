@@ -1,6 +1,10 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import { resolveRuntimeSecret } from '@lambdas/shared/ssm-secret'
-import { SIDELOAD_SIGNING_KEYS_ENV } from '@ts-shared/url-signing'
+import {
+  SIDELOAD_SIGNING_KEYS_ENV,
+  type DependencyAuthorization,
+  type PlacementSourcePolicy,
+} from '@ts-shared/url-signing'
 import { isOgRequest, isSideloadRequest, parseRouterRequest } from './request/index.mts'
 import { fetchImageFromUrl as defaultFetchImageFromUrl } from './http/index.mts'
 import { buildErrorResponse } from './response/index.mts'
@@ -23,11 +27,15 @@ const sideloadSigningKeysParameterEnv = 'VOUCHA_SIDELOAD_SIGNING_KEYS_PARAMETER'
 
 export interface LambdaHandlerDependencies extends ImageRequestDependencies {
   fetchImageFromUrl: typeof defaultFetchImageFromUrl
+  authorizeDependencies: (
+    dependencies: readonly PlacementSourcePolicy[],
+  ) => Promise<readonly DependencyAuthorization[]>
 }
 
 const defaultLambdaHandlerDependencies: LambdaHandlerDependencies = {
   ...defaultImageRequestDependencies,
   fetchImageFromUrl: defaultFetchImageFromUrl,
+  authorizeDependencies: async dependencies => dependencies.map(() => 'unknown'),
 }
 
 export function createLambdaHandler(

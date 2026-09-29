@@ -276,7 +276,7 @@ async function createThreads(owner: PrivateUser, target: Community, count: numbe
 }
 
 async function users(count: number): Promise<PrivateUser[]> {
-  return Promise.all(Array.from({ length: count }, async () => await createTestUser()))
+  return Promise.all(Array.from({ length: count }, async () => createTestUser()))
 }
 
 async function getInbox(user: PrivateUser, target: Community, query: string) {

@@ -95,7 +95,7 @@ describe('createMembership with elapsed grants', () => {
     const promotedGrant = await grantMembership(admin.id, grantUser.id, 'pro', promotedSku.id, 30)
     await updateTestMembershipExpiresAt(firstGrant.id, new Date('2020-01-01T00:00:00Z'))
     const queuedSku = await createTestSku({ plan: 'plus' })
-    const enqueueEntitlementEffects = vi.fn<() => void>()
+    const enqueueEntitlementEffects = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
     const queued = await createMembership(
       {
         userId: grantUser.id,

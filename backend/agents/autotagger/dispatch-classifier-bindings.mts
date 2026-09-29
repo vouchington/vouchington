@@ -2,7 +2,7 @@ import { computeAutotaggerReceiptDigest } from '@services/autotagger'
 import { renderClassifierCandidateQuestion } from '@agents/classifiers/safe-content'
 import type { NoulClassifierBinding, TopicClassifierCandidate } from '@agents/classifiers/types'
 import type { ActiveClassifierConfiguration } from '@services/classifiers'
-import type { AutotaggerClassifierDispatchInput } from './dispatch-classifier.mts'
+import type { AutotaggerClassifierDispatchInput } from './dispatch-classifier-types.mts'
 
 // This dispatch path only ever builds topic candidates (never `StoryClassifierCandidate`), so its
 // bindings are narrowed to that specific member of the `candidate` union rather than left at the

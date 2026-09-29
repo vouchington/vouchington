@@ -195,7 +195,12 @@ describe('NewsItemClusterList', () => {
           official_rss_feed_item_id: null,
         },
       },
-      story_member_ids: { 'story-1': ['item-1', 'item-2'] },
+      story_member_pages: {
+        'story-1': {
+          item_ids: ['item-2'],
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        },
+      },
       rss_feed_item_elections: {
         'item-1': makeElection('election-1'),
         'item-2': makeElection('election-2'),
@@ -237,7 +242,12 @@ describe('NewsItemClusterList', () => {
           official_rss_feed_item_id: null,
         },
       },
-      story_member_ids: { 'story-1': ['item-1', 'item-2'] },
+      story_member_pages: {
+        'story-1': {
+          item_ids: ['item-2'],
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        },
+      },
       rss_feed_item_elections: {},
       related_posts_by_url_id: {
         'url-item-1': [primaryPost.id],

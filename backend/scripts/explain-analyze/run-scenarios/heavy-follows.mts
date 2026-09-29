@@ -12,13 +12,13 @@ export async function runHeavyFollowScenarios() {
   // with the baseline results above.
   await runAndCapture(
     'post-feed-heavy-follows',
-    () => getPostFeedIds(heavyFollowUser as any, { limit: 25, time_range: '1w' }),
+    () => getPostFeedIds(heavyFollowUser, { limit: 25, time_range: '1w' }),
     'heavy',
   )
   await runAndCapture(
     'post-feed-heavy-follow-users',
     () =>
-      getPostFeedIds(heavyFollowUser as any, {
+      getPostFeedIds(heavyFollowUser, {
         feed_type: 'follow_users',
         limit: 25,
         time_range: '1w',
@@ -28,7 +28,7 @@ export async function runHeavyFollowScenarios() {
   await runAndCapture(
     'post-feed-heavy-follow-topics',
     () =>
-      getPostFeedIds(heavyFollowUser as any, {
+      getPostFeedIds(heavyFollowUser, {
         feed_type: 'follow_topics',
         limit: 25,
         time_range: '1w',
@@ -38,7 +38,7 @@ export async function runHeavyFollowScenarios() {
   await runAndCapture(
     'post-feed-heavy-all',
     () =>
-      getPostFeedIds(heavyFollowUser as any, {
+      getPostFeedIds(heavyFollowUser, {
         feed_type: 'all',
         limit: 25,
         time_range: '1w',
@@ -47,20 +47,20 @@ export async function runHeavyFollowScenarios() {
   )
   await runAndCapture(
     'post-feed-heavy-hot',
-    () => getPostFeedIds(heavyFollowUser as any, { sort: 'hot', limit: 25, time_range: '1w' }),
+    () => getPostFeedIds(heavyFollowUser, { sort: 'hot', limit: 25, time_range: '1w' }),
     'heavy-hot',
   )
 
   await runRssFeedFirstAndContinuationScenarios(
     'rss-feed-item-feed-heavy-follows',
-    heavyFollowUser as any,
+    heavyFollowUser,
     { limit: 25, time_range: '1w' },
     'heavy',
   )
   await runAndCapture(
     'rss-feed-item-feed-heavy-follow-rss-feeds',
     () =>
-      getRssFeedItemFeedIds(heavyFollowUser as any, {
+      getRssFeedItemFeedIds(heavyFollowUser, {
         feed_type: 'follow_rss_feeds',
         limit: 25,
         time_range: '1w',
@@ -70,7 +70,7 @@ export async function runHeavyFollowScenarios() {
   await runAndCapture(
     'rss-feed-item-feed-heavy-follow-topics',
     () =>
-      getRssFeedItemFeedIds(heavyFollowUser as any, {
+      getRssFeedItemFeedIds(heavyFollowUser, {
         feed_type: 'follow_topics',
         limit: 25,
         time_range: '1w',
@@ -80,7 +80,7 @@ export async function runHeavyFollowScenarios() {
   await runAndCapture(
     'rss-feed-item-feed-heavy-all',
     () =>
-      getRssFeedItemFeedIds(heavyFollowUser as any, {
+      getRssFeedItemFeedIds(heavyFollowUser, {
         feed_type: 'all',
         limit: 25,
         time_range: '1w',
@@ -88,7 +88,7 @@ export async function runHeavyFollowScenarios() {
     'heavy-all',
   )
   await runAndCapture('rss-feed-item-feed-heavy-story-skew', async () => {
-    const page = await getRssFeedItemFeedIds(heavyFollowUser as any, {
+    const page = await getRssFeedItemFeedIds(heavyFollowUser, {
       limit: 25,
       time_range: '1w',
       text_search_query: STORY_POST_RELATED_URL_PROJECTION_SEED.feedSearchToken,
@@ -104,13 +104,13 @@ export async function runHeavyFollowScenarios() {
 
   await runAndCapture(
     'post-search-heavy-follows',
-    () => getPostIds(heavyFollowUser as any, { sort: 'best', limit: 25, time_range: '1w' }),
+    () => getPostIds(heavyFollowUser, { sort: 'best', limit: 25, time_range: '1w' }),
     'heavy',
   )
   await runAndCapture(
     'post-search-following-new-heavy-follows',
     () =>
-      getPostIds(heavyFollowUser as any, {
+      getPostIds(heavyFollowUser, {
         sort: 'following_new',
         limit: 25,
         time_range: '1w',
@@ -119,7 +119,7 @@ export async function runHeavyFollowScenarios() {
   )
   await runAndCapture(
     'post-search-profile',
-    () => getPostIds(seedUser as any, { user_id: seedUser.id, limit: 25, time_range: '1w' }),
+    () => getPostIds(seedUser, { user_id: seedUser.id, limit: 25, time_range: '1w' }),
     'profile',
   )
 }

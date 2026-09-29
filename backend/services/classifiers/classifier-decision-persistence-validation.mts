@@ -10,7 +10,7 @@ import {
   type PersistedClassifierDecision,
   type PersistedClassifierDecisionResult,
 } from './types.mts'
-import type { LockedClassifierDecisionBatch } from './classifier-decision-batch-lifecycle.mts'
+import type { LockedClassifierDecisionBatch } from './classifier-decision-batch-types.mts'
 import { expectedClassifierDecisionResultCount } from './write-decision-results.mts'
 
 export function assertCandidateKindMatchesSubject(

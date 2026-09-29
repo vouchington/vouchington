@@ -27,5 +27,5 @@ export async function runWithBackgroundResponseHooks<T>(
   hooks: BackgroundResponseHooks,
   callback: () => Promise<T>,
 ): Promise<T> {
-  return await backgroundResponseHooksContext.run(hooks, callback)
+  return backgroundResponseHooksContext.run(hooks, callback)
 }

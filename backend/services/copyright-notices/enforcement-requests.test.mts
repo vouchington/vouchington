@@ -47,7 +47,7 @@ async function createEnforcementFixture() {
     initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', bodyCiphertext: 'notice' },
     targets: [
       {
-        placementKey: `image-placement:${placement.placement_id}`,
+        placementId: placement.placement_id,
         placementRevision: placement.placement_revision,
         imageId,
         hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
@@ -117,7 +117,7 @@ describe('copyright enforcement requests', () => {
           supersedesAssessmentId: assessment.id,
         })
         await expect(processCopyrightEnforcementRequest(assessment.id)).resolves.toBe('not_claimed')
-        return await acceptCopyrightNoticeAndImposeRestriction(input)
+        return acceptCopyrightNoticeAndImposeRestriction(input)
       })
 
     await expect(

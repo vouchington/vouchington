@@ -14,8 +14,6 @@ import type * as Undici from 'undici'
 // binding from this module. If some other import triggers the mocked `undici` load before this
 // binding initializes, the factory throws a temporal-dead-zone `ReferenceError` instead of
 // returning the mock -- this is plain ESM evaluation order, not a Vitest-specific limitation.
-export const TEST_CAPTCHA_TOKEN = 'mock-captcha-token'
-
 export const mockFetch = vi.fn<typeof Undici.fetch>()
 
 export async function createCaptchaUndiciMock(): Promise<typeof import('undici')> {

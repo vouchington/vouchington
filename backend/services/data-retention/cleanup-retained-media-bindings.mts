@@ -61,6 +61,10 @@ export async function cleanupRetainedMediaBindings(
        AND NOT EXISTS (SELECT 1 FROM media_placements live WHERE live.id = binding.placement_id)
        AND NOT EXISTS (SELECT 1 FROM media_delivery_registry_records registry
          WHERE registry.placement_id = binding.placement_id)
+       AND NOT EXISTS (SELECT 1 FROM copyright_notice_targets target
+         WHERE target.placement_id = binding.placement_id)
+       AND NOT EXISTS (SELECT 1 FROM copyright_notice_target_images target_image
+         WHERE target_image.placement_id = binding.placement_id)
        `,
     [locked.map(row => row.placement_id)],
   )

@@ -27,6 +27,7 @@
   "devDependencies": {
     "@modules/http-signatures": "workspace:^",
     "@services/remote-actors": "workspace:^",
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "vitest": "^5.0.2"
   }
 }

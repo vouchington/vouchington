@@ -1,11 +1,7 @@
 import type { BasicUser } from '@voucha/types/entities/user'
 import type { EntityRelationMetadata } from './metadata.mts'
-import type {
-  EntityIdentifier,
-  EntityRelation,
-  UpsertEntityRelationsOptions,
-  UpsertEntityTypes,
-} from './upsert-helpers.mts'
+import type { EntityIdentifier, UpsertEntityTypes } from './upsert-helpers.mts'
+import type { EntityRelation, UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
 import { writeEntityRelations } from './write-relations.mts'
 import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-discoverability/enqueues'
 

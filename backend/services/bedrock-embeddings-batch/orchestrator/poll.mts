@@ -61,7 +61,7 @@ export const processBatch = async (batchId: string): Promise<ProcessBatchOutcome
 
 /* no-mistakes: integration=bedrock */
 export async function retrieveBedrockBatch(jobArn: string) {
-  return await BedrockControlClient.send(
+  return BedrockControlClient.send(
     new GetModelInvocationJobCommand({
       jobIdentifier: jobArn,
     }),

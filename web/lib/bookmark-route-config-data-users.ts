@@ -2,7 +2,7 @@
  * Bookmark route config data for user relation pages (following, followers, muted, blocked, subscriptions).
  * Imported by bookmark-route-config-data.ts — do not import this directly.
  */
-import type { BookmarkRouteConfig } from './bookmark-route-configs'
+import type { BookmarkRouteConfig } from './bookmark-route-config-types'
 
 export const bookmarkRouteConfigDataUsers = {
   'users/following': {

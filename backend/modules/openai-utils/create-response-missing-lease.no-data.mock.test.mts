@@ -53,7 +53,7 @@ describe('background response drain without a durable lease', () => {
       runWithOpenAIResponseAttemptHooks(
         { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
         async () =>
-          await runWithBackgroundResponseHooks(
+          runWithBackgroundResponseHooks(
             { onResponseCreated: () => Promise.resolve(undefined) },
             () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
           ),

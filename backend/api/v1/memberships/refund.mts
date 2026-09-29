@@ -146,7 +146,7 @@ app.route('/api/v1/memberships/refunds').post(async (ctx: Context) => {
     )
     return
   }
-  enqueueDispatchMembershipRefundReconciliationBestEffort()
+  void enqueueDispatchMembershipRefundReconciliationBestEffort()
   ctx.setStatus(202)
   ctx.set('Retry-After', '300')
   ctx.json(

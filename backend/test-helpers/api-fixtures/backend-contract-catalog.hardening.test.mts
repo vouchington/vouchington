@@ -125,6 +125,7 @@ const expectedParameters = {
   'GET:/api/v1/rss-feeds/:id/crawls': ['after', 'limit'],
   'GET:/api/v1/rss-feeds/recommended': ['after', 'limit', 'source'],
   'GET:/api/v1/rss-feeds/trending': ['after', 'limit', 'min_score', 'time_range'],
+  'GET:/api/v1/stories/:id': ['after', 'exclude_item_id', 'limit'],
   'GET:/api/v1/topic-recommendations/top-hashtags': ['after', 'limit', 'mapping', 'q'],
   'GET:/api/v1/topics': [
     'after',

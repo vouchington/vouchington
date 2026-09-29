@@ -10,8 +10,9 @@ import {
   searchCommunitiesCached,
 } from '@services/entity-fetch/search-caches'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
-import type { PrivateUser } from '@services/users/types'
 import { searchNewsVertical, searchPostsVertical } from './omnisearch-content-verticals.mts'
+import type { OmnisearchPost, OmnisearchNewsItem, OmnisearchOptions } from './omnisearch-types.mts'
+export type { OmnisearchPost, OmnisearchNewsItem, OmnisearchOptions } from './omnisearch-types.mts'
 
 const DEFAULT_LIMIT = 3
 
@@ -20,22 +21,6 @@ export type OmnisearchTopic = {
   name: string
   slug: string
   topic_type: string
-}
-
-export type OmnisearchPost = {
-  id: string
-  post_type: string
-  title: string
-  authored_title: string | null
-  declared_language: string | null
-  lingua_rs_detected_language: string | null
-}
-
-export type OmnisearchNewsItem = {
-  id: string
-  url: string
-  title: string
-  feed_title: string
 }
 
 export type OmnisearchDomain = {
@@ -56,21 +41,6 @@ export type OmnisearchResult = {
   news: OmnisearchNewsItem[]
   domains: OmnisearchDomain[]
   communities: OmnisearchCommunity[]
-}
-
-export type OmnisearchOptions = {
-  /** Authenticated user; controls which cached vs. live paths are used. */
-  currentUser?: PrivateUser | null
-  /** Plain-text portion of the query after hashtag mentions are stripped. */
-  textSearchQuery?: string
-  /** Topic IDs resolved from `#topic-name` mentions for verticals that support topic filtering. */
-  hashtagTopicIds?: string[]
-  /** Unlinked alias IDs resolved from hashtag mentions for post and news filtering. */
-  hashtagAliasIds?: string[]
-  /** An unresolved hashtag makes the complete AND-filtered search empty. */
-  hasUnknownHashtag?: boolean
-  /** Per-vertical result cap. Defaults to 3. */
-  limit?: number
 }
 
 function hasPositiveBookmark(p: Record<string, boolean> | undefined): boolean {

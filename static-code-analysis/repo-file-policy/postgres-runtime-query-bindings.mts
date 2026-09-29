@@ -12,7 +12,7 @@ import { classifyDynamicUse } from './postgres-runtime-query-dynamic-use.mts'
 import { markDynamic } from './postgres-runtime-query-escapes.mts'
 import { predeclareFunctionScopedVars } from './postgres-runtime-query-function-vars.mts'
 import { createsScope, predeclareScope } from './postgres-runtime-query-lexical-scope.mts'
-import { type QueryNode } from './postgres-runtime-query-syntax.mts'
+import type { QueryNode } from './postgres-runtime-query-syntax.mts'
 import type { ScopeBinding, SqlStatementBinding } from './postgres-runtime-query-types.mts'
 
 export type { SqlStatementBinding } from './postgres-runtime-query-types.mts'

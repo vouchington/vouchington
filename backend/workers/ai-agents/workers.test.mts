@@ -29,10 +29,12 @@ describe('ai-agents workers', () => {
 
   it('constructs the worker with the queue processor and runtime options', () => {
     const constructed: unknown[] = []
-    class CapturingWorker<T> {
-      constructor(name: string, processor: (job: Job<T>) => unknown, options: unknown) {
-        constructed.push({ name, processor, options })
-      }
+    function CapturingWorker(
+      name: string,
+      processor: (job: Job<AIAgentJobData>) => unknown,
+      options: unknown,
+    ): void {
+      constructed.push({ name, processor, options })
     }
 
     const worker = createAIAgentsWorker({

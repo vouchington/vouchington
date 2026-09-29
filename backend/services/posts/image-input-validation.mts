@@ -2,7 +2,7 @@ import { read } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import type { PostImageInput } from './images.mts'
+import type { PostImageInput } from './images-types.mts'
 
 async function assertImagesExistForUser(
   imageIds: string[],

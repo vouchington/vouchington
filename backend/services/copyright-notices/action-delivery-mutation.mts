@@ -26,14 +26,14 @@ export async function mutateCopyrightPlacement(input: {
       : input.legal.action === 'withhold'
         ? await input.dependencies.withholdImagePlacementForCopyright(
             {
-              placementKey: input.legal.placement_key,
+              placementId: input.legal.placement_id,
               expectedRevision: input.legal.expected_placement_revision,
             },
             { query: input.query },
           )
         : await input.dependencies.restoreImagePlacementForCopyright(
             {
-              placementKey: input.legal.placement_key,
+              placementId: input.legal.placement_id,
               expectedRevision: input.legal.expected_placement_revision,
             },
             { query: input.query },

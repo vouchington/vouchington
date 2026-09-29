@@ -17,3 +17,14 @@ Authentication UI, security requirements, and CVE tracking.
 
 When security policies, authentication flows, or CVE mitigations change, update the relevant doc
 here and cross-link from `docs/overview/architecture/auth-overview.md` and `backend/AGENTS.md`.
+
+## Reference index
+
+- [CF Worker (edge — all responses)](reference-cf-worker-edge-all-responses.md)
+- [Content Security Policy (CF Worker)](reference-content-security-policy-cf-worker.md)
+- [Security Architecture reference](reference-security-authentication-sessions.md)
+- [Security Architecture reference](reference-security-honeypot-fields.md)
+- [Next.js CVE Tracking reference](reference-security-nextjs-cves-edge-mitigation-reference.md)
+- [Next.js CVE Tracking reference](reference-security-nextjs-cves-patch-floor.md)
+- [Security Architecture reference](reference-security-response-headers.md)
+- [Security Architecture reference](reference-security-ssrf-protection.md)

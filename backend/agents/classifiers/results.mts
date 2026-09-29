@@ -1,5 +1,4 @@
 import type {
-  ChoiceAnswer,
   NoulAnswer,
   StructuredDecisionAnswer,
   StructuredDecisionRequest,
@@ -95,7 +94,7 @@ function choiceResults(
 function resultForCandidate(
   candidate: ClassifierDecisionCandidate,
   probability: number,
-  rawResponse: NoulAnswer['raw'] | ChoiceAnswer['raw'],
+  rawResponse: NoulAnswer['raw'],
 ): ClassifierDecisionInputResult {
   if (!Number.isFinite(probability) || probability < 0 || probability > 1)
     throw new Error('Structured-decision answer produced an invalid probability')

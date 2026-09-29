@@ -274,7 +274,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "fixtureIds": ["web.copyright.staff-queue.default"],
-      "hash": "cf6778b83a2cca1f3cac21da8be7d3ca573ddc61a9fc9204031365b4358414f8"
+      "hash": "0dbcc8511172f40e05a0a2866bc42b213aa55c35514a29ba667b51c05de9c5f2"
     },
     "GET:/api/v1/currencies": {
       "fixtureIds": ["shared.currencies.list.default"],
@@ -690,6 +690,10 @@
       "fixtureIds": ["shared.scopes.catalog"],
       "hash": "69c8663d082a689ed73bf12361dd28d8427290d3efc4d35dde806668d834793a"
     },
+    "GET:/api/v1/stories/:id": {
+      "fixtureIds": ["native.stories.get.after", "native.stories.get.default"],
+      "hash": "7d950657d3ccf2e70092466b0fbc280e8d13aba7fef8e7ad9dc431c695624234"
+    },
     "GET:/api/v1/topic-recommendations/:id": {
       "fixtureIds": ["native.topic-recommendation.detail.default"],
       "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
@@ -1005,6 +1009,22 @@
     "POST:/api/v1/communities/:idOrSlug/ban-evasion/:userId": {
       "fixtureIds": ["native.moderation.ban-evasion.confirm"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "POST:/api/v1/copyright-notices/:id/guest-capabilities": {
+      "fixtureIds": ["web.copyright.guest-capability.issued"],
+      "hash": "d020364fa55f17a7d92aa47b6df59fa93651e78fcd65be6691cb9593e0fb0387"
+    },
+    "POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/information-requests": {
+      "fixtureIds": ["web.copyright.guest-information.requested"],
+      "hash": "39aec6be5b694c97ce0291fc4a93fea547cdba8febccaf681a96ec7449d385e4"
+    },
+    "POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation": {
+      "fixtureIds": ["web.copyright.guest-capability.revoked"],
+      "hash": "756c9bcbcd01f3880046c6ff429f69f8d58e58e3c634e434a3eebfe4a52a765a"
+    },
+    "POST:/api/v1/copyright-notices/:id/guest-filings": {
+      "fixtureIds": ["web.copyright.guest-filing.received"],
+      "hash": "94297713083069a9f725d702f8105598f113074f96ac30e01bd04a25c8a71c96"
     },
     "POST:/api/v1/disputes/:id/approval#staff": {
       "fixtureIds": ["native.moderation.disputes.approval.default"],
@@ -2188,6 +2208,14 @@
       "fixtureIds": ["native.spending-category-topics.search.default"],
       "hash": "a4c895cbbde9c92724889e116c191ce69f099ef57d1075fc158468beae71eda7"
     },
+    "native.stories.get.after": {
+      "fixtureIds": ["native.stories.get.after"],
+      "hash": "03df7f293538db1497e33a592feb3d9d9da4896fbb2970dfa9f7aa2e54b8bead"
+    },
+    "native.stories.get.default": {
+      "fixtureIds": ["native.stories.get.default"],
+      "hash": "ec37a7e011d5c598b5cfeb5f3a2021bda48e3d946ea613d6f46abae6ae147ac0"
+    },
     "native.topic-recommendation.detail.default": {
       "fixtureIds": ["native.topic-recommendation.detail.default"],
       "hash": "ed1209544cd19ada812831cbce440eecb9074f86c7f3b62767e2bfea9520d14d"
@@ -2306,7 +2334,7 @@
     },
     "swift.integration.rss-feed-items.video": {
       "fixtureIds": ["swift.integration.rss-feed-items.video"],
-      "hash": "6a61230061295518e850908e990ae3c5f388fd39c72f4d6081ed6e5f3f52851d"
+      "hash": "bbf6ae6184839b62fe8012340096d313c87f869854b81e85de19ca3b1babcf2d"
     },
     "swift.my.identity.default": {
       "fixtureIds": ["swift.my.identity.default"],
@@ -2334,7 +2362,7 @@
     },
     "swift.rss-feed-items.feed.default": {
       "fixtureIds": ["swift.rss-feed-items.feed.default"],
-      "hash": "00af2da23708c91ce4a9946cb5c676a865918001865d9bd6e67497aeb1fe24d2"
+      "hash": "77b4303dfcfbfcad02fd706975e4307fa2beb5a1d39c1f35b886966e68373008"
     },
     "swift.rss-feeds.default": {
       "fixtureIds": ["swift.rss-feeds.default"],
@@ -2550,7 +2578,7 @@
     },
     "web.communities.news.default": {
       "fixtureIds": ["web.communities.news.default"],
-      "hash": "ade947b5513970b12a9423bcff1c9805edf03c8274dcf33b05bd9ed4f4585b39"
+      "hash": "38b02eb31df3f2ea5449a5567f7e1b85b364ce03c5d1deab5cd7e79c6c72e584"
     },
     "web.communities.pinned-posts.default": {
       "fixtureIds": ["web.communities.pinned-posts.default"],
@@ -2596,6 +2624,22 @@
       "fixtureIds": ["web.copyright.email-intake-queue.default"],
       "hash": "8a1b695335a766e2a4b3a708026f9bb34cad58eb05e3fc788bb90cfd8cb2513b"
     },
+    "web.copyright.guest-capability.issued": {
+      "fixtureIds": ["web.copyright.guest-capability.issued"],
+      "hash": "54042215731992c250907470d52261c9dfd64d47be398f7652c4dc5ef89a8edb"
+    },
+    "web.copyright.guest-capability.revoked": {
+      "fixtureIds": ["web.copyright.guest-capability.revoked"],
+      "hash": "7a4fe4354244242ee63601817ff36c56df4abd91d0f4dfe4610c1c743eeeac88"
+    },
+    "web.copyright.guest-filing.received": {
+      "fixtureIds": ["web.copyright.guest-filing.received"],
+      "hash": "58f891f2c801906e22787ab770f9ca1498f68d7396876fc3f845e9bf77d1ed99"
+    },
+    "web.copyright.guest-information.requested": {
+      "fixtureIds": ["web.copyright.guest-information.requested"],
+      "hash": "93d93d2841c2f011847bb9e67366c1f5b2f40ac58e2bd4bf3986c782dfffaaad"
+    },
     "web.copyright.notice.detail.null-claimant": {
       "fixtureIds": ["web.copyright.notice.detail.null-claimant"],
       "hash": "9e46cdf92384461bf15c0e41ee2cb3607f3bc16c63538397838b029722f47b5e"
@@ -2622,7 +2666,7 @@
     },
     "web.copyright.staff-queue.default": {
       "fixtureIds": ["web.copyright.staff-queue.default"],
-      "hash": "49e36db7544c9f572de666304e92b1a31d88d4eaa275d06c34031c6d57e2ea6f"
+      "hash": "417a96ad52ff3a593c26c294c1a949b8a06f07ef2ec03517b80d601c7b5ac13d"
     },
     "web.growth-metrics.default": {
       "fixtureIds": ["web.growth-metrics.default"],
@@ -2678,7 +2722,7 @@
     },
     "web.rss-feed-items.feed.default": {
       "fixtureIds": ["web.rss-feed-items.feed.default"],
-      "hash": "6a61230061295518e850908e990ae3c5f388fd39c72f4d6081ed6e5f3f52851d"
+      "hash": "bbf6ae6184839b62fe8012340096d313c87f869854b81e85de19ca3b1babcf2d"
     },
     "web.topics.mutation.default": {
       "fixtureIds": ["web.topics.mutation.default"],

@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
+import picomatch from 'picomatch'
 import { parse as parseYaml } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
@@ -48,29 +49,29 @@ function toolingFilter(): string[] {
 }
 
 const fixtureDocumentationPaths = [
-  '.github/workflows/JOBS.md',
+  'docs/development/ci/workflows/JOBS.md',
   '.github/workflows/README.md',
-  '.github/workflows/VITEST.md',
+  'docs/development/ci/workflows/VITEST.md',
   '.github/workflows/AGENTS.md',
-  '.github/workflows/WORKFLOWS.md',
-  '.github/workflows/AUTHORING.md',
-  '.github/workflows/reference-step-timeouts.md',
-  '.github/workflows/reference-artifact-rerun-safety.md',
-  '.github/workflows/reference-github-actions-concurrency-locks.md',
-  '.github/workflows/reference-harness-automation-accepted-risk.md',
-  '.github/workflows/reference-fixed-branch-automation-prs.md',
-  '.github/workflows/reference-fix-main-dependency-policy.md',
-  '.github/workflows/reference-workflow-automation-map.md',
-  '.github/workflows/reference-workflow-automation-always-run.md',
-  '.github/workflows/reference-workflow-automation-pull-requests.md',
-  '.github/workflows/reference-workflow-automation-main.md',
-  '.github/workflows/reference-core-ci.md',
-  '.github/workflows/reference-vitest.md',
-  '.github/workflows/reference-playwright-and-storybook.md',
-  '.github/workflows/reference-deploy-and-release.md',
-  '.github/workflows/reference-harness-automation.md',
-  '.github/workflows/reference-workflow-change-preflight.md',
-  '.github/workflows/reference-maintenance-security-and-utilities.md',
+  'docs/development/ci/workflows/WORKFLOWS.md',
+  'docs/development/ci/workflows/AUTHORING.md',
+  'docs/development/ci/workflows/reference-step-timeouts.md',
+  'docs/development/ci/workflows/reference-artifact-rerun-safety.md',
+  'docs/development/ci/workflows/reference-github-actions-concurrency-locks.md',
+  'docs/development/ci/workflows/reference-harness-automation-accepted-risk.md',
+  'docs/development/ci/workflows/reference-fixed-branch-automation-prs.md',
+  'docs/development/ci/workflows/reference-fix-main-dependency-policy.md',
+  'docs/development/ci/workflows/reference-workflow-automation-map.md',
+  'docs/development/ci/workflows/reference-workflow-automation-always-run.md',
+  'docs/development/ci/workflows/reference-workflow-automation-pull-requests.md',
+  'docs/development/ci/workflows/reference-workflow-automation-main.md',
+  'docs/development/ci/workflows/reference-core-ci.md',
+  'docs/development/ci/workflows/reference-vitest.md',
+  'docs/development/ci/workflows/reference-playwright-and-storybook.md',
+  'docs/development/ci/workflows/reference-deploy-and-release.md',
+  'docs/development/ci/workflows/reference-harness-automation.md',
+  'docs/development/ci/workflows/reference-workflow-change-preflight.md',
+  'docs/development/ci/workflows/reference-maintenance-security-and-utilities.md',
   'AGENTS.md',
   'docs/development/ci.md',
   'docs/development/reference-ci-classifying-transient-infrastructure-failures.md',
@@ -84,15 +85,15 @@ const fixtureDocumentationPaths = [
   'docs/development/first-party-dependencies.md',
   'docs/development/reference-dependency-updates-first-party-release-gate-exemptions.md',
   'docs/development/reference-dependency-updates-supply-chain-policy.md',
-  'dev/reference-bedrock-embeddings-local.md',
-  'dev/README.md',
-  'dev/reference-command-catalog.md',
-  'backend/README.md',
+  'docs/development/local-development/reference-bedrock-embeddings-local.md',
+  'docs/development/local-development/README.md',
+  'docs/development/local-development/reference-command-catalog.md',
+  'docs/overview/architecture/backend/README.md',
   'backend/agents/AGENTS.md',
   'backend/agents/README.md',
-  'backend/agents/reference-tests.md',
-  'backend/data-stores/psql/reference-migrations-views-and-config-driven.md',
-  'backend/data-stores/psql/schema-snapshot/README.md',
+  'docs/overview/architecture/ai-agents/reference-tests.md',
+  'docs/development/postgresql/reference-migrations-views-and-config-driven.md',
+  'docs/development/postgresql/schema-snapshot/README.md',
   'docs/overview/architecture/agent-tools/catalog.md',
   'docs/overview/architecture/agent-tools/README.md',
   'docs/overview/infrastructure/reference-deployment-ci-cd-flow.md',
@@ -120,11 +121,31 @@ describe('CI fixture documentation classifier', () => {
     }
 
     expect(docsOnly(['docs/development/ci.md', 'docs/development/tests.md'])).toBe(false)
-    expect(docsOnly(['docs/development/tests.md', '.github/workflows/VITEST.md'])).toBe(false)
+    expect(docsOnly(['docs/development/tests.md', 'docs/development/ci/workflows/VITEST.md'])).toBe(
+      false,
+    )
     expect(docsOnly(['.github/workflows/cleanup-artifacts.yml'])).toBe(false)
     expect(docsOnly(['docs/development/tests.md', 'package.json'])).toBe(false)
     // Now covered by the whole-tree docs/prompts/.+\.mdx? pattern -- see FIXTURE_DOC_TREES.
     expect(docsOnly(['docs/prompts/README.md'])).toBe(false)
+  })
+
+  it.each(['README.md', 'views.md', 'tables/widgets.md', 'nested/schema.md'])(
+    'keeps generated Markdown fixture %s out of docs-only skipping and selects main tooling checks',
+    file => {
+      const path = `docs/development/postgresql/schema-snapshot/markdown/${file}`
+      expect(docsOnly([path])).toBe(false)
+      expect(docsOnly([path, 'docs/development/tests.md'])).toBe(false)
+      expect(mainChecksPushPaths().some(glob => picomatch.isMatch(path, glob))).toBe(true)
+      expect(mainChecksToolingFilter().some(glob => picomatch.isMatch(path, glob))).toBe(true)
+    },
+  )
+
+  it('keeps unrelated schema documentation eligible for docs-only skipping', () => {
+    expect(docsOnly(['docs/development/postgresql/schema-snapshot/notes.md'])).toBe(true)
+    expect(docsOnly(['docs/development/postgresql/schema-snapshot/markdown-other/README.md'])).toBe(
+      true,
+    )
   })
 
   it('does not put living pin-policy pages on TEST_FIXTURE_DOCS just to run the pin guard', () => {

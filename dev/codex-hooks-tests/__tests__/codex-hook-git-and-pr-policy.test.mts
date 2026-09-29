@@ -59,12 +59,12 @@ describe('Codex hook git and PR policy', () => {
     ).toContain(reasonText)
   })
 
-  it('refuses a fetch and rebase chained in one command', () => {
+  it('allows a fetch and rebase chained in one command', () => {
     expect(
       findPreToolUseBlock({
         tool_input: { command: 'git fetch origin && git rebase origin/main' },
-      })?.reason,
-    ).toContain('./dev/rebase-onto-main')
+      }),
+    ).toBeNull()
   })
 
   it.each([

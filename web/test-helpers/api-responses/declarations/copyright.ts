@@ -5,6 +5,10 @@ import webCopyrightNoticeDetailPopulated from '../../../../api-fixtures/v1/respo
 import webCopyrightNoticeDetailNullClaimant from '../../../../api-fixtures/v1/responses/web.copyright.notice.detail.null-claimant.json'
 import webCopyrightNoticeParticipantPopulated from '../../../../api-fixtures/v1/responses/web.copyright.notice.participant.populated.json'
 import webCopyrightNoticeParticipantNullClaimant from '../../../../api-fixtures/v1/responses/web.copyright.notice.participant.null-claimant.json'
+import webCopyrightGuestCapabilityIssued from '../../../../api-fixtures/v1/responses/web.copyright.guest-capability.issued.json'
+import webCopyrightGuestCapabilityRevoked from '../../../../api-fixtures/v1/responses/web.copyright.guest-capability.revoked.json'
+import webCopyrightGuestFilingReceived from '../../../../api-fixtures/v1/responses/web.copyright.guest-filing.received.json'
+import webCopyrightGuestInformationRequested from '../../../../api-fixtures/v1/responses/web.copyright.guest-information.requested.json'
 import webCopyrightStaffQueueDefault from '../../../../api-fixtures/v1/responses/web.copyright.staff-queue.default.json'
 import type {
   CopyrightEmailIntakeQueuePage,
@@ -95,5 +99,46 @@ export const COPYRIGHT_DECLARATIONS = [
     webCopyrightEmailIntakeQueueDefault,
     context => context.server.copyrightNotices.getCopyrightEmailIntakeReviewQueue(),
     [context => context.client.copyrightEmailIntakes.listCopyrightEmailIntakes()],
+  ),
+  defineWebApiFixture<{
+    copyright_guest_capability: { id: string; expires_at: string; token: string }
+  }>()('web.copyright.guest-capability.issued', webCopyrightGuestCapabilityIssued, context =>
+    context.client.copyrightGuest.issueCopyrightGuestCapability(
+      '00000000-0000-7000-8000-000000000830',
+      '2099-07-03T12:00:00.000Z',
+    ),
+  ),
+  defineWebApiFixture<{
+    copyright_guest_capability: { id: string; revoked_at: string }
+  }>()('web.copyright.guest-capability.revoked', webCopyrightGuestCapabilityRevoked, context =>
+    context.client.copyrightGuest.revokeCopyrightGuestCapability(
+      '00000000-0000-7000-8000-000000000830',
+      '00000000-0000-7000-8000-000000000831',
+    ),
+  ),
+  defineWebApiFixture<{ copyright_correspondence: { id: string } }>()(
+    'web.copyright.guest-information.requested',
+    webCopyrightGuestInformationRequested,
+    context =>
+      context.client.copyrightGuest.requestCopyrightGuestInformation(
+        '00000000-0000-7000-8000-000000000830',
+        '00000000-0000-7000-8000-000000000831',
+        'Send the registration number.',
+      ),
+  ),
+  defineWebApiFixture<{
+    copyright_submission: {
+      id: string
+      kind: 'supplement' | 'withdrawal' | 'court_or_ccb_hold'
+      received_at: string
+    }
+  }>()('web.copyright.guest-filing.received', webCopyrightGuestFilingReceived, context =>
+    context.client.copyrightGuest.submitCopyrightGuestFiling({
+      noticeId: '00000000-0000-7000-8000-000000000830',
+      token: 'fixture-guest-capability-token',
+      kind: 'supplement',
+      statement: 'Corrected work description.',
+      cf_turnstile_response: 'fixture-turnstile-token',
+    }),
   ),
 ] as const satisfies readonly WebApiFixtureDeclaration<string, unknown>[]

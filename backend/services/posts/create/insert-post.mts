@@ -1,8 +1,9 @@
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { PrivateUser } from '@services/users/types'
-import type { CreatePostInput, Post } from '../types.mts'
+import type { CreatePostInput } from '../types.mts'
+import type { PostsTableRow } from '../posts-table-row.mts'
 import type { CreatePostDefaults } from './validation.mts'
-import type { PostScope } from './community-scope.mts'
+import type { PostScope } from './community-scope-types.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createPostTextEmbeddingContent, createPostModerationContent } from '../content.mts'
@@ -33,7 +34,7 @@ export async function insertPost({
     images: updates.images ?? [],
     structured_data: updates.structured_data,
   }).content_sha256
-  const { rows } = await write<Omit<Post, '__entity_type'>>(
+  const { rows } = await write<PostsTableRow>(
     sql`/* createPost */
       INSERT INTO posts (
         post_type, title, markdown, created_by_id, parent_id, root_id, community_id,

@@ -81,9 +81,11 @@ describe('worker-cpu Grafana heartbeat', () => {
     expect(GRAFANA_HEARTBEAT_INTERVAL_MS).toBe(60 * 60 * 1000)
     expect(addGracefulShutdownCallback).toHaveBeenCalledTimes(1)
 
-    await scheduled?.()
-    expect(fetch).toHaveBeenCalledTimes(2)
-    expect(onError).toHaveBeenCalledWith(new Error('network unavailable'))
+    scheduled?.()
+    await vi.waitFor(() => {
+      expect(fetch).toHaveBeenCalledTimes(2)
+      expect(onError).toHaveBeenCalledWith(new Error('network unavailable'))
+    })
 
     stop()
     expect(clearTimeout).toHaveBeenCalledWith(timer)

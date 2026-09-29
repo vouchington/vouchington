@@ -58,7 +58,7 @@ describe('Claude sandbox credential deny list', () => {
     expect(sandboxDoc).not.toContain(CREDENTIAL_DENY_MARKER)
   })
 
-  it('points the blackboard stop-work gate at the sandbox credential deny list', () => {
+  it('points the blackboard advisory probe at the sandbox credential deny list', () => {
     expect(repoFile('docs/development/agent-blackboard.md')).toContain(
       'agent-sandbox.md#sandbox-credential-deny-list',
     )

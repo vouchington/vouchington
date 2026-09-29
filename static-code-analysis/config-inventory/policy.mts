@@ -10,14 +10,14 @@ import { checkWorkflowEnvReferences } from './workflow-env-policy.mts'
 
 const ENV_VAR_INDEX_DOC = 'docs/overview/infrastructure/environment-variables.md'
 const LOCAL_ENV_VAR_DOC = 'docs/development/local-env-vars.md'
-const DEV_README = 'dev/README.md'
-const DEV_COMMAND_CATALOG_DOC = 'dev/reference-command-catalog.md'
+const DEV_README = 'docs/development/local-development/README.md'
+const DEV_COMMAND_CATALOG_DOC = 'docs/development/local-development/reference-command-catalog.md'
 const DOC_CROSS_LINKS = [
   ENV_VAR_INDEX_DOC,
   'docs/overview/architecture/dynamic-config.md',
   LOCAL_ENV_VAR_DOC,
   DEV_COMMAND_CATALOG_DOC,
-  'static-code-analysis/README.md',
+  'docs/development/quality/static-code-analysis/README.md',
 ] as const
 
 const CONFIG_INVENTORY_LINK_RE = /\.?\/?dev\/config-inventory/

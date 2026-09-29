@@ -120,8 +120,43 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'PATCH:/api/v1/communities/:idOrSlug/reports/:reportId': { category: 'write' },
   // Copyright intake — sensitive: legal submissions are CAPTCHA-protected and deliberately scarce
   'POST:/api/v1/copyright-notices': { category: 'sensitive', ttlSeconds: 3600 },
+  'POST:/api/v1/copyright-eu-notices': { category: 'sensitive', ttlSeconds: 3600 },
+  'POST:/api/v1/copyright-eu-notices/:id/acknowledgment-failures': { category: 'sensitive' },
+  'POST:/api/v1/copyright-eu-notices/:id/statements-of-reasons': { category: 'sensitive' },
+  'POST:/api/v1/copyright-eu-notices/:id/redress-requests': {
+    category: 'sensitive',
+    ttlSeconds: 3600,
+  },
+  'POST:/api/v1/copyright-eu-notices/:id/redress-requests/:redressId/decisions': {
+    category: 'sensitive',
+  },
+  'POST:/api/v1/copyright-eu-notices/:id/supervised-complaints': { category: 'sensitive' },
+  'POST:/api/v1/copyright-eu-reports': { category: 'sensitive' },
+  'POST:/api/v1/copyright-uk-notices': { category: 'sensitive', ttlSeconds: 3600 },
+  'POST:/api/v1/copyright-uk-notices/:id/acknowledgment-failures': { category: 'sensitive' },
+  'POST:/api/v1/copyright-uk-notices/:id/reviews': { category: 'sensitive' },
+  'POST:/api/v1/copyright-uk-notices/:id/redress-requests': {
+    category: 'sensitive',
+    ttlSeconds: 3600,
+  },
+  'POST:/api/v1/copyright-uk-notices/:id/redress-requests/:redressId/decisions': {
+    category: 'sensitive',
+  },
+  'POST:/api/v1/copyright-territorial-policies': { category: 'sensitive' },
+  'POST:/api/v1/copyright-territorial-policies/:id/withdrawals': { category: 'sensitive' },
   'POST:/api/v1/copyright-notices/:id/appeals': { category: 'sensitive', ttlSeconds: 3600 },
   'POST:/api/v1/copyright-notices/:id/counter-notices': {
+    category: 'sensitive',
+    ttlSeconds: 3600,
+  },
+  'POST:/api/v1/copyright-notices/:id/guest-capabilities': { category: 'sensitive' },
+  'POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation': {
+    category: 'sensitive',
+  },
+  'POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/information-requests': {
+    category: 'sensitive',
+  },
+  'POST:/api/v1/copyright-notices/:id/guest-filings': {
     category: 'sensitive',
     ttlSeconds: 3600,
   },

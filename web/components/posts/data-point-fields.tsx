@@ -9,7 +9,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import type { DataPointVertical } from '@voucha/types/entities/data-point'
 import type { FinancialProfile } from '@/types/my'
 import { CreditCardFields } from './credit-card-fields'
 import { BankAccountFields } from './bank-account-fields'
@@ -17,11 +16,14 @@ import { DataPointProfileFields } from './data-point-profile-fields'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { CurrencySelect } from '@/components/shared/currency-select'
 import type { CurrencyCode } from '@ts-shared/money'
-import { changeStructuredDataCurrency, prepareDataForVertical } from './data-point-fields-state'
-
-export type { DataPointVertical }
-
-export type StructuredDataState = Record<string, unknown>
+import {
+  changeStructuredDataCurrency,
+  prepareDataForVertical,
+  type StructuredDataState,
+} from './data-point-fields-state'
+import type { DataPointVertical } from '@voucha/types/entities/data-point'
+export type { DataPointVertical } from '@voucha/types/entities/data-point'
+export type { StructuredDataState } from './data-point-fields-state'
 
 interface Props {
   vertical: DataPointVertical | null

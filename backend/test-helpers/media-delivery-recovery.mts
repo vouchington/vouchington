@@ -45,7 +45,7 @@ export async function withTestMediaRecoveryBacklog<T>(
     ),
   )
   const deliveryKeys = records.map(record => record.deliveryKey).sort()
-  return await run({
+  return run({
     deliveryKeys,
     placements,
     scanBefore: await getMediaDeliveryRegistryScanBefore(),

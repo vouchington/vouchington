@@ -4,7 +4,6 @@ export const EXISTING_RELATIONAL_STORAGE_DEBT = {
   json: new Set([
     'community_agent_prompt_changes.next_fields',
     'community_agent_prompt_changes.previous_fields',
-    'copyright_notice_lifecycle_events.metadata',
     'dynamic_config_change_logs.next_fields',
     'dynamic_config_change_logs.previous_fields',
     'moderation_appeal_lifecycle_changes.metadata',

@@ -75,7 +75,7 @@ export function listen(target: http.Server, port: number): void {
   target.listen(port, () => {
     console.log(`Lambda dev server: http://localhost:${port}`)
     console.log('  GET  /images/{key}         — image resize')
-    console.log('  GET  /sideload/{base64url}  — sideload image resize')
+    console.log('  GET  /sideload/v2/{base64url}  — sideload image resize')
     console.log('  GET  /og/{base64url}        — OG/Twitter share-card render')
   })
 }

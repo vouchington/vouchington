@@ -37,7 +37,7 @@ Hidden form fields that bots fill but humans never see. Implemented as a zero-fr
 
 ### Backend behavior
 
-See [`backend/services/honeypot/README.md`](../../../backend/services/honeypot/README.md) for service documentation.
+See [`docs/overview/architecture/services/honeypot/README.md`](../../overview/architecture/services/honeypot/README.md) for service documentation.
 
 ---
 

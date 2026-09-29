@@ -4,7 +4,13 @@ Referenced from [the agent-sandbox scheduled prompt](../../../docs/prompts/sched
 
 ### Why frequency isn't the signal
 
-It's tempting to rank "most-escalated commands" and add the top ones to the bypass list. Don't. In this repo the dominant driver of escalations is the sandbox profile hitting the OS `E2BIG` argument-list limit — every registered git worktree contributes deny-paths to the profile, and once it's large enough, even read-only commands already covered by the escalation allowlist (`git`, `gh`, `cat`, `rg`) are forced to escalate just to run at all. Counting those escalations and proposing to allowlist them further would be circular: they're already allowlisted, and the actual fix is pruning the stale worktrees driving the profile size, not growing the bypass list. Worktree cleanup is a manual maintenance step and out of scope for this tool — it only needs to keep the E2BIG count from contaminating the other two sections.
+Escalation frequency alone does not establish a policy gap. Historical Claude captures contained
+sandbox profiles whose registered-worktree deny paths exceeded the OS `E2BIG` argument limit.
+That is one diagnosed mechanism, not a claim that it dominates the current runtime. Require the
+current normalized diagnostic before attributing an escalation to profile size. Keep `E2BIG`,
+linked-worktree Git write denials, credential/network boundaries, and deliberate policy refusals
+separate. Pruning stale worktrees addresses demonstrated profile growth; expanding an allowlist
+does not. Worktree cleanup remains a manual maintenance action outside this audit tool.
 
 The tool sidesteps this by classifying every record into one of three signals instead of one merged ranking. Each signal maps to a distinct action:
 

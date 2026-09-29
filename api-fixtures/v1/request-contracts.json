@@ -3401,13 +3401,31 @@
                       "additionalProperties": false,
                       "properties": {
                         "rationale": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "recommendation": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "state": {
+                          "enum": ["completed", "failed", "pending"],
                           "type": "string"
                         }
                       },
-                      "required": ["rationale", "recommendation"],
+                      "required": ["rationale", "recommendation", "state"],
                       "type": "object"
                     },
                     {
@@ -3617,6 +3635,10 @@
         "work_description"
       ],
       "type": "object"
+    },
+    "CopyrightStaffDisposition": {
+      "enum": ["maintain", "revoke"],
+      "type": "string"
     },
     "CopyrightStaffEmailIntake": {
       "additionalProperties": false,
@@ -3838,6 +3860,22 @@
         }
       },
       "required": ["copyright_notices", "page_info"],
+      "type": "object"
+    },
+    "CopyrightTerritorialPolicyApproval": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "jurisdiction": {
+          "$ref": "#/components/schemas/TerritorialCopyrightJurisdiction"
+        },
+        "policy_version": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "jurisdiction", "policy_version"],
       "type": "object"
     },
     "Country": {
@@ -5973,6 +6011,161 @@
         }
       },
       "required": ["message"],
+      "type": "object"
+    },
+    "EuCopyrightAcknowledgment": {
+      "additionalProperties": false,
+      "properties": {
+        "acknowledged_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "attempt_count": {
+          "type": "number"
+        },
+        "escalated": {
+          "type": "boolean"
+        },
+        "exhausted_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "last_attempt_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "acknowledged_at",
+        "attempt_count",
+        "escalated",
+        "exhausted_at",
+        "id",
+        "last_attempt_at"
+      ],
+      "type": "object"
+    },
+    "EuCopyrightRedressDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "decided_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "staff_disposition": {
+          "$ref": "#/components/schemas/CopyrightStaffDisposition"
+        }
+      },
+      "required": ["decided_at", "id", "staff_disposition"],
+      "type": "object"
+    },
+    "EuCopyrightRedressRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "is_duplicate": {
+          "type": "boolean"
+        }
+      },
+      "required": ["id", "is_duplicate"],
+      "type": "object"
+    },
+    "EuCopyrightStatementOfReasons": {
+      "additionalProperties": false,
+      "properties": {
+        "automation_disclosure": {
+          "const": "human"
+        },
+        "decided_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": ["automation_disclosure", "decided_at", "id"],
+      "type": "object"
+    },
+    "EuCopyrightSupervisedComplaint": {
+      "additionalProperties": false,
+      "properties": {
+        "escalation_id": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": ["escalation_id", "id"],
+      "type": "object"
+    },
+    "EuCopyrightTransparencyReport": {
+      "additionalProperties": false,
+      "properties": {
+        "escalation_count": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "period_ended_at": {
+          "type": "string"
+        },
+        "period_started_at": {
+          "type": "string"
+        },
+        "receipt_count": {
+          "type": "number"
+        },
+        "redress_decision_count": {
+          "type": "number"
+        },
+        "redress_request_count": {
+          "type": "number"
+        },
+        "statement_of_reasons_count": {
+          "type": "number"
+        },
+        "supervised_complaint_count": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "escalation_count",
+        "id",
+        "period_ended_at",
+        "period_started_at",
+        "receipt_count",
+        "redress_decision_count",
+        "redress_request_count",
+        "statement_of_reasons_count",
+        "supervised_complaint_count"
+      ],
       "type": "object"
     },
     "ExactTopic": {
@@ -14855,6 +15048,16 @@
       "properties": {},
       "type": "object"
     },
+    "Record_string_Array_string": {
+      "additionalProperties": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "properties": {},
+      "type": "object"
+    },
     "Record_string_ElectionVote": {
       "additionalProperties": {
         "$ref": "#/components/schemas/ElectionVote"
@@ -15346,6 +15549,20 @@
     "Record_string_ViewHostnameElection": {
       "additionalProperties": {
         "$ref": "#/components/schemas/ViewHostnameElection"
+      },
+      "properties": {},
+      "type": "object"
+    },
+    "Record_string_ViewRssFeedItem": {
+      "additionalProperties": {
+        "$ref": "#/components/schemas/ViewRssFeedItem"
+      },
+      "properties": {},
+      "type": "object"
+    },
+    "Record_string_ViewRssFeedItemElection": {
+      "additionalProperties": {
+        "$ref": "#/components/schemas/ViewRssFeedItemElection"
       },
       "properties": {},
       "type": "object"
@@ -17404,6 +17621,174 @@
       ],
       "type": "object"
     },
+    "StoryMemberPage": {
+      "additionalProperties": false,
+      "properties": {
+        "item_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        }
+      },
+      "required": ["item_ids", "page_info"],
+      "type": "object"
+    },
+    "StoryPageResponse": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "bookmarks": {
+              "additionalProperties": false,
+              "properties": {},
+              "type": "object"
+            },
+            "election_votes": {
+              "additionalProperties": false,
+              "properties": {},
+              "type": "object"
+            },
+            "item_ids": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "page_info": {
+              "$ref": "#/components/schemas/PageInfo"
+            },
+            "posts": {
+              "$ref": "#/components/schemas/Record_string_Post"
+            },
+            "posts_metrics": {
+              "$ref": "#/components/schemas/Record_string_PostMetrics"
+            },
+            "related_posts_by_url_id": {
+              "$ref": "#/components/schemas/Record_string_Array_string"
+            },
+            "rss_feed_bookmarks": {
+              "additionalProperties": false,
+              "properties": {},
+              "type": "object"
+            },
+            "rss_feed_item_content_html": {
+              "$ref": "#/components/schemas/Record_string_string"
+            },
+            "rss_feed_item_elections": {
+              "$ref": "#/components/schemas/Record_string_ViewRssFeedItemElection"
+            },
+            "rss_feed_item_embeds": {
+              "$ref": "#/components/schemas/Record_string_UrlEmbed"
+            },
+            "rss_feed_item_thumbnail_url": {
+              "$ref": "#/components/schemas/Record_string_string"
+            },
+            "rss_feed_items": {
+              "$ref": "#/components/schemas/Record_string_ViewRssFeedItem"
+            },
+            "story": {
+              "$ref": "#/components/schemas/Story"
+            },
+            "story_post_ids": {
+              "$ref": "#/components/schemas/Record_string_string"
+            }
+          },
+          "required": [
+            "bookmarks",
+            "election_votes",
+            "item_ids",
+            "page_info",
+            "posts",
+            "posts_metrics",
+            "related_posts_by_url_id",
+            "rss_feed_bookmarks",
+            "rss_feed_item_content_html",
+            "rss_feed_item_elections",
+            "rss_feed_item_embeds",
+            "rss_feed_item_thumbnail_url",
+            "rss_feed_items",
+            "story",
+            "story_post_ids"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "bookmarks": {
+              "$ref": "#/components/schemas/Record_string_Record_string_boolean"
+            },
+            "election_votes": {
+              "$ref": "#/components/schemas/Record_string_ElectionVote"
+            },
+            "item_ids": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "page_info": {
+              "$ref": "#/components/schemas/PageInfo"
+            },
+            "posts": {
+              "$ref": "#/components/schemas/Record_string_Post"
+            },
+            "posts_metrics": {
+              "$ref": "#/components/schemas/Record_string_PostMetrics"
+            },
+            "related_posts_by_url_id": {
+              "$ref": "#/components/schemas/Record_string_Array_string"
+            },
+            "rss_feed_bookmarks": {
+              "$ref": "#/components/schemas/Record_string_Record_string_boolean"
+            },
+            "rss_feed_item_content_html": {
+              "$ref": "#/components/schemas/Record_string_string"
+            },
+            "rss_feed_item_elections": {
+              "$ref": "#/components/schemas/Record_string_ViewRssFeedItemElection"
+            },
+            "rss_feed_item_embeds": {
+              "$ref": "#/components/schemas/Record_string_UrlEmbed"
+            },
+            "rss_feed_item_thumbnail_url": {
+              "$ref": "#/components/schemas/Record_string_string"
+            },
+            "rss_feed_items": {
+              "$ref": "#/components/schemas/Record_string_ViewRssFeedItem"
+            },
+            "story": {
+              "$ref": "#/components/schemas/Story"
+            },
+            "story_post_ids": {
+              "$ref": "#/components/schemas/Record_string_string"
+            }
+          },
+          "required": [
+            "bookmarks",
+            "election_votes",
+            "item_ids",
+            "page_info",
+            "posts",
+            "posts_metrics",
+            "related_posts_by_url_id",
+            "rss_feed_bookmarks",
+            "rss_feed_item_content_html",
+            "rss_feed_item_elections",
+            "rss_feed_item_embeds",
+            "rss_feed_item_thumbnail_url",
+            "rss_feed_items",
+            "story",
+            "story_post_ids"
+          ],
+          "type": "object"
+        }
+      ]
+    },
     "StoryPostResult": {
       "additionalProperties": false,
       "properties": {
@@ -17542,6 +17927,38 @@
         }
       },
       "required": ["evidence"],
+      "type": "object"
+    },
+    "TerritorialCopyrightJurisdiction": {
+      "enum": ["eu_dsa", "uk"],
+      "type": "string"
+    },
+    "TerritorialCopyrightNoticeReceipt": {
+      "additionalProperties": false,
+      "properties": {
+        "acknowledgment_id": {
+          "type": "string"
+        },
+        "is_duplicate": {
+          "type": "boolean"
+        },
+        "notice_id": {
+          "type": "string"
+        },
+        "receipt_id": {
+          "type": "string"
+        },
+        "route_destination": {
+          "const": "staff_queue"
+        }
+      },
+      "required": [
+        "acknowledgment_id",
+        "is_duplicate",
+        "notice_id",
+        "receipt_id",
+        "route_destination"
+      ],
       "type": "object"
     },
     "TopHashtag": {
@@ -18208,6 +18625,104 @@
         }
       },
       "required": ["page_info", "referral_programs"],
+      "type": "object"
+    },
+    "UkCopyrightAcknowledgment": {
+      "additionalProperties": false,
+      "properties": {
+        "acknowledged_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "attempt_count": {
+          "type": "number"
+        },
+        "escalated": {
+          "type": "boolean"
+        },
+        "exhausted_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "last_attempt_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "acknowledged_at",
+        "attempt_count",
+        "escalated",
+        "exhausted_at",
+        "id",
+        "last_attempt_at"
+      ],
+      "type": "object"
+    },
+    "UkCopyrightRedressDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "decided_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "staff_disposition": {
+          "$ref": "#/components/schemas/CopyrightStaffDisposition"
+        }
+      },
+      "required": ["decided_at", "id", "staff_disposition"],
+      "type": "object"
+    },
+    "UkCopyrightRedressRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "is_duplicate": {
+          "type": "boolean"
+        }
+      },
+      "required": ["id", "is_duplicate"],
+      "type": "object"
+    },
+    "UkCopyrightReview": {
+      "additionalProperties": false,
+      "properties": {
+        "automation_disclosure": {
+          "const": "human"
+        },
+        "id": {
+          "type": "string"
+        },
+        "reviewed_at": {
+          "type": "string"
+        }
+      },
+      "required": ["automation_disclosure", "id", "reviewed_at"],
       "type": "object"
     },
     "UnmappedCategory": {
@@ -21095,6 +21610,28 @@
         "rss_feed",
         "url"
       ],
+      "type": "object"
+    },
+    "ViewRssFeedItemElection": {
+      "additionalProperties": false,
+      "properties": {
+        "__entity_type": {
+          "const": "rss_feed_item_election"
+        },
+        "id": {
+          "type": "string"
+        },
+        "votes_count_down": {
+          "type": "number"
+        },
+        "votes_count_up": {
+          "type": "number"
+        },
+        "votes_score_net": {
+          "type": "number"
+        }
+      },
+      "required": ["__entity_type", "id", "votes_count_down", "votes_count_up", "votes_score_net"],
       "type": "object"
     },
     "ViewTopicElection": {
@@ -24606,6 +25143,24 @@
         },
         "required": ["id"],
         "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "exclude_item_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 25,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
       }
     },
     "GET:/api/v1/topic-recommendations/:id": {
@@ -27404,6 +27959,86 @@
         "type": "object"
       }
     },
+    "POST:/api/v1/copyright-eu-notices": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      }
+    },
+    "POST:/api/v1/copyright-eu-notices/:id/acknowledgment-failures": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-eu-notices/:id/redress-requests": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-eu-notices/:id/redress-requests/:redressId/decisions": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "redressId": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "redressId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-eu-notices/:id/statements-of-reasons": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-eu-notices/:id/supervised-complaints": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-eu-reports": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      }
+    },
     "POST:/api/v1/copyright-form-intakes/:id/reviews": {
       "path": {
         "properties": {
@@ -27484,6 +28119,109 @@
           }
         },
         "required": ["id", "intentId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/guest-capabilities": {
+      "body": {
+        "additionalProperties": false,
+        "properties": {
+          "expires_at": {
+            "type": "string"
+          }
+        },
+        "required": ["expires_at"],
+        "type": "object"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/information-requests": {
+      "body": {
+        "additionalProperties": false,
+        "properties": {
+          "statement": {
+            "type": "string"
+          }
+        },
+        "required": ["statement"],
+        "type": "object"
+      },
+      "path": {
+        "properties": {
+          "capabilityId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "capabilityId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation": {
+      "path": {
+        "properties": {
+          "capabilityId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "capabilityId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/guest-filings": {
+      "body": {
+        "additionalProperties": false,
+        "properties": {
+          "cf_turnstile_response": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "kind": {
+            "enum": ["court_or_ccb_hold", "supplement", "withdrawal"],
+            "type": "string"
+          },
+          "statement": {
+            "type": "string"
+          }
+        },
+        "required": ["cf_turnstile_response", "kind", "statement"],
+        "type": "object"
+      },
+      "header": {
+        "properties": {
+          "copyright-guest-capability": {
+            "type": "string"
+          }
+        },
+        "required": ["copyright-guest-capability"],
+        "type": "object"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
         "type": "object"
       }
     },
@@ -27569,6 +28307,83 @@
       }
     },
     "POST:/api/v1/copyright-submissions/:id/legal-hold-assessments": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-territorial-policies": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      }
+    },
+    "POST:/api/v1/copyright-territorial-policies/:id/withdrawals": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-uk-notices": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      }
+    },
+    "POST:/api/v1/copyright-uk-notices/:id/acknowledgment-failures": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-uk-notices/:id/redress-requests": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-uk-notices/:id/redress-requests/:redressId/decisions": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "redressId": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "redressId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-uk-notices/:id/reviews": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      },
       "path": {
         "properties": {
           "id": {

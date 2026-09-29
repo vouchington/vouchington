@@ -74,7 +74,12 @@ describe('story post projection', () => {
     )
     await addCategoryToRssFeedItem(itemIds[0]!, topic.id)
 
-    const result = await createStoryPost(story.id, testUser, {}, { enqueueOnPostCreated: () => {} })
+    const result = await createStoryPost(
+      story.id,
+      testUser,
+      {},
+      { enqueueOnPostCreated: () => Promise.resolve() },
+    )
     await drainStoryPostRelatedUrlProjection(result.post.id)
     const [relation] = (await getEntityRelation(
       'relation__post__category__topic',
@@ -136,6 +141,7 @@ describe('story post projection', () => {
         },
         enqueueOnPostCreated: postId => {
           effects.push(`created:${postId}`)
+          return Promise.resolve()
         },
         enqueueStoryPostAgent: async postId => {
           effects.push(`agent:${postId}`)

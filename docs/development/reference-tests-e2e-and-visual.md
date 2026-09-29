@@ -39,7 +39,7 @@ Local automation builds default to `NEXT_TEST_BUILD=1`. This keeps `reactCompile
 skips Turbopack minification and Next.js gzip compression. The shared CI web test build explicitly
 sets `NEXT_TEST_BUILD=0` and leaves `NEXT_PUBLIC_ASSET_PREFIX` empty. Playwright and web-integration
 jobs use that production-profile build, with browser assets served through the same-origin Worker;
-see [Caching Architecture](../../cloudflare-worker/reference-caching-architecture.md).
+see [Caching Architecture](../overview/infrastructure/cloudflare-worker/reference-caching-architecture.md).
 
 In React Compiler work, a **compiler-enabled build test** can use the local `NEXT_TEST_BUILD=1`
 build: it proves production source is transformed by the compiler. It does not mean compiling

@@ -65,7 +65,7 @@ export const prepareRssFeedItemsForUpsert = async (feedItems: RssFeedItemToUpser
         )
         return null
       }
-      const { content_sha256 } = await createRssFeedItemEmbeddingContent(feedItem)
+      const { content_sha256 } = createRssFeedItemEmbeddingContent(feedItem)
       return { feedItem, content_sha256, url_id }
     }),
   )

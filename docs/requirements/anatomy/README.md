@@ -27,3 +27,12 @@ actions, surface renames), update the matching anatomy file here and keep it in 
 | [notification](./notification.md)             | Per-user inbox event with structured navigation and delivery state     |
 | [domain](./domain.md)                         | Web hostname with a community trust rating                             |
 | [url](./url.md)                               | Crawled web URL and its associated metadata                            |
+
+## Reference index
+
+- [Fediverse Instance Anatomy reference](reference-fediverse-instance-actions.md)
+- [Fediverse Instance Anatomy reference](reference-fediverse-instance-data-model.md)
+- [Fediverse Instance Anatomy reference](reference-fediverse-instance-list-item-card-anatomy.md)
+- [Fediverse Instance Anatomy reference](reference-fediverse-instance-see-also.md)
+- [Fediverse Instance Anatomy reference](reference-fediverse-instance-states.md)
+- [Fediverse Instance Anatomy reference](reference-fediverse-instance-surfaces.md)

@@ -25,7 +25,9 @@ export async function loadAttestationKeyByKeyId(
         FROM app_attestation_keys
         WHERE key_id = ${keyId}`,
   )
-  const row = rows[0] as StoredAttestationKey | undefined
+  const row = rows[0] as
+    | (Omit<StoredAttestationKey, 'sign_count'> & { sign_count: string })
+    | undefined
   if (!row) return null
   return { ...row, sign_count: Number(row.sign_count) }
 }

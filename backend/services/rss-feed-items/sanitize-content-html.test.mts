@@ -14,7 +14,7 @@ function makeData(overrides: Partial<RssFeedItemToUpsert> = {}): RssFeedItemToUp
 }
 
 describe('sanitizeRssFeedItemContentHtml', () => {
-  const scriptScheme = `java${'script'}:`
+  const scriptScheme = `javascript:`
 
   it('returns null when no content fields are present', async () => {
     const result = await sanitizeRssFeedItemContentHtml(makeData())

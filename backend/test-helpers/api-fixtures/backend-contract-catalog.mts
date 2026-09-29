@@ -17,6 +17,7 @@ import {
 import { vouchaExtractOptions } from './contract-schema.mts'
 import type { HeaderContractRegistry } from './header-contract-types.mts'
 import { relativizeContractTree } from './program-paths.mts'
+import { assertUniqueResponseAttribution } from './response-contract-ambiguous-attribution.mts'
 import type { BackendQueryContractRegistry } from './query-contract-types.mts'
 import type { BackendRequestContract } from './request-contract-types.mts'
 import type { BackendResponseContract } from './response-contract-types.mts'
@@ -52,12 +53,7 @@ export function loadBackendResponseContracts(
   if (!requestedKeys) return catalog(options).responses as Record<string, BackendResponseContract>
   return cached(responses, signature(requestedKeys, options), loaded =>
     relativizeContractTree(
-      discoverApiResponseContracts(
-        loaded.program,
-        loaded.routeFiles,
-        requestedKeys,
-        schemaOptions(options),
-      ),
+      discoverAttributedResponses(loaded, requestedKeys, schemaOptions(options)),
     ),
   ) as Record<string, BackendResponseContract>
 }
@@ -110,15 +106,25 @@ export function loadRegisteredRouteCatalog(): RegisteredRoute[] {
 }
 
 function catalog(options: DiscoveryOptions | undefined): PublishedCatalog {
-  return cached(catalogs, signature(undefined, options), loaded =>
-    relativizeContractTree(
+  return cached(catalogs, signature(undefined, options), loaded => {
+    assertUniqueResponseAttribution(loaded.program, loaded.routeFiles)
+    return relativizeContractTree(
       discoverAppRouteCtxContractsV1({
         program: loaded.program,
         sourceFiles: loaded.routeFiles,
         options: schemaOptions(options),
       }),
-    ),
-  )
+    )
+  })
+}
+
+function discoverAttributedResponses(
+  loaded: BackendProgram,
+  requestedKeys: ReadonlySet<string> | undefined,
+  options: DiscoveryOptions,
+) {
+  assertUniqueResponseAttribution(loaded.program, loaded.routeFiles)
+  return discoverApiResponseContracts(loaded.program, loaded.routeFiles, requestedKeys, options)
 }
 
 function routesFor(loaded: BackendProgram): RegisteredRoute[] | undefined {

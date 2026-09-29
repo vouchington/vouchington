@@ -49,10 +49,11 @@ export async function recoverMissingDecisionAssessments(): Promise<void> {
       ON CONFLICT (copyright_notice_submission_assessment_id) DO NOTHING
     )
     INSERT INTO copyright_notice_lifecycle_events (
-      copyright_notice_id, event_type, actor_user_id, metadata
+      copyright_notice_id, event_type, actor_user_id,
+      copyright_notice_submission_assessment_id, recovery_source
     )
     SELECT submission.copyright_notice_id, 'submission_assessed', inserted.assessed_by_id,
-      '{"recovered_from_durable_decision":true}'::jsonb
+      inserted.id, 'durable_decision'
     FROM inserted
     JOIN copyright_notice_submissions submission
       ON submission.id = inserted.copyright_notice_submission_id

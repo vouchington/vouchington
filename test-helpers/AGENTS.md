@@ -1,8 +1,4 @@
-# Test Helpers
+# Shared test infrastructure
 
-Shared Vitest tooling consumed by [vitest.config.mts](../vitest.config.mts): project wiring,
-aliases, setup files, the fake-timer guard, and fork-leak detection. Not a feature workspace — this
-is the infrastructure other workspaces' tests run on.
-
-Before adding or changing a Vitest test, fixture, or mock here, load the
-[vitest-test-authoring skill](../.agents/skills/vitest-test-authoring/SKILL.md).
+- Keep this root for shared Vitest project/alias/setup, fake-timer guard, and fork-leak infrastructure consumed by [vitest.config.mts](../vitest.config.mts), not feature helpers.
+- Load [Vitest authoring](../.agents/skills/vitest-test-authoring/SKILL.md) for tests, fixtures, or mocks.

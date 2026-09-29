@@ -1,3 +1,4 @@
+import { UNASSESSED_RETROSPECTIVE_SECTIONS } from '../../test-helpers/blackboard/retrospective-sections.mts'
 import { execFile } from 'node:child_process'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -5,6 +6,9 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
+import { recordFriction } from 'vouchington-tooling/session-friction'
+
+import { frictionLogDirectory } from '../../session-friction/config.mts'
 
 const execFileAsync = promisify(execFile)
 const scriptPath = fileURLToPath(new URL('../../retrospective-save.mts', import.meta.url))
@@ -30,6 +34,8 @@ worktree: bubbly-knitting-manatee
 ## CI Failures
 
 Status: none observed
+
+${UNASSESSED_RETROSPECTIVE_SECTIONS}
 `
 
 async function makeTempDir(): Promise<string> {
@@ -55,6 +61,48 @@ describe('retrospective-save CLI', () => {
     expect(result.stdout).toContain('check [--session-id')
   })
 
+  it('collects the local friction log in the actual compose process', async () => {
+    const dir = await makeTempDir()
+    const env = {
+      ...process.env,
+      TMPDIR: dir,
+      AGENT_BLACKBOARD_URL: '',
+      AGENT_BLACKBOARD_TOKEN: '',
+    }
+    const file = join(dir, 'input.json')
+    await writeFile(
+      file,
+      JSON.stringify({
+        sessionId: 'sess-compose',
+        date: '2026-09-27',
+        issues: [],
+        prs: [],
+        description: 'CLI friction capture',
+        repositories: ['vouchington/vouchington'],
+        workOutcome: 'no-change',
+        feedbackCoverage: { status: 'partial', sources: ['friction'], droppedCount: 0 },
+        narrative: '# Retrospective\nNo substantive work.',
+        facts: { status: 'unavailable', reason: 'repository evidence unavailable' },
+        transcript: { status: 'unavailable', reason: 'transcript unavailable' },
+        tools: { status: 'none-observed', reason: 'inspected available observations' },
+        architecture: { status: 'not-assessed', reason: 'no architecture work' },
+      }),
+    )
+    recordFriction(
+      'sess-compose',
+      { type: 'permission-request', command: 'git push' },
+      {
+        directory: frictionLogDirectory(env),
+      },
+    )
+    const result = await execFileAsync(process.execPath, [scriptPath, 'compose', '--input', file], {
+      env,
+    })
+    expect(result.stdout).toContain('## CI Failures\nStatus: unavailable')
+    expect(result.stdout).toContain('## Sandbox & Permission Audit')
+    expect(result.stdout).toContain('git push')
+  })
+
   it('rejects an unknown subcommand with usage on stderr and exit code 1', async () => {
     const rejection = await execFileAsync(process.execPath, [scriptPath, 'bogus']).then(
       () => {
@@ -63,7 +111,7 @@ describe('retrospective-save CLI', () => {
       (error: unknown) => error,
     )
     expect(rejection).toMatchObject({ code: 1 })
-    expect(String((rejection as { stderr: string }).stderr)).toContain('Usage:')
+    expect((rejection as { stderr: string }).stderr).toContain('Usage:')
   })
 
   it('prints Error and Replay-with lines on stderr and exits 1 on a hard failure', async () => {
@@ -73,7 +121,18 @@ describe('retrospective-save CLI', () => {
 
     const rejection = await execFileAsync(
       process.execPath,
-      [scriptPath, 'save', '--file', stagedFile, '--session-id', 'sess-1'],
+      [
+        scriptPath,
+        'save',
+        '--mode',
+        'autonomous',
+        '--work-outcome',
+        'success',
+        '--file',
+        stagedFile,
+        '--session-id',
+        'sess-1',
+      ],
       {
         env: {
           ...process.env,
@@ -89,7 +148,7 @@ describe('retrospective-save CLI', () => {
     )
 
     expect(rejection).toMatchObject({ code: 1 })
-    const stderr = String((rejection as { stderr: string }).stderr)
+    const stderr = (rejection as { stderr: string }).stderr
     expect(stderr).toContain('Error:')
     expect(stderr).toContain(
       `Replay with: node dev/retrospective-save.mts save --file '${stagedFile}' ` +
@@ -105,11 +164,22 @@ describe('retrospective-save CLI', () => {
 
     const rejection = await execFileAsync(
       process.execPath,
-      [scriptPath, 'save', '--file', stagedFile, '--root-codex', '--new-root-codex-session'],
+      [
+        scriptPath,
+        'save',
+        '--mode',
+        'autonomous',
+        '--work-outcome',
+        'success',
+        '--file',
+        stagedFile,
+        '--root-codex',
+        '--new-root-codex-session',
+      ],
       { cwd: dir },
     ).catch((error: unknown) => error)
 
-    expect(String((rejection as { stderr: string }).stderr)).toContain(
+    expect((rejection as { stderr: string }).stderr).toContain(
       '--root-codex --new-root-codex-session',
     )
   })
@@ -121,13 +191,17 @@ describe('retrospective-save CLI', () => {
     const rejection = await execFileAsync(process.execPath, [
       scriptPath,
       'save',
+      '--mode',
+      'autonomous',
+      '--work-outcome',
+      'success',
       '--file',
       stagedFile,
       '--root-codex',
       '--session-id',
       'sess-1',
     ]).catch((error: unknown) => error)
-    const stderr = String((rejection as { stderr: string }).stderr)
+    const stderr = (rejection as { stderr: string }).stderr
     expect(stderr).toContain('--root-codex cannot be used with --session-id')
     expect(stderr).not.toContain('Replay with:')
   })

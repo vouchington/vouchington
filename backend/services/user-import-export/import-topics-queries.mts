@@ -57,7 +57,7 @@ export async function findTopicsBySlugOrName(
       ) matched ON TRUE
     `,
   )
-  return new Map(rows.flatMap(row => (row.id ? [[Number(row.input_index), row.id]] : [])))
+  return new Map(rows.flatMap(row => (row.id ? [[row.input_index, row.id]] : [])))
 }
 
 export async function getFollowedTopicIds(

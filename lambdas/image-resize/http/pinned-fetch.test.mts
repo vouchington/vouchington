@@ -26,6 +26,9 @@ describe('fetchWithPinnedDns (real ssrf-guard)', () => {
     ['blocked hostname localhost', 'http://localhost/'],
     ['blocked subdomain *.localhost', 'http://foo.localhost/'],
     ['blocked metadata.google.internal', 'http://metadata.google.internal/'],
+    ['first-party images host', 'https://images.voucha.ai/photo.jpg'],
+    ['first-party staging images host', 'https://images-staging.voucha.ai/photo.jpg'],
+    ['first-party images subdomain', 'https://cdn.images.voucha.ai/photo.jpg'],
   ])('blocks %s (%s) with HttpOperationError(403)', async (_label, url) => {
     const err = await fetchWithPinnedDns(url, signal).catch((e: unknown) => e)
 

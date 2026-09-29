@@ -50,7 +50,7 @@ a custom target and suppresses that host-service action. Bare libpq target varia
 or `PGSERVICE` are rejected because the generated worktree environment and application use
 `DATABASE_URL`; set that URL explicitly so initialization and runtime cannot select different targets.
 Non-local database initialization and reset remain protected by the explicit opt-ins documented in
-the [command catalog](../../dev/reference-command-catalog.md).
+the [command catalog](local-development/reference-command-catalog.md).
 
 Before Node activation, initialization requires at least 5 GiB free on each distinct host
 filesystem backing the worktree, home directory, and temporary directory. Web initialization also

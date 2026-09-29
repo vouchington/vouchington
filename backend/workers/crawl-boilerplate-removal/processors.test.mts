@@ -103,7 +103,7 @@ describe('extractDomRemovals oversized-combined-input regression (BACKEND-KA)', 
 async function createArtifacts(contents: Buffer[]): Promise<CrawlHtmlTempFile[]> {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), 'crawl-processor-test-'))
   tempDirs.push(tempDir)
-  return await Promise.all(
+  return Promise.all(
     contents.map(async (content, index) => {
       const filePath = path.join(tempDir, `${index}.html`)
       await writeFile(filePath, content)

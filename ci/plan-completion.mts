@@ -61,10 +61,7 @@ export async function runPlanCompletionSnapshot({
   const activePlans = new Set(
     (
       await mapPlanReads(plans, async number =>
-        (await isCurrentOpenPlan(
-          await runGh(readArgs(`repos/${repository}/issues/${number}`)),
-          number,
-        ))
+        isCurrentOpenPlan(await runGh(readArgs(`repos/${repository}/issues/${number}`)), number)
           ? number
           : undefined,
       )
@@ -101,12 +98,7 @@ export async function runPlanCompletionSnapshot({
     const current = markerComment(await runGh(listArgs(commentsPath)))
     if (current?.body === body) continue
     if (current === undefined && advisory.kind === 'none') continue
-    if (
-      !(await isCurrentOpenPlan(
-        await runGh(readArgs(`repos/${repository}/issues/${number}`)),
-        number,
-      ))
-    ) {
+    if (!isCurrentOpenPlan(await runGh(readArgs(`repos/${repository}/issues/${number}`)), number)) {
       continue
     }
     if (current === undefined) {

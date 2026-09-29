@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
 import {
   createTestUserWithAge,
   CONTRIBUTING_USER_AGE_MS,
@@ -16,6 +17,7 @@ import { contributionLimitConfig } from '@services/contribution-gating/limits-co
 import { recaptchaConfig } from '@services/recaptcha'
 import { Response as UndiciResponse } from 'undici'
 import type * as Undici from 'undici'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const mockFetch = vi.hoisted(() => vi.fn<typeof Undici.fetch>())
 
@@ -23,8 +25,6 @@ vi.mock<typeof import('undici')>(import('undici'), async importOriginal => {
   const actual = await importOriginal()
   return { ...actual, fetch: mockFetch }
 })
-
-const TEST_CAPTCHA_TOKEN = 'mock-captcha-token'
 
 describe('POST /api/v1/communities/:idOrSlug/posts CAPTCHA', () => {
   beforeEach(() => {
@@ -139,7 +139,7 @@ describe('POST /api/v1/communities/:idOrSlug/posts CAPTCHA', () => {
       discussion_free_daily_limit: 1,
     })
     mockFetch.mockImplementation(async url => {
-      const body = String(url).includes('recaptchaenterprise.googleapis.com')
+      const body = stringFromUnknown(url).includes('recaptchaenterprise.googleapis.com')
         ? {
             tokenProperties: { valid: true, action: 'create_post' },
             riskAnalysis: { score: 0.9, reasons: [] },
@@ -167,7 +167,7 @@ describe('POST /api/v1/communities/:idOrSlug/posts CAPTCHA', () => {
       await post('Community over capacity').expect(429)
 
       const assessments = mockFetch.mock.calls.filter(([url]) =>
-        String(url).includes('recaptchaenterprise.googleapis.com'),
+        stringFromUnknown(url).includes('recaptchaenterprise.googleapis.com'),
       )
       expect(assessments).toHaveLength(1)
     } finally {

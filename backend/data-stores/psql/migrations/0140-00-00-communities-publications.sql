@@ -476,9 +476,17 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  PERFORM fn_assert_community_application_answer_selection_state(
-    COALESCE(NEW.application_answer_id, OLD.application_answer_id)
-  );
+  IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+    PERFORM fn_assert_community_application_answer_selection_state(NEW.application_answer_id);
+  END IF;
+
+  IF TG_OP = 'DELETE' OR (
+    TG_OP = 'UPDATE'
+    AND NEW.application_answer_id IS DISTINCT FROM OLD.application_answer_id
+  ) THEN
+    PERFORM fn_assert_community_application_answer_selection_state(OLD.application_answer_id);
+  END IF;
+
   RETURN NULL;
 END;
 $$;

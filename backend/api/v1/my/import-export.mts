@@ -116,8 +116,7 @@ function parseTsvOrUrlList(text: string): string[] {
 
   if (hasTabs) {
     const headers = firstLine.toLowerCase().split('\t')
-    const urlCol =
-      headers.indexOf('xmlurl') !== -1 ? headers.indexOf('xmlurl') : headers.indexOf('url')
+    const urlCol = headers.includes('xmlurl') ? headers.indexOf('xmlurl') : headers.indexOf('url')
     if (urlCol === -1) return []
     return lines.slice(1).flatMap(line => {
       const val = line.split('\t')[urlCol] ?? ''

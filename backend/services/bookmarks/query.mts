@@ -32,7 +32,7 @@ export async function queryBookmarksForRelation(
   if (objectIds.length === 0) return []
   const safeRelation = assertValidBookmarkRelation(relation, entityTypeName)
 
-  return await queryEntityBookmarks(userId, safeRelation, objectIds)
+  return queryEntityBookmarks(userId, safeRelation, objectIds)
 }
 
 export function mapBookmarkRowsToOutput(

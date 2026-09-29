@@ -49,14 +49,14 @@ describe('image placements', () => {
     await setPostImages(creator, firstPost, [{ image_id: replacementImageId, order_index: 0 }])
 
     await expect(
-      getImagePlacementForCopyright(`image-placement:${originalPlacement.placement_id}`),
+      getImagePlacementForCopyright(originalPlacement.placement_id),
     ).resolves.toMatchObject({
       imageId: sharedImageId,
       revision: originalPlacement.placement_revision + 1,
       deleted: true,
     })
     await expect(
-      getImagePlacementForCopyright(`image-placement:${secondPlacement.placement_id}`),
+      getImagePlacementForCopyright(secondPlacement.placement_id),
     ).resolves.toMatchObject({
       imageId: sharedImageId,
       revision: secondPlacement.placement_revision,
@@ -77,12 +77,8 @@ describe('image placements', () => {
     await insertTestPostImage({ postId, imageId })
     const placement = (await getPostImages(postId))[0]!
 
-    await expect(
-      getPostIdForImagePlacementCopyright(`image-placement:${placement.placement_id}`),
-    ).resolves.toBe(postId)
-    await expect(
-      getPostIdForImagePlacementCopyright(`image-placement:${randomUUID()}`),
-    ).resolves.toBeNull()
+    await expect(getPostIdForImagePlacementCopyright(placement.placement_id)).resolves.toBe(postId)
+    await expect(getPostIdForImagePlacementCopyright(randomUUID())).resolves.toBeNull()
   })
 
   it('preserves a stable placement identity across idempotent updates and reattachment', async () => {
@@ -127,25 +123,25 @@ describe('image placements', () => {
     const imageId = await insertTestImage(creator.id)
     await insertTestPostImage({ postId, imageId })
     const placement = (await getPostImages(postId))[0]!
-    const placementKey = `image-placement:${placement.placement_id}`
+    const placementId = placement.placement_id
 
     await expect(
       withholdImagePlacementForCopyright({
-        placementKey,
+        placementId,
         expectedRevision: placement.placement_revision,
       }),
     ).resolves.toMatchObject({ status: 'applied', placement: { revision: 1, withheld: true } })
     await expect(
       withholdImagePlacementForCopyright({
-        placementKey,
+        placementId,
         expectedRevision: placement.placement_revision,
       }),
     ).resolves.toMatchObject({ status: 'already_applied', placement: { revision: 1 } })
     await expect(
-      restoreImagePlacementForCopyright({ placementKey, expectedRevision: 0 }),
+      restoreImagePlacementForCopyright({ placementId, expectedRevision: 0 }),
     ).resolves.toMatchObject({ status: 'stale', placement: { revision: 1, withheld: true } })
     await expect(
-      restoreImagePlacementForCopyright({ placementKey, expectedRevision: 1 }),
+      restoreImagePlacementForCopyright({ placementId, expectedRevision: 1 }),
     ).resolves.toMatchObject({ status: 'applied', placement: { revision: 2, withheld: false } })
   })
 })

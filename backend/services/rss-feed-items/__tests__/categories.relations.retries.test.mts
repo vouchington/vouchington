@@ -3,11 +3,8 @@ import { v4 as uuid } from 'uuid'
 
 import { getRssFeedItemById } from '../get.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
-import {
-  backfillCategoriesForTopicAliases,
-  getRssFeedItemCategories,
-  upsertRssFeedItemCategories,
-} from '../categories.mts'
+import { getRssFeedItemCategories, upsertRssFeedItemCategories } from '../categories.mts'
+import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
 import { createTopicAliases, linkTopicAlias, unlinkTopicAlias } from '@services/topics/aliases'
 import { getEntityRelationElectionVote } from '@services/elections-votes/entity-relation/votes-get'
 import { upsertEntityRelationElectionVotes } from '@services/elections-votes/entity-relation/votes-upsert'

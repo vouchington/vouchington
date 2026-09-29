@@ -7,10 +7,10 @@ import { processExtractImageMetadata } from '../processors/extract-metadata.mts'
 
 type ImagesJobData = {/* cleanup-abandoned-uploads */} | { id: string /* extract-metadata */ }
 
-async function handleImagesJob(job: Job<ImagesJobData>): Promise<unknown> {
+export async function handleImagesJob(job: Job<ImagesJobData>): Promise<unknown> {
   switch (job.name) {
     case 'cleanup-abandoned-uploads':
-      return await cleanupAbandonedUploads()
+      return cleanupAbandonedUploads()
     case 'extract-metadata': {
       const data = job.data as { id: string }
       await processExtractImageMetadata(data.id)

@@ -8,7 +8,7 @@ import {
   feedIsEnabledAndDiscoverableSql,
   itemHasDiscoverableSourceSql,
 } from '@modules/feed-query-builders/discoverability-sql'
-import type { SearchRssFeedItemsOptions } from './search.mts'
+import type { SearchRssFeedItemsOptions } from './search-types.mts'
 import {
   buildCategoryTopicFilter,
   buildFeedOwnerTopicFilter,

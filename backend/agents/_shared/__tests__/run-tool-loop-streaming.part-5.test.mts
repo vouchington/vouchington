@@ -52,7 +52,7 @@ describe('runToolLoopStreaming attempt hooks', () => {
     const latchSettled = Promise.withResolvers<void>()
     const latchAccountingUncertainty = vi
       .fn<typeof latchAccountingUncertaintyFn>()
-      .mockImplementation(async () => await latchSettled.promise)
+      .mockImplementation(async () => latchSettled.promise)
     const providerError = new Error('stream disconnected')
     const streamOpenAIResponse = vi
       .fn<VitestLooseMock>()
@@ -82,7 +82,7 @@ describe('runToolLoopStreaming attempt hooks', () => {
     const latchSettled = Promise.withResolvers<void>()
     const latchAccountingUncertainty = vi
       .fn<typeof latchAccountingUncertaintyFn>()
-      .mockImplementation(async () => await latchSettled.promise)
+      .mockImplementation(async () => latchSettled.promise)
     const providerError = new Error('final stream disconnected')
     const streamOpenAIResponse = vi
       .fn<VitestLooseMock>()

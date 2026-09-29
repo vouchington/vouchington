@@ -8,7 +8,7 @@ import {
   verifyGooglePlaySubscription,
 } from './subscription-verifier.mts'
 import type { GooglePlayMembershipObservation } from './types.mts'
-import type { Context } from './process-verification.mts'
+import type { Context } from './process-verification-types.mts'
 
 export async function allocateGooglePlayObservationOrder(): Promise<number> {
   const { rows } = await write<{ provider_order: string }>(

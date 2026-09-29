@@ -46,7 +46,7 @@ describe('refund reconciliation enqueues', () => {
     const leaseToken = randomUUID()
 
     try {
-      enqueueReconcileMembershipRefundOperationBestEffort({ operationId, leaseToken })
+      void enqueueReconcileMembershipRefundOperationBestEffort({ operationId, leaseToken })
 
       await expect
         .poll(async () => readAllQueueJobs(memberships), { timeout: 5_000 })

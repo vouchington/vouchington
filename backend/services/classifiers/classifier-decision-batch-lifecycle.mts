@@ -1,16 +1,8 @@
 import type { OwnedTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import type { ClassifierDecisionSnapshot } from './write-decision-lineage.mts'
-
-export type LockedClassifierDecisionBatch = {
-  classifierId: string
-  promptVersionId: string
-  postId: string | null
-  rssFeedItemId: string | null
-  scopeCategory: 'global' | 'community_ai'
-  scopeCommunityId: string | null
-  completedAt: Date | null
-}
+import type { ClassifierDecisionSnapshot } from './classifier-decision-snapshot.mts'
+import type { LockedClassifierDecisionBatch } from './classifier-decision-batch-types.mts'
+export type { LockedClassifierDecisionBatch } from './classifier-decision-batch-types.mts'
 
 export async function lockClassifierDecisionBatch(
   query: OwnedTransaction,

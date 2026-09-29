@@ -34,7 +34,7 @@ export async function updateRetailerAttributes(
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanUpdateTopic(currentUser), 403, 'Forbidden')
 
-  return await upsertTopicAttributes<RetailerAttributes>('topics__retailers', topic.id, [], [])
+  return upsertTopicAttributes<RetailerAttributes>('topics__retailers', topic.id, [], [])
 }
 
 export async function getRetailerCountries(topic: Topic): Promise<Country[]> {
@@ -90,5 +90,5 @@ export async function updateRetailerCountries(
   }
   await query.commit()
 
-  return getRetailerCountries(topic)
+  return await getRetailerCountries(topic)
 }

@@ -5,6 +5,7 @@ import assert from 'http-assert'
 import { createPostSlug } from './slugs.mts'
 import { getPostByAny } from './get.mts'
 import type { Post } from './types.mts'
+import type { PostsTableRow } from './posts-table-row.mts'
 import { createPostRevision, computePostChanges } from '@services/post-revisions'
 import { setPostClearanceStatus } from '@services/post-clearance'
 
@@ -18,7 +19,7 @@ export async function insertStoryPostRecord(
   },
   options: QueryOptions,
 ): Promise<Post> {
-  const { rows: postRows } = await write<Omit<Post, '__entity_type'>>(
+  const { rows: postRows } = await write<PostsTableRow>(
     sql`/* insertStoryPostRecord */
     INSERT INTO posts (
       post_type,

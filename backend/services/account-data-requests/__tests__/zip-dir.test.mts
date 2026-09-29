@@ -11,7 +11,7 @@ interface ZipContents {
 }
 
 async function readZip(zipPath: string): Promise<ZipContents> {
-  return await new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     yauzl.open(zipPath, { lazyEntries: true }, (openErr, zip) => {
       if (openErr) return reject(openErr)
       const entries: string[] = []

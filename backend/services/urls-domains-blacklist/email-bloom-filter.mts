@@ -30,7 +30,7 @@ const BLOOM_READY_KEY = 'bloom-filter:email-blocklist:ready'
 type ReadyMarkerValue = Exclude<Awaited<ReturnType<typeof bloomValkeyClient.get>>, null>
 
 export async function invalidateEmailBlocklistReadyMarker(): Promise<number> {
-  return Number(await bloomValkeyClient.unlink([BLOOM_READY_KEY]))
+  return bloomValkeyClient.unlink([BLOOM_READY_KEY])
 }
 
 async function enqueueRebuildAndInvalidateReadyMarker(

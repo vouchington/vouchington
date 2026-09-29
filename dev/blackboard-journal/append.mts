@@ -1,10 +1,11 @@
-import { appendJournal } from 'vouchington-tooling/agent-blackboard'
+import { appendJournal, type FeedbackDeliveryResult } from 'vouchington-tooling/agent-blackboard'
 
 import { parseFlagArgs, type FlagKey } from '../blackboard/parse-flag-args.mts'
 import {
   requireBlackboardIdentity,
   validateRootCodexOptions,
 } from '../agent-session-id/resolve.mts'
+import { resolveFeedbackFlags } from './feedback-flags.mts'
 
 type ParsedArgs = {
   noteFile?: string
@@ -16,6 +17,13 @@ type ParsedArgs = {
   version?: string
   timestamp?: string
   repositories?: string[]
+  mode?: string
+  sourceEventId?: string
+  workOutcome?: string
+  coverageStatus?: string
+  coverageSource?: string
+  droppedCount?: string
+  outboxDirectory?: string
 }
 
 // Journal entries record every repository they concern. Without an explicit --repository, a note
@@ -32,6 +40,13 @@ const FLAG_KEYS: Record<string, FlagKey<ParsedArgs>> = {
   '--version': 'version',
   '--timestamp': 'timestamp',
   '--repository': { key: 'repositories', type: 'repeatable' },
+  '--mode': 'mode',
+  '--source-event-id': 'sourceEventId',
+  '--work-outcome': 'workOutcome',
+  '--coverage-status': 'coverageStatus',
+  '--coverage-source': 'coverageSource',
+  '--dropped-count': 'droppedCount',
+  '--outbox-directory': 'outboxDirectory',
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -54,6 +69,13 @@ export class BlackboardJournalError extends Error {
   readonly version?: string
   readonly timestamp?: string
   readonly repositories?: string[]
+  readonly mode?: string
+  readonly sourceEventId?: string
+  readonly workOutcome?: string
+  readonly coverageStatus?: string
+  readonly coverageSource?: string
+  readonly droppedCount?: string
+  readonly outboxDirectory?: string
 
   constructor(message: string, info: ParsedArgs, cause?: unknown) {
     super(message, { cause })
@@ -67,17 +89,23 @@ export class BlackboardJournalError extends Error {
     this.version = info.version
     this.timestamp = info.timestamp
     this.repositories = info.repositories
+    this.mode = info.mode
+    this.sourceEventId = info.sourceEventId
+    this.workOutcome = info.workOutcome
+    this.coverageStatus = info.coverageStatus
+    this.coverageSource = info.coverageSource
+    this.droppedCount = info.droppedCount
+    this.outboxDirectory = info.outboxDirectory
   }
 }
 
-// No filesystem fallback: any failure past this point (missing token, unreachable
-// server, CLI error) hard-fails as a BlackboardJournalError, never falls back to
-// writing the note anywhere else.
+// A thrown failure becomes a replayable BlackboardJournalError. Interactive mode can
+// instead return pending after the caller-supplied outbox retains the envelope.
 export async function runAppend(
   argv: string[],
   env: NodeJS.ProcessEnv = process.env,
   cwd = process.cwd(),
-): Promise<string> {
+): Promise<FeedbackDeliveryResult> {
   const parsed = parseArgs(argv)
   if (!parsed.noteFile) throw new Error('append requires --file <path>')
   validateRootCodexOptions({ ...parsed, agentArg: parsed.agent })
@@ -85,6 +113,7 @@ export async function runAppend(
   let replayInfo = parsed
 
   try {
+    const feedback = resolveFeedbackFlags(parsed)
     const { agent, sessionId } = requireBlackboardIdentity({
       agentArg: parsed.agent,
       cwd,
@@ -116,6 +145,7 @@ export async function runAppend(
       repositories: parsed.repositories ?? [DEFAULT_JOURNAL_REPOSITORY],
       markdownFile: noteFile,
       timestamp,
+      ...feedback,
     })
   } catch (error) {
     throw new BlackboardJournalError(

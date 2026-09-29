@@ -43,9 +43,10 @@ function runScript(
     input = '{}',
     env = {},
     path = scriptPath,
-  }: { input?: string; env?: NodeJS.ProcessEnv; path?: string } = {},
+    args = [],
+  }: { input?: string; env?: NodeJS.ProcessEnv; path?: string; args?: string[] } = {},
 ) {
-  return spawnSync(process.execPath, [path], {
+  return spawnSync(process.execPath, [path, ...args], {
     cwd,
     encoding: 'utf8',
     env: { ...process.env, ...env },
@@ -96,14 +97,14 @@ describe('dev/check-blackboard (hook subprocess)', () => {
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
   })
 
-  it('emits a stop-work directive when the blackboard is unreachable', async () => {
+  it('reports advisory unavailability when the blackboard is unreachable', async () => {
     const result = runScript(await makeRepo(), { env: UNREACHABLE_ENV })
 
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
     const context = additionalContext(result.stdout)
-    expect(context).toContain('STOP WORK')
-    expect(context).toContain('agent-blackboard is unavailable')
+    expect(context).not.toContain('STOP WORK')
+    expect(context).toContain('availability assessment failed')
     expect(context).toContain('AGENT_BLACKBOARD_URL')
     expect(context).toContain('AGENT_BLACKBOARD_TOKEN')
   })

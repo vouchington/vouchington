@@ -68,7 +68,9 @@ function markValkeyCacheMetricBridge(bridge: CacheCallMetricBridge): CacheCallMe
   return bridge
 }
 
-function isValkeyCacheMetricBridge(listener: Function): listener is CacheCallMetricBridge {
+function isValkeyCacheMetricBridge(
+  listener: (...args: never[]) => unknown,
+): listener is CacheCallMetricBridge {
   return (
     (listener as unknown as Record<symbol, true | undefined>)[valkeyCacheMetricBridgeKey] === true
   )

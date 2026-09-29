@@ -96,7 +96,7 @@ app.route('/api/v1/users/:idOrSlug/users/:listType').get(async (ctx: Context) =>
       : null
 
   const muted: Record<string, boolean> | undefined = muteBookmarks
-    ? Object.fromEntries(users.map(u => [u.id, muteBookmarks[u.id]?.mute === true]))
+    ? Object.fromEntries(users.map(u => [u.id, muteBookmarks[u.id]?.mute ?? false]))
     : undefined
 
   applyCacheHeaders(ctx, !resolved.privateCollection, resolved.currentUser)

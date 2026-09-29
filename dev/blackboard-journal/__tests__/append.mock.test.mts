@@ -1,9 +1,35 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type { FeedbackDeliveryResult } from 'vouchington-tooling/agent-blackboard'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const appendJournal = vi.fn<typeof import('vouchington-tooling/agent-blackboard').appendJournal>()
+
+const FEEDBACK_FLAGS = [
+  '--mode',
+  'autonomous',
+  '--source-event-id',
+  'event-1',
+  '--work-outcome',
+  'in-progress',
+  '--coverage-status',
+  'partial',
+]
+
+function deliveredJournal(): FeedbackDeliveryResult {
+  return {
+    status: 'delivered',
+    sourceEventId: 'event-1',
+    pendingCount: 0,
+    receipt: {
+      sessionId: 'sess-1',
+      sourceEventId: 'event-1',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      verified: true,
+    },
+  }
+}
 
 vi.mock<typeof import('vouchington-tooling/agent-blackboard')>(
   import('vouchington-tooling/agent-blackboard'),
@@ -80,7 +106,7 @@ describe('runAppend hard-fail + replay contract', () => {
     )
 
     const rejection = await captureRejection(
-      runAppend(['--file', noteFile, '--session-id', 'sess-1'], {
+      runAppend(['--file', noteFile, '--session-id', 'sess-1', ...FEEDBACK_FLAGS], {
         ...HOSTED_ENV,
         CLAUDE_CODE_SESSION_ID: 'sess-1',
       }),
@@ -103,7 +129,10 @@ describe('runAppend hard-fail + replay contract', () => {
     )
 
     const rejection = await captureRejection(
-      runAppend(['--file', noteFile], { ...HOSTED_ENV, CLAUDE_CODE_SESSION_ID: 'env-sess' }),
+      runAppend(['--file', noteFile, ...FEEDBACK_FLAGS], {
+        ...HOSTED_ENV,
+        CLAUDE_CODE_SESSION_ID: 'env-sess',
+      }),
     )
 
     expect(rejection).toBeInstanceOf(BlackboardJournalError)
@@ -134,6 +163,7 @@ describe('runAppend hard-fail + replay contract', () => {
           '1.2.3',
           '--timestamp',
           '2026-07-22T00:00:00.000Z',
+          ...FEEDBACK_FLAGS,
         ],
         HOSTED_ENV,
       ),
@@ -157,22 +187,35 @@ describe('runAppend Codex identity', () => {
   it('ensures agent codex for --session-id when CODEX_THREAD_ID is set', async () => {
     const dir = await makeTempDir()
     const noteFile = await makeNoteFile(dir, 'a note')
-    appendJournal.mockResolvedValue('journaled')
-    await runAppend(['--file', noteFile, '--session-id', 'thread-1'], {
-      ...HOSTED_ENV,
-      CODEX_THREAD_ID: 'thread-1',
-    })
-    expect(appendJournal).toHaveBeenCalledWith(
-      expect.objectContaining({ sessionId: 'thread-1', agent: 'codex', version: 'unknown' }),
+    appendJournal.mockResolvedValue(deliveredJournal())
+    const result = await runAppend(
+      ['--file', noteFile, '--session-id', 'thread-1', ...FEEDBACK_FLAGS],
+      {
+        ...HOSTED_ENV,
+        CODEX_THREAD_ID: 'thread-1',
+      },
     )
+    expect(result).toEqual(deliveredJournal())
+    expect(appendJournal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId: 'thread-1',
+        agent: 'codex',
+        version: 'unknown',
+        mode: 'autonomous',
+        sourceEventId: 'event-1',
+        workOutcome: 'in-progress',
+        feedbackCoverage: { status: 'partial', sources: [], droppedCount: 0 },
+      }),
+    )
+    expect(appendJournal.mock.calls[0]?.[0]).not.toHaveProperty('outboxDirectory')
   })
 
   it('keeps a direct Cursor and Grok session paired as Grok', async () => {
     const dir = await makeTempDir()
     const noteFile = await makeNoteFile(dir, 'a note')
-    appendJournal.mockResolvedValue('journaled')
+    appendJournal.mockResolvedValue(deliveredJournal())
     await runAppend(
-      ['--file', noteFile],
+      ['--file', noteFile, ...FEEDBACK_FLAGS],
       { ...HOSTED_ENV, CURSOR_SESSION_ID: 'cursor-id', GROK_SESSION_ID: 'grok-id' },
       dir,
     )
@@ -185,7 +228,7 @@ describe('runAppend Codex identity', () => {
     const dir = await makeTempDir()
     const noteFile = await makeNoteFile(dir, 'a note')
     const rejection = await captureRejection(
-      runAppend(['--file', noteFile, '--session-id', 'sess-1'], HOSTED_ENV, dir),
+      runAppend(['--file', noteFile, '--session-id', 'sess-1', ...FEEDBACK_FLAGS], HOSTED_ENV, dir),
     )
     expect(rejection).toBeInstanceOf(BlackboardJournalError)
     expect(() => {
@@ -203,7 +246,7 @@ describe('runAppend Codex identity', () => {
       ),
     )
     const rejection = await captureRejection(
-      runAppend(['--file', noteFile, '--session-id', 'thread-1'], {
+      runAppend(['--file', noteFile, '--session-id', 'thread-1', ...FEEDBACK_FLAGS], {
         ...HOSTED_ENV,
         CODEX_THREAD_ID: 'thread-1',
       }),

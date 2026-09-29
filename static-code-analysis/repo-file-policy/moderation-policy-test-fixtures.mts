@@ -23,8 +23,8 @@ export async function trackModerationDocs(
       overrides.reporting ?? SYNCED_MODERATION_REPORT_DOC,
     'docs/requirements/moderation/MODERATION-FLOWS.md':
       overrides.flows ?? SYNCED_MODERATION_REPORT_DOC,
-    'backend/api/v1/reports/README.md': overrides.api ?? SYNCED_MODERATION_REPORT_DOC,
-    'backend/services/moderation-reports/README.md':
+    'docs/requirements/api/v1/reports/README.md': overrides.api ?? SYNCED_MODERATION_REPORT_DOC,
+    'docs/overview/architecture/services/moderation-reports/README.md':
       overrides.service ?? SYNCED_MODERATION_REPORT_DOC,
     'docs/requirements/navigation/ACTIONS.md': overrides.actions,
     'docs/requirements/moderation/REPORT-JUDGEMENTS.md':

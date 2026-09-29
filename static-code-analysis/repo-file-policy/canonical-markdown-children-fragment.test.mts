@@ -142,7 +142,7 @@ describe('canonical Markdown child fragments', () => {
     const apiReadmes = [
       'backend/api/v1/communities/README.md',
       'backend/api/v1/hostnames/README.md',
-      'backend/api/v1/my/README.md',
+      'docs/requirements/api/v1/my/README.md',
       'backend/api/v1/posts/README.md',
       'backend/api/v1/rss-feeds/README.md',
       'backend/api/v1/sessions-authentication/README.md',
@@ -159,7 +159,9 @@ describe('canonical Markdown child fragments', () => {
       expect(contents).toBeGreaterThanOrEqual(0)
       expect(related).toBeGreaterThan(contents)
       expect(performance).toBeGreaterThan(related)
-      expect(content.slice(performance)).toContain('[Performance](reference-performance.md)')
+      expect(content.slice(performance)).toMatch(
+        /\[Performance\]\([^)]*reference-performance\.md\)/,
+      )
     }
   })
 })

@@ -68,5 +68,5 @@ export async function dismissModerationAppeal(
     ),
     maybeResolveCase(updated.case_id, staffUserId),
   ])
-  return getModerationAppealAfterMutation(appealId)
+  return await getModerationAppealAfterMutation(appealId)
 }

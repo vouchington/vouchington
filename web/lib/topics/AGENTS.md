@@ -1,21 +1,5 @@
-# Topics display-name utilities
+# Topic display names
 
-`display-name.ts` exports pure functions for rendering topic names in the UI.
-
-## Rule: always use the display utilities for topic name rendering
-
-`topics.name` stores the full feed URL for uniqueness (e.g. `Title (https://feed.url)`).
-**Never render `topic.name` directly in the UI for `rss_feed` topics.**
-
-- **All UI display surfaces** → `getTopicDisplayName(topic, { feedType? })` or `getTopicDisplayTitle(topic)`
-- **SEO `<title>` / JSON-LD** → `getTopicDisplayTitle(topic)` (URL-stripped, no kind label)
-- **Identity/input surfaces** (autocomplete match key, settings form `defaultValue`, merge-confirm copy) → raw `topic.name` is correct — leave unchanged
-
-The canonical label vocabulary and priority order live in
-[TOPICS.md § Topic Aliases, Source Metadata, Categories, Lifecycle States, and Related](../../../docs/requirements/content/TOPICS.md#topic-aliases-source-metadata-categories-lifecycle-states-and-related).
-
-## See also
-
-- Producer: `backend/services/rss-feeds/validate.mts → buildSourceTopicName`
-- Entity links: `web/lib/links/AGENTS.md`
-- Topic requirements: [TOPICS.md](../../../docs/requirements/content/TOPICS.md)
+- Never display raw `topic.name` for RSS-feed topics: stored names contain identity URLs. UI uses `getTopicDisplayName(topic, { feedType? })`/`getTopicDisplayTitle(topic)`; SEO title/JSON-LD uses URL-stripped, kind-free `getTopicDisplayTitle`.
+- Identity/input surfaces (autocomplete keys, settings defaults, merge confirmation) retain raw names.
+- Vocabulary/priority belongs in [topic requirements](../../../docs/requirements/content/TOPICS.md#topic-aliases-source-metadata-categories-lifecycle-states-and-related). Producer is `backend/services/rss-feeds/validate.mts` → `buildSourceTopicName`; use [entity link rules](../links/AGENTS.md).

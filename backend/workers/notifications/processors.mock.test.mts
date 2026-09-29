@@ -240,10 +240,8 @@ function recoveryDependencies(enqueues: RecordedEnqueue[], notificationIds: read
         data: { userId, notificationId },
       }
       enqueues.push(recorded)
-      recorded.completion = captureEnqueue(
-        recorded,
-        async () => await enqueueDeliverNotificationPushIntent(userId, notificationId),
-      )
+      const deliver = () => enqueueDeliverNotificationPushIntent(userId, notificationId)
+      recorded.completion = captureEnqueue(recorded, deliver)
       return recorded.completion
     },
     enqueueContinueNotificationPushIntentReconciliation: (
@@ -251,10 +249,8 @@ function recoveryDependencies(enqueues: RecordedEnqueue[], notificationIds: read
     ) => {
       const recorded: RecordedEnqueue = { kind: 'continuation', data }
       enqueues.push(recorded)
-      recorded.completion = captureEnqueue(
-        recorded,
-        async () => await enqueueContinueNotificationPushIntentReconciliation(data),
-      )
+      const continueReconciliation = () => enqueueContinueNotificationPushIntentReconciliation(data)
+      recorded.completion = captureEnqueue(recorded, continueReconciliation)
       return recorded.completion
     },
   }

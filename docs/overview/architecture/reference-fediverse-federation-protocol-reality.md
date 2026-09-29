@@ -66,7 +66,7 @@ flowchart TD
   original ID, so ActivityPub skips their Undo rather than fabricating an unmatchable reference.
   Legacy Follow deletion still reconciles Bluesky from current relation state. Pre-upgrade queued
   Undo jobs missing the original ID are terminally discarded before any federation effect; see the
-  [delivery queue contract](../../../backend/queues/activitypub-delivery/README.md).
+  [delivery queue contract](queues/activitypub-delivery/README.md).
 - **Phase D** persists Bluesky linked-account tokens (`bluesky_linked_accounts`, encrypted via
   `@modules/token-secrets`), keyed by DID rather than handle, since handles are mutable.
 

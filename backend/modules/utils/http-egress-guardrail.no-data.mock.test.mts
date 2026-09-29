@@ -7,7 +7,9 @@ import {
   resetEgressGuardrailDedupeForTest,
 } from './http-egress-guardrail.mts'
 
-const SENTRY_DSN = `https://${'a'.repeat(32)}@o${12345}.ingest.eu.sentry.io/${67890}`
+const SENTRY_DSN = ['https://', 'a'.repeat(32), '@o', 12345, '.ingest.eu.sentry.io/', 67890].join(
+  '',
+)
 const SENTRY_ORIGIN = new URL(SENTRY_DSN).origin
 
 describe('classifyEgressOrigin', () => {

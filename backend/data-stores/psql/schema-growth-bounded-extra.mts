@@ -28,6 +28,10 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'Only active dirty-work scopes or retained impact keys reference these repair identities; cyclic raw-capped reclamation deletes unreferenced rows, bounding cardinality to the active repair backlog.',
   ],
   [
+    'copyright_evidence_retention_gates',
+    'A unique constant index permits exactly one copyright evidence retention gate, and that row stays disabled until a separate human authority changes it.',
+  ],
+  [
     'post_publication_identity_bridge_cleanup_progress',
     'A checked true primary key permits exactly one rotating concrete identity sweep cursor.',
   ],

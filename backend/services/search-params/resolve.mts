@@ -1,12 +1,13 @@
 import { isUUID } from '@modules/utils'
 import { parseStringArray } from '@ts-shared/utils/query'
 import createHttpError from 'http-errors'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export function extractIdentifier(
   query: Record<string, unknown>,
   param: string,
 ): string | undefined {
-  return query[param] ? String(query[param]) : undefined
+  return query[param] ? stringFromUnknown(query[param]) : undefined
 }
 
 export function extractIdentifiers(
@@ -28,7 +29,7 @@ export function extractRssFeedItemId(
   query: Record<string, unknown>,
   param: string,
 ): string | undefined {
-  const value = query[param] ? String(query[param]).trim() : undefined
+  const value = query[param] ? stringFromUnknown(query[param]).trim() : undefined
   if (value !== undefined && !isUUID(value)) {
     throw createHttpError(422, 'similar_rss_feed_item must be a valid UUID')
   }

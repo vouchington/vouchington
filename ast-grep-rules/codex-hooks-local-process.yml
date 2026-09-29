@@ -106,9 +106,6 @@ rule:
                   $$$OPTIONS)
               - pattern: execFileSync('git', ['show', $HEAD_PATH], $$$OPTIONS)
               - pattern: >-
-                  execFileSync(join($CWD, 'dev', 'protected-checkout-diff'), [$TARGET],
-                  $$$OPTIONS)
-              - pattern: >-
                   spawnSync(join($CWD, 'node_modules', '.bin', 'oxfmt'), [$FILE_PATH], $$$OPTIONS)
               - pattern: spawnSync('oxfmt', [$FILE_PATH], $$$OPTIONS)
               - pattern: >-
@@ -244,7 +241,6 @@ examples:
       spawnSync('grep', ['-rlF', '--', value, 'playwright/tests'], { cwd })
       spawnSync(join(cwd, 'node_modules', '.bin', 'oxfmt'), [filePath], { cwd })
       spawnSync('oxfmt', [filePath], { cwd })
-      execFileSync(join(cwd, 'dev', 'protected-checkout-diff'), [target], { cwd })
     isValid: true
     file: 'dev/codex-hooks/local-process.mts'
   - code: |

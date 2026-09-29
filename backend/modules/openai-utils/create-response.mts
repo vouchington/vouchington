@@ -49,7 +49,7 @@ export async function createOpenAIResponse(
   options?: RawCreateOptions,
 ): Promise<OpenAIResponse> {
   const response = await createOpenAIResponseStream(params, true, options)
-  return await drainBackgroundOpenAIResponse(response.stream, response.requestStartedAt)
+  return drainBackgroundOpenAIResponse(response.stream, response.requestStartedAt)
 }
 
 /* no-mistakes: integration=openai */
@@ -80,7 +80,7 @@ async function createOpenAIResponseStream(
   options?: RawCreateOptions,
 ): Promise<{ stream: ResponseStreamLike; requestStartedAt: Date }> {
   const streamParams: ResponseCreateParamsStreaming = { ...params, stream: true, background }
-  return await createOpenAIResponseWithRetries(streamParams, options)
+  return createOpenAIResponseWithRetries(streamParams, options)
 }
 
 export async function* streamOpenAIResponseEvents(

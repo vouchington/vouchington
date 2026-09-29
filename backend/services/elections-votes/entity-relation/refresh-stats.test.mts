@@ -71,6 +71,7 @@ describe('refreshEntityRelationVoteStatsFromPrimaryWithFallback', () => {
   it('describes non-Error primary failures when fallback enqueue also fails', async () => {
     await expect(
       refreshEntityRelationVoteStatsWithDependencies(target, {
+        // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Combined failure formatting preserves primitive primary reasons.
         refreshFromPrimary: async () => Promise.reject('primary unavailable'),
         enqueueReconciliation: async () => Promise.reject(new Error('queue unavailable')),
       }),

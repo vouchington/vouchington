@@ -28,7 +28,7 @@ describe('createLogFetchers', () => {
         maximumActive = Math.max(maximumActive, active)
         await Promise.resolve()
         active -= 1
-        return { stdout: `${args[1]}`, stderr: '' }
+        return { stdout: args[1], stderr: '' }
       },
     })
 

@@ -21,8 +21,6 @@ Resets a worktree to a clean state for the next agent task:
   - Tears down only DB + Valkey + services proven to belong to this worktree
     (preserves .env so port reuse works)
   - Creates a new random branch, then hard-resets it to origin/main
-    unless a sandbox-protected path differs while SANDBOX_RUNTIME or
-    CURSOR_SANDBOX is set (that checkout can stop halfway)
   - Removes worktree-local generated build and test output
   - Runs ./dev/initialize monorepo so pnpm exec tools work immediately
   - Clears the tmux window and pane title (if running inside tmux)
@@ -67,8 +65,6 @@ fi
 source "$REPO_ROOT/dev/lib/worktree-resource-env.sh"
 # shellcheck source=lib/git-index-lock.sh
 source "$REPO_ROOT/dev/lib/git-index-lock.sh"
-# shellcheck source=lib/protected-checkout.sh
-source "$REPO_ROOT/dev/lib/protected-checkout.sh"
 
 # Keep the entire reset exclusive to this worktree (#10849). The lock file
 # can remain between runs and needs no stale-lock cleanup.
@@ -139,12 +135,6 @@ echo -e "${BLUE}=== Reset Worktree ===${NC}\n"
 echo -e "${YELLOW}Fetching origin/main...${NC}"
 git -C "$REPO_ROOT" fetch origin main
 echo -e "${GREEN}✓ Fetched${NC}\n"
-
-# Before teardown or checkout -B --force. A sandboxed checkout can rewrite
-# ordinary files and then fail while unlinking a protected path.
-if ! protected_checkout_allow "$REPO_ROOT" origin/main; then
-    exit 2
-fi
 
 # Tear down services, DB, and Valkey container only when this worktree owns
 # them. The backend-level check is deliberately used here, not the stricter

@@ -93,7 +93,7 @@ export async function diagnoseValkey(
   registry: FlushTargetPrefixRegistry,
   signal?: AbortSignal,
 ): Promise<ValkeyDiagnosticResult> {
-  return await collectValkeyDiagnostics(
+  return collectValkeyDiagnostics(
     sessionValkeyClient,
     getConfiguredValkeyTopology(),
     registry,

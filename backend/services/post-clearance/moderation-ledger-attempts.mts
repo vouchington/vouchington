@@ -1,8 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import {
-  type AutomatedPostModerationSource,
-  type PostModerationDisposition,
+import type {
+  AutomatedPostModerationSource,
+  PostModerationDisposition,
 } from './moderation-ledger-types.mts'
 import {
   ensureCurrentPostModerationVersion,

@@ -43,7 +43,7 @@ describe('record-click', () => {
       await recordLandingPageItemClick({ landingPageId, landingPageItemId, sessionId })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM web_click WHERE page_kind = 'landing_page' AND target_id = '${landingPageItemId}'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -61,7 +61,7 @@ describe('record-click', () => {
       })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM web_click WHERE page_kind = 'landing_page' AND target_id = '${unrelatedItemId}'`,
       )
       expect(rows.length).toBe(0)

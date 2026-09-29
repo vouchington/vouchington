@@ -8,6 +8,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ExplainResult } from '@data-stores/psql'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const OUTPUT_DIR = join(import.meta.dirname, 'output')
 
@@ -20,10 +21,12 @@ function formatPlan(plan: unknown, indent = 0): string {
 
   const nodeType = node['Node Type'] as string | undefined
   if (nodeType) {
-    const relation = node['Relation Name'] ? ` on ${node['Relation Name']}` : ''
+    const relation = node['Relation Name'] ? ` on ${stringFromUnknown(node['Relation Name'])}` : ''
     const alias =
-      node['Alias'] && node['Alias'] !== node['Relation Name'] ? ` (${node['Alias']})` : ''
-    const rows = `rows=${node['Actual Rows'] ?? '?'} (est. ${node['Plan Rows'] ?? '?'})`
+      node['Alias'] && node['Alias'] !== node['Relation Name']
+        ? ` (${stringFromUnknown(node['Alias'])})`
+        : ''
+    const rows = `rows=${stringFromUnknown(node['Actual Rows'] ?? '?')} (est. ${stringFromUnknown(node['Plan Rows'] ?? '?')})`
     const cost = `cost=${(node['Total Cost'] as number)?.toFixed(1) ?? '?'}`
     const time = node['Actual Total Time']
       ? `time=${(node['Actual Total Time'] as number).toFixed(1)}ms`
@@ -31,23 +34,30 @@ function formatPlan(plan: unknown, indent = 0): string {
     lines.push(`${pad}${nodeType}${relation}${alias}  ${rows}  ${cost}  ${time}`)
 
     // Show key details
-    if (node['Index Name']) lines.push(`${pad}  Index: ${node['Index Name']}`)
-    if (node['Index Cond']) lines.push(`${pad}  Index Cond: ${node['Index Cond']}`)
-    if (node['Filter']) lines.push(`${pad}  Filter: ${node['Filter']}`)
-    if (node['Join Filter']) lines.push(`${pad}  Join Filter: ${node['Join Filter']}`)
-    if (node['Hash Cond']) lines.push(`${pad}  Hash Cond: ${node['Hash Cond']}`)
-    if (node['Merge Cond']) lines.push(`${pad}  Merge Cond: ${node['Merge Cond']}`)
+    if (node['Index Name']) lines.push(`${pad}  Index: ${stringFromUnknown(node['Index Name'])}`)
+    if (node['Index Cond'])
+      lines.push(`${pad}  Index Cond: ${stringFromUnknown(node['Index Cond'])}`)
+    if (node['Filter']) lines.push(`${pad}  Filter: ${stringFromUnknown(node['Filter'])}`)
+    if (node['Join Filter'])
+      lines.push(`${pad}  Join Filter: ${stringFromUnknown(node['Join Filter'])}`)
+    if (node['Hash Cond']) lines.push(`${pad}  Hash Cond: ${stringFromUnknown(node['Hash Cond'])}`)
+    if (node['Merge Cond'])
+      lines.push(`${pad}  Merge Cond: ${stringFromUnknown(node['Merge Cond'])}`)
     if (node['Sort Key'])
       lines.push(`${pad}  Sort Key: ${(node['Sort Key'] as string[]).join(', ')}`)
     if (node['Group Key'])
       lines.push(`${pad}  Group Key: ${(node['Group Key'] as string[]).join(', ')}`)
     if (node['Rows Removed by Filter'])
-      lines.push(`${pad}  Rows Removed by Filter: ${node['Rows Removed by Filter']}`)
+      lines.push(
+        `${pad}  Rows Removed by Filter: ${stringFromUnknown(node['Rows Removed by Filter'])}`,
+      )
     if (node['Rows Removed by Join Filter'])
-      lines.push(`${pad}  Rows Removed by Join Filter: ${node['Rows Removed by Join Filter']}`)
+      lines.push(
+        `${pad}  Rows Removed by Join Filter: ${stringFromUnknown(node['Rows Removed by Join Filter'])}`,
+      )
     if (node['Shared Hit Blocks'])
       lines.push(
-        `${pad}  Buffers: shared hit=${node['Shared Hit Blocks']}${node['Shared Read Blocks'] ? ` read=${node['Shared Read Blocks']}` : ''}`,
+        `${pad}  Buffers: shared hit=${stringFromUnknown(node['Shared Hit Blocks'])}${node['Shared Read Blocks'] ? ` read=${stringFromUnknown(node['Shared Read Blocks'])}` : ''}`,
       )
   }
 

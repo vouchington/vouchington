@@ -188,6 +188,7 @@ describe('worker lifecycle', () => {
         upsertSchedules: async () => {
           throw scheduleError
         },
+        // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Worker setup must normalize arbitrary rejection reasons.
         setup: () => Promise.reject('setup failed'),
         onError: error => reportedErrors.push(error),
       }),
@@ -205,6 +206,7 @@ describe('worker lifecycle', () => {
     const thrownError = await initializeWorkerRuntime(
       makeConfig(),
       makeDependencies({
+        // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Worker loading must report primitive rejection reasons.
         loadWorkers: () => Promise.reject('worker loading failed'),
         onError: error => {
           reportedError = error

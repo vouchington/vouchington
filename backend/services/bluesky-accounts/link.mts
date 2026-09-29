@@ -107,7 +107,7 @@ export async function completeBlueskyAccountLinkCallbackDirect(
   if (expectedState && expectedState.callbackMode !== expectedCallbackMode) {
     throw createHttpError(400, 'Invalid Bluesky OAuth state')
   }
-  const callback = async () => await completeBlueskyCallback(getBlueskyOAuthClient, params)
+  const callback = async () => completeBlueskyCallback(getBlueskyOAuthClient, params)
   const result = expectedState
     ? await runWithBlueskySessionAuthorization(
         {

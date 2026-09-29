@@ -8,7 +8,7 @@ import {
   getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
 } from './index.mts'
-import { type createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import type { createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
 import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
 
 describe('late legal-hold edge publication', () => {
@@ -27,7 +27,7 @@ describe('late legal-hold edge publication', () => {
     expect(after?.holdAssessments).toEqual(before?.holdAssessments)
     expect(after?.restrictions).toEqual(before?.restrictions)
     expect(after?.actionIntents).toEqual(before?.actionIntents)
-    await expect(getImagePlacementForCopyright(restored.placementKey)).resolves.toEqual(
+    await expect(getImagePlacementForCopyright(restored.placementId)).resolves.toEqual(
       expect.objectContaining({ withheld: false }),
     )
     expect(publish).toHaveBeenCalledWith(
@@ -42,7 +42,7 @@ describe('late legal-hold edge publication', () => {
     const publish = vi
       .fn<typeof prepublishImagePlacementDenial>()
       .mockImplementation(async input => {
-        const placement = await getImagePlacementForCopyright(restored.placementKey)
+        const placement = await getImagePlacementForCopyright(restored.placementId)
         if (!placement) throw new Error('restored placement disappeared')
         expect(input).toEqual({
           placementId: placement.placementId,
@@ -55,7 +55,7 @@ describe('late legal-hold edge publication', () => {
     await appendLateHold(restored, publish)
 
     expect(withheldStatesAtPublication).toEqual([false])
-    await expect(getImagePlacementForCopyright(restored.placementKey)).resolves.toEqual(
+    await expect(getImagePlacementForCopyright(restored.placementId)).resolves.toEqual(
       expect.objectContaining({ withheld: true }),
     )
   })
@@ -64,7 +64,7 @@ describe('late legal-hold edge publication', () => {
 async function restorePlacementForLateHold(): Promise<{
   moderator: Awaited<ReturnType<typeof createCopyrightRestorationHoldFixture>>['moderator']
   noticeId: string
-  placementKey: string
+  placementId: string
   restorationAt: Date
   targetId: string
 }> {
@@ -78,7 +78,7 @@ async function restorePlacementForLateHold(): Promise<{
   return {
     moderator,
     noticeId: notice.id,
-    placementKey: target.placement_key,
+    placementId: target.placement_id,
     restorationAt,
     targetId: target.id,
   }
@@ -96,7 +96,7 @@ async function appendLateHold(
     submittedByUserId: null,
     bodyCiphertext: `late-hold-${crypto.randomUUID()}`,
   })
-  return await appendCopyrightLegalHoldAssessment({
+  return appendCopyrightLegalHoldAssessment({
     currentUser: restored.moderator,
     submissionId: submission.id,
     assessedAt: new Date(restored.restorationAt.getTime() + 60_000),

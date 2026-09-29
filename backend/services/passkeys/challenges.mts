@@ -12,7 +12,7 @@ export async function storeChallenge(key: string, challenge: string): Promise<vo
 }
 
 export async function getAndDeleteChallenge(key: string): Promise<string | null> {
-  return await getAndDelete(`${KEY_PREFIX}:${key}`, {
+  return getAndDelete(`${KEY_PREFIX}:${key}`, {
     client: sessionValkeyClient,
   })
 }

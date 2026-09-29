@@ -1,18 +1,5 @@
-# Analytics Data Store
+# Analytics data store
 
-Local-first analytics store. Emits structured JSONL records queryable with DuckDB.
-Architecture and environment variables: [../../../docs/overview/architecture/analytics-pipeline.md](../../../docs/overview/architecture/analytics-pipeline.md).
-
-## Rules
-
-- Prefer typed wrappers from `@services/analytics`; call `emit()` directly only when defining a new
-  wrapper or data-store integration.
+- Use typed `@services/analytics` wrappers; call `emit()` directly only when defining wrappers or data-store integrations.
 - Preserve module-load graceful-shutdown registration and the shared local-retention job.
-- Keep runtime modes, paths, and usage examples in [README.md](README.md).
-
-## See Also
-
-- Typed emit wrappers: [`../../services/analytics/`](../../services/analytics/)
-- Graceful shutdown: [../../../docs/overview/architecture/graceful-shutdown.md](../../../docs/overview/architecture/graceful-shutdown.md)
-- Analytics pipeline: [../../../docs/overview/architecture/analytics-pipeline.md](../../../docs/overview/architecture/analytics-pipeline.md)
-- Backend context: [../../AGENTS.md](../../AGENTS.md)
+- Modes, paths, and examples belong in [README.md](../../../docs/overview/architecture/backend/data-stores/analytics/README.md); architecture and environment variables belong in [the analytics pipeline](../../../docs/overview/architecture/analytics-pipeline.md).

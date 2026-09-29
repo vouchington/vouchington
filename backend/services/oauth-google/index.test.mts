@@ -78,9 +78,9 @@ function createSignedJwt(
     kid: String(header.kid),
     alg: 'RS256',
     use: 'sig',
-    kty: String(googleJwk.kty),
-    n: String(googleJwk.n),
-    e: String(googleJwk.e),
+    kty: googleJwk.kty,
+    n: googleJwk.n,
+    e: googleJwk.e,
   })
 
   const encodedHeader = encodeJwtPart(header)

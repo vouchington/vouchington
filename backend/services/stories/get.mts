@@ -106,33 +106,6 @@ export async function getStoriesByIdBatch(
   return ids.map(id => byId.get(id) ?? null)
 }
 
-export async function getItemIdsByStoryIds(
-  storyIds: string[],
-  options: QueryOptions = {},
-): Promise<Record<string, string[]>> {
-  if (storyIds.length === 0) return {}
-
-  const { rows } = await read(
-    sql`/* getItemIdsByStoryIds */
-    SELECT story_id, id
-    FROM rss_feed_items
-    WHERE story_id = ANY(${storyIds}::uuid[])
-      AND deleted_at IS NULL
-    ORDER BY id DESC
-  `,
-    options,
-  )
-
-  const result: Record<string, string[]> = {}
-  for (const row of rows) {
-    const storyId = row.story_id as string
-    const itemId = row.id as string
-    if (!result[storyId]) result[storyId] = []
-    result[storyId].push(itemId)
-  }
-  return result
-}
-
 export type StoryItemSummary = {
   title: string
   summary: string

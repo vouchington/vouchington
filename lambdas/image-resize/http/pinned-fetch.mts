@@ -1,20 +1,26 @@
 import { safeFetch, UnsafeUrlError } from 'ssrf-guard/node'
+import { firstPartyMediaBlockedHosts } from '@ts-shared/url-signing'
 import { HttpOperationError } from '../errors.mts'
 
 type SafeFetchResponse = Awaited<ReturnType<typeof safeFetch>>
 
-const BLOCKED_HOSTNAME_POLICY = {
-  exact: ['localhost', 'metadata.google.internal'],
-  suffixes: ['.localhost'],
+function blockedHostnamePolicy() {
+  const mediaHosts = firstPartyMediaBlockedHosts()
+  return {
+    exact: ['localhost', 'metadata.google.internal', ...mediaHosts.exact],
+    suffixes: ['.localhost', ...mediaHosts.suffixes],
+  }
 }
 
 export async function fetchWithPinnedDns(
   url: URL | string,
   signal: AbortSignal,
+  options: { maxRedirects?: number } = {},
 ): Promise<SafeFetchResponse> {
   try {
     return await safeFetch(url, {
-      blockedHostnames: BLOCKED_HOSTNAME_POLICY,
+      blockedHostnames: blockedHostnamePolicy(),
+      maxRedirects: options.maxRedirects,
       signal,
       headers: { 'User-Agent': 'Voucha-Image-Resize/1.0' },
     })

@@ -26,7 +26,7 @@ export async function syncCopyrightRepeatInfringerIncidents(
       JOIN copyright_restrictions restriction
         ON restriction.copyright_notice_target_id = target.id
       JOIN media_placements placement
-        ON target.placement_key = concat('image-placement:', placement.id)
+        ON target.placement_id = placement.id
       JOIN image_placements image_placement ON image_placement.placement_id = placement.id
       JOIN posts post ON post.id = image_placement.post_id
       JOIN users account ON account.id = post.created_by_id AND account.deleted_at IS NULL

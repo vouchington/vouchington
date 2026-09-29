@@ -20,6 +20,11 @@ describe('gitleaks fixture scanner', () => {
     const sourceDirectory = join(directory, 'source')
     const reportPath = join(directory, 'report.json')
     const syntheticToken = `ghp_${randomBytes(18).toString('hex')}`
+    const existingFakeSecret = ['existing-test-secret-', 'at-least-32-chars'].join('')
+    const alteredFakeSecret = `existing-test-secret-${randomBytes(18).toString('hex')}`
+    const siblingFakeAssignment = ['CF_WORKER_', 'SECRET=', existingFakeSecret, '\n'].join('')
+    const splitWorkerSecretLine = (secret: string) =>
+      `      ['export CF_WORKER_', 'SECRET', '=${secret}\\n  '].join(''),`
     const tokenLine = `API_TOKEN="${syntheticToken}"\n`
 
     for (const relativeDirectory of [
@@ -28,6 +33,7 @@ describe('gitleaks fixture scanner', () => {
       'node_modules/fixtures',
       '.local/fixtures',
       'backend/test-helpers/entities',
+      'dev/initialize-tests/__tests__',
     ]) {
       await mkdir(join(sourceDirectory, relativeDirectory), { recursive: true })
     }
@@ -39,6 +45,19 @@ describe('gitleaks fixture scanner', () => {
     await writeFile(
       join(sourceDirectory, 'backend/test-helpers/entities/totp.mts'),
       "export const TEST_TOTP_SECRET = 'JBSWY3DPEHPK3PXP'\n",
+    )
+    await writeFile(
+      join(sourceDirectory, 'dev/initialize-tests/__tests__/initialize-secrets-and-s3.test.mts'),
+      [splitWorkerSecretLine(existingFakeSecret), splitWorkerSecretLine(alteredFakeSecret)].join(
+        '\n',
+      ),
+    )
+    await writeFile(
+      join(
+        sourceDirectory,
+        'dev/initialize-tests/__tests__/initialize-secrets-and-s3-copy.test.mts',
+      ),
+      siblingFakeAssignment,
     )
 
     const scan = spawnSync(
@@ -79,11 +98,41 @@ describe('gitleaks fixture scanner', () => {
       )
     }
 
-    const findings = JSON.parse(report) as Array<{ File?: string }>
-    expect([...new Set(findings.map(finding => finding.File))].sort()).toEqual([
-      'fixtures/synthetic-secret.txt',
-      'ordinary/synthetic-secret.txt',
+    const findings = JSON.parse(report) as Array<{
+      File?: string
+      RuleID?: string
+      StartLine?: number
+    }>
+    expect(
+      findings
+        .map(({ File, StartLine }) => [File, StartLine])
+        .toSorted(
+          ([leftFile, leftLine], [rightFile, rightLine]) =>
+            String(leftFile).localeCompare(String(rightFile)) ||
+            Number(leftLine) - Number(rightLine),
+        ),
+    ).toEqual([
+      ['dev/initialize-tests/__tests__/initialize-secrets-and-s3-copy.test.mts', 1],
+      ['dev/initialize-tests/__tests__/initialize-secrets-and-s3.test.mts', 2],
+      ['fixtures/synthetic-secret.txt', 1],
+      ['ordinary/synthetic-secret.txt', 1],
     ])
+    expect(
+      findings.some(
+        ({ File, RuleID, StartLine }) =>
+          File === 'dev/initialize-tests/__tests__/initialize-secrets-and-s3-copy.test.mts' &&
+          RuleID === 'generic-api-key' &&
+          StartLine === 1,
+      ),
+    ).toBe(true)
+    expect(
+      findings.some(
+        ({ File, RuleID, StartLine }) =>
+          File === 'dev/initialize-tests/__tests__/initialize-secrets-and-s3.test.mts' &&
+          RuleID === 'generic-api-key' &&
+          StartLine === 2,
+      ),
+    ).toBe(true)
     const containsSyntheticToken = (output: string | null | undefined) =>
       output?.includes(syntheticToken) ?? false
     expect(containsSyntheticToken(report)).toBe(false)

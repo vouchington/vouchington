@@ -205,7 +205,7 @@ describe('direct-message thread and participant cursor behavior', () => {
 })
 
 async function users(count: number): Promise<PrivateUser[]> {
-  return Promise.all(Array.from({ length: count }, async () => await createTestUser()))
+  return Promise.all(Array.from({ length: count }, async () => createTestUser()))
 }
 
 async function getMessages(

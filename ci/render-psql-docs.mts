@@ -7,7 +7,12 @@ import { runRenderDocsCli } from './render-docs-cli.mts'
 import { htmlPage, renderMarkdownToHtml } from './render-docs-page.mts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const DEFAULT_SCHEMA_DIR = resolve(__dirname, '..', 'backend/data-stores/psql/schema-snapshot')
+const DEFAULT_SCHEMA_DIR = resolve(__dirname, '..', 'docs/development/postgresql/schema-snapshot')
+const DEFAULT_SCHEMA_JSON = resolve(
+  __dirname,
+  '..',
+  'backend/data-stores/psql/schema-snapshot/schema.json',
+)
 
 function markdownForHtml(markdown: string): string {
   return markdown.replaceAll(
@@ -21,7 +26,10 @@ function markdownWithPublishedAssetPaths(path: string, markdown: string): string
   if (path !== 'README.md') return markdown
   return markdown
     .replaceAll('[schema-snapshot/README.md](../README.md)', '`schema-snapshot/README.md`')
-    .replaceAll('](../schema.json)', '](schema.json)')
+    .replaceAll(
+      '](../../../../../backend/data-stores/psql/schema-snapshot/schema.json)',
+      '](schema.json)',
+    )
 }
 
 function markdownForPublishedRaw(path: string, markdown: string): string {
@@ -68,12 +76,14 @@ async function schemaMarkdownFiles(schemaDir: string): Promise<Map<string, strin
 export async function renderPsqlDocs({
   outputDir,
   schemaDir = DEFAULT_SCHEMA_DIR,
+  schemaJsonPath = DEFAULT_SCHEMA_JSON,
 }: {
   outputDir: string
   schemaDir?: string
+  schemaJsonPath?: string
 }): Promise<void> {
   const markdownFiles = await schemaMarkdownFiles(schemaDir)
-  const json = await readSchemaSnapshotFile(join(schemaDir, 'schema.json'))
+  const json = await readSchemaSnapshotFile(schemaJsonPath)
   const indexMarkdown = markdownFiles.get('README.md')
   if (!indexMarkdown)
     throw new Error(

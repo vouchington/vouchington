@@ -17,10 +17,7 @@ import {
 } from '@services/ai-usage'
 
 // This project deliberately restores real GlideMQ instead of the default in-memory worker shim.
-vi.mock<typeof import('glide-mq')>(
-  import('glide-mq'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
 function aiAgentsQueue(): Queue<AIAgentJobData> {

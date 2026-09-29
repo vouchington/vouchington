@@ -28,18 +28,22 @@ export function appendRelationCTEs(
     .append(buildFollowedTopicsCTE({ communityId, currentUserId }))
     .append(sql`,
     `)
-    .append(buildExcludedTopicsCTE(currentUserId))
-    .append(sql`,
-    `)
-    .append(buildExcludedRssFeedsCTE(currentUserId))
-    .append(sql`,
-    `)
+    .append(appendRssFeedItemViewerCTEs(sql``, currentUserId))
+    .append(sql`, `)
     .append(buildExcludedUsersCTE(currentUserId))
-    .append(sql`,
-    `)
+}
+
+export function appendRssFeedItemViewerCTEs(
+  query: SQLStatement,
+  currentUserId: string | undefined,
+): SQLStatement {
+  return query
+    .append(buildExcludedTopicsCTE(currentUserId))
+    .append(sql`, `)
+    .append(buildExcludedRssFeedsCTE(currentUserId))
+    .append(sql`, `)
     .append(buildHiddenItemsCTE(currentUserId))
-    .append(sql`,
-    `)
+    .append(sql`, `)
     .append(buildExcludedHostnamesCTE(currentUserId))
 }
 

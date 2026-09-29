@@ -8,6 +8,7 @@ import type {
   FediverseSearchResultType,
 } from './types.mts'
 import { FEDIVERSE_SEARCH_DEADLINE_MS } from '@voucha/config'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const DEFAULT_PROVIDERS: readonly FediverseSearchProvider[] = [
   'peertube',
@@ -27,7 +28,7 @@ const EMPTY_ADAPTERS: Record<FediverseSearchProvider, FediverseProviderAdapter> 
 
 export function parseFediverseProviders(value: unknown): FediverseSearchProvider[] | undefined {
   if (value === undefined || value === null || value === '') return undefined
-  const providers = String(value)
+  const providers = stringFromUnknown(value)
     .split(',')
     .flatMap(provider => {
       const trimmed = provider.trim()
@@ -43,7 +44,7 @@ export function parseFediverseProviders(value: unknown): FediverseSearchProvider
 
 export function parseFediverseResultType(value: unknown): FediverseSearchResultType | undefined {
   if (value === undefined || value === null || value === '') return undefined
-  const type = String(value)
+  const type = stringFromUnknown(value)
   assert(isFediverseResultType(type), 400, `Unsupported Fediverse result type: ${type}`)
   return type
 }

@@ -6,7 +6,7 @@ import {
   insertTestCommunity,
 } from '@voucha/test-helpers'
 import { encodeCursor } from '@modules/pagination'
-import { timestampToUuidv7LowerBound } from '@data-stores/psql/config-driven/utils/partition-utils'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import { MAX_MONEY_AMOUNT } from '@ts-shared/money'
 import type { PrivateUser } from '@services/users/types'
 import { getCommunityAiCostTotals } from '../totals.mts'

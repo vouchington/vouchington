@@ -1,3 +1,5 @@
+import { validateFeedbackEnvelope } from 'vouchington-tooling/agent-blackboard'
+
 import type { SessionEntry } from '../blackboard/entries.mts'
 
 // Single home for "what is a retrospective entry" so the reader (check.mts) and
@@ -5,5 +7,12 @@ import type { SessionEntry } from '../blackboard/entries.mts'
 export const RETROSPECTIVE_ENTRY_TYPE = 'retrospective'
 
 export function isRetrospectiveEntry(entry: SessionEntry): boolean {
-  return entry.data.type === RETROSPECTIVE_ENTRY_TYPE
+  if (entry.data.type !== RETROSPECTIVE_ENTRY_TYPE) return false
+  if (entry.data.schemaVersion === undefined) return true
+  try {
+    validateFeedbackEnvelope(entry.data)
+    return true
+  } catch {
+    return false
+  }
 }

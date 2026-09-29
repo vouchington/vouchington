@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
 import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
@@ -15,8 +16,6 @@ vi.mock<typeof import('undici')>(import('undici'), async importOriginal => {
   const actual = await importOriginal()
   return { ...actual, fetch: mockFetch }
 })
-
-const TEST_CAPTCHA_TOKEN = 'mock-captcha-token'
 
 describe('POST /api/v1/posts replay', () => {
   beforeEach(() => {

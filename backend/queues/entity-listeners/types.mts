@@ -69,7 +69,46 @@ export type EntityJobs =
   | 'processConversationMessageCreated'
   | 'processCommunityAgentPromptsDeactivated'
 
-export type EntityJobsListeners = Record<EntityJobs, (data: any) => unknown>
+type EntityIdData = { id: string }
+
+type EmptyEntityJobData = Record<string, never>
+
+type EntityJobPayloads = {
+  reconcileEntity: ReconcileEntityData
+  reconcileEntities: EmptyEntityJobData
+  processUrlCreated: EntityIdData
+  processUrlUpdated: EmptyEntityJobData
+  processUrlDeleted: EmptyEntityJobData
+  processImageCreated: EntityIdData
+  processImageUpdated: EmptyEntityJobData
+  processImageDeleted: EmptyEntityJobData
+  processUserCreated: EntityIdData
+  processUserUpdated: EntityIdData
+  processUserLoggedIn: EntityIdData
+  processUserDeleted: EntityIdData
+  processAutoFollowReferrer: { newUserId: string; referrerId: string }
+  processPostCreated: EntityIdData
+  processPostUpdated: { id: string; contentChanged?: boolean }
+  processPostDeleted: EntityIdData
+  processReconcilePostCategoryFinalizations: EmptyEntityJobData
+  processTopicCreated: EntityIdData
+  processTopicUpdated: { id: string; updated_by_id?: string }
+  processTopicDeleted: { id: string; updates: CreateTopicUpdates }
+  processConversationMessageCreated: {
+    conversationId: string
+    messageId: string
+    senderId: string
+  }
+  processCommunityAgentPromptsDeactivated: {
+    actorUserId: string
+    userId: string
+    communityId: string
+  }
+}
+
+export type EntityJobsListeners = {
+  [JobName in EntityJobs]: (data: EntityJobPayloads[JobName]) => unknown
+}
 
 export type ReconcileEntityData = {
   entityType: 'user' | 'topic' | 'post_created' | 'post_updated' | 'post_deleted' | 'image' | 'url'

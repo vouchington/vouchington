@@ -1,6 +1,22 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import ts from 'typescript'
+import type {
+  CallExpression,
+  Node,
+  Program,
+  SourceFile,
+  Type,
+  TypeChecker,
+  TypeNode,
+} from 'typescript'
 
+import {
+  forEachTypescriptChild,
+  isTypescriptCallExpression,
+  isTypescriptIdentifier,
+  typescriptIndexKind,
+  typescriptSymbolFlags,
+  typescriptTypeFlags,
+} from './program-paths.mts'
 import {
   getBackendProgramBuildCount,
   loadBackendProgram,
@@ -96,21 +112,21 @@ describe('loadBackendProgram build count', () => {
 })
 
 describe('PostgreSQL row type contracts', () => {
-  let program: ts.Program
-  let checker: ts.TypeChecker
+  let program: Program
+  let checker: TypeChecker
 
   beforeAll(() => {
     program = loadBackendProgram().program
     checker = program.getTypeChecker()
   }, COLD_BACKEND_PROGRAM_TIMEOUT_MS)
 
-  function source(path: string): ts.SourceFile {
+  function source(path: string): SourceFile {
     const file = program.getSourceFiles().find(candidate => candidate.fileName.endsWith(path))
     if (!file) throw new Error(`Backend program does not include ${path}`)
     return file
   }
 
-  function declarationType(path: string, name: string): ts.Type {
+  function declarationType(path: string, name: string): Type {
     const file = source(path)
     const moduleSymbol = checker.getSymbolAtLocation(file)
     const exported =
@@ -118,9 +134,9 @@ describe('PostgreSQL row type contracts', () => {
       checker.getExportsOfModule(moduleSymbol).find(candidate => candidate.name === name)
     const symbol =
       exported &&
-      (exported.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(exported) : exported)
+      (exported.flags & typescriptSymbolFlags.Alias ? checker.getAliasedSymbol(exported) : exported)
     if (!symbol) throw new Error(`Missing ${name} in ${path}`)
-    return symbol.flags & ts.SymbolFlags.Type
+    return symbol.flags & typescriptSymbolFlags.Type
       ? checker.getDeclaredTypeOfSymbol(symbol)
       : checker.getTypeOfSymbolAtLocation(
           symbol,
@@ -128,7 +144,7 @@ describe('PostgreSQL row type contracts', () => {
         )
   }
 
-  function defaultRowType(path: string, name: string): ts.Type {
+  function defaultRowType(path: string, name: string): Type {
     const signature = declarationType(path, name).getCallSignatures()[0]
     const declaration = signature?.getDeclaration()
     const defaultNode = declaration?.typeParameters?.[0]?.default
@@ -145,8 +161,8 @@ describe('PostgreSQL row type contracts', () => {
   ])('%s %s defaults to a row that cannot masquerade as a complete Post', (path, name) => {
     const defaultRow = defaultRowType(path, name)
     const post = declarationType('backend/types/entities/post.mts', 'Post')
-    expect(defaultRow.flags & ts.TypeFlags.Any).toBe(0)
-    expect(post.flags & ts.TypeFlags.Any).toBe(0)
+    expect(defaultRow.flags & typescriptTypeFlags.Any).toBe(0)
+    expect(post.flags & typescriptTypeFlags.Any).toBe(0)
     if (checker.isTypeAssignableTo(defaultRow, post)) {
       throw new Error(
         `Default row masquerades as Post: default=${checker.typeToString(defaultRow)} flags=${defaultRow.flags}; Post=${checker.typeToString(post)} flags=${post.flags}`,
@@ -156,16 +172,16 @@ describe('PostgreSQL row type contracts', () => {
 
   it('keeps the selected id string on a real explicitly projected read call', () => {
     const file = source('backend/services/posts/public-ids.mts')
-    let projectedRead: ts.CallExpression | undefined
-    function visit(node: ts.Node): void {
+    let projectedRead: CallExpression | undefined
+    function visit(node: Node): void {
       if (
-        ts.isCallExpression(node) &&
+        isTypescriptCallExpression(node) &&
         node.expression.getText(file) === 'read' &&
         node.typeArguments?.[0]?.getText(file) === '{ id: string }'
       ) {
         projectedRead = node
       }
-      ts.forEachChild(node, visit)
+      forEachTypescriptChild(node, visit)
     }
     visit(file)
     if (!projectedRead) throw new Error('Missing getPublicPostIds projected read')
@@ -173,9 +189,71 @@ describe('PostgreSQL row type contracts', () => {
     if (!result) throw new Error('Projected read must return an awaitable result')
     const rowsProperty = checker.getPropertyOfType(result, 'rows')
     const rows = rowsProperty && checker.getTypeOfSymbolAtLocation(rowsProperty, projectedRead)
-    const row = rows && checker.getIndexTypeOfType(rows, ts.IndexKind.Number)
+    const row = rows && checker.getIndexTypeOfType(rows, typescriptIndexKind.Number)
     const idProperty = row && checker.getPropertyOfType(row, 'id')
     const id = idProperty && checker.getTypeOfSymbolAtLocation(idProperty, projectedRead)
     expect(id && checker.typeToString(id)).toBe('string')
+  })
+
+  function writeReturningRow(path: string): { row: Type; at: TypeNode } {
+    const file = source(path)
+    let typeArgument: TypeNode | undefined
+    function visit(node: Node): void {
+      if (
+        isTypescriptCallExpression(node) &&
+        isTypescriptIdentifier(node.expression) &&
+        node.expression.text === 'write' &&
+        node.typeArguments?.[0]
+      ) {
+        if (typeArgument) throw new Error(`Multiple write type arguments in ${path}`)
+        typeArgument = node.typeArguments[0]
+      }
+      forEachTypescriptChild(node, visit)
+    }
+    visit(file)
+    if (!typeArgument) throw new Error(`Missing write type argument in ${path}`)
+    return { row: checker.getTypeFromTypeNode(typeArgument), at: typeArgument }
+  }
+
+  function rowProperty(row: Type, at: Node, name: string): string | undefined {
+    const property = checker.getPropertyOfType(row, name)
+    if (!property) return undefined
+    return checker.typeToString(checker.getTypeOfSymbolAtLocation(property, at))
+  }
+
+  it.each([
+    'backend/services/posts/create/insert-post.mts',
+    'backend/services/posts/create-story-post.mts',
+  ])('%s types INSERT RETURNING * as a posts table row', path => {
+    const { row, at } = writeReturningRow(path)
+    const post = declarationType('backend/types/entities/post.mts', 'Post')
+    expect(row.flags & typescriptTypeFlags.Any).toBe(0)
+    expect(checker.isTypeAssignableTo(row, post)).toBe(false)
+    for (const name of ['clearance_status', 'clearance_reason', 'clearance_updated_at']) {
+      expect(rowProperty(row, at, name)).toBeUndefined()
+    }
+    const consumed = {
+      id: 'string',
+      root_id: 'string | null',
+      community_id: 'string | null',
+      title: 'string',
+      markdown: 'string',
+      ai_summary_markdown: 'string',
+      broadcast: 'PostBroadcast',
+      privacy: 'PostPrivacy',
+      is_anonymous: 'boolean',
+      created_by_id: 'string | null',
+      structured_data: 'unknown',
+      data_point_vertical: 'string | null',
+      declared_language: 'string | null',
+      deleted_at: 'Date | null',
+      archived_at: 'Date | null',
+      created_via: 'ContentCreationChannel | null',
+      llm_moderation_content_sha256: 'Buffer<ArrayBufferLike>',
+      search_vector: 'string | null',
+    }
+    for (const [name, expected] of Object.entries(consumed)) {
+      expect({ name, type: rowProperty(row, at, name) }).toEqual({ name, type: expected })
+    }
   })
 })

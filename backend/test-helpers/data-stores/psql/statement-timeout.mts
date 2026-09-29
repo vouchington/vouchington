@@ -10,7 +10,7 @@ import { beginBoundedTransaction } from '@data-stores/psql/setup'
 export const TEST_STATEMENT_TIMEOUT_MS =
   Number.parseInt(process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '', 10) || 20_000
 
-type PoolQuery = typeof read | typeof write
+type PoolQuery = typeof read
 
 /**
  * `read` and `write` are separate `createPsql()` pools; the ALTER DATABASE default is

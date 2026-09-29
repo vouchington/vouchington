@@ -1,11 +1,13 @@
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { getImagePlacementKey } from '@services/images/placements'
 import type { CopyrightRestrictionRecord } from './types.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { syncCopyrightRepeatInfringerIncidents } from './repeat-infringer-incidents.mts'
+import { lockAssessmentForm } from './compliance.mts'
 
 export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   noticeId: string
@@ -15,9 +17,9 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   imposedById: string | null
 }): Promise<CopyrightRestrictionRecord> {
   await using transaction = await beginTransaction()
-  const { rows: targetRows } = await transaction<{ placement_key: string }>(
+  const { rows: targetRows } = await transaction<{ placement_id: string }>(
     sql`/* acceptCopyrightNoticeAndImposeRestriction:findTarget */
-    SELECT placement_key
+    SELECT placement_id
     FROM copyright_notice_targets
     WHERE id = ${input.targetId} AND copyright_notice_id = ${input.noticeId}
   `,
@@ -25,8 +27,15 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   const target = targetRows[0]
   assert(target, 404, 'Copyright notice target not found')
   await transaction(sql`/* acceptCopyrightNoticeAndImposeRestriction:placementAdvisoryLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${target.placement_key}, 0))
+    SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(target.placement_id)}, 0))
   `)
+  const { rows: formAuthorities } = await transaction<{
+    copyright_notice_submission_id: string
+  }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:formAuthority */
+    SELECT copyright_notice_submission_id FROM copyright_notice_submission_assessments WHERE id = ${input.assessmentId}
+  `)
+  if (formAuthorities[0])
+    await lockAssessmentForm(formAuthorities[0].copyright_notice_submission_id, transaction)
   const { rows: noticeRows } = await transaction<{ id: string }>(
     sql`/* acceptCopyrightNoticeAndImposeRestriction:lockNotice */
     SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE
@@ -39,7 +48,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     FROM copyright_notice_targets
     WHERE id = ${input.targetId}
       AND copyright_notice_id = ${input.noticeId}
-      AND placement_key = ${target.placement_key}
+      AND placement_id = ${target.placement_id}
     FOR UPDATE
   `,
   )
@@ -48,9 +57,13 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     source_kind: 'signed_in_form' | 'guest_form' | 'email' | 'staff'
     assessed_by_id: string | null
     substantially_compliant: boolean
+    current_screening_authority: boolean
     has_rejected_form_review: boolean
   }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:lockAssessment */
     SELECT submission.source_kind, assessment.assessed_by_id, assessment.substantially_compliant,
+      assessment.copyright_notice_form_screening_id IS NULL OR fn_current_copyright_form_screening(
+        submission.id, assessment.copyright_notice_form_screening_id
+      ) AS current_screening_authority,
       EXISTS (
         SELECT 1
         FROM copyright_notice_form_intakes intake
@@ -77,9 +90,9 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   assert(assessment.substantially_compliant, 422, 'Copyright notice assessment is not compliant')
   assert(!assessment.has_rejected_form_review, 422, 'Copyright notice form review was rejected')
   assert(
-    assessment.source_kind === 'signed_in_form' || assessment.assessed_by_id !== null,
+    assessment.current_screening_authority,
     422,
-    'Guest and email copyright notices require a human moderator assessment',
+    'Copyright screening authority is not current',
   )
   const { rows: acceptedRows } = await transaction<{
     id: string
@@ -128,7 +141,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     SELECT DISTINCT post.created_by_id AS user_id
     FROM copyright_notice_targets target
     JOIN media_placements placement
-      ON target.placement_key = concat('image-placement:', placement.id)
+      ON target.placement_id = placement.id
     JOIN image_placements image_placement ON image_placement.placement_id = placement.id
     JOIN posts post ON post.id = image_placement.post_id
     WHERE target.id = ${input.targetId}
@@ -177,8 +190,8 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     await syncCopyrightRepeatInfringerIncidents(input.noticeId, transaction)
   }
   await transaction(sql`/* acceptCopyrightNoticeAndImposeRestriction:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
-    VALUES (${input.noticeId}, 'provisional_restriction_imposed', ${input.imposedById}, '{}'::jsonb)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, copyright_restriction_id)
+    VALUES (${input.noticeId}, 'provisional_restriction_imposed', ${input.imposedById}, ${restriction.id})
   `)
   await transaction.commit()
   void enqueueApplyCopyrightAction(actionIntent.id)

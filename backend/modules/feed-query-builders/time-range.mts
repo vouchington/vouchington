@@ -1,6 +1,6 @@
 import type { TimeRange } from '@voucha/types/feed'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { timestampToUuidv7LowerBound } from '@data-stores/psql/config-driven/utils/partition-utils'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 
 /**
  * Generates SQL filter for time range using a UUIDv7 lower bound.

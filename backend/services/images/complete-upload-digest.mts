@@ -46,7 +46,7 @@ export async function replaceFailedImage(
   incoming: ImageRecord,
   hash: Buffer,
 ): Promise<ImageRecord> {
-  return await withImageStorageLifecycleLock(existing.id, () =>
+  return withImageStorageLifecycleLock(existing.id, () =>
     replaceFailedImageWhileLocked(existing, incoming, hash),
   )
 }

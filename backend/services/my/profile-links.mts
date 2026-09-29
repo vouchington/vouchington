@@ -8,7 +8,6 @@ import {
   lockUserProfileLinkImageOwners,
   prepareImageSurfaceAdmission,
   syncImageSurfacePlacement,
-  type ImagePlacementTuple,
 } from '@services/media-delivery-safety'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import { runSequentially } from '@modules/utils/run-sequentially'
@@ -17,26 +16,14 @@ import {
   validateProfileLinkFields,
   validateProfileUrl,
   type CreateProfileLinkInput,
-  type ProfileLinkType,
   type UpdateProfileLinkInput,
 } from './profile-links-input.mts'
+import type { ProfileLink } from './profile-links-types.mts'
+export type { ProfileLink } from './profile-links-types.mts'
+
 export { reorderProfileLinks } from './profile-links-reorder.mts'
 export { listProfileLinks } from './profile-links-list.mts'
 export type { ProfileLinkType } from './profile-links-input.mts'
-export type ProfileLink = {
-  id: string
-  user_id: string
-  link_type: ProfileLinkType
-  sort_order: number
-  url_id: string | null
-  url: string | null
-  handle: string | null
-  name: string | null
-  image_id: string | null
-  image_placement?: ImagePlacementTuple | null
-  created_at: Date
-  updated_at: Date
-}
 const MAX_PROFILE_LINKS = 20
 async function resolveUrlId(
   userId: string,

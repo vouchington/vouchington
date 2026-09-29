@@ -59,8 +59,8 @@ describe('initialize port assignment helpers', () => {
     IS_MAIN=false
     WORKTREE_DIR=$(worktree_resource_current_dir "$PWD")
     SANITIZED_DIR=$(sanitize_worktree_dir "$WORKTREE_DIR")
-    DB_NAME="voucha-${'${'}SANITIZED_DIR:0:53}"
-    VALKEY_CONTAINER="voucha-valkey-${'${'}SANITIZED_DIR:0:45}"
+    DB_NAME="voucha-\${SANITIZED_DIR:0:53}"
+    VALKEY_CONTAINER="voucha-valkey-\${SANITIZED_DIR:0:45}"
     assign_worktree_ports >/dev/null
     printf '%s' "$BACKEND_PORT,$NEXT_PORT,$VALKEY_PORT,$WORKER_PORT,$IMAGE_LAMBDA_PORT,$DB_NAME,$VALKEY_CONTAINER"
     `,
@@ -90,8 +90,8 @@ describe('initialize port assignment helpers', () => {
     IS_MAIN=false
     WORKTREE_DIR=$(worktree_dir_from_path "$PWD")
     SANITIZED_DIR=$(sanitize_worktree_dir "$WORKTREE_DIR")
-    DB_NAME="voucha-${'${'}SANITIZED_DIR:0:53}"
-    VALKEY_CONTAINER="voucha-valkey-${'${'}SANITIZED_DIR:0:45}"
+    DB_NAME="voucha-\${SANITIZED_DIR:0:53}"
+    VALKEY_CONTAINER="voucha-valkey-\${SANITIZED_DIR:0:45}"
     assign_worktree_ports >/dev/null
     printf '%s' "$VALKEY_PORT"
     `,
@@ -134,8 +134,8 @@ describe('initialize port assignment helpers', () => {
     IS_MAIN=false
     WORKTREE_DIR=$(worktree_dir_from_path "$PWD")
     SANITIZED_DIR=$(sanitize_worktree_dir "$WORKTREE_DIR")
-    DB_NAME="voucha-${'${'}SANITIZED_DIR:0:53}"
-    VALKEY_CONTAINER="voucha-valkey-${'${'}SANITIZED_DIR:0:45}"
+    DB_NAME="voucha-\${SANITIZED_DIR:0:53}"
+    VALKEY_CONTAINER="voucha-valkey-\${SANITIZED_DIR:0:45}"
     assign_worktree_ports >/dev/null
     printf '%s' "$STORYBOOK_PORT"
     `,
@@ -164,8 +164,8 @@ describe('initialize port assignment helpers', () => {
     IS_MAIN=false
     WORKTREE_DIR=$(worktree_dir_from_path "$PWD")
     SANITIZED_DIR=$(sanitize_worktree_dir "$WORKTREE_DIR")
-    DB_NAME="voucha-${'${'}SANITIZED_DIR:0:53}"
-    VALKEY_CONTAINER="voucha-valkey-${'${'}SANITIZED_DIR:0:45}"
+    DB_NAME="voucha-\${SANITIZED_DIR:0:53}"
+    VALKEY_CONTAINER="voucha-valkey-\${SANITIZED_DIR:0:45}"
     assign_worktree_ports >/dev/null
     printf '%s' "$STORYBOOK_PORT"
     `,
@@ -184,8 +184,8 @@ describe('initialize port assignment helpers', () => {
     IS_MAIN=false
     WORKTREE_DIR=$(worktree_dir_from_path "$PWD")
     SANITIZED_DIR=$(sanitize_worktree_dir "$WORKTREE_DIR")
-    DB_NAME="voucha-${'${'}SANITIZED_DIR:0:53}"
-    VALKEY_CONTAINER="voucha-valkey-${'${'}SANITIZED_DIR:0:45}"
+    DB_NAME="voucha-\${SANITIZED_DIR:0:53}"
+    VALKEY_CONTAINER="voucha-valkey-\${SANITIZED_DIR:0:45}"
     assign_worktree_ports >/dev/null
     printf '%s' "$BACKEND_PORT,$NEXT_PORT,$VALKEY_PORT,$WORKER_PORT,$IMAGE_LAMBDA_PORT,$INSPECTOR_PORT,$STORYBOOK_PORT"
     `,
@@ -217,8 +217,8 @@ describe('initialize port assignment helpers', () => {
     IS_MAIN=false
     WORKTREE_DIR=$(worktree_dir_from_path "$PWD")
     SANITIZED_DIR=$(sanitize_worktree_dir "$WORKTREE_DIR")
-    DB_NAME="voucha-${'${'}SANITIZED_DIR:0:53}"
-    VALKEY_CONTAINER="voucha-valkey-${'${'}SANITIZED_DIR:0:45}"
+    DB_NAME="voucha-\${SANITIZED_DIR:0:53}"
+    VALKEY_CONTAINER="voucha-valkey-\${SANITIZED_DIR:0:45}"
     assign_worktree_ports >/dev/null
     printf '%s' "$WORKER_PORT"
     `,
@@ -250,8 +250,8 @@ describe('initialize port assignment helpers', () => {
     IS_MAIN=false
     WORKTREE_DIR=$(worktree_resource_current_dir "$PWD")
     SANITIZED_DIR=$(sanitize_worktree_dir "$WORKTREE_DIR")
-    DB_NAME="voucha-${'${'}SANITIZED_DIR:0:53}"
-    VALKEY_CONTAINER="voucha-valkey-${'${'}SANITIZED_DIR:0:45}"
+    DB_NAME="voucha-\${SANITIZED_DIR:0:53}"
+    VALKEY_CONTAINER="voucha-valkey-\${SANITIZED_DIR:0:45}"
     assign_worktree_ports
     printf '\nports=%s' "$BACKEND_PORT,$NEXT_PORT,$VALKEY_PORT,$WORKER_PORT,$IMAGE_LAMBDA_PORT"
     `,

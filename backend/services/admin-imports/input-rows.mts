@@ -60,7 +60,7 @@ export function importBatchMetadata(input: ImportBatchMetadata | undefined): {
 export function batchFromStored(row: StoredImportBatch): ImportBatch {
   const metadata: ImportBatchMetadata = {}
   if (row.metadata_source != null) metadata.source = row.metadata_source
-  if (row.metadata_version != null) metadata.version = Number(row.metadata_version)
+  if (row.metadata_version != null) metadata.version = row.metadata_version
   return {
     id: row.id,
     import_type: row.import_type,

@@ -1,6 +1,6 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import type { ProfileLink } from './profile-links.mts'
+import type { ProfileLink } from './profile-links-types.mts'
 
 export async function listProfileLinks(userId: string): Promise<ProfileLink[]> {
   const { rows } = await read<ProfileLink>(

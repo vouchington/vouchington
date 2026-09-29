@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
 import { CONTRIBUTING_USER_AGE_MS, createTestUserWithAge } from '@voucha/test-helpers'
 import {
   overrideDynamicConfigFieldsForTest,
@@ -9,6 +10,7 @@ import { contributionLimitConfig } from '@services/contribution-gating/limits-co
 import { recaptchaConfig } from '@services/recaptcha'
 import { Response as UndiciResponse } from 'undici'
 import type * as Undici from 'undici'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const mockFetch = vi.hoisted(() => vi.fn<typeof Undici.fetch>())
 
@@ -44,7 +46,7 @@ describe('POST /api/v1/posts reCAPTCHA capacity ordering', () => {
       discussion_free_daily_limit: 1,
     })
     mockFetch.mockImplementation(async url => {
-      const body = String(url).includes('recaptchaenterprise.googleapis.com')
+      const body = stringFromUnknown(url).includes('recaptchaenterprise.googleapis.com')
         ? {
             tokenProperties: { valid: true, action: 'create_post' },
             riskAnalysis: { score: 0.9, reasons: [] },
@@ -62,7 +64,7 @@ describe('POST /api/v1/posts reCAPTCHA capacity ordering', () => {
           post_type: 'discussion',
           title,
           markdown: `${title} body`,
-          cf_turnstile_response: 'mock-captcha-token',
+          cf_turnstile_response: TEST_CAPTCHA_TOKEN,
           recaptcha_token: `recaptcha-${title}`,
         })
 
@@ -70,7 +72,7 @@ describe('POST /api/v1/posts reCAPTCHA capacity ordering', () => {
       await post('Over capacity').expect(429)
 
       const assessments = mockFetch.mock.calls.filter(([url]) =>
-        String(url).includes('recaptchaenterprise.googleapis.com'),
+        stringFromUnknown(url).includes('recaptchaenterprise.googleapis.com'),
       )
       expect(assessments).toHaveLength(1)
     } finally {

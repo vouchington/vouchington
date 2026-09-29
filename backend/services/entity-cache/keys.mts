@@ -1,12 +1,13 @@
 import { read, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { isUUID, isUsernameOrSlug } from '@modules/utils'
 import { normalizeKey } from '@ts-shared/utils/strings'
+import { getCacheKeys } from './classify-cache-keys.mts'
 
 // URL/hostname key resolvers live in url-keys.mts (kept out of this file to stay under the
 // scc-complexity budget); re-exported here so `@services/entity-cache/keys` consumers resolve
 // unchanged.
 export { getUrlCacheKeys, getUrlLookupKeys, getUrlHostnameCacheKeys } from './url-keys.mts'
+export { getCacheKeys } from './classify-cache-keys.mts'
 
 export const getCommunityCacheKeys = async (...keys: unknown[]): Promise<string[]> => {
   const { ids, slugs } = getCacheKeys(keys)
@@ -150,29 +151,6 @@ export const getRssFeedItemCacheKeys = (...keys: unknown[]): Promise<string[]> =
   // RSS feed items can only be looked up by ID, so just normalize the IDs
   const { ids } = getCacheKeys(keys)
   return Promise.resolve([...ids])
-}
-
-// getCacheKeys classifies strings as UUIDs or slugs/usernames.
-// URL strings (https://...) match neither and are intentionally excluded — use getUrlLookupKeys.
-export function getCacheKeys(keys: unknown[]): { ids: Set<string>; slugs: Set<string> } {
-  const stringKeys: string[] = (keys.flat(Infinity) as unknown[]).flatMap((x: unknown) => {
-    if (!x) return []
-    // all possible keys from an object
-    if (typeof x === 'object' && x !== null) {
-      const obj = x as Record<string, unknown>
-      return [obj.id, obj.slug, obj.username].flatMap(v =>
-        typeof v === 'string' && v !== '' ? [normalizeKey(v)] : [],
-      )
-    }
-    if (typeof x === 'string') return x !== '' ? [normalizeKey(x)] : []
-    throw new Error(`Invalid key: ${x}`)
-  })
-
-  const ids = new Set(stringKeys.filter(isUUID))
-  // Exclude UUIDs from slugs: isSlug matches /^[a-z0-9-]+$/ which also matches UUID strings.
-  const slugs = new Set(stringKeys.filter(k => isUsernameOrSlug(k) && !isUUID(k)))
-
-  return { ids, slugs }
 }
 
 export const getRssFeedCacheKeys = (...keys: unknown[]): Promise<string[]> => {
