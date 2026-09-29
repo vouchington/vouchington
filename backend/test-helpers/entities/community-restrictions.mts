@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type {
   CommunityRestriction,
@@ -45,4 +45,24 @@ export async function insertTestCommunityRestriction(
     `,
   )
   return rows[0] as CommunityRestriction
+}
+
+export async function deleteTestCommunityRestriction(restrictionId: string): Promise<void> {
+  await write(sql`/* deleteTestCommunityRestriction */
+    DELETE FROM community_restrictions WHERE id = ${restrictionId}`)
+}
+
+/** Restriction ids a moderator action activated or lifted, stored as child rows. */
+export async function getTestModeratorActionRestrictionIds(
+  moderatorActionId: string,
+): Promise<string[]> {
+  const { rows } = await read<{ community_restriction_id: string }>(
+    sql`/* getTestModeratorActionRestrictionIds */
+    SELECT community_restriction_id
+    FROM moderator_action_community_restrictions
+    WHERE moderator_action_id = ${moderatorActionId}
+    ORDER BY community_restriction_id
+    `,
+  )
+  return rows.map(row => row.community_restriction_id)
 }

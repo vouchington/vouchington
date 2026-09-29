@@ -2,6 +2,7 @@ import { read, write } from '@data-stores/psql'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import sql from 'sql-template-strings'
 import type { PageInfo } from '@voucha/types/pagination'
+import { FLAG_COLUMNS } from './flag-columns.mts'
 import type { ReportIntegrityFlag } from './create-flag.mts'
 import type { IntegrityFlagStatus } from '@ts-shared/utils/moderation-catalogs'
 
@@ -19,24 +20,14 @@ export type GetReportIntegrityFlagsResult = {
 export async function getReportIntegrityFlagByIdFromPrimary(
   id: string,
 ): Promise<ReportIntegrityFlag | null> {
-  const { rows } = await write(sql`/* getReportIntegrityFlagByIdFromPrimary */
-    SELECT
-      id,
-      post_id,
-      reported_user_id,
-      hostname_id,
-      rss_feed_item_id,
-      flag_type,
-      reporter_count,
-      new_account_reporter_pct,
-      details,
-      resolved_at,
-      resolved_by_id,
-      resolution,
-      created_at
+  const query = sql`/* getReportIntegrityFlagByIdFromPrimary */
+    SELECT`
+  query.append(FLAG_COLUMNS)
+  query.append(sql`
     FROM report_integrity_flags
     WHERE id = ${id}
   `)
+  const { rows } = await write(query)
   return (rows[0] as ReportIntegrityFlag) ?? null
 }
 
@@ -54,23 +45,12 @@ export async function getReportIntegrityFlags(
   }
 
   const query = sql`/* getReportIntegrityFlags */
-    SELECT
-      id,
-      post_id,
-      reported_user_id,
-      hostname_id,
-      rss_feed_item_id,
-      flag_type,
-      reporter_count,
-      new_account_reporter_pct,
-      details,
-      resolved_at,
-      resolved_by_id,
-      resolution,
-      created_at
+    SELECT`
+  query.append(FLAG_COLUMNS)
+  query.append(sql`
     FROM report_integrity_flags
     WHERE TRUE
-  `
+  `)
 
   if (status === 'pending') {
     query.append(sql` AND resolved_at IS NULL`)

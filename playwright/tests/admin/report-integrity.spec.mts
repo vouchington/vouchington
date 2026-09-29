@@ -114,7 +114,7 @@ test.describe('Admin Report Integrity — flag actions', () => {
   })
 
   test('admin can investigate a report integrity flag', async ({ page }) => {
-    // Seed reporter users — applyReportAbusePenalty reads details.reporter_user_ids
+    // Seed reporter users — applyReportAbusePenalty penalizes the flag's reporter rows
     const reporter1 = await createTestUser()
     const reporter2 = await createTestUser()
     const reportedUser = requireTestValue(await createTestUser(), 'Failed to create reported user')

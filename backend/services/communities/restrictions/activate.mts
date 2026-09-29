@@ -56,8 +56,8 @@ export async function activateCommunityRestrictions(
     actionType: 'activate_restriction',
     communityId,
     reason: input.reason ?? null,
+    communityRestrictionIds: restrictions.map(restriction => restriction.id),
     metadata: {
-      restriction_ids: restrictions.map(restriction => restriction.id),
       restriction_types: restrictions.map(restriction => restriction.restriction_type),
       expires_at: input.expiresAt?.toISOString() ?? null,
     },

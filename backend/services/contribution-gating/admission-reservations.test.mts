@@ -3,6 +3,7 @@ import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
   getContributionAdmissionAuditForTest,
+  executeTestAdmittedPost,
 } from '@voucha/test-helpers'
 import { runContributionAdmission } from './admission.mts'
 import type { ContributionPolicy } from './policy.mts'
@@ -53,7 +54,7 @@ describe('contribution admission reservations', () => {
       intent: { request: crypto.randomUUID() },
       source: 'discussion',
       policy: policy(2, 2),
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
 
     const retry = await runContributionAdmission({
@@ -63,7 +64,7 @@ describe('contribution admission reservations', () => {
       source: 'discussion',
       policy: policy(2, 2),
       audit: retriedAudit,
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     expect(retry).toMatchObject({ kind: 'created' })
     expect(
@@ -78,7 +79,7 @@ describe('contribution admission reservations', () => {
         source: 'discussion',
         policy: policy(3, 3),
         audit: { ...retriedAudit, policyRevision: 'later-policy-revision' },
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toMatchObject({ kind: 'replay' })
     expect(

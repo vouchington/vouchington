@@ -3,6 +3,7 @@ import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
   getContributionAdmissionReservationStateForTest,
+  executeTestAdmittedPost,
 } from '@voucha/test-helpers'
 import { CONTRIBUTION_QUOTA_EXCEEDED } from '@modules/on-error/error-codes'
 import { runContributionAdmission } from './admission.mts'
@@ -28,7 +29,7 @@ describe('contribution admission capacity preflight', () => {
       intent: { request: crypto.randomUUID() },
       source: 'discussion',
       policy: LIMIT_ONE_POLICY,
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
 
     const idempotencyKey = crypto.randomUUID()

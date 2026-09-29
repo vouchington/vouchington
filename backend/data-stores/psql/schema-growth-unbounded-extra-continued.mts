@@ -21,6 +21,7 @@ export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
   'referral_program_link_validations',
   'referral_program_link_validations_rules',
   'report_abuse_penalties',
+  'report_integrity_flag_reporters',
   'retained_topic_identities',
   'retained_user_identities',
   'retailer_countries',

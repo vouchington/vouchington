@@ -14,7 +14,7 @@ export const COMMUNITY_APPLICATION_MISSING_UPDATED_AT = new Map<string, string>(
   ],
   [
     'post_admission_quota_consumptions',
-    'Immutable committed-admission quota ledger; rows are inserted once and only later deleted by retention pruning.',
+    'Immutable committed-admission quota ledger; rows are inserted once and only later deleted with their reservation or by retention pruning.',
   ],
 ])
 /* v8 ignore stop */

@@ -32,6 +32,7 @@ const ROOT_FAMILIES = {
       ['posts', 'id'],
       ['post_publication_post_identities', 'id'],
       ['notifications', 'publication_post_id'],
+      ['post_admission_reservations', 'committed_post_id'],
       ...retainedRelationReferences('post'),
     ],
   },
