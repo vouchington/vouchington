@@ -72,6 +72,7 @@ describe('copyright guest lifecycle guards', () => {
     const { notice, owner, receivedAt } = await openNotice()
     const actor = await createTestUserDirect()
     const capability = await issueCopyrightGuestCapability({
+      currentUser: { ...actor, roles: ['moderator'] } as typeof actor,
       noticeId: notice.id,
       expiresAt: new Date('2026-07-03T12:00:00.000Z'),
     })
@@ -102,19 +103,19 @@ describe('copyright guest lifecycle guards', () => {
       kind: 'supplement',
       statement,
     })
-    await appendCopyrightGuestFiling({
-      noticeId: notice.id,
-      token: capability.token,
-      now: new Date('2026-07-02T16:00:00.000Z'),
-      kind: 'withdrawal',
-      statement: `withdrawal-${crypto.randomUUID()}`,
-    })
     const court = await appendCopyrightGuestFiling({
       noticeId: notice.id,
       token: capability.token,
-      now: new Date('2026-07-02T17:00:00.000Z'),
+      now: new Date('2026-07-02T16:00:00.000Z'),
       kind: 'court_or_ccb_hold',
       statement: `court-${crypto.randomUUID()}`,
+    })
+    await appendCopyrightGuestFiling({
+      noticeId: notice.id,
+      token: capability.token,
+      now: new Date('2026-07-02T17:00:00.000Z'),
+      kind: 'withdrawal',
+      statement: `withdrawal-${crypto.randomUUID()}`,
     })
     const after = await getCopyrightNoticePrivateAggregate(notice.id)
     expect(after?.notice.received_at).toEqual(receivedAt)
@@ -159,6 +160,7 @@ describe('copyright guest lifecycle guards', () => {
     const staffRecord = await createTestUserDirect()
     const staff = { ...staffRecord, roles: ['moderator'] as const }
     const capability = await issueCopyrightGuestCapability({
+      currentUser: staff,
       noticeId: notice.id,
       expiresAt: new Date('2026-07-03T12:00:00.000Z'),
     })

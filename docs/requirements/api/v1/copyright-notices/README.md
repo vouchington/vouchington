@@ -44,6 +44,17 @@ Reviewers record incident dispositions and warning or no-action review outcomes.
 record restrict, terminate, and reinstatement. Restrict and terminate suspend the account.
 Reinstatement does not unsuspend it.
 
+Staff issue a one-case guest capability with `POST /api/v1/copyright-notices/:id/guest-capabilities`.
+The expiry must be no more than 30 days after issue, and the token is returned only in that
+response. `GET /api/v1/copyright-notices/:id/guest-capabilities` lists the case's capabilities
+newest first with issuer, expiry, and revocation state, using the bounded `after` and `limit`
+(1–100; default 25) contract with a case-scoped cursor; it never returns a token. Staff revoke one
+with `POST .../guest-capabilities/:capabilityId/revocation` and record a request for more
+information with `POST .../guest-capabilities/:capabilityId/information-requests`. A guest files
+with `POST /api/v1/copyright-notices/:id/guest-filings` and the `Copyright-Guest-Capability`
+header. A capability files at most one court or CCB hold (409 on a repeat), and a received
+withdrawal revokes every live capability on the case.
+
 ## Performance
 
 Mutation routes are uncached. An EU or UK receipt writes the notice, routing, and acknowledgment
@@ -55,4 +66,6 @@ one legal aggregate transaction. Appeals and counter-notices use one bounded own
 one transaction. Email approval resolves at most 20 placements, admits one aggregate, then imposes
 target-scoped restrictions. A repeat-infringer account read is one query. A review outcome,
 disposition, or reinstatement is one transaction. Restrict and terminate then call account
-suspension.
+suspension. The guest capability list is private, uncached, and one primary-database query walking
+the `(copyright_notice_id, id)` index. A guest filing locks its capability row, then appends the
+filing and any withdrawal revocations in one transaction.

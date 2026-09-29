@@ -6,6 +6,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
+import { revokeCopyrightGuestCapabilitiesForWithdrawal } from './guest-capability-withdrawal.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
 import { v7 as uuidv7 } from 'uuid'
 
@@ -172,6 +173,12 @@ export async function admitCopyrightEmailCorrespondence(input: {
       copyright_notice_correspondence_id)
     VALUES (${pending.notice_id}, 'email_correspondence_admitted', ${input.currentUser.id}, ${correspondence.id})
   `)
+  if (input.kind === 'withdrawal') {
+    await revokeCopyrightGuestCapabilitiesForWithdrawal(transaction, {
+      noticeId: pending.notice_id,
+      revokedAt: new Date(),
+    })
+  }
   await transaction.commit()
   return {
     noticeId: pending.notice_id,

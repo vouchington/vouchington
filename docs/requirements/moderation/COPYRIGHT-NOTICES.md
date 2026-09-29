@@ -206,13 +206,23 @@ US cases and project case identifier, dates, target URL, restriction state, a me
 lifecycle timeline, and the claimant's current public profile when one exists. They never expose
 legal claimant or poster identity, email, mailing address, signature, raw email, evidence artifacts,
 encrypted fields, moderator rationale, or agent recommendation. A guest or erased claimant has no
-member-visible profile link. A guest who is not signed in acts only with a hashed, expiring,
-revocable capability for one case. Staff issue that token once. The guest sends it in the
-Copyright-Guest-Capability header. Mail, a thread, or a token for another case does not authorize
-a correction, withdrawal, or court filing. A correction does not move the original receipt time
-or an existing restoration deadline. A withdrawal records the filing and leaves existing
-restrictions in place until staff assess it. A court or CCB filing is classified urgent and does
-not itself block restoration. Staff may ask for more information without extending the capability.
+member-visible profile link.
+
+A guest who is not signed in acts only with a hashed, expiring, revocable capability for one case.
+Staff issue that token once, with an expiry no more than 30 days after issue. The capability records
+the issuing staff member, and issue and revocation each append a lifecycle event that names the
+acting staff member. The guest sends the token in the Copyright-Guest-Capability header. Mail, a
+thread, or a token for another case does not authorize a correction, withdrawal, or court filing.
+Each guest filing records the capability that authorized it. A correction does not move the
+original receipt time or an existing restoration deadline. A withdrawal records the filing and
+leaves existing restrictions in place until staff assess it. Receiving a withdrawal, whether filed
+by a guest or admitted from claimant email, revokes every live capability on the case in the same
+transaction and appends an actorless `guest_capability_revoked_by_withdrawal` event for each one. A
+court or CCB filing is classified urgent and does not itself block restoration. A capability may
+file at most one court or CCB hold; a second attempt is refused with a conflict. Staff may ask for
+more information without extending the capability. Staff list a case's capabilities, newest first
+with issuer, expiry, and revocation state but never the token, at
+`GET /api/v1/copyright-notices/:id/guest-capabilities`, so they can revoke tokens after a reload.
 
 Claimants and affected posters receive a participant projection for their own submissions. Copyright
 review staff receive a separate queue and private case projection. Staff-only routes may expose
