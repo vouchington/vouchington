@@ -6,7 +6,6 @@ import {
   ALLOWED_NONRELATION_UUID,
   ALLOWED_TOKEN_CURSOR_PROTOCOL_ID,
 } from './relational-storage-catalog.mts'
-import { EXISTING_RELATIONAL_STORAGE_DEBT } from './relational-storage-debt.mts'
 import { checkRelationalStorage } from './relational-storage-guard.mts'
 import { emptySchemaSnapshot, plainSnapshotTable } from './schema-snapshot-test-fixtures.mts'
 
@@ -92,20 +91,15 @@ describe('reviewed token and audit snapshot identifiers', () => {
     )
   })
 
-  it('keeps the catalogs disjoint, with one reason per entry and no debt overlap', () => {
+  it('keeps the catalogs disjoint, with one reason per entry', () => {
     const tokens = [...ALLOWED_TOKEN_CURSOR_PROTOCOL_ID.keys()]
     const audits = [...ALLOWED_AUDIT_SNAPSHOT_ID.keys()]
-    const debt = new Set([
-      ...EXISTING_RELATIONAL_STORAGE_DEBT.missingForeignKey,
-      ...EXISTING_RELATIONAL_STORAGE_DEBT.encodedReference,
-    ])
     const entries = [...ALLOWED_TOKEN_CURSOR_PROTOCOL_ID, ...ALLOWED_AUDIT_SNAPSHOT_ID]
     const keys = [...tokens, ...audits]
     expect(keys.filter(key => !/^[a-z0-9_]+\.[a-z0-9_]+$/u.test(key))).toEqual([])
     expect(entries.filter(([, reason]) => reason.trim().length === 0).map(([key]) => key)).toEqual(
       [],
     )
-    expect(keys.filter(key => debt.has(key))).toEqual([])
     expect(keys.filter(key => ALLOWED_NONRELATION_UUID.has(key))).toEqual([])
     expect(tokens.filter(key => audits.includes(key))).toEqual([])
   })

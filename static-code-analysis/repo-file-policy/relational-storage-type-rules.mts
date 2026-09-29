@@ -5,12 +5,11 @@ export type RelationalStorageOptions = {
   verifiedPartitionForeignKeys?: ReadonlySet<string>
 }
 
-export type ObservedRelationalDebt = {
+export type ObservedRelationalColumns = {
   encodedReference: Set<string>
   json: Set<string>
   missingForeignKey: Set<string>
   ownPrimary: Set<string>
-  uuidArray: Set<string>
 }
 
 import { GENERATED_FK_ALIASES } from './relational-storage-catalog.mts'

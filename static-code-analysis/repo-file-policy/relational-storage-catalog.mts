@@ -1,5 +1,5 @@
 // Every exception is an exact table.column from the committed PostgreSQL schema snapshot.
-// Remove a remediation entry as its owning domain is normalized. New entries require plan review.
+// Remove an entry once its column no longer needs the exception. New entries require plan review.
 // JSON documents are allowed. This list records reviewed opaque provider, protocol, and replay
 // payloads. Structured documents and change history stay JSON too. An entity id inside any of
 // them is a foreign-key column; the rest of the document stays JSON.

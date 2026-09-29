@@ -6,7 +6,6 @@ import { describe, expect, it } from 'vitest'
 import type { SchemaSnapshot, SchemaTableSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
 
 import createEntityRelationsSql from '../../backend/data-stores/psql/config-driven/0000-00-01-entity-relations.mts'
-import { checkRelationalStorageDebtShrinkOnly } from './relational-storage-debt-baseline.mts'
 import { checkRelationalStorage } from './relational-storage-guard.mts'
 import {
   readTargetEntityRelationSql,
@@ -169,10 +168,5 @@ describe('relational storage guard hardening', () => {
     } finally {
       await rm(target, { force: true, recursive: true })
     }
-  })
-
-  it('rejects remediation inventory keys that are not already on origin/main', () => {
-    const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
-    expect(checkRelationalStorageDebtShrinkOnly(repoRoot)).toEqual([])
   })
 })

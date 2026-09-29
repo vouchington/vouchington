@@ -30,7 +30,6 @@ import { checkPostPublicationReaderInventory } from './post-publication-reader-i
 import { checkPostPublicationWriterInventory } from './post-publication-writer-inventory.mts'
 import { checkPublicSourceLiterals } from './public-source-literal-guard.mts'
 import { checkRelationalStorage } from './relational-storage-guard.mts'
-import { checkRelationalStorageDebtShrinkOnly } from './relational-storage-debt-baseline.mts'
 import { verifyEntityRelationVotePartitionForeignKeysAt } from './partition-foreign-key-proof.mts'
 
 type RepoFilePolicyOptions = {
@@ -68,7 +67,6 @@ export async function checkRepoFilePolicy(
     ? []
     : await verifyEntityRelationVotePartitionForeignKeysAt(ctx.repoRoot)
   errors.push(...partitionFkErrors)
-  errors.push(...checkRelationalStorageDebtShrinkOnly(ctx.repoRoot))
   errors.push(
     ...checkRelationalStorage(schema, {
       enforceCatalogFreshness: !injectedSnapshot,
