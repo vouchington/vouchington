@@ -217,6 +217,10 @@ warning appears only as a Sentry issue. Email intakes that await review are not 
 job has no throttle beyond its five-minute schedule, so a breach repeats every sweep until it
 clears.
 
+A qualifying court or CCB hold blocks the restore but does not cancel or resolve the deadline. A
+deadline held open that way keeps paging as a missed restoration deadline, as the
+`missed_deadline` staff alert does. Only a completed restore or a superseding assessment clears it.
+
 ## Staff alerts
 
 Copyright staff alerts have no notification destination and no numeric review threshold in code.
