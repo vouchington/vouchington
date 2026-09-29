@@ -4,8 +4,8 @@ import {
   createTestInfo,
 } from '../../test-helpers/browser-issue-monitor-fixtures.mts'
 
-import { describe, expect, it, vi } from 'vitest'
-import type { BrowserContext, ConsoleMessage, Page, TestInfo } from '@playwright/test'
+import { describe, expect, it } from 'vitest'
+import type { BrowserContext, ConsoleMessage, Page } from '@playwright/test'
 import { BrowserIssueMonitor } from '../browser-errors.mts'
 
 function createConsoleMessage(

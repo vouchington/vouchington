@@ -5,9 +5,9 @@ import {
   createTestInfo,
 } from '../../test-helpers/browser-issue-monitor-fixtures.mts'
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import type { BrowserContext, Page, Request, TestInfo } from '@playwright/test'
+import type { BrowserContext } from '@playwright/test'
 
 import { BrowserIssueMonitor } from '../browser-errors.mts'
 

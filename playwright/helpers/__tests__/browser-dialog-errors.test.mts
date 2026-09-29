@@ -6,7 +6,7 @@ import {
 
 import { describe, expect, it, vi } from 'vitest'
 
-import type { BrowserContext, Dialog, Page, TestInfo } from '@playwright/test'
+import type { BrowserContext, Dialog, Page } from '@playwright/test'
 
 import { BrowserIssueMonitor } from '../browser-errors.mts'
 
