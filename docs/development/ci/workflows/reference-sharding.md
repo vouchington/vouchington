@@ -39,18 +39,20 @@ shards now run uncapped like every other matrix: GitHub schedules them against n
 capacity and queues excess work. Every shard-capable workflow puts a ten-minute watchdog on the
 Vitest command itself; this is a step deadline, not a replacement for the job's broader timeout.
 
-Every Playwright run uses `max(1, ceil(runnable spec count × 6.1 seconds / 350 seconds))`;
+Every Playwright run uses `max(1, ceil(runnable spec count × 6.1 seconds / 300 seconds))`;
 GitHub's matrix range limits the result to 1–256. The optional `PLAYWRIGHT_SHARD_TOTAL` repository
 variable replaces the formula when set. The 6.1 seconds per
-spec and 350-second execution budget are an allocation heuristic, not a per-spec SLA: 6.1 seconds is
-the hosted-runner test-step time per spec with three Playwright workers, and the budget sizes each
-shard for the seven-to-eight-minute job target. The current full suite resolves to six shards. See
+spec and 300-second execution budget are an allocation heuristic, not a per-spec SLA: 6.1 seconds is
+the hosted-runner test-step time per spec with three Playwright workers, and the budget is the
+average per-shard test time. Count-based sharding leaves the heaviest shard about 1.2× that average
+(near 350 seconds), which sizes it for the seven-to-eight-minute job target. The current full suite
+resolves to seven shards. See
 the derivation in
 [`ci/playwright/shard-total.mts`](../../../../ci/playwright/shard-total.mts). The execution budget
 leaves room for fixed per-shard build/startup overhead inside the job target (build + migrate +
 compile + test, not just the test step). The `Run Playwright tests` step's 12-minute
 `timeout-minutes` is a ceiling, not the target: it adds a slow-runner tail over the ~6-minute
-budget so a shard that is still passing tests finishes instead of ejecting the merge queue (#1185).
+heaviest-shard test time so a shard that is still passing tests finishes instead of ejecting the merge queue (#1185).
 
 Each sharded workflow includes a lightweight job that generates its matrix before the test job
 runs. Web shards run symmetrically — no shard owns a singleton duty; the pages-router check,
