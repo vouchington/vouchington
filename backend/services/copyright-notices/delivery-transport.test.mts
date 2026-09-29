@@ -15,6 +15,7 @@ import {
   appendCopyrightFormScreening,
   applyNonSpamSignedInCopyrightFormScreening,
 } from './form-screenings.mts'
+import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 
 async function createRestrictedNotice(poster: Awaited<ReturnType<typeof createTestUser>>) {
   const claimant = await createTestUser()
@@ -60,6 +61,8 @@ async function createRestrictedNotice(poster: Awaited<ReturnType<typeof createTe
 }
 
 describe('copyright email delivery transport', () => {
+  useAutomaticProvisionalWithholding()
+
   it('prepares a poster restriction email from the member verified address', async () => {
     const poster = await createTestUser()
     const { intentId } = await createRestrictedNotice(poster)

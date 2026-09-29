@@ -21,6 +21,7 @@ import {
   searchRecoverableCopyrightFormReviewIntakeIds,
 } from './index.mts'
 import { appendCopyrightFormScreening } from './form-screenings.mts'
+import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 
 async function createAutomatedCopyrightForm() {
   const claimant = await createTestUser()
@@ -84,6 +85,8 @@ async function recoverListedFormReview(intakeId: string): Promise<void> {
 }
 
 describe('copyright rejected form-review recovery after actor erasure', () => {
+  useAutomaticProvisionalWithholding()
+
   it('reverses the automated restriction from the durable erased rejection', async () => {
     const { assessment, notice } = await createAutomatedCopyrightForm()
     const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)

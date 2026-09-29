@@ -33,8 +33,11 @@ import {
 } from './form-screening-executions.mts'
 import { claimCopyrightEnforcementRequest } from './enforcement-request-claim.mts'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
+import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 
 describe('current copyright form screening execution', () => {
+  useAutomaticProvisionalWithholding()
+
   it('commits admission ahead of a waiting new screen and retains its action intent', async () => {
     const { notice, screeningId } = await createClearScreenedForm()
     const assessment = await appendCopyrightSubmissionAssessment({

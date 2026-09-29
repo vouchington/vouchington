@@ -20,8 +20,11 @@ import {
   applyNonSpamSignedInCopyrightFormScreening,
 } from './form-screenings.mts'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
+import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 
 describe('email appeal review', () => {
+  useAutomaticProvisionalWithholding()
+
   it('emails the unmatched submitter the appeal outcome', async () => {
     const [poster, claimant, moderatorRecord] = await Promise.all([
       createTestUser(),

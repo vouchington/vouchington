@@ -2,8 +2,9 @@
 
 The [current screening authority contract](../requirements/moderation/COPYRIGHT-NOTICES.md#current-screening-authority)
 governs re-screening recovery. The existing agent-dispatch sweep wakes unclaimed pending, failed,
-and expired claims; completed current clear results repair their exact workflow effect without
-another provider run. Pending/failed cases remain staff-actionable. Staff approval records human
+and expired claims; while [automatic provisional withholding](#automatic-provisional-withholding)
+is on, completed current clear results repair their exact workflow effect without another provider
+run. Pending/failed cases remain staff-actionable. Staff approval records human
 authority atomically with the intake review. Existing restrictions and their delivery workers
 continue while screening runs.
 
@@ -32,7 +33,9 @@ These are product response targets, not representations of safe-harbor eligibili
 3. Confirm the target is an exact Voucha-hosted placement and preserve its captured revision.
 4. Record missing elements as an assessment and request information. Do not silently reject a
    substantially compliant notice for failing to match Voucha's form wording.
-5. If a signed-in case was provisionally restricted automatically, record a human `confirm`,
+5. While automatic provisional withholding is off, a clear-screened signed-in form waits here like
+   a guest form. Accept it to withhold its targets, or reject it. The screen is advisory only.
+6. If a signed-in case was provisionally restricted automatically, record a human `confirm`,
    `modify`, or `reverse` decision even when nobody appeals.
 
 ## Intake activation
@@ -71,6 +74,29 @@ authorize every placement request at the viewer edge, deny direct origin access,
 generic post-image routes, publish the authoritative delivery registry, and invalidate cached
 placement paths after a state transition. Record cold and warm cache evidence for withhold and
 restore before enabling intake.
+
+## Automatic provisional withholding
+
+Launch is moderator-first. `automaticProvisionalWithholding` in the `copyright` dynamic-config
+namespace stays `false`. Only a developer or an administrator can change it, and the namespace
+history records each change.
+
+Before enabling it, confirm all of the following:
+
+- claimant abuse controls ([#1209](https://github.com/vouchington/vouchington/issues/1209)) are live;
+- the GDPR Article 22 automated-decision disclosure
+  ([#1230](https://github.com/vouchington/vouchington/issues/1230)) is published; and
+- the staff queue has no clear-screened signed-in intake awaiting review, or staff accept that the
+  next sweep withholds all of them at once.
+
+Enabling it releases the backlog. The next agent-dispatch sweep withholds every clear-screened
+signed-in intake that lacks a moderator review, and the action reconciler enforces every pending
+automated request. Each of those restrictions then needs its own human decision within the triage
+target above.
+
+Disabling it stops new automated assessments. Pending automated requests stay unenforced and in the
+staff queue until a moderator decides the intake. Existing restrictions stay in place; review them
+as usual.
 
 ## Counter-notice and hold handling
 
