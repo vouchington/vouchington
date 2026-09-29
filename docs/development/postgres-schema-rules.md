@@ -18,7 +18,7 @@ Launch behavior and worktree-database recovery follow
 
 An internal entity reference is a column or child row with a concrete foreign key and a supporting
 index, including a reference stored in a primary or unique key. Extract that id from a JSON document
-or a UUID array. Leave the rest of the document in JSON. Do not delete a JSON document and replace
+(other than change history, below) or a UUID array. Leave the rest of the document in JSON. Do not delete a JSON document and replace
 it with a typed column for every field.
 
 Structured documents stay JSON. Data points stay structured JSON. A data-point field that references
