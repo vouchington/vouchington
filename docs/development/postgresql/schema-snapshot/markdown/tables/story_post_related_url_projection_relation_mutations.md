@@ -6,12 +6,12 @@ Post-capture active related URL confirmations that this projection generation mu
 
 Not partitioned — growth: bounded.
 
-| Column        | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                              |
-| ------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------ |
-| `post_id`     | `uuid`                     | no       |                     |          |           |           | Story post whose active related URL relation was confirmed after projection capture. |
-| `generation`  | `bigint`                   | no       |                     |          |           |           | Exact projection generation that observed the post-capture relation confirmation.    |
-| `relation_id` | `uuid`                     | no       |                     |          |           |           | Active related URL relation protected from pruning by this projection generation.    |
-| `updated_at`  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Time this generation-scoped relation mutation fence was last updated.                |
+| Column        | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                    |
+| ------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `post_id`     | `uuid`                     | no       |                     |          |           |           | Story post whose active related URL relation was confirmed after projection capture.                                       |
+| `generation`  | `bigint`                   | no       |                     |          |           |           | Exact projection generation that observed the post-capture relation confirmation.                                          |
+| `relation_id` | `uuid`                     | no       |                     |          |           |           | Active related URL relation protected from pruning by this projection generation; deleting the relation removes the fence. |
+| `updated_at`  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Time this generation-scoped relation mutation fence was last updated.                                                      |
 
 **Primary key:** `PRIMARY KEY (post_id, generation, relation_id)`
 
@@ -24,9 +24,11 @@ _none_
 **Foreign keys:**
 
 - `story_post_related_url_projection_relation_mutatio_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES story_post_related_url_projection_jobs(post_id) ON DELETE CASCADE`
+- `story_post_url_projection_mutations_relation_fkey`: `FOREIGN KEY (post_id, relation_id) REFERENCES relation__post__related__url(subject_id, id) ON DELETE CASCADE`
 
 **Indexes:**
 
+- `idx_story_post_related_url_projection_relation_mutations__relat`: `CREATE INDEX idx_story_post_related_url_projection_relation_mutations__relat ON public.story_post_related_url_projection_relation_mutations USING btree (post_id, relation_id)`
 - `story_post_related_url_projection_relation_mutations_pkey`: `CREATE UNIQUE INDEX story_post_related_url_projection_relation_mutations_pkey ON public.story_post_related_url_projection_relation_mutations USING btree (post_id, generation, relation_id)`
 
 **Triggers:**

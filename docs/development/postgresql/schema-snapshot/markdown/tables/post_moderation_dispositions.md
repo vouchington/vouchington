@@ -6,17 +6,17 @@ Append-only typed moderation outcomes with bounded internal evidence.
 
 Not partitioned — growth: unbounded.
 
-| Column          | Type                                | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                             |
-| --------------- | ----------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------- |
-| `id`            | `uuid`                              | no       | `uuidv7()`                   |          |           |           |                                                                                     |
-| `version_id`    | `uuid`                              | no       |                              |          |           |           | Moderation version receiving this append-only outcome.                              |
-| `source`        | `post_moderation_sources`           | no       |                              |          |           |           | Automated or staff source that made this disposition.                               |
-| `attempt_id`    | `uuid`                              | yes      |                              |          |           |           | Provider attempt that produced this automated outcome; absent for staff decisions.  |
-| `disposition`   | `post_moderation_disposition_types` | no       |                              |          |           |           | Normalized moderation result: pass, review, reject, or incomplete.                  |
-| `reason_code`   | `text`                              | no       |                              |          |           |           | Stable provider-neutral policy or availability reason code.                         |
-| `evidence`      | `jsonb`                             | no       | `'{}'::jsonb`                |          |           |           | Bounded private evidence for moderation staff; never part of public post contracts. |
-| `actor_user_id` | `uuid`                              | yes      |                              |          |           |           | Immutable staff-actor audit snapshot that intentionally survives user deletion.     |
-| `decided_at`    | `timestamp with time zone`          | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | UUIDv7-derived clock time at which this immutable disposition was created.          |
+| Column          | Type                                | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                          |
+| --------------- | ----------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------- |
+| `id`            | `uuid`                              | no       | `uuidv7()`                   |          |           |           |                                                                                                                  |
+| `version_id`    | `uuid`                              | no       |                              |          |           |           | Moderation version receiving this append-only outcome.                                                           |
+| `source`        | `post_moderation_sources`           | no       |                              |          |           |           | Automated or staff source that made this disposition.                                                            |
+| `attempt_id`    | `uuid`                              | yes      |                              |          |           |           | Provider attempt that produced this automated outcome; absent for staff decisions.                               |
+| `disposition`   | `post_moderation_disposition_types` | no       |                              |          |           |           | Normalized moderation result: pass, review, reject, or incomplete.                                               |
+| `reason_code`   | `text`                              | no       |                              |          |           |           | Stable provider-neutral policy or availability reason code.                                                      |
+| `evidence`      | `jsonb`                             | no       | `'{}'::jsonb`                |          |           |           | Bounded private evidence for moderation staff; never part of public post contracts.                              |
+| `actor_user_id` | `uuid`                              | yes      |                              |          |           |           | Immutable staff actor; references the retained user identity, which survives user deletion but never authorizes. |
+| `decided_at`    | `timestamp with time zone`          | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | UUIDv7-derived clock time at which this immutable disposition was created.                                       |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -35,11 +35,13 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
+- `post_moderation_dispositions_actor_user_id_fkey`: `FOREIGN KEY (actor_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `post_moderation_dispositions_attempt_id_version_id_source_fkey`: `FOREIGN KEY (attempt_id, version_id, source) REFERENCES post_moderation_attempts(id, version_id, source) ON DELETE RESTRICT`
 - `post_moderation_dispositions_version_id_fkey`: `FOREIGN KEY (version_id) REFERENCES post_moderation_versions(id) ON DELETE CASCADE`
 
 **Indexes:**
 
+- `idx_post_moderation_dispositions__actor_user_id`: `CREATE INDEX idx_post_moderation_dispositions__actor_user_id ON public.post_moderation_dispositions USING btree (actor_user_id) WHERE (actor_user_id IS NOT NULL)`
 - `idx_post_moderation_dispositions__version_source_id`: `CREATE INDEX idx_post_moderation_dispositions__version_source_id ON public.post_moderation_dispositions USING btree (version_id, source, id DESC)`
 - `post_moderation_dispositions_attempt_id_key`: `CREATE UNIQUE INDEX post_moderation_dispositions_attempt_id_key ON public.post_moderation_dispositions USING btree (attempt_id)`
 - `post_moderation_dispositions_pkey`: `CREATE UNIQUE INDEX post_moderation_dispositions_pkey ON public.post_moderation_dispositions USING btree (id)`
