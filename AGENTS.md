@@ -7,8 +7,9 @@
   backfills, activation flags, or upgrade-only migrations for historical app versions. Preserve external
   protocols, exact replay, key rotation, and fresh-bootstrap safety. Follow the
   [schema policy](docs/development/postgres-schema-rules.md#prelaunch-relational-storage).
-- Application-owned relations use typed columns and concrete foreign keys. Read
-  [PostgreSQL instructions](backend/data-stores/psql/AGENTS.md) for schema changes.
+- Joined ids and relations are foreign keys. Structured JSON, data points, and change history stay
+  JSON and are not joined. Retained-identity rows survive deletion and do not authorize the deleted
+  entity. Read [PostgreSQL instructions](backend/data-stores/psql/AGENTS.md) for schema changes.
 - Non-main worktree databases and Valkey are disposable; recreate stale state using the
   [dev workflow](dev/AGENTS.md). The main worktree's shared database remains guarded.
 - For user/staff UI or shared API changes, coordinate Vouchington and client work through the
