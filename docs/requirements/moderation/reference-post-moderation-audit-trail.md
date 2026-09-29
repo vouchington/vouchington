@@ -17,6 +17,11 @@
 | `agent_moderations`             | Per-post × per-prompt × content-hash | LLM moderation results. Migration: `backend/data-stores/psql/migrations/0070-00-00-posts-feed-content.sql` (lines 454–490)                                                                               |
 | `moderation_reports`            | User-submitted                       | User reports against posts, comments, users, and RSS items. Migration: `backend/data-stores/psql/migrations/0330-00-00-moderation-reports.sql` (lines 16–27)                                             |
 
+`post_clearance_changes.changed_by_id` and `post_moderation_dispositions.actor_user_id` are foreign
+keys to `retained_user_identities` with `ON DELETE RESTRICT`. The actor of a clearance change or
+staff disposition stays named after the user row is hard-deleted, and the retained root is kept
+until the audit row is removed with its post.
+
 ## Database Tables
 
 Moderation state lives across several tables:

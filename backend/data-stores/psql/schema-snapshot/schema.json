@@ -9754,7 +9754,7 @@
         },
         "scope_community_id": {
           "collation": null,
-          "comment": "Immutable community provenance for community_ai scope; no FK so history survives community deletion.",
+          "comment": "Immutable community for community_ai scope; deleting the community cascades to its scoped batches and their results.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -9802,6 +9802,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "rss_feed_items",
+          "validated": true
+        },
+        "classifier_decision_batches_scope_community_id_fkey": {
+          "columns": ["scope_community_id"],
+          "definition": "FOREIGN KEY (scope_community_id) REFERENCES communities(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "communities",
           "validated": true
         },
         "fk_classifier_decision_batches__prompt_classifier": {
@@ -9940,7 +9949,7 @@
         "idx_classifier_decision_batches__scope": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_classifier_decision_batches__scope ON public.classifier_decision_batches USING btree (scope_community_id, id) WHERE (scope_category = 'community_ai'::text)",
+          "definition": "CREATE INDEX idx_classifier_decision_batches__scope ON public.classifier_decision_batches USING btree (scope_community_id, id) WHERE (scope_community_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -9958,7 +9967,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(scope_category = 'community_ai'::text)",
+          "predicate": "(scope_community_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -62418,7 +62427,7 @@
         },
         "user_id": {
           "collation": null,
-          "comment": "Grant owner at event time; intentionally not a foreign key so hard deletion preserves the audit record.",
+          "comment": "Grant owner at event time; references the retained user identity so hard deletion preserves the audit record.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -62428,8 +62437,18 @@
           "type": "uuid"
         }
       },
-      "comment": "Append-only durable evidence of OAuth consent and token revocation lifecycle events; identity columns intentionally have no foreign keys so retention and identity deletion cannot erase the audit record.",
-      "foreignKeys": {},
+      "comment": "Append-only durable evidence of OAuth consent and token revocation lifecycle events; user_id references the retained user identity, and client, grant, request, and token ids are audit snapshot identifiers without foreign keys, so retention and identity deletion cannot erase the audit record.",
+      "foreignKeys": {
+        "oauth_authorization_server_events_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        }
+      },
       "growth": "unbounded",
       "indexes": {
         "idx_oauth_authorization_server_events__access_revocation": {
@@ -67661,7 +67680,7 @@
         },
         "changed_by_id": {
           "collation": null,
-          "comment": "User or admin who initiated the change (no FK for audit persistence).",
+          "comment": "User or admin who initiated the change; references the retained user identity so the audit row survives user deletion.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -67772,6 +67791,15 @@
       },
       "comment": "Append-only audit log of post clearance transitions.",
       "foreignKeys": {
+        "post_clearance_changes_changed_by_id_fkey": {
+          "columns": ["changed_by_id"],
+          "definition": "FOREIGN KEY (changed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
         "post_clearance_changes_post_id_fkey": {
           "columns": ["post_id"],
           "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE",
@@ -67784,6 +67812,26 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_post_clearance_changes__changed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_clearance_changes__changed_by_id ON ONLY public.post_clearance_changes USING btree (changed_by_id) WHERE (changed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "changed_by_id",
+              "descending": false,
+              "expression": "changed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(changed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_post_clearance_changes__post_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -69338,7 +69386,7 @@
       "columns": {
         "actor_user_id": {
           "collation": null,
-          "comment": "Immutable staff-actor audit snapshot that intentionally survives user deletion.",
+          "comment": "Immutable staff actor; references the retained user identity, which survives user deletion but never authorizes.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -69438,6 +69486,15 @@
       },
       "comment": "Append-only typed moderation outcomes with bounded internal evidence.",
       "foreignKeys": {
+        "post_moderation_dispositions_actor_user_id_fkey": {
+          "columns": ["actor_user_id"],
+          "definition": "FOREIGN KEY (actor_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
         "post_moderation_dispositions_attempt_id_version_id_source_fkey": {
           "columns": ["attempt_id", "version_id", "source"],
           "definition": "FOREIGN KEY (attempt_id, version_id, source) REFERENCES post_moderation_attempts(id, version_id, source) ON DELETE RESTRICT",
@@ -69459,6 +69516,26 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_post_moderation_dispositions__actor_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_moderation_dispositions__actor_user_id ON public.post_moderation_dispositions USING btree (actor_user_id) WHERE (actor_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "actor_user_id",
+              "descending": false,
+              "expression": "actor_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(actor_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_post_moderation_dispositions__version_source_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -102755,7 +102832,7 @@
         },
         "relation_id": {
           "collation": null,
-          "comment": "Active related URL relation protected from pruning by this projection generation.",
+          "comment": "Active related URL relation protected from pruning by this projection generation; deleting the relation removes the fence.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -102786,10 +102863,46 @@
           "referencedColumns": ["post_id"],
           "referencedTable": "story_post_related_url_projection_jobs",
           "validated": true
+        },
+        "story_post_url_projection_mutations_relation_fkey": {
+          "columns": ["post_id", "relation_id"],
+          "definition": "FOREIGN KEY (post_id, relation_id) REFERENCES relation__post__related__url(subject_id, id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "relation__post__related__url",
+          "validated": true
         }
       },
       "growth": "bounded",
       "indexes": {
+        "idx_story_post_url_projection_relation_mutations__relation": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_story_post_url_projection_relation_mutations__relation ON public.story_post_related_url_projection_relation_mutations USING btree (post_id, relation_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation_id",
+              "descending": false,
+              "expression": "relation_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "story_post_related_url_projection_relation_mutations_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -114927,7 +115040,7 @@
         },
         "last_crawl_id": {
           "collation": null,
-          "comment": "The most recent crawl for this referral link, set on successful crawl.",
+          "comment": "The most recent crawl for this referral link, set on successful crawl; cleared when that crawl is deleted or its partition expires.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -115076,6 +115189,15 @@
           "referencedTable": "users",
           "validated": true
         },
+        "user_referral_program_links_last_crawl_id_fkey": {
+          "columns": ["last_crawl_id"],
+          "definition": "FOREIGN KEY (last_crawl_id) REFERENCES crawls(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "crawls",
+          "validated": true
+        },
         "user_referral_program_links_parent_link_id_fkey": {
           "columns": ["parent_link_id"],
           "definition": "FOREIGN KEY (parent_link_id) REFERENCES user_referral_program_links(id) ON DELETE CASCADE",
@@ -115130,6 +115252,26 @@
             }
           ],
           "predicate": "(created_via_oauth_client_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_referral_program_links__last_crawl_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_referral_program_links__last_crawl_id ON public.user_referral_program_links USING btree (last_crawl_id) WHERE (last_crawl_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "last_crawl_id",
+              "descending": false,
+              "expression": "last_crawl_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(last_crawl_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

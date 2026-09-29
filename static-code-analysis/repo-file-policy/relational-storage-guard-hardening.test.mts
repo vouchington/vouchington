@@ -122,14 +122,14 @@ describe('relational storage guard hardening', () => {
     expect(checkRelationalStorage(ownIdentity, { enforceCatalogFreshness: false })).toEqual([])
   })
 
-  it('drops encoded-key debt once the column is a UUID with a target FK', () => {
+  it('drops the reviewed encoded-key token once the column is a UUID with a target FK', () => {
     const value = snapshot('user_deletion_external_works', { work_key: column('uuid') })
     value.tables.user_deletion_external_works.foreignKeys.work_fk = foreignKey('work_key')
     const errors = checkRelationalStorage(value)
     expect(errors).toEqual(
       expect.arrayContaining([
         expect.stringContaining(
-          'user_deletion_external_works.work_key: stale encoded reference remediation catalog entry',
+          'user_deletion_external_works.work_key: stale token, cursor or protocol identifier catalog entry',
         ),
       ]),
     )

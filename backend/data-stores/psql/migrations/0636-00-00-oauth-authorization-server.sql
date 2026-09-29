@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS oauth_authorization_server_events (
   authorization_request_id UUID,
   access_token_id UUID,
   refresh_token_family_id UUID,
-  user_id UUID NOT NULL,
+  user_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   client_id UUID NOT NULL,
   grant_id UUID,
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
@@ -325,7 +325,7 @@ ON oauth_access_tokens (expires_at, id);
 COMMENT ON TABLE oauth_clients IS 'Dynamically registered and Client ID Metadata Document clients for the Voucha OAuth authorization server.';
 COMMENT ON TABLE oauth_authorization_requests IS 'Short-lived browser consent requests bound to one Voucha user session.';
 COMMENT ON TABLE oauth_grants IS 'Durable user consent for one client, resource, and canonical scope set.';
-COMMENT ON TABLE oauth_authorization_server_events IS 'Append-only durable evidence of OAuth consent and token revocation lifecycle events; identity columns intentionally have no foreign keys so retention and identity deletion cannot erase the audit record.';
+COMMENT ON TABLE oauth_authorization_server_events IS 'Append-only durable evidence of OAuth consent and token revocation lifecycle events; user_id references the retained user identity, and client, grant, request, and token ids are audit snapshot identifiers without foreign keys, so retention and identity deletion cannot erase the audit record.';
 COMMENT ON TABLE oauth_authorization_codes IS 'Single-use S256 authorization codes stored only as purpose-bound hashes.';
 COMMENT ON TABLE oauth_refresh_token_families IS 'Rotating refresh-token family lifecycle and reuse detection.';
 COMMENT ON TABLE oauth_refresh_tokens IS 'Single-use refresh tokens stored only as purpose-bound hashes.';
@@ -370,7 +370,7 @@ COMMENT ON COLUMN oauth_authorization_server_events.event_type IS 'Immutable con
 COMMENT ON COLUMN oauth_authorization_server_events.authorization_request_id IS 'Short-lived authorization request that produced a consent event; intentionally not a foreign key.';
 COMMENT ON COLUMN oauth_authorization_server_events.access_token_id IS 'Short-lived access token affected by a revocation event; intentionally not a foreign key.';
 COMMENT ON COLUMN oauth_authorization_server_events.refresh_token_family_id IS 'Short-lived refresh family affected by revocation or reuse; intentionally not a foreign key.';
-COMMENT ON COLUMN oauth_authorization_server_events.user_id IS 'Grant owner at event time; intentionally not a foreign key so hard deletion preserves the audit record.';
+COMMENT ON COLUMN oauth_authorization_server_events.user_id IS 'Grant owner at event time; references the retained user identity so hard deletion preserves the audit record.';
 COMMENT ON COLUMN oauth_authorization_server_events.client_id IS 'Client internal identifier at event time; intentionally not a foreign key so client deletion preserves the audit record.';
 COMMENT ON COLUMN oauth_authorization_server_events.grant_id IS 'Grant internal identifier at event time; intentionally not a foreign key so grant deletion preserves the audit record.';
 COMMENT ON COLUMN oauth_authorization_server_events.resource IS 'Protected resource audience affected by the event.';
