@@ -5,6 +5,7 @@
 // Enabled only for ENVIRONMENT=staging|production.
 
 import * as Sentry from '@sentry/aws-serverless'
+import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
 import {
   composeSentryBeforeSend,
   scrubSentryEvent,
@@ -69,6 +70,8 @@ export function initSentry({ lambdaName, beforeSend }: InitSentryOptions): void 
     initialScope: {
       tags: { lambda: lambdaName },
     },
+    // No request/response bodies or gen-AI prompts and completions (see sentry-data-collection.mts).
+    dataCollection: createSentryDataCollection(),
     // withSpikeProtection wraps the outer pipeline so a single recurring error can never again
     // consume a full month's Sentry error quota by itself (see sentry-spike-protection.mts).
     beforeSend: withSpikeProtection(

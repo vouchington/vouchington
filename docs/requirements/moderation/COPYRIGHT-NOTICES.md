@@ -8,9 +8,16 @@ reusing staff authorization, notifications, modlog, and approved-correspondence 
 The implementation remains disabled by default through `COPYRIGHT_INTAKE_ENABLED`. It must not be
 enabled until CAPTCHA, agent recovery, notification, reversible-media, staff UI, and production
 evidence-storage dependencies are deployed and the activation checklist below is complete.
-The flag controls only new form/email intake and new agent disclosure. Disabling intake must never
-hide accepted complaints or interrupt an existing case's staff review, appeal, counter-notice,
-hold, delivery, enforcement, or restoration obligations.
+The flag controls only new claimant intake and new agent disclosure. While it is off, one shared
+guard returns 503 from the three new-intake routes: the signed-in and guest form
+(`POST /api/v1/copyright-notices`) and EU and UK notice submission. Every designated-agent email,
+including a reply on an existing case, enters through email intake, so the SES worker leaves inbound
+mail unprocessed in storage until the switch is on again and staff watch that inbox directly (see the
+[runbook](../../runbooks/copyright-notices.md#intake-activation)). Disabling intake must never hide accepted complaints or
+interrupt an existing case's staff review, appeal, counter-notice, court or CCB filing, correction,
+withdrawal, EU or UK redress, hold, delivery, enforcement, or restoration obligations. Those in-case
+routes and every staff decision route stay open. A route test classifies every non-GET copyright
+route as new intake, in-case response, or staff and fails on an unclassified route.
 
 ## Ownership boundaries
 
@@ -304,7 +311,9 @@ or unassessed filings and another independent restriction never lose their prote
 
 US timing does not govern EU or UK cases. The public form and email intake still accept only
 `us_dmca`. EU and UK use separate contracts and stay unavailable until an unwithdrawn territorial
-policy approval exists. That approval is an operator record, not a seeded row and not
+policy approval exists. That approval is an operator record, not a seeded row. New EU and UK notices
+need both it and `COPYRIGHT_INTAKE_ENABLED`, and neither replaces the other. Redress, supervised
+complaints, and staff decisions on an existing EU or UK notice do not depend on
 `COPYRIGHT_INTAKE_ENABLED`. Representatives, counsel review, and the activation checklist remain
 required before any live intake is advertised. Conflicting grounds go to qualified staff or
 counsel, and removing one ground cannot remove another.

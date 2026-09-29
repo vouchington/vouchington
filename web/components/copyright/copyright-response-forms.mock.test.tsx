@@ -101,6 +101,29 @@ describe('copyright response forms', () => {
     await waitFor(() => expect(mockCreateAppeal).toHaveBeenCalled())
   })
 
+  it('warns about §512(f) misrepresentation liability above the counter-notice submit', () => {
+    render(
+      <CopyrightCounterNoticeForm
+        noticeId={noticeId}
+        targetIds={targetIds}
+      />,
+    )
+
+    const warning = screen.getByRole('note')
+    expect(warning.textContent).toMatch(
+      /512\(f\).*removed or disabled by mistake or misidentification.*attorneys' fees/i,
+    )
+    expect(screen.getByRole('link', { name: 'How copyright complaints work' })).toHaveAttribute(
+      'href',
+      '/article/copyright-complaints',
+    )
+    expect(
+      warning.compareDocumentPosition(
+        screen.getByRole('button', { name: 'Submit counter-notice' }),
+      ),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+  })
+
   it('discloses counter-notice forwarding and submits only selected targets', async () => {
     render(
       <CopyrightCounterNoticeForm
