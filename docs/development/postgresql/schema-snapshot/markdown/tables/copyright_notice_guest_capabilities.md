@@ -6,35 +6,41 @@ Hashed, expiring, revocable capability for one copyright notice. Possession of m
 
 Not partitioned — growth: unbounded.
 
-| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                         |
-| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------- |
-| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                 |
-| `copyright_notice_id` | `uuid`                     | no       |                              |          |           |           | The one copyright notice this capability authorizes.                                            |
-| `token_hash`          | `text`                     | no       |                              |          |           |           | Keyed digest of the guest capability token. The raw token is shown once and is never stored.    |
-| `expires_at`          | `timestamp with time zone` | no       |                              |          |           |           | Instant after which this capability no longer authorizes the case. Equality is already expired. |
-| `revoked_at`          | `timestamp with time zone` | yes      |                              |          |           |           | Instant staff revoked this capability. Null means it has not been revoked.                      |
-| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                 |
-| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                 |
+| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                      |
+| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                              |
+| `copyright_notice_id` | `uuid`                     | no       |                              |          |           |           | The one copyright notice this capability authorizes.                                                                         |
+| `token_hash`          | `text`                     | no       |                              |          |           |           | Keyed digest of the guest capability token. The raw token is shown once and is never stored.                                 |
+| `issued_by_id`        | `uuid`                     | yes      |                              |          |           |           | Copyright staff member who issued this capability; NULL after account deletion.                                              |
+| `expires_at`          | `timestamp with time zone` | no       |                              |          |           |           | Instant after which this capability no longer authorizes the case. Equality is already expired. At most 30 days after issue. |
+| `revoked_at`          | `timestamp with time zone` | yes      |                              |          |           |           | Instant staff revoked this capability, or a withdrawal was received for the case. Null means it has not been revoked.        |
+| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                              |
+| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                              |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
+- `copyright_guest_capability_notice_key`: `UNIQUE (id, copyright_notice_id)`
 - `copyright_notice_guest_capabilities_token_hash_key`: `UNIQUE (token_hash)`
 
 **Check constraints:**
 
+- `copyright_guest_capability_expiry_cap`: `CHECK (((expires_at - uuid_extract_timestamp(id)) <= '30 days'::interval))`
 - `copyright_notice_guest_capabilities_token_hash_check`: `CHECK (((char_length(token_hash) >= 1) AND (char_length(token_hash) <= 256)))`
 
 **Foreign keys:**
 
 - `copyright_notice_guest_capabilities_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `copyright_notice_guest_capabilities_issued_by_id_fkey`: `FOREIGN KEY (issued_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
 
+- `copyright_guest_capability_notice_key`: `CREATE UNIQUE INDEX copyright_guest_capability_notice_key ON public.copyright_notice_guest_capabilities USING btree (id, copyright_notice_id)`
 - `copyright_notice_guest_capabilities_pkey`: `CREATE UNIQUE INDEX copyright_notice_guest_capabilities_pkey ON public.copyright_notice_guest_capabilities USING btree (id)`
 - `copyright_notice_guest_capabilities_token_hash_key`: `CREATE UNIQUE INDEX copyright_notice_guest_capabilities_token_hash_key ON public.copyright_notice_guest_capabilities USING btree (token_hash)`
-- `idx_copyright_notice_guest_capabilities__notice`: `CREATE INDEX idx_copyright_notice_guest_capabilities__notice ON public.copyright_notice_guest_capabilities USING btree (copyright_notice_id)`
+- `idx_copyright_notice_guest_capabilities__issued_by`: `CREATE INDEX idx_copyright_notice_guest_capabilities__issued_by ON public.copyright_notice_guest_capabilities USING btree (issued_by_id) WHERE (issued_by_id IS NOT NULL)`
+- `idx_copyright_notice_guest_capabilities__notice`: `CREATE INDEX idx_copyright_notice_guest_capabilities__notice ON public.copyright_notice_guest_capabilities USING btree (copyright_notice_id, id)`
 
 **Triggers:**
 _none_

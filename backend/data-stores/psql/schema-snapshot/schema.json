@@ -694,7 +694,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_notice_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright restrictions are append-only legal blockers' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.accepted_at IS NOT NULL AND OLD.accepted_at IS DISTINCT FROM NEW.accepted_at THEN\n    RAISE EXCEPTION 'copyright notice acceptance is irreversible' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.provisional_withholding_at IS NOT NULL\n    AND OLD.provisional_withholding_at IS DISTINCT FROM NEW.provisional_withholding_at THEN\n    RAISE EXCEPTION 'copyright notice provisional withholding timestamp is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_notice_submission": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_notice_submission()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright legal receipt records are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.submitted_by_user_id IS NOT NULL\n    AND NEW.submitted_by_user_id IS NULL\n    AND ROW(\n      OLD.id,\n      OLD.copyright_notice_id,\n      OLD.kind,\n      OLD.received_at,\n      OLD.source_kind,\n      OLD.body_ciphertext,\n      OLD.created_at,\n      OLD.updated_at\n    ) IS NOT DISTINCT FROM ROW(\n      NEW.id,\n      NEW.copyright_notice_id,\n      NEW.kind,\n      NEW.received_at,\n      NEW.source_kind,\n      NEW.body_ciphertext,\n      NEW.created_at,\n      NEW.updated_at\n    ) THEN\n    RETURN NEW;\n  END IF;\n  RAISE EXCEPTION 'copyright legal receipt records are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_notice_submission()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright legal receipt records are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.submitted_by_user_id IS NOT NULL\n    AND NEW.submitted_by_user_id IS NULL\n    AND ROW(\n      OLD.id,\n      OLD.copyright_notice_id,\n      OLD.kind,\n      OLD.received_at,\n      OLD.source_kind,\n      OLD.body_ciphertext,\n      OLD.copyright_notice_guest_capability_id,\n      OLD.created_at,\n      OLD.updated_at\n    ) IS NOT DISTINCT FROM ROW(\n      NEW.id,\n      NEW.copyright_notice_id,\n      NEW.kind,\n      NEW.received_at,\n      NEW.source_kind,\n      NEW.body_ciphertext,\n      NEW.copyright_notice_guest_capability_id,\n      NEW.created_at,\n      NEW.updated_at\n    ) THEN\n    RETURN NEW;\n  END IF;\n  RAISE EXCEPTION 'copyright legal receipt records are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
     "fn_guard_copyright_repeat_infringer_incident": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_repeat_infringer_incident()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright repeat-infringer incidents are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.account_user_id IS DISTINCT FROM OLD.account_user_id\n    OR NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id THEN\n    RAISE EXCEPTION 'copyright repeat-infringer incident identity is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -30210,6 +30210,7 @@
     },
     "copyright_notice_guest_capabilities": {
       "checkConstraints": {
+        "copyright_guest_capability_expiry_cap": "CHECK (((expires_at - uuid_extract_timestamp(id)) <= '30 days'::interval))",
         "copyright_notice_guest_capabilities_token_hash_check": "CHECK (((char_length(token_hash) >= 1) AND (char_length(token_hash) <= 256)))"
       },
       "columns": {
@@ -30232,18 +30233,18 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "expires_at": {
           "collation": null,
-          "comment": "Instant after which this capability no longer authorizes the case. Equality is already expired.",
+          "comment": "Instant after which this capability no longer authorizes the case. Equality is already expired. At most 30 days after issue.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -30257,15 +30258,26 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "revoked_at": {
+        "issued_by_id": {
           "collation": null,
-          "comment": "Instant staff revoked this capability. Null means it has not been revoked.",
+          "comment": "Copyright staff member who issued this capability; NULL after account deletion.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "revoked_at": {
+          "collation": null,
+          "comment": "Instant staff revoked this capability, or a withdrawal was received for the case. Null means it has not been revoked.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "token_hash": {
@@ -30287,7 +30299,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         }
       },
@@ -30301,10 +30313,46 @@
           "referencedColumns": ["id"],
           "referencedTable": "copyright_notices",
           "validated": true
+        },
+        "copyright_notice_guest_capabilities_issued_by_id_fkey": {
+          "columns": ["issued_by_id"],
+          "definition": "FOREIGN KEY (issued_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
         }
       },
       "growth": "unbounded",
       "indexes": {
+        "copyright_guest_capability_notice_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_guest_capability_notice_key ON public.copyright_notice_guest_capabilities USING btree (id, copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "copyright_notice_guest_capabilities_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -30345,16 +30393,43 @@
           "unique": true,
           "valid": true
         },
+        "idx_copyright_notice_guest_capabilities__issued_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_guest_capabilities__issued_by ON public.copyright_notice_guest_capabilities USING btree (issued_by_id) WHERE (issued_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "issued_by_id",
+              "descending": false,
+              "expression": "issued_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(issued_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_copyright_notice_guest_capabilities__notice": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_guest_capabilities__notice ON public.copyright_notice_guest_capabilities USING btree (copyright_notice_id)",
+          "definition": "CREATE INDEX idx_copyright_notice_guest_capabilities__notice ON public.copyright_notice_guest_capabilities USING btree (copyright_notice_id, id)",
           "includedColumns": [],
           "keys": [
             {
               "column": "copyright_notice_id",
               "descending": false,
               "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -30375,6 +30450,10 @@
       "relationKind": "table",
       "triggers": {},
       "uniqueConstraints": {
+        "copyright_guest_capability_notice_key": {
+          "columns": ["id", "copyright_notice_id"],
+          "definition": "UNIQUE (id, copyright_notice_id)"
+        },
         "copyright_notice_guest_capabilities_token_hash_key": {
           "columns": ["token_hash"],
           "definition": "UNIQUE (token_hash)"
@@ -30990,7 +31069,7 @@
     },
     "copyright_notice_lifecycle_events": {
       "checkConstraints": {
-        "copyright_lifecycle_event_source_shape": "CHECK (((num_nonnulls(copyright_notice_submission_id, copyright_notice_submission_assessment_id, copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id, copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id, copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id, copyright_notice_email_intake_id, copyright_notice_delivery_intent_id, media_delivery_registry_key) =\nCASE\n    WHEN (event_type = 'notice_received'::text) THEN 0\n    ELSE 1\nEND) AND\nCASE\n    WHEN (event_type = 'notice_received'::text) THEN true\n    WHEN (event_type = ANY (ARRAY['supplement_received'::text, 'appeal_received'::text, 'counter_notice_received'::text, 'withdrawal_received'::text, 'court_or_ccb_hold_received'::text, 'appeal_reviewed'::text, 'counter_notice_reviewed'::text])) THEN (copyright_notice_submission_id IS NOT NULL)\n    WHEN (event_type = 'submission_assessed'::text) THEN (copyright_notice_submission_assessment_id IS NOT NULL)\n    WHEN (event_type = 'evidence_artifact_recorded'::text) THEN (copyright_notice_evidence_artifact_id IS NOT NULL)\n    WHEN (event_type = ANY (ARRAY['outbound_correspondence_created'::text, 'agent_correspondence_approved'::text, 'email_correspondence_admitted'::text])) THEN (copyright_notice_correspondence_id IS NOT NULL)\n    WHEN (event_type = 'legal_hold_assessed'::text) THEN (copyright_notice_legal_hold_assessment_id IS NOT NULL)\n    WHEN (event_type = 'legal_hold_resolved'::text) THEN (copyright_notice_legal_hold_resolution_id IS NOT NULL)\n    WHEN (event_type = 'counter_notice_deadline_started'::text) THEN (copyright_notice_deadline_id IS NOT NULL)\n    WHEN (event_type = ANY (ARRAY['provisional_restriction_imposed'::text, 'mandatory_human_review_completed'::text])) THEN (copyright_restriction_id IS NOT NULL)\n    WHEN (event_type = ANY (ARRAY['restoration_intent_created'::text, 'reversal_restoration_intent_created'::text, 'copyright_action_replayed'::text, 'restoration_unavailable'::text, 'restriction_lifted_placement_retained'::text, 'restoration_authorized_pending_delivery'::text, 'placement_withheld'::text, 'placement_restored'::text])) THEN (copyright_notice_action_intent_id IS NOT NULL)\n    WHEN (event_type = 'email_correspondence_rejected'::text) THEN (copyright_notice_email_intake_id IS NOT NULL)\n    WHEN (event_type = 'delivery_intent_replayed'::text) THEN (copyright_notice_delivery_intent_id IS NOT NULL)\n    WHEN (event_type = 'media_delivery_registry_replayed'::text) THEN (media_delivery_registry_key IS NOT NULL)\n    ELSE false\nEND))",
+        "copyright_lifecycle_event_source_shape": "CHECK (((num_nonnulls(copyright_notice_submission_id, copyright_notice_submission_assessment_id, copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id, copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id, copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id, copyright_notice_email_intake_id, copyright_notice_delivery_intent_id, media_delivery_registry_key, copyright_notice_guest_capability_id) =\nCASE\n    WHEN (event_type = 'notice_received'::text) THEN 0\n    ELSE 1\nEND) AND\nCASE\n    WHEN (event_type = 'notice_received'::text) THEN true\n    WHEN (event_type = ANY (ARRAY['supplement_received'::text, 'appeal_received'::text, 'counter_notice_received'::text, 'withdrawal_received'::text, 'court_or_ccb_hold_received'::text, 'appeal_reviewed'::text, 'counter_notice_reviewed'::text])) THEN (copyright_notice_submission_id IS NOT NULL)\n    WHEN (event_type = 'submission_assessed'::text) THEN (copyright_notice_submission_assessment_id IS NOT NULL)\n    WHEN (event_type = 'evidence_artifact_recorded'::text) THEN (copyright_notice_evidence_artifact_id IS NOT NULL)\n    WHEN (event_type = ANY (ARRAY['outbound_correspondence_created'::text, 'agent_correspondence_approved'::text, 'email_correspondence_admitted'::text])) THEN (copyright_notice_correspondence_id IS NOT NULL)\n    WHEN (event_type = 'legal_hold_assessed'::text) THEN (copyright_notice_legal_hold_assessment_id IS NOT NULL)\n    WHEN (event_type = 'legal_hold_resolved'::text) THEN (copyright_notice_legal_hold_resolution_id IS NOT NULL)\n    WHEN (event_type = 'counter_notice_deadline_started'::text) THEN (copyright_notice_deadline_id IS NOT NULL)\n    WHEN (event_type = ANY (ARRAY['provisional_restriction_imposed'::text, 'mandatory_human_review_completed'::text])) THEN (copyright_restriction_id IS NOT NULL)\n    WHEN (event_type = ANY (ARRAY['restoration_intent_created'::text, 'reversal_restoration_intent_created'::text, 'copyright_action_replayed'::text, 'restoration_unavailable'::text, 'restriction_lifted_placement_retained'::text, 'restoration_authorized_pending_delivery'::text, 'placement_withheld'::text, 'placement_restored'::text])) THEN (copyright_notice_action_intent_id IS NOT NULL)\n    WHEN (event_type = 'email_correspondence_rejected'::text) THEN (copyright_notice_email_intake_id IS NOT NULL)\n    WHEN (event_type = 'delivery_intent_replayed'::text) THEN (copyright_notice_delivery_intent_id IS NOT NULL)\n    WHEN (event_type = 'media_delivery_registry_replayed'::text) THEN (media_delivery_registry_key IS NOT NULL)\n    WHEN (event_type = ANY (ARRAY['guest_capability_issued'::text, 'guest_capability_revoked'::text, 'guest_capability_revoked_by_withdrawal'::text])) THEN (copyright_notice_guest_capability_id IS NOT NULL)\n    ELSE false\nEND))",
         "copyright_notice_lifecycle_ev_review_rationale_ciphertext_check": "CHECK (((review_rationale_ciphertext IS NULL) OR ((char_length(review_rationale_ciphertext) >= 1) AND (char_length(review_rationale_ciphertext) <= 65536))))",
         "copyright_notice_lifecycle_events_check": "CHECK ((((review_action IS NULL) AND (review_rationale_ciphertext IS NULL)) OR ((event_type = 'mandatory_human_review_completed'::text) AND (review_action IS NOT NULL) AND (review_rationale_ciphertext IS NOT NULL))))",
         "copyright_notice_lifecycle_events_check1": "CHECK (((counter_notice_accepted IS NULL) OR (event_type = 'counter_notice_reviewed'::text)))",
@@ -30999,7 +31078,7 @@
         "copyright_notice_lifecycle_events_check4": "CHECK (((event_type = 'counter_notice_reviewed'::text) = (counter_notice_accepted IS NOT NULL)))",
         "copyright_notice_lifecycle_events_check5": "CHECK (((event_type = 'mandatory_human_review_completed'::text) = (review_action IS NOT NULL)))",
         "copyright_notice_lifecycle_events_check6": "CHECK (((event_type <> 'media_delivery_registry_replayed'::text) OR (replay_reason IS NOT NULL)))",
-        "copyright_notice_lifecycle_events_event_type_check": "CHECK ((event_type = ANY (ARRAY['notice_received'::text, 'supplement_received'::text, 'appeal_received'::text, 'counter_notice_received'::text, 'withdrawal_received'::text, 'court_or_ccb_hold_received'::text, 'submission_assessed'::text, 'appeal_reviewed'::text, 'counter_notice_reviewed'::text, 'evidence_artifact_recorded'::text, 'outbound_correspondence_created'::text, 'agent_correspondence_approved'::text, 'email_correspondence_admitted'::text, 'email_correspondence_rejected'::text, 'provisional_restriction_imposed'::text, 'mandatory_human_review_completed'::text, 'legal_hold_assessed'::text, 'legal_hold_resolved'::text, 'counter_notice_deadline_started'::text, 'restoration_intent_created'::text, 'reversal_restoration_intent_created'::text, 'copyright_action_replayed'::text, 'delivery_intent_replayed'::text, 'media_delivery_registry_replayed'::text, 'restoration_unavailable'::text, 'restriction_lifted_placement_retained'::text, 'restoration_authorized_pending_delivery'::text, 'placement_withheld'::text, 'placement_restored'::text])))",
+        "copyright_notice_lifecycle_events_event_type_check": "CHECK ((event_type = ANY (ARRAY['notice_received'::text, 'supplement_received'::text, 'appeal_received'::text, 'counter_notice_received'::text, 'withdrawal_received'::text, 'court_or_ccb_hold_received'::text, 'submission_assessed'::text, 'appeal_reviewed'::text, 'counter_notice_reviewed'::text, 'evidence_artifact_recorded'::text, 'outbound_correspondence_created'::text, 'agent_correspondence_approved'::text, 'email_correspondence_admitted'::text, 'email_correspondence_rejected'::text, 'provisional_restriction_imposed'::text, 'mandatory_human_review_completed'::text, 'legal_hold_assessed'::text, 'legal_hold_resolved'::text, 'counter_notice_deadline_started'::text, 'restoration_intent_created'::text, 'reversal_restoration_intent_created'::text, 'copyright_action_replayed'::text, 'delivery_intent_replayed'::text, 'media_delivery_registry_replayed'::text, 'restoration_unavailable'::text, 'restriction_lifted_placement_retained'::text, 'restoration_authorized_pending_delivery'::text, 'placement_withheld'::text, 'placement_restored'::text, 'guest_capability_issued'::text, 'guest_capability_revoked'::text, 'guest_capability_revoked_by_withdrawal'::text])))",
         "copyright_notice_lifecycle_events_recovery_source_check": "CHECK ((recovery_source = ANY (ARRAY['durable_review'::text, 'durable_decision'::text])))",
         "copyright_notice_lifecycle_events_replay_reason_check": "CHECK ((replay_reason = 'operator_replay'::text))",
         "copyright_notice_lifecycle_events_review_action_check": "CHECK ((review_action = ANY (ARRAY['confirm'::text, 'reverse'::text])))"
@@ -31082,6 +31161,17 @@
           "ordinalPosition": 7,
           "type": "uuid"
         },
+        "copyright_notice_guest_capability_id": {
+          "collation": null,
+          "comment": "Guest capability issued or revoked by this event; the actor is NULL when a withdrawal revoked it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 17,
+          "type": "uuid"
+        },
         "copyright_notice_id": {
           "collation": null,
           "comment": "Legal case whose transition or correspondence event was recorded.",
@@ -31156,7 +31246,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "boolean"
         },
         "created_at": {
@@ -31167,7 +31257,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "event_type": {
@@ -31211,7 +31301,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "text"
         },
         "replay_reason": {
@@ -31222,7 +31312,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "text"
         },
         "review_action": {
@@ -31233,7 +31323,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "text"
         },
         "review_rationale_ciphertext": {
@@ -31244,7 +31334,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "text"
         },
         "updated_at": {
@@ -31255,7 +31345,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "timestamp with time zone"
         }
       },
@@ -31286,6 +31376,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intakes",
+          "validated": true
+        },
+        "copyright_lifecycle_event_guest_capability_fk": {
+          "columns": ["copyright_notice_guest_capability_id", "copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_guest_capability_id, copyright_notice_id) REFERENCES copyright_notice_guest_capabilities(id, copyright_notice_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "copyright_notice_id"],
+          "referencedTable": "copyright_notice_guest_capabilities",
           "validated": true
         },
         "copyright_lifecycle_event_media_registry_fk": {
@@ -31565,6 +31664,33 @@
             }
           ],
           "predicate": "(copyright_notice_email_intake_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notice_events__guest_capability": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_events__guest_capability ON public.copyright_notice_lifecycle_events USING btree (copyright_notice_guest_capability_id, copyright_notice_id) WHERE (copyright_notice_guest_capability_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_guest_capability_id",
+              "descending": false,
+              "expression": "copyright_notice_guest_capability_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_guest_capability_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -32357,7 +32483,8 @@
       "checkConstraints": {
         "copyright_notice_submissions_body_ciphertext_check": "CHECK (((char_length(body_ciphertext) >= 1) AND (char_length(body_ciphertext) <= 1048576)))",
         "copyright_notice_submissions_kind_check": "CHECK ((kind = ANY (ARRAY['notice'::text, 'supplement'::text, 'appeal'::text, 'counter_notice'::text, 'withdrawal'::text, 'court_or_ccb_hold'::text])))",
-        "copyright_notice_submissions_source_kind_check": "CHECK ((source_kind = ANY (ARRAY['signed_in_form'::text, 'guest_form'::text, 'email'::text, 'staff'::text])))"
+        "copyright_notice_submissions_source_kind_check": "CHECK ((source_kind = ANY (ARRAY['signed_in_form'::text, 'guest_form'::text, 'email'::text, 'staff'::text])))",
+        "copyright_submission_guest_capability_shape": "CHECK (((copyright_notice_guest_capability_id IS NULL) OR ((source_kind = 'guest_form'::text) AND (kind = ANY (ARRAY['supplement'::text, 'withdrawal'::text, 'court_or_ccb_hold'::text])))))"
       },
       "columns": {
         "body_ciphertext": {
@@ -32370,6 +32497,17 @@
           "nullable": false,
           "ordinalPosition": 7,
           "type": "text"
+        },
+        "copyright_notice_guest_capability_id": {
+          "collation": null,
+          "comment": "Guest capability that filed this in-case guest submission; NULL for every other source. One court or CCB hold per capability.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
         },
         "copyright_notice_id": {
           "collation": null,
@@ -32390,7 +32528,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -32456,7 +32594,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         }
       },
@@ -32478,6 +32616,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "users",
+          "validated": true
+        },
+        "copyright_submission_guest_capability_fk": {
+          "columns": ["copyright_notice_guest_capability_id", "copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_guest_capability_id, copyright_notice_id) REFERENCES copyright_notice_guest_capabilities(id, copyright_notice_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "copyright_notice_id"],
+          "referencedTable": "copyright_notice_guest_capabilities",
           "validated": true
         }
       },
@@ -32530,6 +32677,33 @@
           "unique": true,
           "valid": true
         },
+        "idx_copyright_notice_submissions__guest_capability": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_submissions__guest_capability ON public.copyright_notice_submissions USING btree (copyright_notice_guest_capability_id, copyright_notice_id) WHERE (copyright_notice_guest_capability_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_guest_capability_id",
+              "descending": false,
+              "expression": "copyright_notice_guest_capability_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_guest_capability_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_copyright_notice_submissions__notice_received": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -32562,6 +32736,26 @@
           "primary": false,
           "ready": true,
           "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notice_submissions__one_guest_court_hold": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_copyright_notice_submissions__one_guest_court_hold ON public.copyright_notice_submissions USING btree (copyright_notice_guest_capability_id) WHERE ((kind = 'court_or_ccb_hold'::text) AND (copyright_notice_guest_capability_id IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_guest_capability_id",
+              "descending": false,
+              "expression": "copyright_notice_guest_capability_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((kind = 'court_or_ccb_hold'::text) AND (copyright_notice_guest_capability_id IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
           "valid": true
         },
         "idx_copyright_notice_submissions__submitted_by": {

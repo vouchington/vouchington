@@ -24,6 +24,7 @@ Not partitioned — growth: unbounded.
 | `copyright_notice_email_intake_id`          | `uuid`                     | yes      |                              |          |           |           | Email intake cited by this event.                                                                 |
 | `copyright_notice_delivery_intent_id`       | `uuid`                     | yes      |                              |          |           |           | Delivery intent replayed by this event.                                                           |
 | `media_delivery_registry_key`               | `text`                     | yes      |                              |          |           |           | Media delivery registry record replayed by this event.                                            |
+| `copyright_notice_guest_capability_id`      | `uuid`                     | yes      |                              |          |           |           | Guest capability issued or revoked by this event; the actor is NULL when a withdrawal revoked it. |
 | `review_action`                             | `text`                     | yes      |                              |          |           |           | Human review outcome stored on a mandatory-review event.                                          |
 | `review_rationale_ciphertext`               | `text`                     | yes      |                              |          |           |           | Private encrypted human-review rationale; member timelines project only event type and timestamp. |
 | `counter_notice_accepted`                   | `boolean`                  | yes      |                              |          |           |           | Whether the counter-notice review accepted the counter-notice.                                    |
@@ -42,7 +43,7 @@ _none_
 - `copyright_lifecycle_event_source_shape`:
 
   ```sql
-  CHECK (((num_nonnulls(copyright_notice_submission_id, copyright_notice_submission_assessment_id, copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id, copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id, copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id, copyright_notice_email_intake_id, copyright_notice_delivery_intent_id, media_delivery_registry_key) =
+  CHECK (((num_nonnulls(copyright_notice_submission_id, copyright_notice_submission_assessment_id, copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id, copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id, copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id, copyright_notice_email_intake_id, copyright_notice_delivery_intent_id, media_delivery_registry_key, copyright_notice_guest_capability_id) =
   CASE
       WHEN (event_type = 'notice_received'::text) THEN 0
       ELSE 1
@@ -61,6 +62,7 @@ _none_
       WHEN (event_type = 'email_correspondence_rejected'::text) THEN (copyright_notice_email_intake_id IS NOT NULL)
       WHEN (event_type = 'delivery_intent_replayed'::text) THEN (copyright_notice_delivery_intent_id IS NOT NULL)
       WHEN (event_type = 'media_delivery_registry_replayed'::text) THEN (media_delivery_registry_key IS NOT NULL)
+      WHEN (event_type = ANY (ARRAY['guest_capability_issued'::text, 'guest_capability_revoked'::text, 'guest_capability_revoked_by_withdrawal'::text])) THEN (copyright_notice_guest_capability_id IS NOT NULL)
       ELSE false
   END))
   ```
@@ -73,7 +75,7 @@ _none_
 - `copyright_notice_lifecycle_events_check4`: `CHECK (((event_type = 'counter_notice_reviewed'::text) = (counter_notice_accepted IS NOT NULL)))`
 - `copyright_notice_lifecycle_events_check5`: `CHECK (((event_type = 'mandatory_human_review_completed'::text) = (review_action IS NOT NULL)))`
 - `copyright_notice_lifecycle_events_check6`: `CHECK (((event_type <> 'media_delivery_registry_replayed'::text) OR (replay_reason IS NOT NULL)))`
-- `copyright_notice_lifecycle_events_event_type_check`: `CHECK ((event_type = ANY (ARRAY['notice_received'::text, 'supplement_received'::text, 'appeal_received'::text, 'counter_notice_received'::text, 'withdrawal_received'::text, 'court_or_ccb_hold_received'::text, 'submission_assessed'::text, 'appeal_reviewed'::text, 'counter_notice_reviewed'::text, 'evidence_artifact_recorded'::text, 'outbound_correspondence_created'::text, 'agent_correspondence_approved'::text, 'email_correspondence_admitted'::text, 'email_correspondence_rejected'::text, 'provisional_restriction_imposed'::text, 'mandatory_human_review_completed'::text, 'legal_hold_assessed'::text, 'legal_hold_resolved'::text, 'counter_notice_deadline_started'::text, 'restoration_intent_created'::text, 'reversal_restoration_intent_created'::text, 'copyright_action_replayed'::text, 'delivery_intent_replayed'::text, 'media_delivery_registry_replayed'::text, 'restoration_unavailable'::text, 'restriction_lifted_placement_retained'::text, 'restoration_authorized_pending_delivery'::text, 'placement_withheld'::text, 'placement_restored'::text])))`
+- `copyright_notice_lifecycle_events_event_type_check`: `CHECK ((event_type = ANY (ARRAY['notice_received'::text, 'supplement_received'::text, 'appeal_received'::text, 'counter_notice_received'::text, 'withdrawal_received'::text, 'court_or_ccb_hold_received'::text, 'submission_assessed'::text, 'appeal_reviewed'::text, 'counter_notice_reviewed'::text, 'evidence_artifact_recorded'::text, 'outbound_correspondence_created'::text, 'agent_correspondence_approved'::text, 'email_correspondence_admitted'::text, 'email_correspondence_rejected'::text, 'provisional_restriction_imposed'::text, 'mandatory_human_review_completed'::text, 'legal_hold_assessed'::text, 'legal_hold_resolved'::text, 'counter_notice_deadline_started'::text, 'restoration_intent_created'::text, 'reversal_restoration_intent_created'::text, 'copyright_action_replayed'::text, 'delivery_intent_replayed'::text, 'media_delivery_registry_replayed'::text, 'restoration_unavailable'::text, 'restriction_lifted_placement_retained'::text, 'restoration_authorized_pending_delivery'::text, 'placement_withheld'::text, 'placement_restored'::text, 'guest_capability_issued'::text, 'guest_capability_revoked'::text, 'guest_capability_revoked_by_withdrawal'::text])))`
 - `copyright_notice_lifecycle_events_recovery_source_check`: `CHECK ((recovery_source = ANY (ARRAY['durable_review'::text, 'durable_decision'::text])))`
 - `copyright_notice_lifecycle_events_replay_reason_check`: `CHECK ((replay_reason = 'operator_replay'::text))`
 - `copyright_notice_lifecycle_events_review_action_check`: `CHECK ((review_action = ANY (ARRAY['confirm'::text, 'reverse'::text])))`
@@ -83,6 +85,7 @@ _none_
 - `copyright_lifecycle_event_action_intent_fk`: `FOREIGN KEY (copyright_notice_action_intent_id) REFERENCES copyright_notice_action_intents(id) ON DELETE RESTRICT`
 - `copyright_lifecycle_event_delivery_intent_fk`: `FOREIGN KEY (copyright_notice_delivery_intent_id) REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT`
 - `copyright_lifecycle_event_email_intake_fk`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
+- `copyright_lifecycle_event_guest_capability_fk`: `FOREIGN KEY (copyright_notice_guest_capability_id, copyright_notice_id) REFERENCES copyright_notice_guest_capabilities(id, copyright_notice_id) ON DELETE RESTRICT`
 - `copyright_lifecycle_event_media_registry_fk`: `FOREIGN KEY (media_delivery_registry_key) REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT`
 - `copyright_notice_lifecycle_e_copyright_notice_legal_hold__fkey1`: `FOREIGN KEY (copyright_notice_legal_hold_resolution_id) REFERENCES copyright_notice_legal_hold_resolutions(id) ON DELETE RESTRICT`
 - `copyright_notice_lifecycle_e_copyright_notice_submission__fkey1`: `FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT`
@@ -106,6 +109,7 @@ _none_
 - `idx_copyright_notice_events__deadline`: `CREATE INDEX idx_copyright_notice_events__deadline ON public.copyright_notice_lifecycle_events USING btree (copyright_notice_deadline_id) WHERE (copyright_notice_deadline_id IS NOT NULL)`
 - `idx_copyright_notice_events__delivery_intent`: `CREATE INDEX idx_copyright_notice_events__delivery_intent ON public.copyright_notice_lifecycle_events USING btree (copyright_notice_delivery_intent_id) WHERE (copyright_notice_delivery_intent_id IS NOT NULL)`
 - `idx_copyright_notice_events__email_intake`: `CREATE INDEX idx_copyright_notice_events__email_intake ON public.copyright_notice_lifecycle_events USING btree (copyright_notice_email_intake_id) WHERE (copyright_notice_email_intake_id IS NOT NULL)`
+- `idx_copyright_notice_events__guest_capability`: `CREATE INDEX idx_copyright_notice_events__guest_capability ON public.copyright_notice_lifecycle_events USING btree (copyright_notice_guest_capability_id, copyright_notice_id) WHERE (copyright_notice_guest_capability_id IS NOT NULL)`
 - `idx_copyright_notice_events__hold_assessment`: `CREATE INDEX idx_copyright_notice_events__hold_assessment ON public.copyright_notice_lifecycle_events USING btree (copyright_notice_legal_hold_assessment_id) WHERE (copyright_notice_legal_hold_assessment_id IS NOT NULL)`
 - `idx_copyright_notice_events__hold_resolution`: `CREATE INDEX idx_copyright_notice_events__hold_resolution ON public.copyright_notice_lifecycle_events USING btree (copyright_notice_legal_hold_resolution_id) WHERE (copyright_notice_legal_hold_resolution_id IS NOT NULL)`
 - `idx_copyright_notice_events__media_registry`: `CREATE INDEX idx_copyright_notice_events__media_registry ON public.copyright_notice_lifecycle_events USING btree (media_delivery_registry_key) WHERE (media_delivery_registry_key IS NOT NULL)`
