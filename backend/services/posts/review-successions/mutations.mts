@@ -122,8 +122,6 @@ async function archiveAutomaticPredecessors(
     )
     SELECT archived.id AS predecessor_post_id
     FROM archived
-    WHERE EXISTS (SELECT 1 FROM inserted_topics)
-      OR NOT EXISTS (SELECT 1 FROM inserted_topics)
     ORDER BY archived.id`,
     [
       JSON.stringify(
