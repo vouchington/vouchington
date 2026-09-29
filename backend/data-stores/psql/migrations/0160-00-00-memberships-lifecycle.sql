@@ -214,7 +214,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_verifications__processing_claim
 CREATE INDEX IF NOT EXISTS idx_membership_verifications__pending_processing ON membership_verifications (next_processing_at, id) WHERE verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS membership_sources (
-  id UUID PRIMARY KEY DEFAULT uuidv7(), user_id UUID,
+  id UUID PRIMARY KEY DEFAULT uuidv7(), user_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   source_kind membership_source_kinds NOT NULL, membership_provider_lineage_id UUID REFERENCES membership_provider_lineages(id) ON DELETE RESTRICT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK ((source_kind = 'admin_grant') = (membership_provider_lineage_id IS NULL))
@@ -258,8 +258,8 @@ CREATE TABLE IF NOT EXISTS membership_grants (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_source_id UUID NOT NULL REFERENCES membership_sources(id) ON DELETE RESTRICT,
   source_kind membership_source_kinds NOT NULL DEFAULT 'admin_grant' CHECK (source_kind = 'admin_grant'),
   user_id UUID NOT NULL, membership_product_id UUID NOT NULL REFERENCES membership_products(id) ON DELETE RESTRICT,
-  calendar_days INTEGER NOT NULL CHECK (calendar_days BETWEEN 1 AND 3660), granted_by_id UUID, issuer_snapshot TEXT NOT NULL,
-  revoked_at TIMESTAMPTZ, revoked_by_id UUID, revocation_reason TEXT, note TEXT,
+  calendar_days INTEGER NOT NULL CHECK (calendar_days BETWEEN 1 AND 3660), granted_by_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT, issuer_snapshot TEXT NOT NULL,
+  revoked_at TIMESTAMPTZ, revoked_by_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT, revocation_reason TEXT, note TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (char_length(issuer_snapshot) BETWEEN 1 AND 1000),
   CHECK ((revoked_at IS NULL) = (revoked_by_id IS NULL) AND (revoked_at IS NULL) = (revocation_reason IS NULL)),
@@ -272,6 +272,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_grants__source_id ON membership
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_grants__id_user_id ON membership_grants (id, user_id);
 CREATE INDEX IF NOT EXISTS idx_membership_grants__product_id ON membership_grants (membership_product_id);
 CREATE INDEX IF NOT EXISTS idx_membership_grants__user_id ON membership_grants (user_id, id);
+CREATE INDEX IF NOT EXISTS idx_membership_grants__granted_by_id ON membership_grants (granted_by_id) WHERE granted_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_membership_grants__revoked_by_id ON membership_grants (revoked_by_id) WHERE revoked_by_id IS NOT NULL;
 CREATE TABLE IF NOT EXISTS membership_grant_activation_periods (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_grant_id UUID NOT NULL REFERENCES membership_grants(id) ON DELETE RESTRICT,
   user_id UUID NOT NULL, started_at TIMESTAMPTZ NOT NULL, ended_at TIMESTAMPTZ, created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -328,10 +330,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_memberships__renewal_claim_token ON member
 CREATE INDEX IF NOT EXISTS idx_memberships__expires_at ON memberships (expires_at, id) WHERE projection_ended_at IS NULL AND expires_at IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS membership_changes (
-  id UUID PRIMARY KEY DEFAULT uuidv7(), membership_id UUID NOT NULL, user_id UUID NOT NULL,
+  id UUID PRIMARY KEY DEFAULT uuidv7(), membership_id UUID NOT NULL, user_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   membership_source_id UUID REFERENCES membership_sources(id) ON DELETE RESTRICT,
   membership_grant_id UUID REFERENCES membership_grants(id) ON DELETE RESTRICT,
-  change_type membership_change_types NOT NULL, from_membership_product_id UUID REFERENCES membership_products(id) ON DELETE RESTRICT, to_membership_product_id UUID REFERENCES membership_products(id) ON DELETE RESTRICT, changed_by_id UUID, note TEXT,
+  change_type membership_change_types NOT NULL, from_membership_product_id UUID REFERENCES membership_products(id) ON DELETE RESTRICT, to_membership_product_id UUID REFERENCES membership_products(id) ON DELETE RESTRICT, changed_by_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT, note TEXT,
   membership_provider_evidence_id UUID REFERENCES membership_provider_evidence_records(id) ON DELETE RESTRICT,
   -- Temporary Stripe adapter replay identity; removed with the adapter migration layer.
   stripe_event_id TEXT,
@@ -341,6 +343,7 @@ CREATE TABLE IF NOT EXISTS membership_changes (
 );
 CREATE INDEX IF NOT EXISTS idx_membership_changes__membership_id ON membership_changes (membership_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_membership_changes__user_id ON membership_changes (user_id, id DESC);
+CREATE INDEX IF NOT EXISTS idx_membership_changes__changed_by_id ON membership_changes (changed_by_id) WHERE changed_by_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_membership_changes__source_id ON membership_changes (membership_source_id, id DESC) WHERE membership_source_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_membership_changes__grant_id ON membership_changes (membership_grant_id, id DESC) WHERE membership_grant_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_membership_changes__from_product_id ON membership_changes (from_membership_product_id) WHERE from_membership_product_id IS NOT NULL;
@@ -461,7 +464,7 @@ CREATE INDEX IF NOT EXISTS idx_membership_automatic_refund_receipts__currency_co
 CREATE TABLE IF NOT EXISTS membership_administrator_refund_operation_requests (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   membership_operation_id UUID NOT NULL UNIQUE REFERENCES membership_operations(id) ON DELETE RESTRICT,
-  administrator_request_key TEXT NOT NULL, membership_id UUID NOT NULL, issued_by_id UUID NOT NULL,
+  administrator_request_key TEXT NOT NULL, membership_id UUID NOT NULL, issued_by_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   provider_payment_reference TEXT NOT NULL, provider_subscription_reference TEXT,
   amount_minor_units BIGINT NOT NULL CHECK (amount_minor_units BETWEEN 1 AND 9007199254740991),
   currency_code TEXT NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT,
@@ -483,12 +486,12 @@ CREATE TABLE IF NOT EXISTS membership_refunds (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_operation_id UUID,
   membership_id UUID NOT NULL,
   membership_source_id UUID NOT NULL REFERENCES membership_sources(id) ON DELETE RESTRICT,
-  user_id UUID,
+  user_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   stripe_refund_id TEXT NOT NULL, stripe_charge_id TEXT NOT NULL, stripe_payment_intent_id TEXT,
   stripe_idempotency_key TEXT,
   admin_request_fingerprint TEXT CHECK (admin_request_fingerprint IS NULL OR char_length(admin_request_fingerprint) = 64),
   amount_minor_units BIGINT NOT NULL CHECK (amount_minor_units BETWEEN 1 AND 9007199254740991), currency_code TEXT NOT NULL CHECK (currency_code ~ '^[a-z]{3}$'),
-  reason membership_refund_reasons NOT NULL, revoked_access BOOLEAN NOT NULL DEFAULT false, issued_by_id UUID, source membership_refund_sources NOT NULL,
+  reason membership_refund_reasons NOT NULL, revoked_access BOOLEAN NOT NULL DEFAULT false, issued_by_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT, source membership_refund_sources NOT NULL,
   stripe_event_id TEXT, note TEXT, created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT membership_refunds_source_identity_check CHECK ((source = 'admin' AND issued_by_id IS NOT NULL AND stripe_idempotency_key IS NOT NULL AND admin_request_fingerprint IS NOT NULL) OR (source = 'stripe_dashboard' AND issued_by_id IS NULL AND stripe_idempotency_key IS NULL AND admin_request_fingerprint IS NULL)),
   CONSTRAINT fk_membership_refunds__operation_source FOREIGN KEY (membership_operation_id, membership_source_id) REFERENCES membership_operations(id, membership_source_id) ON DELETE RESTRICT,
@@ -497,6 +500,7 @@ CREATE TABLE IF NOT EXISTS membership_refunds (
 CREATE INDEX IF NOT EXISTS idx_mrefunds__membership_id ON membership_refunds (membership_id);
 CREATE INDEX IF NOT EXISTS idx_mrefunds__source_id ON membership_refunds (membership_source_id);
 CREATE INDEX IF NOT EXISTS idx_mrefunds__user_id ON membership_refunds (user_id);
+CREATE INDEX IF NOT EXISTS idx_mrefunds__issued_by_id ON membership_refunds (issued_by_id) WHERE issued_by_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mrefunds__stripe_refund_id ON membership_refunds (stripe_refund_id);
 CREATE INDEX IF NOT EXISTS idx_mrefunds__stripe_charge_id ON membership_refunds (stripe_charge_id);
 CREATE INDEX IF NOT EXISTS idx_mrefunds__stripe_payment_intent_id ON membership_refunds (stripe_payment_intent_id) WHERE stripe_payment_intent_id IS NOT NULL;
@@ -728,7 +732,7 @@ COMMENT ON COLUMN membership_verifications.next_processing_at IS 'When pending v
 COMMENT ON COLUMN membership_verifications.last_error IS 'Bounded diagnostic from the most recent recoverable processing failure.';
 
 COMMENT ON TABLE membership_sources IS 'Stable entitlement sources that project provider or administrator access onto a user.';
-COMMENT ON COLUMN membership_sources.user_id IS 'Current user receiving access; detached during final account purge.';
+COMMENT ON COLUMN membership_sources.user_id IS 'Retained user identity of the current recipient; provider sources detach it during final account purge.';
 COMMENT ON COLUMN membership_sources.source_kind IS 'Origin category of the entitlement source.';
 COMMENT ON COLUMN membership_sources.membership_provider_lineage_id IS 'Provider lineage for non-admin sources.';
 
@@ -752,10 +756,10 @@ COMMENT ON COLUMN membership_grants.source_kind IS 'Invariant discriminator prov
 COMMENT ON COLUMN membership_grants.user_id IS 'Recipient user retained as an audit snapshot after final purge.';
 COMMENT ON COLUMN membership_grants.membership_product_id IS 'Canonical product granted to the recipient.';
 COMMENT ON COLUMN membership_grants.calendar_days IS 'Number of calendar days granted after activation.';
-COMMENT ON COLUMN membership_grants.granted_by_id IS 'Administrator identity retained without an FK for audit persistence.';
+COMMENT ON COLUMN membership_grants.granted_by_id IS 'Retained user identity of the granting administrator; outlives the live account and never authorizes.';
 COMMENT ON COLUMN membership_grants.issuer_snapshot IS 'Human-readable issuer snapshot retained after account deletion.';
 COMMENT ON COLUMN membership_grants.revoked_at IS 'When the grant was revoked before or during activation.';
-COMMENT ON COLUMN membership_grants.revoked_by_id IS 'Administrator identity retained without an FK for revocation audit persistence.';
+COMMENT ON COLUMN membership_grants.revoked_by_id IS 'Retained user identity of the revoking administrator or deleted-user sentinel; outlives the live account and never authorizes.';
 COMMENT ON COLUMN membership_grants.revocation_reason IS 'Bounded reason for revoking the grant.';
 COMMENT ON COLUMN membership_grants.note IS 'Optional administrative note for the grant.';
 
@@ -796,13 +800,13 @@ COMMENT ON COLUMN membership_entitlement_effects.delivered_at IS 'Time both idem
 COMMENT ON COLUMN membership_entitlement_effects.delivery_claim_token IS 'Opaque lease token held by the current delivery attempt.';
 COMMENT ON COLUMN membership_entitlement_effects.delivery_claimed_at IS 'Time the current delivery lease was acquired.';
 COMMENT ON COLUMN membership_changes.membership_id IS 'Membership projection affected by this audit event.';
-COMMENT ON COLUMN membership_changes.user_id IS 'User whose membership projection changed.';
+COMMENT ON COLUMN membership_changes.user_id IS 'Retained user identity whose membership projection changed; outlives the live account.';
 COMMENT ON COLUMN membership_changes.membership_source_id IS 'Source responsible for this change, when applicable.';
 COMMENT ON COLUMN membership_changes.membership_grant_id IS 'Administrator grant responsible for this change, when applicable.';
 COMMENT ON COLUMN membership_changes.change_type IS 'Kind of membership lifecycle or source change.';
 COMMENT ON COLUMN membership_changes.from_membership_product_id IS 'Canonical product before the change.';
 COMMENT ON COLUMN membership_changes.to_membership_product_id IS 'Canonical product after the change.';
-COMMENT ON COLUMN membership_changes.changed_by_id IS 'Actor identity retained without an FK for audit persistence.';
+COMMENT ON COLUMN membership_changes.changed_by_id IS 'Retained user identity of the actor; outlives the live account and never authorizes.';
 COMMENT ON COLUMN membership_changes.note IS 'Optional bounded note explaining the change.';
 COMMENT ON COLUMN membership_changes.membership_provider_evidence_id IS 'Verified provider evidence responsible for this change, when applicable.';
 COMMENT ON COLUMN membership_changes.stripe_event_id IS 'Temporary Stripe adapter event identity used for replay protection.';
@@ -848,7 +852,7 @@ COMMENT ON TABLE membership_refunds IS 'Append-only financial ledger of Stripe r
 COMMENT ON COLUMN membership_refunds.membership_operation_id IS 'Operation that reconciled this refund.';
 COMMENT ON COLUMN membership_refunds.membership_id IS 'Membership projection against which the refund was issued.';
 COMMENT ON COLUMN membership_refunds.membership_source_id IS 'Immutable entitlement source whose provider lineage supplied the refunded charge.';
-COMMENT ON COLUMN membership_refunds.user_id IS 'Member recorded as refunded; retained after final account purge.';
+COMMENT ON COLUMN membership_refunds.user_id IS 'Retained user identity of the refunded member; outlives the live account.';
 COMMENT ON COLUMN membership_refunds.stripe_refund_id IS 'Stripe Refund object identity and primary replay key.';
 COMMENT ON COLUMN membership_refunds.stripe_charge_id IS 'Stripe Charge identity that was refunded.';
 COMMENT ON COLUMN membership_refunds.stripe_payment_intent_id IS 'Optional Stripe PaymentIntent identity for the charge.';
@@ -858,7 +862,7 @@ COMMENT ON COLUMN membership_refunds.amount_minor_units IS 'This receipt amount 
 COMMENT ON COLUMN membership_refunds.currency_code IS 'Lowercase ISO currency code reported by Stripe.';
 COMMENT ON COLUMN membership_refunds.reason IS 'Categorized reason for the refund.';
 COMMENT ON COLUMN membership_refunds.revoked_access IS 'Whether this refund also revoked membership access.';
-COMMENT ON COLUMN membership_refunds.issued_by_id IS 'Administrator identity retained without an FK for audit persistence.';
+COMMENT ON COLUMN membership_refunds.issued_by_id IS 'Retained user identity of the issuing administrator; outlives the live account and never authorizes.';
 COMMENT ON COLUMN membership_refunds.source IS 'Whether the refund was administrator initiated or dashboard reconciled.';
 COMMENT ON COLUMN membership_refunds.stripe_event_id IS 'Stripe event that created this reconciliation receipt.';
 COMMENT ON COLUMN membership_refunds.note IS 'Optional bounded administrative refund note.';
@@ -867,7 +871,7 @@ COMMENT ON TABLE membership_administrator_refund_operation_requests IS 'Immutabl
 COMMENT ON COLUMN membership_administrator_refund_operation_requests.membership_operation_id IS 'Administrator refund operation created for this exact request.';
 COMMENT ON COLUMN membership_administrator_refund_operation_requests.administrator_request_key IS 'Administrator idempotency key bound to this immutable request.';
 COMMENT ON COLUMN membership_administrator_refund_operation_requests.membership_id IS 'Membership selected by the administrator when the request was submitted.';
-COMMENT ON COLUMN membership_administrator_refund_operation_requests.issued_by_id IS 'Administrator identity captured without an FK so audit history survives user deletion.';
+COMMENT ON COLUMN membership_administrator_refund_operation_requests.issued_by_id IS 'Retained user identity of the requesting administrator; outlives the live account and never authorizes.';
 COMMENT ON COLUMN membership_administrator_refund_operation_requests.provider_payment_reference IS 'Provider payment reference selected as the refund target.';
 COMMENT ON COLUMN membership_administrator_refund_operation_requests.provider_subscription_reference IS 'Provider subscription selected for cancellation when cancel_requested is true.';
 COMMENT ON COLUMN membership_administrator_refund_operation_requests.amount_minor_units IS 'Requested refund amount in the provider currency minor unit.';

@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { afterAll, describe, expect, it } from 'vitest'
 import { onGracefulShutdown } from '../index.mts'
 import {
@@ -11,6 +10,7 @@ import {
   insertParallelMembershipSourceStates,
   insertPreEffectiveMembershipSourceState,
 } from '../../../test-helpers/data-stores/psql/membership-grant-clocks.mts'
+import { createLocalTestUser } from '../../../test-helpers/data-stores/psql/users.mts'
 
 describe('membership grant clock schema', () => {
   afterAll(async () => {
@@ -18,7 +18,7 @@ describe('membership grant clock schema', () => {
   })
 
   it('rejects source lifecycle timestamps before their effective clock or in parallel states', async () => {
-    const userId = randomUUID()
+    const userId = (await createLocalTestUser()).id
     const productId = await getGrantClockTestProductId()
     const sourceId = await createGrantClockTestSource(userId)
 
@@ -33,7 +33,7 @@ describe('membership grant clock schema', () => {
   })
 
   it('subtracts persisted activation periods from a grant duration', async () => {
-    const userId = randomUUID()
+    const userId = (await createLocalTestUser()).id
     const productId = await getGrantClockTestProductId()
     const sourceId = await createGrantClockTestSource(userId)
     const grantId = await createGrantDurationTestGrant(sourceId, userId, productId)

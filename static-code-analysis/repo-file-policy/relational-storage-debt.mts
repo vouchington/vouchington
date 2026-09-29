@@ -3,9 +3,8 @@
 //
 // JSON documents are not debt. Structured documents, data points, and change history stay JSON.
 // An entity id inside a document still needs its own foreign-key column; this inventory cannot
-// see inside JSON. What remains: UUID arrays (#820) and the membership user-id columns.
-// Token, cursor, protocol, and audit snapshot ids are reviewed in the catalog instead; see the
-// schema rules.
+// see inside JSON. What remains: UUID arrays (#820). Token, cursor, protocol, and audit snapshot
+// ids are reviewed in the catalog instead; see the schema rules.
 export const EXISTING_RELATIONAL_STORAGE_DEBT = {
   json: new Set<string>(),
   uuidArray: new Set([
@@ -14,15 +13,6 @@ export const EXISTING_RELATIONAL_STORAGE_DEBT = {
     'post_category_finalizations.admission_response_topic_ids',
     'review_successions.topic_ids',
   ]),
-  missingForeignKey: new Set([
-    'membership_administrator_refund_operation_requests.issued_by_id',
-    'membership_changes.changed_by_id',
-    'membership_changes.user_id',
-    'membership_grants.granted_by_id',
-    'membership_grants.revoked_by_id',
-    'membership_refunds.issued_by_id',
-    'membership_refunds.user_id',
-    'membership_sources.user_id',
-  ]),
+  missingForeignKey: new Set<string>(),
   encodedReference: new Set<string>(),
 }

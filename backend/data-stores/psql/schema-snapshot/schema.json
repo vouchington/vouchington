@@ -44747,7 +44747,7 @@
         },
         "issued_by_id": {
           "collation": null,
-          "comment": "Administrator identity captured without an FK so audit history survives user deletion.",
+          "comment": "Retained user identity of the requesting administrator; outlives the live account and never authorizes.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -44852,6 +44852,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["code"],
           "referencedTable": "currencies",
+          "validated": true
+        },
+        "membership_administrator_refund_operation_req_issued_by_id_fkey": {
+          "columns": ["issued_by_id"],
+          "definition": "FOREIGN KEY (issued_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
           "validated": true
         }
       },
@@ -45357,7 +45366,7 @@
         },
         "changed_by_id": {
           "collation": null,
-          "comment": "Actor identity retained without an FK for audit persistence.",
+          "comment": "Retained user identity of the actor; outlives the live account and never authorizes.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -45511,7 +45520,7 @@
         },
         "user_id": {
           "collation": null,
-          "comment": "User whose membership projection changed.",
+          "comment": "Retained user identity whose membership projection changed; outlives the live account.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -45523,6 +45532,15 @@
       },
       "comment": "Append-only audit log for membership projection changes.",
       "foreignKeys": {
+        "membership_changes_changed_by_id_fkey": {
+          "columns": ["changed_by_id"],
+          "definition": "FOREIGN KEY (changed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
         "membership_changes_from_membership_product_id_fkey": {
           "columns": ["from_membership_product_id"],
           "definition": "FOREIGN KEY (from_membership_product_id) REFERENCES membership_products(id) ON DELETE RESTRICT",
@@ -45567,6 +45585,15 @@
           "referencedColumns": ["id"],
           "referencedTable": "membership_products",
           "validated": true
+        },
+        "membership_changes_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
         }
       },
       "growth": "unbounded",
@@ -45589,6 +45616,26 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_membership_changes__changed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_changes__changed_by_id ON public.membership_changes USING btree (changed_by_id) WHERE (changed_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "changed_by_id",
+              "descending": false,
+              "expression": "changed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(changed_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_membership_changes__evidence_id": {
@@ -47054,7 +47101,7 @@
         },
         "granted_by_id": {
           "collation": null,
-          "comment": "Administrator identity retained without an FK for audit persistence.",
+          "comment": "Retained user identity of the granting administrator; outlives the live account and never authorizes.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -47142,7 +47189,7 @@
         },
         "revoked_by_id": {
           "collation": null,
-          "comment": "Administrator identity retained without an FK for revocation audit persistence.",
+          "comment": "Retained user identity of the revoking administrator or deleted-user sentinel; outlives the live account and never authorizes.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -47194,6 +47241,15 @@
           "referencedTable": "membership_sources",
           "validated": true
         },
+        "membership_grants_granted_by_id_fkey": {
+          "columns": ["granted_by_id"],
+          "definition": "FOREIGN KEY (granted_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
         "membership_grants_membership_product_id_fkey": {
           "columns": ["membership_product_id"],
           "definition": "FOREIGN KEY (membership_product_id) REFERENCES membership_products(id) ON DELETE RESTRICT",
@@ -47211,10 +47267,39 @@
           "referencedColumns": ["id"],
           "referencedTable": "membership_sources",
           "validated": true
+        },
+        "membership_grants_revoked_by_id_fkey": {
+          "columns": ["revoked_by_id"],
+          "definition": "FOREIGN KEY (revoked_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
         }
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_membership_grants__granted_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_grants__granted_by_id ON public.membership_grants USING btree (granted_by_id) WHERE (granted_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "granted_by_id",
+              "descending": false,
+              "expression": "granted_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(granted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_membership_grants__id_user_id": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -47257,6 +47342,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_membership_grants__revoked_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_grants__revoked_by_id ON public.membership_grants USING btree (revoked_by_id) WHERE (revoked_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "revoked_by_id",
+              "descending": false,
+              "expression": "revoked_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(revoked_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -52617,7 +52722,7 @@
         },
         "issued_by_id": {
           "collation": null,
-          "comment": "Administrator identity retained without an FK for audit persistence.",
+          "comment": "Retained user identity of the issuing administrator; outlives the live account and never authorizes.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -52760,7 +52865,7 @@
         },
         "user_id": {
           "collation": null,
-          "comment": "Member recorded as refunded; retained after final account purge.",
+          "comment": "Retained user identity of the refunded member; outlives the live account.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -52790,6 +52895,15 @@
           "referencedTable": "membership_operations",
           "validated": true
         },
+        "membership_refunds_issued_by_id_fkey": {
+          "columns": ["issued_by_id"],
+          "definition": "FOREIGN KEY (issued_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
         "membership_refunds_membership_source_id_fkey": {
           "columns": ["membership_source_id"],
           "definition": "FOREIGN KEY (membership_source_id) REFERENCES membership_sources(id) ON DELETE RESTRICT",
@@ -52798,10 +52912,39 @@
           "referencedColumns": ["id"],
           "referencedTable": "membership_sources",
           "validated": true
+        },
+        "membership_refunds_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
         }
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_mrefunds__issued_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_mrefunds__issued_by_id ON public.membership_refunds USING btree (issued_by_id) WHERE (issued_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "issued_by_id",
+              "descending": false,
+              "expression": "issued_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(issued_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_mrefunds__membership_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -53380,7 +53523,7 @@
         },
         "user_id": {
           "collation": null,
-          "comment": "Current user receiving access; detached during final account purge.",
+          "comment": "Retained user identity of the current recipient; provider sources detach it during final account purge.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -53399,6 +53542,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "membership_provider_lineages",
+          "validated": true
+        },
+        "membership_sources_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
           "validated": true
         }
       },

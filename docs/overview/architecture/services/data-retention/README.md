@@ -22,7 +22,7 @@ retention is 90 days and never selects pending delivery work.
   capture that tuple again. Each family uses its own transaction and never locks a parent root.
 - `cleanupRetainedIdentityRoots()` — one cursor-bounded, `SKIP LOCKED` page per concrete user,
   topic, post, RSS-item, and image owner family on each scheduled run. A root is deleted only when its
-  live row and all durable request, audit, publication, notification, or retained-relation references are absent; this is separate
+  live row and all durable request, audit, membership lineage, publication, notification, or retained-relation references are absent; this is separate
   from publication-bridge cleanup and does not expire audit history. Every foreign key that targets a
   retained root, including the staff actor on post clearance changes and moderation dispositions and
   the grant owner on OAuth server events, must be listed in `ROOT_FAMILIES`; a catalog-backed test
