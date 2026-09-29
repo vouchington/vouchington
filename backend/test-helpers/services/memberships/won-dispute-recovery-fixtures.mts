@@ -7,7 +7,7 @@ import {
   completeIneligiblePurchaseReversal,
   markIneligiblePurchaseReversalCompleted,
 } from '../../../services/memberships/ineligible-stripe-purchase-reversal-execution.mts'
-import type { IneligibleStripePurchaseOperations } from '../../../services/memberships/reverse-ineligible-stripe-purchase.mts'
+import type { IneligibleStripePurchaseOperations } from '../../../services/memberships/reverse-ineligible-stripe-purchase-types.mts'
 
 type WonDisputeRecoveryOperations = IneligibleStripePurchaseOperations & {
   getWonStripeDisputeInvoice: (

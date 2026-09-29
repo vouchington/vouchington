@@ -74,7 +74,7 @@ export function requiredSecretScopeViolations(
     const policy = environmentDeploymentBranchPolicies.get(environment)
     if (
       policy?.protectedBranchesEnabled !== false ||
-      policy.customBranchPoliciesEnabled !== true ||
+      !policy.customBranchPoliciesEnabled ||
       policy.deploymentBranchRules.length !== 1 ||
       policy.deploymentBranchRules[0]?.name !== 'main' ||
       policy.deploymentBranchRules[0]?.type !== 'branch'

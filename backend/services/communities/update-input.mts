@@ -2,7 +2,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { normalizeContentLanguageTag } from '@ts-shared/languages/content-languages'
 import { validateCommunitySlug } from './slugs.mts'
-import type { UpdateCommunityInput } from './update.mts'
+import type { UpdateCommunityInput } from './update-types.mts'
 
 export function validateCommunityUpdateInput(input: UpdateCommunityInput): void {
   if (input.name !== undefined) {

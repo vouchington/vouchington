@@ -1,5 +1,5 @@
 import { validateUrl, UnsafeUrlError } from 'ssrf-guard/node'
-import { fetchWithTimeout, readResponseBody } from '@modules/utils/http'
+import { cancelResponseBody, fetchWithTimeout, readResponseBody } from '@modules/utils/http'
 import { assertPublicKeyPem } from '@modules/http-signatures'
 import createHttpError from 'http-errors'
 import {
@@ -90,7 +90,7 @@ export async function fetchRemoteActorDocument(
     throw new RemoteActorFetchAvailabilityError('Remote actor document fetch failed', error)
   }
   if (!response.ok) {
-    response.body?.cancel()
+    cancelResponseBody(response)
     const cause = createHttpError(
       502,
       `Remote actor document fetch failed with status ${response.status}`,

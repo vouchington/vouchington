@@ -1,7 +1,7 @@
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { PrivateUser } from '@services/users/types'
 import type { CreatePostInput } from '../types.mts'
-import type { PostScope } from './community-scope.mts'
+import type { PostScope } from './community-scope-types.mts'
 import { isUUID } from '@modules/utils'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { POST_THREAD_LOCKED } from '@modules/on-error/error-codes'

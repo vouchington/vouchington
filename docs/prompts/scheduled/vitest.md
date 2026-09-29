@@ -1,4 +1,4 @@
-Review Vitest tests. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review Vitest tests. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 - Run the relevant local Vitest test more than once when investigating reliability. When it depends
   on PostgreSQL or Valkey state, run it in freshly cleaned state and again without cleaning first.
@@ -18,7 +18,8 @@ Review Vitest tests. Pick exactly one concrete, bounded improvement that is safe
   reruns, or timeout increases.
 - Find any failures and make them more reliable.
 - Find opportunities to make tests faster or leaner.
-- Review `--coverage` reports and add tests for increased coverage.
+- Use coverage reports to locate untested behavior relevant to the selected improvement; add
+  behavior-specific assertions only when they verify its contract, without chasing coverage totals.
 - Review AGENTS.md and README.md files for any incongruence between tests and requirements.
 - Avoid increasing a per-test or per-file timeout to paper over a real failure; the global
   `teardownTimeout: 20_000` in `vitest.config.mts` is a deliberate, already-justified exception that

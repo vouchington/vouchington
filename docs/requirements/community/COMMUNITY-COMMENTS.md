@@ -37,5 +37,5 @@ of this API.
 
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
-- [Comments service](../../../backend/services/comments/README.md)
+- [Comments service](../../overview/architecture/services/comments/README.md)
 - [Communities requirements](./COMMUNITIES.md)

@@ -119,4 +119,22 @@ describe('POST /api/v1/valkey/flush', () => {
 
     expect(enqueueRebuildEmbeddingBloomFilterMock).toHaveBeenCalledOnce()
   })
+
+  it('enqueues url-blocklist, entity-cache, and api-keys rebuilds', async () => {
+    const request = createRequest()
+    await request.authenticateAs(adminUser)
+
+    await request
+      .post('/api/v1/valkey/bloom-filters/rebuild')
+      .send({ filter: 'url-blocklist' })
+      .expect(200)
+    await request
+      .post('/api/v1/valkey/bloom-filters/rebuild')
+      .send({ filter: 'entity-cache' })
+      .expect(200)
+    await request
+      .post('/api/v1/valkey/bloom-filters/rebuild')
+      .send({ filter: 'api-keys' })
+      .expect(200)
+  })
 })

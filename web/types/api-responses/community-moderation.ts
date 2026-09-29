@@ -1,13 +1,18 @@
-import type * as Api from './shared'
-import type { ReportReason } from '@/lib/api/client/reports'
-import type { ModerationReportTargetContent } from '@/lib/api/client/reports-contracts'
+import type { ModerationJudgementAction } from '@ts-shared/utils/moderation-policy'
 import type {
   ModerationReportStatus,
   ModeratorActionType,
 } from '@ts-shared/utils/moderation-catalogs'
-import type { ModerationJudgementAction } from '@ts-shared/utils/moderation-policy'
+import type { PageInfo } from '@voucha/types/pagination'
+import type {
+  ModerationReportTargetContent,
+  ReportReason,
+} from '@/lib/api/client/reports-contracts'
+import type { PublicUser } from '../user'
+import type { CommunityBanEvasionContext } from './community-ban-evasion-context'
+import type { ModerationQueueClaim } from './moderation-queue-claim'
 
-type PublicUser = Api.PublicUser
+export type { CommunityBanEvasionContext, ModerationQueueClaim }
 
 export type { ModeratorActionType }
 
@@ -21,25 +26,6 @@ export interface CommunityModeratorStatsResponseBody {
   window: 30 | 90
   stats: CommunityModeratorStatEntry[]
   users: Record<string, PublicUser>
-}
-
-export interface CommunityBanEvasionContext {
-  community_id: string
-  community_slug: string
-  source_user_id?: string
-  source_username?: string | null
-  score?: number
-  flagged_at?: string
-}
-
-export interface ModerationQueueClaim {
-  id: string
-  community_id: string
-  report_id: string | null
-  post_id: string | null
-  claimed_by_id: string
-  claimed_at: string
-  released_at: string | null
 }
 
 export interface CommunityModerationReport {
@@ -77,7 +63,7 @@ export interface CommunityModerationReport {
 
 export interface CommunityModerationReportsResponseBody {
   reports: CommunityModerationReport[]
-  page_info?: Api.PageInfo
+  page_info?: PageInfo
 }
 
 export interface CommunityMemberVacation {

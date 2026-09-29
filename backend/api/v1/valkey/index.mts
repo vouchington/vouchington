@@ -34,19 +34,21 @@ app.route('/api/v1/valkey/bloom-filters/rebuild').post(async (ctx: Context) => {
   switch (filter) {
     case 'url-blocklist':
     case 'email-blocklist':
-      enqueueRebuildBloomFilter({ filter })
+      await enqueueRebuildBloomFilter({ filter })
       break
     case 'embedding':
-      enqueueRebuildEmbeddingBloomFilter()
+      await enqueueRebuildEmbeddingBloomFilter()
       break
     case 'entity-cache':
-      enqueueBackfillBloomFilter({ entityType: 'posts' })
-      enqueueBackfillBloomFilter({ entityType: 'topics' })
-      enqueueBackfillBloomFilter({ entityType: 'users' })
-      enqueueBackfillBloomFilter({ entityType: 'rss_feed_items' })
+      await Promise.all([
+        enqueueBackfillBloomFilter({ entityType: 'posts' }),
+        enqueueBackfillBloomFilter({ entityType: 'topics' }),
+        enqueueBackfillBloomFilter({ entityType: 'users' }),
+        enqueueBackfillBloomFilter({ entityType: 'rss_feed_items' }),
+      ])
       break
     case 'api-keys':
-      enqueueRebuildBloomFilter({ filter: 'api-keys' })
+      await enqueueRebuildBloomFilter({ filter: 'api-keys' })
       break
   }
 

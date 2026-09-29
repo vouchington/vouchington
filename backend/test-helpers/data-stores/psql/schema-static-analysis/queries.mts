@@ -1,10 +1,6 @@
 /* v8 ignore start -- catalog query helpers are validated through schema-static-analysis.test.mts */
 import { read } from '../../../../data-stores/psql/index.mts'
-import {
-  type NamedCatalogColumn,
-  type NamedCatalogObject,
-  type TypeViolation,
-} from './name-helpers.mts'
+import type { NamedCatalogColumn, NamedCatalogObject, TypeViolation } from './name-helpers.mts'
 import { COMMENT_EXEMPT_COLUMN_NAMES, type CommentViolation } from './conventions.mts'
 
 export async function getNamedObjects({

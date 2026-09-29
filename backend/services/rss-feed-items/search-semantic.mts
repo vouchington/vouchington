@@ -20,7 +20,7 @@ import type { PageInfo } from '@voucha/types/pagination'
 import type { RssFeedItemsResult } from './types.mts'
 import { buildRssFeedItemFilters, appendWhereClauses } from './search-filters.mts'
 import { buildRssFeedItemRelevanceScoreExpression } from './tools/search-relevance-score.mts'
-import type { SearchRssFeedItemsOptions } from './search.mts'
+import type { SearchRssFeedItemsOptions } from './search-types.mts'
 import {
   getSemanticRssFeedItemCursor,
   getSemanticRssFeedItemCursorScope,

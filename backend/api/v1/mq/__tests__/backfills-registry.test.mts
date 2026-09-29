@@ -4,8 +4,10 @@ import {
   isDeduplicatedEnqueue,
   readEnqueuedJob,
 } from '@voucha/test-helpers'
-import { bedrock_embeddings_batch } from '@queues/bedrock-embeddings-batch/queues'
+import { activitypubInbox } from '@queues/activitypub-inbox/queues'
 import { scheduledJobManifest as embeddingReconciliationManifest } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
+import { bedrock_embeddings_batch } from '@queues/bedrock-embeddings-batch/queues'
+import { voteWeightQueue } from '@queues/vote-weight/queues'
 import { EXISTING_DISPATCHER_BACKFILLS } from '../backfills-existing-dispatchers.mts'
 import { BACKFILL_REGISTRY } from '../backfills-registry.mts'
 
@@ -128,6 +130,28 @@ describe('BACKFILL_REGISTRY', () => {
 
   it('has at least one entry', () => {
     expect(BACKFILL_REGISTRY.length).toBeGreaterThan(0)
+  })
+
+  it('enqueues the ActivityPub failed-delivery rearm', async () => {
+    const entry = BACKFILL_REGISTRY.find(
+      candidate => candidate.id === 'activitypub-inbox-failed-deliveries',
+    )
+    if (!entry) throw new Error('ActivityPub failed-delivery backfill missing')
+    const enqueued = await entry.trigger()
+    if (isDeduplicatedEnqueue(enqueued)) return
+    await expect(readEnqueuedJob(activitypubInbox, enqueued)).resolves.toMatchObject({
+      name: 'rearmFailedDeliveries',
+    })
+  })
+
+  it('enqueues the vote-weight dispatcher backfill', async () => {
+    const entry = BACKFILL_REGISTRY.find(candidate => candidate.id === 'vote-weight-dispatch')
+    if (!entry) throw new Error('Vote-weight backfill missing')
+    const enqueued = await entry.trigger()
+    if (isDeduplicatedEnqueue(enqueued)) return
+    await expect(readEnqueuedJob(voteWeightQueue, enqueued)).resolves.toMatchObject({
+      name: 'processRecalculateVoteWeightDispatcher',
+    })
   })
 })
 

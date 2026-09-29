@@ -12,14 +12,8 @@ import {
 import { admitImportedTopicRecommendation } from './admit-topic-recommendation.mts'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating'
 import { claimTopicImportAttempt, finalizeTopicImportAttempt } from './topic-import-attempts.mts'
-
-export type ImportTopicResult = {
-  input: string
-  status: 'followed' | 'recommendation_created' | 'already_following' | 'error'
-  error?: string
-  entity_id?: string
-  recommendation_post_id?: string
-}
+import type { ImportTopicResult } from './import-topics-types.mts'
+export type { ImportTopicResult } from './import-topics-types.mts'
 
 const MAX_IMPORT_ITEMS = 500
 

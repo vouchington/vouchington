@@ -126,7 +126,7 @@ async function createBedrockBatchJob(
     throw new Error('Missing BEDROCK_BATCH_ROLE_ARN')
   }
 
-  return await BedrockControlClient.send(
+  return BedrockControlClient.send(
     new CreateModelInvocationJobCommand({
       jobName: `voucha-${routingEnvironment}-${batchId}`,
       modelId: BEDROCK_NOVA_MULTIMODAL_MODEL_ID,

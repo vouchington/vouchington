@@ -1,5 +1,13 @@
 export * from './app-attestation.mts'
 export * from './entities/index.mts'
+export {
+  countPostRelatedTopics,
+  getTestRelationDeletedAt,
+  hasPostRelatedTopic,
+  insertScoredPostTopicCategoryRelation,
+  setScoredPostTopicCategoryRelationScore,
+  softDeleteScoredPostTopicCategoryRelation,
+} from './entities/entity-relations-posts.mts'
 export * from './entities/membership-source-rebinding.mts'
 export * from './types.mts'
 export * from './data.mts'

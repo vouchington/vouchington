@@ -6,7 +6,7 @@ import type { PageInfo } from '@voucha/types/pagination'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanManageRssFeedCategories } from './authorization.mts'
 import { createTopicAliases } from '@services/topics/aliases'
-import { backfillCategoriesForTopicAliases } from './categories.mts'
+import { backfillCategoriesForTopicAliases } from './backfill-categories-for-topic-aliases.mts'
 
 export type UnmappedCategoryStatus = 'pending' | 'rejected' | 'all'
 

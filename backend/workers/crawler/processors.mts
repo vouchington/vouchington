@@ -9,7 +9,7 @@ import { crawlUrl } from '@services/crawls/crawl-url'
 import type { CrawlBasic } from '@services/crawls/types'
 import { getUrlById } from '@services/urls/get'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
-import { type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import { CrawlerRateLimitError } from '@modules/on-error/errors'
 
 const MAX_RATE_LIMIT_RETRIES = 3
@@ -64,7 +64,7 @@ export async function processCrawlerJob(job: Job): Promise<unknown> {
         /* v8 ignore next -- successful network crawls are covered in crawl-url tests; buildCrawlerJobResult covers worker result shaping. */
         return buildCrawlerJobResult(crawlResult)
       } catch (error) {
-        return await handleCrawlerProcessorError(urlId, rateLimitRetryCount, error, {
+        return handleCrawlerProcessorError(urlId, rateLimitRetryCount, error, {
           crawlTimeoutMs,
           ensureCrawlerForRedirects,
           ignoreRobotsTxt,

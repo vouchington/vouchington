@@ -2,7 +2,12 @@ import type { CrawlerHtmlToMarkdownOptions } from '@services/crawlers/html-to-md
 import { extractHtmlContent, isHtmlContentType } from '@vouchington/crawler-html'
 import { readFile } from 'node:fs/promises'
 import { CRAWLER_USER_AGENT } from '@voucha/config'
-import { fetchWithTimeout, handleHttpErrors, isTimeoutError } from '@modules/utils/http'
+import {
+  cancelResponseBody,
+  fetchWithTimeout,
+  handleHttpErrors,
+  isTimeoutError,
+} from '@modules/utils/http'
 import type { CrawlerHtmlOptions, CrawlerHtmlResult } from './types.mts'
 import { writeResponseToTemporaryFile } from './response-file.mts'
 import { planCrawlerEmbed } from '@services/crawl-embeds/embed-resolver'
@@ -68,14 +73,14 @@ export async function fetchCrawlerHtml(
   }
 
   if (response.status === 204 || response.status === 304) {
-    response.body?.cancel()
+    cancelResponseBody(response)
     return output
   }
 
   handleHttpErrors({ response, url })
   const contentType = response.headers?.get('content-type')
   if (!contentType || !isHtmlContentType(contentType)) {
-    response.body?.cancel()
+    cancelResponseBody(response)
     return output
   }
 

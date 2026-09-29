@@ -1,4 +1,4 @@
-import { type QueryExecutor } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { IneligibleStripePurchase } from './ineligible-stripe-purchase-reversal-types.mts'
 import { isHigherMembershipPlan } from './plan-ranking.mts'

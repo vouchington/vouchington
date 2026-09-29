@@ -27,3 +27,14 @@ User profiles, settings, privacy, account management, and membership features.
 When user profile fields, privacy settings, membership tiers, or account lifecycle flows change,
 update the relevant doc here and cross-link from `docs/requirements/anatomy/user.md` and
 `backend/services/`.
+
+## Reference index
+
+- [OAuth Apps and Connected Apps](oauth-apps.md)
+- [Memberships reference](reference-memberships-architecture.md)
+- [Memberships reference](reference-memberships-contribution-gating-anti-bot.md)
+- [Memberships reference](reference-memberships-refunds.md)
+- [Referral Links reference](reference-referral-links-admin-validation-management.md)
+- [Referral Links reference](reference-referral-links-my-referrals-click-log.md)
+- [Referral Links reference](reference-referral-links-suggesting-referral-programs.md)
+- [Referral Links reference](reference-referral-links-url-validation.md)

@@ -1,5 +1,5 @@
 import { beginTransaction, withTransactionOptions, type TransactionQuery } from '@data-stores/psql'
-import type { UpsertEntityRelationsOptions } from './upsert-helpers.mts'
+import type { UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
 import {
   isRssFeedItemTopicAliasPublicationRelationTable,
   isPostScopedPublicationRelationTable,

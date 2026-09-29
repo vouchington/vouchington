@@ -1,11 +1,6 @@
 ---
 name: triage-prs
-description: |
-  Triage open pull requests: review each one, merge the good ones (mark ready, arm
-  squash auto-merge, dispatch pr-shepherd) and close the rest (delete the branch).
-  Use when asked to review/triage PRs, clear the PR queue, or process automation-created
-  PRs (see docs/development/merge-authority.md). Invocation also authorizes the bounded
-  prompt-feedback issue and draft-PR flow in Step 6a.
+description: Review the PR queue and merge or close PRs under the user's triage authorization.
 argument-hint: '[PR scope: numbers, author, label, or blank for all automation-labeled PRs]'
 allowed-tools:
   ['Bash', 'Read', 'Write', 'Grep', 'Glob', 'Agent', 'AskUserQuestion', 'TaskCreate', 'TaskUpdate']
@@ -306,8 +301,8 @@ actionable feedback whose provenance and exact source are verified under
 normally in the queue, but return `none` for its own PR-creation feedback so the loop cannot recur.
 
 For the current batch, combine every qualifying finding — including `one-off` findings — into one
-validated `Plan:` issue and one draft feedback PR. The Plan issue is the sole closing source for
-that PR; reviewed PRs are evidence only and must never be added as closing references.
+feedback issue and one draft feedback PR. Record the proportional plan in that issue; it is the
+sole closing source for that PR; reviewed PRs are evidence only and must never be added as closing references.
 
 Before publication, verify all of the following at action time:
 
@@ -319,16 +314,17 @@ Before publication, verify all of the following at action time:
 
 Compare the marker and the normalized set of exact source paths on open feedback PRs:
 
-- `duplicate: zero-overlap` — create one validated `Plan:` issue and one draft PR.
-- `duplicate: exact-match` — reuse the one canonical matching PR and its existing Plan issue;
+- `duplicate: zero-overlap` — create one feedback issue and one draft PR.
+- `duplicate: exact-match` — reuse the one canonical matching PR and its existing source issue;
   create neither.
 - `duplicate: ambiguous` — fail closed: any partial overlap, more than one exact match, or any
   uncertain provenance/source set creates nothing.
 
-For a create, use [planning](../planning/SKILL.md) and [github-issue](../github-issue/SKILL.md) for
-the Plan issue, then [pr-description](../pr-description/SKILL.md) for the draft PR. The PR body must
+For a create, save a proportional plan in the feedback issue through
+[github-issue](../github-issue/SKILL.md), then use [pr-description](../pr-description/SKILL.md) for
+the draft PR. The PR body must
 include `<!-- pr-creation-feedback-origin: triage-prs -->`, carry the `automation` label, and link
-the Plan issue with a closing keyword. Do not ready, shepherd, auto-merge, or merge a generated or
+the feedback issue with a closing keyword. Do not ready, shepherd, auto-merge, or merge a generated or
 reused feedback PR in the same triage run.
 
 #### Retrospective disposition

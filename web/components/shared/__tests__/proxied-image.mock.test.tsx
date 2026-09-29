@@ -46,7 +46,7 @@ describe('ProxiedImage', () => {
     window.__IMAGE_ORIGIN__ = 'https://images.example.com'
     render(
       <ProxiedImage
-        src='https://images.example.com/sideload/abc?sig=test&w=400'
+        src='https://images.example.com/sideload/v2/abc?sig=test&w=400'
         alt='proxied image'
         width={400}
         height={300}

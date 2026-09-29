@@ -81,8 +81,7 @@ export async function seedTopicsFromRows(
       ? [{ row, originalIndex }]
       : [],
   )
-  for (let i = 0; i < rowsToRetry.length; i++) {
-    const { row, originalIndex } = rowsToRetry[i]!
+  for (const { row, originalIndex } of rowsToRetry) {
     const slug = row.slug?.trim() || `row-${originalIndex}`
     try {
       // oxlint-disable-next-line no-await-in-loop -- retry rows remain serialized so a successful retry clears the matching first-pass error

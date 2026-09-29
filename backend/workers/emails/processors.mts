@@ -10,5 +10,9 @@ export default function processEmail(
   if (!fn || typeof fn !== 'function') throw new Error(`Email template ${templateName} not found`)
   if (!input) throw new Error('Email .input is required')
   if (!variables) throw new Error('Email .variables are required')
-  return fn(input, variables)
+  const render = fn as (
+    input: EmailTemplateInput,
+    variables: Record<string, unknown>,
+  ) => Promise<unknown>
+  return render(input, variables)
 }

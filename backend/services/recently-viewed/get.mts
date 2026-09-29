@@ -12,5 +12,5 @@ export async function getRecentlyViewedIds(
   assert(isUUID(sessionId), 400, 'Invalid session ID')
   assert(!userId || isUUID(userId), 400, 'Invalid user ID')
 
-  return await searchRecentlyViewed(entityType, sessionId, userId, limit)
+  return searchRecentlyViewed(entityType, sessionId, userId, limit)
 }

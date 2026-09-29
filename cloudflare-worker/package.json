@@ -11,6 +11,7 @@
     "../ts-shared/request-client-info",
     "../ts-shared/route-classification",
     "../ts-shared/session-jwt",
+    "../ts-shared/url-signing",
     "../ts-shared/utils"
   ],
   "type": "module",
@@ -42,6 +43,7 @@
     "@ts-shared/request-client-info": "workspace:^",
     "@ts-shared/route-classification": "workspace:^",
     "@ts-shared/session-jwt": "workspace:^",
+    "@ts-shared/url-signing": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
     "@vouchington/utils": "0.5.3",
@@ -49,7 +51,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260926.1",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.3",
     "@typescript/native": "npm:typescript@^7.0.2",
     "esbuild": "^0.28.2",
     "vitest": "^5.0.2",

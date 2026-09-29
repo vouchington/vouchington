@@ -190,7 +190,7 @@ export async function resolvePostsSearchParams(
 }
 
 async function parsePostsSearchParamsImpl(query: Record<string, unknown>) {
-  return await resolvePostsSearchParams(preparePostsSearchParams(query))
+  return resolvePostsSearchParams(preparePostsSearchParams(query))
 }
 
 export const parsePostsSearchParams = withQueryContract(

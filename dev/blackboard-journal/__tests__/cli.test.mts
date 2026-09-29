@@ -50,7 +50,7 @@ describe('blackboard-journal CLI', () => {
       (error: unknown) => error,
     )
 
-    expect(String((rejection as { stderr: string }).stderr)).toContain('--root-codex')
+    expect((rejection as { stderr: string }).stderr).toContain('--root-codex')
   })
 
   it('preserves an unfinished root-session rotation in a replay command', async () => {
@@ -65,7 +65,7 @@ describe('blackboard-journal CLI', () => {
       { cwd: dir },
     ).catch((error: unknown) => error)
 
-    expect(String((rejection as { stderr: string }).stderr)).toContain(
+    expect((rejection as { stderr: string }).stderr).toContain(
       '--root-codex --new-root-codex-session',
     )
   })
@@ -83,7 +83,7 @@ describe('blackboard-journal CLI', () => {
       '--session-id',
       'sess-1',
     ]).catch((error: unknown) => error)
-    const stderr = String((rejection as { stderr: string }).stderr)
+    const stderr = (rejection as { stderr: string }).stderr
     expect(stderr).toContain('--root-codex cannot be used with --session-id')
     expect(stderr).not.toContain('Replay with:')
   })
@@ -116,7 +116,7 @@ describe('blackboard-journal CLI', () => {
       },
     ).catch((error: unknown) => error)
 
-    expect(String((rejection as { stderr: string }).stderr)).toContain(
+    expect((rejection as { stderr: string }).stderr).toContain(
       "--repository 'vouchington/vouchington' --repository 'vouchington/vouchington-clients'",
     )
   })
@@ -129,7 +129,7 @@ describe('blackboard-journal CLI', () => {
       (error: unknown) => error,
     )
     expect(rejection).toMatchObject({ code: 1 })
-    expect(String((rejection as { stderr: string }).stderr)).toContain('Usage:')
+    expect((rejection as { stderr: string }).stderr).toContain('Usage:')
   })
 
   it('prints Error and Replay-with lines on stderr and exits 1 on a hard failure', async () => {
@@ -155,7 +155,7 @@ describe('blackboard-journal CLI', () => {
     )
 
     expect(rejection).toMatchObject({ code: 1 })
-    const stderr = String((rejection as { stderr: string }).stderr)
+    const stderr = (rejection as { stderr: string }).stderr
     expect(stderr).toContain('Error:')
     expect(stderr).toContain(
       `Replay with: node dev/blackboard-journal.mts append --file '${noteFile}' ` +
@@ -200,7 +200,7 @@ describe('blackboard-journal CLI', () => {
       },
     ).catch((error: unknown) => error)
 
-    const stderr = String((rejection as { stderr: string }).stderr)
+    const stderr = (rejection as { stderr: string }).stderr
     expect(stderr).toContain("--mode 'autonomous'")
     expect(stderr).toContain("--source-event-id 'event-1'")
     expect(stderr).toContain("--work-outcome 'failure'")

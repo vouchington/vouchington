@@ -11,7 +11,7 @@ import {
 import { STRIPE_REVERSAL_CONCURRENCY } from '../ineligible-stripe-purchase-reversal-provider-policy.mts'
 import { StripeReversalRefundDeferredError } from '../ineligible-stripe-purchase-reversal-targets.mts'
 import type { ClaimedIneligiblePurchaseReversals } from '../ineligible-stripe-purchase-reversal-types.mts'
-import type { IneligibleStripePurchaseOperations } from '../reverse-ineligible-stripe-purchase.mts'
+import type { IneligibleStripePurchaseOperations } from '../reverse-ineligible-stripe-purchase-types.mts'
 
 export async function executeIneligibleStripePurchaseReversal(
   claim: ClaimedIneligiblePurchaseReversals,

@@ -46,7 +46,7 @@ describe('handler.cache-format', () => {
   ): APIGatewayProxyEvent {
     const base64url = toBase64Url(url)
     return {
-      path: `/sideload/${base64url}`,
+      path: `/sideload/v2/${base64url}`,
       pathParameters: { base64url },
       queryStringParameters: params,
       headers,

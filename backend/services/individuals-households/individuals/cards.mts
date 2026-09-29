@@ -121,7 +121,7 @@ export async function updateIndividualCardById(
     }
   }
   if (data.is_authorized_user !== undefined) {
-    sets.push(`is_authorized_user = $${values.push(!!data.is_authorized_user)}`)
+    sets.push(`is_authorized_user = $${values.push(data.is_authorized_user)}`)
   }
   if (data.authorized_user_of_id !== undefined) {
     const value = data.authorized_user_of_id || null

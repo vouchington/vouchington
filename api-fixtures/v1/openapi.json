@@ -3418,13 +3418,31 @@
                         "additionalProperties": false,
                         "properties": {
                           "rationale": {
-                            "type": "string"
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
                           },
                           "recommendation": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "state": {
+                            "enum": ["completed", "failed", "pending"],
                             "type": "string"
                           }
                         },
-                        "required": ["rationale", "recommendation"],
+                        "required": ["rationale", "recommendation", "state"],
                         "type": "object"
                       },
                       {
@@ -3640,6 +3658,10 @@
           "work_description"
         ],
         "type": "object"
+      },
+      "CopyrightStaffDisposition": {
+        "enum": ["maintain", "revoke"],
+        "type": "string"
       },
       "CopyrightStaffEmailIntake": {
         "additionalProperties": false,
@@ -3861,6 +3883,22 @@
           }
         },
         "required": ["copyright_notices", "page_info"],
+        "type": "object"
+      },
+      "CopyrightTerritorialPolicyApproval": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "jurisdiction": {
+            "$ref": "#/components/schemas/TerritorialCopyrightJurisdiction"
+          },
+          "policy_version": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "jurisdiction", "policy_version"],
         "type": "object"
       },
       "Country": {
@@ -5996,6 +6034,161 @@
           }
         },
         "required": ["message"],
+        "type": "object"
+      },
+      "EuCopyrightAcknowledgment": {
+        "additionalProperties": false,
+        "properties": {
+          "acknowledged_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "attempt_count": {
+            "type": "number"
+          },
+          "escalated": {
+            "type": "boolean"
+          },
+          "exhausted_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_attempt_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "acknowledged_at",
+          "attempt_count",
+          "escalated",
+          "exhausted_at",
+          "id",
+          "last_attempt_at"
+        ],
+        "type": "object"
+      },
+      "EuCopyrightRedressDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "decided_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "staff_disposition": {
+            "$ref": "#/components/schemas/CopyrightStaffDisposition"
+          }
+        },
+        "required": ["decided_at", "id", "staff_disposition"],
+        "type": "object"
+      },
+      "EuCopyrightRedressRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "is_duplicate": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "is_duplicate"],
+        "type": "object"
+      },
+      "EuCopyrightStatementOfReasons": {
+        "additionalProperties": false,
+        "properties": {
+          "automation_disclosure": {
+            "const": "human"
+          },
+          "decided_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["automation_disclosure", "decided_at", "id"],
+        "type": "object"
+      },
+      "EuCopyrightSupervisedComplaint": {
+        "additionalProperties": false,
+        "properties": {
+          "escalation_id": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["escalation_id", "id"],
+        "type": "object"
+      },
+      "EuCopyrightTransparencyReport": {
+        "additionalProperties": false,
+        "properties": {
+          "escalation_count": {
+            "type": "number"
+          },
+          "id": {
+            "type": "string"
+          },
+          "period_ended_at": {
+            "type": "string"
+          },
+          "period_started_at": {
+            "type": "string"
+          },
+          "receipt_count": {
+            "type": "number"
+          },
+          "redress_decision_count": {
+            "type": "number"
+          },
+          "redress_request_count": {
+            "type": "number"
+          },
+          "statement_of_reasons_count": {
+            "type": "number"
+          },
+          "supervised_complaint_count": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "escalation_count",
+          "id",
+          "period_ended_at",
+          "period_started_at",
+          "receipt_count",
+          "redress_decision_count",
+          "redress_request_count",
+          "statement_of_reasons_count",
+          "supervised_complaint_count"
+        ],
         "type": "object"
       },
       "ExactTopic": {
@@ -17758,6 +17951,38 @@
         "required": ["evidence"],
         "type": "object"
       },
+      "TerritorialCopyrightJurisdiction": {
+        "enum": ["eu_dsa", "uk"],
+        "type": "string"
+      },
+      "TerritorialCopyrightNoticeReceipt": {
+        "additionalProperties": false,
+        "properties": {
+          "acknowledgment_id": {
+            "type": "string"
+          },
+          "is_duplicate": {
+            "type": "boolean"
+          },
+          "notice_id": {
+            "type": "string"
+          },
+          "receipt_id": {
+            "type": "string"
+          },
+          "route_destination": {
+            "const": "staff_queue"
+          }
+        },
+        "required": [
+          "acknowledgment_id",
+          "is_duplicate",
+          "notice_id",
+          "receipt_id",
+          "route_destination"
+        ],
+        "type": "object"
+      },
       "TopHashtag": {
         "additionalProperties": false,
         "properties": {
@@ -18422,6 +18647,104 @@
           }
         },
         "required": ["page_info", "referral_programs"],
+        "type": "object"
+      },
+      "UkCopyrightAcknowledgment": {
+        "additionalProperties": false,
+        "properties": {
+          "acknowledged_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "attempt_count": {
+            "type": "number"
+          },
+          "escalated": {
+            "type": "boolean"
+          },
+          "exhausted_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_attempt_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "acknowledged_at",
+          "attempt_count",
+          "escalated",
+          "exhausted_at",
+          "id",
+          "last_attempt_at"
+        ],
+        "type": "object"
+      },
+      "UkCopyrightRedressDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "decided_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "staff_disposition": {
+            "$ref": "#/components/schemas/CopyrightStaffDisposition"
+          }
+        },
+        "required": ["decided_at", "id", "staff_disposition"],
+        "type": "object"
+      },
+      "UkCopyrightRedressRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "is_duplicate": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "is_duplicate"],
+        "type": "object"
+      },
+      "UkCopyrightReview": {
+        "additionalProperties": false,
+        "properties": {
+          "automation_disclosure": {
+            "const": "human"
+          },
+          "id": {
+            "type": "string"
+          },
+          "reviewed_at": {
+            "type": "string"
+          }
+        },
+        "required": ["automation_disclosure", "id", "reviewed_at"],
         "type": "object"
       },
       "UnmappedCategory": {
@@ -36338,6 +36661,347 @@
         }
       }
     },
+    "/api/v1/copyright-eu-notices": {
+      "post": {
+        "operationId": "post_api_v1_copyright-eu-notices",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "acknowledgment": {
+                      "$ref": "#/components/schemas/EuCopyrightAcknowledgment"
+                    },
+                    "copyright_eu_notice": {
+                      "$ref": "#/components/schemas/TerritorialCopyrightNoticeReceipt"
+                    }
+                  },
+                  "required": ["acknowledgment", "copyright_eu_notice"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "acknowledgment": {
+                      "$ref": "#/components/schemas/EuCopyrightAcknowledgment"
+                    },
+                    "copyright_eu_notice": {
+                      "$ref": "#/components/schemas/TerritorialCopyrightNoticeReceipt"
+                    }
+                  },
+                  "required": ["acknowledgment", "copyright_eu_notice"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-eu-notices/{id}/acknowledgment-failures": {
+      "post": {
+        "operationId": "post_api_v1_copyright-eu-notices_id_acknowledgment-failures",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "acknowledgment": {
+                      "$ref": "#/components/schemas/EuCopyrightAcknowledgment"
+                    }
+                  },
+                  "required": ["acknowledgment"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-eu-notices/{id}/redress-requests": {
+      "post": {
+        "operationId": "post_api_v1_copyright-eu-notices_id_redress-requests",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_eu_redress_request": {
+                      "$ref": "#/components/schemas/EuCopyrightRedressRequest"
+                    }
+                  },
+                  "required": ["copyright_eu_redress_request"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_eu_redress_request": {
+                      "$ref": "#/components/schemas/EuCopyrightRedressRequest"
+                    }
+                  },
+                  "required": ["copyright_eu_redress_request"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-eu-notices/{id}/redress-requests/{redressId}/decisions": {
+      "post": {
+        "operationId": "post_api_v1_copyright-eu-notices_id_redress-requests_redressId_decisions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "redressId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_eu_redress_decision": {
+                      "$ref": "#/components/schemas/EuCopyrightRedressDecision"
+                    }
+                  },
+                  "required": ["copyright_eu_redress_decision"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-eu-notices/{id}/statements-of-reasons": {
+      "post": {
+        "operationId": "post_api_v1_copyright-eu-notices_id_statements-of-reasons",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_eu_statement_of_reasons": {
+                      "$ref": "#/components/schemas/EuCopyrightStatementOfReasons"
+                    }
+                  },
+                  "required": ["copyright_eu_statement_of_reasons"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-eu-notices/{id}/supervised-complaints": {
+      "post": {
+        "operationId": "post_api_v1_copyright-eu-notices_id_supervised-complaints",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_eu_supervised_complaint": {
+                      "$ref": "#/components/schemas/EuCopyrightSupervisedComplaint"
+                    }
+                  },
+                  "required": ["copyright_eu_supervised_complaint"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-eu-reports": {
+      "post": {
+        "operationId": "post_api_v1_copyright-eu-reports",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_eu_report": {
+                      "$ref": "#/components/schemas/EuCopyrightTransparencyReport"
+                    }
+                  },
+                  "required": ["copyright_eu_report"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/copyright-form-intakes/{id}/reviews": {
       "post": {
         "operationId": "post_api_v1_copyright-form-intakes_id_reviews",
@@ -37107,6 +37771,285 @@
         }
       }
     },
+    "/api/v1/copyright-notices/{id}/guest-capabilities": {
+      "post": {
+        "operationId": "post_api_v1_copyright-notices_id_guest-capabilities",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "expires_at": {
+                    "type": "string"
+                  }
+                },
+                "required": ["expires_at"],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_guest_capability": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "expires_at": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "token": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["expires_at", "id", "token"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_guest_capability"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-notices/{id}/guest-capabilities/{capabilityId}/information-requests": {
+      "post": {
+        "operationId": "post_api_v1_copyright-notices_id_guest-capabilities_capabilityId_information-requests",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "capabilityId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "statement": {
+                    "type": "string"
+                  }
+                },
+                "required": ["statement"],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_correspondence": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_correspondence"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-notices/{id}/guest-capabilities/{capabilityId}/revocation": {
+      "post": {
+        "operationId": "post_api_v1_copyright-notices_id_guest-capabilities_capabilityId_revocation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "capabilityId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_guest_capability": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "revoked_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "revoked_at"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_guest_capability"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-notices/{id}/guest-filings": {
+      "post": {
+        "operationId": "post_api_v1_copyright-notices_id_guest-filings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Raw case capability token. Mail and other-case tokens are not accepted.",
+            "in": "header",
+            "name": "Copyright-Guest-Capability",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "cf_turnstile_response": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "kind": {
+                    "enum": ["court_or_ccb_hold", "supplement", "withdrawal"],
+                    "type": "string"
+                  },
+                  "statement": {
+                    "type": "string"
+                  }
+                },
+                "required": ["cf_turnstile_response", "kind", "statement"],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_submission": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "enum": ["court_or_ccb_hold", "supplement", "withdrawal"],
+                          "type": "string"
+                        },
+                        "received_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "kind", "received_at"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_submission"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/copyright-notices/{id}/participant": {
       "get": {
         "operationId": "get_api_v1_copyright-notices_id_participant",
@@ -37755,6 +38698,345 @@
                     }
                   },
                   "required": ["copyright_legal_hold_assessment"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-territorial-policies": {
+      "post": {
+        "operationId": "post_api_v1_copyright-territorial-policies",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_territorial_policy": {
+                      "$ref": "#/components/schemas/CopyrightTerritorialPolicyApproval"
+                    }
+                  },
+                  "required": ["copyright_territorial_policy"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-territorial-policies/{id}/withdrawals": {
+      "post": {
+        "operationId": "post_api_v1_copyright-territorial-policies_id_withdrawals",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_territorial_policy_withdrawal": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_territorial_policy_withdrawal"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-uk-notices": {
+      "post": {
+        "operationId": "post_api_v1_copyright-uk-notices",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "acknowledgment": {
+                      "$ref": "#/components/schemas/UkCopyrightAcknowledgment"
+                    },
+                    "copyright_uk_notice": {
+                      "$ref": "#/components/schemas/TerritorialCopyrightNoticeReceipt"
+                    }
+                  },
+                  "required": ["acknowledgment", "copyright_uk_notice"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "acknowledgment": {
+                      "$ref": "#/components/schemas/UkCopyrightAcknowledgment"
+                    },
+                    "copyright_uk_notice": {
+                      "$ref": "#/components/schemas/TerritorialCopyrightNoticeReceipt"
+                    }
+                  },
+                  "required": ["acknowledgment", "copyright_uk_notice"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-uk-notices/{id}/acknowledgment-failures": {
+      "post": {
+        "operationId": "post_api_v1_copyright-uk-notices_id_acknowledgment-failures",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "acknowledgment": {
+                      "$ref": "#/components/schemas/UkCopyrightAcknowledgment"
+                    }
+                  },
+                  "required": ["acknowledgment"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-uk-notices/{id}/redress-requests": {
+      "post": {
+        "operationId": "post_api_v1_copyright-uk-notices_id_redress-requests",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_uk_redress_request": {
+                      "$ref": "#/components/schemas/UkCopyrightRedressRequest"
+                    }
+                  },
+                  "required": ["copyright_uk_redress_request"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_uk_redress_request": {
+                      "$ref": "#/components/schemas/UkCopyrightRedressRequest"
+                    }
+                  },
+                  "required": ["copyright_uk_redress_request"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-uk-notices/{id}/redress-requests/{redressId}/decisions": {
+      "post": {
+        "operationId": "post_api_v1_copyright-uk-notices_id_redress-requests_redressId_decisions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "redressId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_uk_redress_decision": {
+                      "$ref": "#/components/schemas/UkCopyrightRedressDecision"
+                    }
+                  },
+                  "required": ["copyright_uk_redress_decision"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-uk-notices/{id}/reviews": {
+      "post": {
+        "operationId": "post_api_v1_copyright-uk-notices_id_reviews",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record_string_unknown"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_uk_review": {
+                      "$ref": "#/components/schemas/UkCopyrightReview"
+                    }
+                  },
+                  "required": ["copyright_uk_review"],
                   "type": "object"
                 }
               }

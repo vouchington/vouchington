@@ -1,24 +1,7 @@
-# Web Server API Helpers
+# Server API helpers
 
-Server-side GET helpers in this directory are `React.cache`-wrapped at the module boundary.
-
-All direct server-to-backend requests must use `ServerRequest` or
-`buildWebClientInfoHeaders()` so the backend receives invariant web client/platform/release
-metadata. Per-call headers must not override that identity.
-
-## Missing Entities
-
-- Nullable `get*` helpers that call `serverApi.get()` must wrap that request with
-  `returnNullForMissingEntity()`.
-- `returnNullForMissingEntity()` defaults to 404-only. Do not treat 403 as missing for main route
-  data; let it propagate so Next.js can render a 403 before streaming starts.
-- Optional/degraded panels may pass `nullStatusCodes: [403, 404]` at the call site, but the opt-in
-  must stay local to the optional UI.
-- Do not use `.catch(() => null)` or other catch-all null handling. Only expected missing-entity
-  statuses should become `null`; unrelated errors must propagate to error boundaries.
-- Top-level list/search helpers that intentionally return non-null response bodies should let errors
-  propagate unless a route-level caller explicitly wraps them.
-- Route layouts await critical data before starting optional panels, which may degrade locally with
-  explicit expected status codes.
-
-This is enforced by `ast-grep-rules/server-entity-fetch-return-null.yml`.
+- GET helpers are React-cached at module boundaries; avoid duplicate caching.
+- Direct backend requests use `ServerRequest` or `buildWebClientInfoHeaders()`; per-call headers never override web client/platform/release identity.
+- Nullable `get*` wrappers around `serverApi.get()` use `returnNullForMissingEntity()` (enforced by `server-entity-fetch-return-null.yml`). Default is 404-only; main-route 403s propagate before streaming.
+- Optional/degraded panels may opt into `nullStatusCodes: [403, 404]` locally. Never catch-all to null; unrelated failures reach error boundaries.
+- Non-null list/search helpers propagate errors unless explicitly wrapped by a route caller. Layouts await critical data before optional panels degrade under explicit status codes.

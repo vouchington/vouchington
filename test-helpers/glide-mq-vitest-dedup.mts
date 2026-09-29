@@ -26,7 +26,7 @@ function getDedupEntries(queueName: string): Map<string, DedupEntry> {
   return entries
 }
 
-function isReferencedJobNonTerminal(queue: TestQueue<any, any>, jobId: string | null): boolean {
+function isReferencedJobNonTerminal(queue: TestQueue, jobId: string | null): boolean {
   // A pending reservation (no job id yet) stands in for a non-terminal job: the add it reserved
   // for hasn't resolved yet, so a concurrent caller must still see it as in flight.
   if (jobId === null) return true
@@ -43,7 +43,7 @@ function isReferencedJobNonTerminal(queue: TestQueue<any, any>, jobId: string | 
  * stored dedup entry is non-terminal. Production's `debounce` additionally cancels and replaces a
  * referenced job that is `'delayed'`/`'prioritized'`, but that branch is unreachable here — TestQueue
  * never produces those states (delay is accepted but ignored, and there is no priority-based
- * scheduling in testing mode; see backend/test-helpers/examples.glide-mq-testing.md). So `debounce`
+ * scheduling in testing mode; see docs/development/testing/backend/glide-mq-testing.md). So `debounce`
  * degenerates to `simple`'s pure state-gating.
  *
  * `throttle` ignores job state entirely and only compares elapsed time against `ttl` — this is
@@ -65,7 +65,7 @@ function isReferencedJobNonTerminal(queue: TestQueue<any, any>, jobId: string | 
  * callers racing on the same dedup id (e.g. `Promise.all`) would both read no entry and both proceed.
  */
 export function shouldSkipDedup(
-  queue: TestQueue<any, any>,
+  queue: TestQueue,
   deduplication: DeduplicationOptions | undefined,
   timestamp: number,
 ): boolean {
@@ -87,7 +87,7 @@ export function shouldSkipDedup(
  * add resolves.
  */
 export function reserveDedup(
-  queue: TestQueue<any, any>,
+  queue: TestQueue,
   deduplication: DeduplicationOptions | undefined,
   timestamp: number,
   hadDelay: boolean,
@@ -98,7 +98,7 @@ export function reserveDedup(
 
 /** Finalize a reservation once `queue.add()` resolves with the real job id. */
 export function recordDedup(
-  queue: TestQueue<any, any>,
+  queue: TestQueue,
   deduplication: DeduplicationOptions | undefined,
   jobId: string,
   timestamp: number,

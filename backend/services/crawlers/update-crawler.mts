@@ -115,7 +115,7 @@ export const updateCrawlerCssSelectorsByHostname = async (
     queryOptions,
   )
 
-  return Number(rowCount || 0) > 0
+  return (rowCount ?? 0) > 0
 }
 
 function resolveUpdateHostnameId(updates: UpdateCrawlerUpdates): string | undefined {

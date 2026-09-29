@@ -8,10 +8,7 @@ import {
 } from '@data-stores/valkey-glide-mq'
 import { getAggregatedQueueMetricStats } from './get-queue-stats.mts'
 
-vi.mock<typeof import('glide-mq')>(
-  import('glide-mq'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('queue metric ordering through real GlideMQ', () => {
   it('returns waiting jobs oldest-first so the bounded metric read selects the oldest job', async () => {

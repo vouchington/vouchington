@@ -36,7 +36,7 @@ export type TestQueueFlushDiagnostics = {
  * timeout error it was meant to enrich.
  */
 export function captureFlushDiagnostics(
-  queue: TestQueue<any, any>,
+  queue: TestQueue,
   pendingJobIds: readonly string[],
 ): TestQueueFlushDiagnostics {
   try {

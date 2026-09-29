@@ -31,7 +31,7 @@ async function runDigestBatchForUser(userId: string, input: DigestInput) {
     (value, offset, index) => `${value.slice(0, offset + index)}-${value.slice(offset + index)}`,
     previous,
   )
-  return await createCommunityActivityDigestBatch({ ...input, afterUserId })
+  return createCommunityActivityDigestBatch({ ...input, afterUserId })
 }
 
 describe('community activity digest', () => {

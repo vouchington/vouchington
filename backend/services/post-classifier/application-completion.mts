@@ -87,5 +87,5 @@ async function hasCompletedPostClassifierApplication(
       AND shared_actor_id = ${lease.resolved.configuration.actorId}
       AND decision_batch_id IS NOT DISTINCT FROM ${lease.decisionBatchId}
   `)
-  return rows[0]?.completed === true
+  return rows[0]?.completed ?? false
 }

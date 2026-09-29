@@ -36,7 +36,7 @@ function hasDeadLetterJob(queueName: string, originalJobId: string): boolean {
 }
 
 function inspectJobs(
-  queue: TestQueue<any, any>,
+  queue: TestQueue,
   jobIds: string[],
   expectedDeadLetterJobIds: Set<string>,
 ): string[] {
@@ -69,7 +69,7 @@ function inspectJobs(
  * intentional rather than a bug in itself (it becomes one only when nothing ever attaches a worker).
  */
 export function flushJobs(
-  queue: TestQueue<any, any>,
+  queue: TestQueue,
   jobIds: string[],
   expectedDeadLetterJobIds: Set<string>,
   flushTimeoutMs = DEFAULT_FLUSH_TIMEOUT_MS,
@@ -90,6 +90,7 @@ export function flushJobs(
       settled = true
       if (kickTimer !== undefined) clearTimeout(kickTimer)
       for (const unsubscribe of unsubscribers) unsubscribe()
+      // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- preserves the original queue-inspection failure for test diagnostics
       if (error) reject(error)
       else resolve()
     }

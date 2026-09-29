@@ -194,7 +194,7 @@ export const nativeDomainUrlApiFixtureCases: ApiFixtureCase[] = [
       pathParams: { id: 'url-1' },
     },
     auth: 'fixture-admin',
-    migratedFrom: ['backend/api/v1/urls/README.md'],
+    migratedFrom: ['docs/requirements/api/v1/urls/README.md'],
     body: { success: true, message: 'Crawl enqueued', target: 'html_url', enqueued_count: 1 },
   },
 ]

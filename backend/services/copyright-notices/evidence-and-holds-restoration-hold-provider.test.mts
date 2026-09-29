@@ -8,7 +8,7 @@ import {
   getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
 } from './index.mts'
-import { type createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import type { createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
 import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
 
 describe('late legal-hold edge publication', () => {
@@ -96,7 +96,7 @@ async function appendLateHold(
     submittedByUserId: null,
     bodyCiphertext: `late-hold-${crypto.randomUUID()}`,
   })
-  return await appendCopyrightLegalHoldAssessment({
+  return appendCopyrightLegalHoldAssessment({
     currentUser: restored.moderator,
     submissionId: submission.id,
     assessedAt: new Date(restored.restorationAt.getTime() + 60_000),

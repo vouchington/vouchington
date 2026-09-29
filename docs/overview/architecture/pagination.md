@@ -71,7 +71,7 @@ and unenforced top-N product expectations are not exemptions.
   `idx_conv_participants__conversation_user`; decorrelating into a participant-driven join would
   require sorting the inbox after membership lookup and fails the seeded plan gate.
 
-The backend implementation owner is [`@modules/pagination`](../../../backend/modules/pagination/README.md),
+The backend implementation owner is [`@modules/pagination`](backend/modules/pagination/README.md),
 which adapts generic cursor primitives from `@vouchington/pagination` to Voucha's snake_case
 response and filter contracts.
 SQL `OFFSET` remains prohibited by the existing `no-sql-offset` AST-grep rule.

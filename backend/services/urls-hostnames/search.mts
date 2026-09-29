@@ -1,22 +1,10 @@
 import { read } from '@data-stores/psql'
 import { buildPageInfo, decodeUuidCursor, isNameCursor } from '@modules/pagination'
-import type { PageInfo } from '@voucha/api/types'
+import type { PageInfo } from '@voucha/types/pagination'
 import { buildSearchUrlHostnamesQuery } from './search-query.mts'
 import type { ViewHostname } from './types.mts'
-
-export type SearchUrlHostnamesOptions = {
-  query?: string
-  hostname?: string
-  topic_id?: string
-  topic_ids?: string[]
-  topic_match?: 'any' | 'all'
-  include_descendants?: boolean
-  blocked?: boolean | number | string
-  crawlable?: boolean | number | string
-  limit?: number
-  sort?: 'trust'
-  after?: string
-}
+import type { SearchUrlHostnamesOptions } from './search-types.mts'
+export type { SearchUrlHostnamesOptions } from './search-types.mts'
 
 export const searchUrlHostnames = async (
   options: SearchUrlHostnamesOptions = {},

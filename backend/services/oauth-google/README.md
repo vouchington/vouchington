@@ -1,15 +1,3 @@
 # @services/oauth-google
 
-Google OAuth provider — verifies Google credential JWTs and upserts OAuth accounts.
-
-## Key exports
-
-- `upsertGoogleAccount(credential, options)` — verifies the Google ID token (signature, expiry, issuer, audience) and upserts the OAuth account record
-- `getGoogleAccountByGoogleUserId(googleUserId)` — retrieves an OAuth account by the Google user identifier
-
-## Related
-
-- Parent: [../AGENTS.md](../AGENTS.md)
-- OAuth service: [../oauth/README.md](../oauth/README.md)
-- Auth overview: [../../../docs/overview/architecture/auth-overview.md](../../../docs/overview/architecture/auth-overview.md)
-- Auth requirements: [../../../docs/requirements/security/AUTH.md](../../../docs/requirements/security/AUTH.md)
+The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/services/oauth-google/README.md).

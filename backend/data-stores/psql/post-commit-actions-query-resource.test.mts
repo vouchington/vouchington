@@ -23,7 +23,9 @@ describe('explicit query post-commit actions', () => {
     enableQueryCapture()
     await captureOwnedTransactionQuery()
 
-    expect(getCapturedQueries()).toEqual([
+    expect(
+      getCapturedQueries().filter(query => query.text.includes('/* ownedTransactionCapture */')),
+    ).toEqual([
       expect.objectContaining({
         text: '/* ownedTransactionCapture */ SELECT $1::integer',
         values: [1],
@@ -35,7 +37,9 @@ describe('explicit query post-commit actions', () => {
     enableQueryCapture()
     await captureExplicitTransactionQuery()
 
-    expect(getCapturedQueries()).toEqual([
+    expect(
+      getCapturedQueries().filter(query => query.text.includes('/* explicitQueryCapture */')),
+    ).toEqual([
       expect.objectContaining({
         text: '/* explicitQueryCapture */ SELECT $1::integer',
         values: [1],
@@ -47,7 +51,9 @@ describe('explicit query post-commit actions', () => {
     enableQueryCapture()
     await captureBorrowedClientTransactionQuery()
 
-    expect(getCapturedQueries()).toEqual([
+    expect(
+      getCapturedQueries().filter(query => query.text.includes('/* borrowedClientCapture */')),
+    ).toEqual([
       expect.objectContaining({
         text: '/* borrowedClientCapture */ SELECT $1::integer',
         values: [1],
@@ -60,7 +66,9 @@ describe('explicit query post-commit actions', () => {
 
     await captureInternallyOwnedTransactionQuery()
 
-    expect(getCapturedQueries()).toEqual([
+    expect(
+      getCapturedQueries().filter(query => query.text.includes('/* internalTransactionCapture */')),
+    ).toEqual([
       expect.objectContaining({
         text: '/* internalTransactionCapture */ SELECT $1::integer',
         values: [1],

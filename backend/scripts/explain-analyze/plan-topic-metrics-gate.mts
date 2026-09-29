@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const TOPIC_METRICS_SCENARIO = 'topic-metrics-batch'
 const DEFAULT_SOURCE_ROW_CEILING = 5_000
@@ -28,8 +29,8 @@ export function assertTopicMetricsBatchIsCandidateBounded(result: ExplainResult)
   const nodes = collectPlanNodes(result.plan)
   const correlatedSubplan = nodes.find(
     node =>
-      String(node['Subplan Name'] ?? '').startsWith('SubPlan') &&
-      String(node['Node Type'] ?? '').includes('Aggregate'),
+      stringFromUnknown(node['Subplan Name'] ?? '').startsWith('SubPlan') &&
+      stringFromUnknown(node['Node Type'] ?? '').includes('Aggregate'),
   )
   if (correlatedSubplan) {
     throw new Error(
@@ -64,7 +65,7 @@ export function assertTopicMetricsBatchIsCandidateBounded(result: ExplainResult)
 }
 
 function baseRelationName(node: PlanNode): string {
-  return String(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
+  return stringFromUnknown(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
 }
 
 function collectPlanNodes(value: unknown, nodes: PlanNode[] = []): PlanNode[] {

@@ -87,7 +87,7 @@ export function enqueueRssStoryTriggerRecovery(after?: string): EnqueueReturnTyp
 }
 
 export async function enqueueAllEmbeddingReconciliationRoots(): Promise<unknown[]> {
-  return await Promise.all([
+  return Promise.all([
     enqueueReconcileExistingEmbeddings('topics'),
     enqueueReconcileExistingEmbeddings('posts'),
     enqueueReconcileExistingEmbeddings('rss_feed_items'),

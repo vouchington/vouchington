@@ -34,9 +34,13 @@ export function withProviderOperationTimeout<T>(
 }
 
 function raceOperationWithAbort<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
-  if (signal.aborted) return Promise.reject(signal.reason)
+  if (signal.aborted) {
+    // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- AbortSignal.reason is an arbitrary caller-provided value and must be preserved.
+    return Promise.reject(signal.reason)
+  }
   let removeAbortListener = () => {}
   const aborted = new Promise<never>((_resolve, reject) => {
+    // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Preserve the exact AbortSignal.reason for callers.
     const onAbort = () => reject(signal.reason)
     signal.addEventListener('abort', onAbort, { once: true })
     removeAbortListener = () => signal.removeEventListener('abort', onAbort)

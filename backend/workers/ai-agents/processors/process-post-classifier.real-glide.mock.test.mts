@@ -33,6 +33,7 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/application-service'
 import { setPostClassifierToggleForTest } from '@voucha/test-helpers/entities/post-classifier-toggles'
 import { processPostClassifier } from './process-post-classifier.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 vi.mock<typeof import('@modules/structured-decisions/transport')>(
   import('@modules/structured-decisions/transport'),
@@ -146,7 +147,9 @@ describe('post classifier processor (real GlideMQ)', () => {
     }
     const request = vi.mocked(fetchStructuredDecisionProvider)
     request.mockImplementation(async (_url, init) => {
-      const body = JSON.parse(String(init?.body)) as { questions: Record<string, unknown> }
+      const body = JSON.parse(stringFromUnknown(init?.body)) as {
+        questions: Record<string, unknown>
+      }
       expect(Object.keys(body.questions)).toHaveLength(10)
       return Response.json({
         id: `decision-${randomUUID()}`,

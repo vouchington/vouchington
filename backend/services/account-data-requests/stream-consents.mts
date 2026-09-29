@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 
 /** Streams consent records for the given user (GDPR PII). */
 export function streamConsents(userId: string) {
-  return createAsyncGeneratorFromCursor<Record<string, unknown>>(sql`/* streamConsents */
+  return createAsyncGeneratorFromCursor(sql`/* streamConsents */
     SELECT
       id,
       consent_type,
@@ -18,9 +18,7 @@ export function streamConsents(userId: string) {
 
 /** Streams referral attribution rows for the given user. */
 export function streamReferralAttributions(userId: string) {
-  return createAsyncGeneratorFromCursor<
-    Record<string, unknown>
-  >(sql`/* streamReferralAttributions */
+  return createAsyncGeneratorFromCursor(sql`/* streamReferralAttributions */
     SELECT
       id,
       session_id,

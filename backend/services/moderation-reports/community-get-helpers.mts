@@ -1,7 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { BAN_EVASION_SYSTEM_USERNAME } from '@services/users/constants'
-import type { PendingModerationReport } from './get.mts'
+import type { PendingModerationReport } from './pending-moderation-report.mts'
 import type { ModerationReportCursor, ModerationReportSort } from './sort-sql.mts'
 
 export function sortMergedReports(

@@ -111,6 +111,14 @@ parents are generated from `entityRelationMetadatum`; do not duplicate either li
 uses RANGE by relation ID. Both keys are required for full two-level pruning. Voter-only maintenance
 and export intentionally fan out and rely on local `user_id` indexes.
 
+The [isolated EXPLAIN pruning proof](../../development/postgresql/explain-analyze/README.md#explicit-range-pruning)
+uses a disposable migrated sibling database with two populated explicit ranges and the default
+for review ratings, conversation messages, and relation votes. Actual review, conversation, and
+vote-stat service calls must execute only their target leaves in forced custom and generic plans.
+The vote-stat batch binds both the exact target set and its UUID range bounds because joining
+only that id list did not prune nested RANGE children. This is query evidence for retaining the
+current production default-only layout until growth or measured pressure warrants explicit ranges.
+
 `web_push_endpoint_owners` is intentionally unpartitioned: its SHA-256 endpoint key is the global
 serialization and uniqueness point across the user-partitioned `web_push_subscriptions` table.
 `notification_push_intent_subscription_receipts` retains delivery outcomes by exact subscription
@@ -132,6 +140,11 @@ a stronger invariant. The typed registry owns the rationale and trigger.
 - Audit and workflow history: `admin_import_batches`, `admin_import_rows`,
   `activitypub_distribution_checkpoints`, `ap_inbox_activities`,
   `community_activity_digest_dispatch_windows`, `community_agent_prompt_changes`,
+  `copyright_eu_escalations`, `copyright_eu_notice_acknowledgments`,
+  `copyright_eu_notice_receipts`, `copyright_eu_notice_routings`,
+  `copyright_eu_redress_decisions`, `copyright_eu_redress_requests`,
+  `copyright_eu_statements_of_reasons`, `copyright_eu_supervised_complaints`,
+  `copyright_eu_transparency_reports`,
   `copyright_legal_hold_restrictions`, `copyright_notice_action_intents`,
   `copyright_notice_appeal_recommendations`,
   `copyright_notice_appeal_reviews`, `copyright_notice_correspondence_messages`,
@@ -147,19 +160,37 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_notice_email_intakes`, `copyright_notice_email_thread_references`,
   `copyright_notice_evidence_artifacts`,
   `copyright_notice_form_intake_reviews`, `copyright_notice_form_intakes`,
-  `copyright_notice_form_screenings`,
+  `copyright_notice_form_screening_executions`, `copyright_notice_form_screenings`,
+  `copyright_evidence_retention_disposition_artifacts`,
+  `copyright_evidence_retention_disposition_email_intakes`,
+  `copyright_evidence_retention_dispositions`,
+  `copyright_evidence_retention_policies`,
+  `copyright_evidence_retention_preview_artifacts`,
+  `copyright_evidence_retention_preview_blocks`,
+  `copyright_evidence_retention_preview_email_intakes`,
+  `copyright_evidence_retention_previews`,
+  `copyright_notice_closures`,
+  `copyright_notice_guest_capabilities`,
   `copyright_notice_legal_hold_assessments`, `copyright_notice_legal_hold_assessment_targets`,
   `copyright_notice_legal_hold_resolutions`,
   `copyright_notice_lifecycle_events`,
   `copyright_notice_submission_assessments`, `copyright_notice_submission_requests`,
   `copyright_notice_submission_targets`, `copyright_notice_submissions`,
-  `copyright_notice_target_images`, `copyright_notice_targets`, `copyright_notices`,
+  `copyright_notice_target_images`, `copyright_notice_targets`,
+  `copyright_notice_urgent_filings`, `copyright_notices`,
   `copyright_repeat_infringer_dispositions`, `copyright_repeat_infringer_incidents`,
   `copyright_repeat_infringer_reviews`,
-  `copyright_restrictions`,
+  `copyright_restrictions`, `copyright_staff_alert_acknowledgements`,
+  `copyright_staff_alert_policies`, `copyright_staff_alerts`,
+  `copyright_territorial_policy_approvals`, `copyright_territorial_policy_withdrawals`,
+  `copyright_uk_escalations`, `copyright_uk_notice_acknowledgments`,
+  `copyright_uk_notice_receipts`, `copyright_uk_notice_routings`,
+  `copyright_uk_redress_decisions`, `copyright_uk_redress_requests`,
+  `copyright_uk_reviews`,
   `crm_contact_lifecycle_changes`,
   `dynamic_config_change_logs`, `follower_distribution_deliveries`, `follower_distributions`,
   `identity_verification_attempts`, `media_delivery_registry_records`,
+  `og_dependency_manifest_placements`, `og_dependency_manifests`,
   `membership_administrator_refund_operation_requests`,
   `membership_changes`, `membership_entitlement_effects`,
   `membership_ineligible_purchase_reversal_refund_observations`,
@@ -187,7 +218,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
 - Publication identity snapshots: `post_publication_identity_snapshots` and
   `post_publication_identity_snapshot_keys`. Accepted receipts retain one exact snapshot per post;
   abandoned and superseded attempts are reclaimed by the bounded cyclic sweep in
-  [post-publication](../../../backend/services/post-publication/README.md). Snapshot and native key
+  [post-publication](services/post-publication/README.md). Snapshot and native key
   indexes keep pages selective; revisit partitioning under the registry's growth trigger while
   preserving globally unique receipt pointers and bounded reclamation.
 - Publication repair identities: `post_publication_post_identities` is UUIDv7 range-partitioned
@@ -195,7 +226,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   RSS feed, RSS item, topic alias, and story identity bridge tables retain only active work/key
   references; a cyclic raw-capped sweep reclaims unreferenced bridges. Their selective live-FK,
   work-scope, and retained-impact indexes support deletion and cleanup. See the
-  [publication ownership model](../../../backend/services/post-publication/README.md); reconsider
+  [publication ownership model](services/post-publication/README.md); reconsider
   non-post partitioning if that backlog invariant changes or measured planner/write pressure warrants it.
 - Notification push effects: `notification_push_intents` and
   `notification_push_intent_subscription_receipts`.
@@ -320,7 +351,7 @@ jonathanong/filaments#8750. The retention question is now
 settled too: anonymous (`user_id IS NULL`) rows are deleted after 30 days by
 `deleteOldReferralAttributionBatch()`, while user-linked rows are retained for the life of the
 account — `deleteUser` nulls `user_id`, which drops the row into the same 30-day sweep. See the
-[attribution service README](../../../backend/services/attribution/README.md#retention--dedup) for
+[attribution service README](services/attribution/README.md#retention--dedup) for
 the dedup/move-to-latest design that keeps the anonymous set bounded by traffic as well.
 
 A monthly-partition, partition-drop retention model is permanently off the table for this table:
@@ -339,6 +370,6 @@ partition-status API and `pg_total_relation_size()`.
 
 - [Partition Pruning Hints](partition-pruning-hints.md)
 - [Database Rules](../../../backend/data-stores/psql/AGENTS.md)
-- [PostgreSQL queue](../../../backend/queues/psql/README.md)
+- [PostgreSQL queue](queues/psql/README.md)
 - [RSS feed crawling](../../requirements/content/RSS-FEED-CRAWLING.md)
 - [PostgreSQL EXPLAIN ANALYZE prompt](../../prompts/scheduled/postgresql-explain-analyze.md) — recurring schema-growth classification audit against this policy.

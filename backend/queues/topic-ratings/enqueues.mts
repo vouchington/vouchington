@@ -31,7 +31,7 @@ export const enqueueBulkUpdateTopicRatingStatsForTopicId = (
   topicIds: string[],
   priority?: number,
 ): EnqueueReturnType => {
-  if (topicIds.length === 0) return
+  if (topicIds.length === 0) return Promise.resolve()
 
   return enqueueBulkUpdateTopicRatingStatsJobs(topicIds, {
     priority: priority ?? PRIORITY_DEFAULT,

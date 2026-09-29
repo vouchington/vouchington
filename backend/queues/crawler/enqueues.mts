@@ -3,6 +3,8 @@ import { CRAWL_URLS_QUEUE_NAME, PRIORITY_DEFAULT } from './config.mts'
 import { waitForCrawlUrlJobResult } from './enqueues/crawl-url-job-results.mts'
 import { crawlUrls } from './queues.mts'
 import type { CrawlerJobs, EnqueueCrawlerJobOptions, EnqueueCrawlUrlEntry } from './types.mts'
+import type { CrawlUrlJobResult } from './enqueues/crawl-url-job-result.mts'
+export type { CrawlUrlJobResult } from './enqueues/crawl-url-job-result.mts'
 
 type CrawlUrlBulkInput = EnqueueCrawlUrlEntry & {
   jobDelay?: number
@@ -19,12 +21,6 @@ const CRAWL_URL_JOB_RETRY_OPTIONS = {
 const PRIORITY_HIGHEST = 0
 const CRAWL_URL_WAIT_TIMEOUT_MS = 30_000
 const CRAWL_URL_WAIT_COMPLETED_RETENTION = { age: 60, count: 100 }
-
-export type CrawlUrlJobResult = {
-  url_id: string
-  crawl_id: string
-  response_status_code: number
-}
 
 const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
   CrawlUrlBulkInput,

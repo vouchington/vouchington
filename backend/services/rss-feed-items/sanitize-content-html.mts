@@ -1,6 +1,7 @@
 import { sanitizeRssHtml, sanitizeRssHtmlBatch } from '@jongleberry/vurst-html'
 import onError from '@modules/on-error'
 import { absolutizeSideloadImageSources } from '@modules/utils/absolute-sideload-html'
+import { CURRENT_SIDELOAD_PATH_PREFIX } from '@ts-shared/url-signing'
 import type { RssFeedItemToUpsert } from './types.mts'
 import { getSigningKeys } from './signing-keys.mts'
 
@@ -41,7 +42,7 @@ export async function sanitizeRssFeedItemContentHtml(
   try {
     const sanitized = await sanitizeRssHtml(Buffer.from(html, 'utf-8'), {
       proxyImages: true,
-      imageProxyUrlPrefix: '/sideload/',
+      imageProxyUrlPrefix: CURRENT_SIDELOAD_PATH_PREFIX,
       imageProxySigningKeys: getSigningKeys(),
     })
     const result = absolutizeSideloadImageSources(sanitized.html.toString('utf-8').trim())
@@ -106,7 +107,7 @@ export async function sanitizeRssFeedItemContentHtmlBatch(
         const buffers = chunk.map(({ html }) => Buffer.from(html, 'utf-8'))
         const sanitized = await sanitizeRssHtmlBatch(buffers, {
           proxyImages: true,
-          imageProxyUrlPrefix: '/sideload/',
+          imageProxyUrlPrefix: CURRENT_SIDELOAD_PATH_PREFIX,
           imageProxySigningKeys: getSigningKeys(),
         })
         for (let i = 0; i < chunk.length; i++) {

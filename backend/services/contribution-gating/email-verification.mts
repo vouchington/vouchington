@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 
 const CACHE_TTL_SECONDS = 5 * 60
 
-const cache = new ValkeyCache<string>({
+const cache = new ValkeyCache({
   prefix: 'contribution-gating:verified-email',
   ttlSeconds: CACHE_TTL_SECONDS,
 })

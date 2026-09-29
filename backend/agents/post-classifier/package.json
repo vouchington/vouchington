@@ -29,6 +29,7 @@
     "@services/moderation": "workspace:^",
     "@services/post-classifier": "workspace:^",
     "@services/posts": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^"
   },
   "devDependencies": {

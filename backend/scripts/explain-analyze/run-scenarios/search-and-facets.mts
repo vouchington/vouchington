@@ -40,13 +40,11 @@ export async function runSearchAndFacetScenarios() {
   )
 
   // Recommended topics
-  await runAndCapture('recommended-topics', () =>
-    getRecommendedTopics(seedUser as any, { limit: 25 }),
-  )
+  await runAndCapture('recommended-topics', () => getRecommendedTopics(seedUser, { limit: 25 }))
 
   // Post search — text search
   await runAndCapture('post-search-text', () =>
-    getPostIds(seedUser as any, { text_search_query: 'seed', limit: 25, time_range: '1w' }),
+    getPostIds(seedUser, { text_search_query: 'seed', limit: 25, time_range: '1w' }),
   )
 
   // RSS feed items search — by seeded feed id. The seed source rows intentionally share
@@ -121,7 +119,7 @@ export async function runSearchAndFacetScenarios() {
   await runAndCapture(
     'post-search-text-heavy-follows',
     () =>
-      getPostIds(heavyFollowUser as any, {
+      getPostIds(heavyFollowUser, {
         text_search_query: 'seed',
         limit: 25,
         time_range: '1w',
@@ -154,30 +152,29 @@ export async function runSearchAndFacetScenarios() {
   // Post Facets — baseline and text-search variants
   await runAndCapture(
     'post-facets',
-    () => getPostFacets(seedUser as any, { limit: 25, time_range: '1w' }),
+    () => getPostFacets(seedUser, { limit: 25, time_range: '1w' }),
     'baseline',
   )
   await runAndCapture(
     'post-facets-text',
-    () =>
-      getPostFacets(seedUser as any, { text_search_query: 'seed', limit: 25, time_range: '1w' }),
+    () => getPostFacets(seedUser, { text_search_query: 'seed', limit: 25, time_range: '1w' }),
     'text',
   )
 
   // Post search — relationship filter variants
   await runAndCapture(
     'post-search-review-topic',
-    () => getPostIds(seedUser as any, { review_topic_ids: [seedTopicId], limit: 25 }),
+    () => getPostIds(seedUser, { review_topic_ids: [seedTopicId], limit: 25 }),
     'review-topic',
   )
   await runAndCapture(
     'post-search-data-point-topic',
-    () => getPostIds(seedUser as any, { data_point_topic_ids: [seedTopicId], limit: 25 }),
+    () => getPostIds(seedUser, { data_point_topic_ids: [seedTopicId], limit: 25 }),
     'data-point-topic',
   )
   await runAndCapture(
     'post-search-universal-topic',
-    () => getPostIds(seedUser as any, { universal_topic_ids: [seedTopicId], limit: 25 }),
+    () => getPostIds(seedUser, { universal_topic_ids: [seedTopicId], limit: 25 }),
     'universal-topic',
   )
 

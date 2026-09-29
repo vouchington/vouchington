@@ -160,7 +160,9 @@ function dynamicEligibilityTable(node: ts.TemplateExpression): boolean {
   )
     return false
   const expression = node.templateSpans[0]?.expression
-  return Boolean(
-    expression && ts.isStringLiteral(expression) && ELIGIBILITY_TABLES.has(expression.text),
+  return (
+    expression !== undefined &&
+    ts.isStringLiteral(expression) &&
+    ELIGIBILITY_TABLES.has(expression.text)
   )
 }

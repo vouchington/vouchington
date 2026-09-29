@@ -44,6 +44,8 @@ describe('Docs Publish workflow', () => {
         'ci/render-docs-cli.mts',
         'ci/render-docs-page.mts',
         'ci/render-mcp-docs.mts',
+        'backend/data-stores/psql/schema-snapshot/**',
+        'docs/development/postgresql/schema-snapshot/**',
         '.github/actions/**',
         'package.json',
         'pnpm-lock.yaml',

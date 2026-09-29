@@ -35,7 +35,7 @@ export async function scanDependencyResult(
   repoRoot: string,
   rootFiles: string[],
   result: DependencyResult,
-  textCache: Map<string, Promise<string>> = new Map(),
+  textCache = new Map<string, Promise<string>>(),
   exclusions: readonly UnresolvedImportExclusion[] = UNRESOLVED_IMPORT_EXCLUSIONS,
 ): Promise<{ aliases: Set<string>; issues: ClosureScanIssue[] }> {
   const paths = result.files

@@ -40,7 +40,11 @@ function watchHealth(containerId: string, since: string) {
           reject(new Error(`Private platform-stats Valkey failed: ${event.Action}`))
         }
       } catch (cause) {
-        reject(cause)
+        reject(
+          cause instanceof Error
+            ? cause
+            : new Error('Private platform-stats Valkey log line was not valid JSON'),
+        )
       }
     })
     child.once('error', reject)

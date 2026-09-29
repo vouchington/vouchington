@@ -28,7 +28,7 @@ export function createFediverseAdapters(): Record<
 // Only `ok` buckets are cached — caching `partial`/`error` buckets would replay a
 // transient provider outage to every caller until the TTL expires.
 export function cacheAdapter(adapter: FediverseProviderAdapter): FediverseProviderAdapter {
-  const cache = new ValkeyCache<string>({
+  const cache = new ValkeyCache({
     prefix: `fediverse-search:${adapter.provider}`,
     ttlSeconds: HTTP_CACHE_SHORT_MAX_AGE_SECONDS,
     mode: 'json',

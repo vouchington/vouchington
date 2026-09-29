@@ -3,7 +3,7 @@ import { createCodedError } from '@modules/on-error/create-coded-error'
 import { IDEMPOTENCY_KEY_REUSED } from '@modules/on-error/error-codes'
 import { hashAdmissionIntent } from '@services/contribution-gating/admission'
 import sql from 'sql-template-strings'
-import type { ImportTopicResult } from './import-topics.mts'
+import type { ImportTopicResult } from './import-topics-types.mts'
 
 const TOPIC_IMPORT_REPLAY_RETENTION_HOURS = 48
 

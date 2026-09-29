@@ -39,7 +39,7 @@ export async function processCopyrightEnforcementRequest(
               FROM copyright_notice_submission_assessments
               WHERE id = ${request.assessment_id}
             )
-            AND authority.assessed_by_id IS NULL
+            AND authority.copyright_notice_form_screening_id IS NOT NULL
             AND restriction.lifted_at IS NOT NULL
         )
       ORDER BY target.id
@@ -69,7 +69,7 @@ export async function processCopyrightEnforcementRequest(
                   FROM copyright_notice_submission_assessments
                   WHERE id = ${request.assessment_id}
                 )
-                AND authority.assessed_by_id IS NULL
+                AND authority.copyright_notice_form_screening_id IS NOT NULL
                 AND restriction.lifted_at IS NOT NULL
             )
         )

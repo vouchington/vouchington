@@ -41,4 +41,14 @@ describe('provider operation timeout', () => {
       /Apple OAuth provider request timed out/,
     )
   })
+
+  it('preserves the reason when the parent signal is already aborted', async () => {
+    const parent = new AbortController()
+    const reason = new Error('provider operation already aborted')
+    parent.abort(reason)
+
+    await expect(
+      withProviderOperationTimeout('GitHub', async () => 'ok', parent.signal),
+    ).rejects.toBe(reason)
+  })
 })

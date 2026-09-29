@@ -29,7 +29,7 @@ The canonical user, topic, post, and RSS-item creators register their concrete r
 inside the live-row insertion transaction. Live rows FK back to that owner; deletion may remove the
 live row while a request, audit record, or publication bridge keeps the owner. Root reservation is
 not proof that the live entity exists or that an operation is authorized. The independent bounded
-[retained-identity cleanup](../../backend/services/data-retention/README.md#key-exports) removes
+[retained-identity cleanup](../overview/architecture/services/data-retention/README.md#key-exports) removes
 an owner only after its live row and every durable reference have gone; audit rows have no inferred
 expiry.
 
@@ -124,7 +124,7 @@ change-detector is permanently "changed" → every recompute rewrites the row an
 refresh, defeating the debounced/no-op path. Pick one type (`DOUBLE PRECISION` for weighted sums) and
 use it for the column, the compute, and the comparison.
 
-This generalizes the existing vote-score rule in [psql AGENTS.md](../../backend/data-stores/psql/AGENTS.md#querying-rules).
+This generalizes the existing vote-score rule in [psql AGENTS.md](../../backend/data-stores/psql/AGENTS.md).
 Tracked by #7354.
 
 ## Large aggregation recomputes read the replica and absorb lag asynchronously
@@ -135,7 +135,7 @@ recompute, read the **replica**, not the primary — do not add primary-read loa
 aggregation. Handle replica lag by running the recompute asynchronously with throttle
 deduplication, an ordering key, and a fixed delay through the full throttle window plus a
 replica-lag safety margin. For election tallies, a five-second throttle and one-second margin yield
-a six-second delay; see the [elections queue timing](../../backend/queues/elections/README.md).
+a six-second delay; see the [elections queue timing](../overview/architecture/queues/elections/README.md).
 A full recompute written back from a replica must carry a freshness marker captured by the exact
 aggregate statement. Election tallies persist the PostgreSQL snapshot `xmax` plus its in-progress
 transaction count and accept only a later marker, so out-of-order jobs cannot roll a newer tally

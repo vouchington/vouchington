@@ -12,10 +12,7 @@ import type {
 import { SesInboundTerminalError, type ParsedSesInboundEmail } from './mime.mts'
 import { processSesInboundEmail, reconcileSesInboundEmails } from '../processors.mts'
 
-vi.mock<typeof import('mailparser')>(
-  import('mailparser'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('mailparser')>(import('mailparser'), async importOriginal => importOriginal())
 
 describe('SES copyright inbound routing', () => {
   it('reconciles every copyright evidence page while intake is enabled', async () => {

@@ -1,12 +1,17 @@
 /** Explicit SQL-backed service calls whose shared tests must use an owned bound or keyset. */
 export const sharedDbScopeTables = {
+  listCopyrightStaffAlertAcknowledgements: 'copyright_staff_alerts',
   listCopyrightStaffQueue: 'copyright_notices',
+  listOpenCopyrightStaffAlerts: 'copyright_staff_alerts',
+  searchCopyrightStaffAlertNoticeIds: 'copyright_notices',
+  syncCopyrightStaffAlerts: 'copyright_staff_alerts',
   searchCopyrightStaffEmailIntakes: 'copyright_notice_email_intakes',
   getPendingCopyrightAgentDispatches: 'copyright_notice_dispatch_sources',
   searchDueStatutoryCopyrightRestorationDeadlineIds: 'copyright_notice_deadlines',
   searchRecoverableCopyrightFormReviewIntakeIds: 'copyright_notice_form_intake_reviews',
   searchReconcilableCopyrightEnforcementRequestIds: 'copyright_notice_enforcement_requests',
   searchRecoverableCopyrightActionIntentIds: 'copyright_notice_action_intents',
+  searchBlockedCopyrightHoldRestorationNoticeIds: 'copyright_notices',
   searchRecoverableCopyrightDeliveryIntentIds: 'copyright_notice_delivery_intents',
   searchRecoverableCopyrightEmailIntakeResponseIds: 'copyright_notice_email_intake_responses',
   replayFailedMediaDeliveryRegistryRecords: 'media_delivery_registry_records',

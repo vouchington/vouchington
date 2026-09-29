@@ -12,7 +12,7 @@ runtime tests for dependency behavior. Delete ambient declarations when
 bundled or maintained types become available.
 
 The retained backend inventory and its verification guidance live in
-[`backend/types/README.md`](../../../backend/types/README.md#ambient-third-party-boundaries). It
+[`docs/overview/architecture/backend/types/README.md`](backend/types/README.md#ambient-third-party-boundaries). It
 contains the narrow `http-assert` callable contract, the consumed `sql-template-strings` statement
 surface, and the test-only `VitestLooseMock` global. The worker-owned `cloudflare:workers` boundary
 is defined in

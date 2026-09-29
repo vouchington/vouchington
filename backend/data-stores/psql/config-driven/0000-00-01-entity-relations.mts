@@ -88,7 +88,7 @@ function createEntityRelationTable(metadata: EntityRelationMetadata) {
   // partitioned: they're small (<1M rows) and have no retention policy. relation__user__* was
   // HASH-partitioned once (HASH is now forbidden repo-wide); buildPrivacyFilter's object_id
   // broadcast checks scanned all 8 hash partitions 5+ times per feed query — see
-  // backend/services/feeds/README.md, "Performance" section, for the measured incident.
+  // docs/overview/architecture/services/feeds/README.md, "Performance" section, for the measured incident.
   if (metadata.subject_type === 'post') {
     query += ` PARTITION BY RANGE (subject_id)`
   }

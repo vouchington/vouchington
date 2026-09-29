@@ -1,6 +1,7 @@
 import { SEED_PREFIX, runAndCapture, seedPostId, seedTopicId, seedUser } from '../run-support.mts'
 import * as services from '../run-services.mts'
 import { runPartitionPruningScenarios } from './partition-pruning.mts'
+import { runAdminUserSearchScenarios } from './admin-user-search.mts'
 
 const {
   aggregateElectionVoteStatsFromReplica,
@@ -23,14 +24,12 @@ const {
   getUserBookmarkCounts,
   listUserRemovedPosts,
   POST_ELECTION_CONFIG,
-  searchAdminUsers,
   searchCommunities,
   searchCommunityPosts,
   searchDataPoints,
   searchPendingPosts,
   searchTopHostnames,
   searchTopicAliases,
-  searchUsers,
   TOPIC_ELECTION_CONFIG,
   updateTopicRatingStats,
 } = services
@@ -143,18 +142,7 @@ export async function runEntityAndCommunityScenarios() {
     searchTopHostnames({ topic_id: seedTopicId, limit: 25 }),
   )
 
-  // User search — username prefix and admin UUID lookup
-  await runAndCapture('search-users', () => searchUsers('seeduser', { limit: 25 }))
-  await runAndCapture(
-    'search-admin-users',
-    () => searchAdminUsers('seeduser', { limit: 25 }),
-    'prefix',
-  )
-  await runAndCapture(
-    'search-admin-users-uuid',
-    () => searchAdminUsers(seedUser.id, { limit: 25 }),
-    'uuid',
-  )
+  await runAdminUserSearchScenarios()
 
   // Topic alias search — autocomplete prefix query
   await runAndCapture('search-topic-aliases', () =>

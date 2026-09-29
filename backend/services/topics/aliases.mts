@@ -97,7 +97,7 @@ export async function linkTopicAlias(
   }
   const linkedAlias = await runTopicAliasTransaction(options, run)
   if (!options.skipSideEffects) {
-    entityCacheBloomFilters.topics.add([normalizeKey(linkedAlias.alias)])
+    void entityCacheBloomFilters.topics.add([normalizeKey(linkedAlias.alias)])
     const affectedTopicIds = previousTopicId ? [...new Set([previousTopicId, topicId])] : [topicId]
     await Promise.all([
       ...affectedTopicIds.map(id => invalidate.topics(id, linkedAlias.alias)),

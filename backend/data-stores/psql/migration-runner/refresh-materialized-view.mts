@@ -21,7 +21,7 @@ export async function refreshMaterializedView(viewName: string): Promise<void> {
       '/* refreshMaterializedView.tryAdvisoryLock */ SELECT pg_try_advisory_lock(hashtext($1)) AS locked',
       [MATERIALIZED_VIEW_ADVISORY_LOCK],
     )
-    hasMaterializedViewLock = lock.rows[0]?.locked === true
+    hasMaterializedViewLock = lock.rows.at(0)?.locked ?? false
     if (!hasMaterializedViewLock) {
       client.release()
       released = true

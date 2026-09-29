@@ -1,7 +1,7 @@
 // GENERATED FILE - do not edit by hand.
 // Regenerate: node static-code-analysis/i18n-extract/route-selector-map.mts
 // Verify:     node static-code-analysis/i18n-extract/route-selector-map.mts --check
-export const WEB_CHROME_SELECTOR = 'web.chrome.869fe76751614010'
+export const WEB_CHROME_SELECTOR = 'web.chrome.a9560b44791b3565'
 // oxfmt-ignore
 export const ROUTE_SELECTORS = [
   { pattern: "/", selectorId: "web.route.af63a24c860189fe.50730295d8eb2790", hasMembership: true },
@@ -100,6 +100,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/copyright/notices/[id]", selectorId: "web.route.ce896f0462e5bd7d.cbf29ce484222325", hasMembership: false },
   { pattern: "/copyright/notices/[id]/appeal", selectorId: "web.route.14f2acedc20361a5.18a6f38661bfd2ec", hasMembership: true },
   { pattern: "/copyright/notices/[id]/counter-notice", selectorId: "web.route.d3ec16e74db8658d.18a6f38661bfd2ec", hasMembership: true },
+  { pattern: "/copyright/notices/[id]/guest", selectorId: "web.route.70f15876d7ee5fc2.18a6f38661bfd2ec", hasMembership: true },
   { pattern: "/copyright/notices/new", selectorId: "web.route.33bc31725bbf9188.18a6f38661bfd2ec", hasMembership: true },
   { pattern: "/copyright/repeat-infringer-policy", selectorId: "web.route.3e1923115d812a61.cbf29ce484222325", hasMembership: false },
   { pattern: "/copyright/review-queue", selectorId: "web.route.cfd5a705607388d2.cbf29ce484222325", hasMembership: false },
@@ -216,7 +217,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/my/news-sources/muted", selectorId: "web.route.ef025c4add2d2501.96d03048955cd1b9", hasMembership: true },
   { pattern: "/my/news-sources/viewed", selectorId: "web.route.4a8853f12155049e.96d03048955cd1b9", hasMembership: true },
   { pattern: "/my/notification-settings", selectorId: "web.route.261f5e76931b4ad4.6fec067cad9d1d91", hasMembership: true },
-  { pattern: "/my/notifications", selectorId: "web.route.3397123a11f4af97.ec78e765d73120a0", hasMembership: true },
+  { pattern: "/my/notifications", selectorId: "web.route.3397123a11f4af97.cdedceb3796b574b", hasMembership: true },
   { pattern: "/my/podcast-episodes/hidden", selectorId: "web.route.81a68437405a4ea5.96d03048955cd1b9", hasMembership: true },
   { pattern: "/my/podcast-episodes/saved", selectorId: "web.route.321e8a1c9e5af2e0.96d03048955cd1b9", hasMembership: true },
   { pattern: "/my/podcast-episodes/viewed", selectorId: "web.route.10658e11d3b2287d.96d03048955cd1b9", hasMembership: true },

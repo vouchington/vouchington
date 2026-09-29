@@ -89,9 +89,10 @@ describe('config inventory', () => {
       [environmentVariablesReference]: '`LATE_ENV_VAR`\n',
       'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
       'docs/development/local-env-vars.md': './dev/config-inventory\n',
-      'dev/README.md': '[Command Catalog](reference-command-catalog.md)\n',
-      'dev/reference-command-catalog.md': './dev/config-inventory\n',
-      'static-code-analysis/README.md': './dev/config-inventory\n',
+      'docs/development/local-development/README.md':
+        '[Command Catalog](reference-command-catalog.md)\n',
+      'docs/development/local-development/reference-command-catalog.md': './dev/config-inventory\n',
+      'docs/development/quality/static-code-analysis/README.md': './dev/config-inventory\n',
       'web/late.mts': 'const value = process.env.LATE_ENV_VAR\n',
       'pnpm-workspace.yaml':
         'allowBuilds:\r\n  sharp: true\r\npackageExtensions:\r\n  # comment\r\n  "@ghostery/adblocker-puppeteer@*":\r\n    peerDependenciesMeta:\r\n      puppeteer:\r\n        optional: true\r\nminimumReleaseAge: 2880\r\nminimumReleaseAgeExclude:\r\n  - valkyries',
@@ -247,9 +248,9 @@ describe('config inventory', () => {
       [environmentVariablesIndexDoc]: './dev/config-inventory\n`AMBIGUOUS_SETTING`\n',
       'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
       'docs/development/local-env-vars.md': 'no link\n',
-      'dev/README.md': 'no link\n',
-      'dev/reference-command-catalog.md': 'no link\n',
-      'static-code-analysis/README.md': 'no link\n',
+      'docs/development/local-development/README.md': 'no link\n',
+      'docs/development/local-development/reference-command-catalog.md': 'no link\n',
+      'docs/development/quality/static-code-analysis/README.md': 'no link\n',
       'pnpm-workspace.yaml': 'minimumReleaseAge: 2880\n',
     })
 

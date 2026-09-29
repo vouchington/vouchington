@@ -214,13 +214,13 @@ async function createLockedEntityId(jobType: BatchJobType, userId: string): Prom
   const suffix = randomUUID().slice(0, 8)
   switch (jobType) {
     case 'topics':
-      return await insertTestTopic({
+      return insertTestTopic({
         name: `Batch Lock ${suffix}`,
         slug: `batch-lock-${suffix}`,
         createdById: userId,
       })
     case 'posts':
-      return await insertTestPost({
+      return insertTestPost({
         title: `Batch Lock ${suffix}`,
         slug: `batch-lock-post-${suffix}`,
         markdown: 'Post body',
@@ -230,7 +230,7 @@ async function createLockedEntityId(jobType: BatchJobType, userId: string): Prom
       const topicId = await createLockedEntityId('topics', userId)
       const feedId = await insertTestRssFeed({ topicId, title: `Batch Lock Feed ${suffix}` })
       const urlId = await createTestUrlWithHostname()
-      return await insertTestRssFeedItem({
+      return insertTestRssFeedItem({
         rssFeedId: feedId,
         urlId,
         guid: `batch-lock-${suffix}`,
@@ -255,7 +255,7 @@ async function createLockedEntityId(jobType: BatchJobType, userId: string): Prom
       return createCrawlChunkEntityId(crawl.id, 0)
     }
     case 'images':
-      return await insertTestImage(userId)
+      return insertTestImage(userId)
   }
 }
 

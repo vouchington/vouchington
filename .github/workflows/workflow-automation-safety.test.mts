@@ -81,25 +81,31 @@ describe('workflow automation safety', () => {
   it('routes operational policies to focused workflow references', () => {
     const readme = readFileSync('.github/workflows/README.md', 'utf8')
     const codexAutomation = readFileSync(
-      '.github/workflows/reference-harness-automation.md',
+      'docs/development/ci/workflows/reference-harness-automation.md',
       'utf8',
     )
     const dependencyPolicy = readFileSync(
-      '.github/workflows/reference-fix-main-dependency-policy.md',
+      'docs/development/ci/workflows/reference-fix-main-dependency-policy.md',
       'utf8',
     )
     const workflowPreflight = readFileSync(
-      '.github/workflows/reference-workflow-change-preflight.md',
+      'docs/development/ci/workflows/reference-workflow-change-preflight.md',
       'utf8',
     )
-    expect(readme).toContain('[Auto Harness automation](reference-harness-automation.md)')
-    expect(readme).toContain('[Workflow change preflight](reference-workflow-change-preflight.md)')
+    expect(readme).toContain(
+      '[Auto Harness automation](../../docs/development/ci/workflows/reference-harness-automation.md)',
+    )
+    expect(readme).toContain(
+      '[Workflow change preflight](../../docs/development/ci/workflows/reference-workflow-change-preflight.md)',
+    )
     expect(codexAutomation).toContain('## Configuration and activation')
-    expect(codexAutomation).toContain('[Fix Main](fix-main.yml)')
+    expect(codexAutomation).toContain('[Fix Main](../../../../.github/workflows/fix-main.yml)')
     expect(dependencyPolicy).toContain(
       '[Back to Auto Harness automation](reference-harness-automation.md)',
     )
-    expect(dependencyPolicy).toContain('[Back to Workflow Reference](README.md)')
+    expect(dependencyPolicy).toContain(
+      '[Back to Workflow Reference](../../../../.github/workflows/README.md)',
+    )
     expect(workflowPreflight).toContain('## Workflow Reference Hygiene')
   })
 
@@ -174,14 +180,14 @@ describe('workflow automation safety', () => {
 
   it('keeps every workflow in a grouped inventory reference and standalone workflows in the automation-map leaf Mermaid diagrams', () => {
     const readme = readFileSync('.github/workflows/README.md', 'utf8')
-    const workflowReference = readFileSync('.github/workflows/WORKFLOWS.md', 'utf8')
+    const workflowReference = readFileSync('docs/development/ci/workflows/WORKFLOWS.md', 'utf8')
     const automationMap = readFileSync(
-      '.github/workflows/reference-workflow-automation-map.md',
+      'docs/development/ci/workflows/reference-workflow-automation-map.md',
       'utf8',
     )
     const workflowInstructions = readFileSync('.github/workflows/AGENTS.md', 'utf8')
     const fixedBranchAutomation = readFileSync(
-      '.github/workflows/reference-fixed-branch-automation-prs.md',
+      'docs/development/ci/workflows/reference-fixed-branch-automation-prs.md',
       'utf8',
     )
     const githubActionsChecklist = readFileSync('docs/checklists/github-actions.md', 'utf8')
@@ -194,21 +200,27 @@ describe('workflow automation safety', () => {
       'reference-maintenance-security-and-utilities.md',
     ]
     const inventoryWorkflowNames = getInventoryWorkflowNames(
-      inventoryReferences.map(path => readFileSync(`.github/workflows/${path}`, 'utf8')).join('\n'),
+      inventoryReferences
+        .map(path => readFileSync(`docs/development/ci/workflows/${path}`, 'utf8'))
+        .join('\n'),
     )
     const leaves = automationMapLeaves.map(leaf =>
-      readFileSync(`.github/workflows/${leaf}`, 'utf8'),
+      readFileSync(`docs/development/ci/workflows/${leaf}`, 'utf8'),
     )
     const mermaidNodeIds = getMermaidNodeIds(leaves)
     const inventoryMissing: string[] = []
     const mermaidMissing: string[] = []
-    expect(readme).toContain('[Workflow automation map](reference-workflow-automation-map.md)')
+    expect(readme).toContain(
+      '[Workflow automation map](../../docs/development/ci/workflows/reference-workflow-automation-map.md)',
+    )
     expect(workflowReference).toContain(
       '[Workflow automation map](reference-workflow-automation-map.md)',
     )
     expect(getMermaidDiagrams(readme)).toEqual([])
     expect(getMermaidDiagrams(workflowReference)).toEqual([])
-    expect(automationMap).toContain('[Back to Workflow Reference](README.md)')
+    expect(automationMap).toContain(
+      '[Back to Workflow Reference](../../../../.github/workflows/README.md)',
+    )
     expect(automationMap).toContain('[Back to Workflow inventory](WORKFLOWS.md)')
     expect(getMermaidDiagrams(automationMap)).toEqual([])
     for (const [index, leaf] of automationMapLeaves.entries()) {
@@ -219,13 +231,13 @@ describe('workflow automation safety', () => {
       expect(getMermaidDiagrams(leaves[index]!)).toHaveLength(1)
     }
     expect(workflowInstructions).toContain(
-      '[Workflow automation map](reference-workflow-automation-map.md)',
+      '](../../docs/development/ci/workflows/reference-workflow-automation-map.md)',
     )
     expect(fixedBranchAutomation).toMatch(
       /\[Workflow automation\s+map\]\(reference-workflow-automation-map\.md\)/u,
     )
     expect(githubActionsChecklist).toMatch(
-      /\[Workflow automation\s+map\]\(\.\.\/\.\.\/\.github\/workflows\/reference-workflow-automation-map\.md\)/u,
+      /\[Workflow automation\s+map\]\(\.\.\/development\/ci\/workflows\/reference-workflow-automation-map\.md\)/u,
     )
     for (const path of workflowPaths) {
       const workflow = readWorkflow(path)

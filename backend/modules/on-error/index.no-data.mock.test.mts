@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 // Mirrors vitest.setup.sentry-mock.mts; kept local so this .mock test owns its vi.mock().
 const sentryMocks = vi.hoisted(() => {
@@ -37,7 +38,8 @@ import { CrawlerNetworkError, CrawlerTimeoutError } from './errors.mts'
 import { runWithRequestClientInfo } from '@modules/request-client-info'
 
 function makeErrorWithFields(fields: Record<string, unknown>): Error & Record<string, unknown> {
-  const error = new Error(String(fields.message ?? 'error')) as Error & Record<string, unknown>
+  const error = new Error(stringFromUnknown(fields.message ?? 'error')) as Error &
+    Record<string, unknown>
   for (const [key, value] of Object.entries(fields)) error[key] = value
   return error
 }

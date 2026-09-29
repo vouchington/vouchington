@@ -9,7 +9,7 @@ import { createMembership } from './create.mts'
 import { failIneligiblePurchaseReversal } from './ineligible-stripe-purchase-reversal-execution.mts'
 import { claimIneligiblePurchaseReversals } from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from './reconcile-recorded-ineligible-stripe-purchase-reversal.mts'
-import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase.mts'
+import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
 
 describe('recorded ineligible Stripe purchase pending-refund reconciliation', () => {
   it('records fully observed refunds so a later reconciliation does not replay an expired idempotency key', async () => {

@@ -105,7 +105,7 @@ describe('web-integration asset metadata cache', () => {
       releaseLeases()
     }
     await requests
-    if (saturationError) throw saturationError
+    expect(saturationError).toBeUndefined()
     expect(maximum).toBe(6)
   })
 })

@@ -13,7 +13,7 @@ import type { Post } from '@/types/posts'
 import type { Hostname } from '@/types/hostnames'
 import type { RssFeedItem } from '@/types/rss-feed-items'
 import type { Community } from '@/types/api-responses'
-import type { SearchResults } from './command-search-data'
+import type { SearchResults } from './command-search-results'
 
 const EMPTY: SearchResults = {
   topics: [],

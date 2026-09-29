@@ -11,7 +11,7 @@ import {
   inspectStripeRefundPage,
   type InspectedStripeRefundPage,
 } from './refund-scan-observations.mts'
-import type { StripeRefundScanTarget } from './refund-scan.mts'
+import type { StripeRefundScanTarget } from './refund-scan-target.mts'
 
 export async function getStripeRefundScanResult(scanId: string): Promise<{
   alreadyRefundedMinorUnits: number
@@ -48,7 +48,7 @@ export async function wasSucceededStripeRefundObservedInLedger(
         AND observation.stripe_refund_id = ${stripeRefundId}
     ) AS observed
   `)
-  return rows[0]?.observed === true
+  return rows.at(0)?.observed ?? false
 }
 
 export async function applyStripeRefundScanPage(options: {

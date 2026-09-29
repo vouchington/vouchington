@@ -1,4 +1,4 @@
-import type { UpdateRssFeedChanges } from './update.mts'
+import type { UpdateRssFeedChanges } from './update-types.mts'
 
 export type RssFeedStateChange = {
   kind: 'enablement' | 'discoverability'

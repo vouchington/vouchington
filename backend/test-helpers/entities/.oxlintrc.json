@@ -5,7 +5,17 @@
   // causes oxlint to fall back to its own default plugin set instead, which flags unrelated
   // pre-existing code across this entire directory under rules the root config never enables).
   // Keep this in exact sync with the root .oxlintrc.json "plugins" array.
-  "plugins": ["react", "nextjs", "jsx-a11y", "react-perf", "vitest", "jest", "promise", "oxc"],
+  "plugins": [
+    "react",
+    "nextjs",
+    "jsx-a11y",
+    "react-perf",
+    "vitest",
+    "jest",
+    "promise",
+    "oxc",
+    "typescript"
+  ],
   // Root overrides do not correctly re-match paths once a directory has its own .oxlintrc.json,
   // because their globs are evaluated relative to this config's directory. Keep the backend
   // transaction guards and test-helper relaxations value-equal with their root overrides.

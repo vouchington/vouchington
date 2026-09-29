@@ -56,3 +56,28 @@ describe('web-api-no-direct-request-clients', () => {
     expect(requestClientRule?.from.pathNot).toEqual(['^web/lib/api/', '^web/test-helpers/lib/api/'])
   })
 })
+
+describe('inlined dependency-cruiser base rules', () => {
+  const baseConfig = config as DependencyCruiserConfig & {
+    extends?: readonly string[]
+    forbidden: Array<{
+      name: string
+      severity: string
+      to: { circular?: boolean; couldNotResolve?: boolean }
+    }>
+  }
+
+  it('keeps no-circular and not-to-unresolvable in forbidden', () => {
+    const extended = baseConfig.extends ?? []
+    expect(extended).not.toContain('dependency-cruiser/configs/rules/no-circular')
+    expect(extended).not.toContain('dependency-cruiser/configs/rules/not-to-unresolvable')
+    expect(baseConfig.forbidden.find(entry => entry.name === 'no-circular')).toMatchObject({
+      severity: 'error',
+      to: { circular: true },
+    })
+    expect(baseConfig.forbidden.find(entry => entry.name === 'not-to-unresolvable')).toMatchObject({
+      severity: 'error',
+      to: { couldNotResolve: true },
+    })
+  })
+})

@@ -44,7 +44,7 @@ export async function applyPostCommitSideEffects(
   const resolvedDependencies = { ...defaultPostCommitSideEffectsDependencies, ...dependencies }
   const bloomKeys = [normalizeKey(post.id)]
   if (post.slug) bloomKeys.push(normalizeKey(post.slug))
-  entityCacheBloomFilters.posts.add(bloomKeys)
+  void entityCacheBloomFilters.posts.add(bloomKeys)
   let createResponseTopics: Post['post_related_topics'] | undefined
   try {
     createResponseTopics =

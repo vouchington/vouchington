@@ -69,6 +69,7 @@ describe('fetchImageFromUrl', () => {
     expect(mockFetchWithPinnedDns).toHaveBeenCalledWith(
       new URL('https://example.com/image.jpg'),
       expect.any(AbortSignal),
+      { maxRedirects: 0 },
     )
   })
 
@@ -157,6 +158,7 @@ describe('fetchImageFromUrl', () => {
     expect(mockFetchWithPinnedDns).toHaveBeenCalledWith(
       new URL('https://example.com/image.jpg'),
       expect.any(AbortSignal),
+      { maxRedirects: 0 },
     )
   })
 
@@ -253,6 +255,30 @@ describe('fetchImageFromUrl', () => {
     )
 
     expect(result.contentType).toBe('image/png')
+  })
+
+  it('rejects a source that redirects more than five times', async () => {
+    const cancel = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
+    mockFetchWithPinnedDns.mockResolvedValue({
+      ok: false,
+      status: 302,
+      statusText: 'Found',
+      body: { cancel },
+      headers: {
+        get: (name: string) => (name === 'location' ? 'https://cdn.example/next.jpg' : null),
+      },
+    } as never)
+
+    const err = await fetchImageFromUrl('https://example.com/image.jpg', undefined, undefined, {
+      fetchWithPinnedDns: mockFetchWithPinnedDns,
+    }).catch(e => e)
+
+    expect(err).toBeInstanceOf(HttpOperationError)
+    expect((err as HttpOperationError).statusCode).toBe(403)
+    expect(() => {
+      throw err
+    }).toThrow('URL not allowed: too many redirects')
+    expect(mockFetchWithPinnedDns).toHaveBeenCalledTimes(6)
   })
 
   it('should re-throw HttpOperationError from fetchWithPinnedDns', async () => {

@@ -90,7 +90,7 @@ function register(
   applyHourlyFloor: boolean,
 ): Promise<unknown> {
   const resolvedRepeat = resolve(job.repeat)
-  validateScheduledJobRepeat(resolvedRepeat, `${job.schedulerId}`, job.subMinuteJustification)
+  validateScheduledJobRepeat(resolvedRepeat, job.schedulerId, job.subMinuteJustification)
   validateStagingHourlyFloorBypass(job, resolvedRepeat, job.schedulerId)
   // The floor clamps the resolved value, not the definition: a thunk must re-resolve to its
   // real interval on every call, and only the interval actually about to be registered matters.

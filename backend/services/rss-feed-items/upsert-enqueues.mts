@@ -50,7 +50,9 @@ export const enqueueRssFeedItemPostUpsertJobs = async (
     options.existingRowsForFanout ?? existingRows,
     upsertedRows,
   )
-  entityCacheBloomFilters.rss_feed_items.add(fanoutRowsWithGuids.map(row => normalizeKey(row.id)))
+  void entityCacheBloomFilters.rss_feed_items.add(
+    fanoutRowsWithGuids.map(row => normalizeKey(row.id)),
+  )
   await Promise.all([
     enqueueEmbeddingsAndAutotagger(fanoutRowsWithGuids),
     invalidateRssFeedItemsInChunks(fanoutRowsWithGuids.map(row => row.id)),

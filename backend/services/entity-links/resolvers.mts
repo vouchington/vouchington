@@ -65,10 +65,7 @@ export async function resolveEntityMentions(mentions: EntityMention[]): Promise<
     const entity = lookup?.get(mention.identifier) ?? null
 
     const rootLookupFailed =
-      mention.type === 'post' &&
-      lookupError === false &&
-      rootLookup.failed &&
-      isCommentPostEntity(entity)
+      mention.type === 'post' && !lookupError && rootLookup.failed && isCommentPostEntity(entity)
     if (rootLookupFailed) {
       resolved.push({
         type: 'unresolved',

@@ -22,7 +22,7 @@ or implying a public destination for predecessor issues or milestones.
 
 Lifecycle parity is additionally executable through the stable scenario IDs in
 [`api-fixtures/v1/lifecycle-scenarios.json`](../../api-fixtures/v1/lifecycle-scenarios.json). The
-[fixture authoring guide](../../backend/test-helpers/api-fixtures/README.md#lifecycle-scenario-contract)
+[fixture authoring guide](../development/testing/backend/api-fixtures.md#lifecycle-scenario-contract)
 defines the required claim and adapter workflow. Moderation operations, integrity actions, and
 saved/bookmark capabilities cite platform runners that consume that shared contract.
 

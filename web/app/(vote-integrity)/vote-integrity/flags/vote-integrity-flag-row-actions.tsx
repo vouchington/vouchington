@@ -14,7 +14,7 @@ import { userHref } from '@/lib/links/entity-href'
 import type { FlagResolution, VoteIntegrityFlag } from '@/types/vote-integrity'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import { ApplyPenaltyButton, ResolveFlagButton } from './vote-integrity-flag-actions'
-import type { VoteIntegrityFlagsTableProps } from './vote-integrity-flags-table'
+import type { VoteIntegrityFlagsTableProps } from './vote-integrity-flags-table-props'
 
 type FlagActionProps = {
   flag: VoteIntegrityFlag

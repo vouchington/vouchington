@@ -17,7 +17,7 @@ interface RecoverableStagedSource {
 
 // Re-read under a primary lock immediately before selecting staged-only versus known storage.
 export async function cleanupStagedUploadSource(imageId: string): Promise<boolean> {
-  return await withImageStorageLifecycleLock(imageId, async () =>
+  return withImageStorageLifecycleLock(imageId, async () =>
     cleanupStagedUploadSourceWhileLocked(imageId),
   )
 }

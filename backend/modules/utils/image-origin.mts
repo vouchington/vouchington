@@ -1,4 +1,5 @@
 import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
+import { CURRENT_SIDELOAD_PATH_PREFIX } from '@ts-shared/url-signing'
 
 const IMAGE_ORIGIN_ENV = 'IMAGE_ORIGIN'
 
@@ -15,7 +16,7 @@ export function getImageOrigin(): string {
 }
 
 export function getSideloadImageUrlPrefix(): string {
-  return `${getImageOrigin()}/sideload/`
+  return `${getImageOrigin()}${CURRENT_SIDELOAD_PATH_PREFIX}`
 }
 
 export function validateRuntimeImageOrigin(): void {

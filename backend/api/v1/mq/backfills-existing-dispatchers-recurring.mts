@@ -12,7 +12,7 @@ import type { BloomFilterEntityType } from '@queues/bloom-filters/types'
 
 function createVoteWeightTrigger(): () => Promise<unknown> {
   return async () =>
-    await enqueueRecalculateVoteWeightDispatcher(undefined, {
+    enqueueRecalculateVoteWeightDispatcher(undefined, {
       deduplicationId: 'backfill:vote-weight-dispatch',
     })
 }

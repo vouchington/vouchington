@@ -4,7 +4,11 @@ import {
 } from '@jongleberry/vurst-markdown'
 import { replaceEntityMentions } from '@services/entity-links'
 import { absolutizeSideloadImageSources } from '@modules/utils/absolute-sideload-html'
-import { parseSigningKeys, SIDELOAD_SIGNING_KEYS_ENV } from '@ts-shared/url-signing'
+import {
+  parseSigningKeys,
+  SIDELOAD_SIGNING_KEYS_ENV,
+  CURRENT_SIDELOAD_PATH_PREFIX,
+} from '@ts-shared/url-signing'
 
 type MarkdownRenderOptions = {
   allowHtml?: boolean
@@ -36,7 +40,7 @@ function normalizeRenderOptions(options: MarkdownRenderOptions): NormalizedRende
     allowHtml: options.allowHtml ?? false,
     nofollowLinks: options.nofollowLinks ?? true,
     proxyImages: options.proxyImages ?? true,
-    imageProxyUrlPrefix: '/sideload/',
+    imageProxyUrlPrefix: CURRENT_SIDELOAD_PATH_PREFIX,
     imageProxySigningKeys: options.imageProxySigningKeys ?? getSigningKeys(),
   }
 }

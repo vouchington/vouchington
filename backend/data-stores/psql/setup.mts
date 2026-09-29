@@ -1,10 +1,10 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import onError from '@modules/on-error'
-import {
-  type BeginTransactionOptions,
-  type BoundedTransactionOptions,
-  type Psql,
-  type Transaction,
+import type {
+  BeginTransactionOptions,
+  BoundedTransactionOptions,
+  Psql,
+  Transaction,
 } from '@vouchington/postgres'
 import { psql } from './runtime.mts'
 import { maybeCaptureQuery } from './query-capture.mts'

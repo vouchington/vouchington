@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest'
 const repoFile = (path: string) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8')
 
 describe('backend focused-command docs stay pinned to supported filtering forms', () => {
-  it('backend/README.md documents aggregate pnpm filtering through the group runner', () => {
-    const readme = repoFile('backend/README.md')
+  it('docs/overview/architecture/backend/README.md documents aggregate pnpm filtering through the group runner', () => {
+    const readme = repoFile('docs/overview/architecture/backend/README.md')
     const codeSpans = [...readme.matchAll(/`([^`]+)`/g)].map(match => match[1])
 
     const runScriptSpans = codeSpans.filter(span => span.startsWith('pnpm run test:backend'))
@@ -17,9 +17,11 @@ describe('backend focused-command docs stay pinned to supported filtering forms'
   it('backend/agents/README.md routes focused agent test commands to its reference section', () => {
     const readme = repoFile('backend/agents/README.md')
 
-    expect(readme).toContain('[Tests](reference-tests.md)')
+    expect(readme).toContain(
+      '[Tests](../../docs/overview/architecture/ai-agents/reference-tests.md)',
+    )
 
-    const referenceTests = repoFile('backend/agents/reference-tests.md')
+    const referenceTests = repoFile('docs/overview/architecture/ai-agents/reference-tests.md')
     const fencedBash = /```bash\n([\s\S]*?)```/.exec(referenceTests)
     expect(fencedBash).not.toBeNull()
     const commandBlock = fencedBash![1]

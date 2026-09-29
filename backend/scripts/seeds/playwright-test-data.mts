@@ -16,7 +16,7 @@ import { seedPlaywrightRssFeedCategoryData } from './playwright-test-data/rss-fe
 let seeded = false
 
 export function createPlaywrightSeedQuery(query: TransactionQuery): TransactionQuery {
-  async function annotatedQuery<Row extends Record<string, unknown> = any>(
+  async function annotatedQuery<Row extends Record<string, unknown> = Record<string, unknown>>(
     input: QueryInput,
     values?: QueryValues,
   ) {

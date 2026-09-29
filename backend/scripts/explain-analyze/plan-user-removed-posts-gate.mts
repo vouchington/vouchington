@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const USER_REMOVED_POSTS_INDEX = 'idx_posts__default__created_by_rejected_at_id'
 
@@ -7,7 +8,8 @@ export function assertUserRemovedPostsUsesIndex(result: ExplainResult): void {
   const usesOwnerRemovalIndex = nodes.some(node => node['Index Name'] === USER_REMOVED_POSTS_INDEX)
   const scansPosts = nodes.some(
     node =>
-      node['Node Type'] === 'Seq Scan' && String(node['Relation Name'] ?? '').startsWith('posts__'),
+      node['Node Type'] === 'Seq Scan' &&
+      stringFromUnknown(node['Relation Name'] ?? '').startsWith('posts__'),
   )
   if (!usesOwnerRemovalIndex || scansPosts) {
     throw new Error(

@@ -9,7 +9,6 @@ exclude_path = [
   "(^|/)playwright-report($|/)",
   "(^|/)\\.git($|/)",
   "(^|/)\\.claude($|/)",
-  "(^|/)\\.agents($|/)",
   "(^|/)\\.vercel($|/)",
   "(^|/)\\.output($|/)",
   # Test fixtures and snapshots contain scraped external content — links not under our control

@@ -1,5 +1,8 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { retainPostPublicationKeys, type PostPublicationRetainedKey } from './capture-keys.mts'
+import {
+  retainPostPublicationKeys,
+  type PostPublicationRetainedKey,
+} from './retained-key-writes.mts'
 
 export type PostPublicationImpactsByScope = {
   scopeId: string

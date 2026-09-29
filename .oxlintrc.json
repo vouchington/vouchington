@@ -6,7 +6,17 @@
     "**/.pr-shepherd/**",
     "!**/.pr-shepherd/**/__tests__/**"
   ],
-  "plugins": ["react", "nextjs", "jsx-a11y", "react-perf", "vitest", "jest", "promise", "oxc"],
+  "plugins": [
+    "react",
+    "nextjs",
+    "jsx-a11y",
+    "react-perf",
+    "vitest",
+    "jest",
+    "promise",
+    "oxc",
+    "typescript"
+  ],
   "jsPlugins": [
     "eslint-plugin-playwright",
     {

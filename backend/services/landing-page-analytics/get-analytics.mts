@@ -123,9 +123,9 @@ export async function getLandingPageAnalyticsByPageId(
     ),
   ])
 
-  const totalVisits = Number(visitRows[0]?.total_visits ?? 0)
-  const uniqueVisitors = Number(visitRows[0]?.unique_visitors ?? 0)
-  const totalClicks = Number(clickRows[0]?.total_clicks ?? 0)
+  const totalVisits = visitRows.at(0)?.total_visits ?? 0
+  const uniqueVisitors = visitRows.at(0)?.unique_visitors ?? 0
+  const totalClicks = clickRows.at(0)?.total_clicks ?? 0
 
   // Enrich item clicks with item_type from PG
   const itemIds = itemClickRows.map(r => r.item_id)
@@ -142,20 +142,20 @@ export async function getLandingPageAnalyticsByPageId(
     itemClicks = itemClickRows.map(r => ({
       item_id: r.item_id,
       item_type: itemTypeMap.get(r.item_id) ?? 'unknown',
-      click_count: Number(r.click_count),
+      click_count: r.click_count,
     }))
   }
 
   const dailyStats: DailyStats[] = dailyRows.map(r => ({
     date: r.date,
-    visits: Number(r.visits),
-    clicks: Number(r.clicks),
-    unique_visitors: Number(r.unique_visitors),
+    visits: r.visits,
+    clicks: r.clicks,
+    unique_visitors: r.unique_visitors,
   }))
 
   const utmSources: UtmSourceStats[] = utmRows.map(r => ({
     utm_source: r.utm_source,
-    visits: Number(r.visits),
+    visits: r.visits,
   }))
 
   return {

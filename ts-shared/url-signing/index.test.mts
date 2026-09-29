@@ -154,7 +154,7 @@ describe('@ts-shared/url-signing', () => {
       const url = 'https://example.com/img.jpg'
       const encoded = Buffer.from(url, 'utf8').toString('base64url')
       const result = buildSideloadImageUrl(url, { imageOrigin, width: 400, signingKeys: [] })
-      expect(result).toContain(`/sideload/${encoded}`)
+      expect(result).toContain(`/sideload/v2/${encoded}`)
     })
 
     it('returns null for empty string', () => {

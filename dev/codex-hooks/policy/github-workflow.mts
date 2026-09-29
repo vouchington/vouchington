@@ -9,7 +9,6 @@ import { commandPrefixAt } from './github-command-position.mts'
 import { contentRuleExemption } from './github-content-rule-scope.mts'
 import { findAutomationMergeBlock } from './github-merge-authority.mts'
 import { parseGhOrGhStackInvocation } from './github-invocation.mts'
-import { findRawIssueCreateBlock } from './github-issue-create-policy.mts'
 import { findGitHubStackWorkflowBlock } from './github-stack-workflow.mts'
 import { githubPrBodyDecision } from './github-workflow-pr-body.mts'
 import { tokenizeShellWordsDetailed } from './shell-tokenizer.mts'
@@ -39,11 +38,11 @@ export function findGitHubWorkflowBlock(
       if (invocation === null) {
         continue
       }
-      const { action, area } = invocation
       const invocationCwd = commandCwd(tokens, index, cwd)
       const contentRulesApply = !exemptFromContentRules(invocation, index, invocationCwd)
 
       const prBodyDecision = githubPrBodyDecision({
+        automationContext: options.automationContext ?? DEFAULT_AUTOMATION_CONTEXT,
         contentRulesApply,
         cwd,
         invocation,
@@ -55,13 +54,6 @@ export function findGitHubWorkflowBlock(
       const stackBlock = findGitHubStackWorkflowBlock(invocation, invocationCwd)
       if (stackBlock !== null) {
         return stackBlock
-      }
-
-      if (contentRulesApply && area === 'issue' && action === 'create') {
-        const issueCreateBlock = findRawIssueCreateBlock(invocation, detailedTokens)
-        if (issueCreateBlock !== null) {
-          return issueCreateBlock
-        }
       }
     }
   }

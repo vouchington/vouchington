@@ -71,4 +71,4 @@ Related docs:
 
 - [Environment Variables](./environment-variables.md)
 - [Local Env Vars](../../development/local-env-vars.md)
-- [Static Code Analysis](../../../static-code-analysis/README.md)
+- [Static Code Analysis](../../development/quality/static-code-analysis/README.md)

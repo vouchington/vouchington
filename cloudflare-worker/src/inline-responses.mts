@@ -111,5 +111,5 @@ export async function handleWebSocketRequest(
       'INVALID_INPUT',
     )
   }
-  return await handleWebSocket(request, url, env)
+  return handleWebSocket(request, url, env)
 }

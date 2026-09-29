@@ -68,7 +68,7 @@ export async function resolveReviewDisputeRemove(
       )
       .catch(onError)
   }
-  return getReviewDisputeAfterMutation(disputeId)
+  return await getReviewDisputeAfterMutation(disputeId)
 }
 
 export async function resolveReviewDisputeAnnotate(
@@ -137,5 +137,5 @@ export async function resolveReviewDisputeAnnotate(
       )
       .catch(onError)
   }
-  return getReviewDisputeAfterMutation(disputeId)
+  return await getReviewDisputeAfterMutation(disputeId)
 }

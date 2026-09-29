@@ -55,7 +55,7 @@ vi.mock<typeof import('node:child_process')>(
     ({
       spawn: vi.fn<MockSpawn>((command, args, options) => {
         spawnCalls.push({
-          command: String(command),
+          command,
           args: Array.isArray(args) ? args.map(String) : [],
           cwd: typeof options?.cwd === 'string' ? options.cwd : undefined,
           env: options?.env ?? {},
@@ -74,12 +74,12 @@ vi.mock<typeof import('node:child_process')>(
       }),
       spawnSync: vi.fn<MockSpawnSync>((command, args) => {
         spawnSyncCalls.push({
-          command: String(command),
+          command,
           args: Array.isArray(args) ? args.map(String) : [],
         })
-        const unavailable = readMockUnavailableCommands().includes(String(command))
+        const unavailable = readMockUnavailableCommands().includes(command)
         return {
-          error: unavailable ? new Error(`${String(command)}: command not found`) : undefined,
+          error: unavailable ? new Error(`${command}: command not found`) : undefined,
           output: [],
           pid: 0,
           signal: null,

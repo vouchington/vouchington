@@ -112,6 +112,26 @@ describe('start-wrangler config', () => {
     expect(output).toEqual(['[ERROR] real wrangler error'])
   })
 
+  it('filters current workerd client-disconnect write errors and the following stack', () => {
+    const state = createWranglerStderrConsoleFilterState()
+    const stack =
+      '  stack: /home/runner/node_modules/@cloudflare/workerd-linux-64/bin/workerd@57472b3\n'
+    const output = filterWranglerStderrConsoleLines(
+      state,
+      `✘ [ERROR] kj::getCaughtExceptionAsKj() = rust/cxx/kj-rs-io/ffi.rs:164: disconnected: write(): Broken pipe (os error 32)\n${
+        stack
+      }✘ [ERROR] kj::getCaughtExceptionAsKj() = rust/cxx/kj-rs-io/ffi.rs:164: disconnected: write(): Connection reset by peer (os error 104)\n${
+        stack
+      }[ERROR] route pattern is invalid\n` +
+        `kj::getCaughtExceptionAsKj() = rust/cxx/kj-rs-io/ffi.rs:164: disconnected: write(): permission denied\n`,
+    )
+
+    expect(output).toEqual([
+      '[ERROR] route pattern is invalid',
+      'kj::getCaughtExceptionAsKj() = rust/cxx/kj-rs-io/ffi.rs:164: disconnected: write(): permission denied',
+    ])
+  })
+
   it('filters workerd broken pipe errors split across stderr chunks', () => {
     const state = createWranglerStderrConsoleFilterState()
 

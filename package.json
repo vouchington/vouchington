@@ -123,7 +123,7 @@
     "@storybook/addon-vitest": "^10.6.0",
     "@ts-shared/utils": "workspace:^",
     "@types/jsdom": "^30.0.0",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.3",
     "@types/pg": "^8.23.1",
     "@types/picomatch": "^4.0.3",
     "@typescript/native": "npm:typescript@^7.0.2",
@@ -171,5 +171,10 @@
   "engines": {
     "node": ">=24.16.0"
   },
-  "packageManager": "pnpm@11.13.1"
+  "packageManager": "pnpm@11.13.1",
+  "knip": {
+    "ignoreDependencies": [
+      "husky"
+    ]
+  }
 }

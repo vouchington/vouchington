@@ -8,7 +8,8 @@ import { persistPublicationSnapshotPage } from './snapshot-key-writes.mts'
 import { retainStoredPublicationIdentityPage } from './retain-stored-identities.mts'
 import { publicationEligibilityFingerprintSql } from './fingerprint.mts'
 
-export const POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE = 100
+import { POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE } from './identity-snapshot-page-size.mts'
+export { POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE } from './identity-snapshot-page-size.mts'
 type SnapshotPost = { id: string; eligibility_fingerprint: string; is_public: boolean }
 export type Snapshot = {
   id: string

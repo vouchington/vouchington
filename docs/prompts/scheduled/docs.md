@@ -1,27 +1,26 @@
-Review [AGENTS.md](../../../AGENTS.md), [README.md](../../../README.md), [docs/\*\*](../../), and `**/*.md`. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Use [the documentation index](../../README.md) and current source to find at most one concrete,
+bounded documentation improvement that is safe to ship in one PR. Start with a domain index,
+broken-link report, or a known behavior change; do not read the whole documentation tree. If no
+candidate qualifies, make no repository changes and report why.
 
-Rules:
-
-- AGENTS.md notes principles and requirements. All other docs are wikis. There should be very little overlap between them.
-- Avoid duplication of content. Use linking instead.
-- When changing code, update the nearest docs. Keep `backend/queues/` ↔ `backend/services/`, `backend/services/` ↔ `docs/**`, `web/` ↔ `docs/**`, and `cloudflare-worker/` ↔ `docs/**` cross-referenced.
-- Backend business logic docs belong in `backend/services/` or `docs/**`, not in API routes or systems.
-- Cross-links must be bidirectional: `docs/**` pages must link to relevant code entry points by file path. Index new pages in [`docs/README.md`](../../README.md) and [`docs/catalog/README.md`](../../catalog/README.md); `AGENTS.md` points at the catalog, not each page. See [docs/AGENTS.md](../../AGENTS.md) for instruction placement.
-- `pnpm run lint:links` validates that links resolve, but it does not enforce bidirectional coverage.
-- Use markdown links to reference other files instead of using backticks.
-- Is there any opportunity to make AGENTS.md files smaller by moving AGENTS.md content to deeper subdirectories, docs/\*\*, skills, or rules? We want to minimize loaded context. AGENTS.md files must hold only durable principles and rules; tracked bug lists, state tables, SQL snippets, and long examples belong in `docs/**` or a co-located README — replace them with a one-line pointer and a cross-link.
-- Do any folders need improved [README.md](../../../README.md) files? MermaidJS, tables, and bullet points are preferred.
-- Verify Mermaid semantics against cited source files: every node, edge, direction, and state change
-  must represent the implementation rather than merely render successfully.
-- Are we missing any specifications in docs/\*\* or README files?
-- Are any docs out of date? Should anything be moved to commands/skills/agents? Should anything be removed entirely?
-- Are there any AGENTS.md files that should be moved to `docs/**` or `README.md` files?
-- Run the full `no-mistakes` `agents-md-max-size` repository scan and flag every `AGENTS.md` with at
-  least 170 lines or 11,500 characters, including files untouched by the selected improvement.
-- When editing [CLIENT-PARITY-MATRIX.md](../../requirements/CLIENT-PARITY-MATRIX.md), keep closed
-  issue citations separate from status claims: closed source issues document completed work, but
-  every row with remaining Swift/.NET/web gaps must still name those gaps explicitly.
-
-- `docs/checklists/**` is the canonical home for lifecycle and edit rules (commit, package.json, GitHub Actions). If these pages contain rules duplicated elsewhere, trim the duplicate to a pointer. The matching skills (`.agents/skills/git-commit-checklist`, `package-json-checklist`, `github-actions-checklist`) stay minimal — principles and pointers only. The `AGENTS.md` pointers and `.codex/agents/**` adapters should stay in sync with the skill bodies.
-
-Run `pnpm run lint:links`. Add improvements to lychee.toml or ci/lint-links.sh only when needed for the selected docs improvement.
+- Follow [instruction placement](../../AGENTS.md): scoped invariants in the nearest `AGENTS.md`,
+  task-triggered procedures in skills, and explanatory guides in `docs/**`. Source README files
+  provide short navigation to their owner docs. Use [agent-skill-docs](agent-skill-docs.md) for
+  contradictions between agent instructions or skill triggers.
+- Give each fact and complete leaf inventory one owner. Link the new page from its domain README;
+  update the top-level index only when adding a domain. Do not duplicate inventories in
+  [docs/README.md](../../README.md) and [docs/catalog/README.md](../../catalog/README.md).
+- Link docs to real code entrypoints and relevant code navigation back to the owning guide.
+  Backend business logic explanations belong in `docs/**`; API contracts belong in the API docs.
+- Keep `AGENTS.md` concise and within the configured `agents-md-max-size` budget. Move explanations,
+  examples, historical incidents, and changing inventories to their owner docs; do not add nested
+  instruction files merely to satisfy reachability checks.
+- Verify commands and Mermaid nodes, edges, directions, and state changes against their source.
+  A rendered diagram or syntactically plausible command is not sufficient evidence.
+- Preserve useful fragments and update links, generators, and code consumers when moving a page.
+  Use Markdown links for file navigation. Run `pnpm run lint:links`; link existence does not prove
+  bidirectional coverage. Change lychee or link-check configuration only when the selected fix needs it.
+- Follow the public/private documentation boundary and version-pinning policy in the owning docs.
+- In [client parity](../../requirements/CLIENT-PARITY-MATRIX.md), closed issue citations describe
+  completed work; rows with remaining Swift/.NET/web gaps must still name those gaps.
+- Keep lifecycle/edit checklists under `docs/checklists/**` and cross-link their owning skills.

@@ -1,4 +1,18 @@
 import { signPathWithKey, verifyPathWithKey } from './hmac.mts'
+import { CURRENT_SIDELOAD_PATH_PREFIX, isFirstPartyMediaUrl } from './media-source-policy.mts'
+
+export {
+  CURRENT_SIDELOAD_PATH_PREFIX,
+  TRANSFORMED_SIDELOAD_CACHE_PREFIX,
+  authorizeDependencyStates,
+  firstPartyMediaBlockedHosts,
+  isCurrentSideloadRoute,
+  isFirstPartyMediaUrl,
+  isPlacementSourcePolicy,
+  isRemovedSideloadRoute,
+  normalizeMediaHostname,
+} from './media-source-policy.mts'
+export type { DependencyAuthorization, PlacementSourcePolicy } from './media-source-policy.mts'
 
 export const SIDELOAD_SIGNING_KEYS_ENV = 'VOUCHA_SIDELOAD_SIGNING_KEYS'
 
@@ -10,23 +24,31 @@ export const SIDELOAD_SIGNING_KEYS_ENV = 'VOUCHA_SIDELOAD_SIGNING_KEYS'
  */
 export function buildSideloadImageUrl(
   externalUrl: string,
-  opts: { imageOrigin: string; width: number; signingKeys: string[]; quality?: number },
+  opts: {
+    imageOrigin: string
+    width: number
+    signingKeys: string[]
+    quality?: number
+    aliases?: readonly string[]
+  },
 ): string | null {
   const url = externalUrl.trim()
   if (!url) return null
   if (url.startsWith('//')) return null
   if (url.startsWith('/sideload/')) return null
+  let parsedUrl: URL
   try {
-    const parsedUrl = new URL(url)
+    parsedUrl = new URL(url)
     if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') return null
   } catch {
     return null
   }
   const imageOrigin = new URL(opts.imageOrigin).origin
   if (isAbsoluteSideloadUrl(url, imageOrigin)) return null
+  if (isFirstPartyMediaUrl(parsedUrl, { imageOrigin, aliases: opts.aliases })) return null
 
   const encoded = Buffer.from(url, 'utf8').toString('base64url')
-  const path = `/sideload/${encoded}`
+  const path = `${CURRENT_SIDELOAD_PATH_PREFIX}${encoded}`
   let sig: string | null = null
   try {
     sig = signPath(path, opts.signingKeys)

@@ -1,5 +1,6 @@
 import { write } from '@data-stores/psql'
 import { collectPlanNodes, definePlanStatisticsRefresh } from '../query-plans.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export const analyzeStoryMemberPlanTables = definePlanStatisticsRefresh(async () => {
   await write(`/* analyzeStoryMemberPlanTables */ ANALYZE
@@ -28,7 +29,7 @@ export function assertBoundedStoryMemberPlan(
         Number(node['Rows Removed by Filter'] ?? 0) +
         Number(node['Rows Removed by Index Recheck'] ?? 0)) *
       Number(node['Actual Loops'])
-    const indexCondition = String(node['Index Cond'] ?? '')
+    const indexCondition = stringFromUnknown(node['Index Cond'] ?? '')
     if (
       !['Index Scan', 'Index Only Scan'].includes(String(node['Node Type'])) ||
       !indexCondition.includes('story_id =') ||

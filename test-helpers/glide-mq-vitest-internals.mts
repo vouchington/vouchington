@@ -25,7 +25,7 @@ type DeadLetterSourceJob = {
   failedReason?: string
 }
 export const deadLetterQueueNames = new Map<string, string>()
-const queues = new Map<string, TestQueue<any, any>>()
+const queues = new Map<string, TestQueue>()
 
 /** Snapshot every TestWorker currently attached through the in-memory queue shim. */
 export function captureAttachedTestWorkers(): ReadonlySet<TestWorker> {
@@ -52,7 +52,7 @@ export function getUnexpectedAttachedTestWorkerQueueNames(
   return [...names].sort()
 }
 
-export function getOrCreateQueue(name: string): TestQueue<any, any> {
+export function getOrCreateQueue(name: string): TestQueue {
   const existing = queues.get(name)
   if (existing) return existing
   const queue = new TestQueue(name, { dedup: false })
@@ -66,14 +66,14 @@ export function configureDeadLetterQueue(
   if (deadLetterQueue?.name) deadLetterQueueNames.set(queueName, deadLetterQueue.name)
 }
 
-export function kickQueue(queue: TestQueue<any, any>): void {
+export function kickQueue(queue: TestQueue): void {
   for (const worker of queue.workers as Set<any>) {
     if (typeof worker.processAvailable === 'function') worker.processAvailable()
     else if (typeof worker.onJobAdded === 'function') worker.onJobAdded()
   }
 }
 /** Move one failed TestQueue job back to waiting, matching TestQueue.retryJobs. */
-export function retryFailedTestJob(queue: TestQueue<any, any>, jobId: string): void {
+export function retryFailedTestJob(queue: TestQueue, jobId: string): void {
   const record = queue.jobs.get(jobId)
   if (!record || record.state !== 'failed') return
   record.state = 'waiting'
@@ -83,7 +83,7 @@ export function retryFailedTestJob(queue: TestQueue<any, any>, jobId: string): v
   queue.waitingQueue.push(record)
   kickQueue(queue)
 }
-export function attachTestJobRetry(queue: TestQueue<any, any>, job: TestJob | null) {
+export function attachTestJobRetry(queue: TestQueue, job: TestJob | null) {
   if (!job) return null
   const withRetry = job as TestJob & { retry: () => Promise<void> }
   withRetry.retry = async () => retryFailedTestJob(queue, job.id)
@@ -98,7 +98,7 @@ export function clampTestWorkerConcurrency(concurrency?: number): number {
 }
 /** Wire a TestWorker's 'failed' listener to forward jobs into the configured dead-letter queue. */
 export function wireDeadLetterQueue(
-  worker: TestWorker<any, any>,
+  worker: TestWorker,
   queueName: string,
   deadLetterQueue?: { name: string },
 ): void {

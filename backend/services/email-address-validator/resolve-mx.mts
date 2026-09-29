@@ -20,7 +20,7 @@ function resolveMxWithTimeout(domain: string): Promise<{ exchange: string; prior
       })
       .catch(error => {
         clearTimeout(timer)
-        reject(error)
+        reject(error instanceof Error ? error : new Error('DNS lookup failed', { cause: error }))
       })
   })
 }

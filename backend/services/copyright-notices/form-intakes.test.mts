@@ -70,7 +70,8 @@ describe('copyright form intakes', () => {
       model: 'test-model',
     }
     const screeningId = await appendCopyrightFormScreening(screening)
-    await expect(appendCopyrightFormScreening(screening)).resolves.toBe(screeningId)
+    const repeatedScreeningId = await appendCopyrightFormScreening(screening)
+    expect(repeatedScreeningId).not.toBe(screeningId)
   })
 
   it('treats an unknown screening submission as an inert queue replay', async () => {

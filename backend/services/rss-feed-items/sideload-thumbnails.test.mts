@@ -54,6 +54,6 @@ describe('sideload-thumbnails', () => {
     const encoded = Buffer.from(raw, 'utf8').toString('base64url')
     const items = [makeItem('item-1', raw)]
     const result = proxyThumbnailUrls(items)
-    expect(result['item-1']).toContain(`/sideload/${encoded}`)
+    expect(result['item-1']).toContain(`/sideload/v2/${encoded}`)
   })
 })

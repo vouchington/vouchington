@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { serializeCatalogTable } from '@vouchington/localization'
 import { loadCatalogDirectory } from '@vouchington/localization-compiler'
 import { format, type FormatConfig } from 'oxfmt'
-import { type AnalysisBudgetOptions } from './analysis-budget.mts'
+import type { AnalysisBudgetOptions } from './analysis-budget.mts'
 import {
   createDiagnosticsCollector,
   writeDiagnostics,

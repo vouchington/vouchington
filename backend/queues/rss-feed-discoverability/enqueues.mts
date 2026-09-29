@@ -38,7 +38,7 @@ export function enqueueBulkEvaluateRssFeedDiscoverability(
   rssFeedIds: string[],
   priority?: number,
 ): EnqueueReturnType {
-  if (rssFeedIds.length === 0) return
+  if (rssFeedIds.length === 0) return Promise.resolve()
   return enqueueBulkEvaluateJobs(Array.from(new Set(rssFeedIds)), {
     priority: priority ?? RSS_FEED_DISCOVERABILITY_DEFAULTS.priority,
   } satisfies Partial<JobOptions>)

@@ -23,15 +23,11 @@ async function performBlueskyFollow(
   follower: BlueskyLinkedAccount,
   followeeDid: string,
 ): Promise<string> {
-  return await runWithAttachedBlueskySession(
-    followerUserId,
-    follower.link_authorization_id,
-    async () => {
-      const client = await getBlueskyOAuthClient()
-      const session = await restoreBlueskySession(client, follower.bluesky_did)
-      return createFollowOnBluesky(session, followeeDid)
-    },
-  )
+  return runWithAttachedBlueskySession(followerUserId, follower.link_authorization_id, async () => {
+    const client = await getBlueskyOAuthClient()
+    const session = await restoreBlueskySession(client, follower.bluesky_did)
+    return createFollowOnBluesky(session, followeeDid)
+  })
 }
 
 async function performBlueskyUnfollow(

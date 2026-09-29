@@ -82,7 +82,7 @@ export const enqueueBulkSourceSyncs = (
   dataList: BlacklistSourceSyncData[],
   priority?: number,
 ): EnqueueReturnType => {
-  if (dataList.length === 0) return
+  if (dataList.length === 0) return Promise.resolve()
 
   // NOTE: no BULLMQ_INLINE_MODE support because it makes external HTTP requests
   return enqueueBulkSourceSyncJobs(

@@ -21,7 +21,7 @@ describe('recordAgentResponseUsage settlement barrier', () => {
     const claimRegisteredResponseUsage = vi.fn<() => Promise<void>>().mockRejectedValue(ledgerError)
     const latchAccountingUncertainty = vi
       .fn<typeof latchAccountingUncertaintyFn>()
-      .mockImplementation(async () => await latchSettled.promise)
+      .mockImplementation(async () => latchSettled.promise)
     const recording = recordAgentResponseUsage(
       {
         response: responseWithUsage(),
@@ -68,7 +68,7 @@ describe('recordAgentResponseUsage settlement barrier', () => {
     const recorderSettled = Promise.withResolvers<void>()
     const recorder = vi
       .fn<typeof recordAgentResponseUsage>()
-      .mockImplementation(async () => await recorderSettled.promise)
+      .mockImplementation(async () => recorderSettled.promise)
     const response = responseWithUsage()
     const call = callRecordingAgentResponseUsage(
       async () => response,

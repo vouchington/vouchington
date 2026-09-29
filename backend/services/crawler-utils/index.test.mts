@@ -4,7 +4,7 @@ import {
   CrawlerSsrfError,
   CrawlerTimeoutError,
 } from '@modules/on-error/errors'
-import { type validateUrl as validateSafeUrl } from 'ssrf-guard/node'
+import type { validateUrl as validateSafeUrl } from 'ssrf-guard/node'
 import { fetchUrl } from './index.mts'
 
 class TestUnsafeUrlError extends Error {

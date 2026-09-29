@@ -1,3 +1,4 @@
+import { TRANSFORMED_SIDELOAD_CACHE_PREFIX } from '@ts-shared/url-signing'
 import { buildCacheKey, sha256 } from './cache/index.mts'
 import { negotiateFormat } from './transform/index.mts'
 import type { EnvironmentConfig, SideloadConfig } from './config.mts'
@@ -31,7 +32,7 @@ export function normalizeSideloadRequest(
   const width = selectWidth(config.widths, request.width)
   const quality = clampQuality(config.qualities, request.quality)
   const cacheKey = buildCacheKey({
-    key: sha256(request.url),
+    key: `${TRANSFORMED_SIDELOAD_CACHE_PREFIX}${sha256(request.url)}`,
     width,
     height: request.height,
     quality,

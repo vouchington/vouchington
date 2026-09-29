@@ -1,5 +1,6 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { lockAssessmentForm } from './compliance.mts'
 
 export type EnforcementRequest = {
   assessment_id: string
@@ -12,7 +13,9 @@ type EnforcementRequestClaim = EnforcementRequest | 'completed' | null
 export async function claimCopyrightEnforcementRequest(
   assessmentId: string,
 ): Promise<EnforcementRequestClaim> {
-  const { rows } = await write<{
+  await using transaction = await beginTransaction()
+  await lockEnforcementForm(assessmentId, transaction)
+  const { rows } = await transaction<{
     assessment_id: string
     notice_id: string | null
     imposed_by_id: string | null
@@ -29,7 +32,8 @@ export async function claimCopyrightEnforcementRequest(
         AND submission.copyright_notice_id = request.copyright_notice_id
         AND submission.kind = 'notice'
         AND assessment.substantially_compliant
-        AND (submission.source_kind = 'signed_in_form' OR assessment.assessed_by_id IS NOT NULL)
+        AND (assessment.copyright_notice_form_screening_id IS NULL OR
+          fn_current_copyright_form_screening(submission.id, assessment.copyright_notice_form_screening_id))
         AND NOT EXISTS (
           SELECT 1
           FROM copyright_notice_form_intakes intake
@@ -80,6 +84,7 @@ export async function claimCopyrightEnforcementRequest(
     SELECT assessment_id, notice_id, imposed_by_id, false AS terminalized
     FROM claimed
   `)
+  await transaction.commit()
   const claim = rows[0]
   if (!claim) return null
   if (claim.terminalized) return 'completed'
@@ -94,7 +99,9 @@ export async function claimCopyrightEnforcementRequest(
 export async function completeNonEnforceableCopyrightEnforcementRequest(
   assessmentId: string,
 ): Promise<boolean> {
-  const { rows } = await write(sql`/* completeNonEnforceableCopyrightEnforcementRequest */
+  await using transaction = await beginTransaction()
+  await lockEnforcementForm(assessmentId, transaction)
+  const { rows } = await transaction(sql`/* completeNonEnforceableCopyrightEnforcementRequest */
     UPDATE copyright_notice_enforcement_requests request
     SET state = 'completed', claimed_at = NULL, completed_at = CURRENT_TIMESTAMP,
       updated_at = CURRENT_TIMESTAMP
@@ -109,7 +116,8 @@ export async function completeNonEnforceableCopyrightEnforcementRequest(
           AND submission.copyright_notice_id = request.copyright_notice_id
           AND submission.kind = 'notice'
           AND assessment.substantially_compliant
-          AND (submission.source_kind = 'signed_in_form' OR assessment.assessed_by_id IS NOT NULL)
+          AND (assessment.copyright_notice_form_screening_id IS NULL OR
+            fn_current_copyright_form_screening(submission.id, assessment.copyright_notice_form_screening_id))
           AND NOT EXISTS (
             SELECT 1
             FROM copyright_notice_form_intakes intake
@@ -126,5 +134,18 @@ export async function completeNonEnforceableCopyrightEnforcementRequest(
       )
     RETURNING request.copyright_notice_submission_assessment_id
   `)
+  await transaction.commit()
   return rows.length > 0
+}
+
+async function lockEnforcementForm(
+  assessmentId: string,
+  transaction: Awaited<ReturnType<typeof beginTransaction>>,
+): Promise<void> {
+  const { rows } = await transaction<{
+    copyright_notice_submission_id: string
+  }>(sql`/* lockEnforcementForm */
+    SELECT copyright_notice_submission_id FROM copyright_notice_submission_assessments WHERE id = ${assessmentId}
+  `)
+  if (rows[0]) await lockAssessmentForm(rows[0].copyright_notice_submission_id, transaction)
 }

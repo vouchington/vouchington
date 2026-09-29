@@ -23,9 +23,9 @@ function toProgress(row: BatchRow | undefined): RowUpdateProgress {
   }
   return {
     batchId: row.batch_id,
-    completed: Number(row.completed_rows),
-    failed: Number(row.failed_rows),
-    total: Number(row.total_rows),
+    completed: row.completed_rows,
+    failed: row.failed_rows,
+    total: row.total_rows,
     done: row.completed_at !== null,
   }
 }

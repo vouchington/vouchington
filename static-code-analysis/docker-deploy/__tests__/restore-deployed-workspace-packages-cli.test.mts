@@ -10,7 +10,7 @@ describe('runRestoreDeployedWorkspacePackagesCli', () => {
       args: [],
       env: {},
       isMain: false,
-      restore: options => calls.push(String(options?.prodDir)),
+      restore: options => calls.push(options.prodDir),
     })
 
     expect(calls).toEqual([])
@@ -27,7 +27,7 @@ describe('runRestoreDeployedWorkspacePackagesCli', () => {
       args,
       env,
       isMain: true,
-      restore: options => calls.push(String(options?.prodDir)),
+      restore: options => calls.push(options.prodDir),
     })
 
     expect(calls).toEqual([expected])

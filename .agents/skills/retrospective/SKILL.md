@@ -1,6 +1,6 @@
 ---
 name: retrospective
-description: Provide a Vouchington session retrospective. Loads the portable Vouchington retrospective workflow, then applies local evidence, validation, and storage rules.
+description: Review a completed Vouchington session using its journal and validation evidence.
 ---
 
 # Vouchington Retrospective Adapter

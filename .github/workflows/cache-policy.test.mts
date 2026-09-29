@@ -202,7 +202,7 @@ describe('CI cache policy', () => {
         if (!block.includes('runner.os') || !block.includes('runner.arch')) {
           violations.push(`${path}: "${firstLine}" must scope its key by runner.os/runner.arch.`)
         }
-        if (isPlaywright && /restore-keys:/.test(block)) {
+        if (isPlaywright && block.includes('restore-keys:')) {
           violations.push(`${path}: Playwright cache "${firstLine}" must not declare restore-keys.`)
         }
       }

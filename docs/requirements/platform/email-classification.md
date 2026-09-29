@@ -2,7 +2,7 @@
 
 Every outbound email has exactly one authoritative classification — `transactional` or
 `marketing` — enforced structurally so a new email type cannot ship unclassified. Service
-implementation: [`backend/services/email-classification/README.md`](../../../backend/services/email-classification/README.md).
+implementation: [`docs/overview/architecture/services/email-classification/README.md`](../../overview/architecture/services/email-classification/README.md).
 
 ## Why
 
@@ -127,7 +127,7 @@ out of scope here — tracked by #1167 / #1351.
 
 ## Related
 
-- Service implementation: [`backend/services/email-classification/README.md`](../../../backend/services/email-classification/README.md)
+- Service implementation: [`docs/overview/architecture/services/email-classification/README.md`](../../overview/architecture/services/email-classification/README.md)
 - Membership renewal notifications: [Membership refunds, renewal notifications, and grants](../users/memberships.md#refunds-renewal-notifications-admin-grants-feature-flag-and-agent-prompt-slots)
 - Job replayability (non-replayable email queue): [JOB-REPLAYABILITY.md](JOB-REPLAYABILITY.md)
-- Email templates catalog: [`email-templates/README.md`](../../../email-templates/README.md)
+- Email templates catalog: [`docs/overview/architecture/email-templates/README.md`](../../overview/architecture/email-templates/README.md)

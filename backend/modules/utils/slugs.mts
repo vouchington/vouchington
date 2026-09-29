@@ -66,5 +66,5 @@ export const validateUsername = (username = '') => {
     'Username must contain at least 3 letters',
   )
   assert(!isUUID(username), 422, 'Username cannot be a UUID')
-  return username.toString()
+  return username
 }

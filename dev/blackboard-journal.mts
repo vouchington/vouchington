@@ -83,7 +83,7 @@ async function main(): Promise<void> {
     const directory = parsed.directory ?? join(process.cwd(), '.local', 'blackboard-outbox')
     const result =
       subcommand === 'outbox-status'
-        ? await feedbackOutboxStatus(directory)
+        ? feedbackOutboxStatus(directory)
         : await flushFeedbackOutbox({ directory })
     process.stdout.write(`${JSON.stringify(result)}\n`)
     return

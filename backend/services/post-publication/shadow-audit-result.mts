@@ -1,4 +1,4 @@
-import type { ShadowAuditCandidate } from './shadow-audit.mts'
+import type { ShadowAuditCandidate } from './shadow-audit-types.mts'
 
 export type PostPublicationShadowAuditResult = {
   dryRun: boolean

@@ -19,7 +19,7 @@ import {
   HttpNoBodyError,
   CrawlerInvalidContentTypeError,
 } from '@modules/on-error/errors'
-import { type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import onError from '@modules/on-error'
 import { enqueueCrawlBrowser } from '@queues/crawl-browser/enqueues'
 

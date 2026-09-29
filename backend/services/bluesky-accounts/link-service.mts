@@ -30,7 +30,7 @@ export async function completeBlueskyAccountLink(
   currentUserId: string,
   flowId: string,
 ): Promise<{ did: string; handle: string }> {
-  return await completeWebBlueskyAccountLinkDurably({
+  return completeWebBlueskyAccountLinkDurably({
     params: params.toString(),
     flowId,
     currentUserId,

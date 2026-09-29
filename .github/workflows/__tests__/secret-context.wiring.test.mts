@@ -92,7 +92,7 @@ describe('secret-backed workflow context gates (wiring and routing)', () => {
   })
 
   it('documents every Vitest project exactly once in VITEST.md', () => {
-    const mappingTable = read('.github/workflows/VITEST.md').split(
+    const mappingTable = read('docs/development/ci/workflows/VITEST.md').split(
       '\nCurrent conventions for future credentialed suites:',
     )[0]
     const projectNames = Array.from(

@@ -191,7 +191,7 @@ describe('cleanupExpiredBlueskyLinkCompletions', () => {
 })
 
 async function insertNativePending(userId: string, authorizationId: string, expiresAt: Date) {
-  return await insertTestBlueskyLinkedAccount({
+  return insertTestBlueskyLinkedAccount({
     userId: null,
     handle: null,
     linkingUserId: userId,

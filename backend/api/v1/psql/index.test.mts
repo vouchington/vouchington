@@ -15,4 +15,15 @@ describe('POST /api/v1/psql/jobs', () => {
 
     expect(response.body).toMatchObject({ success: true })
   })
+
+  it('enqueues the remaining psql admin jobs', async () => {
+    const user = await createTestUser({ administrator: true })
+    const request = createRequest()
+    await request.authenticateAs(user)
+
+    for (const type of ['runMigrations', 'runViews', 'createPartitions', 'cleanupPartitions']) {
+      const response = await request.post('/api/v1/psql/jobs').send({ type }).expect(200)
+      expect(response.body).toMatchObject({ success: true })
+    }
+  })
 })

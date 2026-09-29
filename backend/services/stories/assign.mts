@@ -94,7 +94,7 @@ export async function adminAssignItemToStory(
     reportError,
   )
   for (const { result } of refreshResults) {
-    if (result) enqueueStoryPost(result.postId, { force: true })
+    if (result) void enqueueStoryPost(result.postId, { force: true })
   }
   await (dependencies.invalidateStories ?? invalidateStories)(storyId, priorStoryId)
   return rows[0].id as string
@@ -161,7 +161,7 @@ export async function adminRemoveItemFromStory(
   const priorStoryId = rows[0].prior_story_id as string | null
   await dispatchPostCommitEffectsBestEffort(refreshResults, reportError)
   for (const refreshResult of refreshResults)
-    enqueueStoryPost(refreshResult.postId, { force: true })
+    void enqueueStoryPost(refreshResult.postId, { force: true })
   await (dependencies.invalidateStories ?? invalidateStories)(priorStoryId)
   return rows[0].id as string
 }

@@ -5,9 +5,7 @@ type ToolSchema = {
   name: string
   type: 'function'
   description?: string | null
-  parameters: {
-    [key: string]: unknown
-  } | null
+  parameters: Record<string, unknown> | null
   // Set to `true` to enable OpenAI structured outputs / strict JSON schema validation.
   // Set to `null` to leave provider strict-mode unset. `false` is not a supported value.
   strict: true | null

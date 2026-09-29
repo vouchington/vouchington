@@ -54,7 +54,7 @@ export async function addImageToBatch(
   const response = await dependencies.getImageFromS3(getDeployEnvironment(), image.s3_key)
   const bytes = await createBedrockImageBytes(response.Body, image.id)
 
-  return await fileBuilder.addImageIfFits(
+  return fileBuilder.addImageIfFits(
     {
       entity_id: image.id,
       image_sha_256: image.sha_256,

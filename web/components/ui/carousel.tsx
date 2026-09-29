@@ -2,46 +2,15 @@
 'use client'
 
 import * as React from 'react'
-import { use } from 'react'
-import useEmblaCarousel, { type UseEmblaCarouselType } from 'embla-carousel-react'
+import useEmblaCarousel from 'embla-carousel-react'
 
 import { cn } from '@/lib/utils'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { InternalCarouselNext, InternalCarouselPrevious } from './carousel/controls'
 import { InternalCarouselContent, InternalCarouselItem } from './carousel/layout'
 
-type CarouselApi = UseEmblaCarouselType[1]
-type UseCarouselParameters = Parameters<typeof useEmblaCarousel>
-type CarouselOptions = UseCarouselParameters[0]
-type CarouselPlugin = UseCarouselParameters[1]
-
-interface CarouselProps {
-  opts?: CarouselOptions
-  plugins?: CarouselPlugin
-  orientation?: 'horizontal' | 'vertical'
-  setApi?: (api: CarouselApi) => void
-}
-
-type CarouselContextProps = {
-  carouselRef: ReturnType<typeof useEmblaCarousel>[0]
-  api: ReturnType<typeof useEmblaCarousel>[1]
-  scrollPrev: () => void
-  scrollNext: () => void
-  canScrollPrev: boolean
-  canScrollNext: boolean
-} & CarouselProps
-
-const CarouselContext = React.createContext<CarouselContextProps | null>(null)
-
-export function useCarousel() {
-  const context = use(CarouselContext)
-
-  if (!context) {
-    throw new Error('useCarousel must be used within a <Carousel />')
-  }
-
-  return context
-}
+import { CarouselContext, type CarouselApi, type CarouselProps } from './carousel/context'
+export { useCarousel, type CarouselApi } from './carousel/context'
 
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- carousel containers need explicit group semantics with aria-roledescription. */
 function Carousel({
@@ -167,4 +136,4 @@ const CarouselItem = InternalCarouselItem
 const CarouselPrevious = InternalCarouselPrevious
 const CarouselNext = InternalCarouselNext
 
-export { type CarouselApi, Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext }
+export { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext }

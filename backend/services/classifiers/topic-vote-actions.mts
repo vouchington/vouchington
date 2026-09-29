@@ -53,7 +53,7 @@ async function assertSharedSystemActor(
   const { rows } = await query<{ is_system: boolean }>(sql`/* readClassifierTopicVoteActor */
     SELECT is_system FROM users WHERE id = ${sharedActorId}::uuid
   `)
-  if (rows[0]?.is_system !== true) {
+  if (!rows[0]?.is_system) {
     throw new Error('Classifier topic votes require a system actor')
   }
 }

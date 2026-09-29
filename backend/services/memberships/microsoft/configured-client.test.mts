@@ -4,6 +4,7 @@ import {
   createConfiguredMicrosoftStoreClient,
   getMicrosoftStoreServiceConfig,
 } from './configured-client.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 type ExternalFetch = ReturnType<typeof httpDispatchers.getExternalFetch>
 
@@ -215,7 +216,7 @@ describe('configured Microsoft Store client', () => {
       resolveToken = resolve
     })
     const fetch = vi.fn<ExternalFetch>(url =>
-      String(url).includes('/oauth2/v2.0/token')
+      stringFromUnknown(url).includes('/oauth2/v2.0/token')
         ? tokenResponse
         : Promise.resolve(Response.json({ items: [] })),
     )
@@ -234,7 +235,7 @@ describe('configured Microsoft Store client', () => {
     resolveToken!(Response.json({ access_token: 'service-token', expires_in: 3600 }))
     await expect(Promise.all([collections, recurrences])).resolves.toEqual([[], []])
     expect(
-      fetch.mock.calls.filter(([url]) => String(url).includes('/oauth2/v2.0/token')),
+      fetch.mock.calls.filter(([url]) => stringFromUnknown(url).includes('/oauth2/v2.0/token')),
     ).toHaveLength(1)
   })
 
@@ -294,6 +295,6 @@ function expectRequests(
   for (const [offset, body] of bodies.entries()) {
     const [calledUrl, options] = fetch.mock.calls[start + offset - 1]!
     expect(calledUrl).toBe(url)
-    expect(JSON.parse(String(options?.body))).toEqual(body)
+    expect(JSON.parse(stringFromUnknown(options?.body))).toEqual(body)
   }
 }

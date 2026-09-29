@@ -1,4 +1,4 @@
-Review Playwright tests. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review Playwright tests. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 - Run the relevant local Playwright test more than once when investigating reliability.
 - Find any failures and make them more reliable.

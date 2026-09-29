@@ -32,7 +32,7 @@ export async function runWithStoryPostRelatedUrlProjectionLeaseRenewal<T>(
   const renewalMs = dependencies.renewalMs ?? STORY_POST_RELATED_URL_PROJECTION_LEASE_RENEWAL_MS
 
   await renewStoryPostRelatedUrlProjectionLeaseNow(state)
-  if (state.renewalError) throw state.renewalError
+  assertNoRenewalError(state)
   if (state.ownershipLost) return null
 
   const timer = setInterval(renewStoryPostRelatedUrlProjectionLeaseOnInterval, renewalMs, state)
@@ -42,7 +42,7 @@ export async function runWithStoryPostRelatedUrlProjectionLeaseRenewal<T>(
     clearInterval(timer)
     await state.renewal
     await renewStoryPostRelatedUrlProjectionLeaseNow(state)
-    if (state.renewalError) throw state.renewalError
+    assertNoRenewalError(state)
     return state.ownershipLost ? null : { value }
   } finally {
     clearInterval(timer)
@@ -78,6 +78,12 @@ async function performStoryPostRelatedUrlProjectionLeaseRenewal(
   } catch (error) {
     state.ownershipLost = true
     state.renewalError =
-      error instanceof Error ? error : new Error('Story projection lease renewal failed')
+      error instanceof Error
+        ? error
+        : new Error('Story projection lease renewal failed', { cause: error })
   }
+}
+
+function assertNoRenewalError(state: LeaseRenewalState): void {
+  if (state.renewalError) throw state.renewalError
 }

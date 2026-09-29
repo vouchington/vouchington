@@ -1,6 +1,6 @@
 /* v8 ignore start -- catalog query helper is validated through schema-static-analysis.test.mts */
 import { read } from '../../../../data-stores/psql/index.mts'
-import { type TimestampConventionViolation } from './conventions.mts'
+import type { TimestampConventionViolation } from './conventions.mts'
 
 export async function getTimestampConventionViolations(): Promise<TimestampConventionViolation[]> {
   const { rows } = await read<TimestampConventionViolation>(

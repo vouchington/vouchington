@@ -30,7 +30,7 @@ function responseFor(
 ): Awaited<ReturnType<ClientIdMetadataDependencies['safeFetch']>> {
   return new Response(JSON.stringify(body), {
     status: 200,
-    headers: { 'content-type': 'application/json', ...init.headers },
+    headers: { 'content-type': 'application/json' },
     ...init,
   }) as unknown as Awaited<ReturnType<ClientIdMetadataDependencies['safeFetch']>>
 }
@@ -123,8 +123,8 @@ describe('Client ID Metadata Documents', () => {
     const clientId = randomMetadataUrl()
     await expect(
       resolveClientIdMetadataDocument(clientId, {
-        safeFetch: async (_url, options) =>
-          await new Promise((_resolve, reject) => {
+        safeFetch: (_url, options) =>
+          new Promise((_resolve, reject) => {
             options?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
           }),
       }),

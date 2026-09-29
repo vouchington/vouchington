@@ -12,7 +12,7 @@ import { recordPostPublicationChange } from '@services/post-publication'
 import { processReconcilePostPublication } from '../processors.mts'
 
 // The real-transport project routes by this suffix; no queue or service is mocked.
-vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => await original())
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => original())
 
 describe('post-publication notification recovery (real GlideMQ)', () => {
   it('does not acknowledge publication work when its notification enqueue fails, then retries delivery', async () => {

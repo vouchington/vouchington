@@ -1,6 +1,10 @@
 import { buildPageInfo } from '@modules/pagination'
 import type { Community, CommunityMetrics } from '../types.mts'
-import type { CommunityOwner, CommunitySortMode, SearchCommunitiesResult } from '../search.mts'
+import type {
+  CommunityOwner,
+  CommunitySortMode,
+  SearchCommunitiesResult,
+} from '../search-types.mts'
 
 type CommunitySearchRow = Community & {
   owner_id: string | null

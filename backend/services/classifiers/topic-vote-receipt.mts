@@ -28,7 +28,7 @@ export async function recordTopicVoteApplication(
         AND batch_id >= ${decision.batchId}
     ) AS exists
   `)
-  if (supersedingRows[0]?.exists === true) return false
+  if (supersedingRows[0]?.exists) return false
   const { rows } = await query<{ batch_id: string }>(sql`
     /* recordTopicClassifierVoteApplication */
     INSERT INTO classifier_topic_vote_applications (

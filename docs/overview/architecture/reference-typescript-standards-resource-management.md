@@ -56,6 +56,6 @@ instead of converting it solely for syntactic consistency.
 
 ## Related
 
-- [PostgreSQL data store](../../../backend/data-stores/psql/README.md)
+- [PostgreSQL data store](../../development/postgresql/README.md)
 - [Graceful shutdown](graceful-shutdown.md)
 - [Tests and checks](../../development/tests.md)

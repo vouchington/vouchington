@@ -151,6 +151,6 @@ currency association, and old or storage-shaped first-party public fields.
 - [Membership requirements](../../requirements/users/memberships.md)
 - [Data point requirements](../../requirements/platform/data-points-spec.md)
 - [Growth dashboard requirements](../../requirements/admin/GROWTH-DASHBOARD.md)
-- [PostgreSQL data store](../../../backend/data-stores/psql/README.md)
+- [PostgreSQL data store](../../development/postgresql/README.md)
 - [Web workspace rules](../../../web/AGENTS.md)
 - [Native client workspace rules](https://github.com/vouchington/vouchington-clients)

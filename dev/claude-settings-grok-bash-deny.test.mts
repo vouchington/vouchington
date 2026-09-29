@@ -67,7 +67,7 @@ const sanctionedForceWithLease = [
   'bash -lc "git push --force-with-lease origin docs/codex-workflow"',
 ]
 
-const bannedForcePushes = [
+const plainForcePushes = [
   'git push --force',
   'git push --force origin main',
   'git push origin --force',
@@ -77,21 +77,33 @@ const bannedForcePushes = [
   'git push origin +HEAD:main',
 ]
 
-describe('Claude settings deny list under Grok Bash matching', () => {
-  it('does not include the prefix-unsafe exact --force deny', () => {
-    expect(denyRules).not.toContain('Bash(git push --force)')
-  })
+const removedForceDenies = [
+  'Bash(git push --force)',
+  'Bash(git push --force *)',
+  'Bash(*git push --force)',
+  'Bash(git push * --force)',
+  'Bash(git push * --force *)',
+  'Bash(git push -f)',
+  'Bash(git push -f *)',
+  'Bash(git push * -f)',
+  'Bash(git push * -f *)',
+  'Bash(git push +*)',
+  'Bash(git push * +*)',
+]
 
-  it('keeps a leading-glob deny for the no-arg force push', () => {
-    expect(denyRules).toContain('Bash(*git push --force)')
+describe('Claude settings deny list under Grok Bash matching', () => {
+  it('does not deny plain force pushes; the pre-push hook owns that check', () => {
+    for (const rule of removedForceDenies) {
+      expect(denyRules).not.toContain(rule)
+    }
   })
 
   it.each(sanctionedForceWithLease)('does not deny sanctioned rebase push: %s', command => {
     expect(grokBashDenied(denyRules, command)).toBe(false)
   })
 
-  it.each(bannedForcePushes)('still denies banned force-push: %s', command => {
-    expect(grokBashDenied(denyRules, command)).toBe(true)
+  it.each(plainForcePushes)('does not deny plain force push %s', command => {
+    expect(grokBashDenied(denyRules, command)).toBe(false)
   })
 
   it('treats Bash(git push --force) as a prefix of --force-with-lease', () => {

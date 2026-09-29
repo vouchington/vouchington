@@ -114,7 +114,7 @@ async function listOutputObjectKeys(prefix: string): Promise<string[]> {
 
 /* no-mistakes: integration=bedrock */
 async function getOutputObject(key: string) {
-  return await S3BedrockBatchClient.send(
+  return S3BedrockBatchClient.send(
     new GetObjectCommand({
       Bucket: S3BedrockBatchBucket,
       Key: key,

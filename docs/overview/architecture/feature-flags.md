@@ -87,11 +87,11 @@ namespace value. Public reads started after that write remain eligible to refres
 
 ## Related Services
 
-- [backend/services/feature-flags/README.md](../../../backend/services/feature-flags/README.md) -- flag reading, cookie parsing, update logic
+- [docs/overview/architecture/services/feature-flags/README.md](services/feature-flags/README.md) -- flag reading, cookie parsing, update logic
 - [ts-shared/feature-flags](../../../ts-shared/feature-flags/index.mts) -- Voucha cookie-name and
   compatibility facade over the environment-agnostic platform primitives
 - [@vouchington/utils feature flags](https://github.com/vouchington/vouchington-platform/tree/main/packages/utils) -- dependency-free cookie codec mechanics
 - `backend/data-stores/valkey/dynamic-config.mts` -- `DynamicConfig` class
-- [backend/api/v1/feature-flags/README.md](../../../backend/api/v1/feature-flags/README.md) -- read endpoint
-- [backend/api/v1/dynamic-config/README.md](../../../backend/api/v1/dynamic-config/README.md) -- admin write endpoint and history
+- [docs/requirements/api/v1/feature-flags/README.md](../../requirements/api/v1/feature-flags/README.md) -- read endpoint
+- [docs/requirements/api/v1/dynamic-config/README.md](../../requirements/api/v1/dynamic-config/README.md) -- admin write endpoint and history
 - [Web rules](../../../web/AGENTS.md) -- UI conventions for feature flags

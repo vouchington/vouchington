@@ -120,7 +120,7 @@ describe('API origin guards', () => {
         let data = ''
         socket.setEncoding('utf8')
         socket.on('data', chunk => {
-          data += chunk
+          data += typeof chunk === 'string' ? chunk : chunk.toString('utf8')
         })
         socket.on('end', () => resolve(data))
         socket.on('error', reject)

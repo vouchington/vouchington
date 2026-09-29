@@ -4,7 +4,7 @@ import {
   type ScopeDefinition as PublicScopeDefinition,
 } from '@vouchington/utils/scopes'
 
-import type { ApiScope, ScopeDefinition } from './scopes.mts'
+import type { ApiScope, ScopeDefinition } from './scope-types.mts'
 
 /** Compile the current definition objects so surface checks see the live catalogue. */
 export function compileVouchaScopeCatalog(

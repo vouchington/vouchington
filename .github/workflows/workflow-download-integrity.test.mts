@@ -52,7 +52,7 @@ const SHELL_VAR_ASSIGN_RE = /^([A-Z_][A-Z0-9_]*)="([^"\n]+)"/gm
 
 type Step = {
   run?: string
-  env?: Record<string, string>
+  env?: Record<string, unknown>
 }
 
 type Job = {

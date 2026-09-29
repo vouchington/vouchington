@@ -4,7 +4,7 @@ import type { TrustTierContext } from './types.mts'
 
 const FIVE_MINUTES_IN_SECONDS = 5 * 60
 
-const rateLimitContextCache = new ValkeyCache<string>({
+const rateLimitContextCache = new ValkeyCache({
   prefix: 'user-rl-ctx',
   ttlSeconds: FIVE_MINUTES_IN_SECONDS,
   mode: 'text',
@@ -35,14 +35,14 @@ export async function getUserRateLimitContext(userId: string): Promise<TrustTier
       }
       if (context.membershipPlan && !('membershipExpiresAt' in context)) {
         await rateLimitContextCache.delete(userId)
-        return fetchRateLimitContext(userId)
+        return await fetchRateLimitContext(userId)
       }
       const membershipExpiresAt = context.membershipExpiresAt
         ? new Date(context.membershipExpiresAt)
         : null
       if (membershipExpiresAt && membershipExpiresAt <= new Date()) {
         await rateLimitContextCache.delete(userId)
-        return fetchRateLimitContext(userId)
+        return await fetchRateLimitContext(userId)
       }
       return {
         membershipPlan: context.membershipPlan ?? null,

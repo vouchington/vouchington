@@ -98,14 +98,14 @@ export async function withholdImagePlacementForCopyright(
   input: { placementId: string; expectedRevision: number },
   options: QueryOptions = {},
 ): Promise<CopyrightImagePlacementMutation> {
-  return await changeImagePlacementCopyrightWithholding(input, true, options)
+  return changeImagePlacementCopyrightWithholding(input, true, options)
 }
 
 export async function restoreImagePlacementForCopyright(
   input: { placementId: string; expectedRevision: number },
   options: QueryOptions = {},
 ): Promise<CopyrightImagePlacementMutation> {
-  return await changeImagePlacementCopyrightWithholding(input, false, options)
+  return changeImagePlacementCopyrightWithholding(input, false, options)
 }
 
 async function changeImagePlacementCopyrightWithholding(

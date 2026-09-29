@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  clearCategoriesForUnlinkedTopicAlias,
-  getRssFeedItemCategories,
-  upsertRssFeedItemCategories,
-} from '../categories.mts'
+import { getRssFeedItemCategories, upsertRssFeedItemCategories } from '../categories.mts'
+import { clearCategoriesForUnlinkedTopicAlias } from '../clear-topic-alias-categories.mts'
 import { applyCollaborativeTopicRelations } from '../collaborative-topic-relations.mts'
 import { clearCategorizerVotesForUnreferencedCategoryTopicRelations } from '../category-topic-votes.mts'
 import { upsertRssFeedItems } from '../upsert.mts'

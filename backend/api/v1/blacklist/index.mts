@@ -17,7 +17,7 @@ app.route('/api/v1/blacklist/dispatch').post(async (ctx: Context) => {
     currentUserCanManageBlacklist,
     'POST:/api/v1/blacklist/dispatch',
   )
-  enqueueBlacklistDispatcher()
+  await enqueueBlacklistDispatcher()
   ctx.json({ success: true })
 })
 
@@ -32,6 +32,6 @@ app.route('/api/v1/blacklist/source-sync').post(async (ctx: Context) => {
   ctx.assert(body !== null && typeof body === 'object' && 'sourceId' in body, 400)
   const sourceId = parsePositiveBigintId((body as { sourceId?: unknown }).sourceId)
   ctx.assert(sourceId, 400, 'sourceId must be a positive integer')
-  enqueueSourceSync({ sourceId } satisfies SourceSyncBody)
+  await enqueueSourceSync({ sourceId } satisfies SourceSyncBody)
   ctx.json({ success: true })
 })

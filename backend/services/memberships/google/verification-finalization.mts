@@ -14,7 +14,7 @@ import {
   finalizeVerified,
   getMapping,
 } from './verification-persistence.mts'
-import type { Context } from './process-verification.mts'
+import type { Context } from './process-verification-types.mts'
 import type { GooglePlayVerifiedMembershipObservation } from './types.mts'
 
 type GooglePlayTransaction = Awaited<ReturnType<typeof beginTransaction>>
@@ -61,7 +61,7 @@ async function isLatestGooglePlayPurchaseToken(options: {
         AND successor.membership_provider_lineage_id = ${options.lineageId}
         AND successor.linked_purchase_token_lookup_sha256 = ${tokenDigest(options.purchaseToken)}
     ) AS current`)
-  return rows[0]?.current === true
+  return rows.at(0)?.current ?? false
 }
 
 export async function deferPendingGooglePlayVerification(
@@ -99,7 +99,7 @@ export async function persistVerifiedGooglePlayObservation(
   const submittedToken = resolved.tokens[0]
   const firstSuccessor =
     submittedTokenInserted && submittedToken?.linkedToken
-      ? (
+      ? ((
           await query<{ first: boolean }>(sql`/* firstGooglePlaySuccessor */
             SELECT NOT EXISTS (
               SELECT 1 FROM membership_google_play_purchase_tokens sibling
@@ -107,7 +107,7 @@ export async function persistVerifiedGooglePlayObservation(
                 AND sibling.linked_purchase_token_lookup_sha256 = ${tokenDigest(submittedToken.linkedToken)}
                 AND sibling.purchase_token_lookup_sha256 <> ${tokenDigest(submittedToken.token)}
             ) AS first`)
-        ).rows[0]?.first === true
+        ).rows.at(0)?.first ?? false)
       : false
   const observationOrder =
     firstSuccessor && latestOrder > providerOrder

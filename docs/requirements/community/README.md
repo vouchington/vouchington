@@ -14,3 +14,10 @@ Community creation, management, comments, and curated lists.
 
 When community lifecycle, membership, or list features change, update the relevant doc here and
 cross-link from `docs/requirements/anatomy/community.md` and `backend/services/`.
+
+## Reference index
+
+- [Community Lists reference](reference-community-lists-community-metrics.md)
+- [Community Lists reference](reference-community-lists-list-type.md)
+- [Community Lists reference](reference-community-lists-overview.md)
+- [Community Lists reference](reference-community-lists-roles-permissions.md)

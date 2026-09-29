@@ -36,12 +36,12 @@ describe('Codex hook git -C global-option policy', () => {
     ).toBeNull()
   })
 
-  it('refuses a fetch and rebase chained through git -C', () => {
+  it('allows a fetch and rebase chained through git -C', () => {
     expect(
       findPreToolUseBlock({
         tool_input: { command: 'git -C /repo fetch origin && git -C /repo rebase origin/main' },
-      })?.reason,
-    ).toContain('./dev/rebase-onto-main')
+      }),
+    ).toBeNull()
   })
 
   it('still blocks hooksPath override when mixed with -C', () => {

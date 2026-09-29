@@ -6,15 +6,20 @@ import {
   assertSnapshotManifest,
   assertSafeSnapshotDestination,
   describeGeneratedSnapshotFiles,
-  isGeneratedSnapshotPath,
   type SnapshotIdentity,
   type SnapshotManifest,
 } from './postgresql-snapshot-update-core.mts'
 import { assertPublishTarget, candidateImage } from './postgresql-snapshot-github.mts'
 import { prepareSnapshotRequest } from './postgresql-snapshot-prepare.mts'
 
+import {
+  snapshotArtifactPath,
+  snapshotJsonPath,
+  snapshotMarkdownPath,
+  snapshotRepositoryPath,
+} from './postgresql-snapshot-paths.mts'
+
 const execFile = promisify(execFileCallback)
-const snapshotPath = 'backend/data-stores/psql/schema-snapshot'
 
 function required(name: string, value = process.env[name]): string {
   if (!value) throw new Error(`${name} is required`)
@@ -44,12 +49,12 @@ function identityFromEnvironment(): SnapshotIdentity {
 
 async function generateManifest(): Promise<void> {
   const identity = identityFromEnvironment()
-  const source = join(required('GITHUB_WORKSPACE'), snapshotPath)
+  const source = required('GITHUB_WORKSPACE')
   const target = required('SNAPSHOT_ARTIFACT_DIR', process.env.SNAPSHOT_ARTIFACT_DIR)
   await mkdir(target, { recursive: true })
   await Promise.all([
-    cp(join(source, 'schema.json'), join(target, 'schema.json'), { dereference: false }),
-    cp(join(source, 'markdown'), join(target, 'markdown'), {
+    cp(join(source, snapshotJsonPath), join(target, 'schema.json'), { dereference: false }),
+    cp(join(source, snapshotMarkdownPath), join(target, 'markdown'), {
       recursive: true,
       dereference: false,
     }),
@@ -64,8 +69,9 @@ async function copySnapshotFile(
   artifactRoot: string,
   relative: string,
 ): Promise<void> {
-  const destination = join(checkout, snapshotPath, relative)
-  await assertSafeSnapshotDestination(checkout, `${snapshotPath}/${relative}`)
+  const repositoryPath = snapshotRepositoryPath(relative)
+  const destination = join(checkout, repositoryPath)
+  await assertSafeSnapshotDestination(checkout, repositoryPath)
   await mkdir(dirname(destination), { recursive: true })
   return copyFile(join(artifactRoot, relative), destination)
 }
@@ -90,36 +96,29 @@ async function publish(): Promise<void> {
   }
   await assertPublishTarget(identity, defaultBranch)
 
-  const target = join(checkout, snapshotPath)
-  const tracked = await execFile('git', ['ls-files', '-z', '--', snapshotPath], { cwd: checkout })
+  const tracked = await execFile(
+    'git',
+    ['ls-files', '-z', '--', snapshotJsonPath, snapshotMarkdownPath],
+    { cwd: checkout },
+  )
   for (const path of tracked.stdout.split('\0').filter(Boolean)) {
-    const relative = path.slice(snapshotPath.length + 1)
-    if (!isGeneratedSnapshotPath(relative)) continue
-    await assertSafeSnapshotDestination(checkout, `${snapshotPath}/${relative}`)
-    if (!files.includes(relative)) await rm(join(target, relative))
+    const relative = snapshotArtifactPath(path)
+    if (relative === null) continue
+    await assertSafeSnapshotDestination(checkout, path)
+    if (!files.includes(relative)) await rm(join(checkout, path))
   }
   for (const relative of files) {
     await copySnapshotFile(checkout, artifactRoot, relative)
   }
-  await execFile(
-    'git',
-    ['add', '-A', '--', `${snapshotPath}/schema.json`, `${snapshotPath}/markdown`],
-    {
-      cwd: checkout,
-    },
-  )
+  await execFile('git', ['add', '-A', '--', snapshotJsonPath, snapshotMarkdownPath], {
+    cwd: checkout,
+  })
   const staged = (
     await execFile('git', ['diff', '--cached', '--name-only', '-z'], { cwd: checkout })
   ).stdout
     .split('\0')
     .filter(Boolean)
-  if (
-    staged.some(
-      path =>
-        !path.startsWith(`${snapshotPath}/`) ||
-        !isGeneratedSnapshotPath(path.slice(snapshotPath.length + 1)),
-    )
-  ) {
+  if (staged.some(path => snapshotArtifactPath(path) === null)) {
     throw new Error('Publisher staged a path outside generated snapshot files')
   }
   if (staged.length === 0) {

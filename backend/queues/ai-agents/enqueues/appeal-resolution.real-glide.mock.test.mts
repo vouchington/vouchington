@@ -3,10 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ai_agents } from '../queues.mts'
 import { enqueueAppealResolutionAndWait } from './appeal-resolution.mts'
 
-vi.mock<typeof import('glide-mq')>(
-  import('glide-mq'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('enqueueAppealResolutionAndWait', () => {
   const appealIds: string[] = []

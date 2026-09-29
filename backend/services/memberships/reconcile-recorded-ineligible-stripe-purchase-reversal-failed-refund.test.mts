@@ -12,7 +12,7 @@ import {
 } from './ineligible-stripe-purchase-reversal-execution.mts'
 import { claimIneligiblePurchaseReversals } from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from './reconcile-recorded-ineligible-stripe-purchase-reversal.mts'
-import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase.mts'
+import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
 
 describe('recorded ineligible Stripe purchase failed-refund reconciliation', () => {
   it('reconciles to zero when a known failed refund was superseded by an external refund', async () => {
