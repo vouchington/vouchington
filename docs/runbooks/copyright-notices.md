@@ -184,6 +184,39 @@ projection fail-closed, replay the idempotent edge-registry publication, invalid
 placement path, and verify both a cached and uncached request before acknowledging delivery. Never
 change the PostgreSQL revision merely to make the edge registry match it.
 
+## Review-target page
+
+The `copyright-review-target-page` job on the `notifications` queue runs every five minutes. When
+any count below is above zero, it sends one Sentry warning named `copyright_review_target_breach`.
+Its `reason` tag has the same value, and one boolean tag per count shows which counts are set:
+
+- `waiting_past_target` counts notices with an item waiting for a moderator longer than
+  `reviewTargetMinutes`. The items are:
+  - a form intake in the staff queue, timed from its receipt;
+  - an active restriction with no human review, timed from when it was imposed;
+  - an appeal or counter-notice with no moderator review, timed from its receipt; and
+  - a court or CCB filing with no assessment, timed from its receipt.
+- `missed_escalation` counts notices with an open deadline at or past `escalation_at`.
+- `missed_restoration_deadline` counts notices with an open deadline at or past
+  `restoration_deadline_at`. Those notices also count as missed escalations.
+
+`reviewTargetMinutes` is in the `copyright` dynamic-config namespace. Only a developer or an
+administrator can change it, and the namespace history records each change. The default is `0`,
+which means unset: `waiting_past_target` stays off. Set it to the approved target in whole minutes,
+at most 10,080 (one week). The service targets above are not applied until someone sets this value.
+Missed deadlines page even while the target is unset.
+
+The event holds each count and up to 20 notice IDs per count, oldest first. It has no claimant,
+poster, work, or correspondence fields. Open each case from the staff queue by notice ID and triage
+it as described in [Queue triage](#queue-triage). Treat a missed restoration deadline under
+[Incident response](#incident-response).
+
+The Sentry alert rule that routes this warning and its on-call destination are not in this
+repository ([#1230](https://github.com/vouchington/vouchington/issues/1230)). Until they exist, the
+warning appears only as a Sentry issue. Email intakes that await review are not counted yet. The
+job has no throttle beyond its five-minute schedule, so a breach repeats every sweep until it
+clears.
+
 ## Staff alerts
 
 Copyright staff alerts have no notification destination and no numeric review threshold in code.

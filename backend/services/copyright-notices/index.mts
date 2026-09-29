@@ -127,6 +127,12 @@ export { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.
 export { previewCopyrightEvidenceRetention } from './retention-preview.mts'
 export { recordCopyrightEvidenceRetentionDisposition } from './retention-disposition.mts'
 export {
+  COPYRIGHT_REVIEW_TARGET_NOTICE_ID_LIMIT,
+  readCopyrightReviewTargetBreaches,
+  type CopyrightReviewTargetBreaches,
+} from './review-target-breaches.mts'
+export { getCopyrightReviewTargetMinutes } from './config.mts'
+export {
   acknowledgeCopyrightStaffAlert,
   listCopyrightStaffAlertAcknowledgements,
   listOpenCopyrightStaffAlerts,

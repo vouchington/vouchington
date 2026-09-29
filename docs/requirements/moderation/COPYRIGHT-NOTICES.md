@@ -408,6 +408,25 @@ fields are returned only to copyright reviewers, and only while an approved aler
 No alert destination or operator threshold is stored. A failed alert delivery does not resolve the
 deadline or the delivery obligation.
 
+## Review-target page
+
+A five-minute sweep sends one Sentry warning when copyright work is late. It counts three sets of
+notices:
+
+- notices with an item waiting for a moderator longer than `reviewTargetMinutes`;
+- notices with an open counter-notice deadline at or past `escalation_at`; and
+- notices with an open deadline at or past `restoration_deadline_at`.
+
+`reviewTargetMinutes` lives in the audited `copyright` dynamic-config namespace. Its default is `0`,
+which means unset: the waiting count stays off until an operator records an approved target. Missed
+deadlines page whether or not a target is set. The warning carries only counts and at most 20 notice
+IDs per set. It never carries claimant, poster, work, or correspondence fields. When every count is
+zero, nothing is sent.
+
+The Sentry alert rule and on-call destination for this warning are not in this repository
+([#1230](https://github.com/vouchington/vouchington/issues/1230)). Email intakes that await review
+are not counted yet. See the [runbook](../../runbooks/copyright-notices.md#review-target-page).
+
 ## Activation gates
 
 Before accepting live notices, the operator must register and publish the actual US designated

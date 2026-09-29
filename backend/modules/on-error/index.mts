@@ -1,6 +1,7 @@
 import Sentry from './sentry.mts'
 import { isExpectedCrawlerOperationalError } from './expected-crawler-operational-error.mts'
 import { getOptionalRequestClientInfo } from '@modules/request-client-info'
+export { recordCopyrightReviewTargetBreach } from './copyright-review-target-breach.mts'
 export { recordOffAllowlistEgress } from './egress-guardrail.mts'
 export { recordOpenAiSpendCapBreach } from './openai-spend-cap-breach.mts'
 export { recordSqsConsumerConfigMissing } from './sqs-consumer-config-missing.mts'

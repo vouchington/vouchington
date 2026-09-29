@@ -74,6 +74,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'notifications/media-delivery-registry-reconciliation',
   'notifications/copyright-action-reconciliation',
   'notifications/copyright-delivery-reconciliation',
+  'notifications/copyright-review-target-page',
   'notifications/notification-push-intent-recovery',
   'openai_moderation_omni_single/reconcile-image-quarantines',
   'openai_moderation_omni_single/reconcile-post-moderation',
@@ -102,7 +103,7 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 31 manifests, including the scheduler tombstone, and 82 live jobs', () => {
+  it('imports the exact 31 manifests, including the scheduler tombstone, and 83 live jobs', () => {
     expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(31)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
@@ -152,7 +153,7 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(66)
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(67)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,

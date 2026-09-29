@@ -35,6 +35,7 @@ const NON_PRODUCTION_CLAMP_JOBS = [
   'memberships/stripeEventRecovery',
   'notifications/copyright-action-reconciliation',
   'notifications/copyright-delivery-reconciliation',
+  'notifications/copyright-review-target-page',
   'notifications/media-delivery-registry-reconciliation',
   'notifications/notification-push-intent-recovery',
   'oauth-authorization-exchange/oauthAuthorizationExchangeDispatcher',
@@ -53,8 +54,8 @@ describe('staging hourly-floor clamp', () => {
   it('clamps exactly the non-production high-frequency jobs and leaves every other repeat unchanged', async () => {
     const baseline = await captureRegisteredRepeats({ ENVIRONMENT: 'production' })
     const staging = await captureRegisteredRepeats({ ENVIRONMENT: 'staging' })
-    expect(baseline.size).toBe(82)
-    expect(staging.size).toBe(82)
+    expect(baseline.size).toBe(83)
+    expect(staging.size).toBe(83)
     const clamped = [...baseline.keys()].filter(
       key => JSON.stringify(staging.get(key)) !== JSON.stringify(baseline.get(key)),
     )

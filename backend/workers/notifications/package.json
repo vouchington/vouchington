@@ -21,6 +21,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/on-error": "workspace:^",
     "@modules/queue-config": "workspace:^",
     "@modules/queue-errors": "workspace:^",
     "@queues/emails": "workspace:^",
