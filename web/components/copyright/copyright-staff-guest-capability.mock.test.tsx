@@ -233,4 +233,18 @@ describe('CopyrightStaffGuestCapability', () => {
       screen.queryByRole('button', { name: 'Load older guest access' }),
     ).not.toBeInTheDocument()
   })
+
+  it('does not request older access without a cursor', async () => {
+    mockList.mockResolvedValue({
+      ...page([capability()], true),
+      page_info: { has_next_page: true, start_cursor: null, end_cursor: null },
+    })
+    render(<CopyrightStaffGuestCapability noticeId={noticeId} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Load older guest access' }))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Load older guest access' })).toBeEnabled()
+    })
+    expect(mockList).toHaveBeenCalledTimes(1)
+    expect(onError).not.toHaveBeenCalled()
+  })
 })

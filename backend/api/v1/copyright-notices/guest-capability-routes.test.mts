@@ -92,6 +92,7 @@ describe('copyright guest capability routes', () => {
     const listed = await staff
       .get(`/api/v1/copyright-notices/${noticeId}/guest-capabilities`)
       .expect(200)
+    expect(listed.headers['cache-control']).toBe('private, no-store')
     expect(listed.body).toEqual({
       copyright_guest_capabilities: [
         {
