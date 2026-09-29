@@ -62,6 +62,21 @@ describe('CopyrightNoticeForm', () => {
     ).toBeInTheDocument()
   })
 
+  it('warns about §512(f) misrepresentation liability above the submit button', () => {
+    render(<CopyrightNoticeForm />)
+
+    const warning = screen.getByRole('note')
+    expect(warning).toHaveTextContent(/512\(f\).*that material is infringing.*attorneys' fees/i)
+    expect(warning).toHaveTextContent(/fair use/i)
+    expect(screen.getByRole('link', { name: 'How copyright complaints work' })).toHaveAttribute(
+      'href',
+      '/article/copyright-complaints',
+    )
+    expect(
+      warning.compareDocumentPosition(screen.getByRole('button', { name: 'Submit notice' })),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+  })
+
   it('resolves a hosted-use URL and submits only selected images without exposing raw IDs', async () => {
     mockResolveTargets.mockResolvedValue([
       {
