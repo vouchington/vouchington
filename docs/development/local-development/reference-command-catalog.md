@@ -37,6 +37,12 @@ Operating-system and host provisioning is intentionally not a `dev/` entrypoint.
   (`pnpm install` follows the reset). `--force` permits discarding uncommitted changes. A second reset
   of the same worktree fails immediately; see
   [git-worktree-locks.md](../git-worktree-locks.md).
+- `./dev/rebase-onto-main [--stack] [--upstack]` — Current worktree. Runs `git fetch origin main`,
+  then `git rebase origin/main`, both with `git -C` anchored at the repository that contains
+  [`dev/rebase-onto-main`](../../../dev/rebase-onto-main). `--stack` runs `gh stack rebase` in the
+  current directory after that fetch instead of `git rebase`. `--upstack` is accepted only with
+  `--stack` and runs `gh stack rebase --upstack`. `-h` or `--help` prints usage and exits before
+  the fetch. Any other option, and `--upstack` without `--stack`, is rejected before the fetch.
 - `./dev/cleanup [--yes]` — All local Voucha worktrees; removes confirmed orphaned canonical hashed databases, Valkey
   containers, and prunable worktrees.
 - `./dev/unstick-locks` — All local worktrees; removes stale zero-byte Git index locks and a dead-owner
