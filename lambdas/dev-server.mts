@@ -1,5 +1,4 @@
 import http from 'node:http'
-import { fileURLToPath } from 'node:url'
 import { handler as imageHandler } from './image-resize/index.mts'
 import { httpRequestToLambdaEvent } from './image-resize/http-request-to-lambda-event.mts'
 import {
@@ -80,7 +79,7 @@ export function listen(target: http.Server, port: number): void {
   })
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   /* c8 ignore next -- entry-point guard never executes under import-based tests */
   listen(server, PORT)
 }

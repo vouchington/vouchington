@@ -1,5 +1,4 @@
 import { appendFileSync, globSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 
 import { GITHUB_MATRIX_MAX_JOBS } from '../shard-limits.mts'
 
@@ -67,7 +66,7 @@ export function runnablePlaywrightSpecCount(worktreeRoot: string): number {
     .length
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   const total = playwrightShardTotal(
     runnablePlaywrightSpecCount(process.env['GITHUB_WORKSPACE'] ?? process.cwd()),
     process.env['SHARD_TOTAL_OVERRIDE'],

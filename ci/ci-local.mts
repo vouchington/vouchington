@@ -20,6 +20,6 @@ export function runCiLocal(args: string[]): number {
   return runPublished({ args, targets, usage: USAGE })
 }
 
-if (process.argv[1] === import.meta.filename) {
+if (import.meta.main) {
   process.exitCode = runCiLocal(process.argv.slice(2))
 }

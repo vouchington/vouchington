@@ -1,8 +1,5 @@
 #!/usr/bin/env node
 /** Trusted/local inventory check. It reads only secret names and presence, never values. */
-import { realpathSync } from 'node:fs'
-import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 
 import pSettle from 'p-settle'
@@ -193,8 +190,4 @@ export async function runVerifyWorkflowSecretsCli(
   }
 }
 
-if (
-  process.argv[1] &&
-  realpathSync(resolve(process.argv[1])) === realpathSync(fileURLToPath(import.meta.url))
-)
-  process.exitCode = await runVerifyWorkflowSecretsCli(process.argv.slice(2))
+if (import.meta.main) process.exitCode = await runVerifyWorkflowSecretsCli(process.argv.slice(2))

@@ -1,5 +1,4 @@
 import { appendFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 
 import { decide, type DecisionResult } from './decision-evaluator.mts'
 import { readDecisionEnv } from './env.mts'
@@ -13,7 +12,7 @@ export function formatDecisionOutput(result: DecisionResult): string {
   return `decision=${result.decision}\nmatched_rule=${result.matchedRule}\n`
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   const { conclusion, githubOutput, repository, runAttempt, runId, workflowName } =
     readDecisionEnv()
   const ctx = await buildWorkflowRunContext({

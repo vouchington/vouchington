@@ -297,6 +297,14 @@ and attached (`-XGET`, `--method=GET`) forms — `gh` 2.96.0 parses both — mir
 detection already tolerates attached forms. `gh api graphql` calls are exempt: GraphQL has no GET
 form, so `-f`/`-F` there always POSTs by design (#10956).
 
+The `no-argv-main-module-guard.yml` rule bans detecting a script's entry point by comparing
+`process.argv[1]` with `import.meta.url`, `import.meta.filename`, or `__filename`, directly or
+through `fileURLToPath`, `pathToFileURL`, `resolve`, or `realpathSync`. Node resolves the main module
+through `realpath`, so a script started through a symlinked path (macOS temp directories under
+`/var/folders`, where `/var` links to `/private/var`) never matches: the guard is false, the script
+does nothing, and it exits 0 (#778). Use `import.meta.main`, or default an injected `isMain`
+parameter to it. Other reads of `process.argv[1]`, such as a positional CLI argument, are fine.
+
 ## Migration Artifact Cleanup
 
 The PostgreSQL [relational-storage guard](../../../../static-code-analysis/repo-file-policy/relational-storage-guard.mts) reads the

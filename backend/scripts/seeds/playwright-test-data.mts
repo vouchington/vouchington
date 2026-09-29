@@ -75,7 +75,7 @@ export async function seedPlaywrightTestData() {
     throw error
   }
 }
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.main) {
   await seedPlaywrightTestData()
   process.exit(0)
 }

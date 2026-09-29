@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import { fileURLToPath } from 'node:url'
 import {
   collectDbBackedTestSetupInput,
   hasDataStoreInit,
@@ -119,6 +118,6 @@ function main() {
   process.exit(1)
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   main()
 }
