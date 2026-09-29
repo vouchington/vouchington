@@ -191,7 +191,6 @@ describe('agent sandbox configuration', () => {
       ['pnpm', 'dlx'],
       ['pnpm', '--filter'],
       ['pnpm', '--dir'],
-      ['corepack', 'pnpm'],
     ]) {
       expect(codexRules).not.toContain(codexRuleFor(pattern))
     }

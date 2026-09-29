@@ -151,8 +151,7 @@ On `main`, the backend ECR login TLS handshake timeout, backend ECR push TLS han
 backend ECR push layer retry timeout, backend ECR push timeout, backend BuildKit,
 tooling teardown artifact-upload timeout,
 Lambda deploy AWS CLI closed connection, Lint Links GitHub 5xx, Main CI checks probe-mise hook timeout,
-runner shutdown of an idempotent leaf job,
-Docker Corepack pnpm registry 5xx, and Storybook rows above are auto-classified by the rule
+runner shutdown of an idempotent leaf job, and Storybook rows above are auto-classified by the rule
 catalogue in [`ci/transient-retry/`](ci/transient-retry/README.md). Those classified failures
 rerun according to their rows except terminal BuildKit session expiry, which is ignored without a
 retry or Fix Main dispatch. The generic Docker rows are not yet
