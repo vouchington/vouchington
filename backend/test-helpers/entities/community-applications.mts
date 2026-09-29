@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CommunityApplication } from '@voucha/types/entities/community'
 
@@ -36,4 +36,24 @@ export async function insertTestCommunityApplication(
     ...row,
     answers,
   }
+}
+
+/** Stored answer rows of an application, ordered by question id; `value` is the raw JSON. */
+export async function listTestCommunityApplicationAnswers(
+  applicationId: string,
+): Promise<{ question_id: string; value: unknown }[]> {
+  const { rows } = await read(
+    sql`/* listTestCommunityApplicationAnswers */
+    SELECT question_id, value FROM community_application_answers
+    WHERE application_id = ${applicationId}
+    ORDER BY question_id
+    `,
+  )
+  return rows as { question_id: string; value: unknown }[]
+}
+
+export async function deleteTestCommunityApplication(applicationId: string): Promise<void> {
+  await write(sql`/* deleteTestCommunityApplication */
+    DELETE FROM community_applications WHERE id = ${applicationId}
+  `)
 }

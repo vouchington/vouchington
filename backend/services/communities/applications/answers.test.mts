@@ -1,9 +1,10 @@
-import { read, write } from '@data-stores/psql'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
+  deleteTestCommunityApplication,
   insertTestCommunity,
   insertTestCommunityMember,
+  listTestCommunityApplicationAnswers,
 } from '@voucha/test-helpers'
 import { banUserFromCommunity } from '../bans/create.mts'
 import { archiveCommunity } from '../archive.mts'
@@ -65,16 +66,7 @@ describe('application answers', () => {
       [long!.id]: null,
     })
 
-    const stored = async () =>
-      (
-        await read(
-          `/* readStoredAnswers */
-          SELECT question_id, value FROM community_application_answers
-          WHERE application_id = $1 ORDER BY question_id`,
-          [application.id],
-        )
-      ).rows
-    expect(await stored()).toEqual(
+    expect(await listTestCommunityApplicationAnswers(application.id)).toEqual(
       [
         { question_id: short!.id, value: 'text' },
         { question_id: long!.id, value: null },
@@ -82,10 +74,8 @@ describe('application answers', () => {
     )
     expect(application.answers).not.toHaveProperty(skipped!.id)
 
-    await write(`/* deleteApplication */ DELETE FROM community_applications WHERE id = $1`, [
-      application.id,
-    ])
-    expect(await stored()).toEqual([])
+    await deleteTestCommunityApplication(application.id)
+    expect(await listTestCommunityApplicationAnswers(application.id)).toEqual([])
   })
 
   it('preserves multi-select input order and required checkbox false', async () => {
