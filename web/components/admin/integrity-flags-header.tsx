@@ -28,33 +28,33 @@ export interface IntegrityFlagsHeaderLabels {
 
 export interface IntegrityFlagsHeaderProps {
   flagsHref: string
-  headingDataPw: string
+  headingPw: string
   isPending: boolean
   labels: IntegrityFlagsHeaderLabels
   onRefresh: () => void
   onStatusChange: (status: IntegrityFlagStatusFilter) => void
-  penaltiesDataPw: string
   penaltiesHref: string
+  penaltiesPw: string
   selectedStatus: IntegrityFlagStatusFilter
-  statusFilterDataPw?: string
+  statusFilterPw?: string
 }
 
 export function IntegrityFlagsHeader({
   flagsHref,
-  headingDataPw,
+  headingPw,
   isPending,
   labels,
   onRefresh,
   onStatusChange,
-  penaltiesDataPw,
   penaltiesHref,
+  penaltiesPw,
   selectedStatus,
-  statusFilterDataPw,
+  statusFilterPw,
 }: IntegrityFlagsHeaderProps) {
   return (
     <div className='mb-8'>
       <AdminPageHeader
-        dataPw={headingDataPw}
+        dataPw={headingPw}
         title={labels.title}
         description={labels.description}
       >
@@ -80,7 +80,7 @@ export function IntegrityFlagsHeader({
               href={penaltiesHref}
               prefetch={false}
               // oxlint-disable-next-line no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- each flags page passes its own literal penalties tab id
-              data-pw={penaltiesDataPw}
+              data-pw={penaltiesPw}
             >
               {labels.penalties}
             </Link>
@@ -94,7 +94,7 @@ export function IntegrityFlagsHeader({
             className='w-36'
             aria-label={labels.status}
             // oxlint-disable-next-line no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- vote passes a literal id; report omits it so a default would add a ghost selector
-            data-pw={statusFilterDataPw}
+            data-pw={statusFilterPw}
             disabled={isPending}
           >
             <SelectValue placeholder={labels.pending} />

@@ -17,7 +17,7 @@ export function VoteIntegrityFlagsHeader(props: VoteIntegrityFlagsHeaderProps) {
     <IntegrityFlagsHeader
       {...props}
       flagsHref='/vote-integrity/flags'
-      headingDataPw='vote-integrity-flags-heading'
+      headingPw='vote-integrity-flags-heading'
       labels={{
         all: t('extracted.flags.voteIntegrityFlagsHeader.all_a52ace42'),
         description: t(
@@ -31,9 +31,9 @@ export function VoteIntegrityFlagsHeader(props: VoteIntegrityFlagsHeaderProps) {
         status: t('extracted.flags.voteIntegrityFlagsHeader.filterFlagsByStatus_dc937672'),
         title: t('extracted.flags.voteIntegrityFlagsHeader.voteIntegrityFlags_1917e940'),
       }}
-      penaltiesDataPw='vote-integrity-penalties-tab'
+      penaltiesPw='vote-integrity-penalties-tab'
       penaltiesHref='/vote-integrity/penalties'
-      statusFilterDataPw='vote-integrity-flags-status-filter'
+      statusFilterPw='vote-integrity-flags-status-filter'
     />
   )
 }

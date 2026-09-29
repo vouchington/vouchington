@@ -17,7 +17,7 @@ export function ReportIntegrityFlagsHeader(props: ReportIntegrityFlagsHeaderProp
     <IntegrityFlagsHeader
       {...props}
       flagsHref='/report-integrity/flags'
-      headingDataPw='report-integrity-flags-heading'
+      headingPw='report-integrity-flags-heading'
       labels={{
         all: t('extracted.flags.reportIntegrityFlagsHeader.all_a52ace42'),
         description: t(
@@ -31,7 +31,7 @@ export function ReportIntegrityFlagsHeader(props: ReportIntegrityFlagsHeaderProp
         status: t('extracted.flags.reportIntegrityFlagsHeader.filterFlagsByStatus_dc937672'),
         title: t('extracted.flags.reportIntegrityFlagsHeader.reportIntegrityFlags_b3271a57'),
       }}
-      penaltiesDataPw='report-integrity-penalties-tab'
+      penaltiesPw='report-integrity-penalties-tab'
       penaltiesHref='/report-integrity/penalties'
     />
   )

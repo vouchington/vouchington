@@ -1,6 +1,7 @@
 {
   "accordion.stories.tsx": ["Single", "Multiple"],
   "admin-curated-asides.stories.tsx": ["TableWithItems", "EmptyTable"],
+  "admin-integrity-flags.stories.tsx": ["Report", "Vote"],
   "admin-integrity-penalties.stories.tsx": [
     "Header",
     "RowRequiringReconciliation",
