@@ -87,10 +87,10 @@ Before enabling it, confirm all of the following:
 - the GDPR Article 22 automated-decision disclosure
   ([#1230](https://github.com/vouchington/vouchington/issues/1230)) is published; and
 - the staff queue has no clear-screened signed-in intake awaiting review, or staff accept that the
-  next sweep withholds all of them at once.
+  sweeps withhold all of them without a moderator.
 
-Enabling it releases the backlog. The next agent-dispatch sweep withholds every clear-screened
-signed-in intake that lacks a moderator review, and the action reconciler enforces every pending
+Enabling it releases the backlog. The agent-dispatch sweeps withhold every clear-screened signed-in
+intake that lacks a moderator review, and the action reconciler enforces every pending
 automated request. Each of those restrictions then needs its own human decision within the triage
 target above.
 
