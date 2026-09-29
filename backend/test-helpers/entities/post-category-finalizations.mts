@@ -53,7 +53,7 @@ export async function getTestAdmissionResponseTopicSnapshot(postId: string): Pro
   if (!row) return null
   return {
     responseGeneration: row.admission_response_generation,
-    topicCount: Number(row.topic_count),
+    topicCount: row.topic_count,
   }
 }
 
