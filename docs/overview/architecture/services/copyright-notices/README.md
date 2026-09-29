@@ -9,7 +9,9 @@ allowlisted member projection; PostgreSQL owns the durable legal aggregate intro
 The package provides transactional aggregate creation, immutable submission and assessment records,
 deadline derivation, restriction/review transitions, hold resolution, correspondence approval, and
 revision-fenced restore intents. The intake layer adds structured form and preserved-email records,
-but remains disabled by default with `COPYRIGHT_INTAKE_ENABLED`. Later enforcement and delivery
+but remains disabled by default with `COPYRIGHT_INTAKE_ENABLED`. `assertCopyrightIntakeEnabled()`
+is the one guard every new-intake route (US form, EU and UK notices) calls first; in-case responses
+and staff routes never call it. Later enforcement and delivery
 layers must use these boundaries instead of treating a generic content report or ordinary appeal as
 a statutory notice.
 

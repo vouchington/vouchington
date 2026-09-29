@@ -40,10 +40,6 @@ These are product response targets, not representations of safe-harbor eligibili
 Keep `COPYRIGHT_INTAKE_ENABLED=false` until all of the following are verified in the target
 environment:
 
-This switch stops only new intake and intake-agent processing. Existing complaint pages and all
-ongoing statutory casework remain available; use the individual delivery/enforcement controls and
-incident procedures rather than the intake switch to manage a downstream outage.
-
 - the published address belongs to the registered US designated agent and production inbox routing
   assigns `copyright` only to the trusted `copyright-incoming/` S3 prefix;
 - `S3_BUCKET_COPYRIGHT_EVIDENCE` is private, encrypted, versioned, access-logged, retention-reviewed,
@@ -54,6 +50,29 @@ incident procedures rather than the intake switch to manage a downstream outage.
 - receipts, poster notices, approved correspondence, retry/bounce handling, appeal and counter-notice
   workflows are live; and
 - the repeat-infringer policy, retention schedule, templates, staffing, and legal review are approved.
+
+This switch is the intake kill switch. It stops only new claimant intake and intake-agent
+processing. Existing complaint pages and all ongoing statutory casework remain available; use the
+individual delivery/enforcement controls and incident procedures rather than the intake switch to
+manage a downstream outage.
+
+| Class             | Routes                                                                                                                                | While the switch is off |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| New intake        | `POST /api/v1/copyright-notices` (signed-in and guest form), `POST /api/v1/copyright-eu-notices`, `POST /api/v1/copyright-uk-notices` | 503                     |
+| In-case responses | Appeals, counter-notices, guest filings (supplement, withdrawal, court/CCB hold), EU and UK redress, EU supervised complaints         | Open                    |
+| Staff             | Every staff decision, review, replay, capability, repeat-infringer, territorial-policy, and report route                              | Open                    |
+
+[`intake-kill-switch-routes.test.mts`](../../backend/api/v1/copyright-notices/intake-kill-switch-routes.test.mts)
+fails when a non-GET copyright route has no class. Staff approval of an already received email or
+form intake is a staff decision, so it can still open a case while the switch is off. New EU and UK
+notices need the switch and an unwithdrawn territorial policy approval. Turning the switch on does
+not approve either jurisdiction.
+
+The switch also pauses designated-agent email. The SES worker leaves every inbound message in
+`copyright-incoming/` and processes it once the switch is on again, including replies on existing
+cases. Emailed counter-notices and court/CCB filing notices start their §512(g) clocks on receipt,
+so while intake is off staff must read the designated-agent inbox directly so no statutory
+deadline is missed.
 
 The web footer must link to the Copyright policy, designated-agent status, repeat-infringer policy,
 Terms, Privacy, and Community Guidelines. Before launch, counsel must update the DB-backed Terms,
