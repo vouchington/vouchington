@@ -11,6 +11,7 @@ import { createCopyrightCounterNotice } from '@/lib/api/client/copyright-notices
 import onError, { onSuccess } from '@/lib/on-error'
 import { DeclarationCheckbox, LabeledInput } from './copyright-form-fields'
 import { TargetScopeSelector } from './copyright-appeal-form'
+import { CopyrightMisrepresentationWarning } from './copyright-misrepresentation-warning'
 import { useCopyrightTargetSelection } from './copyright-target-selection'
 
 export function CopyrightCounterNoticeForm({
@@ -149,6 +150,7 @@ export function CopyrightCounterNoticeForm({
           I accept service of process from the person who submitted the original notice or that
           person&apos;s agent.
         </DeclarationCheckbox>
+        <CopyrightMisrepresentationWarning kind='counter_notice' />
         <TurnstileField turnstile={turnstile} />
         <Button
           type='submit'

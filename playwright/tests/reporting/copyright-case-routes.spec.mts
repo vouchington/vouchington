@@ -47,6 +47,9 @@ test('accepted case links retain poster scope in appeal and statutory counter-no
   await expect(
     page.getByRole('button', { name: 'Submit counter-notice', exact: true }),
   ).toBeDisabled()
+  const warning = page.getByTestId('copyright-misrepresentation-warning')
+  await expect(warning).toContainText('512(f)')
+  await expect(warning.getByRole('link')).toHaveAttribute('href', '/article/copyright-complaints')
 })
 
 test('staff review rationale hydrates for a genuine pending restriction', async ({ page }) => {
