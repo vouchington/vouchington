@@ -37,9 +37,9 @@ export async function seedPruningProof(): Promise<void> {
     )
     await write(
       `/* seedPruningProofMessage */ INSERT INTO conversation_messages
-        (conversation_id, created_by_id, chat_role, chat_text)
-       VALUES ($1, $2, 'user'::conversation_message_chat_roles, 'proof')`,
-      [conversationId, fixture.userId],
+        (conversation_id, created_by_id, content)
+       VALUES ($1, $2, $3::jsonb)`,
+      [conversationId, fixture.userId, JSON.stringify({ role: 'user', content: 'proof' })],
     )
   }
   for (const [index, relationId] of fixture.relations.entries()) {

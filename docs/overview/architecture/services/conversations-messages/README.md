@@ -20,7 +20,7 @@ and prevent gaps or duplicates.
 ## Key exports
 
 - `createConversation(createdById, title?)` — starts a new conversation
-- `createConversationMessage(conversationId, createdById, content)` — stores a chat envelope as role, text, and error columns
+- `createConversationMessage(conversationId, createdById, content)` — validates and stores the `{ role, content, error }` chat envelope as JSON in `conversation_messages.content`
 - `createConversationMessageAgenticRun(params)` — records a new agentic run for a message
 - `createRunEventWriter(agenticRunId)` — returns a writer function for streaming run events
 - `getConversationById(id)` / `getConversationByIdForMutation(id)` / `getConversationsByCreatedById(userId, options)` — conversation retrieval

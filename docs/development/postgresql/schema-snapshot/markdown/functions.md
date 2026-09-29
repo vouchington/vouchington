@@ -75,30 +75,6 @@ CREATE OR REPLACE FUNCTION public.fn_apply_moderation_transparency_daily_rollup(
  LANGUAGE plpgsql
 ```
 
-## `fn_assert_community_application_answer_from_answer`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_from_answer()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_assert_community_application_answer_from_selection`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_from_selection()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_assert_community_application_answer_selection_state(checked_answer_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_selection_state(checked_answer_id uuid)
- RETURNS void
- LANGUAGE plpgsql
-```
-
 ## `fn_assert_follower_distribution_recipient_bounds`
 
 ```sql

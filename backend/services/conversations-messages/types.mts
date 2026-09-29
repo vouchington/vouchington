@@ -3,7 +3,7 @@ import type { Conversation } from '@voucha/types/entities/conversation'
 
 export type { Conversation }
 
-/** Public chat envelope assembled from typed chat_role, chat_text, and chat_error columns. */
+/** Stored shape of conversation_messages.content (JSON). */
 export type ConversationMessageContent =
   | { role: 'user'; content: string }
   | { role: 'assistant'; content: string | null; error?: string }
