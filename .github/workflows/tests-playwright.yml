@@ -185,9 +185,10 @@ jobs:
       - name: Run Playwright tests
         id: run-playwright
         # PLAYWRIGHT_EXECUTION_BUDGET_SECONDS (ci/playwright/shard-total.mts) sizes shards to about
-        # 350s of test time; this ceiling adds a slow-runner tail on top of it. Merge-queue shards
-        # still recording passes were killed at 9 minutes with ~50 tests left at ~80 passes per
-        # 2.5 minutes (#1185), so 12 covers that tail. Assertion failures still fail the step.
+        # 300s of average test time (about 350s for the heaviest); this ceiling adds a slow-runner
+        # tail on top of it. Merge-queue shards still recording passes were killed at 9 minutes
+        # with ~50 tests left at ~80 passes per 2.5 minutes (#1185), so 12 covers that tail.
+        # Assertion failures still fail the step.
         timeout-minutes: 12
         env:
           GIT_COMMIT: ${{ github.sha }}
