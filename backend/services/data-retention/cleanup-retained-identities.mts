@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
 import { electedRelationMetadata } from '@services/users/relation-impact-targets'
 
 function retainedRelationReferences(subjectType: string): [string, string][] {
@@ -76,6 +77,7 @@ export async function cleanupRetainedIdentityRoots(
     if (idsByFamily && !ids?.length) continue
     if (ids && ids.length > pageSize)
       throw new RangeError('Scoped retained identity cleanup must fit one page')
+    observeSharedDbScope('cleanupRetainedIdentityRoots', sharedDbIdsScope(ids))
     // oxlint-disable-next-line no-await-in-loop -- each family has an independent bounded cursor transaction
     results.push(await cleanupRetainedIdentityFamily(family, pageSize, ids))
   }
