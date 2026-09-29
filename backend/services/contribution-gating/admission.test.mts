@@ -5,6 +5,8 @@ import {
   createTestUserWithAge,
   expireContributionAdmissionForTest,
   getContributionAdmissionReservationStateForTest,
+  ensureTestAdmittedPostIdentity,
+  executeTestAdmittedPost,
 } from '@voucha/test-helpers'
 import { CONTRIBUTION_QUOTA_EXCEEDED } from '@modules/on-error/error-codes'
 import {
@@ -62,7 +64,7 @@ describe('contribution admission identity', () => {
         actorId: user.id,
         idempotencyKey: key,
         intent,
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       })
     const first = await create()
     const second = await create()
@@ -81,13 +83,15 @@ describe('contribution admission identity', () => {
         actorId: user.id,
         idempotencyKey,
         intent,
-        execute: query =>
-          executePreparedContribution(query, async () => ({
+        execute: async query => {
+          await ensureTestAdmittedPostIdentity(query, postId)
+          return executePreparedContribution(query, async () => ({
             response: { post: { id: postId, post_related_topics: [] as string[] } },
             finalize: async () => ({
               post: { id: postId, post_related_topics: ['topic-id'] },
             }),
-          })),
+          }))
+        },
       })
 
     const first = await create()
@@ -105,14 +109,14 @@ describe('contribution admission identity', () => {
       actorId: user.id,
       idempotencyKey: key,
       intent: { request: 'first' },
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     await expect(
       runContributionAdmission({
         actorId: user.id,
         idempotencyKey: key,
         intent: { request: 'second' },
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).rejects.toMatchObject({ code: 'IDEMPOTENCY_KEY_REUSED', status: 409 })
   })
@@ -121,13 +125,15 @@ describe('contribution admission identity', () => {
     const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const key = crypto.randomUUID()
     const intent = { post_type: 'discussion', title: crypto.randomUUID() }
-    const pending = deferred<{ post: { id: string } }>()
+    const response = { post: { id: crypto.randomUUID() } }
+    const pending = deferred<typeof response>()
     const started = deferred<void>()
     const first = runContributionAdmission({
       actorId: user.id,
       idempotencyKey: key,
       intent,
-      execute: () => {
+      execute: async query => {
+        await ensureTestAdmittedPostIdentity(query, response.post.id)
         started.resolve()
         return pending.promise
       },
@@ -137,13 +143,12 @@ describe('contribution admission identity', () => {
       actorId: user.id,
       idempotencyKey: key,
       intent,
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     expect(duplicate).toMatchObject({ kind: 'in_progress', retryAfterSeconds: expect.any(Number) })
     const retryAfterSeconds = duplicate.kind === 'in_progress' ? duplicate.retryAfterSeconds : 0
     expect(retryAfterSeconds).toBeGreaterThan(0)
     expect(retryAfterSeconds).toBeLessThanOrEqual(CONTRIBUTION_ADMISSION_CLAIM_SECONDS)
-    const response = { post: { id: crypto.randomUUID() } }
     pending.resolve(response)
     await expect(first).resolves.toEqual({ kind: 'created', response })
     await expect(
@@ -151,7 +156,7 @@ describe('contribution admission identity', () => {
         actorId: user.id,
         idempotencyKey: key,
         intent,
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toEqual({ kind: 'replay', response })
   })
@@ -180,7 +185,7 @@ describe('contribution admission identity', () => {
     await expect(
       runContributionAdmission({
         ...input,
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toMatchObject({ kind: 'created' })
   })
@@ -195,7 +200,7 @@ describe('contribution admission identity', () => {
         intent: { source, request: crypto.randomUUID() },
         source,
         policy: limits,
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       })
 
     await expect(create('discussion')).resolves.toMatchObject({ kind: 'created' })
@@ -230,7 +235,7 @@ describe('contribution admission identity', () => {
     await expect(
       runContributionAdmission({
         ...input,
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toMatchObject({ kind: 'created' })
 
@@ -248,7 +253,7 @@ describe('contribution admission identity', () => {
         intent: reclaimIntent,
         source: 'discussion',
         policy: policy(-1, -1),
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toMatchObject({ kind: 'created' })
   })
@@ -266,13 +271,13 @@ describe('contribution admission identity', () => {
     }
     const first = await runContributionAdmission({
       ...input,
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     if (first.kind !== 'created') throw new Error('expected exempt admission to create')
     await expect(
       runContributionAdmission({
         ...input,
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toEqual({ kind: 'replay', response: first.response })
   })
@@ -284,7 +289,7 @@ describe('contribution admission identity', () => {
       actorId: user.id,
       idempotencyKey: key,
       intent: { request: 'retention' },
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     await expireContributionAdmissionForTest({ actorId: user.id, idempotencyKey: key })
     await expect(

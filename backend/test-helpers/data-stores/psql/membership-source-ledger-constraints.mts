@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import sql from 'sql-template-strings'
 import { read, write } from '@data-stores/psql'
+import { createLocalTestUser } from './users.mts'
 
 export type MembershipSourceLedgerConstraintFixture = {
   rejectAdminGrantProviderObservation(): ReturnType<typeof write>
@@ -17,8 +18,8 @@ export type MembershipSourceLedgerConstraintFixture = {
 export async function createMembershipSourceLedgerConstraintFixture(): Promise<MembershipSourceLedgerConstraintFixture> {
   const suffix = randomUUID()
   const applicationId = `schema-negative-${suffix}`
-  const firstUserId = randomUUID()
-  const secondUserId = randomUUID()
+  const firstUserId = (await createLocalTestUser()).id
+  const secondUserId = (await createLocalTestUser()).id
   const { rows: productRows } = await read<{ id: string }>(
     `/* getMembershipLedgerNegativeTestProduct */ SELECT id FROM membership_products WHERE plan = 'plus' AND billing_interval = 'monthly'`,
   )

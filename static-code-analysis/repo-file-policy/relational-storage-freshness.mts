@@ -1,9 +1,11 @@
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
 
 import {
+  ALLOWED_AUDIT_SNAPSHOT_ID,
   ALLOWED_NONRELATION_UUID,
   ALLOWED_OWN_PRIMARY_UUID,
   ALLOWED_OPAQUE_JSON,
+  ALLOWED_TOKEN_CURSOR_PROTOCOL_ID,
   GENERATED_FK_ALIASES,
   PARTITION_FOREIGN_KEY_COLUMNS,
 } from './relational-storage-catalog.mts'
@@ -34,6 +36,22 @@ function checkDisjoint(allowed: Catalog, debt: Catalog, label: string, errors: s
     if (!debt.has(key)) continue
     errors.push(relationalStorageDiagnostic(key, `duplicate ${label} catalog entry`))
   }
+}
+
+// Each reviewed id needs an exact live column and no second classification.
+function appendReviewedIdFreshness(observed: ObservedRelationalDebt, errors: string[]): void {
+  const debt = EXISTING_RELATIONAL_STORAGE_DEBT
+  const tokenColumns = new Set([...observed.missingForeignKey, ...observed.encodedReference])
+  const tokens = new Set(ALLOWED_TOKEN_CURSOR_PROTOCOL_ID.keys())
+  const audits = new Set(ALLOWED_AUDIT_SNAPSHOT_ID.keys())
+  checkFreshness('token, cursor or protocol identifier', tokens, tokenColumns, errors)
+  checkFreshness('audit snapshot identifier', audits, observed.missingForeignKey, errors)
+  for (const reviewed of [tokens, audits]) {
+    checkDisjoint(reviewed, debt.missingForeignKey, 'reviewed identifier', errors)
+    checkDisjoint(reviewed, ALLOWED_NONRELATION_UUID, 'reviewed identifier', errors)
+  }
+  checkDisjoint(tokens, debt.encodedReference, 'reviewed identifier', errors)
+  checkDisjoint(tokens, audits, 'reviewed identifier', errors)
 }
 
 export function appendCatalogFreshness(
@@ -70,6 +88,7 @@ export function appendCatalogFreshness(
     errors,
   )
   checkFreshness('own primary UUID', ALLOWED_OWN_PRIMARY_UUID, observed.ownPrimary, errors)
+  appendReviewedIdFreshness(observed, errors)
   for (const [key, alias] of GENERATED_FK_ALIASES) {
     const [tableName, columnName] = key.split('.')
     const table = tableName ? schema.tables[tableName] : undefined

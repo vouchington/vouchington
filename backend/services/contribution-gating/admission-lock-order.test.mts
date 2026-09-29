@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { TransactionQuery } from '@data-stores/psql'
 import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
+  ensureTestAdmittedPostIdentity,
+  executeTestAdmittedPost,
   expireContributionAdmissionClaimForTest,
   insertContributionAdmissionFkLockedTopicForTest,
 } from '@voucha/test-helpers'
@@ -26,11 +29,12 @@ describe('contribution admission lock order', () => {
         idempotencyKey: crypto.randomUUID(),
         intent: { request: crypto.randomUUID() },
         execute: async query => {
-          const topicId = await insertContributionAdmissionFkLockedTopicForTest(query, user.id)
+          await insertContributionAdmissionFkLockedTopicForTest(query, user.id)
+          const created = await executeTestAdmittedPost(query)
           readyCount += 1
           if (readyCount === 2) mutationsReady.resolve()
           await mutationsReady.promise
-          return { post: { id: topicId } }
+          return created
         },
       })
 
@@ -55,9 +59,10 @@ describe('contribution admission lock order', () => {
     const originalResponse = { post: { id: crypto.randomUUID() } }
     const first = runContributionAdmission({
       ...input,
-      execute: async () => {
+      execute: async query => {
         mutationStarted.resolve()
         await releaseMutation.promise
+        await ensureTestAdmittedPostIdentity(query, originalResponse.post.id)
         return originalResponse
       },
     })
@@ -67,11 +72,14 @@ describe('contribution admission lock order', () => {
     const retryResponse = { post: { id: crypto.randomUUID() } }
     const retryStarted = deferred<void>()
     const releaseRetry = deferred<void>()
-    const retryMutation = vi.fn<() => Promise<typeof retryResponse>>(async () => {
-      retryStarted.resolve()
-      await releaseRetry.promise
-      return retryResponse
-    })
+    const retryMutation = vi.fn<(query: TransactionQuery) => Promise<typeof retryResponse>>(
+      async query => {
+        retryStarted.resolve()
+        await releaseRetry.promise
+        await ensureTestAdmittedPostIdentity(query, retryResponse.post.id)
+        return retryResponse
+      },
+    )
     const retry = runContributionAdmission({ ...input, execute: retryMutation })
     await retryStarted.promise
     releaseMutation.resolve()

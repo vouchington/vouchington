@@ -129,7 +129,7 @@ describe('classifier result storage', () => {
         ...communityLineage,
         candidateId: communityFixture.communityCandidateId,
       }),
-    ).resolves.toEqual({ batches: 1, calls: 1, candidates: 0, results: 0 })
+    ).resolves.toEqual({ batches: 0, calls: 0, candidates: 0, results: 0 })
   })
 
   it('creates concrete default RANGE partitions for both result families', async () => {

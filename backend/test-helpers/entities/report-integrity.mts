@@ -48,6 +48,31 @@ export async function getTestReportIntegrityFlagsByUserId(
   return rows as TestReportIntegrityFlag[]
 }
 
+/** Reporter user ids stored as rows for a flag, ordered by user id. */
+export async function getTestReportIntegrityFlagReporterIds(flagId: string): Promise<string[]> {
+  const { rows } = await read<{ user_id: string }>(sql`/* getTestReportIntegrityFlagReporterIds */
+    SELECT user_id
+    FROM report_integrity_flag_reporters
+    WHERE flag_id = ${flagId}
+    ORDER BY user_id
+  `)
+  return rows.map(row => row.user_id)
+}
+
+/** The flag's stored `details` document, without the rebuilt reporter ids. */
+export async function getTestReportIntegrityFlagStoredDetails(
+  flagId: string,
+): Promise<Record<string, unknown>> {
+  const { rows } = await read<{ details: Record<string, unknown> }>(
+    sql`/* getTestReportIntegrityFlagStoredDetails */
+    SELECT details
+    FROM report_integrity_flags
+    WHERE id = ${flagId}
+  `,
+  )
+  return rows[0]!.details
+}
+
 export async function getTestReportAbusePenaltiesByFlagId(
   flagId: string,
 ): Promise<TestReportAbusePenalty[]> {
@@ -128,25 +153,29 @@ export async function insertTestReportIntegrityFlag(options: {
     resolution = null,
   } = options
 
-  const details = JSON.stringify({ reporter_user_ids: reporterUserIds })
-
   const { rows } = await write<{ id: string }>(sql`/* insertTestReportIntegrityFlag */
-    INSERT INTO report_integrity_flags
-      (post_id, reported_user_id, hostname_id, rss_feed_item_id,
-       flag_type, reporter_count, new_account_reporter_pct, details, resolved_at, resolution)
-    VALUES (
-      ${postId}::uuid,
-      ${reportedUserId}::uuid,
-      ${hostnameId}::uuid,
-      ${rssId}::uuid,
-      'mass_report_suspected',
-      ${reporterCount},
-      ${newAccountReporterPct},
-      ${details}::jsonb,
-      ${resolvedAt === undefined ? null : resolvedAt},
-      ${resolution === undefined ? null : resolution}
+    WITH flag AS (
+      INSERT INTO report_integrity_flags
+        (post_id, reported_user_id, hostname_id, rss_feed_item_id,
+         flag_type, reporter_count, new_account_reporter_pct, resolved_at, resolution)
+      VALUES (
+        ${postId}::uuid,
+        ${reportedUserId}::uuid,
+        ${hostnameId}::uuid,
+        ${rssId}::uuid,
+        'mass_report_suspected',
+        ${reporterCount},
+        ${newAccountReporterPct},
+        ${resolvedAt === undefined ? null : resolvedAt},
+        ${resolution === undefined ? null : resolution}
+      )
+      RETURNING id
+    ), reporters AS (
+      INSERT INTO report_integrity_flag_reporters (flag_id, user_id)
+      SELECT flag.id, reporter.id
+      FROM flag CROSS JOIN unnest(${reporterUserIds}::uuid[]) AS reporter(id)
     )
-    RETURNING id
+    SELECT id FROM flag
   `)
   return rows[0]!.id
 }

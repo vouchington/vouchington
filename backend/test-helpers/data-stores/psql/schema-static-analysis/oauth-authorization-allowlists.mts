@@ -32,10 +32,6 @@ export const OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS = [
     'oauth_authorization_server_events.grant_id',
     'Immutable audit snapshot intentionally survives OAuth grant deletion.',
   ],
-  [
-    'oauth_authorization_server_events.user_id',
-    'Immutable audit snapshot intentionally survives user deletion.',
-  ],
 ] as const
 
 export const AUTHORIZATION_TABLES_WITHOUT_CREATED_AT = [

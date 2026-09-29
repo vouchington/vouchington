@@ -3,6 +3,7 @@ import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
   getContributionAdmissionPolicyRevisionForTest,
+  executeTestAdmittedPost,
 } from '@voucha/test-helpers'
 import { runContributionAdmission, type ContributionAdmissionAudit } from './admission.mts'
 
@@ -30,7 +31,7 @@ describe('contribution admission policy revision', () => {
       runContributionAdmission({
         ...input,
         audit: admissionAudit('new-policy-revision'),
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toMatchObject({ kind: 'created' })
 

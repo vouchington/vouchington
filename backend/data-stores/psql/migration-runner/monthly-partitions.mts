@@ -145,10 +145,17 @@ export async function cleanupPartitions(referenceDate: Date = new Date()): Promi
   const sql = expiredPartitions
     .map(partition => {
       const partitionName = assertSafeSqlIdentifier(partition.partitionName)
-      // Partition DROP does not fire ON DELETE. Clear batch bookkeeping that references
-      // crawls in this partition before the parent partition disappears.
+      // Partition DROP fires no ON DELETE action, and a partition that other tables' foreign keys
+      // still reference cannot be dropped. Clear the SET NULL pointers, then DETACH (which
+      // rejects any remaining referencing row) before the DROP. Other referenced families still
+      // need the same treatment: vouchington/vouchington#1290.
       if (partition.table === 'crawls') {
-        return `UPDATE bedrock_embeddings_batches SET crawl_id = NULL WHERE crawl_id IN (SELECT id FROM ${partitionName});\nDROP TABLE IF EXISTS ${partitionName};`
+        return [
+          `UPDATE bedrock_embeddings_batches SET crawl_id = NULL WHERE crawl_id IN (SELECT id FROM ${partitionName});`,
+          `UPDATE user_referral_program_links SET last_crawl_id = NULL WHERE last_crawl_id IN (SELECT id FROM ${partitionName});`,
+          `ALTER TABLE crawls DETACH PARTITION ${partitionName};`,
+          `DROP TABLE IF EXISTS ${partitionName};`,
+        ].join('\n')
       }
       return `DROP TABLE IF EXISTS ${partitionName};`
     })

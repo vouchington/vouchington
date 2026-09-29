@@ -1,8 +1,10 @@
 import type { SchemaTableSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
 
 import {
+  ALLOWED_AUDIT_SNAPSHOT_ID,
   ALLOWED_NONRELATION_UUID,
   ALLOWED_OWN_PRIMARY_UUID,
+  ALLOWED_TOKEN_CURSOR_PROTOCOL_ID,
   PARTITION_FOREIGN_KEY_COLUMNS,
 } from './relational-storage-catalog.mts'
 import { EXISTING_RELATIONAL_STORAGE_DEBT } from './relational-storage-debt.mts'
@@ -20,6 +22,14 @@ import {
 } from './relational-storage-type-rules.mts'
 
 type Catalog = ReadonlySet<string>
+
+const ACCEPTED_UUID_REFERENCE: Catalog = new Set([
+  ...ALLOWED_NONRELATION_UUID,
+  ...ALLOWED_TOKEN_CURSOR_PROTOCOL_ID.keys(),
+  ...ALLOWED_AUDIT_SNAPSHOT_ID.keys(),
+])
+// An encoded key is accepted only as a reviewed token; audit snapshots are always UUID columns.
+const ACCEPTED_ENCODED_REFERENCE: Catalog = new Set(ALLOWED_TOKEN_CURSOR_PROTOCOL_ID.keys())
 
 function checkCategory(
   key: string,
@@ -73,7 +83,7 @@ export function classifyRelationalColumn(
     checkCategory(
       key,
       'UUID reference without a target foreign key',
-      ALLOWED_NONRELATION_UUID,
+      ACCEPTED_UUID_REFERENCE,
       EXISTING_RELATIONAL_STORAGE_DEBT.missingForeignKey,
       observed.missingForeignKey,
       errors,
@@ -94,7 +104,7 @@ export function classifyRelationalColumn(
     checkCategory(
       key,
       'UUID reference without a target foreign key',
-      ALLOWED_NONRELATION_UUID,
+      ACCEPTED_UUID_REFERENCE,
       EXISTING_RELATIONAL_STORAGE_DEBT.missingForeignKey,
       observed.missingForeignKey,
       errors,
@@ -110,7 +120,7 @@ export function classifyRelationalColumn(
     checkCategory(
       key,
       'encoded entity reference',
-      new Set(),
+      ACCEPTED_ENCODED_REFERENCE,
       EXISTING_RELATIONAL_STORAGE_DEBT.encodedReference,
       observed.encodedReference,
       errors,

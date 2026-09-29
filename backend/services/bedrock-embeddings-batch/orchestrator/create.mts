@@ -3,23 +3,29 @@ import { unlink } from 'node:fs/promises'
 import { finished } from 'node:stream/promises'
 import { CreateModelInvocationJobCommand } from '@aws-sdk/client-bedrock'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
-import { beginTransaction, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import { S3BedrockBatchBucket, S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import onError from '@modules/on-error'
 import { mintUUIDv7 } from '@modules/utils/ids'
 import { BEDROCK_NOVA_MULTIMODAL_MODEL_ID } from '@services/bedrock-embeddings/config'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
-import type { BatchMetadata } from './shared.mts'
+import type { BatchMetadata, BatchSource } from './shared.mts'
 import { cleanupBatchLocks, stopBedrockBatch } from './cleanup.mts'
-import { insertLockRowsWithQuery } from './lock-rows.mts'
+import {
+  batchDocument,
+  insertBatchAndLockRows,
+  markBatchSubmittedForPolling,
+} from './persist-batch.mts'
 import { getBedrockBatchRoutingEnvironment } from './routing-environment.mts'
+
 export const createBatch = async (
   filePath: string,
   jobType: BatchJobType,
   entityCount: number,
   entityIdsFilePath: string,
   metadata?: BatchMetadata,
+  source: BatchSource = {},
 ): Promise<string> => {
   const batchId = mintUUIDv7()
   const inputKey = `bedrock-embeddings-input/${batchId}/input.jsonl`
@@ -41,17 +47,19 @@ export const createBatch = async (
       entityCount,
       entityIdsFilePath,
       createdAt,
-      inputS3Uri,
-      outputS3Uri,
-      inputSizeMb: batchMetadata.inputSizeMB ?? 0,
-      urlId: batchMetadata.url_id ?? null,
-      crawlId: batchMetadata.crawl_id ?? null,
+      data: batchDocument('Preparing', inputS3Uri, outputS3Uri, batchMetadata),
+      urlId: source.urlId ?? null,
+      crawlId: source.crawlId ?? null,
     })
     batchPersisted = true
     await uploadBatchInput(filePath, inputKey)
     const job = await createBedrockBatchJob(batchId, inputS3Uri, outputS3Uri, routingEnvironment)
     submittedJobArn = job.jobArn
-    await markBatchSubmittedForPolling(batchId, submittedJobArn)
+    await markBatchSubmittedForPolling(
+      batchId,
+      submittedJobArn,
+      batchDocument('Submitted', inputS3Uri, outputS3Uri, batchMetadata, submittedJobArn),
+    )
   } catch (error) {
     let canReleaseLocks = !submittedJobArn
     if (submittedJobArn) {
@@ -60,7 +68,18 @@ export const createBatch = async (
         canReleaseLocks = true
       } catch (stopError) {
         onError(stopError instanceof Error ? stopError : new Error(String(stopError)))
-        await markBatchSubmittedForPolling(batchId, submittedJobArn, new Date()).catch(onError)
+        await markBatchSubmittedForPolling(
+          batchId,
+          submittedJobArn,
+          batchDocument(
+            'Submitted',
+            inputS3Uri,
+            outputS3Uri,
+            batchMetadata,
+            submittedJobArn,
+            new Date().toISOString(),
+          ),
+        ).catch(onError)
       }
     }
     if (canReleaseLocks && batchPersisted) {
@@ -77,60 +96,7 @@ export const createBatch = async (
   }
   return batchId
 }
-async function markBatchSubmittedForPolling(
-  batchId: string,
-  jobArn: string | undefined,
-  stopFailedAt: Date | null = null,
-): Promise<void> {
-  await write(
-    `/* createBatch:markSubmitted */
-    UPDATE bedrock_embeddings_batches
-    SET job_arn = $2,
-        submitted_at = COALESCE(submitted_at, CURRENT_TIMESTAMP),
-        stop_failed_at = COALESCE($3, stop_failed_at)
-    WHERE id = $1
-  `,
-    [batchId, jobArn || null, stopFailedAt],
-  )
-}
-async function insertBatchAndLockRows(params: {
-  batchId: string
-  jobType: BatchJobType
-  entityCount: number
-  entityIdsFilePath: string
-  createdAt: Date
-  inputS3Uri: string
-  outputS3Uri: string
-  inputSizeMb: number
-  urlId: string | null
-  crawlId: string | null
-}): Promise<void> {
-  await using query = await beginTransaction()
 
-  await query(
-    `/* createBatch:insertPreparing */
-      INSERT INTO bedrock_embeddings_batches (
-        id, job_arn, model_id, job_type, input_s3_uri, output_s3_uri,
-        input_size_mb, url_id, crawl_id, records, created_at
-      )
-      VALUES ($1, NULL, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-    [
-      params.batchId,
-      BEDROCK_NOVA_MULTIMODAL_MODEL_ID,
-      params.jobType,
-      params.inputS3Uri,
-      params.outputS3Uri,
-      params.inputSizeMb,
-      params.urlId,
-      params.crawlId,
-      params.entityCount,
-      params.createdAt,
-    ],
-  )
-  await insertLockRowsWithQuery(query, params.batchId, params.jobType, params.entityIdsFilePath)
-
-  await query.commit()
-}
 /* no-mistakes: integration=bedrock */
 async function uploadBatchInput(filePath: string, key: string): Promise<void> {
   const body = createReadStream(filePath)

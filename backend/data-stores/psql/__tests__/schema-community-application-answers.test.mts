@@ -1,268 +1,158 @@
+import { randomUUID } from 'node:crypto'
 import { afterAll, describe, expect, it } from 'vitest'
 import {
   insertAnswer,
   insertApplication,
-  insertOption,
   insertQuestion,
   seedCommunity,
 } from '../../../test-helpers/data-stores/psql/community-application-answer-schema.mts'
-import {
-  insertCommittedSelectAnswer,
-  insertCommittedSingleSelection,
-  insertSelectAnswer,
-  insertSelection,
-  moveSelectionToOtherApplication,
-} from '../../../test-helpers/data-stores/psql/community-application-answer-selection-schema.mts'
 import { insertTestCommunity } from '../../../test-helpers/entities/communities.mts'
-import { createTestUser } from '../../../test-helpers/entities/users.mts'
-import { beginTransaction, onGracefulShutdown, read, write } from '../index.mts'
+import { onGracefulShutdown, read, write } from '../index.mts'
 
-describe('community application answer relations', () => {
+async function countAnswers(applicationId: string): Promise<number> {
+  const { rows } = await read(
+    `/* countCommunityApplicationAnswers */
+      SELECT count(*)::int AS count FROM community_application_answers WHERE application_id = $1`,
+    [applicationId],
+  )
+  return (rows[0] as { count: number }).count
+}
+
+describe('community application answer rows', () => {
   afterAll(onGracefulShutdown)
 
-  it('rejects a question from another community', async () => {
+  it('rejects a question from another community through the composite FK', async () => {
     const { user, community } = await seedCommunity()
     const other = await insertTestCommunity({ createdById: user.id, visibility: 'private' })
-    const questionId = await insertQuestion(other.id, 'short_text')
+    const questionId = await insertQuestion(other.id)
     const applicationId = await insertApplication(community.id, user.id)
     await expect(
-      insertAnswer(applicationId, community.id, questionId, 'short_text', false, 'yes', null),
-    ).rejects.toMatchObject({ code: '23503' })
-  })
-
-  it('rejects an option that belongs to another question', async () => {
-    const { user, community } = await seedCommunity()
-    const firstQuestionId = await insertQuestion(community.id, 'single_select', 0)
-    const secondQuestionId = await insertQuestion(community.id, 'single_select', 1)
-    const otherOptionId = await insertOption(
-      community.id,
-      secondQuestionId,
-      'single_select',
-      'Other',
-    )
-    const applicationId = await insertApplication(community.id, user.id)
-    {
-      await using query = await beginTransaction()
-      const answer = await insertSelectAnswer(
-        query,
-        applicationId,
-        community.id,
-        firstQuestionId,
-        'single_select',
-      )
-      await expect(insertSelection(query, answer, otherOptionId)).rejects.toMatchObject({
-        code: '23503',
-      })
-    }
-  })
-
-  it('rejects duplicate active labels and order violations', async () => {
-    const { community } = await seedCommunity()
-    const questionId = await insertQuestion(community.id, 'multi_select')
-    await insertOption(community.id, questionId, 'multi_select', 'Alpha', 0)
-    await expect(
-      insertOption(community.id, questionId, 'multi_select', 'Alpha', 1),
-    ).rejects.toMatchObject({ code: '23505' })
-    await expect(
-      insertOption(community.id, questionId, 'multi_select', 'Beta', 0),
-    ).rejects.toMatchObject({ code: '23505' })
-    await expect(
-      insertOption(community.id, questionId, 'multi_select', 'Gamma', -1),
-    ).rejects.toMatchObject({ code: '23514' })
-  })
-  it.each([
-    ['short_text', true, 'x', null],
-    ['short_text', false, 'ok', true],
-    ['checkbox', false, 'no', null],
-    ['single_select', false, 'x', null],
-  ] as const)(
-    'rejects invalid %s answer state',
-    async (fieldType, isNull, textValue, booleanValue) => {
-      const { user, community } = await seedCommunity()
-      const questionId = await insertQuestion(community.id, fieldType)
-      const applicationId = await insertApplication(community.id, user.id)
-      await expect(
-        insertAnswer(
-          applicationId,
-          community.id,
-          questionId,
-          fieldType,
-          isNull,
-          textValue,
-          booleanValue,
-        ),
-      ).rejects.toMatchObject({ code: '23514' })
-    },
-  )
-
-  it('rejects a second single-select option and a duplicate selection order', async () => {
-    const { user, community } = await seedCommunity()
-    const singleId = await insertQuestion(community.id, 'single_select', 0)
-    const multiId = await insertQuestion(community.id, 'multi_select', 1)
-    const firstOptionId = await insertOption(community.id, singleId, 'single_select', 'One', 0)
-    const secondOptionId = await insertOption(community.id, singleId, 'single_select', 'Two', 1)
-    const alphaId = await insertOption(community.id, multiId, 'multi_select', 'Alpha', 0)
-    const betaId = await insertOption(community.id, multiId, 'multi_select', 'Beta', 1)
-    const applicationId = await insertApplication(community.id, user.id)
-    {
-      await using query = await beginTransaction()
-      const singleAnswer = await insertSelectAnswer(
-        query,
-        applicationId,
-        community.id,
-        singleId,
-        'single_select',
-      )
-      await insertSelection(query, singleAnswer, firstOptionId)
-      await expect(insertSelection(query, singleAnswer, secondOptionId, 1)).rejects.toMatchObject({
-        code: '23505',
-      })
-    }
-
-    const multiAnswer = await insertCommittedSelectAnswer(
-      applicationId,
-      community.id,
-      multiId,
-      'multi_select',
-    )
-    await insertSelection(write, multiAnswer, alphaId)
-    await expect(insertSelection(write, multiAnswer, betaId)).rejects.toMatchObject({
-      code: '23505',
+      insertAnswer(applicationId, community.id, questionId, 'yes'),
+    ).rejects.toMatchObject({
+      code: '23503',
+      constraint: 'community_application_answers_question_fkey',
     })
   })
 
-  it('rejects an empty single-select and a null answer that still has a selection at commit', async () => {
+  it('rejects an application from another community through the composite FK', async () => {
     const { user, community } = await seedCommunity()
-    const questionId = await insertQuestion(community.id, 'single_select')
-    const optionId = await insertOption(community.id, questionId, 'single_select', 'Alpha')
-    const applicationId = await insertApplication(community.id, user.id)
-
-    {
-      await using emptySelect = await beginTransaction()
-      await insertSelectAnswer(
-        emptySelect,
-        applicationId,
-        community.id,
-        questionId,
-        'single_select',
-      )
-      await expect(emptySelect.commit()).rejects.toMatchObject({ code: '23514' })
-    }
-
-    {
-      await using nullSelection = await beginTransaction()
-      const answer = await insertSelectAnswer(
-        nullSelection,
-        applicationId,
-        community.id,
-        questionId,
-        'single_select',
-        true,
-      )
-      await insertSelection(nullSelection, answer, optionId)
-      await expect(nullSelection.commit()).rejects.toMatchObject({ code: '23514' })
-    }
+    const other = await insertTestCommunity({ createdById: user.id, visibility: 'private' })
+    const questionId = await insertQuestion(community.id)
+    const applicationId = await insertApplication(other.id, user.id)
+    await expect(
+      insertAnswer(applicationId, community.id, questionId, 'yes'),
+    ).rejects.toMatchObject({
+      code: '23503',
+      constraint: 'community_application_answers_application_fkey',
+    })
   })
 
-  it('rolls back the application when a typed answer is invalid', async () => {
+  it('rejects an unknown question id at the FK when the service check is bypassed', async () => {
     const { user, community } = await seedCommunity()
-    const questionId = await insertQuestion(community.id, 'checkbox')
-    let applicationId = ''
-    {
-      await using query = await beginTransaction()
-      const { rows } = await query(
-        `/* insertRollbackApplication */
-          INSERT INTO community_applications (community_id, user_id)
-          VALUES ($1, $2)
-          RETURNING id`,
-        [community.id, user.id],
-      )
-      applicationId = (rows[0] as { id: string }).id
-      await expect(
-        query(
-          `/* insertInvalidCheckbox */
-            INSERT INTO community_application_answers (
-              application_id, community_id, question_id, question_field_type,
-              is_null, text_value, boolean_value
-            )
-            VALUES ($1, $2, $3, 'checkbox', false, 'no', NULL)`,
-          [applicationId, community.id, questionId],
-        ),
-      ).rejects.toMatchObject({ code: '23514' })
-    }
+    const applicationId = await insertApplication(community.id, user.id)
+    await expect(
+      insertAnswer(applicationId, community.id, randomUUID(), 'yes'),
+    ).rejects.toMatchObject({
+      code: '23503',
+      constraint: 'community_application_answers_question_fkey',
+    })
+  })
 
-    const { rows: remaining } = await read(
-      `/* findRolledBackApplication */
-        SELECT id FROM community_applications WHERE id = $1`,
+  it('stores one row per question and rejects a second answer for the same question', async () => {
+    const { user, community } = await seedCommunity()
+    const questionId = await insertQuestion(community.id)
+    const applicationId = await insertApplication(community.id, user.id)
+    await insertAnswer(applicationId, community.id, questionId, 'first')
+    await expect(
+      insertAnswer(applicationId, community.id, questionId, 'second'),
+    ).rejects.toMatchObject({ code: '23505' })
+    expect(await countAnswers(applicationId)).toBe(1)
+  })
+
+  it.each([
+    ['a string', 'text'],
+    ['an empty string', ''],
+    ['a boolean', false],
+    ['an explicit null', null],
+    ['an array of strings', ['Beta', 'Alpha']],
+    ['an empty array', []],
+  ])('accepts %s as a value', async (_label, value) => {
+    const { user, community } = await seedCommunity()
+    const questionId = await insertQuestion(community.id)
+    const applicationId = await insertApplication(community.id, user.id)
+    await insertAnswer(applicationId, community.id, questionId, value)
+    const { rows } = await read(
+      `/* readCommunityApplicationAnswerValue */
+        SELECT value FROM community_application_answers WHERE application_id = $1`,
       [applicationId],
     )
-    expect(remaining).toEqual([])
+    expect(rows).toEqual([{ value }])
+  })
+
+  it.each([
+    ['a number', 1],
+    ['an object', { label: 'Alpha' }],
+    ['an array with a non-string element', ['Alpha', 1]],
+    ['an array with a null element', ['Alpha', null]],
+  ])('rejects %s as a value', async (_label, value) => {
+    const { user, community } = await seedCommunity()
+    const questionId = await insertQuestion(community.id)
+    const applicationId = await insertApplication(community.id, user.id)
+    await expect(
+      insertAnswer(applicationId, community.id, questionId, value),
+    ).rejects.toMatchObject({
+      code: '23514',
+      constraint: 'community_application_answers_value_check',
+    })
+  })
+
+  it('cascades answer rows when the application is deleted', async () => {
+    const { user, community } = await seedCommunity()
+    const first = await insertQuestion(community.id, 0)
+    const second = await insertQuestion(community.id, 1)
+    const applicationId = await insertApplication(community.id, user.id)
+    await insertAnswer(applicationId, community.id, first, 'a')
+    await insertAnswer(applicationId, community.id, second, ['b'])
+    expect(await countAnswers(applicationId)).toBe(2)
+    await write(`/* deleteApplication */ DELETE FROM community_applications WHERE id = $1`, [
+      applicationId,
+    ])
+    expect(await countAnswers(applicationId)).toBe(0)
+    const { rows } = await read(
+      `/* countSurvivingQuestions */
+        SELECT count(*)::int AS count FROM community_application_questions WHERE community_id = $1`,
+      [community.id],
+    )
+    expect(rows[0]).toEqual({ count: 2 })
   })
 
   it('hard-deletes application answers with the community', async () => {
     const { user, community } = await seedCommunity()
-    const questionId = await insertQuestion(community.id, 'multi_select')
-    const optionId = await insertOption(community.id, questionId, 'multi_select', 'Alpha')
+    const questionId = await insertQuestion(community.id)
     const applicationId = await insertApplication(community.id, user.id)
-    const answerId = await insertAnswer(
-      applicationId,
-      community.id,
-      questionId,
-      'multi_select',
-      false,
-      null,
-      null,
-    )
-    await write(
-      `/* insertCascadeSelection */
-        INSERT INTO community_application_answer_selections (
-          application_answer_id, application_id, community_id, question_id,
-          question_field_type, option_id, order_index
-        )
-        VALUES ($1, $2, $3, $4, 'multi_select', $5, 0)`,
-      [answerId, applicationId, community.id, questionId, optionId],
-    )
+    await insertAnswer(applicationId, community.id, questionId, 'x')
     await write(`/* deleteCommunity */ DELETE FROM communities WHERE id = $1`, [community.id])
     const { rows } = await read(
       `/* countDeletedCommunityApplicationRows */
         SELECT
           (SELECT count(*)::int FROM community_applications WHERE community_id = $1) AS applications,
           (SELECT count(*)::int FROM community_application_questions WHERE community_id = $1) AS questions,
-          (SELECT count(*)::int FROM community_application_question_options WHERE community_id = $1) AS options,
-          (SELECT count(*)::int FROM community_application_answers WHERE community_id = $1) AS answers,
-          (SELECT count(*)::int FROM community_application_answer_selections WHERE community_id = $1) AS selections`,
+          (SELECT count(*)::int FROM community_application_answers WHERE community_id = $1) AS answers`,
       [community.id],
     )
-    expect(rows[0]).toEqual({
-      applications: 0,
-      questions: 0,
-      options: 0,
-      answers: 0,
-      selections: 0,
-    })
+    expect(rows[0]).toEqual({ applications: 0, questions: 0, answers: 0 })
   })
 
-  it('rejects moving a single-select selection between two applications', async () => {
+  it('keeps answers when their question is soft-deleted', async () => {
     const { user, community } = await seedCommunity()
-    const otherUser = await createTestUser()
-    const questionId = await insertQuestion(community.id, 'single_select')
-    const optionId = await insertOption(community.id, questionId, 'single_select', 'Alpha')
-    const sourceApplicationId = await insertApplication(community.id, user.id)
-    const destinationApplicationId = await insertApplication(community.id, otherUser.id)
-    const source = await insertCommittedSingleSelection(
-      sourceApplicationId,
-      community.id,
-      questionId,
-      optionId,
+    const questionId = await insertQuestion(community.id)
+    const applicationId = await insertApplication(community.id, user.id)
+    await insertAnswer(applicationId, community.id, questionId, 'kept')
+    await write(
+      `/* softDeleteQuestion */
+        UPDATE community_application_questions SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      [questionId],
     )
-    const destination = await insertCommittedSingleSelection(
-      destinationApplicationId,
-      community.id,
-      questionId,
-      optionId,
-    )
-    await expect(
-      moveSelectionToOtherApplication(source.id, destination.id, destination.applicationId),
-    ).rejects.toMatchObject({ code: '23514' })
+    expect(await countAnswers(applicationId)).toBe(1)
   })
 })

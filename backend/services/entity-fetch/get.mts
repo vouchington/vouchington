@@ -16,7 +16,7 @@ import { getPostMetricsByAny } from '@services/posts/metrics'
 import { getPostMetricsByAnyBatch } from '@services/posts/metrics-batch'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
 import { getRssFeedItemsByIdBatch } from '@services/rss-feed-items/get-batch'
-import { getEntityRelationElectionsByIdBatch } from '@services/elections-votes/entity-relation/get-election-batch'
+import { getEntityRelationElectionsByTargetBatch } from '@services/elections-votes/entity-relation/get-election-batch'
 import { getTopicElectionsByIdBatch } from '@services/elections-votes/topic/get-election-batch'
 import { getHostnameElectionById } from '@services/elections-votes/hostname/get-election'
 import { getHostnameElectionsByIdBatch } from '@services/elections-votes/hostname/get-election-batch'
@@ -65,8 +65,8 @@ export const getPostByAnyCachedBatch = caches.posts.cacheGetByAnyBatch(getPostsB
 export const getPostMetricsByAnyCached = caches.post_metrics.cacheGetByAny(getPostMetricsByAny)
 export const getPostMetricsByAnyCachedBatch =
   caches.post_metrics.cacheGetByAnyBatch(getPostMetricsByAnyBatch)
-export const getEntityRelationElectionByIdCachedBatch =
-  caches.entity_relation_elections.cacheGetByAnyBatch(getEntityRelationElectionsByIdBatch)
+export const getEntityRelationElectionByTargetCachedBatch =
+  caches.entity_relation_elections.cacheGetByAnyBatch(getEntityRelationElectionsByTargetBatch)
 /** @internal — no production consumer yet; rss-feed-item category tests mirror this cache instance/TTL/invalidation keys */
 export const getRssFeedItemByIdCached = caches.rss_feed_items.cacheGetByAny(getRssFeedItemById)
 export const getRssFeedItemByIdCachedBatch =

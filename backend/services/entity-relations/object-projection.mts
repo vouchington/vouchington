@@ -25,7 +25,7 @@ export function isProjectedEntityRelationObjectType(
 const LATEST_URL_CRAWL = `(
         SELECT json_build_object(
           'title', c.title,
-          'image_url', coalesce(c.og_image_exact, c.twitter_image_exact)
+          'image_url', coalesce(c.meta_tags->>'og:image', c.meta_tags->>'twitter:image')
         )
         FROM crawls c
         WHERE c.url_id = obj.id

@@ -3,6 +3,7 @@ import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
   getContributionAdmissionReservationStateForTest,
+  executeTestAdmittedPost,
 } from '@voucha/test-helpers'
 import { runContributionAdmission } from './admission.mts'
 import type { ContributionPolicy } from './policy.mts'
@@ -42,7 +43,7 @@ describe('contribution admission transaction boundaries', () => {
       intent: { request: crypto.randomUUID() },
       source: 'discussion',
       policy: limits,
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     const idempotencyKey = crypto.randomUUID()
     const beforeCommit = vi.fn<() => Promise<void>>(async () => undefined)
@@ -54,7 +55,7 @@ describe('contribution admission transaction boundaries', () => {
         source: 'discussion',
         policy: limits,
         beforeCommit,
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).rejects.toMatchObject({ code: 'CONTRIBUTION_QUOTA_EXCEEDED', status: 429 })
     expect(beforeCommit).not.toHaveBeenCalled()

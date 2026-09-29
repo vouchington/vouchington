@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { randomBytes } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import {
   createTestUser,
   insertTestCommunity,
+  insertTestCommunityRestriction,
   getModeratorActionRowsForTest,
+  getTestModeratorActionRestrictionIds,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { Community } from '@voucha/types/entities/community'
@@ -100,6 +102,60 @@ describe('recordModeratorAction', () => {
     const row = rows.find(r => r.action_type === 'suspend')
     expect(row).toBeDefined()
     expect(row!.actor_id).toBeNull()
+  })
+
+  it('stores each targeted restriction once as a child row, not in metadata', async () => {
+    const restrictionCommunity = await insertTestCommunity({ createdById: actor.id })
+    const noLinks = await insertTestCommunityRestriction({
+      communityId: restrictionCommunity.id,
+      restrictionType: 'no_links',
+      activatedById: actor.id,
+    })
+    const approval = await insertTestCommunityRestriction({
+      communityId: restrictionCommunity.id,
+      restrictionType: 'require_post_approval',
+      activatedById: actor.id,
+    })
+
+    await recordModeratorAction(actor.id, {
+      actionType: 'activate_restriction',
+      communityId: restrictionCommunity.id,
+      communityRestrictionIds: [noLinks.id, approval.id, noLinks.id],
+      metadata: { restriction_types: ['no_links', 'require_post_approval'] },
+    })
+
+    const [row] = await getModeratorActionRowsForTest({ communityId: restrictionCommunity.id })
+    expect(await getTestModeratorActionRestrictionIds(row!.id)).toEqual(
+      [noLinks.id, approval.id].sort(),
+    )
+    expect(row!.metadata).toEqual({ restriction_types: ['no_links', 'require_post_approval'] })
+  })
+
+  it('records an action without restrictions and no child rows', async () => {
+    const plainCommunity = await insertTestCommunity({ createdById: actor.id })
+
+    await recordModeratorAction(actor.id, {
+      actionType: 'activate_restriction',
+      communityId: plainCommunity.id,
+    })
+
+    const [row] = await getModeratorActionRowsForTest({ communityId: plainCommunity.id })
+    expect(row).toBeDefined()
+    expect(await getTestModeratorActionRestrictionIds(row!.id)).toEqual([])
+  })
+
+  it('rejects the whole action when a targeted restriction does not exist', async () => {
+    const missingCommunity = await insertTestCommunity({ createdById: actor.id })
+
+    await expect(
+      recordModeratorAction(actor.id, {
+        actionType: 'lift_restriction',
+        communityId: missingCommunity.id,
+        communityRestrictionIds: [randomUUID()],
+      }),
+    ).rejects.toMatchObject({ code: '23503' })
+
+    expect(await getModeratorActionRowsForTest({ communityId: missingCommunity.id })).toEqual([])
   })
 
   it('records large action batches without exceeding PostgreSQL parameter limits', async () => {

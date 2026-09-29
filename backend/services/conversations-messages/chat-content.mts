@@ -1,21 +1,22 @@
 import sql from 'sql-template-strings'
+import type { ConversationMessageContent } from './types.mts'
+
 export class InvalidConversationMessageContentError extends Error {
   constructor() {
-    super('Stored chat message content is invalid')
+    super('Chat message content is invalid')
   }
-}
-
-export type ConversationMessageChatColumns = {
-  role: 'user' | 'assistant'
-  text: string | null
-  error: string | null
 }
 
 type AppendableSql = {
   append: (statement: ReturnType<typeof sql>) => unknown
 }
 
-export function conversationMessageColumns(content: unknown): ConversationMessageChatColumns {
+/**
+ * Validates the `{ role, content, error }` chat envelope before it is written to
+ * `conversation_messages.content` and returns its canonical JSON form (no `error` key unless the
+ * turn failed).
+ */
+export function parseConversationMessageContent(content: unknown): ConversationMessageContent {
   if (typeof content !== 'object' || content === null || Array.isArray(content)) {
     throw new InvalidConversationMessageContentError()
   }
@@ -28,7 +29,7 @@ export function conversationMessageColumns(content: unknown): ConversationMessag
     ) {
       throw new InvalidConversationMessageContentError()
     }
-    return { role: 'user', text: message.content, error: null }
+    return { role: 'user', content: message.content }
   }
   if (message.role === 'assistant') {
     if (
@@ -40,25 +41,14 @@ export function conversationMessageColumns(content: unknown): ConversationMessag
     }
     return {
       role: 'assistant',
-      text: message.content as string | null,
-      error: typeof message.error === 'string' ? message.error : null,
+      content: message.content as string | null,
+      ...(typeof message.error === 'string' ? { error: message.error } : {}),
     }
   }
   throw new InvalidConversationMessageContentError()
 }
 
-/** Public message envelope derived from typed chat columns. Not a stored document. */
-export function appendConversationMessageContent(query: AppendableSql): void {
-  query.append(sql`CASE
-    WHEN chat_role IS NULL THEN NULL
-    ELSE jsonb_build_object('role', chat_role, 'content', chat_text)
-      || CASE
-        WHEN chat_error IS NULL THEN '{}'::jsonb
-        ELSE jsonb_build_object('error', chat_error)
-      END
-  END AS content`)
-}
-
+/** Appends the public message columns to an `INSERT ... RETURNING` statement. */
 export function appendConversationMessageReturning(query: AppendableSql): void {
   query.append(sql`
     id,
@@ -69,6 +59,6 @@ export function appendConversationMessageReturning(query: AppendableSql): void {
     updated_by_id,
     deleted_at,
     deleted_by_id,
+    content
   `)
-  appendConversationMessageContent(query)
 }
