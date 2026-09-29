@@ -199,6 +199,18 @@ pages. It pins owned intent timestamps to one isolated cursor window, exposes a 
 snapshot and endpoint-state readers, and deletes only its owned notifications after the callback
 settles.
 
+## Copyright Intake Environment
+
+Call `useCopyrightIntakeEnvironment()` from
+`@voucha/test-helpers/services/copyright-notices/intake-environment` inside a `describe` block
+whose tests reach a new-intake route (`POST /api/v1/copyright-notices`,
+`POST /api/v1/copyright-eu-notices`, `POST /api/v1/copyright-uk-notices`). Before each test it
+stubs `COPYRIGHT_INTAKE_ENABLED` plus the evidence, email, and media-delivery settings that
+`assertCopyrightIntakeEnabled()` requires, and it unstubs every environment variable after each
+test. Pass `{ enabled: false }` to keep that configuration but turn the switch off, so a 503 proves
+the switch alone closed intake. The helper does not mock AWS; add `installTestMediaDeliveryEdge()`
+when the test publishes delivery changes.
+
 ## Surviving a Dirty Database
 
 The DB accumulates rows from every test run and is never cleaned. These patterns prevent flaky tests.

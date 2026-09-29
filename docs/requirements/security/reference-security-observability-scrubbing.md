@@ -35,7 +35,8 @@ would violate this Sentry hook contract.
   `event.request.headers`: `authorization`, `proxy-authorization`, `x-api-key`,
   `cf-access-jwt-assertion`, `x-cf-worker-secret`, `x-bedrock-batch-shared-key`,
   `x-voucha-cache-purge-secret`, `x-app-attest-assertion`, `x-app-attest-nonce`,
-  `x-app-attest-challenge-id`, `stripe-signature`, `signature`, and `cookie`
+  `x-app-attest-challenge-id`, `stripe-signature`, `signature`, `copyright-guest-capability`,
+  `idempotency-key`, and `cookie`
 - **Request cookies replaced with `[Filtered]`** while preserving cookie names in
   `event.request.cookies`
 - **Credential span attributes replaced with `[Filtered]`** after Sentry's hyphen-to-underscore
@@ -59,19 +60,65 @@ covers errors. Existing filters or Lambda-specific hooks run first; their final 
 scrubbed. Null drops, synchronous returns, async returns, thrown errors, and rejected promises keep
 their existing control flow.
 
-| Workspace         | File                                                                  | Notes                                                                                                                            |
-| ----------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Backend           | `backend/modules/on-error/sentry-scrub.mts` (wired from `sentry.mts`) | `scrubSentrySpan`, overridable via `SentryInitDeps`                                                                              |
-| Web (server)      | `web/sentry-server-options.ts`                                        | DI pattern via `SentryServerInitDeps`; `web/sentry.server.config.ts` initializes these options                                   |
-| Web (client)      | `web/sentry.client.config.ts`                                         | Inline `Sentry.init()`; the only surface where the plain `url` and `*.fragment` keys are actually observed (browser fetch spans) |
-| Web (edge)        | `web/sentry.edge.config.ts`                                           | Inline `Sentry.init()`, same hooks                                                                                               |
-| Lambdas           | `lambdas/shared/sentry.mts`                                           | Retains the existing deep event scrubber, then applies the shared request-metadata contract                                      |
-| Cloudflare Worker | `cloudflare-worker/src/sentry.mts`                                    | Registers the shared error and span scrubbers                                                                                    |
+| Workspace         | File                                                                  | Notes                                                                                                                                                             |
+| ----------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend           | `backend/modules/on-error/sentry-scrub.mts` (wired from `sentry.mts`) | `scrubSentrySpan`, overridable via `SentryInitDeps`                                                                                                               |
+| Web (server)      | `web/sentry-server-options.ts`                                        | DI pattern via `SentryServerInitDeps`; `web/sentry.server.config.ts` initializes these options                                                                    |
+| Web (client)      | `web/sentry-client-options.ts`                                        | `web/sentry.client.config.ts` initializes these options; the only surface where the plain `url` and `*.fragment` keys are actually observed (browser fetch spans) |
+| Web (edge)        | `web/sentry-edge-options.ts`                                          | `web/sentry.edge.config.ts` initializes these options, same hooks                                                                                                 |
+| Lambdas           | `lambdas/shared/sentry.mts`                                           | Retains the existing deep event scrubber, then applies the shared request-metadata contract                                                                       |
+| Cloudflare Worker | `cloudflare-worker/src/sentry.mts`                                    | Registers the shared error and span scrubbers                                                                                                                     |
 
 Enabled Sentry reporting surfaces always register the scrubbers. Sentry is disabled outside
 `staging`/`production`, including under `OTEL_ENABLED=1`. These hooks do not establish a scrubbing
 contract for the independent OTLP export path (`dev/otel-register.mts`), which carries no Sentry
 payload and is outside the scope of this change.
+
+### Data collection: bodies and gen-AI content
+
+Sentry v11 collects by default what `@sentry/core`'s `resolveDataCollectionOptions` resolves:
+every HTTP body (`httpBodies`: incoming and outgoing requests and responses) and every gen-AI
+input and output (`genAI: { inputs: true, outputs: true }`). Request bodies carry copyright
+notice and counter-notice fields (legal identities, addresses, perjury statements) and other form
+data. Gen-AI inputs carry the same content as LLM prompts, plus MCP tool arguments and results.
+
+[`ts-shared/utils/sentry-data-collection.mts`](../../../ts-shared/utils/sentry-data-collection.mts)
+owns the policy, and every SDK init site passes it as `dataCollection`:
+
+```ts
+{ httpBodies: [], genAI: { inputs: false, outputs: false } }
+```
+
+- An empty `httpBodies` array turns off request and response body capture.
+- `genAI.inputs`/`genAI.outputs` are the fallback for the AI integrations (OpenAI, Anthropic and
+  the rest of `ai/core`, plus Vercel AI) and the MCP server integration. Each uses `genAI` unless
+  an integration's `recordInputs`/`recordOutputs` option or, for Vercel AI, a per-call
+  `experimental_telemetry` flag overrides it. The repository sets neither, so the policy applies
+  to all of them.
+- Headers, cookies, query strings and user info stay collected and pass through the credential
+  scrubbers above.
+
+The init sites are `backend/modules/on-error/sentry.mts` (shared by the API server and every
+worker entrypoint), `web/sentry-server-options.ts`, `web/sentry-edge-options.ts`,
+`web/sentry-client-options.ts`, `lambdas/shared/sentry.mts` and `cloudflare-worker/src/sentry.mts`.
+Each site's options test asserts the policy, typed against the SDK's `dataCollection` option so a
+misspelled key fails type-checking. If a Lambda is deployed with the
+`--import @sentry/aws-serverless/awslambda-auto` preload, that preload calls `init()` with default
+options, but `initSentry()` replaces the client at module load, before any invocation. Every body
+and gen-AI gate reads the current client (`getClient()`) per request, so the policy applies.
+
+`httpBodies` gates only the SDK's own body capture (`integrations/http/server-subscription.js` in
+`@sentry/core`, `integrations/httpServer.js` in `@sentry/cloudflare`). `requestdata.js` still
+copies any body data already on the scope into `event.request.data` and the
+`http.request.body.data` span attribute. As a backstop, `scrubSentryEvent` drops `request.data`
+and `scrubSpanAttributes` drops `http.request.body.data`.
+
+These SDK behaviors were verified by reading `@sentry/core@11.0.0`
+(`utils/data-collection/resolveDataCollectionOptions.js`, `integrations/requestdata.js`,
+`integrations/http/server-subscription.js`, `integrations/mcp-server/transport.js`),
+`@sentry/server-utils@11.0.0` (`ai/core/utils.js`, `integrations/index.js`,
+`integrations/vercel-ai/vercel-ai-dc-subscriber.js`) and
+`@sentry/cloudflare@11.0.0` (`integrations/httpServer.js`).
 
 ### URL-bearing request headers
 
@@ -121,25 +168,26 @@ request runs inside the Sentry suppression.
 
 ### Explicit boundary
 
-The shared contract covers request metadata only: request and breadcrumb URLs, query strings,
-credential request headers, Request Interface cookies, and corresponding span attributes. It does
-not inspect request bodies, arbitrary `extra` values, arbitrary contexts, attachments, replays, or
-logs. Lambda events retain their pre-existing broader deep scrubber. Reading Sentry v10's
+The shared contract covers request metadata and request bodies: request and breadcrumb URLs,
+query strings, credential request headers, Request Interface cookies, request bodies, and
+corresponding span attributes. It does not inspect arbitrary `extra` values, arbitrary contexts,
+attachments, replays, or logs. Lambda events retain their pre-existing broader deep scrubber. Reading Sentry v10's
 `requestdata.js` and `utils/request.js` confirmed that its other request-header producers use the
 same normalized `http.request.header.*` and cookie-key shapes covered here.
 
-The `http.request.body.data` span attribute that Sentry v11 emits on segment spans is likewise
-outside the contract, and that is parity rather than a regression: v10's `requestdata.js` defaulted
-`include.data` to `true` and copied the normalized request body into `event.request.data` on
-transaction events (and onto the same `http.request.body.data` span attribute), and nothing in this
-repository scrubbed it there either.
+Request bodies are off at the source through `dataCollection` (see
+[Data collection](#data-collection-bodies-and-gen-ai-content)). The scrubbers still drop
+`event.request.data` and the `http.request.body.data` span attribute, because `requestdata.js`
+copies body data that reached the scope by any other path.
 
 ### Verification
 
 The fixture matrices in
 [`observability-scrubbing.test.mts`](../../../ts-shared/utils/observability-scrubbing.test.mts) and
 [`sentry-event-scrubbing.test.mts`](../../../ts-shared/utils/sentry-event-scrubbing.test.mts) test
-the URL, credential-header, cookie, and composition contracts — including that the four
+the URL, credential-header, cookie, and composition contracts, and
+[`sentry-data-collection.test.mts`](../../../ts-shared/utils/sentry-data-collection.test.mts) tests
+the data-collection policy and the request-body backstops — including that the four
 component-only keys are **deleted** entirely rather
 than overwritten with an empty string, and that the two `http.request.header.*` keys and their
 request-header counterparts strip in place while non-URL-bearing headers and non-string header values

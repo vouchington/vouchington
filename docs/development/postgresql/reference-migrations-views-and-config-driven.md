@@ -24,8 +24,8 @@ so an unmanaged dependent blocks the rebuild without removing any managed object
 Voucha has not launched. Add columns in the owning migration's original `CREATE TABLE`, then
 rebuild disposable databases, including staging through its operator runbook. Do not add a forward
 `ALTER TABLE ADD COLUMN` merely because an earlier application version once used a different shape.
-The existing exact `postgres-no-add-column` exceptions in [`.no-mistakes.yml`](../../../.no-mistakes.yml)
-are prelaunch cleanup debt; do not extend them. Add cross-file `CHECK` and foreign keys as named
+[`.no-mistakes.yml`](../../../.no-mistakes.yml) allows no `postgres-no-add-column` exceptions; do
+not add one. Add cross-file `CHECK` and foreign keys as named
 `NOT VALID` constraints with a matching `VALIDATE CONSTRAINT` where the bootstrap ordering requires
 them. See [prelaunch relational storage](../postgres-schema-rules.md#prelaunch-relational-storage).
 

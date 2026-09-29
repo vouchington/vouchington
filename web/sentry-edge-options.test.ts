@@ -21,6 +21,15 @@ describe('createSentryEdgeInitOptions', () => {
     ).toMatchObject({ dsn: 'https://public@example.test/123', enabled: true })
   })
 
+  it('turns off HTTP body capture and gen-AI input and output recording', () => {
+    const expected: ReturnType<typeof createSentryEdgeInitOptions>['dataCollection'] = {
+      httpBodies: [],
+      genAI: { inputs: false, outputs: false },
+    }
+
+    expect(createSentryEdgeInitOptions({ NODE_ENV: 'production' }).dataCollection).toEqual(expected)
+  })
+
   it('stays disabled outside the deployed-environment allowlist', () => {
     const options = createSentryEdgeInitOptions(
       { NODE_ENV: 'production' },

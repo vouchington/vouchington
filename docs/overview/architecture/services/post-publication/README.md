@@ -94,11 +94,10 @@ Audit repair only records dirty work. The worker stages old receipt identities f
 Current source capture still pages all disappearing identities in the caller's mutation transaction,
 including descendant sitemap shards when their root is changed or removed.
 
-This is a prelaunch schema change, not an operational rollout. The forward migration removes the
-old receipt payload and requires the snapshot pointer immediately. Existing incompatible data
-fails migration rather than being silently deleted or backfilled; an operator must explicitly
-recreate a disposable development or staging schema. Complete fresh migrations and the normal
-strict schema verifier establish the supported schema.
+Publication storage is defined by the canonical fresh-bootstrap creators. Receipts are snapshot-only:
+`applied_snapshot_id` is non-null in the receipt table, and there is no JSON receipt payload,
+activation switch, upgrade migration, or backfill. Rebuild a disposable database from those creators.
+The migration ledger and strict schema verifier establish the supported schema.
 
 Each existing scheduled reconciliation invocation reclaims an independent bounded page even when
 there is no dirty work. Cleanup advances a persisted cyclic header cursor, caps examined headers

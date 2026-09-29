@@ -147,6 +147,15 @@ describe('createSentryInitOptions', () => {
     expect(createSentryInitOptions({}).environment).toBe('development')
   })
 
+  it('turns off HTTP body capture and gen-AI input and output recording', () => {
+    const expected: ReturnType<typeof createSentryInitOptions>['dataCollection'] = {
+      httpBodies: [],
+      genAI: { inputs: false, outputs: false },
+    }
+
+    expect(createSentryInitOptions({ ENVIRONMENT: 'production' }).dataCollection).toEqual(expected)
+  })
+
   it('stays disabled during tests and CI', () => {
     expect(createSentryInitOptions({ NODE_ENV: 'test' }).enabled).toBe(false)
     expect(createSentryInitOptions({ CI: 'true', NODE_ENV: 'development' }).enabled).toBe(false)

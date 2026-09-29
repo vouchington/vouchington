@@ -12,7 +12,14 @@ export default function CounterNoticePage() {
       </p>
       <p>
         After a valid counter-notice is forwarded, restoration follows the statutory timing unless a
-        qualifying court or Copyright Claims Board notice prevents it.
+        qualifying court or Copyright Claims Board notice prevents it. Read{' '}
+        <Link
+          className='underline'
+          href='/article/copyright-complaints'
+        >
+          How copyright complaints work
+        </Link>{' '}
+        for the full timeline and your options.
       </p>
       <Link
         className='underline'

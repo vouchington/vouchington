@@ -17,6 +17,7 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { readFileSync } from 'node:fs'
 import { POST_PUBLICATION_DIRTY_WORK_KEY_KINDS } from './capture-keys.mts'
 import { lockPostPublicationPostScopes } from './capture-posts.mts'
+import { RETAINED_KEY_COLUMNS } from './concrete-key-columns.mts'
 import {
   acknowledgePostPublicationDirtyWork,
   claimPostPublicationDirtyWork,
@@ -240,13 +241,26 @@ describe('post publication capture', () => {
     ).rejects.toThrow('Unsupported post publication reason')
   })
 
-  it('keeps publication reasons and retained-key kinds aligned with database constraints', () => {
+  it('keeps publication reasons and retained-key columns aligned with database constraints', () => {
     expect(
       extractSqlValues(captureMigrationSql, /reasons <@ ARRAY\[([\s\S]*?)\]::TEXT\[\]/u),
     ).toEqual([...POST_PUBLICATION_REASONS].toSorted())
-    expect(
-      extractSqlValues(captureMigrationSql, /kind TEXT NOT NULL CHECK \(kind IN \(([\s\S]*?)\)\)/u),
-    ).toEqual([...POST_PUBLICATION_DIRTY_WORK_KEY_KINDS].toSorted())
+    const payload =
+      /chk_post_publication_dirty_work_keys__concrete_payload CHECK \(\s*num_nonnulls\(\s*([\s\S]*?)\s*\) = 1/u.exec(
+        captureMigrationSql,
+      )?.[1]
+    if (payload === undefined) {
+      throw new Error('Expected concrete retained-key payload constraint')
+    }
+    const columns = payload
+      .split(',')
+      .map(column => column.trim())
+      .filter(column => column.length > 0)
+    expect(columns.toSorted()).toEqual([...Object.values(RETAINED_KEY_COLUMNS)].toSorted())
+    expect([...Object.keys(RETAINED_KEY_COLUMNS)].toSorted()).toEqual(
+      [...POST_PUBLICATION_DIRTY_WORK_KEY_KINDS].toSorted(),
+    )
+    expect(captureMigrationSql).toContain('(post_type IS NULL) = (day IS NULL)')
   })
 
   it('rejects a topic-alias scope without an alias identifier', async () => {

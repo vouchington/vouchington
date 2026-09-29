@@ -23,6 +23,23 @@ export default function CopyrightPage() {
         profile. They do not show legal names, contact details, raw email, evidence, or agent
         analysis.
       </p>
+      <p>
+        Read{' '}
+        <Link
+          className='underline'
+          href='/article/copyright-and-dmca'
+        >
+          Copyright and the DMCA on Voucha
+        </Link>{' '}
+        for how the process works, and{' '}
+        <Link
+          className='underline'
+          href='/article/copyright-complaints'
+        >
+          How copyright complaints work
+        </Link>{' '}
+        before you file a notice or counter-notice.
+      </p>
       <div className='space-y-2'>
         <Link
           className='block underline'

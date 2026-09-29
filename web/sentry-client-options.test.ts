@@ -70,6 +70,19 @@ describe('createSentryClientInitOptions', () => {
 
     expect(options.enabled).toBe(false)
   })
+
+  it('turns off HTTP body capture and gen-AI input and output recording', () => {
+    const expected: SentryInitOptions['dataCollection'] = {
+      httpBodies: [],
+      genAI: { inputs: false, outputs: false },
+    }
+
+    const options = createSentryClientInitOptions({
+      getRuntimePublicConfig: () => ({ environment: 'production' }),
+    })
+
+    expect(options.dataCollection).toEqual(expected)
+  })
 })
 
 describe('initializeSentryClient', () => {

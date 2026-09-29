@@ -1,36 +1,15 @@
-// Existing prelaunch debt. PRs 4–10 of Plan #809 remove entries as their owners normalize them;
-// new entries require explicit review against the accepted Plan.
+// Shrink-only prelaunch debt. The acceptance check rejects any key that is not already on
+// origin/main. Remove a key only after that column no longer has the defect. Do not add keys.
+//
+// JSON documents are not debt. Structured documents, data points, and change history stay JSON.
+// An entity id inside a document still needs its own foreign-key column; this inventory cannot
+// see inside JSON. UUID arrays, missing foreign keys, and encoded keys remain.
+// OAuth, membership, ActivityPub checkpoints, vote device/session ids, and story related-URL
+// identities still lack foreign keys, so this audit does not mark them complete.
 export const EXISTING_RELATIONAL_STORAGE_DEBT = {
-  json: new Set([
-    'admin_import_batches.metadata',
-    'admin_import_rows.input_data',
-    'bedrock_embeddings_batches.data',
-    'boilerplate_removals.results',
-    'community_agent_prompt_changes.next_fields',
-    'community_agent_prompt_changes.previous_fields',
-    'crawls.embed_metadata',
-    'crawls.links',
-    'dynamic_config_change_logs.next_fields',
-    'dynamic_config_change_logs.previous_fields',
-    'moderation_appeal_lifecycle_changes.metadata',
-    'moderation_media_reveals.metadata',
-    'moderation_training_feedbacks.metadata',
-    'moderator_actions.metadata',
-    'post_admission_reservations.replay_metadata',
-    'post_clearance_changes.metadata',
-    'post_moderation_dispositions.evidence',
-    'post_revisions.changes',
-    'posts.structured_data',
-    'report_integrity_flags.details',
-    'review_dispute_lifecycle_changes.metadata',
-    'rss_feed_item_category_snapshot_reconciliations.categories',
-    'rss_feed_item_source_category_snapshots.categories',
-    'ses_bounce_events.recipients',
-    'topic_revisions.changes',
-    'urls.search_params',
-    'vote_integrity_flags.details',
-  ]),
+  json: new Set<string>(),
   uuidArray: new Set([
+    // #820
     'post_category_finalizations.actor_user_ids',
     'post_category_finalizations.admission_response_topic_ids',
     'review_successions.topic_ids',
@@ -42,6 +21,7 @@ export const EXISTING_RELATIONAL_STORAGE_DEBT = {
     'agent_moderation_votes.session_id',
     'agent_moderations.moderation_transparency_community_id',
     'classifier_decision_batches.scope_community_id',
+    // #823
     'community_agent_prompt_changes.agent_prompt_id',
     'entity_relation_votes.device_id',
     'entity_relation_votes.session_id',
@@ -62,6 +42,7 @@ export const EXISTING_RELATIONAL_STORAGE_DEBT = {
     'moderation_reports.moderation_transparency_community_id',
     'moderation_transparency_daily_rollups.community_id',
     'moderation_transparency_released_daily_rollups.community_id',
+    // #823
     'moderator_actions.moderation_transparency_community_id',
     'oauth_authorization_server_events.access_token_id',
     'oauth_authorization_server_events.authorization_request_id',
@@ -73,6 +54,7 @@ export const EXISTING_RELATIONAL_STORAGE_DEBT = {
     'oauth_authorizations.initiating_session_id',
     'oauth_authorizations.result_device_id',
     'oauth_authorizations.result_session_id',
+    // #823
     'post_admission_quota_consumptions.reservation_id',
     'post_admission_reservations.committed_post_id',
     'post_clearance_changes.changed_by_id',

@@ -14,7 +14,12 @@ test-support sources; its local configuration and command inventory are in
 
 [Static Code Analysis](../../.github/workflows/static-code-analysis.yml) is a reusable workflow with no inputs, also available by manual dispatch. [`static.yml`](../../.github/workflows/static.yml) calls it on every pull request and merge group, and [`nightly.yml`](../../.github/workflows/nightly.yml) runs it at the `main` tip. Every call runs every check, including on docs-only changes: a docs-only input would need a `changes` job, and a `needs:` on that reusable job hides the typecheck steps from the no-mistakes `tsconfig-gate-coverage` rule. The jscpd threshold judges the whole tree without a
 base ref, so pull requests, merge groups, and nightly runs agree; see the
-[jscpd clone-size threshold](quality/static-code-analysis/jscpd/README.md). Workspace-owned
+[jscpd clone-size threshold](quality/static-code-analysis/jscpd/README.md). Before repo-node static
+checks, the job fetches `refs/heads/main` at depth 1 into `refs/remotes/origin/main` so the
+shrink-only relational-storage debt inventory can run `git show`. The tooling test job fetches the
+same ref before Vitest, because its hardening test calls that live check on a depth-1 checkout.
+That fetch is not a jscpd base.
+Workspace-owned
 dependency, type, and SQL checks run in their reusable test workflows so they gate that unit's
 main build or deploy. The static-analysis job runs only the centralized tools listed below. Legacy policy rules that are not backed by
 one of these tools are tracked in the static-analysis migration milestone and should be
