@@ -67,14 +67,17 @@ Moderators may use automated checks, AI-assisted judgement, community moderation
 ## Copyright Reports
 
 Copyright reports follow a separate legal process. They are not ordinary moderation reports. When
-the US copyright process is active, a signed-in claimant can submit a structured notice and an
-affected poster can appeal or submit a counter-notice. CAPTCHA helps prevent abuse. It does not
-decide whether a claim is legally valid.
+the US copyright process is active, a signed-in member can submit a structured notice, anyone can
+send a notice by email to the designated agent, and an affected poster can appeal or submit a
+counter-notice. CAPTCHA helps prevent abuse. It does not decide whether a claim is legally valid.
+A copyright moderator reviews every notice. An AI agent may assist, but it does not decide.
 
 Do not submit false, misleading, or abusive copyright notices or counter-notices. Voucha may take
-account action for repeated abuse after human review. Accepted copyright case records are visible to
-signed-in members in redacted form. They do not reveal names, contact details, raw correspondence,
-evidence, or agent analysis.
+account action for repeated abuse after human review. Repeat infringement is handled under the
+repeat-infringer policy in Section 10 of the Terms of Service. Accepted copyright case records are
+visible to signed-in members. When a signed-in member filed the notice, a record shows that
+member's current public profile if it still exists. Records do not reveal legal names, contact
+details, signatures, raw correspondence, evidence, moderator rationale, or agent analysis.
 
 ## Appeals
 
