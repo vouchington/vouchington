@@ -104696,10 +104696,10 @@
       },
       "growth": "bounded",
       "indexes": {
-        "idx_story_post_related_url_projection_relation_mutations__relat": {
+        "idx_story_post_url_projection_relation_mutations__relation": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_story_post_related_url_projection_relation_mutations__relat ON public.story_post_related_url_projection_relation_mutations USING btree (post_id, relation_id)",
+          "definition": "CREATE INDEX idx_story_post_url_projection_relation_mutations__relation ON public.story_post_related_url_projection_relation_mutations USING btree (post_id, relation_id)",
           "includedColumns": [],
           "keys": [
             {

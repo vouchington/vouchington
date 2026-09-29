@@ -28,7 +28,7 @@ _none_
 
 **Indexes:**
 
-- `idx_story_post_related_url_projection_relation_mutations__relat`: `CREATE INDEX idx_story_post_related_url_projection_relation_mutations__relat ON public.story_post_related_url_projection_relation_mutations USING btree (post_id, relation_id)`
+- `idx_story_post_url_projection_relation_mutations__relation`: `CREATE INDEX idx_story_post_url_projection_relation_mutations__relation ON public.story_post_related_url_projection_relation_mutations USING btree (post_id, relation_id)`
 - `story_post_related_url_projection_relation_mutations_pkey`: `CREATE UNIQUE INDEX story_post_related_url_projection_relation_mutations_pkey ON public.story_post_related_url_projection_relation_mutations USING btree (post_id, generation, relation_id)`
 
 **Triggers:**
