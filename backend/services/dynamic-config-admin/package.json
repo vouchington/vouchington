@@ -28,6 +28,7 @@
     "@services/bloom-filter-config": "workspace:^",
     "@services/captcha": "workspace:^",
     "@services/contribution-gating": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
     "@services/dynamic-config-audit": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/feature-flags": "workspace:^",

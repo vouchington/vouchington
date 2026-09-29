@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { lockAssessmentForm } from './compliance.mts'
+import { isAutomaticProvisionalWithholdingEnabled } from './config.mts'
 
 export type EnforcementRequest = {
   assessment_id: string
@@ -10,9 +11,14 @@ export type EnforcementRequest = {
 
 type EnforcementRequestClaim = EnforcementRequest | 'completed' | null
 
+/**
+ * Claims a pending request for enforcement, or completes one that is no longer enforceable. An
+ * automated assessment's request stays pending while `automaticProvisionalWithholding` is off.
+ */
 export async function claimCopyrightEnforcementRequest(
   assessmentId: string,
 ): Promise<EnforcementRequestClaim> {
+  const automaticWithholding = await isAutomaticProvisionalWithholdingEnabled()
   await using transaction = await beginTransaction()
   await lockEnforcementForm(assessmentId, transaction)
   const { rows } = await transaction<{
@@ -22,7 +28,9 @@ export async function claimCopyrightEnforcementRequest(
     terminalized: boolean
   }>(sql`/* claimCopyrightEnforcementRequest */
     WITH enforceable AS (
-      SELECT request.copyright_notice_submission_assessment_id AS assessment_id
+      SELECT request.copyright_notice_submission_assessment_id AS assessment_id,
+        assessment.assessed_by_id IS NULL
+          AND assessment.copyright_notice_form_screening_id IS NOT NULL AS automated
       FROM copyright_notice_enforcement_requests request
       JOIN copyright_notice_submission_assessments assessment
         ON assessment.id = request.copyright_notice_submission_assessment_id
@@ -74,6 +82,7 @@ export async function claimCopyrightEnforcementRequest(
           SELECT 1
           FROM enforceable
           WHERE assessment_id = request.copyright_notice_submission_assessment_id
+            AND (${automaticWithholding}::boolean OR NOT automated)
         )
       RETURNING request.copyright_notice_submission_assessment_id AS assessment_id,
         request.copyright_notice_id AS notice_id, request.imposed_by_id
