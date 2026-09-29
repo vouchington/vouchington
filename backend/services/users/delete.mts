@@ -24,30 +24,13 @@ import {
   lockUserProfileImageOwners,
 } from '@services/media-delivery-safety'
 import { assertCopyrightEvidenceAllowsDeletion } from './delete-copyright-evidence.mts'
-type UserDeletionTarget = {
-  id: string
-  username: string | null
-}
+import { lockUserDeletionRows, type UserDeletionTarget } from './delete-row-locks.mts'
 
 async function lockUserDeletionLifecycle(query: TransactionQuery, userId: string): Promise<void> {
   await query(sql`/* deleteUser:lockUser */
     SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
   `)
   await lockAuthorPublicationLifecycle(query, userId)
-}
-
-async function getUserDeletionTarget(
-  query: TransactionQuery,
-  userId: string,
-): Promise<UserDeletionTarget> {
-  const { rows } = await query<UserDeletionTarget>(sql`/* deleteUser:lockUserRow */
-    SELECT id, username FROM users
-    WHERE id = ${userId}
-    FOR UPDATE
-  `)
-  const target = rows[0]
-  assert(target, 409, 'User is already deleted')
-  return target
 }
 
 async function auditAndCreateUserDeletionRequest(
@@ -75,7 +58,7 @@ async function establishUserDeletionRequest(
   user: PrivateUser,
   requestedById: string,
 ) {
-  const target = await lockAndGetUserDeletionTarget(query, user.id)
+  const target = await lockAndGetUserDeletionTarget(query, user.id, requestedById)
   const request = await auditAndCreateUserDeletionRequest(query, target, requestedById)
   return { request, target }
 }
@@ -83,10 +66,11 @@ async function establishUserDeletionRequest(
 async function lockAndGetUserDeletionTarget(
   query: TransactionQuery,
   userId: string,
+  requestedById: string,
 ): Promise<UserDeletionTarget> {
   await lockUserDeletionLifecycle(query, userId)
   await lockUserProfileImageOwners([userId], query)
-  return getUserDeletionTarget(query, userId)
+  return lockUserDeletionRows(query, userId, requestedById)
 }
 
 async function scrubUserDeletionIdentities(
