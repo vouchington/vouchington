@@ -29,6 +29,15 @@ describe('createSentryOptions', () => {
     },
   )
 
+  it('turns off HTTP body capture and gen-AI input and output recording', () => {
+    const expected: ReturnType<typeof createSentryOptions>['dataCollection'] = {
+      httpBodies: [],
+      genAI: { inputs: false, outputs: false },
+    }
+
+    expect(createSentryOptions({ ENVIRONMENT: 'production' }).dataCollection).toEqual(expected)
+  })
+
   it('returns enabled=false when ENVIRONMENT is unset', () => {
     const opts = createSentryOptions({})
     expect(opts.enabled).toBe(false)

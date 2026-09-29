@@ -7,4 +7,4 @@
 | `pnpm run test:smoke:backend`           | Backend server + worker start                                             | monorepo |
 | `pnpm run test:smoke:cloudflare-worker` | CF Worker builds and answers `/robots.txt` over HTTP on an allocated port | monorepo |
 | `pnpm run test:smoke:image-lambda`      | Image lambda starts and answers `/health` over HTTP on an allocated port  | monorepo |
-| `pnpm run test:smoke:web`               | Next.js starts                                                            | web      |
+| `pnpm run test:smoke:web`               | Next.js starts and serves `/` on allocated ports                          | web      |

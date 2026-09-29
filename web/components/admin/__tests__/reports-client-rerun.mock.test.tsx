@@ -71,7 +71,7 @@ describe('ReportsClient re-run judgement button', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: /re-run ai judgement/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /re-run ai judgement/i })).toBeVisible()
   })
 
   it('calls rerunReportJudgement and shows a success toast on success', async () => {

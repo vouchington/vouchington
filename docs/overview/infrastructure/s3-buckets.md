@@ -6,8 +6,12 @@ See also:
 
 - [infrastructure.md](infrastructure.md) — AWS resources overview and cost estimates
 - `vouchington-infra/opentofu/s3.tf` — bucket and lifecycle definitions
-- `vouchington-infra/opentofu/s3-coverage-transport.tf` — transient CI coverage and Vitest-blob transport
 - `vouchington-infra/opentofu/locals.tf` — bucket name locals (`local.s3_buckets`, `local.s3_test_buckets`, etc.)
+
+The former `coverage_transport` path carried sparse patch-LCOV and Vitest blobs. Vouchington
+retired its producer and consumer in #813; this is not active product coverage transport.
+The current private resource and lifecycle state has not been verified here. Assessment or
+cleanup in `vouchington-infra` remains deferred until infrastructure scope is explicitly enabled.
 
 ---
 

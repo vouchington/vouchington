@@ -24,11 +24,13 @@ For database work, read [`backend/data-stores/psql/AGENTS.md`](../../../backend/
 before selecting column shapes. Trace each identifier's readers and joins; record what it denotes,
 its concrete relationship, foreign-key coverage, constraint, and deletion behavior. Check generic `kind`/type plus ID designs against the owning
 schema rules even when they resemble existing code or have TypeScript unions and SQL `CHECK`s.
-If historical identity retention conflicts with foreign-key deletion semantics, resolve that
-choice with the human before implementing an exception; do not silently reinterpret the rule.
+Change history is not a foreign key. Do not add one so a history document can be joined. A
+retained-identity row is separate: a durable record can reference the entity after the live row is
+gone, and the identity does not authorize that entity.
 
-Classify every JSON field and reference by ownership; plan concrete live or entity-specific
-retained identity FKs for internal relations. See
+Plan a foreign key for an id or a UUID array that a query joins. Leave structured documents and
+change history as JSON. A data point stays JSON except for an entity id inside it, such as a topic
+id. See
 [prelaunch relational storage](../../../docs/development/postgres-schema-rules.md#prelaunch-relational-storage).
 
 Save the accepted plan once outside Git: use an existing issue or comment, the PR description,

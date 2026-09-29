@@ -56,6 +56,7 @@ See also: [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md) — maps each ro
   - `/article/terms-of-service` - Terms of Service article (DB-backed article content, SEO-indexed)
   - `/article/privacy-policy` - Privacy Policy article (DB-backed article content, SEO-indexed)
   - `/article/community-guidelines` - Community Guidelines article (DB-backed article content, SEO-indexed)
+  - `/article/copyright-and-dmca` and `/article/copyright-complaints` - copyright policy and notice/counter-notice guide articles, linked from `/copyright` (DB-backed article content, SEO-indexed)
   - `/copyright` - copyright policy and launch-gated designated-agent, repeat-infringer, and counter-notice information (public, SEO-indexed)
   - `/copyright/notices`, `/copyright/notices/:id`, and `/copyright/notices/new` - authenticated member case index, redacted accepted-case detail, and structured notice form; not indexed
   - `/copyright/notices/:id/appeal` and `/copyright/notices/:id/counter-notice` - authenticated poster response forms; server authorization remains authoritative

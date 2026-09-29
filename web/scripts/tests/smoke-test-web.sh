@@ -6,33 +6,23 @@ set -euo pipefail
 # Determine script directory and project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WEB_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$WEB_DIR/.." && pwd)"
 WEB_OUTPUT_LOG="$WEB_DIR/web-output.log"
 
-# Find a random available port (between 3100-3999 to avoid common ports)
-find_available_port() {
-  local port
-  for i in {1..50}; do
-    port=$((3100 + RANDOM % 900))
-    if node - "$port" <<'NODE'
-const net = require('node:net')
-const server = net.createServer()
-setTimeout(() => process.exit(1), 2000).unref()
-server.once('error', () => process.exit(1))
-server.listen(Number(process.argv[2]), '0.0.0.0', () => {
-  server.close(() => process.exit(0))
-})
-NODE
-    then
-      echo $port
-      return 0
-    fi
-  done
-  echo "✗ Error: Could not find available port after 50 attempts"
+# Reserve the web and localization backend ports together from the browser-safe pool. A raw random
+# port can be one that Fetch rejects with "bad port": curl still connects to it, so the backend
+# health check passes, but Next.js' server-side fetch throws before it opens a connection.
+# Resolve the allocator from the repo root so the script works from any working directory.
+echo "Selecting web smoke ports..."
+PORTS=$(python3 "$REPO_ROOT/ci/allocate-browser-safe-ports.py" 2) || {
+  echo "✗ Error: Could not allocate browser-safe ports"
   exit 1
 }
-
-echo "Selecting web smoke port..."
-WEB_PORT=$(find_available_port)
+read -r WEB_PORT BACKEND_PORT <<< "$PORTS"
+if [ -z "${WEB_PORT:-}" ] || [ -z "${BACKEND_PORT:-}" ] || [ "$WEB_PORT" = "$BACKEND_PORT" ]; then
+  echo "✗ Error: Expected two distinct browser-safe ports, got: '$PORTS'"
+  exit 1
+fi
 
 # Check if build exists
 if [ ! -d "$WEB_DIR/.next" ]; then
@@ -52,9 +42,7 @@ trap cleanup EXIT
 # The live web server always requests copy over HTTP. Serve that request through the real
 # backend localization resolver and a freshly compiled catalog during this standalone smoke.
 echo "Preparing localization smoke backend..."
-BACKEND_PORT=$(find_available_port)
-while [ "$BACKEND_PORT" = "$WEB_PORT" ]; do BACKEND_PORT=$(find_available_port); done
-cd "$WEB_DIR/.."
+cd "$REPO_ROOT"
 echo "Compiling localization catalog for smoke test..."
 node web/test-helpers/compile-localization-smoke-catalog.mts "$SMOKE_TMP_DIR/catalog.sqlite"
 LOCALIZATION_SQLITE_PATH="$SMOKE_TMP_DIR/catalog.sqlite" \

@@ -135,6 +135,17 @@ describe('initSentry', () => {
     )
   })
 
+  it('turns off HTTP body capture and gen-AI input and output recording', () => {
+    const expected: NonNullable<Parameters<typeof Sentry.init>[0]>['dataCollection'] = {
+      httpBodies: [],
+      genAI: { inputs: false, outputs: false },
+    }
+
+    initSentry({ lambdaName: 'test-lambda' })
+
+    expect(vi.mocked(Sentry.init).mock.lastCall?.[0]?.dataCollection).toEqual(expected)
+  })
+
   it('composes beforeSend with the default scrubber', async () => {
     const beforeSend = vi.fn<BeforeSend>(event => ({
       ...event,

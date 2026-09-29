@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
-import { PostDefaultsSection } from './post-defaults-section'
+/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- moved test support forwards the component data-pw props the privacy tests query */
+import type { ReactNode } from 'react'
+import { vi } from 'vitest'
 import type { UserPrivacyAudience } from '@/types/user'
 
 vi.mock(
@@ -12,11 +12,12 @@ vi.mock(
         value,
         onValueChange,
       }: {
-        children: React.ReactNode
+        children: ReactNode
         value: string
-        onValueChange?: (v: string) => void
+        onValueChange?: (next: string) => void
         disabled?: boolean
       }) => (
+        // ast-grep-ignore: web-no-raw-form-elements -- test double replaces Select with a button the privacy tests click
         <button
           type='button'
           data-testid='select'
@@ -30,9 +31,10 @@ vi.mock(
         children,
         'data-pw': dataPw,
       }: {
-        children: React.ReactNode
+        children: ReactNode
         'data-pw'?: string
       }) => (
+        // ast-grep-ignore: web-no-raw-form-elements -- test double replaces SelectTrigger with a button the privacy tests query
         <button
           type='button'
           data-pw={dataPw}
@@ -41,16 +43,17 @@ vi.mock(
         </button>
       ),
       SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
-      SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+      SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
       SelectItem: ({
         children,
         value,
         'data-pw': dataPw,
       }: {
-        children: React.ReactNode
+        children: ReactNode
         value: string
         'data-pw'?: string
       }) => (
+        // ast-grep-ignore: web-no-raw-form-elements -- test double replaces SelectItem with an option the privacy tests query
         <option
           value={value}
           data-pw={dataPw}
@@ -65,7 +68,10 @@ vi.mock(
   import('@/components/ui/label'),
   () =>
     ({
-      Label: ({ children }: { children: React.ReactNode }) => <label>{children}</label>,
+      Label: ({ children }: { children: ReactNode }) => (
+        // ast-grep-ignore: web-no-raw-form-elements -- test double replaces Label with a native label
+        <label>{children}</label>
+      ),
     }) as unknown as typeof import('@/components/ui/label'),
 )
 
@@ -87,36 +93,4 @@ function makeSettings(overrides?: Partial<Record<string, string>>) {
   }
 }
 
-describe('PostDefaultsSection', () => {
-  it('renders the Post Defaults heading', () => {
-    render(
-      <PostDefaultsSection
-        pending={new Set()}
-        settings={makeSettings()}
-        onChange={vi.fn<VitestLooseMock>()}
-      />,
-    )
-
-    expect(screen.getByRole('heading', { name: 'Post Defaults' })).toBeInTheDocument()
-  })
-
-  it('renders the default_post_broadcast label', () => {
-    const { container } = render(
-      <PostDefaultsSection
-        pending={new Set()}
-        settings={makeSettings()}
-        onChange={vi.fn<VitestLooseMock>()}
-      />,
-    )
-
-    expect(screen.getByText(/default post audience/i)).toBeInTheDocument()
-    expect(container.querySelector('[data-pw="default-post-broadcast-select"]')).not.toBeNull()
-    expect(
-      container.querySelector('[data-pw="default-post-broadcast-option-mutual-followers"]'),
-    ).not.toBeNull()
-    expect(container.querySelector('[data-pw="default-post-privacy-select"]')).not.toBeNull()
-    expect(
-      container.querySelector('[data-pw="default-post-privacy-option-private"]'),
-    ).not.toBeNull()
-  })
-})
+export { makeSettings }
