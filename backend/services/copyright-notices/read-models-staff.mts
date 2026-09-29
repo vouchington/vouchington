@@ -8,20 +8,36 @@ import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { getPendingCopyrightStaffCase } from './read-models-staff-case.mts'
-import type { CopyrightStaffCase } from './read-models-staff-types.mts'
+import { copyrightStaffQueueKeysSql } from './read-models-staff-queue-sql.mts'
+import type {
+  CopyrightStaffQueueCase,
+  CopyrightStaffQueueReason,
+} from './read-models-staff-types.mts'
 
-export type { CopyrightStaffCase } from './read-models-staff-types.mts'
+export type {
+  CopyrightStaffCase,
+  CopyrightStaffQueueCase,
+  CopyrightStaffQueueReason,
+} from './read-models-staff-types.mts'
 
-// Names the `(received_at, id)` ascending keyset below; cursors encoded under another scope are
-// rejected, so a cursor from a different list can never seek into this one.
-export const copyrightStaffQueueCursorScope = 'copyright-notices:staff-queue:received-at-asc-id-asc'
+// Names the `(urgency, waiting_since, id)` ascending keyset below; cursors encoded under another
+// scope are rejected, so a cursor from a different list or ordering can never seek into this one.
+export const copyrightStaffQueueCursorScope =
+  'copyright-notices:staff-queue:urgency-asc-waiting-since-asc-id-asc'
 
+export type CopyrightStaffQueueCursor = { tier: number; timestamp: string; id: string }
+type QueuedCase = CopyrightStaffQueueCase & { cursor: CopyrightStaffQueueCursor }
+
+/**
+ * Lists actionable cases by urgency: missed restoration deadlines first, then deadlines past
+ * escalation, then everything else by how long its oldest open item has waited.
+ */
 export async function listCopyrightStaffQueue(
   currentUser: PrivateUser,
-  options: { limit: number; after?: { timestamp: string; id: string } },
+  options: { limit: number; after?: CopyrightStaffQueueCursor },
 ): Promise<{
-  cases: Array<CopyrightStaffCase & { cursor_received_at: string }>
-  endCursor: { timestamp: string; id: string } | null
+  cases: QueuedCase[]
+  endCursor: CopyrightStaffQueueCursor | null
   hasNextPage: boolean
 }> {
   assertNotSuspended(currentUser)
@@ -30,106 +46,70 @@ export async function listCopyrightStaffQueue(
   }
   observeSharedDbScope('listCopyrightStaffQueue', sharedDbCursorScope(options.after?.id))
   await using transaction = await beginTransaction()
-  const query = sql`/* listPendingCopyrightStaffCases */
-    SELECT notice.id, to_char(
-      notice.received_at AT TIME ZONE 'UTC',
-      'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
-    ) AS cursor_received_at
-    FROM copyright_notices notice
-    WHERE (
-      EXISTS (
-      SELECT 1 FROM copyright_notice_form_intakes intake
-      JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id
-      LEFT JOIN copyright_notice_form_intake_reviews review ON review.copyright_notice_form_intake_id = intake.id
-      WHERE intake.copyright_notice_id = notice.id AND review.id IS NULL
-        AND (submission.source_kind = 'guest_form' OR NOT EXISTS (
-          SELECT 1 FROM copyright_notice_form_screening_executions execution
-          JOIN copyright_notice_submission_assessments assessment
-            ON assessment.copyright_notice_submission_id = submission.id
-              AND assessment.copyright_notice_form_screening_id = execution.copyright_notice_form_screening_id
-          WHERE execution.copyright_notice_form_intake_id = intake.id
-            AND fn_current_copyright_form_screening(submission.id, execution.copyright_notice_form_screening_id)
-            AND assessment.substantially_compliant AND NOT EXISTS (
-              SELECT 1 FROM copyright_notice_submission_assessments newer
-              WHERE newer.supersedes_assessment_id = assessment.id
-            )
-        ))
-      ) OR EXISTS (
-      SELECT 1 FROM copyright_restrictions restriction
-      JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-      WHERE target.copyright_notice_id = notice.id
-        AND restriction.lifted_at IS NULL AND restriction.human_reviewed_at IS NULL
-      ) OR EXISTS (
-      SELECT 1 FROM copyright_notice_submissions submission
-      WHERE submission.copyright_notice_id = notice.id AND submission.kind = 'appeal'
-        AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_appeal_reviews review
-          WHERE review.copyright_notice_submission_id = submission.id
-        )
-      ) OR EXISTS (
-      SELECT 1 FROM copyright_notice_submissions submission
-      WHERE submission.copyright_notice_id = notice.id AND submission.kind = 'counter_notice'
-        AND NOT EXISTS (
-          SELECT 1 FROM copyright_notice_counter_notice_reviews review
-          WHERE review.copyright_notice_submission_id = submission.id
-        )
-      ) OR EXISTS (
-      SELECT 1 FROM copyright_notice_submissions submission
-      LEFT JOIN copyright_notice_legal_hold_assessments assessment
-        ON assessment.copyright_notice_submission_id = submission.id
-      LEFT JOIN copyright_notice_legal_hold_resolutions resolution
-        ON resolution.copyright_notice_legal_hold_assessment_id = assessment.id
-      WHERE submission.copyright_notice_id = notice.id
-        AND submission.kind = 'court_or_ccb_hold'
-        AND (assessment.id IS NULL OR (
-          resolution.id IS NULL
-          AND assessment.from_original_claimant
-          AND assessment.proceeding_kind IS NOT NULL
-          AND assessment.commenced_at IS NOT NULL
-          AND assessment.received_by_designated_agent_at IS NOT NULL
-          AND assessment.same_material
-        ))
-      ) OR EXISTS (
-      SELECT 1 FROM copyright_notice_action_intents intent
-      JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
-      JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-      WHERE target.copyright_notice_id = notice.id AND intent.state = 'failed'
-      ) OR EXISTS (
-      SELECT 1 FROM copyright_notice_enforcement_requests request
-      WHERE request.copyright_notice_id = notice.id AND request.state <> 'completed'
-    ) OR EXISTS (
-      SELECT 1 FROM copyright_notice_delivery_intents intent
-      WHERE intent.copyright_notice_id = notice.id AND intent.state IN ('failed', 'bounced')
-      )
-    )
-  `
+  const query = sql`/* listPendingCopyrightStaffCases */`.append(copyrightStaffQueueKeysSql())
+    .append(sql`
+    SELECT queue_key.id, queue_key.urgency, queue_key.reasons, queue_key.waiting_since,
+      to_char(queue_key.waiting_since AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+        AS cursor_waiting_since,
+      next_deadline.escalation_at, next_deadline.restoration_deadline_at
+    FROM queue_key
+    LEFT JOIN LATERAL (
+      SELECT deadline.escalation_at, deadline.restoration_deadline_at
+      FROM copyright_notice_deadlines deadline
+      WHERE deadline.copyright_notice_id = queue_key.id
+        AND deadline.resolved_at IS NULL AND deadline.cancelled_at IS NULL
+      ORDER BY deadline.escalation_at, deadline.id
+      LIMIT 1
+    ) next_deadline ON true
+  `)
   if (options.after) {
     query.append(sql`
-      AND (notice.received_at, notice.id) > (${options.after.timestamp}::timestamptz, ${options.after.id})`)
+    WHERE (queue_key.urgency, queue_key.waiting_since, queue_key.id)
+      > (${options.after.tier}::int, ${options.after.timestamp}::timestamptz, ${options.after.id}::uuid)`)
   }
   query.append(sql`
-    ORDER BY notice.received_at, notice.id
+    ORDER BY queue_key.urgency, queue_key.waiting_since, queue_key.id
     LIMIT ${options.limit + 1}
   `)
-  const { rows } = await transaction<{ id: string; cursor_received_at: string }>(query)
+  const { rows } = await transaction<QueueKeyRow>(query)
   const cases = await Promise.all(
     rows.slice(0, options.limit).map(async row => {
       const staffCase = await getPendingCopyrightStaffCase(row.id, transaction)
-      return staffCase ? { ...staffCase, cursor_received_at: row.cursor_received_at } : null
+      return staffCase ? { ...staffCase, ...queueFields(row), cursor: cursorFor(row) } : null
     }),
   )
   await transaction.commit()
+  const last = rows.length > options.limit ? rows[options.limit - 1] : undefined
   return {
-    cases: cases.filter(
-      (item): item is CopyrightStaffCase & { cursor_received_at: string } => item !== null,
-    ),
-    endCursor:
-      rows.length > options.limit
-        ? {
-            timestamp: rows[options.limit - 1]!.cursor_received_at,
-            id: rows[options.limit - 1]!.id,
-          }
-        : null,
+    cases: cases.filter((item): item is QueuedCase => item !== null),
+    endCursor: last ? cursorFor(last) : null,
     hasNextPage: rows.length > options.limit,
   }
+}
+
+type QueueKeyRow = {
+  id: string
+  urgency: number
+  reasons: CopyrightStaffQueueReason[]
+  waiting_since: Date
+  cursor_waiting_since: string
+  escalation_at: Date | null
+  restoration_deadline_at: Date | null
+}
+
+function queueFields(
+  row: QueueKeyRow,
+): Pick<CopyrightStaffQueueCase, 'reasons' | 'waiting_since' | 'next_deadline'> {
+  return {
+    reasons: row.reasons,
+    waiting_since: row.waiting_since,
+    next_deadline:
+      row.escalation_at && row.restoration_deadline_at
+        ? { escalation_at: row.escalation_at, restoration_deadline_at: row.restoration_deadline_at }
+        : null,
+  }
+}
+
+function cursorFor(row: QueueKeyRow): CopyrightStaffQueueCursor {
+  return { tier: row.urgency, timestamp: row.cursor_waiting_since, id: row.id }
 }
