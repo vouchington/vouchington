@@ -28,10 +28,8 @@ export async function createClientGeneratedChatTurn(params: {
   await using query = await beginTransaction()
   await lockConversationAndAssertNoActiveChatTurn(query, conversationId)
   const userInsert = sql`/* createClientGeneratedChatTurnUser */
-    INSERT INTO conversation_messages (
-      conversation_id, created_by_id, chat_role, chat_text, chat_error
-    )
-    VALUES (${conversationId}, ${createdById}, 'user', ${message}, NULL)
+    INSERT INTO conversation_messages (conversation_id, created_by_id, content)
+    VALUES (${conversationId}, ${createdById}, ${JSON.stringify({ role: 'user', content: message })})
     RETURNING
   `
   appendConversationMessageReturning(userInsert)
@@ -39,10 +37,11 @@ export async function createClientGeneratedChatTurn(params: {
   const userMessage = userMessageResult.rows[0]!
 
   const assistantInsert = sql`/* createClientGeneratedChatTurnAssistant */
-    INSERT INTO conversation_messages (
-      conversation_id, created_by_id, chat_role, chat_text, chat_error
-    )
-    VALUES (${conversationId}, ${createdById}, 'assistant', ${assistantContent}, NULL)
+    INSERT INTO conversation_messages (conversation_id, created_by_id, content)
+    VALUES (${conversationId}, ${createdById}, ${JSON.stringify({
+      role: 'assistant',
+      content: assistantContent,
+    })})
     RETURNING
   `
   appendConversationMessageReturning(assistantInsert)

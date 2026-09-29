@@ -102,12 +102,11 @@ export async function reconcileStaleChatRuntimeGenerations(
           AND c.deleted_at IS NULL
       ), update_assistant_message AS (
         UPDATE conversation_messages cm
-        SET chat_error = ${CHAT_RUNTIME_GENERATION_INTERRUPTED_ERROR}
+        SET content = cm.content || ${JSON.stringify({ error: CHAT_RUNTIME_GENERATION_INTERRUPTED_ERROR })}::jsonb
         FROM stale
         WHERE cm.conversation_id = stale.conversation_id
           AND cm.id = stale.conversation_message_id
           AND cm.deleted_at IS NULL
-          AND cm.chat_role = 'assistant'
       )
       SELECT conversation_message_id FROM stale
     `)
