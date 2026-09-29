@@ -25,7 +25,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS,
   ['post_admission_claims.lease_id', 'Fencing token, not a durable relation.'],
-  ['post_admission_reservations.committed_post_id', 'Replay snapshot; no foreign key.'],
   ['agent_moderations.moderation_transparency_community_id', 'Trigger-maintained scope snapshot.'],
   ['moderation_appeals.moderation_transparency_community_id', 'Immutable scope snapshot.'],
   [

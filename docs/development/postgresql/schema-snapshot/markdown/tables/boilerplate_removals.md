@@ -6,13 +6,14 @@ Stores computed boilerplate removal results for a hostname and parent path combi
 
 Not partitioned — growth: unbounded.
 
-| Column        | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                |
-| ------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------ |
-| `id`          | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                        |
-| `hostname_id` | `uuid`                     | no       |                              |          |           |           | The hostname these removal rules apply to.             |
-| `parent_path` | `text`                     | no       |                              |          |           |           | The URL parent path pattern for scoping removal rules. |
-| `created_at`  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                        |
-| `updated_at`  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                        |
+| Column        | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                |
+| ------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
+| `id`          | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                        |
+| `hostname_id` | `uuid`                     | no       |                              |          |           |           | The hostname these removal rules apply to.                             |
+| `parent_path` | `text`                     | no       |                              |          |           |           | The URL parent path pattern for scoping removal rules.                 |
+| `results`     | `jsonb`                    | no       | `'{}'::jsonb`                |          |           |           | JSONB containing the computed boilerplate removal selectors and rules. |
+| `created_at`  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                        |
+| `updated_at`  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                        |
 
 **Primary key:** `PRIMARY KEY (id)`
 

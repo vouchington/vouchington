@@ -18,6 +18,7 @@ import { retryCacheSaturation } from '@data-stores/valkey/retry-saturation'
 import { caches } from './caches.mts'
 import onError from '@modules/on-error'
 import { enqueueBulkPurgeCacheTags } from '@queues/cache-purge/enqueues'
+import type { EntityRelationElectionCacheKey } from './entity-relation-election-key.mts'
 import {
   postTag,
   topicTag,
@@ -32,7 +33,7 @@ import {
   HTML_TAG,
 } from '@ts-shared/cache'
 
-type InvalidateFunction = (...keys: unknown[]) => Promise<void>
+type InvalidateFunction<Keys extends unknown[] = unknown[]> = (...keys: Keys) => Promise<void>
 type CacheDeleteGroups = Parameters<typeof ValkeyCache.deleteFromCaches>[0]
 
 const CACHE_DELETE_KEYS_PER_BATCH = 500
@@ -75,11 +76,10 @@ export const invalidate = {
     const electionKeys = await getElectionCacheKeys(...keys)
     await caches.agent_moderation_elections.invalidateCacheGetByAny(...electionKeys)
   }),
-  entity_relation_elections: wrap(async (...keys: unknown[]): Promise<void> => {
-    const electionKeys = await getElectionCacheKeys(...keys)
-    await deleteFromCachesInChunks([
-      { cache: caches.entity_relation_elections, keys: electionKeys },
-    ])
+  // Election identity is the concrete relation table plus id; a bare UUID could evict another
+  // relation family's cached election, so callers pass relation-table-qualified keys.
+  entity_relation_elections: wrap(async (...keys: EntityRelationElectionCacheKey[]) => {
+    await deleteFromCachesInChunks([{ cache: caches.entity_relation_elections, keys }])
   }),
   posts: wrap(async (...keys: unknown[]): Promise<void> => {
     // getPostCacheKeys returns both UUIDs and slugs. We pass only the slug portion to
@@ -180,8 +180,8 @@ export async function deleteFromCachesInChunks(groups: CacheDeleteGroups): Promi
   await deleteNextChunk(0)
 }
 
-function wrap(fn: InvalidateFunction): InvalidateFunction {
-  return async (...keys: unknown[]): Promise<void> => {
+function wrap<Keys extends unknown[]>(fn: InvalidateFunction<Keys>): InvalidateFunction<Keys> {
+  return async (...keys: Keys): Promise<void> => {
     try {
       return await fn(...keys)
     } catch (error) {

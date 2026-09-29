@@ -17,7 +17,8 @@ describe('report integrity primary-read routing', () => {
 
   it('keeps flag lists replica-eligible and routes exact flag reads through the primary', () => {
     const serviceSource = source('./get-flags.mts')
-    expect(serviceSource).toContain('await write(sql`/* getReportIntegrityFlagByIdFromPrimary */')
+    expect(serviceSource).toContain('/* getReportIntegrityFlagByIdFromPrimary */')
+    expect(serviceSource).toContain('const { rows } = await write(query)')
     expect(serviceSource).toContain('const { rows } = await read(query)')
     expect(source('../../api/v1/report-integrity/flags.mts')).toContain(
       'await getReportIntegrityFlagByIdFromPrimary(id)',

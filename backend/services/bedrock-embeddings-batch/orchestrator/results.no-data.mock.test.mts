@@ -22,7 +22,7 @@ describe('downloadBatchResults S3 I/O', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     readBatch.mockResolvedValue({
-      rows: [{ output_s3_uri: `s3://${S3BedrockBatchBucket}/bedrock-output/` }],
+      rows: [{ data: { outputS3Uri: `s3://${S3BedrockBatchBucket}/bedrock-output/` } }],
     })
   })
 

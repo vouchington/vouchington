@@ -9,7 +9,8 @@ import {
   getTestEntityRelationVoteState,
   insertTestUrlDirect,
 } from '@voucha/test-helpers'
-import { getEntityRelationElectionByIdCachedBatch } from '../entity-fetch/get.mts'
+import { createEntityRelationElectionTarget } from '../elections-votes/entity-relation/target.mts'
+import { getEntityRelationElectionByTargetCachedBatch } from '../entity-fetch/get.mts'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import {
   insertPrevalidatedPostRelatedUrlEntityRelationsInTransaction,
@@ -32,9 +33,9 @@ describe('writeEntityRelations transaction', () => {
       [{ subject: { id: post.id }, object: { id: topic.id } }],
       { vote: false },
     )
-    const relationId = createdRelation!.id!
+    const target = createEntityRelationElectionTarget(createdRelation!.id!, relation.table_name)
 
-    const [cachedBefore] = await getEntityRelationElectionByIdCachedBatch([relationId])
+    const [cachedBefore] = await getEntityRelationElectionByTargetCachedBatch([target])
     expect(cachedBefore?.votes_score_net).toBe(0)
 
     await using query = await beginTransaction()
@@ -45,12 +46,12 @@ describe('writeEntityRelations transaction', () => {
       { query },
     )
 
-    const [cachedBeforeCommit] = await getEntityRelationElectionByIdCachedBatch([relationId])
+    const [cachedBeforeCommit] = await getEntityRelationElectionByTargetCachedBatch([target])
     expect(cachedBeforeCommit?.votes_score_net).toBe(0)
 
     await query.commit()
 
-    const [cachedAfterCommit] = await getEntityRelationElectionByIdCachedBatch([relationId])
+    const [cachedAfterCommit] = await getEntityRelationElectionByTargetCachedBatch([target])
     expect(cachedAfterCommit?.votes_score_net).toBeGreaterThan(0)
   })
 

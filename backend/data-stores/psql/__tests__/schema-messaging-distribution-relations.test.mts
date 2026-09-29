@@ -4,7 +4,7 @@ import { createLocalTestUser } from '../../../test-helpers/data-stores/psql/user
 import { insertTestPostsForUser } from '../../../test-helpers/entities/posts-deletion.mts'
 import {
   insertAllFollowersDistributionWithRecipient,
-  insertChatMessageWithoutRole,
+  insertChatMessageWithoutContent,
   insertDuplicateSelectedRecipient,
   insertLocalConversation,
   insertNotificationWithMissingPublicationPost,
@@ -13,7 +13,6 @@ import {
   insertOversizedSelectedRecipientSet,
   insertSelectedDistributionWithoutRecipients,
   insertUnknownSelectedRecipient,
-  insertUserChatMessageWithError,
 } from '../../../test-helpers/data-stores/psql/messaging-distribution-relations.mts'
 
 describe('messaging and distribution relation constraints', () => {
@@ -54,13 +53,10 @@ describe('messaging and distribution relation constraints', () => {
     )
   })
 
-  it('rejects chat rows that are not a user or assistant message', async () => {
+  it('rejects chat rows without content', async () => {
     const user = await createLocalTestUser()
     const conversationId = await insertLocalConversation(user.id)
-    await expect(insertChatMessageWithoutRole(conversationId, user.id)).rejects.toThrow(
-      'chk_conversation_messages__kind_content',
-    )
-    await expect(insertUserChatMessageWithError(conversationId, user.id)).rejects.toThrow(
+    await expect(insertChatMessageWithoutContent(conversationId, user.id)).rejects.toThrow(
       'chk_conversation_messages__kind_content',
     )
   })

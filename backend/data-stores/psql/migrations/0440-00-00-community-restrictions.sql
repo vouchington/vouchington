@@ -45,3 +45,18 @@ COMMENT ON COLUMN community_restrictions.updated_at IS 'When the restriction row
 COMMENT ON COLUMN community_restrictions.lifted_at IS 'When a moderator manually lifted the restriction early. NULL means not manually lifted.';
 COMMENT ON COLUMN community_restrictions.lifted_by_id IS 'Who lifted the restriction early.';
 COMMENT ON COLUMN community_restrictions.reason IS 'Optional reason recorded for moderation history.';
+
+-- Restrictions a moderator action activated or lifted. Rebuilt into the action's metadata
+-- (`restriction_id` / `restriction_ids`) when moderator actions are read.
+CREATE TABLE IF NOT EXISTS moderator_action_community_restrictions (
+  moderator_action_id UUID NOT NULL REFERENCES moderator_actions (id) ON DELETE CASCADE,
+  community_restriction_id UUID NOT NULL REFERENCES community_restrictions (id) ON DELETE CASCADE,
+  PRIMARY KEY (moderator_action_id, community_restriction_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_moderator_action_community_restrictions__restriction
+  ON moderator_action_community_restrictions (community_restriction_id);
+
+COMMENT ON TABLE moderator_action_community_restrictions IS 'Community restrictions activated or lifted by a moderator action. Restriction types and expiry stay in the action metadata.';
+COMMENT ON COLUMN moderator_action_community_restrictions.moderator_action_id IS 'Moderator action that activated or lifted the restriction.';
+COMMENT ON COLUMN moderator_action_community_restrictions.community_restriction_id IS 'Community restriction the moderator action targeted.';

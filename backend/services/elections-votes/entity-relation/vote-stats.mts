@@ -153,7 +153,7 @@ export async function updateEntityRelationElectionVoteStats(
     target.relationTable,
   )
   const updated = await persistEntityRelationVoteStats(target, stats)
-  await invalidate.entity_relation_elections(target.entityRelationId)
+  await invalidate.entity_relation_elections(target)
   await enqueuePublisherTypeTopicDiscoverabilityIfUpdated(target, Boolean(updated))
   enqueuePostNotificationReconciliationIfUpdated(target, updated?.subject_id)
   enqueueTopHashtagRefreshIfUpdated(target, Boolean(updated))
@@ -169,7 +169,7 @@ export async function updateEntityRelationElectionVoteStatsFromPrimary(
     target.relationTable,
   )
   const updated = await persistEntityRelationVoteStats(target, stats)
-  await invalidate.entity_relation_elections(target.entityRelationId)
+  await invalidate.entity_relation_elections(target)
   await enqueuePublisherTypeTopicDiscoverabilityIfUpdated(target, Boolean(updated))
   enqueuePostNotificationReconciliationIfUpdated(target, updated?.subject_id)
   enqueueTopHashtagRefreshIfUpdated(target, Boolean(updated))

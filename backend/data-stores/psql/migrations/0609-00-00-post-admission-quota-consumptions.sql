@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS post_admission_quota_consumptions (
-  reservation_id UUID PRIMARY KEY,
+  reservation_id UUID PRIMARY KEY REFERENCES post_admission_reservations (id) ON DELETE CASCADE,
   actor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   source TEXT NOT NULL,
   committed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -17,7 +17,7 @@ CREATE INDEX IF NOT EXISTS idx_post_admission_quota_consumptions__retention
 ON post_admission_quota_consumptions (committed_at, reservation_id);
 
 COMMENT ON TABLE post_admission_quota_consumptions IS 'Immutable committed-admission ledger used to enforce contribution quotas.';
-COMMENT ON COLUMN post_admission_quota_consumptions.reservation_id IS 'Admission reservation that committed and consumed quota exactly once.';
+COMMENT ON COLUMN post_admission_quota_consumptions.reservation_id IS 'Admission reservation that committed and consumed quota exactly once. The consumption is deleted with its reservation, which outlives every contribution-policy window.';
 COMMENT ON COLUMN post_admission_quota_consumptions.actor_id IS 'Actor whose contribution quota was consumed.';
 COMMENT ON COLUMN post_admission_quota_consumptions.source IS 'Contribution-policy source whose quota was consumed.';
 COMMENT ON COLUMN post_admission_quota_consumptions.committed_at IS 'Clock timestamp at which the quota-consuming admission committed.';

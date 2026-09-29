@@ -13,8 +13,16 @@ export interface RecordModeratorActionInput {
   moderationAppealId?: string | null
   communityApplicationId?: string | null
   reason?: string | null
+  /** Community restrictions this action activated or lifted; stored as child rows, not metadata. */
+  communityRestrictionIds?: string[]
   metadata?: Record<string, unknown>
 }
+
+/** Batch actions carry no per-row child rows, so restriction actions use `recordModeratorAction`. */
+export type RecordModeratorActionsInput = Omit<
+  RecordModeratorActionInput,
+  'communityRestrictionIds'
+>
 
 const MODERATOR_ACTION_INSERT_COLUMNS = `(
       actor_id,
@@ -35,7 +43,8 @@ export async function recordModeratorAction(
   input: RecordModeratorActionInput,
   options?: QueryOptions,
 ): Promise<void> {
-  const insert = createModeratorActionInsert('recordModeratorAction')
+  const insert = sql`/* recordModeratorAction */ WITH inserted AS (INSERT INTO moderator_actions `
+  insert.append(MODERATOR_ACTION_INSERT_COLUMNS)
   insert.append(sql` VALUES (
       ${actorId},
       ${input.actionType},
@@ -48,17 +57,24 @@ export async function recordModeratorAction(
       ${input.communityApplicationId ?? null},
       ${input.reason ?? null},
       ${JSON.stringify(input.metadata ?? {})}
-    )`)
+    )
+    RETURNING id
+  )
+  INSERT INTO moderator_action_community_restrictions (moderator_action_id, community_restriction_id)
+  SELECT inserted.id, restriction.id
+  FROM inserted
+  CROSS JOIN UNNEST(${[...new Set(input.communityRestrictionIds ?? [])]}::uuid[]) AS restriction(id)`)
   await write(insert, options)
 }
 
 export async function recordModeratorActions(
   actorId: string | null,
-  inputs: RecordModeratorActionInput[],
+  inputs: RecordModeratorActionsInput[],
   options?: QueryOptions,
 ): Promise<void> {
   if (inputs.length === 0) return
-  const insert = createModeratorActionInsert('recordModeratorActions')
+  const insert = sql`/* recordModeratorActions */ INSERT INTO moderator_actions `
+  insert.append(MODERATOR_ACTION_INSERT_COLUMNS)
   insert.append(sql`
     SELECT
       ${actorId}::uuid,
@@ -96,15 +112,4 @@ export async function recordModeratorActions(
       metadata
     )`)
   await write(insert, options)
-}
-
-function createModeratorActionInsert(
-  queryName: 'recordModeratorAction' | 'recordModeratorActions',
-) {
-  const insert =
-    queryName === 'recordModeratorAction'
-      ? sql`/* recordModeratorAction */ INSERT INTO moderator_actions `
-      : sql`/* recordModeratorActions */ INSERT INTO moderator_actions `
-  insert.append(MODERATOR_ACTION_INSERT_COLUMNS)
-  return insert
 }
