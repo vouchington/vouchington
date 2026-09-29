@@ -87,8 +87,7 @@ workflows and Gitleaks subscribe to `merge_group` checks requested; a merge grou
 areas its base-to-head diff touches.
 Other workflows keep their path and branch filters. Playwright, web integration, and Docker image
 build filters should skip Markdown-only, Vitest-only, test-helper-only, and Storybook-only changes
-on both pull requests and `main` pushes unless the changed files are directly owned by that
-workflow. Direct `node_modules` caches and `actions/setup-node` package-manager cache helpers are
+unless the changed files are directly owned by that workflow. Direct `node_modules` caches and `actions/setup-node` package-manager cache helpers are
 not allowed. Ephemeral GitHub-hosted jobs may cache the pnpm store, Playwright browsers, and shared
 web test runtime output through the explicit, SHA-pinned `actions/cache` policy in the [GitHub
 Actions checklist](../checklists/github-actions.md).
