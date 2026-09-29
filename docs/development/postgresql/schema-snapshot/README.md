@@ -76,7 +76,9 @@ Local development databases can be rebuilt with `db:clean`. Staging uses the pri
 infrastructure staging database reset runbook (the "Staging database reset" step of the
 first-deploy checklist in the private `vouchington-infra` repository), which requires organization
 access. Neither path resets Valkey, queues, object storage, analytics warehouse/event data, or
-infrastructure state.
+infrastructure state. A staging reset must also follow the
+[media-delivery reset and restore runbook](../../../runbooks/media-delivery-reset-restore.md), because the
+edge registry and CDN cache are retained.
 
 ## Declared Partition Policy and Physical Catalog Facts
 

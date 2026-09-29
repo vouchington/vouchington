@@ -83,4 +83,8 @@ staging database reset (the "Staging database reset" step of the first-deploy ch
 private `vouchington-infra` repository), which requires organization access, including deploy/apply
 admission, service quiescence, recovery evidence, and restoration. It resets only the PostgreSQL `public` schema;
 Valkey, queues, object storage, analytics warehouse/event data, and infrastructure state are
-retained.
+retained. The media-delivery edge registry and CDN cache are retained too and keep enforcing their
+records after a reset or restore. Reset or restore PostgreSQL only through the coordinated
+[media-delivery reset and restore runbook](../../runbooks/media-delivery-reset-restore.md), which
+prohibits partial restores and defines the reconciliation and invalidation evidence required
+before media-delivery workers resume.
