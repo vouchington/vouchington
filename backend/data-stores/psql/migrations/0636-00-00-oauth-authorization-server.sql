@@ -325,7 +325,7 @@ ON oauth_access_tokens (expires_at, id);
 COMMENT ON TABLE oauth_clients IS 'Dynamically registered and Client ID Metadata Document clients for the Voucha OAuth authorization server.';
 COMMENT ON TABLE oauth_authorization_requests IS 'Short-lived browser consent requests bound to one Voucha user session.';
 COMMENT ON TABLE oauth_grants IS 'Durable user consent for one client, resource, and canonical scope set.';
-COMMENT ON TABLE oauth_authorization_server_events IS 'Append-only durable evidence of OAuth consent and token revocation lifecycle events; identity columns intentionally have no foreign keys so retention and identity deletion cannot erase the audit record.';
+COMMENT ON TABLE oauth_authorization_server_events IS 'Append-only durable evidence of OAuth consent and token revocation lifecycle events; user_id references the retained user identity, and client, grant, request, and token ids are audit snapshot identifiers without foreign keys, so retention and identity deletion cannot erase the audit record.';
 COMMENT ON TABLE oauth_authorization_codes IS 'Single-use S256 authorization codes stored only as purpose-bound hashes.';
 COMMENT ON TABLE oauth_refresh_token_families IS 'Rotating refresh-token family lifecycle and reuse detection.';
 COMMENT ON TABLE oauth_refresh_tokens IS 'Single-use refresh tokens stored only as purpose-bound hashes.';
