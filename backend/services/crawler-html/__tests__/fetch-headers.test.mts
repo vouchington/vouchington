@@ -188,7 +188,7 @@ describe('fetchCrawlerHtml headers and request options', () => {
         {},
       ).catch(error => error)
       await vi.advanceTimersByTimeAsync(1)
-      await expect(await handled).toMatchObject({ message: 'aborted' })
+      expect(await handled).toMatchObject({ message: 'aborted' })
 
       expect(fetchSpy).toHaveBeenCalledWith(
         'https://example.com',

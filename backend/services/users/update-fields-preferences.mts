@@ -120,9 +120,7 @@ function appendEmailFrequency(
   query: ReturnType<typeof sql>,
   hasSet: boolean,
   field: 'news_digest_frequency' | 'community_digest_frequency',
-  value:
-    | UpdateUserOptions['news_digest_frequency']
-    | UpdateUserOptions['community_digest_frequency'],
+  value: UpdateUserOptions['news_digest_frequency'],
 ): boolean {
   if (value === undefined) return hasSet
   assert(

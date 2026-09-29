@@ -1,6 +1,6 @@
 ---
 name: package-json-checklist
-description: Use when editing a Vouchington package manifest or adding a dependency. Loads the portable package-metadata checklist, then applies local workspace policy.
+description: Edit Vouchington package manifests, dependencies, and workspace metadata.
 ---
 
 # Vouchington package.json Adapter

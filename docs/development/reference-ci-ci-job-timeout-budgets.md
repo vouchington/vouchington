@@ -4,8 +4,8 @@
 
 Runner-pool topology and per-step timeout tables live in the canonical references below — do not duplicate them here:
 
-- **Runner pools**: [Job & runner inventory](../../.github/workflows/JOBS.md)
-- **Step timeout guidelines and authoring patterns**: [Workflow Step Timeouts](../../.github/workflows/reference-step-timeouts.md)
+- **Runner pools**: [Job & runner inventory](ci/workflows/JOBS.md)
+- **Step timeout guidelines and authoring patterns**: [Workflow Step Timeouts](ci/workflows/reference-step-timeouts.md)
 
 ### Fail-fast budget relationship
 
@@ -62,7 +62,7 @@ relink. The first install rebuilds stale dependency/platform-selection state, in
 native packages, without executing package code; the second applies the workspace's `allowBuilds`
 policy. The pair gets a 5-minute per-attempt step timeout, three retry attempts, and a 35-minute job
 budget so a timed-out attempt does not leave broken workspace links for later typechecks. See
-[Workflow Step Timeouts](../../.github/workflows/reference-step-timeouts.md)
+[Workflow Step Timeouts](ci/workflows/reference-step-timeouts.md)
 for the canonical step-timeout table.
 
 Docker validation image builds get 10-minute step ceilings. The backend and web build jobs retain

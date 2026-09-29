@@ -1,5 +1,10 @@
 import satori from 'satori'
 import sharp from 'sharp'
+import {
+  authorizeDependencyStates,
+  type DependencyAuthorization,
+  type PlacementSourcePolicy,
+} from '@ts-shared/url-signing'
 import type { EnvironmentConfig } from '../config.mts'
 import type { createS3Client, fetchImageFromS3 } from '../s3/index.mts'
 import type { OgParams } from './params.mts'
@@ -12,6 +17,9 @@ import { CARD_WIDTH, CARD_HEIGHT } from './card-frame.mts'
 export interface OgRenderDependencies {
   createS3Client: typeof createS3Client
   fetchImageFromS3: typeof fetchImageFromS3
+  authorizeDependencies: (
+    dependencies: readonly PlacementSourcePolicy[],
+  ) => Promise<readonly DependencyAuthorization[]>
 }
 
 // OG cards render fresh on every invocation instead of going through
@@ -30,10 +38,7 @@ export async function renderOgImage(
 ): Promise<Buffer> {
   const fonts = loadInterFonts()
 
-  const avatarDataUri =
-    params.type === 'landing' && params.avatarImageId
-      ? await resolveAvatarDataUri(params.avatarImageId, config, dependencies)
-      : undefined
+  const avatarDataUri = await authorizedAvatarDataUri(params, config, dependencies)
 
   const node =
     params.type === 'generic'
@@ -53,4 +58,16 @@ export async function renderOgImage(
   })
 
   return sharp(Buffer.from(svg)).png().toBuffer()
+}
+
+async function authorizedAvatarDataUri(
+  params: OgParams,
+  config: EnvironmentConfig,
+  dependencies: OgRenderDependencies,
+): Promise<string | undefined> {
+  if (params.type !== 'landing' || params.dependencies.length === 0) return undefined
+  const states = await dependencies.authorizeDependencies(params.dependencies)
+  if (states.length !== params.dependencies.length) return undefined
+  if (authorizeDependencyStates(states) !== 'allow') return undefined
+  return resolveAvatarDataUri(params.dependencies[0]!.imageId, config, dependencies)
 }

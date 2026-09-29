@@ -4,7 +4,8 @@ import { getHorizontalOverflowState } from '../mobile-assertions.mts'
 interface FakeElement {
   tagName: string
   id: string
-  className: string
+  className: string | { baseVal: string }
+  getAttribute: (name: string) => string | null
   getBoundingClientRect: () => Pick<DOMRect, 'right'>
 }
 
@@ -41,6 +42,7 @@ describe('getHorizontalOverflowState', () => {
         tagName: 'DIV',
         id: 'within-viewport',
         className: 'content',
+        getAttribute: () => 'content',
         getBoundingClientRect: () => ({ right: 321 }),
       },
     ])
@@ -59,6 +61,7 @@ describe('getHorizontalOverflowState', () => {
         tagName: 'SECTION',
         id: 'offender',
         className: 'x'.repeat(61),
+        getAttribute: () => 'x'.repeat(61),
         getBoundingClientRect: () => ({ right: 322.4 }),
       },
     ])
@@ -69,5 +72,20 @@ describe('getHorizontalOverflowState', () => {
       clientWidth: 320,
       offenders: [{ tag: 'SECTION', id: 'offender', cls: 'x'.repeat(60), right: 322 }],
     })
+  })
+
+  it.each(['icon', null])('reads SVG class attributes (%s) without stringifying className', cls => {
+    installDocument(500, 320, [
+      {
+        tagName: 'svg',
+        id: 'svg-offender',
+        className: { baseVal: cls ?? '' },
+        getAttribute: () => cls,
+        getBoundingClientRect: () => ({ right: 400 }),
+      },
+    ])
+    expect(getHorizontalOverflowState().offenders).toEqual([
+      { tag: 'svg', id: 'svg-offender', cls: cls ?? '', right: 400 },
+    ])
   })
 })

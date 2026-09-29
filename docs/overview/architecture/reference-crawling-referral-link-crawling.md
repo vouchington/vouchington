@@ -38,11 +38,11 @@ Auto-deactivation sets `activated_at = NULL`, `deactivated_at = CURRENT_TIMESTAM
 
 - Workspace instructions: [backend/AGENTS.md](../../../backend/AGENTS.md)
 - Worker entry point: [backend/workers/crawler/workers.mts](../../../backend/workers/crawler/workers.mts)
-- [backend/services/crawls/README.md](../../../backend/services/crawls/README.md) — error recording, embeddings workflow
+- [docs/overview/architecture/services/crawls/README.md](services/crawls/README.md) — error recording, embeddings workflow
 - [backend/AGENTS.md](../../../backend/AGENTS.md) — backend workspace conventions
 - [backend/services/crawler-html/index.mts](../../../backend/services/crawler-html/index.mts) — secure HTML fetch policy, upstream extraction, crawler error classification, and metrics
-- [backend/services/crawler-html/README.md](../../../backend/services/crawler-html/README.md) — crawler HTML service ownership and contracts
-- [backend/services/urls-domains-robots/README.md](../../../backend/services/urls-domains-robots/README.md) — bloom filter fast path, RFC 9309
-- [backend/queues/crawler/README.md](../../../backend/queues/crawler/README.md) — job queue configuration, S3 storage
+- [docs/overview/architecture/services/crawler-html/README.md](services/crawler-html/README.md) — crawler HTML service ownership and contracts
+- [docs/overview/architecture/services/urls-domains-robots/README.md](services/urls-domains-robots/README.md) — bloom filter fast path, RFC 9309
+- [docs/overview/architecture/queues/crawler/README.md](queues/crawler/README.md) — job queue configuration, S3 storage
 - [articles/voucha-bot.md](../../../articles/voucha-bot.md) — public-facing crawler documentation
 - [Runtime timeout classification](../../development/reference-runtime-timeouts-classification.md#hard-constraints-externalprotocol-driven) — per-fetch hard constraints for crawler HTML, robots.txt, and RSS chapters

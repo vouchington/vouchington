@@ -123,7 +123,8 @@ async function csvImport(input: string, output: string): Promise<void> {
       if (failed === undefined && !committed) failed = error
     }
   }
-  if (failed !== undefined) throw failed
+  if (failed instanceof Error) throw failed
+  if (failed !== undefined) throw new Error('Catalog import failed', { cause: failed })
 }
 function tableFile(command: string | undefined, source: string, args: readonly string[]): string {
   if (command?.startsWith('alias-')) return join(source, 'aliases.json')

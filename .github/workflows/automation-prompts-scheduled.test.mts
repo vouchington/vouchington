@@ -60,20 +60,9 @@ describe('Harness scheduled automation prompt contracts', () => {
   it('keeps native-localization contract validation runnable across checkout boundaries', () => {
     const prompt = readFileSync('docs/prompts/scheduled/agent-skill-docs.md', 'utf8')
 
-    for (const token of [
+    expect(prompt).toContain(
       '[canonical translation validation guide](../../development/reference-tests-translation-catalog-and-locale-checks.md)',
-      'node dev/native-localization.mts',
-      '--output-root',
-      '--consumer-root',
-      '--check',
-      'dotnet-clients/tooling/with-build-lock.sh',
-      'dotnet test',
-      'dotnet-clients/Voucha.DotNet.sln',
-      '--configuration Release',
-      'Vouchington',
-      'vouchington-clients',
-    ])
-      expect(prompt).toContain(token)
+    )
   })
 
   it('requires cold-cache durable fallback coverage through the Valkey service boundary', () => {

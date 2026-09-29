@@ -12,7 +12,7 @@ import {
   finalizeTopicImportAttempt,
   pruneExpiredTopicImportAttempts,
 } from './topic-import-attempts.mts'
-import type { ImportTopicResult } from './import-topics.mts'
+import type { ImportTopicResult } from './import-topics-types.mts'
 
 describe('topic import attempts', () => {
   it('prunes only expired attempts inside the requested retention window', async () => {

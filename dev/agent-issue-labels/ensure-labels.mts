@@ -64,7 +64,7 @@ if (isDirectInvocation()) {
   const repoIdx = args.indexOf('--repo')
   if (
     repoIdx !== -1 &&
-    (args.indexOf('--repo', repoIdx + 1) !== -1 ||
+    (args.includes('--repo', repoIdx + 1) ||
       !args[repoIdx + 1] ||
       args[repoIdx + 1].startsWith('-'))
   ) {

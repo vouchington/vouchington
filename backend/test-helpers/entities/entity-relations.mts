@@ -6,15 +6,6 @@ import { read, write } from '@data-stores/psql'
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import sql from 'sql-template-strings'
 
-export {
-  countPostRelatedTopics,
-  getTestRelationDeletedAt,
-  hasPostRelatedTopic,
-  insertScoredPostTopicCategoryRelation,
-  setScoredPostTopicCategoryRelationScore,
-  softDeleteScoredPostTopicCategoryRelation,
-} from './entity-relations-posts.mts'
-
 const ALLOWED_RELATION_TABLES = new Set(
   entityRelationMetadatum.map(relation => relation.table_name),
 )

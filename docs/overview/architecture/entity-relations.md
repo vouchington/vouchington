@@ -52,7 +52,7 @@ relations such as follow, mute, and block remain bookmark API concerns.
 
 ## Privacy Filter Integration
 
-`buildPrivacyFilter()` in `backend/services/posts/privacy-filter.mts` uses entity relation tables to enforce post visibility in feeds and search. It checks follow relationships via `relation__user__follow__user` to determine broadcast audience access. Since these tables use plain B-tree indexes, the reverse lookup hits a single index scan — previously, when this table was hash-partitioned by `subject_id`, this same `object_id` lookup scanned all 8 partitions 5+ times per feed query. See [backend/services/feeds/README.md](../../../backend/services/feeds/README.md#performance).
+`buildPrivacyFilter()` in `backend/services/posts/privacy-filter.mts` uses entity relation tables to enforce post visibility in feeds and search. It checks follow relationships via `relation__user__follow__user` to determine broadcast audience access. Since these tables use plain B-tree indexes, the reverse lookup hits a single index scan — previously, when this table was hash-partitioned by `subject_id`, this same `object_id` lookup scanned all 8 partitions 5+ times per feed query. See [docs/overview/architecture/services/feeds/README.md](services/feeds/README.md#performance).
 
 ## Side Effects
 
@@ -74,7 +74,7 @@ relations such as follow, mute, and block remain bookmark API concerns.
 - [Backend rules](../../../backend/AGENTS.md) — service and data conventions
 - [Web rules](../../../web/AGENTS.md) — UI and routing conventions
 
-- [backend/services/entity-relations/README.md](../../../backend/services/entity-relations/README.md) -- config, upsert, delete, query logic
-- [backend/services/bookmarks/README.md](../../../backend/services/bookmarks/README.md) -- bookmark operations built on entity relations
-- [backend/services/feeds/README.md](../../../backend/services/feeds/README.md) -- feed filtering using follow/mute/block relations
-- [backend/api/v1/entity-relations/README.md](../../../backend/api/v1/entity-relations/README.md) -- API endpoints
+- [docs/overview/architecture/services/entity-relations/README.md](services/entity-relations/README.md) -- config, upsert, delete, query logic
+- [docs/overview/architecture/services/bookmarks/README.md](services/bookmarks/README.md) -- bookmark operations built on entity relations
+- [docs/overview/architecture/services/feeds/README.md](services/feeds/README.md) -- feed filtering using follow/mute/block relations
+- [docs/requirements/api/v1/entity-relations/README.md](../../requirements/api/v1/entity-relations/README.md) -- API endpoints

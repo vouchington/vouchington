@@ -31,9 +31,7 @@ describe('cache', () => {
       })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
-        `SELECT * FROM valkey_cache_calls WHERE cache_name = 'users'`,
-      )
+      const rows = await query(`SELECT * FROM valkey_cache_calls WHERE cache_name = 'users'`)
       expect(rows.length).toBeGreaterThanOrEqual(1)
       const row = rows[0]!
       expect(row.cache_name).toBe('users')

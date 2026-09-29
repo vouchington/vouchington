@@ -48,9 +48,9 @@ describe('story post related URL projection', () => {
         {},
         {
           dispatchStoryPostRelationEffects: async () => {},
-          enqueueOnPostCreated: () => {},
+          enqueueOnPostCreated: () => Promise.resolve(),
           enqueueStoryPostAgent: async () => {},
-          enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => {},
+          enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => Promise.resolve(),
           invalidateStories: async () => {},
         },
       )
@@ -103,9 +103,9 @@ describe('story post related URL projection', () => {
       {},
       {
         dispatchStoryPostRelationEffects: async () => {},
-        enqueueOnPostCreated: () => {},
+        enqueueOnPostCreated: () => Promise.resolve(),
         enqueueStoryPostAgent: async () => {},
-        enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => {},
+        enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => Promise.resolve(),
         invalidateStories: async () => {},
       },
     )
@@ -154,9 +154,9 @@ describe('story post related URL projection', () => {
       {},
       {
         dispatchStoryPostRelationEffects: async () => {},
-        enqueueOnPostCreated: () => {},
+        enqueueOnPostCreated: () => Promise.resolve(),
         enqueueStoryPostAgent: async () => {},
-        enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => {},
+        enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => Promise.resolve(),
         invalidateStories: async () => {},
       },
     )
@@ -256,9 +256,9 @@ async function createProjectablePost(label: string) {
     {},
     {
       dispatchStoryPostRelationEffects: async () => {},
-      enqueueOnPostCreated: () => {},
+      enqueueOnPostCreated: () => Promise.resolve(),
       enqueueStoryPostAgent: async () => {},
-      enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => {},
+      enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => Promise.resolve(),
       invalidateStories: async () => {},
     },
   )

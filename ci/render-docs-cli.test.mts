@@ -31,6 +31,7 @@ describe('runRenderDocsCli', () => {
   ])('prints %s thrown by the renderer and returns 1', async (_case, thrown, message) => {
     const error = vi.spyOn(console, 'error').mockReturnValue(undefined)
 
+    // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- exercises non-Error renderer failures
     await expect(runRenderDocsCli(['out'], USAGE, () => Promise.reject(thrown))).resolves.toBe(1)
     expect(error).toHaveBeenCalledExactlyOnceWith(message)
   })

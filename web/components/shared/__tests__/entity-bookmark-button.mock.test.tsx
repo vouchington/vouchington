@@ -110,6 +110,10 @@ describe('EntityBookmarkButton', () => {
       expect(mockBookmarkEntity).toHaveBeenCalledWith('post', 'post-1', 'subscribe')
     })
 
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Subscribed' })).toBeEnabled()
+    })
+
     fireEvent.click(screen.getByRole('button', { name: 'Subscribed' }))
 
     await waitFor(() => {

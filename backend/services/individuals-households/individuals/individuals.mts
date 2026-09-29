@@ -63,7 +63,7 @@ async function createIndividual(currentUser: PrivateUser | null) {
 export async function getOrCreateIndividual(currentUser: PrivateUser | null) {
   const existing = await getIndividual(currentUser)
   if (existing) return existing
-  return await createIndividual(currentUser)
+  return createIndividual(currentUser)
 }
 
 async function getRepresentativeIndividualUser(userId: string) {

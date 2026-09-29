@@ -8,7 +8,11 @@ import {
 } from '@agents/_shared'
 import { extractTextFromOpenAIResponse } from '@modules/openai-utils'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
-import { appendCopyrightFormScreening } from '@services/copyright-notices/form-screenings'
+import {
+  claimCopyrightFormScreening,
+  completeCopyrightFormScreening,
+  failCopyrightFormScreening,
+} from '@services/copyright-notices/form-screening-executions'
 import { getCopyrightFormIntakeForScreening } from '@services/copyright-notices/form-screening-intake'
 
 const PROMPT =
@@ -19,41 +23,48 @@ export async function runCopyrightFormScreeningAgent(
 ): Promise<'not_obviously_invalid' | 'invalid_or_spam' | null> {
   const intake = await getCopyrightFormIntakeForScreening(submissionId)
   if (!intake) return null
-  const input = JSON.stringify({
-    statutory_fields_complete: intake.statutoryFieldsComplete,
-    work_description: intake.workDescription,
-  })
-  const safeInput = wrapExternalContent(await sanitizePromptInjection(input), {
-    source: 'copyright_form',
-    contentType: 'copyright-complaint',
-  })
-  const response = await callRecordingAgentResponseUsage(
-    () =>
-      createOpenAIResponse(
-        {
-          model: DEFAULT_AGENT_MODEL,
-          instructions: PROMPT,
-          input: safeInput,
-          metadata: { type: 'copyright-form-screening' },
-          service_tier: 'flex',
-          text: { format: { type: 'json_object' } },
-        } as Parameters<typeof createOpenAIResponse>[0],
-        { maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries },
-      ),
-    { agentSlug: 'copyright-form-screening' },
-  )
-  const { recommendation, rationale } = parseCopyrightFormScreeningOutput(
-    extractTextFromOpenAIResponse(response),
-  )
-  await appendCopyrightFormScreening({
-    intakeId: intake.intakeId,
-    inputSha256: createHash('sha256').update(safeInput).digest(),
-    recommendation,
-    rationale,
-    promptVersion: PROMPT_VERSION,
-    model: DEFAULT_AGENT_MODEL,
-  })
-  return recommendation
+  const attempt = await claimCopyrightFormScreening(intake.intakeId)
+  if (!attempt) return null
+  try {
+    const input = JSON.stringify({
+      statutory_fields_complete: intake.statutoryFieldsComplete,
+      work_description: intake.workDescription,
+    })
+    const safeInput = wrapExternalContent(await sanitizePromptInjection(input), {
+      source: 'copyright_form',
+      contentType: 'copyright-complaint',
+    })
+    const response = await callRecordingAgentResponseUsage(
+      () =>
+        createOpenAIResponse(
+          {
+            model: DEFAULT_AGENT_MODEL,
+            instructions: PROMPT,
+            input: safeInput,
+            metadata: { type: 'copyright-form-screening' },
+            service_tier: 'flex',
+            text: { format: { type: 'json_object' } },
+          } as Parameters<typeof createOpenAIResponse>[0],
+          { maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries },
+        ),
+      { agentSlug: 'copyright-form-screening' },
+    )
+    const { recommendation, rationale } = parseCopyrightFormScreeningOutput(
+      extractTextFromOpenAIResponse(response),
+    )
+    const result = await completeCopyrightFormScreening(attempt, {
+      intakeId: intake.intakeId,
+      inputSha256: createHash('sha256').update(safeInput).digest(),
+      recommendation,
+      rationale,
+      promptVersion: PROMPT_VERSION,
+      model: DEFAULT_AGENT_MODEL,
+    })
+    return result ? recommendation : null
+  } catch (error) {
+    await failCopyrightFormScreening(attempt)
+    throw error
+  }
 }
 
 export function parseCopyrightFormScreeningOutput(text: string): {

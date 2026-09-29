@@ -29,7 +29,7 @@ export const embeddingBloomFilter = new ValkeyBloomFilter({
 async function invalidateReadyMarkerAndEnqueueRebuild(): Promise<void> {
   try {
     const removed = await bloomValkeyClient.unlink([EMBEDDING_BLOOM_READY_KEY])
-    if (Number(removed) > 0) {
+    if (removed > 0) {
       await enqueueRebuildBloomFilter({ filter: 'embedding' })
     }
   } catch (error) {

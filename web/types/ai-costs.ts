@@ -13,4 +13,4 @@ export type AiCostsResponseBody = {
   page_info: PageInfo
 }
 import type { ScaledMoneyAggregate } from '@ts-shared/money'
-import type { PageInfo } from './api-responses'
+import type { PageInfo } from '@voucha/types/pagination'

@@ -1,4 +1,4 @@
-import type { CommunityOwner } from './search.mts'
+import type { CommunityOwner } from './search-types.mts'
 import type { Community } from './types.mts'
 
 export type CommunityWithOwner = Community & { owner: CommunityOwner | null }

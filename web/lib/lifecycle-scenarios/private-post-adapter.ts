@@ -3,7 +3,7 @@ import {
   stringArrayValue,
   stringValue,
   type LifecycleAdapter,
-} from './adapters'
+} from './lifecycle-values'
 import { formatUnknownValue } from '@/lib/format-unknown-value'
 
 export const webPrivatePostCollection: LifecycleAdapter = input => {

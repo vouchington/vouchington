@@ -105,5 +105,5 @@ export async function deliverPendingMembershipEntitlementEffects(
   const userIds = [...new Set(effects.map(effect => effect.userId))]
   await markJwtStaleBatch(userIds)
   await enqueueBulkRecalculateUserVoteWeight(userIds, true)
-  return await completeMembershipEntitlementEffects(effects)
+  return completeMembershipEntitlementEffects(effects)
 }

@@ -12,12 +12,8 @@ import {
 } from './refund-scan-cycle-ledger.mts'
 import type { StripeRefund } from './refund-history.mts'
 
-export type StripeRefundScanTarget = {
-  chargeId: string | null
-  currency: string
-  invoiceId: string
-  paymentIntentId: string | null
-}
+import type { StripeRefundScanTarget } from './refund-scan-target.mts'
+export type { StripeRefundScanTarget } from './refund-scan-target.mts'
 
 export type StripeRefundScanCallBudget = { remainingCalls: number }
 

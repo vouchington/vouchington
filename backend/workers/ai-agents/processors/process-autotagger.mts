@@ -57,7 +57,7 @@ export async function processAutotaggerRssFeedItem(
       throw new Error(
         `Embeddings never generated for rss_feed_item ${job.data.rss_feed_item_id} after ${retries} retries`,
       )
-    void enqueueRssFeedItem(job.data.rss_feed_item_id, retries + 1)
+    enqueueRssFeedItem(job.data.rss_feed_item_id, retries + 1)
     return null
   }
 

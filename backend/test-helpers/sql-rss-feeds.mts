@@ -92,7 +92,7 @@ export async function countEnabledRssFeedsForTest(): Promise<number> {
     WHERE is_enabled = TRUE AND deleted_at IS NULL`,
     [],
   )
-  return Number(rows[0]?.count ?? 0)
+  return rows.at(0)?.count ?? 0
 }
 
 export async function getRssFeedItemTitleByGuidForTest(guid: string): Promise<string | undefined> {

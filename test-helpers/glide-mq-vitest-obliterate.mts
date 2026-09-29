@@ -25,7 +25,7 @@ import { deadLetterQueueNames, getOrCreateQueue } from './glide-mq-vitest-intern
  * ID.
  */
 export async function obliterateTestQueue(
-  queue: TestQueue<any, any>,
+  queue: TestQueue,
   visited = new Set<string>(),
 ): Promise<void> {
   if (visited.has(queue.name)) return

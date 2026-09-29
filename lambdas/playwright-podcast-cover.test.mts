@@ -9,7 +9,7 @@ import {
 describe('Playwright podcast cover fixture', () => {
   it('matches only the reserved sideload source URL', () => {
     const encoded = Buffer.from(PLAYWRIGHT_PODCAST_COVER_URL).toString('base64url')
-    expect(isPlaywrightPodcastCoverRequest(`/sideload/${encoded}`)).toBe(true)
+    expect(isPlaywrightPodcastCoverRequest(`/sideload/v2/${encoded}`)).toBe(true)
     expect(isPlaywrightPodcastCoverRequest('/sideload/not-the-fixture')).toBe(false)
     expect(isPlaywrightPodcastCoverRequest('/images/podcast-cover.png')).toBe(false)
   })

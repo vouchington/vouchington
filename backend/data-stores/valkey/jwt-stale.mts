@@ -65,7 +65,7 @@ export async function clearJwtStaleIfCurrent(
   userId: string,
   expectedMarker: string,
 ): Promise<boolean> {
-  return await unlinkIfValueMatches(getJwtStaleKey(userId), expectedMarker, {
+  return unlinkIfValueMatches(getJwtStaleKey(userId), expectedMarker, {
     client: sessionValkeyClient,
   })
 }

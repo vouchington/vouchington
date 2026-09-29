@@ -6,10 +6,12 @@ import { describe, expect, it } from 'vitest'
 
 import { checkPublicSourceLiterals } from './public-source-literal-guard.mts'
 
-const SENTRY_DSN = `https://${'a'.repeat(32)}@o${12345}.ingest.sentry.io/${67890}`
-const REGIONAL_SENTRY_DSN = `https://${'b'.repeat(32)}@o${23456}.ingest.eu.sentry.io/${78901}`
+const SENTRY_DSN = ['https://', 'a'.repeat(32), '@o', 12345, '.ingest.sentry.io/', 67890].join('')
+const REGIONAL_SENTRY_DSN = ['https://', 'b'.repeat(32), '@o23456.ingest.eu.sentry.io/78901'].join(
+  '',
+)
 const FUNCTION_URL = `https://${'a'.repeat(26)}.lambda-url.us-west-2.on.aws/`
-const ACCOUNT_ARN = `arn:aws:s3:us-west-2:${111_222_333_444}:private-bucket`
+const ACCOUNT_ARN = ['arn:aws:s3:us-west-2:', 111_222_333_444, ':private-bucket'].join('')
 const SERVICE_ACCOUNT = ['deployer', '@private-project.iam.gserviceaccount.com'].join('')
 const CLOUD_SERVICES_ACCOUNT = [111_222, 333_444, '@cloudservices.gserviceaccount.com'].join('')
 const CLOUD_BUILD_ACCOUNT = [111_222, 333_444, '@cloudbuild.gserviceaccount.com'].join('')

@@ -14,6 +14,7 @@ import {
   extractViewNames,
   runViews,
 } from './views.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 describe('migration runner views', () => {
   beforeAll(() => loadSqlParserModule())
@@ -214,7 +215,7 @@ describe('migration runner views', () => {
 
 function makeWriter(writes: string[], onWrite: (sql: string) => void = () => {}): QueryExecutor {
   return (input: QueryInput): Promise<pg.QueryResult> => {
-    const sql = String(input)
+    const sql = stringFromUnknown(input)
     writes.push(sql)
     onWrite(sql)
     return Promise.resolve({

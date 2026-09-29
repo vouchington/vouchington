@@ -72,3 +72,40 @@ export function failingEntriesIterable(error: Error): AsyncIterable<SessionEntry
     },
   }
 }
+
+export function feedbackClientDependencies(
+  clients: {
+    sessions?: BlackboardSessionsClient
+    entries?: BlackboardEntriesClient
+  } = {},
+): import('vouchington-tooling/agent-blackboard').BlackboardClientDependencies {
+  const sessions = clients.sessions ?? sessionsClientFixture()
+  const entries = clients.entries ?? entriesClientFixture()
+  return {
+    loadClient: async () => ({
+      Sessions: class {
+        ensure = sessions.ensure
+        patch = sessions.patch
+        list = sessions.list
+        get = sessions.get
+      },
+      Entries: class {
+        append = entries.append
+        get = entries.get
+      },
+    }),
+  }
+}
+
+export function feedbackStore() {
+  const records: SessionEntry[] = []
+  const entries = entriesClientFixture({
+    append: async input => {
+      const entry = entryFixture(input)
+      records.push(entry)
+      return entry
+    },
+    get: () => entriesIterable(records),
+  })
+  return { records, entries, dependencies: feedbackClientDependencies({ entries }) }
+}

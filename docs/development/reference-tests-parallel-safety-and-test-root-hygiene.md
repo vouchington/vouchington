@@ -77,7 +77,7 @@ The GlideMQ Vitest shim is fork-local, so a test's `crawl_urls` queue jobs and `
 
 Membership catalog fixtures use per-test application identifiers. Fixed production entrypoint
 tests use their existing internal catalog dependency seams with isolated fixture values instead
-of mutating the shared production mapping — see [Test Helpers § Shared membership catalog rows](../../backend/test-helpers/README.md#shared-membership-catalog-rows).
+of mutating the shared production mapping — see [Test Helpers § Shared membership catalog rows](testing/backend/helpers.md#shared-membership-catalog-rows).
 
 **Correct — append-only + discriminator key:** `integration-tests/web/helpers/backend-trace-proxy.mts` stores traced requests in an unbounded append-only array. Each `client.getTraceRequests(requestId)` call filters by the `x-request-id` echoed from the response, so parallel test files see only their own traffic — no reset between tests is needed and none is possible. A regression guard lives at `integration-tests/web/tests/__tests__/backend-trace-proxy.test.mts`.
 
@@ -97,7 +97,14 @@ assertion runs (#10984, Main CI backend run 34008968250; #11013).
 stay live for side effects. Definition identity tests that import any other worker
 module must close it before the file finishes, matching the OAuth and
 activitypub-inbox `load()` tests in that file — closing the worker remains mandatory
-regardless of how enqueue tests assert.
+regardless of how enqueue tests assert. `TestWorker` drains jobs already waiting on
+its queue from a constructor `queueMicrotask`, and that microtask runs before the
+importing module body. `afterAll` and a `close()` after the static import are both
+too late. Pause that test queue before evaluating the worker module, close the
+worker, then resume the queue.
+`backend/workers/activitypub-inbox/workers.test.mts` does this so a waiting
+`rearmFailedDeliveries` job cannot call `rearmFailedActivityPubInboxDeliveries()`
+with no ids. Still `await worker.close()` in `afterAll`.
 
 `backend-data-stores` also configures
 `vitest.runner.glide-mq-worker-attachment-guard.mts`. After the project's setup files load but
@@ -198,7 +205,7 @@ test and prints it to stderr only from `onTestFailed`. A failing route test ther
 500 stay silent. Other projects that use `createRequest()` keep at most the 20 most recent entries.
 
 A 500 from a global list usually means the test read rows it does not own; see
-[Oldest-first queue heads](../../backend/test-helpers/README.md#oldest-first-queue-heads).
+[Oldest-first queue heads](testing/backend/helpers.md#oldest-first-queue-heads).
 
 ### Shared-storage overlap waits must observe in-flight state
 
@@ -306,7 +313,7 @@ The error-level
 [`backend-persisted-user-random-username`](../../ast-grep-rules/backend-persisted-user-random-username.yml)
 rule blocks direct random producers in explicit `username` properties at the known persisted-user
 factories. The canonical static-analysis guide owns the
-[exact syntax boundary and enforcement severity](../../static-code-analysis/README.md#enforcement-policy).
+[exact syntax boundary and enforcement severity](quality/static-code-analysis/README.md#enforcement-policy).
 
 Persisted test emails must use `createUniqueTestEmail(prefix)` from
 `@voucha/test-helpers/data`. It preserves a readable normalized prefix while adding a bounded,

@@ -36,8 +36,10 @@ failed or was rejected.
 Every retrospective must contain a `## CI Failures` section immediately after
 `## Transcript Facts`. This is an **observed-failures log**, not a historical GitHub audit: read the
 session journal first (via `node dev/blackboard-journal.mts entries [--root-codex]` for interactive
-root Codex), then the raw transcript and
-recursive subagent transcripts for failures surfaced during the session. Do not crawl workflow
+root Codex), then the supported
+`retrospective-transcript` and `session-friction/report.mts` outputs for failures surfaced during
+the session. Do not re-mine raw or recursive transcripts: the normalized collectors own that
+boundary. A collector reporting unavailable evidence must remain unavailable. Do not crawl workflow
 history for failures the session never observed, and do not infer that no failure occurred merely
 because the final run passed.
 
@@ -69,6 +71,14 @@ This grammar is enforced programmatically by `validateRetroDoc` in
 dev/retrospective-save.mts save` runs it on the staged doc before appending, and rejects a
 malformed section before any agent-blackboard call. If this doc and the validator ever disagree,
 the validator wins; treat the mismatch as a bug in this doc.
+
+## Required assessments
+
+New retrospective saves require exactly one `## Tool Findings` and `## Architecture Findings`
+section. Each has one explicit status: `findings`, or `none observed`, `not assessed`, or `unavailable`
+with a non-blank reason or inspected scope in parentheses. Every finding records an observation,
+`  - Evidence: ...`, and `  - Disposition: ...`. `validateRetroDoc` rejects missing assessments
+before delivery; historical stored records remain readable without rewriting them.
 
 ## Wording rules
 

@@ -1,4 +1,4 @@
-Review PostgreSQL query plans. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review PostgreSQL query plans. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 If the database is not initialized, run `./dev/initialize web`, then `source .env`. Seed the database and run the EXPLAIN ANALYZE scripts:
 
@@ -21,5 +21,5 @@ Schema growth and partition classification — audit at most one table per run:
 - Compare that entry's `growth` class, `partition` policy, `noPartitionRationale`, and `reconsiderPartitioningWhen` against measured evidence: current row count, the plan shapes captured by `explain:run`, write and autovacuum pressure, and whether retention actually deletes rows.
 - Apply `$postgres-partitioning-uuid-v7`: RANGE on the UUIDv7 key, a DEFAULT child first, explicit range children only after about one million rows or measured planner/write pressure, and monthly children only where `cleanupPartitions` owns retention.
 - Do not create partitions mechanically. A proposed partition needs measured evidence, a migration that is independently safe against the live schema, and resolved retention behavior. Without all three, leave the schema alone; only correct the registry rationale or its reconsideration trigger when the recorded one is demonstrably wrong.
-- A justified registry, schema, or documentation change from this audit is that run's one improvement. Otherwise, recording no change is a valid result — say so in the PR notes and spend the run on the query-plan work above instead.
+- A justified registry, schema, or documentation change from this audit is that run's one improvement. If neither this audit nor the query-plan review supports a safe improvement, report no change without opening a PR.
 - The retention product decision tracked in issue #8750 is out of scope for this audit.

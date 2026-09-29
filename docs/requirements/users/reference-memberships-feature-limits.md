@@ -33,7 +33,7 @@ Community agent prompt slots remain the paid community feature. Membership lapse
 
 ### Autotagger
 
-The [autotagger agent](../../../backend/agents/autotagger/README.md) tags new posts with related topics automatically. How many topics it may add is gated by the **post author's** membership tier, resolved at worker time — free authors get zero automatic tags (no LLM call is made at all):
+The [autotagger agent](../../overview/architecture/ai-agents/autotagger/README.md) tags new posts with related topics automatically. How many topics it may add is gated by the **post author's** membership tier, resolved at worker time — free authors get zero automatic tags (no LLM call is made at all):
 
 | Plan  | Autotagger Topics (per post) |
 | ----- | ---------------------------- |

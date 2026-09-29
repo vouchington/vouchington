@@ -145,7 +145,7 @@ describe('runDistillClassify', () => {
       'retro\tretrospective\teligible',
       'checkpoint\tcheckpoint-only\tnot-yet-eligible',
       'journal\tjournal-only\teligible',
-      'unresolved\tentry-type-unresolved\tnot-yet-eligible',
+      'unresolved\tentry-type-unresolved\tnot-yet-eligible\tquarantined=1;reasons=unknown-entry-type',
       'child\tzero-entry-child\teligible',
       'root\tzero-entry-root\tnot-yet-eligible',
     ])

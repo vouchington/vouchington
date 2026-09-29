@@ -1,5 +1,5 @@
 /**
- * Regenerates the ownership table region in .github/workflows/VITEST.md from
+ * Regenerates the ownership table region in docs/development/ci/workflows/VITEST.md from
  * ci/vitest/project-ownership.mts's VITEST_OWNERSHIP — the single source of truth for which CI
  * job owns each Vitest project. Delegates final formatting to oxfmt's own `format()` API (same
  * engine as `pnpm run oxfmt`/`oxfmt:check`) so hand-rolled table padding never drifts from
@@ -18,7 +18,7 @@ import { VITEST_OWNERSHIP } from './project-ownership.mts'
 
 const __filename = fileURLToPath(import.meta.url)
 const ROOT = path.join(import.meta.dirname, '../..')
-const DEFAULT_DOC_PATH = path.join(ROOT, '.github/workflows/VITEST.md')
+const DEFAULT_DOC_PATH = path.join(ROOT, 'docs/development/ci/workflows/VITEST.md')
 
 const BEGIN = '<!-- BEGIN GENERATED: vitest-ownership -->'
 const END = '<!-- END GENERATED -->'

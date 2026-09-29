@@ -3,7 +3,7 @@
 import { TimeAgo } from '@/components/shared/time-ago'
 import { EntityActionIcons } from '@/components/shared/entity-action-icons'
 import { Button } from '@/components/ui/button'
-import type { NotificationListNotification } from './notification-list'
+import type { NotificationListNotification } from './notification-list-notification'
 import { NotificationIcon } from './notification-icon'
 import { useTranslations } from '@/lib/i18n/use-translations'
 

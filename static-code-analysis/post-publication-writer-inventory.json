@@ -2,7 +2,7 @@
   "version": 1,
   "capture_api": "backend/services/post-publication/capture.mts",
   "captured_writers": [
-    "backend/services/posts/create.mts",
+    "backend/services/posts/prepare-post-with-community-reviews.mts",
     "backend/services/posts/update.mts",
     "backend/services/posts/delete.mts",
     "backend/services/posts/agent-moderate.mts",
@@ -10,6 +10,7 @@
     "backend/services/posts/images-rollback.mts",
     "backend/services/posts/update-story-post-agent-result.mts",
     "backend/services/images/delete-rollback.mts",
+    "backend/services/images/delete-while-storage-locked.mts",
     "backend/services/posts/archive.mts",
     "backend/services/posts/post-ratings.mts",
     "backend/services/posts/post-ratings/delete.mts",

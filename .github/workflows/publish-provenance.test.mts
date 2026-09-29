@@ -68,8 +68,7 @@ describe.each(cases)('$path image provenance', config => {
     for (const subject of config.subjects) {
       const step = attestations.find(
         candidate =>
-          candidate.with?.['subject-name'] ===
-          `ghcr.io/${'${{ github.repository_owner }}'}/${subject}`,
+          candidate.with?.['subject-name'] === `ghcr.io/\${{ github.repository_owner }}/${subject}`,
       )
       expect(step).toBeDefined()
       expect(step?.uses).toMatch(/^actions\/attest@[0-9a-f]{40}$/u)

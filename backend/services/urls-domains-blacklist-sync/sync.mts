@@ -15,14 +15,10 @@ import {
   createSyncFailedError,
 } from './sync-utils.mts'
 import { syncDomainsWithDatabase } from './sync-db.mts'
+import type { SyncBlacklistSourceResult } from './sync-types.mts'
+export type { SyncBlacklistSourceResult } from './sync-types.mts'
 
 const FETCH_TIMEOUT_MS = 30_000
-
-export type SyncBlacklistSourceResult = {
-  skipped: boolean
-  domainsAdded: number
-  domainsRemoved: number
-}
 
 type SourceCacheHeaders = {
   etag: string | null
@@ -93,7 +89,7 @@ export async function syncBlacklistSource(
 
 /* no-mistakes: integration=http */
 async function fetchBlacklist(url: string, cache: SourceCacheHeaders | null): Promise<Response> {
-  return await undici.fetch(url, {
+  return undici.fetch(url, {
     dispatcher: getExternalRequestDispatcher(),
     headers: createBlacklistFetchHeaders(cache),
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),

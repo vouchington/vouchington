@@ -13,7 +13,11 @@
       "evidence": [],
       "form_review": {
         "intake_id": "00000000-0000-7000-8000-000000000806",
-        "screening": null,
+        "screening": {
+          "rationale": null,
+          "recommendation": null,
+          "state": "pending"
+        },
         "source_kind": "guest_form"
       },
       "id": "00000000-0000-7000-8000-000000000804",

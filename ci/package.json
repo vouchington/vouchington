@@ -8,6 +8,7 @@
   "type": "module",
   "scripts": {},
   "dependencies": {
+    "@ts-shared/utils": "workspace:^",
     "auto-harness-client": "0.8.1",
     "coverage-check": "^0.17.0",
     "jsonc-parser": "^3.3.1",

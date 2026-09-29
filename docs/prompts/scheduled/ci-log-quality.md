@@ -1,4 +1,4 @@
-Review CI log quality. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review CI log quality. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 Use `$review-ci-logs` to inspect the deterministic core-plus-failures window, download only
 representative log archives, and classify real failures separately from misleading or excessive

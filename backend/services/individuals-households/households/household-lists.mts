@@ -155,8 +155,8 @@ export async function getHouseholdMemberships(
   const { rows } = await write<HouseholdMembershipPageSqlRow>(query)
   const firstRow = rows[0]
   assert(firstRow, 500, 'Invalid household membership page')
-  assert(firstRow.household_exists, 404, 'Household not found')
-  assert(firstRow.can_view, 403, 'Forbidden')
+  assert(firstRow.household_exists === true, 404, 'Household not found')
+  assert(firstRow.can_view === true, 403, 'Forbidden')
   assert(
     rows.every(row => row.id === null || isAuthorizedHouseholdMembershipCursorRow(row)),
     500,

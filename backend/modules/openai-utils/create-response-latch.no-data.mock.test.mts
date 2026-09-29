@@ -44,7 +44,7 @@ describe('OpenAI response stream latch decisions', () => {
           onUnknownBilledAttempt,
         },
         async () =>
-          await streamOpenAIResponse(
+          streamOpenAIResponse(
             { model: 'gpt-4.1-mini', input: 'hello' },
             { signal: controller.signal },
           ).next(),
@@ -72,7 +72,7 @@ describe('OpenAI response stream latch decisions', () => {
     await expect(
       runWithOpenAIResponseAttemptHooks(
         { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => await streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
+        async () => streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
       ),
     ).rejects.toBeInstanceOf(OpenAIResponseNotCompletedError)
 
@@ -106,7 +106,7 @@ describe('OpenAI response stream latch decisions', () => {
     await expect(
       runWithOpenAIResponseAttemptHooks(
         { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => await streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
+        async () => streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
       ),
     ).rejects.toBeInstanceOf(OpenAIResponseNotCompletedError)
 
@@ -130,7 +130,7 @@ describe('OpenAI response stream latch decisions', () => {
     await expect(
       runWithOpenAIResponseAttemptHooks(
         { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => await streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
+        async () => streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
       ),
     ).rejects.toMatchObject({
       code: 'previous_response_not_found',

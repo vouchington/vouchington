@@ -35,6 +35,7 @@
     "@services/openai-agents": "workspace:^",
     "@services/openai-moderation": "workspace:^",
     "@services/users": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
     "@voucha/tools": "workspace:^",
     "http-errors": "^2.0.1",
     "openai": "^7.23.0",

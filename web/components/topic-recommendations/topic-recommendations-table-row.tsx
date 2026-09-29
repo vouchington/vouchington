@@ -10,7 +10,7 @@ import { clearPostVote, submitPostRecommendationVote } from '@/lib/api/client/el
 import { useAuth } from '@/lib/auth/context'
 import { createUserPathname } from '@/lib/links/entity-href'
 import { TopicRecommendationRowActions } from './topic-recommendation-row-actions'
-import type { TopicRecommendationTablePost } from './topic-recommendations-table'
+import type { TopicRecommendationTablePost } from './topic-recommendation-table-post'
 import type { PostsResponseBody } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { PostContentText } from '@/components/posts/post-content-text'

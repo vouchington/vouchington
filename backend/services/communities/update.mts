@@ -8,12 +8,7 @@ import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
 import onError from '@modules/on-error'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import { currentUserCanUpdateCommunity } from './authorization.mts'
-import type {
-  CommunityListType,
-  CommunityMember,
-  CommunityMemberRosterVisibility,
-  CommunityVisibility,
-} from './types.mts'
+import type { CommunityMember } from './types.mts'
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateAllCommunityMemberUserMetrics } from './members/invalidate-user-metrics.mts'
@@ -21,20 +16,8 @@ import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import { buildCommunityUpdateStatement, validateCommunityUpdateInput } from './update-input.mts'
 import { updateCommunityInTransaction } from './update-transaction.mts'
-
-export type UpdateCommunityInput = {
-  name?: string
-  slug?: string
-  markdown?: string | null
-  visibility?: CommunityVisibility
-  member_roster_visibility?: CommunityMemberRosterVisibility
-  list_type?: CommunityListType | null
-  member_invites_allowed_at?: Date | null
-  post_approval_required_at?: Date | null
-  profile_image_id?: string | null
-  banner_image_id?: string | null
-  default_language?: string | null
-}
+import type { UpdateCommunityInput } from './update-types.mts'
+export type { UpdateCommunityInput } from './update-types.mts'
 
 export async function updateCommunity(
   currentUser: PrivateUser,
@@ -81,7 +64,10 @@ export async function updateCommunity(
 
   const updated = await getCommunity(communityId, options)
   assert(updated, 404, 'Community not found after update')
-  entityCacheBloomFilters.communities.add([normalizeKey(updated.id), normalizeKey(updated.slug)])
+  void entityCacheBloomFilters.communities.add([
+    normalizeKey(updated.id),
+    normalizeKey(updated.slug),
+  ])
   if (!options?.query) {
     await Promise.all([
       invalidate.communities(community, updated),

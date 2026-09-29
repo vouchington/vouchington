@@ -17,11 +17,8 @@ import {
 import type { PageInfo } from '@voucha/types/pagination'
 import { buildRssFeedItemFilters, appendWhereClauses } from './search-filters.mts'
 import { searchRssFeedItemsBySemantic } from './search-semantic.mts'
-import type { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
-
-type SearchRssFeedItemsDependencies = {
-  getCachedSearchEmbedding: typeof getCachedSearchEmbedding
-}
+import type { SearchRssFeedItemsOptions } from './search-types.mts'
+export type { SearchRssFeedItemsOptions } from './search-types.mts'
 
 type RecencySearchRow = {
   id: string
@@ -29,29 +26,6 @@ type RecencySearchRow = {
   cursor_published_at: string
   story_id: string | null
   has_next_page: boolean
-}
-
-export type SearchRssFeedItemsOptions = {
-  rss_feed_ids?: string[]
-  topic_ids?: string[]
-  category_topic_ids?: string[]
-  hashtag_topic_ids?: string[]
-  hashtag_alias_ids?: string[]
-  story_id?: string
-  limit?: number
-  after?: string
-  has_related_posts?: boolean
-  media_types?: Array<'article' | 'audio' | 'video'>
-  text_search_query?: string
-  /** When set, returns embedding-ranked results instead of recency ordering. */
-  semantic_search_query?: string
-  /** Filter by read state. Requires currentUserId. */
-  read?: boolean
-  /** Used with `read` to filter by the current user's read states. */
-  currentUserId?: string
-  /** Internal viewer role flag for post-relationship discovery. */
-  isAdministrator?: boolean
-  dependencies?: Partial<SearchRssFeedItemsDependencies>
 }
 
 export async function searchRssFeedItems(options: SearchRssFeedItemsOptions = {}): Promise<{
@@ -114,7 +88,7 @@ export async function searchRssFeedItems(options: SearchRssFeedItemsOptions = {}
   appendRssFeedItemsPageClauses(query, safeLimit)
 
   const { rows } = await read<RecencySearchRow>(query)
-  const hasNextPage = rows.some(row => row.has_next_page === true)
+  const hasNextPage = rows.some(row => row.has_next_page)
 
   const results = rows.map(row => ({
     __entity_type: 'rss_feed_item' as const,

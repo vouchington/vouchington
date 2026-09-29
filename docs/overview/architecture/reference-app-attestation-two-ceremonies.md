@@ -75,7 +75,7 @@ regardless of those flags.
 
 The eight gated actions and their Swift-side `AppAttestActionTag` values are listed in
 [captcha.md § Action × provider matrix](captcha.md#action--provider-matrix) and the
-[captcha service README's protected-endpoints table](../../../backend/services/captcha/README.md#protected-endpoints) —
+[captcha service README's protected-endpoints table](services/captcha/README.md#protected-endpoints) —
 keep both in sync with
 [`AppAttestActionTag.swift`](https://github.com/vouchington/vouchington-clients/tree/main/swift-clients/core/Sources/VouchaAuth).
 

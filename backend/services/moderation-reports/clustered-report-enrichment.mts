@@ -1,4 +1,4 @@
-import type { PendingModerationReport } from './get.mts'
+import type { PendingModerationReport } from './pending-moderation-report.mts'
 import { attachBanEvasionContext } from './ban-evasion-context-attach.mts'
 import { attachJudgements } from './judgement-attach.mts'
 import { attachPostModerationContext } from './post-moderation-context-attach.mts'

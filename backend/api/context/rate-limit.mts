@@ -26,22 +26,21 @@ const extensions = {
   ): Promise<void> {
     if (!isRouteRateLimitEnabled()) return
 
-    const ctx = this
     // Pre-compute session data once so identity resolution does not trigger a
     // second JWT/Valkey check. Route rate limiting uses signed session claims
     // and does not load the private user record on the hot path.
     if (extras?.identityMode === 'ip-only') {
-      const result = await checkRouteRateLimit(routeKey, { ip: ctx.ip ?? 'unknown' }, null)
+      const result = await checkRouteRateLimit(routeKey, { ip: this.ip ?? 'unknown' }, null)
       applyRateLimitResult(this, result)
       return
     }
 
-    const { sessionData, deviceData } = await resolveRouteRateLimitTokenData(ctx, extras)
+    const { sessionData, deviceData } = await resolveRouteRateLimitTokenData(this, extras)
     const deviceClass =
       deviceData && 'dc' in deviceData && deviceData.dc === 'attested' ? 'attested' : undefined
 
     const identities = await resolveRateLimitIdentities({
-      ip: ctx.ip ?? 'unknown',
+      ip: this.ip ?? 'unknown',
       deviceClass,
       getSessionTokenData: () =>
         Promise.resolve({

@@ -23,7 +23,7 @@ function hasUnrecognizedActionsError(log: string): boolean {
     if (line.includes('The operation was canceled.')) continue
     if (line.includes('A task was canceled.')) continue
     if (line.includes('The runner has received a shutdown signal.')) continue
-    if (/##\[error\]Process completed with exit code 143\./.test(line)) continue
+    if (line.includes('##[error]Process completed with exit code 143.')) continue
     return true
   }
   return false

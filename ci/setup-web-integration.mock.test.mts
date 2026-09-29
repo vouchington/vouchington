@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 interface SpawnCall {
   args: string[]
@@ -181,7 +182,7 @@ describe('setup-web-integration', () => {
     const calls = vi
       .mocked(fs.writeFileSync)
       .mock.calls.filter(([path]) => path === timingPath)
-      .map(([, json]) => JSON.parse(String(json)) as { timings: Record<string, number> })
+      .map(([, json]) => JSON.parse(stringFromUnknown(json)) as { timings: Record<string, number> })
 
     // One write before any step starts, plus one after each of cache-cleanup,
     // cloudflare-worker-build, next-build, and standalone-asset-copy: a watchdog SIGKILL partway

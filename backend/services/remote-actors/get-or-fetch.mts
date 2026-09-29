@@ -113,7 +113,7 @@ export async function getOrFetchRemoteActorByKeyId(
   if (document.actorUri !== actorUri) {
     throw createHttpError(422, "Remote actor document's id does not match the fetched actor URI")
   }
-  return await upsertRemoteActor(document)
+  return upsertRemoteActor(document)
 }
 
 function deriveActorUriFromKeyId(keyId: string): string {

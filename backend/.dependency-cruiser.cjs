@@ -18,6 +18,10 @@
  * `no-circular` graph. That invariant is instead enforced by the
  * `production-dependency-declarations` rule in .no-mistakes.yml, which
  * resolves declarations directly against each package's package.json.
+ *
+ * `no-circular`, `not-to-unresolvable`, and `no-non-package-json` are copied
+ * into `forbidden`. dependency-cruiser merges `extends` by reading `.forbidden`
+ * only, and those presets export a bare rule, so extending them adds nothing.
  */
 
 const path = require('node:path')
@@ -34,12 +38,38 @@ const {
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
-  extends: [
-    'dependency-cruiser/configs/rules/no-non-package-json',
-    'dependency-cruiser/configs/rules/not-to-unresolvable',
-    'dependency-cruiser/configs/rules/no-circular',
-  ],
   forbidden: [
+    {
+      name: 'not-to-unresolvable',
+      comment: 'backend imports must resolve to source files or installed packages.',
+      severity: 'error',
+      from: {},
+      to: {
+        couldNotResolve: true,
+      },
+    },
+    {
+      name: 'no-circular',
+      comment: 'backend source should stay acyclic so entrypoints remain easy to reason about.',
+      severity: 'error',
+      from: {},
+      to: {
+        circular: true,
+      },
+    },
+    {
+      name: 'no-non-package-json',
+      comment:
+        "This module depends on an npm package that isn't in the 'dependencies' section " +
+        "of your package.json. That's problematic as the package either (1) won't be " +
+        'available on live (2 - worse) will be available on live with an non-guaranteed ' +
+        'version. Fix it by adding the package to the dependencies in your package.json.',
+      severity: 'error',
+      from: {},
+      to: {
+        dependencyTypes: ['npm-no-pkg', 'npm-unknown'],
+      },
+    },
     ...dataStorePrimaryRules,
     ...dataStoreSecondaryRules,
     ...packageBoundaryRules,

@@ -31,7 +31,7 @@ describe('web-page-view', () => {
       recordLandingPageVisit({ pageId, sessionId })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM web_page_view WHERE page_kind = 'landing_page' AND page_id = '${pageId}'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -46,7 +46,7 @@ describe('web-page-view', () => {
       recordRecentlyViewedTopic({ pageId, sessionId })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM web_page_view WHERE page_kind = 'topic' AND page_id = '${pageId}'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -61,7 +61,7 @@ describe('web-page-view', () => {
       recordRecentlyViewedPost({ pageId, sessionId })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM web_page_view WHERE page_kind = 'post' AND page_id = '${pageId}'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -76,7 +76,7 @@ describe('web-page-view', () => {
       recordRecentlyViewedRssFeed({ pageId, sessionId })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM web_page_view WHERE page_kind = 'rss_feed' AND page_id = '${pageId}'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)

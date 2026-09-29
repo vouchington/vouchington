@@ -1,7 +1,7 @@
-Perform a security audit. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Perform a security audit. Find one concrete, bounded improvement that is safe to ship in one PR. If none qualifies, make no repository changes and report why.
 
-- Review one threat model area such as authentication, authorization, rate limiting, SSRF, XSS, CSRF, secrets, webhook verification, file/image handling, or admin actions.
-- Look for least-privilege improvements in application permissions, IAM, cookies, headers, route guards, or API checks.
+- Review one application threat area such as authorization, SSRF, XSS, CSRF, security headers, webhook verification, file/image handling, or admin actions. Authentication/session flows belong to [auth.md](auth.md); rate-limit policy belongs to [rate-limiting.md](rate-limiting.md).
+- Look for least-privilege improvements in application permissions, IAM, security headers, route guards, or API checks.
 - New mutation routes (`POST`/`DELETE`/`PATCH`) must apply the domain's full guard set, not just `requireAuth` — suspension (`assertNotSuspended`), the domain's `currentUserCan*` gate, and domain limits (participant caps, target-user existence, block/mute). For messaging mutation routes (`backend/api/v1/my/messages*.mts` → `backend/services/messaging/**`), follow the cross-file contract summary in [authorization.mts](../../../backend/services/messaging/authorization.mts) and verify a rejection-path integration test exists for each guard.
 - Add or tighten tests for the selected security issue when practical.
 - This prompt is scoped to application threat models; agent tooling and sandbox permission surfaces

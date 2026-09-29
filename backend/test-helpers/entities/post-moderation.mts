@@ -247,7 +247,7 @@ export async function getTestPostModerationRetryDelayMinutes(
   source: TestModerationSource,
 ): Promise<number | null> {
   const { rows } = await read<{
-    retry_minutes: number
+    retry_minutes: string
   }>(sql`/* getTestPostModerationRetryDelayMinutes */
     SELECT EXTRACT(EPOCH FROM (work.available_at - version.created_at)) / 60 AS retry_minutes
     FROM post_moderation_work_items work

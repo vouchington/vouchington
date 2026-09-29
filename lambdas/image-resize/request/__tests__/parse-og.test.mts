@@ -41,7 +41,7 @@ describe('parseOgRequest', () => {
     }
     const event = createMockEvent(toOgBase64url(params))
     const result = parseOgRequest(event)
-    expect(result.params).toEqual(params)
+    expect(result.params).toEqual({ ...params, dependencies: [] })
   })
 
   it('throws on missing base64url', () => {

@@ -72,8 +72,11 @@ export function enqueueDeliverMembershipEntitlementEffects(): EnqueueReturnType 
   } satisfies Partial<JobOptions>)
 }
 
-export function enqueueDeliverMembershipEntitlementEffectsBestEffort(): void {
-  void Promise.resolve(enqueueDeliverMembershipEntitlementEffects()).catch(onError)
+export function enqueueDeliverMembershipEntitlementEffectsBestEffort(): Promise<void> {
+  return Promise.resolve(enqueueDeliverMembershipEntitlementEffects()).then(
+    () => undefined,
+    onError,
+  )
 }
 
 export function enqueueBulkSendRenewalPriceIncreaseEmail(

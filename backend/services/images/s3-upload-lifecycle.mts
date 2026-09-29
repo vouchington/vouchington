@@ -19,7 +19,7 @@ interface FrozenImageFile {
 
 /* no-mistakes: integration=aws */
 export async function getImageUploadSourceFromS3(image: ImageUploadSourceRecord) {
-  return await S3ImageUploadsClient.send(
+  return S3ImageUploadsClient.send(
     new GetObjectCommand({
       Bucket: S3Buckets.imageUploads,
       Key: image.id,

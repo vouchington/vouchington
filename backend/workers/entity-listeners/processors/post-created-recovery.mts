@@ -34,7 +34,7 @@ export async function recoverPostCreatedEffects(
 ): Promise<void> {
   const bloomKeys = [normalizeKey(post.id)]
   if (post.slug) bloomKeys.push(normalizeKey(post.slug))
-  entityCacheBloomFilters.posts.add(bloomKeys)
+  void entityCacheBloomFilters.posts.add(bloomKeys)
 
   await Promise.all([
     recoverPostUrlEffects(post),

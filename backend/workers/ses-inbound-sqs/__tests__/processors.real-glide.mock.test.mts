@@ -8,10 +8,7 @@ import { processSesInboundSqsMessage } from '../processors.mts'
 // This file intentionally exercises real glide-mq rather than mocking it; the passthrough only
 // exists because the .real-glide.mock.test.mts filename (required for backend-real-glide-mq
 // project routing) trips the no-mistakes mock-file-naming rule without a vi.mock call present.
-vi.mock<typeof import('glide-mq')>(
-  import('glide-mq'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 const BUCKET = 'voucha-ses-inbound-test'
 

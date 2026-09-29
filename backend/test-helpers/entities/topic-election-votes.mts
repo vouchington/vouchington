@@ -42,7 +42,7 @@ export async function getTopicElectionNetScore(topicId: string): Promise<number 
     SELECT votes_score_net FROM topics WHERE id = ${topicId}
   `)
   const score = rows[0]?.votes_score_net
-  return score === undefined ? null : Number(score)
+  return score === undefined ? null : score
 }
 
 export async function getTopicElectionVoteEventCount(
@@ -78,5 +78,5 @@ export async function getTopicElectionNeutralStats(
     `,
   )
   const row = rows[0]
-  return row ? { scoreNone: Number(row.votes_score_none), countNone: row.votes_count_none } : null
+  return row ? { scoreNone: row.votes_score_none, countNone: row.votes_count_none } : null
 }

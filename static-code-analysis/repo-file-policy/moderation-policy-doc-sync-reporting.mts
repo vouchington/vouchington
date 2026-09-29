@@ -60,13 +60,13 @@ export function extractReportEntityList(docPath: string, content: string): strin
       sectionBetween(content, '**Reportable entities:**', '**Reasons:**'),
     )
   }
-  if (docPath === 'backend/api/v1/reports/README.md') {
+  if (docPath === 'docs/requirements/api/v1/reports/README.md') {
     return [
       ...extractApiReportEntityCanonicalList(content),
       ...extractApiReportEntityRequestBodyList(content),
     ]
   }
-  if (docPath === 'backend/services/moderation-reports/README.md') {
+  if (docPath === 'docs/overview/architecture/services/moderation-reports/README.md') {
     return extractInlineCodeTokensFromText(
       sectionBetween(content, 'Canonical entity types are', '## Data Model'),
     ).filter(token => token !== 'entityType')
@@ -108,10 +108,10 @@ export function extractReportReasonList(docPath: string, content: string): strin
       sectionBetweenHeadingTexts(content, 'Report reasons', 'Adding a report reason'),
     )
   }
-  if (docPath === 'backend/api/v1/reports/README.md') {
+  if (docPath === 'docs/requirements/api/v1/reports/README.md') {
     return extractQuotedUnionTokens(lineMatching(content, '"reason"'))
   }
-  if (docPath === 'backend/services/moderation-reports/README.md') {
+  if (docPath === 'docs/overview/architecture/services/moderation-reports/README.md') {
     const row = findTableCells(sectionBetweenHeadings(content, 'Data Model', 'Usage'), 'reason')
     return row ? extractReasonCellTokens(row[2] ?? '').filter(token => token !== 'reason') : []
   }
@@ -144,7 +144,7 @@ function reportingSchemaBlock(content: string): string {
       ? ''
       : content.slice(
           start,
-          content.indexOf('## Review Queue', start) === -1
+          !content.includes('## Review Queue', start)
             ? undefined
             : content.indexOf('## Review Queue', start),
         )

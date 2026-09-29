@@ -10,6 +10,7 @@ import type { QueryExecutor, QueryInput } from '../types.mts'
 import { write, writePool } from '../index.mts'
 import { runConfigDrivenStatementsInTransaction } from './config-driven-statements.mts'
 import { runConfigDriven } from './migrations.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 describe('runConfigDriven lock contention handling', () => {
   const testDirs: string[] = []
@@ -166,7 +167,6 @@ describe('runConfigDriven lock contention handling', () => {
       '/* runConfigDrivenStatements */ ALTER TABLE active_table ADD COLUMN x INT',
     ])
   })
-
   it('runs constraint validation statements in a separate transaction group', async () => {
     // Short prefix keeps this within PostgreSQL's 63-byte identifier limit (a longer prefix
     // silently truncates on write, so the exact-match `conname = $1` lookup below finds nothing).
@@ -181,8 +181,8 @@ describe('runConfigDriven lock contention handling', () => {
       // PostgreSQL enforcement), while also recording what was sent so we can assert on the
       // boundary itself instead of only the resulting schema state.
       const passthroughWriter: QueryExecutor = (input: QueryInput) => {
-        writes.push(String(input))
-        return client.query(String(input))
+        writes.push(stringFromUnknown(input))
+        return client.query(stringFromUnknown(input))
       }
 
       await runConfigDrivenStatementsInTransaction(
@@ -278,7 +278,7 @@ async function runWithSingleRetryableFailure(folder: string, code: '40P01' | '55
 
 function makeWriter(writes: string[], onWrite: (sql: string) => void = () => {}): QueryExecutor {
   return (input: QueryInput): Promise<pg.QueryResult> => {
-    const sql = String(input)
+    const sql = stringFromUnknown(input)
     writes.push(sql)
     onWrite(sql)
     return Promise.resolve(makeQueryResult())

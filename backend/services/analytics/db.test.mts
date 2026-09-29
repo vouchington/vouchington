@@ -24,9 +24,7 @@ describe('trackVoteDrift', () => {
     trackVoteDrift({ entityTable, sampled: 500, drifted: 3, sampleEntityId: 'post-42' })
     await flush()
 
-    const rows = await query<Record<string, unknown>>(
-      `SELECT * FROM pg_vote_drift WHERE entity_table = '${entityTable}'`,
-    )
+    const rows = await query(`SELECT * FROM pg_vote_drift WHERE entity_table = '${entityTable}'`)
     expect(rows).toHaveLength(1)
     const row = rows[0]!
     expect(Number(row.sampled)).toBe(500)
@@ -39,9 +37,7 @@ describe('trackVoteDrift', () => {
     trackVoteDrift({ entityTable, sampled: 10, drifted: 0 })
     await flush()
 
-    const rows = await query<Record<string, unknown>>(
-      `SELECT * FROM pg_vote_drift WHERE entity_table = '${entityTable}'`,
-    )
+    const rows = await query(`SELECT * FROM pg_vote_drift WHERE entity_table = '${entityTable}'`)
     expect(rows).toHaveLength(1)
     const row = rows[0]!
     expect(Number(row.sampled)).toBe(10)

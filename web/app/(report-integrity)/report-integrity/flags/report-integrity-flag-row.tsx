@@ -20,7 +20,7 @@ import {
   ResolveReportIntegrityFlagButton,
 } from './report-integrity-flag-actions'
 import { ReportIntegrityFlagStatus } from './report-integrity-flag-status'
-import type { ReportIntegrityFlagsTableProps } from './report-integrity-flags-table'
+import type { ReportIntegrityFlagsTableProps } from './report-integrity-flags-table-props'
 
 type FlagRowProps = {
   flag: ReportIntegrityFlag

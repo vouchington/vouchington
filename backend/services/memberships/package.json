@@ -54,6 +54,7 @@
     "@queues/unfurl-referral-links": "workspace:^",
     "@queues/vote-weight": "workspace:^",
     "@ts-shared/money": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/memberships": "0.2.0",

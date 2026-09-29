@@ -62,7 +62,7 @@ export async function recordCopyrightEmailParse(
   }
   await transaction.commit()
   if (input.status !== 'succeeded') return null
-  return recordCopyrightEmailThreadReferences({
+  return await recordCopyrightEmailThreadReferences({
     intakeId: intake.id,
     messageId: input.messageId,
     replyReferences: input.replyReferences,

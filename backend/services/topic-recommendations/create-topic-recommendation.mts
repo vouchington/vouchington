@@ -52,7 +52,7 @@ export async function createTopicRecommendation(
 
   if (options.skipCreatedEvents) return post
 
-  entityCacheBloomFilters.posts.add([normalizeKey(post.id)])
+  void entityCacheBloomFilters.posts.add([normalizeKey(post.id)])
   void enqueueOnPostCreated(post.id)
 
   return post
@@ -70,7 +70,7 @@ export async function prepareTopicRecommendation(
   return {
     response: post,
     finalize: async () => {
-      entityCacheBloomFilters.posts.add([normalizeKey(post.id)])
+      void entityCacheBloomFilters.posts.add([normalizeKey(post.id)])
       void enqueueOnPostCreated(post.id)
     },
   }

@@ -6,7 +6,7 @@ import {
 } from './config.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { ModerationReportSort } from './sort-sql.mts'
-import type { PendingModerationReport } from './get.mts'
+import type { PendingModerationReport } from './pending-moderation-report.mts'
 import type { ModerationReportTargetContent } from './target-metadata.mts'
 import type {
   ClusterRow,
@@ -69,7 +69,7 @@ export function parseReasonBreakdown(
   reasonCounts: Record<string, number> | null,
 ): ModerationReportReasonBreakdown {
   return MODERATION_REPORT_REASONS.flatMap(reason => {
-    const count = Number(reasonCounts?.[reason] ?? 0)
+    const count = reasonCounts?.[reason] ?? 0
     return count > 0 ? [{ reason, count }] : []
   })
 }

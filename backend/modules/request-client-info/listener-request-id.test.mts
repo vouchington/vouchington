@@ -47,7 +47,7 @@ type ListenerCallResult = {
 }
 
 async function callListener(options: CallOptions): Promise<ListenerCallResult> {
-  return await new Promise(resolve => {
+  return new Promise(resolve => {
     let status = 200
     let body = ''
     const response = {

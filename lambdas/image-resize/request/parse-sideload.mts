@@ -1,10 +1,12 @@
 import type { APIGatewayProxyEvent } from 'aws-lambda'
-import { RequestParseError } from '../errors.mts'
 import {
-  verifyPathSignature,
+  CURRENT_SIDELOAD_PATH_PREFIX,
+  isFirstPartyMediaUrl,
   parseSigningKeys,
   SIDELOAD_SIGNING_KEYS_ENV,
+  verifyPathSignature,
 } from '@ts-shared/url-signing'
+import { RequestParseError } from '../errors.mts'
 import { getSideloadBase64url } from './event-path.mts'
 import { parseImageParams, type ImageParams } from './parse-image-params.mts'
 
@@ -46,7 +48,7 @@ export function parseSideloadRequest(
   if (keys.length === 0 && requiresSideloadSigning()) {
     throw new RequestParseError('Sideload signing keys are not configured', 403)
   }
-  const path = `/sideload/${base64url}`
+  const path = `${CURRENT_SIDELOAD_PATH_PREFIX}${base64url}`
   if (!verifyPathSignature(path, sig, keys)) {
     throw new RequestParseError('Invalid or missing signature', 403)
   }
@@ -64,6 +66,9 @@ export function parseSideloadRequest(
   // Validate URL format
   if (!isValidUrl(url)) {
     throw new RequestParseError('Invalid URL: must be http:// or https://', 400)
+  }
+  if (isFirstPartyMediaUrl(new URL(url))) {
+    throw new RequestParseError('First-party media origin is not a sideload source', 403)
   }
 
   return { url, ...parseImageParams(params, headers) }

@@ -24,7 +24,7 @@ export async function getAndDeleteAppAttestChallenge(
   type: AppAttestChallengeType,
   key: string,
 ): Promise<string | null> {
-  return await getAndDelete(`${KEY_PREFIX}:${type}:${key}`, {
+  return getAndDelete(`${KEY_PREFIX}:${type}:${key}`, {
     client: sessionValkeyClient,
   })
 }

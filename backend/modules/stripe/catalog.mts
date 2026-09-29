@@ -34,7 +34,7 @@ export async function resolveRecurringCatalogPrice(
       },
       { idempotencyKey: `voucha-membership-${expected.lookupKey}` },
     )
-    return validateRecurringCatalogPrice(stripe, created, expected)
+    return await validateRecurringCatalogPrice(stripe, created, expected)
   } catch (error) {
     if (!isLookupKeyCreateRace(error)) throw error
     const raced = await findRecurringCatalogPrice(stripe, expected.lookupKey)

@@ -12,11 +12,13 @@ app.route('/api/v1/__tests__/error-handler-statusless').get(() => {
 
 app.route('/api/v1/__tests__/error-handler-string').get(() => {
   const thrown: unknown = 'sensitive internal detail'
+  // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- The HTTP handler must sanitize arbitrary thrown JS values.
   return Promise.reject(thrown)
 })
 
 app.route('/api/v1/__tests__/error-handler-null').get(() => {
   const thrown: null = null
+  // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Null rejection is an explicit HTTP middleware boundary case.
   return Promise.reject(thrown)
 })
 

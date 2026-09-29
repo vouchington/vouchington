@@ -5,10 +5,7 @@ import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-gl
 import type { OAuthAuthorizationExchangeJobData } from './types.mts'
 import { enqueueOrReactivateBulkOAuthAuthorizationExchanges } from './enqueues.mts'
 
-vi.mock<typeof import('glide-mq')>(
-  import('glide-mq'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('OAuth authorization exchange recovery through real GlideMQ', () => {
   it('reactivates matching completed and failed stable IDs without touching unrelated jobs', async () => {
@@ -23,7 +20,7 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
     const initialWorker = new Worker<OAuthAuthorizationExchangeJobData>(
       queueName,
       async (job: Job<OAuthAuthorizationExchangeJobData>) => {
-        const authorizationId = String(job.data.authorizationId)
+        const authorizationId = job.data.authorizationId
         executionCounts.set(authorizationId, (executionCounts.get(authorizationId) ?? 0) + 1)
         if (authorizationId === failedAuthorizationId && failSelectedJob) {
           throw new Error('expected terminal exchange failure')
@@ -79,24 +76,23 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
       ]
       await expect(
         enqueueOrReactivateBulkOAuthAuthorizationExchanges(inputs, {
-          getCompletedJobs: async () =>
-            await queue.getJobs('completed', 0, -1, { excludeData: true }),
+          getCompletedJobs: async () => queue.getJobs('completed', 0, -1, { excludeData: true }),
           enqueueBulk: async jobs =>
-            await queue.addBulk(
+            queue.addBulk(
               jobs.map(data => ({
                 name: 'exchangeOAuthAuthorization',
                 data,
                 opts: options(data.authorizationId),
               })),
             ),
-          getFailedJobs: async () => await queue.getJobs('failed', 0, -1, { excludeData: true }),
+          getFailedJobs: async () => queue.getJobs('failed', 0, -1, { excludeData: true }),
         }),
       ).resolves.toBe(1)
 
       recoveryWorker = new Worker<OAuthAuthorizationExchangeJobData>(
         queueName,
         async (job: Job<OAuthAuthorizationExchangeJobData>) => {
-          const authorizationId = String(job.data.authorizationId)
+          const authorizationId = job.data.authorizationId
           executionCounts.set(authorizationId, (executionCounts.get(authorizationId) ?? 0) + 1)
         },
         connection,

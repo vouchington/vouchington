@@ -60,7 +60,7 @@ export async function updateSpendingCategoryAttributes(
     }
   }
 
-  return await upsertTopicAttributes<SpendingCategoryAttributes>(
+  return upsertTopicAttributes<SpendingCategoryAttributes>(
     'topics__spending_categories',
     topic.id,
     columns,

@@ -17,7 +17,7 @@ import {
   enqueueEmailBlocklistRebuild,
   invalidateEmailBlocklistReadyMarker,
 } from '@services/urls-domains-blacklist/email-bloom-filter'
-import type { SyncBlacklistSourceResult } from './sync.mts'
+import type { SyncBlacklistSourceResult } from './sync-types.mts'
 import type { DomainBlacklistSourceId } from '@services/urls-domains-blacklist/sources'
 const RAW_DOMAINS_TABLE = 'tmp_domain_blacklist_raw_domains'
 const NEW_DOMAINS_TABLE = 'tmp_domain_blacklist_new_domains'

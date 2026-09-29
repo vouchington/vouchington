@@ -39,7 +39,7 @@ export async function isTestModerationTransparencyLockHeldByAnotherSession(): Pr
       '/* isTestModerationTransparencyLockHeldByAnotherSession */ SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS acquired',
       [TEST_MODERATION_TRANSPARENCY_LOCK],
     )
-    const acquired = rows[0]?.acquired === true
+    const acquired = rows.at(0)?.acquired ?? false
     if (acquired) {
       // The lock was free, so this observer session just took it itself — release it before
       // returning the connection to the pool, or the pooled session holds it indefinitely and

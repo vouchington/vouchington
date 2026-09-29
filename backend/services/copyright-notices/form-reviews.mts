@@ -1,10 +1,10 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
-import { appendCopyrightSubmissionAssessment } from './compliance.mts'
+import { appendCopyrightSubmissionAssessmentInTransaction } from './compliance.mts'
 import { processCopyrightEnforcementRequest } from './enforcement-requests.mts'
 import { reverseAutomatedCopyrightRestrictions } from './form-reviews-reversal.mts'
 
@@ -24,14 +24,14 @@ export async function reviewCopyrightFormIntake(input: {
     notice_id: string
     submission_id: string
     source_kind: string
-    screening_recommendation: string | null
+    current_screening_authority: boolean
   }>(sql`/* reviewCopyrightFormIntake:intake */
     SELECT intake.copyright_notice_id AS notice_id,
       intake.copyright_notice_submission_id AS submission_id, submission.source_kind,
-      (SELECT screening.recommendation
-       FROM copyright_notice_form_screenings screening
-       WHERE screening.copyright_notice_form_intake_id = intake.id
-       ORDER BY screening.id DESC LIMIT 1) AS screening_recommendation
+      EXISTS (SELECT 1 FROM copyright_notice_form_screening_executions execution
+        WHERE execution.copyright_notice_form_intake_id = intake.id
+          AND fn_current_copyright_form_screening(submission.id,
+            execution.copyright_notice_form_screening_id)) AS current_screening_authority
     FROM copyright_notice_form_intakes intake
     JOIN copyright_notice_submissions submission
       ON submission.id = intake.copyright_notice_submission_id
@@ -39,15 +39,6 @@ export async function reviewCopyrightFormIntake(input: {
   `)
   const intake = rows[0]
   assert(intake, 404, 'Copyright form intake not found')
-  assert(
-    intake.source_kind === 'guest_form' ||
-      (intake.source_kind === 'signed_in_form' &&
-        (!input.accepted ||
-          intake.screening_recommendation === null ||
-          intake.screening_recommendation === 'invalid_or_spam')),
-    422,
-    'Only guest forms and signed-in forms without a clear anti-spam result require moderator review',
-  )
   const { rows: reviewRows } = await transaction<{ accepted: boolean }>(
     sql`/* reviewCopyrightFormIntake:existing */
       SELECT accepted FROM copyright_notice_form_intake_reviews
@@ -56,6 +47,13 @@ export async function reviewCopyrightFormIntake(input: {
   const existing = reviewRows[0]
   assert(!existing || existing.accepted === input.accepted, 409, 'Form intake was already reviewed')
   if (!existing) {
+    assert(
+      intake.source_kind === 'guest_form' ||
+        (intake.source_kind === 'signed_in_form' &&
+          (!input.accepted || !intake.current_screening_authority)),
+      422,
+      'Only guest forms and signed-in forms without a clear anti-spam result require moderator review',
+    )
     await transaction(sql`/* reviewCopyrightFormIntake:review */
       INSERT INTO copyright_notice_form_intake_reviews (
         copyright_notice_form_intake_id, reviewed_at, reviewed_by_id, accepted, rationale_ciphertext
@@ -65,12 +63,13 @@ export async function reviewCopyrightFormIntake(input: {
       )
     `)
   }
-  await transaction.commit()
   const assessmentId = await getOrCreateHumanAssessment(
     intake.submission_id,
     input.currentUser,
     input.accepted,
+    transaction,
   )
+  await transaction.commit()
   if (input.accepted) {
     await processCopyrightEnforcementRequest(assessmentId)
   } else {
@@ -91,44 +90,48 @@ async function getOrCreateHumanAssessment(
   submissionId: string,
   currentUser: PrivateUser,
   accepted: boolean,
+  transaction: Awaited<ReturnType<typeof beginTransaction>>,
 ): Promise<string> {
-  const existing = await getCurrentAssessment(submissionId)
-  if (existing?.substantially_compliant === accepted) return existing.id
-  if (existing) {
-    assert(!accepted, 409, 'Submission was already assessed')
-    return (
-      await appendCopyrightSubmissionAssessment({
-        submissionId,
-        assessedAt: new Date(),
-        currentUser,
-        substantiallyCompliant: false,
-        supersedesAssessmentId: existing.id,
-      })
-    ).id
-  }
-  try {
-    return (
-      await appendCopyrightSubmissionAssessment({
+  const existing = await getCurrentAssessment(submissionId, transaction)
+  if (
+    existing?.copyright_notice_form_screening_id === null &&
+    existing.substantially_compliant === accepted
+  )
+    return existing.id
+  assert(
+    !existing || !accepted || existing.copyright_notice_form_screening_id !== null,
+    409,
+    'Submission was already assessed',
+  )
+  return (
+    await appendCopyrightSubmissionAssessmentInTransaction(
+      {
         submissionId,
         assessedAt: new Date(),
         currentUser,
         substantiallyCompliant: accepted,
-      })
-    ).id
-  } catch (error) {
-    if (!isConflict(error)) throw error
-    const raced = await getCurrentAssessment(submissionId)
-    assert(raced?.substantially_compliant === accepted, 409, 'Submission was already assessed')
-    return raced.id
-  }
+        supersedesAssessmentId: existing?.id,
+      },
+      transaction,
+    )
+  ).id
 }
 
 async function getCurrentAssessment(
   submissionId: string,
-): Promise<{ id: string; substantially_compliant: boolean } | null> {
-  const { rows } = await write<{ id: string; substantially_compliant: boolean }>(
+  transaction: Awaited<ReturnType<typeof beginTransaction>>,
+): Promise<{
+  id: string
+  substantially_compliant: boolean
+  copyright_notice_form_screening_id: string | null
+} | null> {
+  const { rows } = await transaction<{
+    id: string
+    substantially_compliant: boolean
+    copyright_notice_form_screening_id: string | null
+  }>(
     sql`/* reviewCopyrightFormIntake:assessment */
-      SELECT assessment.id, assessment.substantially_compliant
+      SELECT assessment.id, assessment.substantially_compliant, assessment.copyright_notice_form_screening_id
       FROM copyright_notice_submission_assessments assessment
       WHERE assessment.copyright_notice_submission_id = ${submissionId}
         AND NOT EXISTS (
@@ -137,10 +140,4 @@ async function getCurrentAssessment(
         )`,
   )
   return rows[0] ?? null
-}
-
-function isConflict(error: unknown): boolean {
-  return (
-    typeof error === 'object' && error !== null && (error as { status?: unknown }).status === 409
-  )
 }

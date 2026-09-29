@@ -30,7 +30,7 @@ export async function requestOpenAIModeration(
 ) {
   const openai = getModerationClient()
   const { apiSafetyCheck, ...requestOptions } = options ?? {}
-  return await openai.moderations.create(
+  return openai.moderations.create(
     { input, model },
     apiSafetyCheck
       ? {

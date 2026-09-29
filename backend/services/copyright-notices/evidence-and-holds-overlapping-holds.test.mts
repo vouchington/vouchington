@@ -101,7 +101,7 @@ async function createQualifyingHold(input: {
     submittedByUserId: null,
     bodyCiphertext: `hold-${crypto.randomUUID()}`,
   })
-  return await appendCopyrightLegalHoldAssessment({
+  return appendCopyrightLegalHoldAssessment({
     currentUser: input.moderator,
     submissionId: submission.id,
     assessedAt: input.assessedAt,

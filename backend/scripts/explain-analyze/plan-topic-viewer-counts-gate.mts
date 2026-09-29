@@ -3,6 +3,7 @@ import {
   POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE,
   POST_TOPIC_CATEGORY_RELATION_TABLE,
 } from '@voucha/types/entities/entity-relation-tables'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const TOPIC_VIEWER_COUNTS_SCENARIOS = new Set(['topic-viewer-counts'])
 const TOPIC_CANDIDATE_RELATIONS = new Set([
@@ -62,21 +63,21 @@ export function assertTopicViewerCountsDiscussionsUsesCandidateBind(result: Expl
 type PlanNode = Record<string, unknown>
 
 function baseRelationName(node: PlanNode): string {
-  return String(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
+  return stringFromUnknown(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
 }
 
 // Mirrors plan-topic-metrics-gate.mts's Bitmap Heap Scan handling: the `Index Cond` for a Bitmap
 // Heap Scan lives on its child `Bitmap Index Scan`, not the node itself.
 function hasIndexedAccess(node: PlanNode): boolean {
-  if (String(node['Node Type'] ?? '') === 'Bitmap Heap Scan') {
+  if (stringFromUnknown(node['Node Type'] ?? '') === 'Bitmap Heap Scan') {
     return collectPlanNodes(node).some(
       descendant =>
         descendant !== node &&
-        String(descendant['Node Type'] ?? '') === 'Bitmap Index Scan' &&
-        Boolean(String(descendant['Index Cond'] ?? '')),
+        stringFromUnknown(descendant['Node Type'] ?? '') === 'Bitmap Index Scan' &&
+        Boolean(stringFromUnknown(descendant['Index Cond'] ?? '')),
     )
   }
-  return Boolean(String(node['Index Cond'] ?? ''))
+  return Boolean(stringFromUnknown(node['Index Cond'] ?? ''))
 }
 
 // The condition that determines what a node is joined/filtered on: `Index Cond` for a direct
@@ -88,14 +89,14 @@ function getEffectiveConditionText(node: PlanNode): string {
   const parts = [node['Index Cond'], node['Recheck Cond'], node['Filter']]
     .filter(Boolean)
     .map(String)
-  if (String(node['Node Type'] ?? '') === 'Bitmap Heap Scan') {
+  if (stringFromUnknown(node['Node Type'] ?? '') === 'Bitmap Heap Scan') {
     for (const descendant of collectPlanNodes(node)) {
       if (
         descendant !== node &&
-        String(descendant['Node Type'] ?? '') === 'Bitmap Index Scan' &&
+        stringFromUnknown(descendant['Node Type'] ?? '') === 'Bitmap Index Scan' &&
         descendant['Index Cond']
       ) {
-        parts.push(String(descendant['Index Cond']))
+        parts.push(stringFromUnknown(descendant['Index Cond']))
       }
     }
   }

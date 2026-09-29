@@ -1,6 +1,6 @@
 ---
 name: revisit-followups
-description: Scan merged Vouchington PR Shepherd Journals, instructions, and closed issues for actionable deferred follow-ups using the portable Vouchington workflow.
+description: Find verified deferred work in merged PR journals, instructions, and closed issues.
 ---
 
 # Vouchington Follow-up Review Adapter

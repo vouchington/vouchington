@@ -9,6 +9,6 @@
 - `backend/api/__tests__/sse-route-architecture.test.mts` — requires every production
   `startSSE(ctx)` route to stay in the canonical SSE route inventory, so new served SSE routes
   cannot bypass the documented connection-cycle and client-recovery review.
-- `web/app/(my)/my/data/__tests__/data-request-section.part-2.mock.test.tsx` — asserts the
+- `web/app/(my)/my/data/__tests__/data-request-section.part-2.test.tsx` — asserts the
   data-request client stays open (native reconnect) on a non-terminal timeout cycle, and closes
   only once the durable status is terminal.

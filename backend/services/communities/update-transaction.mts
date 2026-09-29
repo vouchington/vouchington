@@ -6,7 +6,7 @@ import {
 } from '@services/media-delivery-safety'
 import { recordPostPublicationChange } from '@services/post-publication'
 import type { CommunityWithOwner } from './get.mts'
-import type { UpdateCommunityInput } from './update.mts'
+import type { UpdateCommunityInput } from './update-types.mts'
 import type { CommunityVisibility } from './types.mts'
 
 export async function updateCommunityInTransaction(input: {

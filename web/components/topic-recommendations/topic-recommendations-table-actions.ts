@@ -17,7 +17,7 @@ import {
   type EditableState,
   type TopicRecommendationEditablePostWithId,
 } from './topic-recommendation-editable-state'
-import type { TopicRecommendationTablePost } from './topic-recommendations-table'
+import type { TopicRecommendationTablePost } from './topic-recommendation-table-post'
 
 export function useTopicRecommendationActions(orderedPostIds: string[]) {
   const router = useRouter()

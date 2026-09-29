@@ -42,7 +42,7 @@ app.route('/api/v1/users').get(async (ctx: Context) => {
     const muteBookmarks =
       users.length > 0 ? await getBookmarksForEntities(currentUser, 'user', users) : null
     const muted: Record<string, boolean> | undefined = muteBookmarks
-      ? Object.fromEntries(users.map(u => [u.id, muteBookmarks[u.id]?.mute === true]))
+      ? Object.fromEntries(users.map(u => [u.id, muteBookmarks[u.id]?.mute ?? false]))
       : undefined
 
     const getCursor = (user: (typeof users)[number]) => ({

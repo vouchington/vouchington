@@ -118,6 +118,8 @@ patterns require careful review (non-null assertion where SQL guarantees a row).
 
 ## `any` Policy
 
-`any` is banned by oxlint (`typescript/no-explicit-any: "error"`). Use `unknown` instead.
+`any` is banned by oxlint (`typescript/no-explicit-any: "error"`). Prefer `unknown` for a value whose type is not yet checked.
+
+A heterogeneous callback registry uses a generic or a mapped payload type so each concrete callback stays assignable. Already-parsed JSON stays `unknown` at the dispatcher that invokes the callback.
 
 Exception: generated files are allowed `any` (see `.oxlintrc.json` overrides).

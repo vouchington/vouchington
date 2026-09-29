@@ -1,6 +1,6 @@
 ---
 name: voucha-queue-authoring
-description: Use when adding or changing Voucha GlideMQ queues, enqueue APIs, workers, processors, flows, payloads, retries, deduplication, idempotency, scheduled jobs, backfills, or worker placement.
+description: Author Voucha GlideMQ queues, payloads, enqueues, workers, retries, and schedules.
 ---
 
 # Voucha Queue Authoring
@@ -21,7 +21,7 @@ scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
    queues, workers, services, or data stores.
 5. Update the domain README and queue inventory with the implementation.
 6. For effectful worker/RPC or financial (Stripe) operations, fill in the
-   [durable transition matrix](../../../docs/checklists/backend-queues.md#durable-transition-matrix-for-worker-and-rpc-operations).
+   [durable transition matrix](../../../docs/checklists/backend-queues.md#durable-transition-matrix).
 
 Load the installed `glide-mq` skill only when generic GlideMQ API detail is needed; repository
 ownership, replayability, and validation policy remain authoritative here.

@@ -50,8 +50,8 @@ const ACTIONS_DOC_PATH = 'docs/requirements/navigation/ACTIONS.md'
 const MODERATION_REPORT_SYNC_DOC_PATHS = [
   'docs/requirements/moderation/REPORTING.md',
   'docs/requirements/moderation/MODERATION-FLOWS.md',
-  'backend/api/v1/reports/README.md',
-  'backend/services/moderation-reports/README.md',
+  'docs/requirements/api/v1/reports/README.md',
+  'docs/overview/architecture/services/moderation-reports/README.md',
   ACTIONS_DOC_PATH,
 ]
 
@@ -223,7 +223,7 @@ export function checkModerationPolicyDocSync(
       label: 'moderation report entity type',
     })
     if (
-      docPath === 'backend/services/moderation-reports/README.md' &&
+      docPath === 'docs/overview/architecture/services/moderation-reports/README.md' &&
       content.includes('Target FK')
     ) {
       assertExactDocTokens({
@@ -254,7 +254,7 @@ export function checkModerationPolicyDocSync(
       })
     }
     if (
-      docPath === 'backend/api/v1/reports/README.md' &&
+      docPath === 'docs/requirements/api/v1/reports/README.md' &&
       (content.includes('Canonical `entityType` values are') || content.includes('"entityType"'))
     ) {
       assertExactDocTokens({

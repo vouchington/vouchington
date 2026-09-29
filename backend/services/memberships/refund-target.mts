@@ -3,7 +3,7 @@ import {
   getMembershipSourceIdByMembershipId,
   getStripeSubscriptionIdByMembershipSourceId,
 } from './get.mts'
-import { type MembershipRefundRequestIntent } from './refund-idempotency.mts'
+import type { MembershipRefundRequestIntent } from './refund-idempotency.mts'
 import {
   listRefundableChargesForSubscription,
   matchesRefundRequest,

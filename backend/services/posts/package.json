@@ -73,6 +73,8 @@
     "@data-stores/valkey": "workspace:^",
     "@services/comments": "workspace:^",
     "@types/http-errors": "^2.0.5",
-    "@voucha/test-helpers": "workspace:^"
+    "@types/pg": "^8.23.1",
+    "@voucha/test-helpers": "workspace:^",
+    "vitest": "^5.0.2"
   }
 }

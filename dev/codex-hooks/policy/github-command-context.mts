@@ -11,12 +11,12 @@ export function commandsToInspectForGitHubPolicy(command: string): string[] {
   const commands = [command.replace(/\\\n/g, ' ')]
   const inspected = new Set<string>()
 
-  for (let index = 0; index < commands.length; index += 1) {
+  for (const command of commands) {
     const {
       bodySubstitutions,
       shellBodies,
       textWithoutBodies: candidate,
-    } = stripNonShellHeredocBodies(commands[index])
+    } = stripNonShellHeredocBodies(command)
     if (inspected.has(candidate)) {
       continue
     }

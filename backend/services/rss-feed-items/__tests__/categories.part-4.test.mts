@@ -1,10 +1,7 @@
 import { it, expect, beforeEach, describe } from 'vitest'
-import {
-  backfillCategoriesForTopicAliases,
-  clearCategoriesForUnlinkedTopicAlias,
-  getRssFeedItemCategories,
-  upsertRssFeedItemCategories,
-} from '../categories.mts'
+import { getRssFeedItemCategories, upsertRssFeedItemCategories } from '../categories.mts'
+import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
+import { clearCategoriesForUnlinkedTopicAlias } from '../clear-topic-alias-categories.mts'
 import { createTopic } from '@services/topics'
 import { createTopicAliases, unlinkTopicAlias } from '@services/topics/aliases'
 import { upsertRssFeedItems } from '../upsert.mts'

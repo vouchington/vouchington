@@ -44,11 +44,6 @@ async function makeRepo({ withEnv = true, withValkeyPort = true } = {}) {
   await copyLib(dir, 'git-worktrees.sh')
   await copyLib(dir, 'worktree-resource-env.sh')
   await copyLib(dir, 'git-index-lock.sh')
-  await copyLib(dir, 'protected-checkout.sh')
-  await writeFile(
-    join(dir, 'dev', 'protected-checkout-paths.txt'),
-    await readFile(join(scriptDir, 'protected-checkout-paths.txt'), 'utf8'),
-  )
 
   await writeFile(
     join(dir, 'dev', 'initialize'),

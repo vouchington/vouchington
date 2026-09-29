@@ -9,8 +9,8 @@ export type HouseholdMembershipPageSqlRow = {
   updated_at: string | null
   cursor_updated_at: string | null
   individual: unknown
-  household_exists: boolean
-  can_view: boolean
+  household_exists: unknown
+  can_view: unknown
 }
 
 type AuthorizedHouseholdMembershipCursorRow = HouseholdMembershipRow & {

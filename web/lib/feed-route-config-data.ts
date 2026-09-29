@@ -8,7 +8,7 @@ import type {
   PodcastFeedRouteConfig,
   VideoFeedRouteConfig,
   ReferralLinksFeedRouteConfig,
-} from './feed-route-configs'
+} from './feed-route-config-types'
 
 type AnyFeedRouteConfig =
   | PostFeedRouteConfig

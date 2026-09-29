@@ -128,7 +128,7 @@ useEffect(() => {
 
 Reference implementation: `web/components/auth/login-email-step.tsx`, `web/components/auth/login-code-step.tsx`, `web/components/auth/mfa-step.tsx`.
 
-See [web-agent-rules.md](../../../docs/development/web-agent-rules.md#forms-auth-and-errors) for the authoritative rule.
+See [web-agent-rules.md](../../development/web-agent-rules.md#forms-auth-and-errors) for the authoritative rule.
 
 ### Inline Add Forms (Settings Pages)
 

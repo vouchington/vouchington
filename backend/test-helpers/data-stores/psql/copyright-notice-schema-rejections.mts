@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import type { CopyrightNoticeSchemaFixture } from './copyright-notice-schema.mts'
+import type { CopyrightNoticeSchemaFixture } from './copyright-notice-schema-types.mts'
 
 export function rejectCopyrightNotificationWithAnotherEntity(
   fixture: CopyrightNoticeSchemaFixture,

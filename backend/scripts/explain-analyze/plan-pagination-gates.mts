@@ -1,6 +1,7 @@
 import type { ExplainResult } from '@data-stores/psql'
 import { collectPlanNodes } from './plan-nodes.mts'
 import { isBoundedStoryPresentationSort } from './story-presentation-sort.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const PAGINATION_INDEXES_BY_SCENARIO = new Map<string, string[]>([
   ['direct-message-inbox-page', ['idx_conversations__direct_message_updated']],
@@ -71,7 +72,9 @@ export function assertPaginationPlanShape(result: ExplainResult): void {
   const missingIndexes = requiredIndexes.filter(
     requiredIndex => !nodes.some(node => node['Index Name'] === requiredIndex),
   )
-  const explicitSort = nodes.some(node => String(node['Node Type'] ?? '').includes('Sort'))
+  const explicitSort = nodes.some(node =>
+    stringFromUnknown(node['Node Type'] ?? '').includes('Sort'),
+  )
   if (missingIndexes.length > 0 || explicitSort) {
     throw new Error(
       `${result.name} must paginate in ${requiredIndexes.join(' and ')} order without an explicit Sort`,
@@ -84,12 +87,14 @@ function assertOAuthClientVerificationPlan(result: ExplainResult): void {
   const verifiedIndexNode = nodes.find(
     node => node['Index Name'] === OAUTH_CLIENT_VERIFICATION_INDEX,
   )
-  const cursorIndexCondition = String(verifiedIndexNode?.['Index Cond'] ?? '')
+  const cursorIndexCondition = stringFromUnknown(verifiedIndexNode?.['Index Cond'] ?? '')
   const usesCursorAsIndexBound = /\bid\s*</u.test(cursorIndexCondition)
   const scansOAuthClients = nodes.some(
     node => node['Node Type'] === 'Seq Scan' && node['Relation Name'] === 'oauth_clients',
   )
-  const explicitSort = nodes.some(node => String(node['Node Type'] ?? '').includes('Sort'))
+  const explicitSort = nodes.some(node =>
+    stringFromUnknown(node['Node Type'] ?? '').includes('Sort'),
+  )
   if (!verifiedIndexNode || !usesCursorAsIndexBound || scansOAuthClients || explicitSort) {
     throw new Error(
       `${result.name} must page verified oauth_clients through ${OAUTH_CLIENT_VERIFICATION_INDEX} with the cursor in its Index Cond and without an oauth_clients sequential scan or explicit Sort`,
@@ -102,8 +107,8 @@ function assertStoryProjectionSourcePagePlan(result: ExplainResult): void {
 
   const nodes = collectPlanNodes(result.plan)
   const usesSourceIndex = nodes.some(node => {
-    const relationName = String(node['Relation Name'] ?? '')
-    const indexName = String(node['Index Name'] ?? '')
+    const relationName = stringFromUnknown(node['Relation Name'] ?? '')
+    const indexName = stringFromUnknown(node['Index Name'] ?? '')
     return (
       indexName === STORY_PROJECTION_SOURCE_INDEX ||
       (relationName.startsWith('rss_feed_items_') &&
@@ -113,8 +118,8 @@ function assertStoryProjectionSourcePagePlan(result: ExplainResult): void {
   const scansOrSortsSource = nodes.some(
     node =>
       (node['Node Type'] === 'Seq Scan' &&
-        String(node['Relation Name'] ?? '').startsWith('rss_feed_items')) ||
-      (String(node['Node Type'] ?? '').includes('Sort') &&
+        stringFromUnknown(node['Relation Name'] ?? '').startsWith('rss_feed_items')) ||
+      (stringFromUnknown(node['Node Type'] ?? '').includes('Sort') &&
         !isBoundedStoryPresentationSort(node, nodes)),
   )
   if (!usesSourceIndex || scansOrSortsSource) {
@@ -129,8 +134,8 @@ function assertRssFeedItemsGlobalCursorPlan(result: ExplainResult): void {
 
   const nodes = collectPlanNodes(result.plan)
   const usesPublishedAtIndex = nodes.some(node => {
-    const relationName = String(node['Relation Name'] ?? '')
-    const indexName = String(node['Index Name'] ?? '')
+    const relationName = stringFromUnknown(node['Relation Name'] ?? '')
+    const indexName = stringFromUnknown(node['Index Name'] ?? '')
     return (
       indexName === RSS_FEED_ITEMS_GLOBAL_CURSOR_INDEX ||
       (relationName.startsWith('rss_feed_items_') &&
@@ -140,7 +145,7 @@ function assertRssFeedItemsGlobalCursorPlan(result: ExplainResult): void {
   const scansRssFeedItems = nodes.some(
     node =>
       node['Node Type'] === 'Seq Scan' &&
-      String(node['Relation Name'] ?? '').startsWith('rss_feed_items'),
+      stringFromUnknown(node['Relation Name'] ?? '').startsWith('rss_feed_items'),
   )
   if (!usesPublishedAtIndex || scansRssFeedItems) {
     throw new Error(

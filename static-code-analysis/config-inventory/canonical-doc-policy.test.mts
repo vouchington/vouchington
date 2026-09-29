@@ -5,14 +5,15 @@ import { checkConfigInventoryPolicy } from './index.mts'
 import { makeRepoFixture } from '../test-helpers/config-inventory/repo-fixture.mts'
 
 const ENV_VARS_DOC = 'docs/overview/infrastructure/environment-variables.md'
-const COMMAND_CATALOG_DOC = 'dev/reference-command-catalog.md'
+const COMMAND_CATALOG_DOC = 'docs/development/local-development/reference-command-catalog.md'
 const canonicalDocs: Record<string, string> = {
   [ENV_VARS_DOC]: './dev/config-inventory\n',
   'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
   'docs/development/local-env-vars.md': './dev/config-inventory\n',
-  'dev/README.md': '[Command Catalog](reference-command-catalog.md)\n',
+  'docs/development/local-development/README.md':
+    '[Command Catalog](reference-command-catalog.md)\n',
   [COMMAND_CATALOG_DOC]: './dev/config-inventory\n',
-  'static-code-analysis/README.md': './dev/config-inventory\n',
+  'docs/development/quality/static-code-analysis/README.md': './dev/config-inventory\n',
 }
 
 describe('config inventory canonical documentation policy', () => {
@@ -34,14 +35,14 @@ describe('config inventory canonical documentation policy', () => {
   it('requires the command catalog to document config inventory and the dev index to route there', async () => {
     const ctx = await makeCanonicalFixture({
       ...canonicalDocs,
-      'dev/README.md': 'no route\n',
+      'docs/development/local-development/README.md': 'no route\n',
       [COMMAND_CATALOG_DOC]: 'no command\n',
     })
 
     await expect(checkConfigInventoryPolicy(ctx)).resolves.toEqual({
       errors: expect.arrayContaining([
-        'dev/reference-command-catalog.md must mention ./dev/config-inventory',
-        'dev/README.md must link to dev/reference-command-catalog.md',
+        'docs/development/local-development/reference-command-catalog.md must mention ./dev/config-inventory',
+        'docs/development/local-development/README.md must link to docs/development/local-development/reference-command-catalog.md',
       ]),
     })
   })
@@ -52,8 +53,8 @@ describe('config inventory canonical documentation policy', () => {
 
     await expect(checkConfigInventoryPolicy(ctx)).resolves.toEqual({
       errors: expect.arrayContaining([
-        'dev/reference-command-catalog.md is untracked; config inventory docs cannot be cross-linked',
-        'dev/reference-command-catalog.md is missing or unreadable; config inventory docs cannot be cross-linked',
+        'docs/development/local-development/reference-command-catalog.md is untracked; config inventory docs cannot be cross-linked',
+        'docs/development/local-development/reference-command-catalog.md is missing or unreadable; config inventory docs cannot be cross-linked',
       ]),
     })
   })

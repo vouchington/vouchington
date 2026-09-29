@@ -127,11 +127,11 @@ export function getApiEgressProxyUrl(): string {
 }
 
 export async function closeApiEgressProxyTransport(): Promise<void> {
-  if (closePromise) return await closePromise
+  if (closePromise) return closePromise
   closePromise = Promise.all(
     Object.values(proxyDispatchers).map(dispatcher => dispatcher.close().catch(onError)),
   ).then(() => undefined)
-  return await closePromise
+  return closePromise
 }
 
 export async function resetApiEgressProxyTransportForTest(): Promise<void> {

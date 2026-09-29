@@ -56,7 +56,7 @@ async function tryAcquireSlot(client: PoolClient, slot: number): Promise<boolean
     '/* acquireTestAiUsageDateReservation */ SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS acquired',
     [lockName(slot)],
   )
-  return rows[0]?.acquired === true
+  return rows.at(0)?.acquired ?? false
 }
 
 async function clearSlot(client: PoolClient, slot: number): Promise<void> {
@@ -85,7 +85,7 @@ async function releaseReservation(client: PoolClient, slot: number): Promise<voi
       '/* releaseTestAiUsageDateReservation */ SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked',
       [lockName(slot)],
     )
-    if (rows[0]?.unlocked !== true) {
+    if (!rows[0]?.unlocked) {
       throw new Error('PostgreSQL did not release the AI usage test date reservation')
     }
     client.release()

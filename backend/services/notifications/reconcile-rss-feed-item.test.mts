@@ -31,7 +31,7 @@ describe('reconcile-rss-feed-item', () => {
 
   async function createFeedSubscribers(feedId: string, count: number, createdAt: Date) {
     const subscribers = await Promise.all(
-      Array.from({ length: count }, async () => await createTestUser()),
+      Array.from({ length: count }, async () => createTestUser()),
     )
     await Promise.all(
       subscribers.map(async subscriber => {

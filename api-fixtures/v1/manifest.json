@@ -11440,7 +11440,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "cf6778b83a2cca1f3cac21da8be7d3ca573ddc61a9fc9204031365b4358414f8",
+      "hash": "0dbcc8511172f40e05a0a2866bc42b213aa55c35514a29ba667b51c05de9c5f2",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -11884,13 +11884,49 @@
                                   "rationale": {
                                     "required": true,
                                     "schema": {
-                                      "type": "string"
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "type": "null"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
                                     }
                                   },
                                   "recommendation": {
                                     "required": true,
                                     "schema": {
-                                      "type": "string"
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "type": "null"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "state": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "type": "literal",
+                                          "value": "completed"
+                                        },
+                                        {
+                                          "type": "literal",
+                                          "value": "failed"
+                                        },
+                                        {
+                                          "type": "literal",
+                                          "value": "pending"
+                                        }
+                                      ]
                                     }
                                   }
                                 },
@@ -65208,6 +65244,189 @@
       "statusCodes": [204],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/copyright-notices/:id/guest-capabilities": {
+      "bodyKind": "content",
+      "hash": "d020364fa55f17a7d92aa47b6df59fa93651e78fcd65be6691cb9593e0fb0387",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/copyright-notices/:id/guest-capabilities",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_guest_capability": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "expires_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "token": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/guest-capability-routes.mts",
+      "statusCodes": [201],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/information-requests": {
+      "bodyKind": "content",
+      "hash": "39aec6be5b694c97ce0291fc4a93fea547cdba8febccaf681a96ec7449d385e4",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/information-requests",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_correspondence": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/guest-capability-routes.mts",
+      "statusCodes": [201],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation": {
+      "bodyKind": "content",
+      "hash": "756c9bcbcd01f3880046c6ff429f69f8d58e58e3c634e434a3eebfe4a52a765a",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_guest_capability": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "revoked_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/guest-capability-routes.mts",
+      "statusKnowledge": "default"
+    },
+    "POST:/api/v1/copyright-notices/:id/guest-filings": {
+      "bodyKind": "content",
+      "hash": "94297713083069a9f725d702f8105598f113074f96ac30e01bd04a25c8a71c96",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/copyright-notices/:id/guest-filings",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_submission": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "kind": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "literal",
+                          "value": "court_or_ccb_hold"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "supplement"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "withdrawal"
+                        }
+                      ]
+                    }
+                  },
+                  "received_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/guest-capability-routes.mts",
+      "statusCodes": [201],
+      "statusKnowledge": "explicit"
+    },
     "POST:/api/v1/disputes/:id/approval#staff": {
       "bodyKind": "content",
       "hash": "ff3e92da79d3ba5049858e4848887465bf5ec57d4935194321555698f764643e",
@@ -75984,7 +76203,7 @@
       "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
       "id": "web.growth-metrics.default",
       "method": "GET",
-      "migratedFrom": ["backend/api/v1/admin/growth-metrics/README.md"],
+      "migratedFrom": ["docs/requirements/api/v1/admin/growth-metrics/README.md"],
       "path": "/api/v1/growth-metrics",
       "query": {
         "range": "30d"
@@ -81573,7 +81792,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.url-crawl-trigger.default",
       "method": "POST",
-      "migratedFrom": ["backend/api/v1/urls/README.md"],
+      "migratedFrom": ["docs/requirements/api/v1/urls/README.md"],
       "path": "/api/v1/urls/url-1/crawl",
       "responseSchema": {
         "hash": "d897db0f9a2eda987e8f560f968e69c873fcccf3359cc79ca566d6270e711998",
@@ -81895,7 +82114,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "49e36db7544c9f572de666304e92b1a31d88d4eaa275d06c34031c6d57e2ea6f",
+        "hash": "417a96ad52ff3a593c26c294c1a949b8a06f07ef2ec03517b80d601c7b5ac13d",
         "key": "web.copyright.staff-queue.default"
       },
       "route": {
@@ -81979,6 +82198,127 @@
         "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
       },
       "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/copyright-notices/:id/guest-capabilities",
+      "bodyFile": "responses/web.copyright.guest-capability.issued.json",
+      "consumers": ["web"],
+      "id": "web.copyright.guest-capability.issued",
+      "method": "POST",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/guest-capability-routes.mts",
+        "web/lib/api/client/copyright-guest.ts"
+      ],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000830/guest-capabilities",
+      "requestBody": {
+        "expires_at": "2099-07-03T12:00:00.000Z"
+      },
+      "responseSchema": {
+        "hash": "54042215731992c250907470d52261c9dfd64d47be398f7652c4dc5ef89a8edb",
+        "key": "web.copyright.guest-capability.issued"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000830"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/guest-capabilities"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-guest-cases.mts"
+      },
+      "status": 201
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation",
+      "bodyFile": "responses/web.copyright.guest-capability.revoked.json",
+      "consumers": ["web"],
+      "id": "web.copyright.guest-capability.revoked",
+      "method": "POST",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/guest-capability-routes.mts",
+        "web/lib/api/client/copyright-guest.ts"
+      ],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000830/guest-capabilities/00000000-0000-7000-8000-000000000831/revocation",
+      "responseSchema": {
+        "hash": "7a4fe4354244242ee63601817ff36c56df4abd91d0f4dfe4610c1c743eeeac88",
+        "key": "web.copyright.guest-capability.revoked"
+      },
+      "route": {
+        "pathParams": {
+          "capabilityId": "00000000-0000-7000-8000-000000000831",
+          "id": "00000000-0000-7000-8000-000000000830"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-guest-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/information-requests",
+      "bodyFile": "responses/web.copyright.guest-information.requested.json",
+      "consumers": ["web"],
+      "id": "web.copyright.guest-information.requested",
+      "method": "POST",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/guest-capability-routes.mts",
+        "web/lib/api/client/copyright-guest.ts"
+      ],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000830/guest-capabilities/00000000-0000-7000-8000-000000000831/information-requests",
+      "requestBody": {
+        "statement": "Send the registration number."
+      },
+      "responseSchema": {
+        "hash": "93d93d2841c2f011847bb9e67366c1f5b2f40ac58e2bd4bf3986c782dfffaaad",
+        "key": "web.copyright.guest-information.requested"
+      },
+      "route": {
+        "pathParams": {
+          "capabilityId": "00000000-0000-7000-8000-000000000831",
+          "id": "00000000-0000-7000-8000-000000000830"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/information-requests"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-guest-cases.mts"
+      },
+      "status": 201
+    },
+    {
+      "auth": "none",
+      "backendResponseContractKey": "POST:/api/v1/copyright-notices/:id/guest-filings",
+      "bodyFile": "responses/web.copyright.guest-filing.received.json",
+      "consumers": ["web"],
+      "id": "web.copyright.guest-filing.received",
+      "method": "POST",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/guest-capability-routes.mts",
+        "web/lib/api/client/copyright-guest.ts"
+      ],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000830/guest-filings",
+      "requestBody": {
+        "cf_turnstile_response": "fixture-turnstile-token",
+        "kind": "supplement",
+        "statement": "Corrected work description."
+      },
+      "responseSchema": {
+        "hash": "58f891f2c801906e22787ab770f9ca1498f68d7396876fc3f845e9bf77d1ed99",
+        "key": "web.copyright.guest-filing.received"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000830"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/guest-filings"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-guest-cases.mts"
+      },
+      "status": 201
     },
     {
       "auth": "fixture-admin",

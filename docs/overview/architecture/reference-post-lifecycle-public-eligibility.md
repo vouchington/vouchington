@@ -13,7 +13,7 @@ relational pages before cache, sitemap, or receipt effects. Page cursors follow 
 source rows before identity mapping; duplicate or filtered rows still advance progress. Snapshot
 reclamation also bounds examined headers before ownership checks. Its snapshot-only receipts,
 concrete FK identity ownership, and bounded reclamation are owned by
-[`backend/services/post-publication`](../../../backend/services/post-publication/README.md).
+[`backend/services/post-publication`](services/post-publication/README.md).
 
 ## Predicates
 

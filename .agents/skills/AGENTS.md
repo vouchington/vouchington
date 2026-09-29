@@ -1,9 +1,21 @@
-# Claude Skills
+# Skills
 
-Skills authored in this repo live in `.agents/skills/<name>/`. Author `.agents/skills/<name>/SKILL.md` first, then run `pnpm exec vouchington link-skill <name> --source-root .agents/skills --target-root .claude/skills` to create the tracked Claude discovery symlink. Do not use ad hoc `ln -s`. There is no third discovery surface: Codex, Grok, Cursor, and OpenCode load `.agents/skills/` directly. Do not add a `.codex/agents` adapter, `agents/openai.yaml`, or `.claude/agents` file unless the skill is a dispatchable specialist.
-
-Every skill must be exposed to Claude Code through that tracked symlink; there is no per-skill opt-in flag. The 1:1 mapping is enforced by the `Claude skill discovery set consistency` `finite-set-consistency` rule in [`.no-mistakes.yml`](../../.no-mistakes.yml).
-
-Skill entry points are indexed from [the agent catalog](../catalog/README.md). Skills that split into `reference-*.md` leaves also keep a local `AGENTS.md` pointing at their `README.md`.
-
-Do not vendor upstream skills in this repository.
+- Author local skills in `.agents/skills/<name>/SKILL.md`. Keep descriptions short and state the
+  task trigger; keep entrypoints focused and load supporting procedures only when needed.
+- Prefer a local adapter for repository work. It loads its canonical Vouchington plugin, or the
+  installed `node_modules/vouchington-tooling/skills/<name>/SKILL.md` fallback, then local policy.
+  `web-vitest-test-authoring` adapts canonical `nextjs-vitest-test-authoring`. Do not reload a
+  canonical skill or adapter already read, and do not vendor upstream skills.
+- Shared procedures belong in `vouchington-tooling`; repository constraints belong here.
+  Explanatory documentation belongs in `docs/**`. Follow [placement](../../docs/AGENTS.md).
+- Read this file explicitly when authoring or using skills; Claude's automatic subtree discovery
+  skips `.agents`. Other startup loaders also do not read all target-directory instructions.
+- Expose each skill to Claude with
+  `pnpm exec vouchington link-skill <name> --source-root .agents/skills --target-root .claude/skills`.
+  Do not create symlinks manually. The tracked one-to-one mapping is enforced by
+  [`finite-set-consistency`](../../.no-mistakes.yml).
+- Codex, Grok, Cursor, and OpenCode discover `.agents/skills` directly. Add no extra agent adapter
+  or `agents/openai.yaml` unless the skill is a dispatchable specialist.
+- Register skills in [the catalog](../catalog/README.md). Verify local and canonical links,
+  referenced resources, aliases, and installation prerequisites; installation closure does not
+  mean every prerequisite must be eagerly read.

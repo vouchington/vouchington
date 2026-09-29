@@ -33,7 +33,7 @@ export function createNotificationPushIntentLeaseKeeper(input: {
 
   async function renewNow(): Promise<boolean> {
     if (ownershipLost) return false
-    if (renewal) return await renewal
+    if (renewal) return renewal
     renewal = input
       .renew(input.intent, input.leaseSeconds)
       .then(accepted => {
@@ -49,7 +49,7 @@ export function createNotificationPushIntentLeaseKeeper(input: {
       .finally(() => {
         renewal = undefined
       })
-    return await renewal
+    return renewal
   }
 
   function start() {

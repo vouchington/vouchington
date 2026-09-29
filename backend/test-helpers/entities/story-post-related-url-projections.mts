@@ -127,7 +127,7 @@ export async function insertTestStoryPostProjectionJob(
 
 export async function getTestStoryPostProjectionGeneration(postId: string): Promise<number> {
   const { rows } = await write<{
-    generation: number
+    generation: string
   }>(sql`/* getTestStoryPostProjectionGeneration */
     SELECT generation
     FROM story_post_related_url_projection_jobs

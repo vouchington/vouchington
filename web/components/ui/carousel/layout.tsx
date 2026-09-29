@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { cn } from '@/lib/utils'
-import { useCarousel } from '../carousel'
+import { useCarousel } from './context'
 
 function CarouselContent({
   className,

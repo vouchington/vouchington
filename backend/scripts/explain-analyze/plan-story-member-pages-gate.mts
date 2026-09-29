@@ -1,5 +1,6 @@
 import type { ExplainResult } from '@data-stores/psql'
 import { collectPlanNodes } from './plan-nodes.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const PAGE_SHAPES = new Map<string, { limit: number; after: boolean; excluded: boolean }>()
 for (const [kind, limit, excluded] of [
@@ -43,13 +44,13 @@ function assertSelectorPlan(
     throw new Error(`${result.name} must capture the production story member selector`)
   const nodes = collectPlanNodes(result.plan)
   const membershipScans = nodes.filter(node =>
-    String(node['Relation Name'] ?? '').startsWith('rss_feed_items'),
+    stringFromUnknown(node['Relation Name'] ?? '').startsWith('rss_feed_items'),
   )
   const executing = membershipScans.filter(node => Number(node['Actual Loops'] ?? 0) > 0)
   if (executing.length !== 1)
     throw new Error(`${result.name} must execute one indexed story membership scan`)
   const scan = executing[0]!
-  const condition = String(scan['Index Cond'] ?? '')
+  const condition = stringFromUnknown(scan['Index Cond'] ?? '')
   if (
     !['Index Scan', 'Index Only Scan'].includes(String(scan['Node Type'])) ||
     !condition.includes('story_id =') ||
@@ -79,7 +80,7 @@ function assertHydrationPlan(result: ExplainResult, limit: number): void {
     throw new Error(`${result.name} hydrated ${rows} rows for a ${limit}-item page`)
   const broadItems = collectPlanNodes(result.plan).filter(
     node =>
-      String(node['Relation Name'] ?? '').startsWith('rss_feed_items') &&
+      stringFromUnknown(node['Relation Name'] ?? '').startsWith('rss_feed_items') &&
       node['Node Type'] === 'Seq Scan' &&
       Number(node['Actual Loops'] ?? 0) > 0,
   )
@@ -106,5 +107,5 @@ function physicalRows(node: Record<string, unknown>): number {
 
 function rootRows(plan: unknown): number {
   const root = (plan as { Plan?: { 'Actual Rows'?: number } } | null)?.Plan
-  return Number(root?.['Actual Rows'] ?? 0)
+  return root?.['Actual Rows'] ?? 0
 }

@@ -11,7 +11,7 @@ import {
 } from './ineligible-stripe-purchase-reversal-execution.mts'
 import { claimIneligiblePurchaseReversals } from './ineligible-stripe-purchase-reversal/claim-ledger.mts'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from './reconcile-recorded-ineligible-stripe-purchase-reversal.mts'
-import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase.mts'
+import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
 
 describe('recorded ineligible Stripe purchase known-refund reconciliation', () => {
   it('records its known succeeded refund instead of a zero-amount external receipt', async () => {

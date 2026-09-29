@@ -1,6 +1,6 @@
 ---
 name: web-vitest-test-authoring
-description: Use when adding or changing web/** Vitest tests — the Next.js module-mock exemption, navMockModule/createNavMock, mockLucideReact, API-response factories, and direct Server Component / next/headers caveats.
+description: Author web/** Vitest tests and fixtures with Next.js mocking and response contracts.
 ---
 
 # Web Vitest Test Authoring

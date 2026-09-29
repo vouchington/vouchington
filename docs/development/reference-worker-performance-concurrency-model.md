@@ -3,14 +3,14 @@
 [Back to Worker Performance](worker-performance.md#concurrency-model)
 
 Every worker is constructed with `concurrency: getWorkerConcurrency(name, { baseline })` from
-[`@modules/queue-config`](../../backend/modules/queue-config/README.md). The helper resolves
+[`@modules/queue-config`](../overview/architecture/backend/modules/queue-config/README.md). The helper resolves
 concurrency in this order:
 
 1. `WORKER_CONCURRENCY_<NAME>` env override (clamped by max).
 2. Otherwise `round(baseline * WORKER_CONCURRENCY_SCALE)`, clamped to `[1, max]`.
 
 `max` defaults to `25` and can be lowered globally via `WORKER_CONCURRENCY_MAX`. The
-`backend/queues/README.md` Active Workers table is the source of truth for baselines; worker
+`docs/overview/architecture/queues/README.md` Active Workers table is the source of truth for baselines; worker
 index tests in `backend/entrypoints/worker-cpu/` and `backend/entrypoints/worker-io/` lock
 baselines to the helper's resolution behavior.
 

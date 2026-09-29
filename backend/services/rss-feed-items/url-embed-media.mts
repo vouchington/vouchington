@@ -1,5 +1,5 @@
 import type { matchEmbedProvider } from '@vouchington/embeds/providers'
-import type { RawEmbedRow } from './url-embed-types.mts'
+import type { RawEmbedRow } from './raw-embed-row.mts'
 
 type ResolvedMediaType = 'article' | 'audio' | 'video' | null
 

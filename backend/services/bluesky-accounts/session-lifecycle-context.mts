@@ -22,7 +22,7 @@ export async function runWithBlueskySessionAuthorization<T>(
   context: BlueskySessionAuthorizationContext,
   callback: () => Promise<T>,
 ): Promise<T> {
-  return await authorizationContext.run(context, callback)
+  return authorizationContext.run(context, callback)
 }
 
 export async function runWithAttachedBlueskySession<T>(
@@ -30,7 +30,7 @@ export async function runWithAttachedBlueskySession<T>(
   authorizationId: string,
   callback: () => Promise<T>,
 ): Promise<T> {
-  return await runWithBlueskySessionAuthorization(
+  return runWithBlueskySessionAuthorization(
     { authorizationId, owner: { kind: 'attached', userId } },
     callback,
   )
@@ -43,5 +43,5 @@ export function isBlueskySessionPersistenceBlocked(): boolean {
 export async function runWithBlueskySessionPersistenceBlocked<T>(
   callback: () => Promise<T>,
 ): Promise<T> {
-  return await persistenceBlockedContext.run(true, callback)
+  return persistenceBlockedContext.run(true, callback)
 }

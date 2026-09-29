@@ -1,0 +1,116 @@
+# Stories Service
+
+Source entrypoint: [backend/services/stories/README.md](../../../../../backend/services/stories/README.md)
+
+Groups related RSS feed items covering the same news event into a first-class "story" entity.
+
+## Overview
+
+A **story** clusters articles about the same event together using embedding similarity + LLM heuristics. Stories have:
+
+- **Title**: LLM-generated headline summarizing the cluster
+- **`cluster_reason`**: LLM-generated explanation of why the articles were grouped together — displayed in the UI on the news cluster card
+- **`published_at`**: When the event occurred (agent-determined, not row creation time)
+- **`post__stories`**: Junction table linking one story post per story
+- **Official item**: The canonical/primary source article (e.g. original press release)
+- **Admin locks**: `story_locked_at` on items prevents auto-reassignment; `official_locked_at` on stories prevents agent override of admin's official pick
+
+## Data Model
+
+```
+stories
+  id                        UUIDv7 primary key
+  title                     TEXT (nullable, 1–500 chars, LLM-generated)
+  cluster_reason            TEXT (nullable, LLM-generated explanation for the grouping)
+  published_at              TIMESTAMPTZ (nullable, when the event occurred)
+  official_rss_feed_item_id UUID FK → rss_feed_items.id (nullable)
+  official_locked_at        TIMESTAMPTZ (set by admin)
+  created_at                VIRTUAL (uuid_extract_timestamp)
+  updated_at                TIMESTAMPTZ
+  deleted_at                TIMESTAMPTZ
+
+rss_feed_items (added columns)
+  story_id        UUID FK → stories.id
+  story_locked_at TIMESTAMPTZ (set by admin)
+
+post__stories (junction table)
+  post_id         UUID PK FK → posts.id
+  story_id        UUID UNIQUE FK → stories.id
+  initiated_by_id UUID FK → users.id
+  created_at      TIMESTAMPTZ
+```
+
+## Files
+
+| File                                    | Responsibility                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `types.mts`                             | `Story`, `StoryWithItemCount`, `PostStory` types                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `get.mts`                               | `getStoryById`, `getStoryWithItemCount`, `getStoryItemIds`, `getStoriesByIdBatch`, `getPostStoryByStoryId`, `getPostStoryByPostId`, `getStoryItemSummaries`                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `create.mts`                            | `createStory`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `update.mts`                            | `updateStoryTitle`, `setStoryOfficialItem`, `adminSetStoryOfficialItem`, `createPostStory`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `assign.mts`                            | `adminAssignItemToStory`, `adminRemoveItemFromStory`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `cluster.mts`                           | `clusterRssFeedItem` — core incremental clustering algorithm                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `cluster-fetch.mts`                     | `fetchClusterItem` — fetch an item for clustering eligibility check                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `cluster-candidates.mts`                | `findClusterCandidates` — find nearest-neighbor candidates via pgvector                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `story-posts.mts`                       | `createStoryPost` / `prepareStoryPost` — public story-post creation boundary. Records durable related-URL projection intent, an `approve` clearance change, and post-commit delivery.                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `story-post-create.mts`                 | Transactional story-post insert, topic relations, and publication capture used by `story-posts.mts`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `story-post-related-url-projection.mts` | Generation-fenced, lease-based reconciliation of every eligible active story-member URL in bounded source, prune, and stale-state cleanup pages. Durable least-recently-claimed ordering rotates large continuations across pending posts, while generation-scoped mutation fences preserve manually re-confirmed links and copy into each restarted generation under the post-publication lock. Hostname ancestry uses indexed suffix equality rather than a leading-wildcard scan. Receipts make relation and crawl effects replayable; a five-minute schedule recovers missed enqueues. |
+| `get-or-create-for-item.mts`            | `getOrCreateStoryForItem` — get or create a story for an item (for story post creation)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `authorization.mts`                     | `currentUserCanCreateStoryPost` — any authenticated user                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `embedding-trigger.mts`                 | Strict queue acceptance and exact-input marker for story clustering; bounded recovery of pending RSS items                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+
+## Clustering Algorithm
+
+`clusterRssFeedItem(rss_feed_item_id)` runs after an embedding is created for an item:
+
+1. Fetch item; skip if deleted, locked (`story_locked_at`), or has no embedding
+2. If item already has `story_id`, return early (already clustered)
+3. Find up to `STORY_CLUSTER_CANDIDATE_LIMIT` candidates by vector distance within the asymmetric time window
+4. No candidates → return null (no agent call, item stays standalone)
+5. Call the `@story-teller` agent with the item + candidates; agent decides using heuristics
+6. Agent says `should_cluster=false` → return null
+7. Agent picks candidates that already have a story → assign item to that existing story
+8. Agent picks candidates without a story → create new story with agent-provided title, `published_at`, and official item; assign all clustered items
+
+Candidates include items **both with and without existing stories**. An item may be pulled into an existing story (joining its cluster) or form a new story with other standalone items.
+
+### Trigger Sources
+
+The strict story-clustering enqueue and exact-input marker are used by three embedding paths:
+
+1. **Single-path embedding worker** ([`backend/workers/bedrock-embeddings/workers/bedrock-embeddings-nova-multimodal-v1-single.mts`](../../../../../backend/workers/bedrock-embeddings/workers/bedrock-embeddings-nova-multimodal-v1-single.mts)) — immediately after `upsertRssFeedItemEmbedding` writes the embedding vector.
+2. **Batch-path save** ([`backend/services/bedrock-embeddings-batch/entities/rss-feed-items.mts`](../../../../../backend/services/bedrock-embeddings-batch/entities/rss-feed-items.mts)) — for each item id returned by `applyRssFeedItemBatchUpdates` after a Bedrock batch result is applied.
+3. **Reusable-copy reconciliation** (same file) — for each item hydrated from the centralized `bedrock_nova_multimodal_v1_embeddings` table by `copyExistingRssFeedItemEmbeddings` in the independent reconciliation lane.
+
+Queue acceptance is marked with `story_clustering_embedding_input_sha256` only when the accepted
+job's embedding input and current content still match. This records delivery to GlideMQ, not
+completion of the clustering agent. A failed or deduplicated enqueue leaves the marker pending.
+`rss_story_trigger_recovery` scans pending current embeddings in pages of at most 100 and retries
+delivery; its cursorless root runs each minute in production (hourly on staging). Operators can
+restart all five embedding reconciliation roots through `bedrock-embedding-reconciliation`.
+
+### Embedding Retry
+
+The `processStoryClustering` processor mirrors the autotagger's embedding-retry pattern: if `clusterRssFeedItem` returns `null` and `hasRssFeedItemEmbedding` is `false`, the job re-enqueues itself with `embedding_retries + 1` and a 5 s delay, up to a cap of 10 retries. This handles narrow timing gaps where clustering fires before the embedding row is fully visible.
+
+### Race Condition Handling
+
+All assignments use `UPDATE ... WHERE story_id IS NULL AND story_locked_at IS NULL RETURNING id`. If RETURNING is empty, the item was assigned concurrently. The current job terminates; a subsequent run will handle the already-clustered item.
+
+## Related item pages
+
+`getStoryMemberPagesBatch` selects at most one page and a lookahead per story with a lateral index probe ordered by item ID descending. The `story_member_pages` feed/search/community sidecar contains related IDs only; the first direct result for each story is excluded before selection. Shared deliveries remain standalone. Members must pass the same source discoverability and viewer exclusions across those surfaces and story detail. `GET /api/v1/stories/:id` continues with an opaque story/viewer/access/exclusion-scoped cursor and hydrates only its selected page. The selection does not run the original request's search, follow, or community-list filters. The `story-related-items-config.preview_limit` dynamic setting controls preview size from 1 through 3 (default 3), read once per request. Story detail has a separate maximum of 25.
+
+## Configuration
+
+- `STORY_WINDOW_DAYS` env var (default 4, max 14) — forward window from story `published_at`
+- `STORY_DISTANCE_THRESHOLD = 0.35` — cosine distance cutoff for candidate search
+- `STORY_CLUSTER_CANDIDATE_LIMIT = 5` — max candidates sent to agent per item
+
+## Related
+
+- System: [docs/overview/architecture/queues/ai-agents/README.md](../../queues/ai-agents/README.md) — job queue calling `clusterRssFeedItem`
+- Agent (clustering): [`backend/agents/story-clustering/`](../../../../../backend/agents/story-clustering/) — LLM clustering + title generation
+- Agent (story post): [`backend/agents/story-post/`](../../../../../backend/agents/story-post/) — LLM title + `ai_summary_markdown` generation
+- API: [docs/requirements/api/v1/stories/README.md](../../../../requirements/api/v1/stories/README.md), [`backend/api/v1/stories/`](../../../../../backend/api/v1/stories/)
+- Docs: [docs/requirements/content/stories.md](../../../../requirements/content/stories.md)

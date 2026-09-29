@@ -36,7 +36,7 @@ describe('Storybook browser runner diagnostics', () => {
   })
 
   it('keeps the on-disk log within 1 MiB after a session-budget kill', async () => {
-    // Reproduces the raw-protocol-traffic flood (web/storybook/README.md) that used to reach
+    // Reproduces the raw-protocol-traffic flood (docs/development/testing/storybook/README.md) that used to reach
     // 255+ MiB before commit 0cc4390bd2 restored the bound: stream well past 1 MiB of stderr
     // right up to the moment the shared session budget expires and the child is SIGTERM'd, then
     // SIGKILL'd, mirroring ci/storybook-browser-runner-budget.test.mts's kill-timer sequence.

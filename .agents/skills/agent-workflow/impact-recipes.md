@@ -10,7 +10,7 @@ identifiers; quote search values that contain punctuation. Batch the initial ana
 known compatible file, including files in different workspaces. Use one invocation per command,
 config, framework, and environment; reserve single-file calls for focused post-batch diagnosis.
 Validate with the full suites of the touched areas: `<project-a>` and `<project-b>` stand for each
-owning Vitest project in [VITEST.md](../../../.github/workflows/VITEST.md), matching what CI runs.
+owning Vitest project in [VITEST.md](../../../docs/development/ci/workflows/VITEST.md), matching what CI runs.
 
 ## Endpoint Migration
 
@@ -59,7 +59,7 @@ it. `git grep` searches tracked dotfiles as well as ordinary source files.
    exposing or allowlisting gitignored local credentials. Directory-mode fingerprints do not
    include commit IDs, so the wrapper does not pass the git-history baseline. This supplements,
    rather than changes, CI's unchanged `gitleaks git` history scan. See
-   [system dependencies](../../../docs/development/system-dependencies.md#7-mise-managed-ci-tools--always-required)
+   [system dependencies](../../../docs/development/system-dependencies.md#product-contract)
    for the local pin and
    [standalone workflow checks](../../../docs/development/reference-ci-standalone-workflow-checks.md)
    for the isolated CI scan.
@@ -106,7 +106,7 @@ consumers, and their tests.
    ```
 
 Never edit `api-fixtures/v1/manifest.json`, `schema-lock.json`, or `responses/**` by hand; change the
-fixture source and follow the [fixture update flow](../../../backend/test-helpers/api-fixtures/README.md):
+fixture source and follow the [fixture update flow](../../../docs/development/testing/backend/api-fixtures.md):
 
 ```sh
 pnpm run api-fixtures:generate
@@ -157,7 +157,7 @@ the accepted plan into a finite contract matrix before the first push.
    ```
 
 4. Close the loop before pushing by updating the implementation ledger from
-   [Implementation Rules](implementation.md#implementation-rules): each contract row needs a target
+   [implementation workflow](implementation.md): each contract row needs a target
    file/test owner and an evidence status. If one client or lifecycle surface cannot ship in the PR,
    document the blocker and tracked follow-up in the PR body rather than leaving the matrix implicit.
 

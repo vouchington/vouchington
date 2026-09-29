@@ -1,6 +1,6 @@
 import sql from 'sql-template-strings'
 import type { TransactionQuery } from '@data-stores/psql'
-import type { SourceRow } from './identity-source-paging.mts'
+import type { SourceRow } from './identity-source-paging-types.mts'
 import { nativeSourceBounds, nativeSourceRange } from './native-source-range.mts'
 import { publicationPageLimit } from './page-limit.mts'
 import { publicationStoryItemPageCtes } from './story-item-pages.mts'

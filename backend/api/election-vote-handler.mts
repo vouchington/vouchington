@@ -185,7 +185,7 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
     }
 
     if (!isClear && score !== null && options.enqueueIntegrityCheck !== false) {
-      enqueueVoteIntegrityCheck(
+      void enqueueVoteIntegrityCheck(
         options.entityType,
         ctx.params.id!,
         currentUser.id,

@@ -100,7 +100,7 @@ export async function handleChargeRefunded(
         stripeRefundMetadata: getStripeRefundMetadata(refund),
         providerApplicationId: applicationContext.applicationId,
         providerEnvironment,
-      }).then(async receipt => await wakeRefundReconciliations(receipt.operationIds)),
+      }).then(async receipt => wakeRefundReconciliations(receipt.operationIds)),
     )
   }
   await Promise.all(promises)

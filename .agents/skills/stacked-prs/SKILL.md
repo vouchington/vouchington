@@ -1,9 +1,6 @@
 ---
 name: stacked-prs
-description: |
-  Recognize a native GitHub stacked pull request, or a PR whose base branch isn't `main`, and drain
-  it from the bottom-most ready layer up. Load whenever a PR is part of a stack: Vouchington command
-  catalog, ownership, owned-layer shepherding, and human-gated per-layer merging.
+description: Discover and shepherd native GitHub PR stacks or PRs based on non-main branches.
 ---
 
 # Stacked Pull Requests
@@ -29,7 +26,7 @@ If `gh stack` exits 9 (not enabled on the repository), do not bundle the source 
 Open one PR targeting `main` for the bottom issue, wait for it to merge, then open the next. Say that
 stacks are unavailable.
 
-The [area workflows](../../../.github/workflows/reference-workflow-automation-pull-requests.md) must not set `pull_request.branches` or
+The [area workflows](../../../docs/development/ci/workflows/reference-workflow-automation-pull-requests.md) must not set `pull_request.branches` or
 `branches-ignore`. GitHub docs evaluate `branches: [main]` against `stack.base.ref`, but
 `gh stack submit` opens mid-stack PRs before the stack object exists
 ([github/gh-stack#425](https://github.com/github/gh-stack/issues/425)), so that filter skips those

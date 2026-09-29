@@ -3,7 +3,7 @@ import { createSingleEmbedding, hasCurrentRssFeedItemEmbedding } from '@services
 import type { ViewRssFeedItem } from '@services/rss-feed-items/types'
 
 export const upsertRssFeedItemEmbedding = async (rssFeedItem: ViewRssFeedItem) => {
-  const { content, content_sha256 } = await createRssFeedItemEmbeddingContent(rssFeedItem.data)
+  const { content, content_sha256 } = createRssFeedItemEmbeddingContent(rssFeedItem.data)
 
   if (await hasCurrentRssFeedItemEmbedding(rssFeedItem.id, content_sha256)) {
     return {

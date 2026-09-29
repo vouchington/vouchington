@@ -94,5 +94,5 @@ async function currentUserCanViewPrivatePost(
   )
   const relation = rows[0]
   if (broadcast === 'followers') return relation?.viewer_follows_creator ?? false
-  return Boolean(relation?.viewer_follows_creator && relation.creator_follows_viewer)
+  return (relation?.viewer_follows_creator && relation.creator_follows_viewer) ?? false
 }

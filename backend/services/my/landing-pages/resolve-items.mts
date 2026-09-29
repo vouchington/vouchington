@@ -1,6 +1,6 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import type { ProfileLink } from '../profile-links.mts'
+import type { ProfileLink } from '../profile-links-types.mts'
 import { buildReviewMap } from './shared.mts'
 import { getLandingPageItemRows } from './reads.mts'
 import { getLandingPageReferralLinksByIds, getLandingPageTopicsByIds } from './topic-lookups.mts'

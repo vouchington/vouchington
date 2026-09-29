@@ -31,10 +31,12 @@ export function processExistingEmbeddingReconciliation(
     posts: copyExistingPostEmbeddings,
     rss_feed_items: copyExistingRssFeedItemEmbeddings,
   }[entityType]
+  const enqueueContinuation = (cursor: string) =>
+    enqueueReconcileExistingEmbeddings(entityType, cursor)
   return processReconciliationPage(
     after,
     cursor => copy(cursor === undefined ? {} : { after: cursor }),
-    async cursor => await enqueueReconcileExistingEmbeddings(entityType, cursor),
+    enqueueContinuation,
   )
 }
 

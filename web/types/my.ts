@@ -1,5 +1,5 @@
 import type { BlueskyAccountInfo, OAuthAccountInfo } from './user'
-import type { PageInfo } from './api-responses'
+import type { PageInfo } from '@voucha/types/pagination'
 import type { CurrencyCode, Money, MoneyRange, ScaledMoney } from '@ts-shared/money'
 
 export type { AuthorizedUserOfCardSummary, IndividualCard, UpdateMyCardBody } from './my-cards'

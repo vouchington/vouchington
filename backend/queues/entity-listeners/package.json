@@ -12,6 +12,11 @@
       "types": "./*.mts",
       "import": "./*.mts",
       "default": "./*.mts"
+    },
+    "./*/*": {
+      "types": "./*/*.mts",
+      "import": "./*/*.mts",
+      "default": "./*/*.mts"
     }
   },
   "scripts": {},

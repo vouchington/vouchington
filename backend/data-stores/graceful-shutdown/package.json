@@ -24,5 +24,7 @@
     "@modules/on-error": "workspace:^",
     "@voucha/config": "workspace:^"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "vitest": "^5.0.2"
+  }
 }

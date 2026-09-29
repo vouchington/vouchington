@@ -10,7 +10,7 @@ import { createTestUrlWithHostname } from '@voucha/test-helpers/entities/urls'
 import { getRssFeedItemEmbedsByItems } from './get-rss-feed-item-embeds.mts'
 
 function sideloadSource(url: string): string {
-  const encoded = new URL(url).pathname.split('/sideload/')[1]!
+  const encoded = new URL(url).pathname.split('/sideload/v2/')[1]!
   return Buffer.from(encoded, 'base64url').toString('utf8')
 }
 

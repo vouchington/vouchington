@@ -15,7 +15,7 @@ For Stripe (and any other financial/payment-provider) operation, also fill in:
 | Rolling-version compatibility | Whether an old-API/new-worker (or the reverse) pairing during a rolling deploy stays correct.         |
 | Concurrent-winner resolution  | How two racing attempts for the same logical operation converge on one outcome.                       |
 
-See [`@modules/stripe`](../../backend/modules/stripe/README.md) for the module contract and
+See [`@modules/stripe`](../overview/architecture/backend/modules/stripe/README.md) for the module contract and
 the membership Stripe tests for real-boundary idempotency and cancellation-convergence evidence.
 
 | Column                        | Worked example (`sanitizeCustomer`, `cancelSubscriptionImmediately`)                                                                                                               |

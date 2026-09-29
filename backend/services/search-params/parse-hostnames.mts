@@ -13,6 +13,7 @@ import type { PrivateUser } from '@services/users/types'
 import { currentUserCanFilterHostnameModeration } from '@services/urls-hostnames'
 import { getTopicIdByAnyCached, getTopicIdsByAnyCachedBatch } from '@services/entity-cache'
 import { extractIdentifier, extractIdentifiers, checkShouldReturnEmpty } from './resolve.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 function parseModerationBooleanParam(canFilter: boolean, value: unknown): boolean | undefined {
   if (!canFilter || value === undefined || value === 'null') return undefined
@@ -56,8 +57,8 @@ async function parseHostnamesSearchParamsImpl(
   return {
     shouldReturnEmpty,
     ...paginationOptions,
-    query: query.query ? String(query.query) : undefined,
-    hostname: query.hostname ? String(query.hostname) : undefined,
+    query: query.query ? stringFromUnknown(query.query) : undefined,
+    hostname: query.hostname ? stringFromUnknown(query.hostname) : undefined,
     ...(resolvedTopicId ? { topic_id: resolvedTopicId } : {}),
     ...(resolvedTopicIds.filter((id): id is string => !!id).length > 0
       ? { topic_ids: resolvedTopicIds.filter((id): id is string => !!id) }

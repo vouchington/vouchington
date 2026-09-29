@@ -7,6 +7,7 @@ import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { syncCopyrightRepeatInfringerIncidents } from './repeat-infringer-incidents.mts'
+import { lockAssessmentForm } from './compliance.mts'
 
 export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   noticeId: string
@@ -28,6 +29,13 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   await transaction(sql`/* acceptCopyrightNoticeAndImposeRestriction:placementAdvisoryLock */
     SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(target.placement_id)}, 0))
   `)
+  const { rows: formAuthorities } = await transaction<{
+    copyright_notice_submission_id: string
+  }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:formAuthority */
+    SELECT copyright_notice_submission_id FROM copyright_notice_submission_assessments WHERE id = ${input.assessmentId}
+  `)
+  if (formAuthorities[0])
+    await lockAssessmentForm(formAuthorities[0].copyright_notice_submission_id, transaction)
   const { rows: noticeRows } = await transaction<{ id: string }>(
     sql`/* acceptCopyrightNoticeAndImposeRestriction:lockNotice */
     SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE
@@ -49,9 +57,13 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     source_kind: 'signed_in_form' | 'guest_form' | 'email' | 'staff'
     assessed_by_id: string | null
     substantially_compliant: boolean
+    current_screening_authority: boolean
     has_rejected_form_review: boolean
   }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:lockAssessment */
     SELECT submission.source_kind, assessment.assessed_by_id, assessment.substantially_compliant,
+      assessment.copyright_notice_form_screening_id IS NULL OR fn_current_copyright_form_screening(
+        submission.id, assessment.copyright_notice_form_screening_id
+      ) AS current_screening_authority,
       EXISTS (
         SELECT 1
         FROM copyright_notice_form_intakes intake
@@ -78,9 +90,9 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   assert(assessment.substantially_compliant, 422, 'Copyright notice assessment is not compliant')
   assert(!assessment.has_rejected_form_review, 422, 'Copyright notice form review was rejected')
   assert(
-    assessment.source_kind === 'signed_in_form' || assessment.assessed_by_id !== null,
+    assessment.current_screening_authority,
     422,
-    'Guest and email copyright notices require a human moderator assessment',
+    'Copyright screening authority is not current',
   )
   const { rows: acceptedRows } = await transaction<{
     id: string

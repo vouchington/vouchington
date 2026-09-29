@@ -55,8 +55,8 @@ type PaginationFilterQueryContract<TFilters extends FiltersConfig | undefined> =
       }
     : {})
 
-export type PaginationQueryContract<TConfig extends PaginationConfig> = {
-  readonly [TName in CursorParameterName<TConfig>]: QueryStringContract
-} & {
+export type PaginationQueryContract<TConfig extends PaginationConfig> = Readonly<
+  Record<CursorParameterName<TConfig>, QueryStringContract>
+> & {
   readonly limit: LimitContract<TConfig>
 } & PaginationFilterQueryContract<TConfig['filters']>

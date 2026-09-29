@@ -128,7 +128,7 @@ export async function resolveModerationAppealAccept(
     void enqueueRefreshTopHashtags()
   }
   await Promise.all(postCommitWork)
-  return getModerationAppealAfterMutation(appealId)
+  return await getModerationAppealAfterMutation(appealId)
 }
 
 export async function resolveModerationAppealReduce(
@@ -189,5 +189,5 @@ export async function resolveModerationAppealReduce(
     ),
     maybeResolveCase(updated.case_id, staffUserId),
   ])
-  return getModerationAppealAfterMutation(appealId)
+  return await getModerationAppealAfterMutation(appealId)
 }

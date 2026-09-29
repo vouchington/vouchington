@@ -62,7 +62,7 @@ describe('transient-retry rule docs sync', () => {
 
   it('documents the live fix-main dispatch output name', () => {
     const rerunReference = readFileSync(
-      'ci/transient-retry/reference-how-automatic-reruns-work-on-main-ci-only.md',
+      'docs/development/ci/transient-retry/reference-how-automatic-reruns-work-on-main-ci-only.md',
       'utf8',
     )
 
@@ -73,9 +73,9 @@ describe('transient-retry rule docs sync', () => {
 
   it('documents automatic main recovery as default-off behind the Harness gate', () => {
     const paths = [
-      'ci/transient-retry/README.md',
-      'ci/transient-retry/reference-what-is-the-rule-catalogue.md',
-      'ci/transient-retry/reference-how-automatic-reruns-work-on-main-ci-only.md',
+      'docs/development/ci/transient-retry/README.md',
+      'docs/development/ci/transient-retry/reference-what-is-the-rule-catalogue.md',
+      'docs/development/ci/transient-retry/reference-how-automatic-reruns-work-on-main-ci-only.md',
       'docs/development/reference-ci-classifying-transient-infrastructure-failures.md',
     ]
     const documents = paths.map(path => readFileSync(path, 'utf8'))

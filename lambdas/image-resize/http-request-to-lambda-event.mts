@@ -16,8 +16,8 @@ export function httpRequestToLambdaEvent(req: http.IncomingMessage): APIGatewayP
   const pathParameters: Record<string, string> = {}
   const path = url.pathname
 
-  // Sideload route: /sideload/{base64url} — extract base64url into pathParameters
-  const sideloadMatch = path.match(/^\/sideload\/(.+)$/)
+  // Sideload route: /sideload/v2/{base64url} — extract base64url into pathParameters
+  const sideloadMatch = path.match(/^\/sideload\/v2\/([^/]+)$/)
   if (sideloadMatch) {
     pathParameters.base64url = sideloadMatch[1]
   }

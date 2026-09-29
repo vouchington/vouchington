@@ -43,19 +43,19 @@ app.route('/api/v1/psql/jobs').post(async (ctx: Context) => {
 
   switch (type) {
     case 'runMigrations':
-      enqueueRunMigrations()
+      await enqueueRunMigrations()
       break
     case 'runViews':
-      enqueueRunViews()
+      await enqueueRunViews()
       break
     case 'runConfigDriven':
-      enqueueRunConfigDriven()
+      await enqueueRunConfigDriven()
       break
     case 'createPartitions':
-      enqueueCreatePartitions()
+      await enqueueCreatePartitions()
       break
     case 'cleanupPartitions':
-      enqueueCleanupPartitions()
+      await enqueueCleanupPartitions()
       break
   }
 

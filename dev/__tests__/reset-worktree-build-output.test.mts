@@ -112,8 +112,6 @@ async function makeRepo() {
     'lib/worktree-resource-env.sh',
     'lib/db-name-from-url.sh',
     'lib/git-index-lock.sh',
-    'lib/protected-checkout.sh',
-    'protected-checkout-paths.txt',
   ]) {
     const destination = join(repo, 'dev', relativePath)
     await mkdir(dirname(destination), { recursive: true })

@@ -3,12 +3,12 @@
  * Mirrors backend/services/rss-feed-items/types.mts
  */
 
-import type { PageInfo, PaginatedResponse } from './api-responses/pagination-and-entities'
+import type { PageInfo, PaginatedResult } from '@voucha/types/pagination'
+import type { PaginatedResponse } from './api-responses/paginated-response'
 import type { ElectionVote, Post, PostMetrics } from './posts'
 import type { PublicUser } from './user'
-import type { PaginatedResult } from '@voucha/types/pagination'
 import type { PodcastShow } from './rss-feeds'
-import type { UrlEmbed } from './api-responses/posts-topics-and-feeds'
+import type { UrlEmbed } from './api-responses/url-embed'
 
 interface RssFeedItemData {
   link: string

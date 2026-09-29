@@ -33,11 +33,11 @@ const currentCaches = {
 }
 
 const legacyCaches = {
-  activePlans: new ValkeyCache<string>({
+  activePlans: new ValkeyCache({
     prefix: 'membership_products_active',
     ttlSeconds: ONE_MINUTE_IN_SECONDS,
   }),
-  byStripePriceId: new ValkeyCache<string>({
+  byStripePriceId: new ValkeyCache({
     prefix: 'membership_products_price',
     ttlSeconds: ONE_MINUTE_IN_SECONDS,
   }),

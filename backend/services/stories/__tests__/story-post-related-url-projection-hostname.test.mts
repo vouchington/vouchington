@@ -34,9 +34,9 @@ describe('story post related URL projection hostname ancestry', () => {
       {},
       {
         dispatchStoryPostRelationEffects: async () => {},
-        enqueueOnPostCreated: () => {},
+        enqueueOnPostCreated: () => Promise.resolve(),
         enqueueStoryPostAgent: async () => {},
-        enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => {},
+        enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => Promise.resolve(),
         invalidateStories: async () => {},
       },
     )

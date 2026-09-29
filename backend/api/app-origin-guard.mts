@@ -14,10 +14,7 @@ const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
 type HttpListener = (req: IncomingMessage, res: ServerResponse) => void
 
-export function createOriginGuardedListener(
-  listener: HttpListener,
-  secret: string | undefined = undefined,
-): HttpListener {
+export function createOriginGuardedListener(listener: HttpListener, secret?: string): HttpListener {
   const secretHash = hashWorkerSecret(secret)
   return (req, res) => {
     if (!preflightOriginRequest(req, res, secretHash)) return

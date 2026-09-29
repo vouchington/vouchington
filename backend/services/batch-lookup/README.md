@@ -1,14 +1,3 @@
 # Batch Lookup Helpers
 
-Shared helpers for backend services that accept ordered caller identifiers, query PostgreSQL in
-typed partitions, and return rows scattered back into caller order.
-
-Use these helpers when a batch service needs to preserve duplicate inputs and return `null` for
-missing rows. Domain SQL and row shaping stay in the owning service so table/view ownership remains
-local.
-
-Related conventions:
-
-- [Services README](../README.md)
-- [Services agent rules](../AGENTS.md)
-- [API performance requirements](../../../docs/requirements/platform/api-performance.md)
+The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/services/batch-lookup/README.md).

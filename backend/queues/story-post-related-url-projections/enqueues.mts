@@ -37,8 +37,11 @@ export function enqueueReconcileStoryPostRelatedUrlProjections(
   )
 }
 
-export function enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort(): void {
-  void Promise.resolve(enqueueReconcileStoryPostRelatedUrlProjections()).catch(onError)
+export function enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort(): Promise<void> {
+  return Promise.resolve(enqueueReconcileStoryPostRelatedUrlProjections()).then(
+    () => undefined,
+    onError,
+  )
 }
 
 export function enqueueContinueStoryPostRelatedUrlProjectionReconciliation(): EnqueueReturnType {

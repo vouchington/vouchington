@@ -11,7 +11,7 @@ import type { Community } from '@services/communities/types'
 // Covers the post-auth runtime request-contract validation added for issue #295. Split out of
 // modmail.test.mts so that file stays focused on route behavior. See
 // backend/services/runtime-request-validation for the shared registry these tests exercise, and
-// backend/api/v1/communities/reference-request-validation.md for the 400->422 body-shape change
+// docs/requirements/api/v1/communities/reference-request-validation.md for the 400->422 body-shape change
 // these tests pin.
 describe('POST/PATCH /api/v1/communities/:idOrSlug/modmail - request contract validation', () => {
   let mod: PrivateUser
