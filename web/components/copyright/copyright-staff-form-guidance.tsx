@@ -30,7 +30,6 @@ export function CopyrightStaffFormGuidance({ guidance }: { guidance: CopyrightFo
     <section
       aria-label={COPYRIGHT_AI_GUIDANCE_LABEL}
       className='space-y-2 rounded border border-dashed p-3 text-sm'
-      data-pw='copyright-form-guidance'
     >
       <h4 className='font-medium'>{COPYRIGHT_AI_GUIDANCE_LABEL}</h4>
       <p>{guidance.summary}</p>
