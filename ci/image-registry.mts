@@ -38,13 +38,18 @@ type Json = Record<string, unknown>
 const record = (value: unknown): Json | undefined =>
   value !== null && typeof value === 'object' && !Array.isArray(value) ? (value as Json) : undefined
 
+function hasControlCharacter(value: string): boolean {
+  for (const character of value) if (character < ' ' || character === '\u007f') return true
+  return false
+}
+
 function validateRequest(request: RegistryManifestRequest): void {
   const { password, username } = request.credentials ?? {}
   const validCredential = (value: unknown, max: number) =>
     typeof value === 'string' &&
     value.length > 0 &&
     value.length <= max &&
-    ![...value].some(character => character < ' ' || character === '\u007f')
+    !hasControlCharacter(value)
   if (
     !TARGETS.has(request.target) ||
     (!TAG.test(request.reference) && !REGISTRY_DIGEST.test(request.reference)) ||
@@ -65,9 +70,9 @@ function isMissingManifest(value: unknown): boolean {
   const errors = envelope['errors']
   if (!Array.isArray(errors) || errors.length !== 1) return false
   const error = record(errors[0])
-  return Boolean(
+  return (
     error?.['code'] === 'MANIFEST_UNKNOWN' &&
-    (!Object.hasOwn(error, 'message') || typeof error['message'] === 'string'),
+    (!Object.hasOwn(error, 'message') || typeof error['message'] === 'string')
   )
 }
 

@@ -21,6 +21,12 @@ function jsonResponse(value: unknown, status = 200): Response {
   })
 }
 
+function calledUrl(call: Parameters<RegistryFetch> | undefined): string {
+  const input = call?.[0]
+  if (input === undefined) return ''
+  return input instanceof Request ? input.url : input.toString()
+}
+
 describe('GHCR registry authentication boundary', () => {
   it('binds the validated request before awaiting the token response', async () => {
     let resolveToken: ((response: Response) => void) | undefined
@@ -44,7 +50,7 @@ describe('GHCR registry authentication boundary', () => {
     expect(transport.mock.calls[0]?.[1]?.headers).toEqual({
       authorization: `Basic ${Buffer.from('registry-user:credential-secret').toString('base64')}`,
     })
-    expect(String(transport.mock.calls[1]?.[0])).toBe(
+    expect(calledUrl(transport.mock.calls[1])).toBe(
       `https://ghcr.io/v2/vouchington/api/manifests/sha-${sourceSha}`,
     )
   })
@@ -60,8 +66,8 @@ describe('GHCR registry authentication boundary', () => {
       await expect(
         resolveGhcrManifest({ ...request, target }, { fetch: transport }),
       ).resolves.toBeNull()
-      const tokenUrl = new URL(String(transport.mock.calls[0]?.[0]))
-      const manifestUrl = new URL(String(transport.mock.calls[1]?.[0]))
+      const tokenUrl = new URL(calledUrl(transport.mock.calls[0]))
+      const manifestUrl = new URL(calledUrl(transport.mock.calls[1]))
       expect(tokenUrl.origin).toBe('https://ghcr.io')
       expect(tokenUrl.searchParams.get('scope')).toBe(`repository:vouchington/${target}:pull`)
       expect(manifestUrl.href).toBe(
