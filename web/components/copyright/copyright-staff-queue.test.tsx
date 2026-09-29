@@ -1,6 +1,21 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import type { CopyrightFormGuidance } from '@/types/copyright-notices'
 import { CopyrightStaffQueue } from './copyright-staff-queue'
+
+const guidance: CopyrightFormGuidance = {
+  summary: 'Claims an unlicensed copy of a photograph.',
+  elements: [
+    { element: 'signature', status: 'present', gap: null },
+    { element: 'work_identification', status: 'present', gap: null },
+    { element: 'material_identification', status: 'present', gap: null },
+    { element: 'contact_information', status: 'present', gap: null },
+    { element: 'good_faith_statement', status: 'present', gap: null },
+    { element: 'accuracy_authority_statement', status: 'present', gap: null },
+  ],
+  risk_notes: [],
+  suggested_action: 'approve_intake',
+}
 
 describe('CopyrightStaffQueue', () => {
   it('shows an empty review queue when no cases are waiting', () => {
@@ -60,6 +75,7 @@ describe('CopyrightStaffQueue', () => {
                     state,
                     recommendation: state === 'completed' ? 'invalid_or_spam' : null,
                     rationale: state === 'completed' ? 'Needs review.' : null,
+                    guidance: state === 'completed' ? guidance : null,
                   },
                 },
                 restrictions: [
@@ -120,6 +136,9 @@ describe('CopyrightStaffQueue', () => {
           : `Screening ${state}. Moderator review required.`
       expect(screen.getByText(screeningText)).toBeInTheDocument()
       expect(screen.queryAllByText(/Agent: invalid_or_spam/)).toHaveLength(
+        state === 'completed' ? 1 : 0,
+      )
+      expect(screen.queryAllByText('AI guidance — not a decision')).toHaveLength(
         state === 'completed' ? 1 : 0,
       )
       expect(screen.getByText(/Claimant.*claimant@example\.test/)).toBeInTheDocument()

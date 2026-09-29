@@ -12,6 +12,7 @@ import {
   startCopyrightFormScreening,
   failCopyrightFormScreening,
 } from './form-screening-executions.mts'
+import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 
 describe('human form review with changing screening authority', () => {
   it('allows human approval of a completed-clear intake whose requester was erased', async () => {
@@ -53,6 +54,7 @@ describe('human form review with changing screening authority', () => {
       inputSha256: Buffer.alloc(32, 77),
       recommendation: 'not_obviously_invalid',
       rationale: 'Current clear recommendation.',
+      guidance: testCopyrightFormGuidance,
       promptVersion: 'copyright-form-screening-v2',
       model: 'test-model',
     })

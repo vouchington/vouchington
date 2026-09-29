@@ -16,6 +16,7 @@ import {
   applyNonSpamSignedInCopyrightFormScreening,
 } from './form-screenings.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
+import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 
 async function expectQueuedRestore(noticeId: string) {
   const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
@@ -65,6 +66,7 @@ describe('copyright form moderator fallback', () => {
       inputSha256: Buffer.alloc(32, 9),
       recommendation: 'invalid_or_spam',
       rationale: 'Potential false positive for staff review.',
+      guidance: testCopyrightFormGuidance,
       promptVersion: 'copyright-form-screening-v2',
       model: 'test-model',
     })
@@ -144,6 +146,7 @@ describe('copyright form moderator fallback', () => {
       inputSha256: Buffer.alloc(32, 10),
       recommendation: 'not_obviously_invalid',
       rationale: 'No obvious spam markers.',
+      guidance: testCopyrightFormGuidance,
       promptVersion: 'copyright-form-screening-v2',
       model: 'test-model',
     })
@@ -201,6 +204,7 @@ describe('copyright form moderator fallback', () => {
       inputSha256: Buffer.alloc(32, 11),
       recommendation: 'not_obviously_invalid',
       rationale: 'No obvious spam markers.',
+      guidance: testCopyrightFormGuidance,
       promptVersion: 'copyright-form-screening-v2',
       model: 'test-model',
     })

@@ -8,8 +8,9 @@ import {
 import * as openaiProvider from '@modules/openai-utils/create-response'
 import * as promptSanitizer from '@jongleberry/vurst-prompt'
 import { readTestCopyrightStaffScreening } from '@voucha/test-helpers/data-stores/psql/copyright-screening-executions'
+import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { createCopyrightFormIntake } from '@services/copyright-notices'
-import { parseCopyrightFormScreeningOutput, runCopyrightFormScreeningAgent } from './run.mts'
+import { runCopyrightFormScreeningAgent } from './run.mts'
 
 vi.mock(import('@modules/openai-utils/create-response'), async importOriginal => ({
   ...(await importOriginal()),
@@ -26,62 +27,68 @@ vi.mock(import('@jongleberry/vurst-prompt'), async importOriginal => {
   }
 })
 
-describe('copyright form screening output', () => {
+const screeningOutput = {
+  recommendation: 'not_obviously_invalid',
+  rationale: 'No obvious spam markers.',
+  guidance: testCopyrightFormGuidance,
+}
+
+function mockProviderText(text: string) {
+  return vi.spyOn(openaiProvider, 'createOpenAIResponse').mockResolvedValue({
+    id: `resp-${crypto.randomUUID()}`,
+    output: [{ type: 'message', status: 'completed', content: [{ type: 'output_text', text }] }],
+  } as never)
+}
+
+describe('copyright form screening agent', () => {
   afterEach(() => vi.restoreAllMocks())
-  it('accepts the not-obviously-invalid anti-spam recommendation', () => {
-    expect(
-      parseCopyrightFormScreeningOutput(
-        JSON.stringify({
-          recommendation: 'not_obviously_invalid',
-          rationale: 'No obvious spam markers.',
-        }),
-      ),
-    ).toEqual({
-      recommendation: 'not_obviously_invalid',
-      rationale: 'No obvious spam markers.',
-    })
-  })
 
-  it('rejects a recommendation outside the anti-spam vocabulary', () => {
-    expect(() => parseCopyrightFormScreeningOutput('{')).toThrow(
-      'Invalid copyright form screening JSON',
-    )
-    expect(() =>
-      parseCopyrightFormScreeningOutput(
-        JSON.stringify({ recommendation: 'takedown', rationale: 'Looks valid.' }),
-      ),
-    ).toThrow('Invalid copyright form screening output')
-  })
-
-  it('records a non-spam assessment for a persisted structured form', async () => {
+  it('persists the recommendation and staff-visible guidance once per structured form', async () => {
     const intake = await createScreeningForm()
-    const createResponse = vi.spyOn(openaiProvider, 'createOpenAIResponse').mockResolvedValue({
-      id: `resp-${crypto.randomUUID()}`,
-      output: [
-        {
-          type: 'message',
-          status: 'completed',
-          content: [
-            {
-              type: 'output_text',
-              text: JSON.stringify({
-                recommendation: 'not_obviously_invalid',
-                rationale: 'No obvious spam markers.',
-              }),
-            },
-          ],
-        },
-      ],
-    } as never)
+    const createResponse = mockProviderText(JSON.stringify(screeningOutput))
 
     await expect(
       runCopyrightFormScreeningAgent(intake.intake.copyright_notice_submission_id),
     ).resolves.toBe('not_obviously_invalid')
     expect(createResponse).toHaveBeenCalledOnce()
     await expect(
+      readTestCopyrightStaffScreening(intake.intake.copyright_notice_id),
+    ).resolves.toEqual({ state: 'completed', ...screeningOutput })
+    await expect(
       runCopyrightFormScreeningAgent(intake.intake.copyright_notice_submission_id),
     ).resolves.toBeNull()
     expect(createResponse).toHaveBeenCalledOnce()
+  })
+
+  it('sends structured form fields without claimant contact, email, or signature values', async () => {
+    const intake = await createScreeningForm({
+      claimantContact: '742 Sentinel Terrace, Springfield · +1 555 0142',
+      claimantEmail: 'sentinel-claimant@example.test',
+      electronicSignature: '/s/ Sentinel Signer',
+    })
+    mockProviderText(JSON.stringify(screeningOutput))
+    const sanitize = vi.mocked(promptSanitizer.sanitizePromptInjection)
+    sanitize.mockClear()
+
+    await runCopyrightFormScreeningAgent(intake.intake.copyright_notice_submission_id)
+
+    expect(sanitize).toHaveBeenCalledOnce()
+    const serialized = sanitize.mock.calls[0]![0]
+    expect(JSON.parse(serialized)).toEqual({
+      source_kind: 'signed_in_form',
+      jurisdiction: 'us_dmca',
+      statutory_fields_complete: true,
+      claimant_display_name: 'Claimant',
+      work_description: 'A photograph',
+      hosted_use_urls: [expect.stringMatching(/^https:\/\/voucha\.ai\/posts\//)],
+      has_claimant_contact: true,
+      has_claimant_email: true,
+      has_electronic_signature: true,
+      good_faith_belief: true,
+      accuracy_authority_under_penalty_of_perjury: true,
+    })
+    for (const secret of ['Sentinel Terrace', '555 0142', 'sentinel-claimant', 'Sentinel Signer'])
+      expect(serialized).not.toContain(secret)
   })
 
   it.each(['provider', 'sanitizer', 'parse'] as const)(
@@ -94,32 +101,20 @@ describe('copyright form screening output', () => {
         vi.spyOn(promptSanitizer, 'sanitizePromptInjection').mockRejectedValue(
           new Error('Private sanitizer error'),
         )
-      if (kind === 'parse')
-        provider.mockResolvedValue({
-          id: `resp-${crypto.randomUUID()}`,
-          output: [
-            {
-              type: 'message',
-              status: 'completed',
-              content: [{ type: 'output_text', text: '{' }],
-            },
-          ],
-        } as never)
+      if (kind === 'parse') mockProviderText('{')
       await expect(
         runCopyrightFormScreeningAgent(intake.intake.copyright_notice_submission_id),
       ).rejects.toThrow(/Private|Invalid copyright form screening/)
       await expect(
         readTestCopyrightStaffScreening(intake.intake.copyright_notice_id),
-      ).resolves.toEqual({
-        state: 'failed',
-        recommendation: null,
-        rationale: null,
-      })
+      ).resolves.toEqual({ state: 'failed', recommendation: null, rationale: null, guidance: null })
     },
   )
 })
 
-async function createScreeningForm() {
+async function createScreeningForm(
+  claimant: { claimantContact?: string; claimantEmail?: string; electronicSignature?: string } = {},
+) {
   const user = await createTestUser()
   const postId = await insertTestPost({
     title: `form agent ${crypto.randomUUID()}`,
@@ -142,6 +137,7 @@ async function createScreeningForm() {
       goodFaithBelief: true,
       accuracyAuthorityUnderPenaltyOfPerjury: true,
       electronicSignature: 'Claimant',
+      ...claimant,
       claimantTargets: [{ postId, imageId, hostedUseUrl: `https://voucha.ai/posts/${postId}` }],
     },
   })

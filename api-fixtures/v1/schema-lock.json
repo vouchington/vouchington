@@ -274,7 +274,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "fixtureIds": ["web.copyright.staff-queue.default"],
-      "hash": "0dbcc8511172f40e05a0a2866bc42b213aa55c35514a29ba667b51c05de9c5f2"
+      "hash": "b6207b403ed5e5d8298db86cedcfb1cff3c2183c34450850f429fcfa992035fe"
     },
     "GET:/api/v1/currencies": {
       "fixtureIds": ["shared.currencies.list.default"],
@@ -2666,7 +2666,7 @@
     },
     "web.copyright.staff-queue.default": {
       "fixtureIds": ["web.copyright.staff-queue.default"],
-      "hash": "417a96ad52ff3a593c26c294c1a949b8a06f07ef2ec03517b80d601c7b5ac13d"
+      "hash": "c9ee417e5a91e7301aa7dd40b4242f7b84f33ae27cd0983db7f8758d6f40f974"
     },
     "web.growth-metrics.default": {
       "fixtureIds": ["web.growth-metrics.default"],

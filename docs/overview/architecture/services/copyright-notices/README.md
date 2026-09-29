@@ -59,6 +59,10 @@ member projection.
 The current screening execution, rather than the newest result UUID or any historical clear result,
 owns automatic authority. See [current screening authority](../../../../requirements/moderation/COPYRIGHT-NOTICES.md#current-screening-authority)
 for the admission boundary and [execution services](../../../../../backend/services/copyright-notices/form-screening-executions.mts) for token fencing.
+Each screening row also stores encrypted moderator guidance (summary, 512(c)(3) element checklist,
+risk notes, and suggested action) validated by the shared
+[guidance parser](../../../../../backend/services/copyright-notices/form-screening-guidance.mts) on
+write and on the staff read. No predicate reads it; it is staff-visible advice, not authority.
 Final restriction admission takes placement, form, notice, and assessment locks in that order.
 Human approval commits a genuine human assessment and enforcement request with its intake review.
 Human provenance is the absence of a screening FK, including after the reviewer account is erased.

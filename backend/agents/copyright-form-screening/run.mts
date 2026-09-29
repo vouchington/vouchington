@@ -1,11 +1,5 @@
 import { createHash } from 'node:crypto'
-import {
-  callRecordingAgentResponseUsage,
-  parseLLMJsonResponse,
-  createOpenAIResponse,
-  DEFAULT_AGENT_MODEL,
-  QUEUED_BACKGROUND_RETRY_POLICY,
-} from '@agents/_shared'
+import { callRecordingAgentResponseUsage, DEFAULT_AGENT_MODEL } from '@agents/_shared'
 import { extractTextFromOpenAIResponse } from '@modules/openai-utils'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import {
@@ -13,11 +7,15 @@ import {
   completeCopyrightFormScreening,
   failCopyrightFormScreening,
 } from '@services/copyright-notices/form-screening-executions'
-import { getCopyrightFormIntakeForScreening } from '@services/copyright-notices/form-screening-intake'
+import {
+  type CopyrightFormIntakeForScreening,
+  getCopyrightFormIntakeForScreening,
+} from '@services/copyright-notices/form-screening-intake'
+import { callCopyrightFormScreeningModel } from './model.mts'
+import { parseCopyrightFormScreeningOutput } from './output.mts'
 
-const PROMPT =
-  'This is only an anti-spam gate for an already structured copyright form. Return invalid_or_spam only for obvious spam or obvious invalidity; otherwise return not_obviously_invalid, including when legal merits are uncertain. Return JSON {"recommendation":"not_obviously_invalid"|"invalid_or_spam","rationale":"..."}. Do not decide legal ownership or take action.'
-const PROMPT_VERSION = 'copyright-form-screening-v2'
+const PROMPT_VERSION = 'copyright-form-screening-v3'
+
 export async function runCopyrightFormScreeningAgent(
   submissionId: string,
 ): Promise<'not_obviously_invalid' | 'invalid_or_spam' | null> {
@@ -26,30 +24,15 @@ export async function runCopyrightFormScreeningAgent(
   const attempt = await claimCopyrightFormScreening(intake.intakeId)
   if (!attempt) return null
   try {
-    const input = JSON.stringify({
-      statutory_fields_complete: intake.statutoryFieldsComplete,
-      work_description: intake.workDescription,
-    })
-    const safeInput = wrapExternalContent(await sanitizePromptInjection(input), {
-      source: 'copyright_form',
-      contentType: 'copyright-complaint',
-    })
+    const safeInput = wrapExternalContent(
+      await sanitizePromptInjection(serializeCopyrightFormScreeningInput(intake)),
+      { source: 'copyright_form', contentType: 'copyright-complaint' },
+    )
     const response = await callRecordingAgentResponseUsage(
-      () =>
-        createOpenAIResponse(
-          {
-            model: DEFAULT_AGENT_MODEL,
-            instructions: PROMPT,
-            input: safeInput,
-            metadata: { type: 'copyright-form-screening' },
-            service_tier: 'flex',
-            text: { format: { type: 'json_object' } },
-          } as Parameters<typeof createOpenAIResponse>[0],
-          { maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries },
-        ),
+      () => callCopyrightFormScreeningModel(safeInput),
       { agentSlug: 'copyright-form-screening' },
     )
-    const { recommendation, rationale } = parseCopyrightFormScreeningOutput(
+    const { recommendation, rationale, guidance } = parseCopyrightFormScreeningOutput(
       extractTextFromOpenAIResponse(response),
     )
     const result = await completeCopyrightFormScreening(attempt, {
@@ -57,6 +40,7 @@ export async function runCopyrightFormScreeningAgent(
       inputSha256: createHash('sha256').update(safeInput).digest(),
       recommendation,
       rationale,
+      guidance,
       promptVersion: PROMPT_VERSION,
       model: DEFAULT_AGENT_MODEL,
     })
@@ -67,23 +51,19 @@ export async function runCopyrightFormScreeningAgent(
   }
 }
 
-export function parseCopyrightFormScreeningOutput(text: string): {
-  recommendation: 'not_obviously_invalid' | 'invalid_or_spam'
-  rationale: string
-} {
-  let output: { recommendation?: unknown; rationale?: unknown } | null
-  try {
-    output = parseLLMJsonResponse<{ recommendation?: unknown; rationale?: unknown }>(text)
-  } catch {
-    throw new TypeError('Invalid copyright form screening JSON')
-  }
-  const recommendation = output?.recommendation
-  const rationale = output?.rationale
-  if (
-    (recommendation !== 'not_obviously_invalid' && recommendation !== 'invalid_or_spam') ||
-    typeof rationale !== 'string' ||
-    rationale.length > 10_000
-  )
-    throw new TypeError('Invalid copyright form screening output')
-  return { recommendation, rationale }
+/** Only structured, non-contact form fields; contact, email, and signature values stay out. */
+function serializeCopyrightFormScreeningInput(intake: CopyrightFormIntakeForScreening): string {
+  return JSON.stringify({
+    source_kind: intake.sourceKind,
+    jurisdiction: intake.jurisdiction,
+    statutory_fields_complete: intake.statutoryFieldsComplete,
+    claimant_display_name: intake.claimantDisplayName,
+    work_description: intake.workDescription,
+    hosted_use_urls: intake.hostedUseUrls,
+    has_claimant_contact: intake.hasClaimantContact,
+    has_claimant_email: intake.hasClaimantEmail,
+    has_electronic_signature: intake.hasElectronicSignature,
+    good_faith_belief: intake.goodFaithBelief,
+    accuracy_authority_under_penalty_of_perjury: intake.accuracyAuthorityUnderPenaltyOfPerjury,
+  })
 }

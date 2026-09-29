@@ -34,6 +34,7 @@ import {
 import { claimCopyrightEnforcementRequest } from './enforcement-request-claim.mts'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
+import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 
 describe('current copyright form screening execution', () => {
   useAutomaticProvisionalWithholding()
@@ -66,6 +67,7 @@ describe('current copyright form screening execution', () => {
       state: 'pending',
       recommendation: null,
       rationale: null,
+      guidance: null,
     })
     const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
     expect(aggregate?.restrictions.find(item => item.id === restriction.id)?.lifted_at).toBeNull()
@@ -80,6 +82,7 @@ describe('current copyright form screening execution', () => {
       inputSha256: Buffer.alloc(32, 99),
       recommendation: 'invalid_or_spam',
       rationale: 'Latest screening is invalid.',
+      guidance: testCopyrightFormGuidance,
       promptVersion: 'copyright-form-screening-v3',
       model: 'test-model',
     })
@@ -108,6 +111,7 @@ describe('current copyright form screening execution', () => {
         state,
         recommendation: null,
         rationale: null,
+        guidance: null,
       })
       expect(await readTestPendingCopyrightAgentDispatches(submissionId)).toEqual([
         { kind: 'form-screening', submissionId },
@@ -138,6 +142,7 @@ describe('current copyright form screening execution', () => {
       inputSha256: Buffer.alloc(32, 1),
       recommendation: 'invalid_or_spam' as const,
       rationale: 'Invalid current screen.',
+      guidance: testCopyrightFormGuidance,
       promptVersion: 'copyright-form-screening-v2',
       model: 'test-model',
     }
@@ -178,6 +183,7 @@ describe('current copyright form screening execution', () => {
         inputSha256: Buffer.alloc(32, 1),
         recommendation: 'not_obviously_invalid',
         rationale: 'Late output.',
+        guidance: testCopyrightFormGuidance,
         promptVersion: 'copyright-form-screening-v2',
         model: 'test-model',
       }),
@@ -238,6 +244,7 @@ describe('current copyright form screening execution', () => {
       inputSha256: Buffer.alloc(32, 2),
       recommendation: 'not_obviously_invalid',
       rationale: 'Current clear.',
+      guidance: testCopyrightFormGuidance,
       promptVersion: 'copyright-form-screening-v2',
       model: 'test-model',
     })

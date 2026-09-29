@@ -16,6 +16,7 @@ import {
   applyNonSpamSignedInCopyrightFormScreening,
 } from './form-screenings.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
+import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 
 async function createRestrictedNotice(poster: Awaited<ReturnType<typeof createTestUser>>) {
   const claimant = await createTestUser()
@@ -48,6 +49,7 @@ async function createRestrictedNotice(poster: Awaited<ReturnType<typeof createTe
     inputSha256: Buffer.alloc(32, 4),
     recommendation: 'not_obviously_invalid',
     rationale: 'No obvious spam or invalidity.',
+    guidance: testCopyrightFormGuidance,
     promptVersion: 'copyright-form-screening-v2',
     model: 'test-model',
   })

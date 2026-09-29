@@ -26,6 +26,7 @@ import {
 } from './form-screenings.mts'
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
+import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 
 async function expectFormEffect(submissionId: string): Promise<void> {
   await expect(readTestPendingCopyrightAgentDispatches(submissionId)).resolves.toEqual([
@@ -89,6 +90,7 @@ describe('copyright form-screening recovery', () => {
       inputSha256: Buffer.alloc(32, 99),
       recommendation: 'invalid_or_spam',
       rationale: 'The latest input is invalid.',
+      guidance: testCopyrightFormGuidance,
       promptVersion: 'copyright-form-screening-v3',
       model: 'test-model',
     })
@@ -125,6 +127,7 @@ describe('copyright form-screening recovery', () => {
       inputSha256: Buffer.alloc(32, 98),
       recommendation: 'not_obviously_invalid',
       rationale: 'A later clear screening supersedes the first.',
+      guidance: testCopyrightFormGuidance,
       promptVersion: 'copyright-form-screening-v3',
       model: 'test-model',
     })

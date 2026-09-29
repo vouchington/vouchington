@@ -21,6 +21,7 @@ import {
 } from './form-screenings.mts'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
+import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 
 describe('email appeal review', () => {
   useAutomaticProvisionalWithholding()
@@ -61,6 +62,7 @@ describe('email appeal review', () => {
       inputSha256: Buffer.alloc(32, 12),
       recommendation: 'not_obviously_invalid',
       rationale: 'No obvious spam or invalidity.',
+      guidance: testCopyrightFormGuidance,
       promptVersion: 'copyright-form-screening-v2',
       model: 'test-model',
     })
