@@ -1,53 +1,12 @@
+import {
+  MockBrowserContext,
+  createPage,
+  createTestInfo,
+} from '../../test-helpers/browser-issue-monitor-fixtures.mts'
+
 import { describe, expect, it, vi } from 'vitest'
 import type { BrowserContext, ConsoleMessage, Page, TestInfo } from '@playwright/test'
 import { BrowserIssueMonitor } from '../browser-errors.mts'
-
-type Listener = (...args: never[]) => void
-
-class MockBrowserContext {
-  readonly listeners = new Map<string, Set<Listener>>()
-
-  emit(event: string, ...args: never[]) {
-    for (const listener of this.listeners.get(event) ?? []) {
-      listener(...args)
-    }
-  }
-
-  off(event: string, listener: Listener) {
-    this.listeners.get(event)?.delete(listener)
-    return this
-  }
-
-  on(event: string, listener: Listener) {
-    const listeners = this.listeners.get(event) ?? new Set<Listener>()
-    listeners.add(listener)
-    this.listeners.set(event, listeners)
-    return this
-  }
-
-  pages() {
-    return []
-  }
-}
-
-function createTestInfo() {
-  const attachments: { body: Buffer; contentType: string; name: string }[] = []
-  const testInfo = {
-    attach: vi.fn<(...args: Array<never>) => unknown>(
-      (name: string, options: { body: Buffer; contentType: string }) => {
-        attachments.push({ name, ...options })
-        return Promise.resolve()
-      },
-    ),
-  } as unknown as TestInfo
-  return { attachments, testInfo }
-}
-
-function createPage(url = 'http://localhost:8787/path') {
-  return {
-    url: () => url,
-  } as Page
-}
 
 function createConsoleMessage(
   overrides: Partial<{
