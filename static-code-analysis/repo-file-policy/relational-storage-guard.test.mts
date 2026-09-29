@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
+import type { SchemaSnapshot, SchemaTableSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
 
 import { checkRelationalStorage } from './relational-storage-guard.mts'
 import { emptySchemaSnapshot, plainSnapshotTable } from './schema-snapshot-test-fixtures.mts'
@@ -21,6 +21,18 @@ function column(type: string, generatedExpression: string | null = null) {
   } as const
 }
 
+function foreignKey(columnName: string): SchemaTableSnapshot['foreignKeys'][string] {
+  return {
+    columns: [columnName],
+    definition: `FOREIGN KEY (${columnName}) REFERENCES owners (id)`,
+    referencedTable: 'owners',
+    referencedColumns: ['id'],
+    onUpdate: 'no action',
+    onDelete: 'restrict',
+    validated: true,
+  }
+}
+
 function snapshot(
   tableName: string,
   columns: Record<string, ReturnType<typeof column>>,
@@ -33,13 +45,13 @@ function snapshot(
 
 describe('relational storage guard', () => {
   it.each(['json', 'jsonb', 'json[]', 'jsonb[]', 'json[][]', 'jsonb[][]'])(
-    'rejects undeclared %s documents',
+    'accepts %s documents without typing each field',
     type => {
       expect(
         checkRelationalStorage(snapshot('new_records', { facts: column(type) }), {
           enforceCatalogFreshness: false,
         }),
-      ).toEqual([expect.stringContaining('new_records.facts: JSON storage')])
+      ).toEqual([])
     },
   )
 
@@ -52,7 +64,7 @@ describe('relational storage guard', () => {
     ).toEqual([])
   })
 
-  it('rejects new business JSON, UUID arrays and reference-like UUIDs without FKs', () => {
+  it('accepts a JSON document and rejects UUID arrays and reference-like UUIDs without FKs', () => {
     const result = checkRelationalStorage(
       snapshot('new_records', {
         facts: column('jsonb'),
@@ -62,9 +74,9 @@ describe('relational storage guard', () => {
       }),
       { enforceCatalogFreshness: false },
     )
+    expect(result.join('\n')).not.toContain('new_records.facts')
     expect(result).toEqual(
       expect.arrayContaining([
-        expect.stringContaining('new_records.facts'),
         expect.stringContaining('new_records.topic_ids'),
         expect.stringContaining('new_records.topic_id'),
         expect.stringContaining('new_records.target_uuid'),
@@ -112,16 +124,10 @@ describe('relational storage guard', () => {
       entity_id: column('uuid', 'COALESCE(topic_id, rss_feed_id, community_id)'),
     })
     for (const name of ['topic_id', 'rss_feed_id', 'community_id'] as const) {
-      value.tables.curated_aside_items.foreignKeys[`${name}_fk`] = {
-        columns: [name],
-        definition: `FOREIGN KEY (${name}) REFERENCES owners (id)`,
-        referencedTable: 'owners',
-        referencedColumns: ['id'],
-        onUpdate: 'no action',
-        onDelete: 'restrict',
-        validated: true,
-      }
+      value.tables.curated_aside_items.foreignKeys[`${name}_fk`] = foreignKey(name)
     }
+    value.tables.curated_aside_items.checkConstraints.chk_curated_aside_items__one_target =
+      'CHECK ((num_nonnulls(topic_id, rss_feed_id, community_id) = 1))'
     expect(checkRelationalStorage(value, { enforceCatalogFreshness: false })).toEqual([])
     value.tables.curated_aside_items.columns.entity_id.generatedExpression =
       'COALESCE(gen_random_uuid(), topic_id)'
@@ -158,13 +164,13 @@ describe('relational storage guard', () => {
     ).toEqual([])
   })
 
-  it('rejects revived copyright lifecycle JSON', () => {
+  it('accepts copyright lifecycle JSON', () => {
     expect(
       checkRelationalStorage(
         snapshot('copyright_notice_lifecycle_events', { metadata: column('jsonb') }),
         { enforceCatalogFreshness: false },
       ),
-    ).toEqual([expect.stringContaining('copyright_notice_lifecycle_events.metadata')])
+    ).toEqual([])
   })
 
   it('flags stale catalog entries and accepts exact reviewed opaque JSON', () => {
@@ -208,15 +214,20 @@ describe('relational storage guard', () => {
 describe('repo-file-policy synthetic schema integration', () => {
   const fixture = setupRepoFilePolicyTest()
 
-  it('accepts an injected empty schema while rejecting a new JSON column', async () => {
+  it('accepts an injected JSON document and rejects a new UUID array', async () => {
     const repo = await fixture.makeRepo()
     await expect(fixture.run(repo)).resolves.toEqual({ stdout: 'All checks passed.' })
     fixture.setSnapshotTable(repo, 'new_records', {
       ...plainSnapshotTable(),
       columns: { facts: column('jsonb') },
     })
+    await expect(fixture.run(repo)).resolves.toEqual({ stdout: 'All checks passed.' })
+    fixture.setSnapshotTable(repo, 'new_records', {
+      ...plainSnapshotTable(),
+      columns: { topic_ids: column('uuid[]') },
+    })
     await expect(fixture.run(repo)).rejects.toMatchObject({
-      stdout: expect.stringContaining('new_records.facts'),
+      stdout: expect.stringContaining('new_records.topic_ids'),
     })
   })
 })
