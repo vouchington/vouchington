@@ -77,7 +77,7 @@ $$;
 
 -- Serves the composite foreign key to relation__post__related__url (subject_id, id), which is
 -- added by the config-driven entity-relation step because that table does not exist yet.
-CREATE INDEX IF NOT EXISTS idx_story_post_related_url_projection_relation_mutations__relation
+CREATE INDEX IF NOT EXISTS idx_story_post_url_projection_relation_mutations__relation
   ON story_post_related_url_projection_relation_mutations (post_id, relation_id);
 CREATE INDEX IF NOT EXISTS idx_story_post_related_url_projection_receipts__url_id
   ON story_post_related_url_projection_receipts (url_id);
