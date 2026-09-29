@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { execFile as execFileCb } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFileCb)
@@ -127,7 +126,7 @@ async function main(): Promise<void> {
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   main().catch((error: unknown) => {
     process.stderr.write(
       `check-blackboard failed: ${error instanceof Error ? error.message : String(error)}\n`,

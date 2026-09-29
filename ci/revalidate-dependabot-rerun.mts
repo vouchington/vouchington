@@ -1,5 +1,4 @@
 import { execFile as execFileCallback } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 import { assessSourceRunState, FAILED_CONCLUSIONS } from './source-run-assessment.mts'
@@ -153,7 +152,7 @@ export async function runDependabotRerun(
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   process.exitCode = await runDependabotRerun({
     EVENT_HEAD_SHA: process.env.EVENT_HEAD_SHA,
     GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY,

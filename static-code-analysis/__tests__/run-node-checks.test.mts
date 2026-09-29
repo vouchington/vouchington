@@ -98,8 +98,8 @@ describe('run-node-checks', () => {
     expect(exits).toEqual([2])
   })
 
-  it('reports passing CLI checks and tests canonical entrypoint detection', async () => {
-    const { isInvokedAsScript, runNodeChecksCli } = await import('../run-node-checks-cli.mts')
+  it('reports passing CLI checks', async () => {
+    const { runNodeChecksCli } = await import('../run-node-checks-cli.mts')
     const stdout: string[] = []
     await runNodeChecksCli({
       args: ['--checks', 'repo-file-policy'],
@@ -111,12 +111,5 @@ describe('run-node-checks', () => {
       run: () => Promise.resolve([{ errors: [], name: 'repo-file-policy' }]),
     })
     expect(stdout).toEqual(['[repo-file-policy] passed.'])
-    expect(isInvokedAsScript('/alias', '/real', () => '/same')).toBe(true)
-    expect(isInvokedAsScript(undefined, '/real')).toBe(false)
-    expect(
-      isInvokedAsScript('/missing', '/real', () => {
-        throw new Error('missing')
-      }),
-    ).toBe(false)
   })
 })

@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-import { fileURLToPath } from 'node:url'
-
 import { runCompose } from './retrospective-save/compose.mts'
 import { runCheck } from './retrospective-save/check.mts'
 import { RetrospectiveSaveError, runSave } from './retrospective-save/save.mts'
@@ -89,7 +87,7 @@ async function main(): Promise<void> {
   process.stdout.write(`${await runSave(rest)}\n`)
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   main().catch((err: unknown) => {
     process.stderr.write(`Error: ${err instanceof Error ? err.message : String(err)}\n`)
     if (err instanceof RetrospectiveSaveError) printReplayCommand(err)

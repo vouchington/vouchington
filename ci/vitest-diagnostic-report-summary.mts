@@ -1,5 +1,3 @@
-import { pathToFileURL } from 'node:url'
-
 import {
   formatDiagnosticReportSummaries as formatPublishedDiagnosticReportSummaries,
   readDiagnosticReportSummaries as readPublishedDiagnosticReportSummaries,
@@ -30,6 +28,6 @@ export function readDiagnosticReportSummaries(
   return readPublishedDiagnosticReportSummaries(directory, options)
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (import.meta.main) {
   process.stdout.write(formatDiagnosticReportSummaries(readDiagnosticReportSummaries()))
 }

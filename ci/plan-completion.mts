@@ -1,5 +1,4 @@
 import { execFile as execFileCallback } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 import { assessPlanCompletion } from '../dev/pr-description/plan-completion.mts'
@@ -128,7 +127,7 @@ export async function runPlanCompletionSnapshot({
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   const repository = process.env.GITHUB_REPOSITORY
   if (!repository) throw new Error('GITHUB_REPOSITORY is required')
   await runPlanCompletionSnapshot({ repository })

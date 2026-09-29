@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 // Full LCOV is the sole persisted coverage artifact family. Either upload attempt must succeed.
 
-import { fileURLToPath } from 'node:url'
-
 const STEP_OUTCOMES = new Set(['success', 'failure', 'cancelled', 'skipped'])
 export function artifactUploadOutcomeExitCode(
   family: string,
@@ -21,7 +19,7 @@ export function artifactUploadOutcomeExitCode(
   return first === 'success' || retry === 'success' ? 0 : 1
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   const [family = '', suite = '', first = '', retry = '', ...extra] = process.argv.slice(2)
   const exitCode =
     extra.length === 0 ? artifactUploadOutcomeExitCode(family, suite, first, retry) : 2

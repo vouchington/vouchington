@@ -1,6 +1,4 @@
 import { execFile } from 'node:child_process'
-import { realpathSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
@@ -40,18 +38,7 @@ export function labelDescription(name: string): string {
   return priorityMetadata(name)?.description ?? `Repository issue classification: ${name}.`
 }
 
-function isDirectInvocation(): boolean {
-  try {
-    return Boolean(
-      process.argv[1] &&
-      realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)),
-    )
-  } catch {
-    return false
-  }
-}
-
-if (isDirectInvocation()) {
+if (import.meta.main) {
   const args = process.argv.slice(2)
   const help = args[0] === '-h' || args[0] === '--help'
   if (help && args.length === 1) {

@@ -1,5 +1,3 @@
-import { realpathSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { parseArgs as nodeParseArgs } from 'node:util'
 
 import type { CheckName, CheckResult } from './node-check-types.mts'
@@ -68,18 +66,5 @@ export async function runNodeChecksCli(options: NodeChecksCliOptions): Promise<v
   } catch (error) {
     options.error(error instanceof Error ? error.message : String(error))
     options.exit(2)
-  }
-}
-
-export function isInvokedAsScript(
-  argvPath = process.argv[1],
-  modulePath = fileURLToPath(import.meta.url),
-  canonicalize: (path: string) => string = realpathSync,
-): boolean {
-  if (!argvPath) return false
-  try {
-    return canonicalize(argvPath) === canonicalize(modulePath)
-  } catch {
-    return false
   }
 }
