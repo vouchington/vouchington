@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { mockOnError } from '@/test-helpers/app/identity-verification/identity-verification-content.mock-support'
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -7,53 +7,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { IdentityVerificationContent } from '../identity-verification-content'
 
 import { ApiError } from '@/lib/api/error'
-
-const { mockOnError, mockOnSuccess } = vi.hoisted(() => ({
-  mockOnError: vi.fn<VitestLooseMock>(),
-  mockOnSuccess: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(import('@/lib/api/client/identity-verification'), () => ({
-  startMyIdentityVerificationCheckout: vi.fn<VitestLooseMock>(),
-  updateMyIdentityVerificationDisplayPreferences: vi.fn<VitestLooseMock>(),
-  getMyIdentityVerificationSessionUrl: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(import('@/lib/on-error'), () => ({
-  default: mockOnError,
-  onSuccess: mockOnSuccess,
-}))
-
-vi.mock(
-  import('@/components/ui/select'),
-  () =>
-    ({
-      Select: ({
-        onValueChange,
-        value,
-        children,
-      }: {
-        children: ReactNode
-        onValueChange?: (value: string) => void
-        value?: string
-      }) => (
-        <select
-          aria-label='name-display-select'
-          data-testid='name-display-select'
-          value={value}
-          onChange={event => onValueChange?.(event.target.value)}
-        >
-          {children}
-        </select>
-      ),
-      SelectContent: ({ children }: { children: ReactNode }) => children,
-      SelectItem: ({ children, value }: { children: ReactNode; value: string }) => (
-        <option value={value}>{children}</option>
-      ),
-      SelectTrigger: () => null,
-      SelectValue: () => null,
-    }) as unknown as typeof import('@/components/ui/select'),
-)
 
 import { startMyIdentityVerificationCheckout } from '@/lib/api/client/identity-verification'
 
