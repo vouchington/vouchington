@@ -14,6 +14,80 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
   ...overrides,
 })
 
+const cancelledWebRetry = (input: {
+  jobNames: readonly string[]
+  jobConclusions: ReadonlyArray<readonly [string, string]>
+  failedJobNames: readonly string[]
+}): WorkflowRunContext =>
+  makeCtx({
+    workflowName: 'Web',
+    conclusion: 'cancelled',
+    runAttempt: 2,
+    jobNames: [...input.jobNames],
+    jobConclusions: new Map(input.jobConclusions),
+    failedJobNames: [...input.failedJobNames],
+  })
+
+const detectChangesCancelledJobNames = ['detect-changes', 'web'] as const
+const detectChangesFanInCancelledRetry = {
+  jobNames: [
+    ...detectChangesCancelledJobNames,
+    'static-code-analysis',
+    'test-web',
+    'test-backend-unit',
+  ],
+  jobConclusions: detectChangesCancelledJobNames.map((name): [string, string] => [
+    name,
+    'cancelled',
+  ]),
+  failedJobNames: detectChangesCancelledJobNames,
+}
+const detectChangesListedJobFailedRetry = {
+  jobNames: detectChangesCancelledJobNames,
+  jobConclusions: detectChangesCancelledJobNames.map((name): [string, string] => [
+    name,
+    name === 'detect-changes' ? 'failure' : 'cancelled',
+  ]),
+  failedJobNames: detectChangesCancelledJobNames,
+}
+const detectChangesProducerFailedRetry = {
+  jobNames: ['detect-changes', 'test-web / web-tests (1)'],
+  jobConclusions: [
+    ['detect-changes', 'cancelled'],
+    ['test-web / web-tests (1)', 'failure'],
+  ] as Array<[string, string]>,
+  failedJobNames: ['detect-changes', 'test-web / web-tests (1)'],
+}
+
+const staticAnalysisCancelledJobNames = [
+  'static-code-analysis / static-code-analysis',
+  'web',
+] as const
+const staticAnalysisFanInCancelledRetry = {
+  jobNames: ['detect-changes', ...staticAnalysisCancelledJobNames, 'test-web', 'test-backend-unit'],
+  jobConclusions: [
+    ['detect-changes', 'success'] as [string, string],
+    ...staticAnalysisCancelledJobNames.map((name): [string, string] => [name, 'cancelled']),
+  ],
+  failedJobNames: staticAnalysisCancelledJobNames,
+}
+const staticAnalysisListedJobFailedRetry = {
+  jobNames: staticAnalysisCancelledJobNames,
+  jobConclusions: staticAnalysisCancelledJobNames.map((name): [string, string] => [
+    name,
+    name === 'static-code-analysis / static-code-analysis' ? 'failure' : 'cancelled',
+  ]),
+  failedJobNames: staticAnalysisCancelledJobNames,
+}
+const staticAnalysisProducerFailedRetry = {
+  jobNames: ['static-code-analysis / static-code-analysis', 'test-web / web-tests (1)'],
+  jobConclusions: [
+    ['static-code-analysis / static-code-analysis', 'cancelled'],
+    ['test-web / web-tests (1)', 'failure'],
+  ] as Array<[string, string]>,
+  failedJobNames: ['static-code-analysis / static-code-analysis', 'test-web / web-tests (1)'],
+}
+
 describe('RULES catalogue', () => {
   describe('storybook-browser-vite-optimizer-timeout', () => {
     const storybookJobName = 'storybook-build / storybook'
@@ -105,61 +179,20 @@ describe('RULES catalogue', () => {
   })
 
   describe('workflow-cancelled-without-failure-signal (detect-changes variant)', () => {
-    const cancelledWithoutProducerFailureJobNames = ['detect-changes', 'web']
-
     it('ignores a cancelled CI retry with only detect-changes and fan-in jobs cancelled', async () => {
-      const ctx = makeCtx({
-        workflowName: 'Web',
-        conclusion: 'cancelled',
-        runAttempt: 2,
-        jobNames: [
-          ...cancelledWithoutProducerFailureJobNames,
-          'static-code-analysis',
-          'test-web',
-          'test-backend-unit',
-        ],
-        jobConclusions: new Map(
-          cancelledWithoutProducerFailureJobNames.map(name => [name, 'cancelled']),
-        ),
-        failedJobNames: cancelledWithoutProducerFailureJobNames,
-      })
-      const result = await decide(ctx, RULES)
+      const result = await decide(cancelledWebRetry(detectChangesFanInCancelledRetry), RULES)
       expect(result.decision).toBe('ignore')
       expect(result.matchedRule).toBe('workflow-cancelled-without-failure-signal')
     })
 
     it('does not ignore a cancelled CI retry when a listed job failed', async () => {
-      const ctx = makeCtx({
-        workflowName: 'Web',
-        conclusion: 'cancelled',
-        runAttempt: 2,
-        jobNames: cancelledWithoutProducerFailureJobNames,
-        jobConclusions: new Map(
-          cancelledWithoutProducerFailureJobNames.map(name => [
-            name,
-            name === 'detect-changes' ? 'failure' : 'cancelled',
-          ]),
-        ),
-        failedJobNames: cancelledWithoutProducerFailureJobNames,
-      })
-      const result = await decide(ctx, RULES)
+      const result = await decide(cancelledWebRetry(detectChangesListedJobFailedRetry), RULES)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
 
     it('does not ignore a cancelled CI retry when a producer job also failed', async () => {
-      const ctx = makeCtx({
-        workflowName: 'Web',
-        conclusion: 'cancelled',
-        runAttempt: 2,
-        jobNames: ['detect-changes', 'test-web / web-tests (1)'],
-        jobConclusions: new Map([
-          ['detect-changes', 'cancelled'],
-          ['test-web / web-tests (1)', 'failure'],
-        ]),
-        failedJobNames: ['detect-changes', 'test-web / web-tests (1)'],
-      })
-      const result = await decide(ctx, RULES)
+      const result = await decide(cancelledWebRetry(detectChangesProducerFailedRetry), RULES)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -167,67 +200,20 @@ describe('RULES catalogue', () => {
 })
 
 describe('workflow-cancelled-without-failure-signal (static-analysis variant)', () => {
-  const cancelledWithoutProducerFailureJobNames = [
-    'static-code-analysis / static-code-analysis',
-    'web',
-  ]
-
   it('ignores a cancelled CI retry with only static analysis setup and fan-in jobs cancelled', async () => {
-    const ctx = makeCtx({
-      workflowName: 'Web',
-      conclusion: 'cancelled',
-      runAttempt: 2,
-      jobNames: [
-        'detect-changes',
-        ...cancelledWithoutProducerFailureJobNames,
-        'test-web',
-        'test-backend-unit',
-      ],
-      jobConclusions: new Map([
-        ['detect-changes', 'success'],
-        ...cancelledWithoutProducerFailureJobNames.map(
-          name => [name, 'cancelled'] as [string, string],
-        ),
-      ]),
-      failedJobNames: cancelledWithoutProducerFailureJobNames,
-    })
-    const result = await decide(ctx, RULES)
+    const result = await decide(cancelledWebRetry(staticAnalysisFanInCancelledRetry), RULES)
     expect(result.decision).toBe('ignore')
     expect(result.matchedRule).toBe('workflow-cancelled-without-failure-signal')
   })
 
   it('does not ignore a cancelled CI retry when static analysis failed after setup', async () => {
-    const ctx = makeCtx({
-      workflowName: 'Web',
-      conclusion: 'cancelled',
-      runAttempt: 2,
-      jobNames: cancelledWithoutProducerFailureJobNames,
-      jobConclusions: new Map(
-        cancelledWithoutProducerFailureJobNames.map(name => [
-          name,
-          name === 'static-code-analysis / static-code-analysis' ? 'failure' : 'cancelled',
-        ]),
-      ),
-      failedJobNames: cancelledWithoutProducerFailureJobNames,
-    })
-    const result = await decide(ctx, RULES)
+    const result = await decide(cancelledWebRetry(staticAnalysisListedJobFailedRetry), RULES)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
 
   it('does not ignore a cancelled CI retry when a producer job also failed', async () => {
-    const ctx = makeCtx({
-      workflowName: 'Web',
-      conclusion: 'cancelled',
-      runAttempt: 2,
-      jobNames: ['static-code-analysis / static-code-analysis', 'test-web / web-tests (1)'],
-      jobConclusions: new Map([
-        ['static-code-analysis / static-code-analysis', 'cancelled'],
-        ['test-web / web-tests (1)', 'failure'],
-      ]),
-      failedJobNames: ['static-code-analysis / static-code-analysis', 'test-web / web-tests (1)'],
-    })
-    const result = await decide(ctx, RULES)
+    const result = await decide(cancelledWebRetry(staticAnalysisProducerFailedRetry), RULES)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
