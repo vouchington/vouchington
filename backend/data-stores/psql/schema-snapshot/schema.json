@@ -894,6 +894,9 @@
     "fn_reject_copyright_territorial_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'copyright territorial contract rows are immutable'\n    USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
+    "fn_reject_mcp_call_audit_event_mutation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_mcp_call_audit_event_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'mcp call audit events are append-only' USING ERRCODE = '23514';\nEND $function$\n"
+    },
     "fn_reject_membership_administrator_refund_request_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_request_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN RAISE EXCEPTION 'membership administrator refund requests are immutable'; END $function$\n"
     },
@@ -44304,6 +44307,273 @@
       "triggers": {
         "lists_content_provenance_immutable": "CREATE TRIGGER lists_content_provenance_immutable AFTER UPDATE ON public.lists FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_lists_updated_at": "CREATE TRIGGER trigger_lists_updated_at BEFORE UPDATE ON public.lists FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "mcp_call_audit_events": {
+      "checkConstraints": {
+        "mcp_call_audit_events_check": "CHECK (((tool_name IS NULL) OR (jsonrpc_method = 'tools/call'::text)))",
+        "mcp_call_audit_events_jsonrpc_method_check": "CHECK ((jsonrpc_method ~ '^[A-Za-z][A-Za-z0-9_./-]{0,63}$'::text))",
+        "mcp_call_audit_events_outcome_check": "CHECK ((outcome = ANY (ARRAY['accepted'::text, 'tool_error'::text, 'invalid_request'::text, 'invalid_arguments'::text, 'not_found'::text, 'role_denied'::text, 'plan_denied'::text, 'scopes_undeclared'::text, 'insufficient_scope'::text, 'rate_limited'::text])))",
+        "mcp_call_audit_events_resource_check": "CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))",
+        "mcp_call_audit_events_surface_check": "CHECK ((surface = ANY (ARRAY['mcp'::text, 'admin_mcp'::text])))",
+        "mcp_call_audit_events_tool_name_check": "CHECK ((tool_name ~ '^[A-Za-z0-9_.-]{1,64}$'::text))"
+      },
+      "columns": {
+        "actor_user_id": {
+          "collation": null,
+          "comment": "Owner of the verified access token; references the retained user identity so hard deletion preserves the record.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "correlation_id": {
+          "collation": null,
+          "comment": "Server-minted id shared by every row written for one HTTP request; returned to the caller in the X-Correlation-Id response header.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "jsonrpc_method": {
+          "collation": null,
+          "comment": "JSON-RPC method from a fixed allowlist of MCP methods, or NULL when the request was rejected before its body was read or named no supported method.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "oauth_client_id": {
+          "collation": null,
+          "comment": "OAuth client the access token was issued to.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "occurred_at": {
+          "collation": null,
+          "comment": "Time the audit row was written, derived from the UUIDv7 id.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "outcome": {
+          "collation": null,
+          "comment": "Authorization and dispatch result of the call, or tool_error when an admitted tool call failed; never derived from result content.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text"
+        },
+        "resource": {
+          "collation": null,
+          "comment": "Protected resource URL the access token was validated against.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "surface": {
+          "collation": null,
+          "comment": "MCP surface that received the call: mcp (user) or admin_mcp.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "tool_name": {
+          "collation": null,
+          "comment": "Name of a registered tool on the surface for a tools/call; NULL for other calls and for a requested name that is not a registered tool, so caller-supplied text is never stored.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "text"
+        }
+      },
+      "comment": "Append-only durable audit of MCP calls made with a verified OAuth access token; one row per JSON-RPC message, plus a tool_error follow-up row for an admitted tool call that failed. Arguments, results, tokens, and headers are never stored.",
+      "foreignKeys": {
+        "mcp_call_audit_events_actor_user_id_fkey": {
+          "columns": ["actor_user_id"],
+          "definition": "FOREIGN KEY (actor_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
+        "mcp_call_audit_events_oauth_client_id_fkey": {
+          "columns": ["oauth_client_id"],
+          "definition": "FOREIGN KEY (oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_mcp_call_audit_events__actor_user": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_mcp_call_audit_events__actor_user ON ONLY public.mcp_call_audit_events USING btree (actor_user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "actor_user_id",
+              "descending": false,
+              "expression": "actor_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_mcp_call_audit_events__correlation": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_mcp_call_audit_events__correlation ON ONLY public.mcp_call_audit_events USING btree (correlation_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "correlation_id",
+              "descending": false,
+              "expression": "correlation_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_mcp_call_audit_events__oauth_client": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_mcp_call_audit_events__oauth_client ON ONLY public.mcp_call_audit_events USING btree (oauth_client_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "oauth_client_id",
+              "descending": false,
+              "expression": "oauth_client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "mcp_call_audit_events_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX mcp_call_audit_events_pkey ON ONLY public.mcp_call_audit_events USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": {
+        "accessClass": "target-scoped",
+        "children": "default",
+        "key": "id",
+        "retentionOwner": null,
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (id)",
+        "strategy": "range"
+      },
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "partitioned table",
+      "triggers": {
+        "trigger_mcp_call_audit_events_append_only": "CREATE TRIGGER trigger_mcp_call_audit_events_append_only BEFORE DELETE OR UPDATE ON public.mcp_call_audit_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mcp_call_audit_event_mutation()"
       },
       "uniqueConstraints": {}
     },

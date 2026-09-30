@@ -1007,6 +1007,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_mutation()
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_mcp_call_audit_event_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_mcp_call_audit_event_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_membership_administrator_refund_request_mutation`
 
 ```sql
