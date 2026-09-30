@@ -1,5 +1,8 @@
 import type { BasicUser } from '@services/users/types'
-import { getStoryMemberPagesBatch, type StoryMemberRequest } from './story-member-pages.mts'
+import {
+  getStoryMemberPagesBatch,
+  type StoryMemberRequest,
+} from '@services/feeds/rss-feed-items/story-member-pages'
 import { getStoryRelatedItemsConfig } from './story-related-items-config.mts'
 
 type StoryPrimaryResult = {

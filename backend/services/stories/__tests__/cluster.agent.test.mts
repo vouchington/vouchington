@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 
 import { clusterRssFeedItem } from '../cluster.mts'
 
-import { getStoryById } from '../get.mts'
+import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
 
 import type { CandidateRow } from '../cluster-candidates.mts'
 
