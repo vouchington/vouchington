@@ -39,6 +39,16 @@ export function feedTextValue(value: unknown): string | undefined {
   return hasStringValue(value) ? value.value : undefined
 }
 
+/** JSON Feed HTML body. Blank values are absent so plain text can fill the shared content fields. */
+export function itemJsonContentHtml(item: Record<string, unknown>): string | undefined {
+  return presentFeedString(item.content_html)
+}
+
+/** JSON Feed plain-text body. Blank values are absent so an existing description is preserved. */
+export function itemJsonContentText(item: Record<string, unknown>): string | undefined {
+  return presentFeedString(item.content_text)
+}
+
 /** Normalize categories to string[] (feedsmith uses { name } or string) */
 export function itemCategories(item: Record<string, unknown>): string[] {
   const cat = item.categories
@@ -48,6 +58,11 @@ export function itemCategories(item: Record<string, unknown>): string[] {
       typeof c === 'object' && c !== null && 'name' in c ? (c as { name: unknown }).name : c
     return typeof raw === 'string' && raw.trim() !== '' ? [raw] : []
   })
+}
+
+function presentFeedString(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  return value.trim() === '' ? undefined : value
 }
 
 function valueOrString(input: unknown): string | null {

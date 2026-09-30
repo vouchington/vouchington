@@ -1,6 +1,5 @@
-// Shared by the worker-exit diagnostics reporter (onTestRunEnd) and the teardown-overrun
-// diagnostics (onProcessTimeout). Both snapshot a process's resource usage at a force-kill
-// or exit boundary. The fork-exit sentinel line is formatted by vouchington-tooling.
+// Used by the teardown-overrun diagnostics (onProcessTimeout) to snapshot the main process's
+// resource usage at the boundary where Vitest force-exits.
 import { getHeapStatistics } from 'node:v8'
 
 export function formatProcessResources(): string {

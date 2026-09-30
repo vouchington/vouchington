@@ -65,8 +65,8 @@ test.describe('News Page', () => {
     const articleUrl = `https://${feed.hostname}/youtube-summary-${suffix}`
     const urlResult = await write(
       `/* news.part-2.spec insert youtube summary url */
-       INSERT INTO urls (url, hostname_id, pathname)
-       VALUES ($1, $2, $3)
+       INSERT INTO urls (url, hostname_id, pathname, search_params)
+       VALUES ($1, $2, $3, '{}'::JSONB)
        ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
        RETURNING id`,
       [articleUrl, feed.hostnameId, `/youtube-summary-${suffix}`],

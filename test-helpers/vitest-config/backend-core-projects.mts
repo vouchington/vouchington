@@ -1,8 +1,6 @@
 import react from '@vitejs/plugin-react'
 import type { TestProjectConfiguration } from 'vitest/config'
 
-import { forkCrashReportExecArgv } from './backend-data-projects.mts'
-
 export const backendCoreProjects: TestProjectConfiguration[] = [
   {
     extends: true,
@@ -83,8 +81,6 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         'backend/test-helpers/api-fixtures/native-moderation-optional-contracts.test.mts',
       ],
       exclude: ['**/node_modules/**', '**/.git/**'],
-      setupFiles: ['./test-helpers/vitest.setup.fork-exit-sentinel.mts'],
-      execArgv: forkCrashReportExecArgv,
       // Backstop only, not the real per-test/per-hook budget: every it()/beforeAll() in these four
       // files that needs more than this already carries its own explicit inline timeout override
       // composed from cold-build-budget.mts's constants (COLD_BACKEND_PROGRAM_TIMEOUT_MS,

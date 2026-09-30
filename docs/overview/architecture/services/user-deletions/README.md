@@ -7,6 +7,11 @@ and required external-work records. The request transaction in `@services/users`
 privacy fence; this service owns the background completion marker and never treats a queue delivery
 as the source of truth.
 
+The request transaction locks the target `users` row (`FOR UPDATE`) and the requesting actor row
+(`FOR KEY SHARE`, the lock the `users.deleted_by_id` foreign key needs) in ascending user-id order.
+Two administrators deleting each other therefore queue instead of deadlocking, and both deletions
+succeed. See `lockUserDeletionRows` in `backend/services/users/delete-row-locks.mts`.
+
 Writers that can recreate deletion-owned rows acquire the same active-user transaction fence before
 their narrower locks and mutations. A writer already in flight therefore commits before deletion
 can start, while a writer arriving after `deleted_at` is set is rejected.

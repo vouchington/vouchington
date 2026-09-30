@@ -144,4 +144,60 @@ describe('buildItems', () => {
     expect(result[0].pubDate).toBe('Mon, 01 Jan 2024 00:00:00 GMT')
     expect(result[0].isoDate).toBe('2024-01-01T00:00:00Z')
   })
+
+  it('copies JSON Feed content_html and content_text onto shared content fields', () => {
+    const feed: ParsedFeed = {
+      items: [
+        {
+          url: 'https://example.com/json-body',
+          id: 'json-body-1',
+          title: 'JSON body',
+          content_html: '<p>HTML body</p>',
+          content_text: 'Plain body',
+          summary: 'Short summary',
+        },
+      ],
+    }
+    const result = buildItems(feed)
+    expect(result).toHaveLength(1)
+    expect(result[0].content).toBe('<p>HTML body</p>')
+    expect(result[0].description).toBe('Plain body')
+    expect(result[0].summary).toBe('Short summary')
+  })
+
+  it('uses JSON Feed content_text when content_html is blank', () => {
+    const feed: ParsedFeed = {
+      items: [
+        {
+          url: 'https://example.com/json-text',
+          id: 'json-text-1',
+          content_html: '   ',
+          content_text: 'Plain only',
+        },
+      ],
+    }
+    const result = buildItems(feed)
+    expect(result).toHaveLength(1)
+    expect(result[0].content).toBeUndefined()
+    expect(result[0].description).toBe('Plain only')
+  })
+
+  it('keeps RSS content and description ahead of JSON Feed body fields', () => {
+    const feed: ParsedFeed = {
+      items: [
+        {
+          link: 'https://example.com/rss-desc',
+          guid: 'rss-desc-1',
+          content: '<p>RSS content</p>',
+          description: 'RSS description',
+          content_html: '<p>JSON html</p>',
+          content_text: 'JSON text',
+        },
+      ],
+    }
+    const result = buildItems(feed)
+    expect(result).toHaveLength(1)
+    expect(result[0].content).toBe('<p>RSS content</p>')
+    expect(result[0].description).toBe('RSS description')
+  })
 })

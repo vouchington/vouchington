@@ -3,9 +3,11 @@ import {
   createRandomString,
   createTestUser,
   getPostArchivedFields,
+  hardDeleteTestTopic,
   insertTestPost,
   insertTestPostReview,
   insertTestTopic,
+  reviewSuccessionTopicDeleteErrorCode,
   setTestPostClearanceStatus,
 } from '@voucha/test-helpers'
 import { archivePost, unarchivePost } from '../archive.mts'
@@ -160,6 +162,23 @@ describe('review successions', () => {
     })
     expect((await getPostArchivedFields(predecessorId))?.archived_at).not.toBeNull()
     await expect(listReviewSuccessionsForPostIds([predecessorId])).resolves.toHaveLength(2)
+  })
+
+  it('keeps the archive-time topic set after the live topic is deleted', async () => {
+    const topic = await insertTestTopic({
+      name: `Deleted succession topic ${createRandomString(8)}`,
+      slug: `deleted-succession-topic-${createRandomString(8)}`,
+      createdById: administrator.id,
+    })
+    const predecessorId = await createReview([topic])
+    const successorId = await createReview([topic])
+    await reconcileReviewSuccessionsForPostIds([successorId])
+    const blocked = await reviewSuccessionTopicDeleteErrorCode(topic)
+    expect(blocked).toBe('23514')
+    await hardDeleteTestTopic(topic)
+    await expect(listReviewSuccessionsForPostIds([predecessorId])).resolves.toMatchObject([
+      { topic_ids: [topic] },
+    ])
   })
 
   it('replays a completed handoff without creating a second epoch', async () => {

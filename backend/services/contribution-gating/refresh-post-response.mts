@@ -10,16 +10,16 @@ export async function refreshContributionAdmissionPostResponses(
   const { rows } = await write<{
     post_related_topics: NonNullable<Post['post_related_topics']> | null
   }>(sql`/* refreshContributionAdmissionPostResponses */ WITH current_finalization AS MATERIALIZED (
-    SELECT admission_response_generation, admission_response_topic_ids, generation
+    SELECT post_id, admission_response_generation, generation
     FROM post_category_finalizations
     WHERE post_id = ${postId}
       AND generation = ${finalizationGeneration}
     FOR UPDATE
   ), response_finalization AS (
-    SELECT admission_response_topic_ids AS topic_ids
+    SELECT post_id
     FROM current_finalization
     WHERE admission_response_generation = generation
-      AND admission_response_topic_ids IS NOT NULL
+      AND admission_response_generation IS NOT NULL
   ), finalized_topics AS (
     SELECT COALESCE(
       jsonb_agg(TO_JSONB(topic.*) ORDER BY selected.votes_score_net DESC, selected.object_id),
@@ -28,8 +28,10 @@ export async function refreshContributionAdmissionPostResponses(
     FROM (
       SELECT relation.object_id, relation.votes_score_net
       FROM response_finalization
+      INNER JOIN post_category_finalization_admission_topics admission_topic
+        ON admission_topic.post_id = response_finalization.post_id
       INNER JOIN relation__post__category__topic relation
-        ON relation.object_id = ANY(response_finalization.topic_ids)
+        ON relation.object_id = admission_topic.topic_id
       WHERE relation.subject_id = ${postId}
         AND relation.deleted_at IS NULL
         AND relation.votes_score_net > 0

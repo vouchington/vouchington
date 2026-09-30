@@ -137,6 +137,7 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
   ],
   ['post_clearance_changes', 'Append-only clearance audit log.'],
   ...postModeration.POST_MODERATION_TABLES_WITHOUT_UPDATED_AT,
+  ...postModeration.MODERATION_LINK_TABLES_WITHOUT_UPDATED_AT,
   ['post_revisions', 'Append-only post revision history.'],
   ['rss_feed_crawls', 'Append-only crawl history partitioned by UUIDv7 id.'],
   ['rss_feed_discoverability_changes', 'Append-only discoverability audit log.'],

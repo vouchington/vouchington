@@ -5,6 +5,7 @@ import {
   createTestUser,
   createTestUserWithAge,
   overrideDynamicConfigFieldsForTest,
+  executeTestAdmittedPost,
 } from '@voucha/test-helpers'
 import {
   contributionLimitConfig,
@@ -196,7 +197,7 @@ async function recordAdmission(user: PrivateUser, source: 'discussion' | 'review
         createContributionPolicyActor(user.id, null),
         source,
       ),
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     }),
   ).resolves.toMatchObject({ kind: 'created' })
 }

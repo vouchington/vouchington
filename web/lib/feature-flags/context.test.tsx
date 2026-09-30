@@ -64,6 +64,33 @@ describe('FeatureFlagsProvider', () => {
     expect(screen.getByTestId('fediverse')).toHaveTextContent('false')
   })
 
+  it('ignores cookie overrides for flags absent from the loaded global catalog', () => {
+    setFeatureFlagOverride('notARealFlag', true)
+    setFeatureFlagOverride('fediverse', true)
+
+    render(
+      <FeatureFlagsProvider globalFlags={{ fediverse: false }}>
+        <FlagProbe name='notARealFlag' />
+        <FlagProbe name='fediverse' />
+      </FeatureFlagsProvider>,
+    )
+
+    expect(screen.getByTestId('notARealFlag')).toHaveTextContent('false')
+    expect(screen.getByTestId('fediverse')).toHaveTextContent('true')
+  })
+
+  it('keeps cookie overrides when the global catalog is unavailable', () => {
+    setFeatureFlagOverride('fediverse', true)
+
+    render(
+      <FeatureFlagsProvider globalFlags={{}}>
+        <FlagProbe name='fediverse' />
+      </FeatureFlagsProvider>,
+    )
+
+    expect(screen.getByTestId('fediverse')).toHaveTextContent('true')
+  })
+
   it('restores individually cleared overrides to global feature flags', () => {
     setFeatureFlagOverride('fediverse', true)
     setFeatureFlagOverride('chat', true)

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 
 import { feedbackOutboxStatus, flushFeedbackOutbox } from 'vouchington-tooling/agent-blackboard'
 import { parseFlagArgs } from './blackboard/parse-flag-args.mts'
@@ -99,7 +98,7 @@ async function main(): Promise<void> {
   process.stdout.write(`${JSON.stringify(await runAppend(rest))}\n`)
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   main().catch((err: unknown) => {
     process.stderr.write(`Error: ${err instanceof Error ? err.message : String(err)}\n`)
     if (err instanceof BlackboardJournalError) printReplayCommand(err)

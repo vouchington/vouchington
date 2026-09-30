@@ -23,7 +23,7 @@ Potentially verbose machine-readable results stay outside the main agent context
 2. Write one repository-relative changed path per line to `$impact_dir/changed-files.txt`, then run
    the aggregate impact driver once. Do not put additional `no-mistakes` calls in `Promise.all`,
    background jobs, or another parallel fan-out. Under Grok/Codex/Cursor `workspace-write`, also run
-   `pnpm exec` serially (pnpm 11's store SQLite). Parallel non-no-mistakes tools go through
+   `pnpm exec` serially (pnpm's SQLite store index). Parallel non-no-mistakes tools go through
    `node_modules/.bin/<tool>`.
 3. The driver preserves separate `<name>.json`, `<name>.stderr`, and `<name>.status` files for each
    report even though all four reports come from one analysis session. On aggregate failure it

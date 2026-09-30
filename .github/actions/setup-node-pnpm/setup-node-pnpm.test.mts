@@ -33,12 +33,12 @@ describe('setup-node-pnpm composite action', () => {
     })
   })
 
-  it('activates the .nvmrc Node and then pnpm from package.json#packageManager', () => {
+  it('activates the .nvmrc Node and then pnpm', () => {
+    // pnpm-activation.test.mts owns the pnpm/action-setup inputs across every call site.
     const [node, pnpm] = steps
     expect(node?.uses).toMatch(/^actions\/setup-node@/)
     expect(node?.with).toEqual({ 'node-version-file': '.nvmrc', 'package-manager-cache': false })
     expect(pnpm?.uses).toMatch(/^pnpm\/action-setup@/)
-    expect(pnpm?.with).toBeUndefined()
   })
 
   it('restores the pnpm store cache before installing', () => {
@@ -56,13 +56,13 @@ describe('setup-node-pnpm composite action', () => {
       name: 'pnpm install',
       if: "inputs.install-scripts != 'false'",
       shell: 'bash',
-      run: 'pnpm install --frozen-lockfile',
+      run: 'pnpm install --frozen-lockfile --loglevel=warn',
     })
     expect(step('pnpm install without lifecycle scripts')).toEqual({
       name: 'pnpm install without lifecycle scripts',
       if: "inputs.install-scripts == 'false'",
       shell: 'bash',
-      run: 'pnpm install --frozen-lockfile --ignore-scripts',
+      run: 'pnpm install --frozen-lockfile --ignore-scripts --loglevel=warn',
     })
   })
 })

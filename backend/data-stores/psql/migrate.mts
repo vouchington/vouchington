@@ -1,4 +1,3 @@
-import { realpathSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import onError, { flushSentry } from '@modules/on-error'
@@ -116,9 +115,7 @@ export async function runAllMigrations(
   exit(0)
 }
 
-// realpathSync resolves symlinks so this guard works when the script is invoked
-// via a node_modules symlink (e.g. in the production ECS image).
-if (process.argv?.[1] && realpathSync(process.argv[1]) === __filename) {
+if (import.meta.main) {
   /* c8 ignore next -- direct-execution entry; exercised by the docker migrate smoke. */
   await runAllMigrations()
 }

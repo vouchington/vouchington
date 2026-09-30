@@ -3,8 +3,7 @@ import { backendCredentialedVitestCommandMarkers } from './backend-credentialed-
 /**
  * Shared synthetic-log builders for credentialed-provider Vitest projects. Callers pass the
  * project/path in — this module holds no repo-path literal of its own — so a fixture can no
- * longer agree with a broken matcher by construction (see #10806/#10825), and this file carries
- * zero literals for `repo-owned-literal-freshness.test.mts`'s completeness scanner to police.
+ * longer agree with a broken matcher by construction (see #10806/#10825).
  *
  * Built by joining the same markers `hasBackendCredentialedProviderSmokeTestEnvelope` requires,
  * rather than a hand-typed second copy of the real `run:` line — so this fixture can't silently

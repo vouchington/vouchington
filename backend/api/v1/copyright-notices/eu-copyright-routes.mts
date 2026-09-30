@@ -3,6 +3,7 @@ import { isUUID } from '@modules/utils'
 import { verifyCaptchaOrAttestation } from '@services/captcha'
 import {
   acknowledgeEuCopyrightNotice,
+  assertCopyrightIntakeEnabled,
   compileEuCopyrightTransparencyReport,
   currentUserCanReviewCopyrightNotices,
   receiveEuCopyrightNotice,
@@ -30,6 +31,7 @@ import {
 
 app.route('/api/v1/copyright-eu-notices').post(async (ctx: Context) => {
   setPrivateNoStoreCacheHeaders(ctx)
+  assertCopyrightIntakeEnabled()
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/copyright-eu-notices')
   assertNotSuspended(currentUser)

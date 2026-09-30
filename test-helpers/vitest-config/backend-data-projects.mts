@@ -1,25 +1,5 @@
 import type { TestProjectConfiguration } from 'vitest/config'
 
-// Node diagnostic reports for a fork's fatal V8/native errors — the leg that separates heap
-// exhaustion (populated javascriptHeap, header.trigger fatal-error) from a native/NAPI fatal
-// error (populated nativeStack). init-forks.js only special-cases --prof/--cpu-prof/--heap-prof/
-// --diagnostic-dir, so these --report-* flags pass through to each fork untouched. CI-gated:
-// these reports are large and local runs already have a live terminal to inspect on failure.
-// Exported for vitest.config.mts's inline backend-real-glide-mq project and
-// backend-core-projects.mts's backend-contract-program project — the other projects outside this
-// file that need the same fork diagnostics — kept as one CI-gate definition rather than duplicating
-// it.
-const forkDiagnosticReportDirectory =
-  process.env.VITEST_FORK_DIAGNOSTIC_DIR ?? '.vitest-reports/fork-diagnostics'
-export const forkCrashReportExecArgv = process.env.CI
-  ? [
-      '--report-on-fatalerror',
-      '--report-uncaught-exception',
-      '--report-compact',
-      `--report-directory=${forkDiagnosticReportDirectory}`,
-    ]
-  : []
-
 const backendDataStoreTestDefaults = {
   pool: 'forks' as const,
   isolate: false,
@@ -41,9 +21,7 @@ const backendDataStoreTestDefaults = {
     './backend/test-helpers/vitest.setup.captcha-skip.mts',
     './backend/test-helpers/vitest.setup.server-error-responses.mts',
     './test-helpers/vitest.setup.fork-leak-detection.mts',
-    './test-helpers/vitest.setup.fork-exit-sentinel.mts',
   ],
-  execArgv: forkCrashReportExecArgv,
   testTimeout: 30_000,
   hookTimeout: 30_000,
 }
@@ -131,8 +109,6 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         'backend/data-stores/psql/__tests__/lifecycle-integrity.test.mts',
       ],
       exclude: ['**/node_modules/**', '**/.git/**'],
-      setupFiles: ['./test-helpers/vitest.setup.fork-exit-sentinel.mts'],
-      execArgv: forkCrashReportExecArgv,
       testTimeout: 30_000,
       hookTimeout: 30_000,
     },
@@ -164,9 +140,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         './test-helpers/vitest.setup.glide-mq-workers.mts',
         './backend/test-helpers/vitest.setup.aws-mocks.mts',
         './backend/test-helpers/vitest.setup.server-error-responses.mts',
-        './test-helpers/vitest.setup.fork-exit-sentinel.mts',
       ],
-      execArgv: forkCrashReportExecArgv,
       testTimeout: 15_000,
       hookTimeout: 15_000,
     },

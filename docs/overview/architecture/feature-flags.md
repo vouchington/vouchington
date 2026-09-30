@@ -48,7 +48,10 @@ export const featureFlagsConfig = new DynamicConfig({
   facade for the base64-encoded `ff` cookie. Dependency-free codec, Boolean filtering, encoded-size,
   and safe cookie-part mechanics come from `@vouchington/utils/feature-flags`; Voucha retains the
   cookie name, runtime codecs/configuration, and known-flag authorization. Only boolean override
-  values are accepted, and only known flags can override backend results.
+  values are accepted, and only known flags can override backend results. Web effective reads apply
+  the same rule to the loaded global catalog: a cookie can change only flags present in that
+  catalog. When the global read fails, the catalog is empty, parsed cookie overrides stay in
+  effect, and every flag the cookie does not set stays off.
   `FEATURE_FLAG_COOKIE_MAX_LENGTH` (backend) and the web runtime-public cookie limit currently named
   `NEXT_PUBLIC_FEATURE_FLAG_COOKIE_MAX_LENGTH` limit the accepted encoded cookie value length before
   decode/parse and default to `4096`; oversized cookies parse as no overrides and are not forwarded

@@ -1,7 +1,7 @@
 // GENERATED FILE - do not edit by hand.
 // Regenerate: node static-code-analysis/i18n-extract/route-selector-map.mts
 // Verify:     node static-code-analysis/i18n-extract/route-selector-map.mts --check
-export const WEB_CHROME_SELECTOR = 'web.chrome.a9560b44791b3565'
+export const WEB_CHROME_SELECTOR = 'web.chrome.2b5bd11df1f28cc1'
 // oxfmt-ignore
 export const ROUTE_SELECTORS = [
   { pattern: "/", selectorId: "web.route.af63a24c860189fe.50730295d8eb2790", hasMembership: true },

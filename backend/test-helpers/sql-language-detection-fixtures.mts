@@ -138,8 +138,8 @@ export async function insertLanguageDetectionCrawlForTest(params: {
   `)
   const hostnameId = hostnameResult.rows[0]!.id
   const urlResult = await write<{ id: string }>(sql`/* insertLanguageDetectionCrawlUrlForTest */
-    INSERT INTO urls (url, hostname_id, pathname)
-    VALUES (${params.url}, ${hostnameId}, ${'/page'})
+    INSERT INTO urls (url, hostname_id, pathname, search_params)
+    VALUES (${params.url}, ${hostnameId}, ${'/page'}, ${'{}'}::jsonb)
     RETURNING id
   `)
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionCrawlForTest */

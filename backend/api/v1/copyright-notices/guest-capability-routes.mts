@@ -47,6 +47,7 @@ app.route('/api/v1/copyright-notices/:id/guest-capabilities').post(async (ctx: C
     expires_at: expiresAt.toISOString(),
   })
   const capability = await issueCopyrightGuestCapability({
+    currentUser,
     noticeId: validateUUIDParam(ctx, 'id'),
     expiresAt,
   })
@@ -77,6 +78,7 @@ app
     assertNotSuspended(currentUser)
     const revokedAt = new Date()
     await revokeCopyrightGuestCapability({
+      currentUser,
       noticeId: validateUUIDParam(ctx, 'id'),
       capabilityId: validateUUIDParam(ctx, 'capabilityId'),
       revokedAt,

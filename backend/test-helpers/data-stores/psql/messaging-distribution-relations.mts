@@ -131,26 +131,14 @@ export async function insertOversizedSelectedRecipientSet(
   await query.commit()
 }
 
-export async function insertChatMessageWithoutRole(
+export async function insertChatMessageWithoutContent(
   conversationId: string,
   createdById: string,
 ): Promise<unknown> {
   return write(
-    `/* insertChatMessageWithoutRole */ INSERT INTO conversation_messages
+    `/* insertChatMessageWithoutContent */ INSERT INTO conversation_messages
       (conversation_id, created_by_id)
       VALUES ($1, $2)`,
-    [conversationId, createdById],
-  )
-}
-
-export async function insertUserChatMessageWithError(
-  conversationId: string,
-  createdById: string,
-): Promise<unknown> {
-  return write(
-    `/* insertUserChatMessageWithError */ INSERT INTO conversation_messages
-      (conversation_id, created_by_id, chat_role, chat_text, chat_error)
-      VALUES ($1, $2, 'user', 'Hello', 'not allowed')`,
     [conversationId, createdById],
   )
 }

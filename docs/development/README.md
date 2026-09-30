@@ -179,7 +179,7 @@ flowchart TD
 Plan Mode is read-only with respect to branch history: inspect `origin/main` with `git diff` and
 `git show` instead of resetting or rebasing during planning. Once the plan is accepted, use
 unforced `./dev/reset-worktree` for a new task that was planned from `origin/main`, or preserve the
-branch and run `./dev/rebase-onto-main` for resumed work. Before that publish, read the four refs in [Reading the four refs](../../.agents/skills/agent-workflow/git-and-prs.md#reading-the-four-refs) so a rewritten `origin/<branch>` is not replayed onto local `main`. Never infer permission to discard
+branch and run [`./dev/rebase-onto-main`](local-development/reference-command-catalog.md) for resumed work. Before that publish, read the four refs in [Reading the four refs](../../.agents/skills/agent-workflow/git-and-prs.md#reading-the-four-refs) so a rewritten `origin/<branch>` is not replayed onto local `main`. Never infer permission to discard
 changes or add `--force`.
 The agent-specific procedure lives in [Start Of Work](../../.agents/skills/agent-workflow/start-of-work.md);
 the hook interface is documented in the [`dev/` command catalog](local-development/README.md#agent-session-hooks).
@@ -219,11 +219,10 @@ finish; the kernel releases its lock automatically if the process exits. See
 
 ## Dependency Updates
 
-Dependabot (npm/docker/github-actions) and Renovate (the root `package.json`
-`packageManager` pnpm pin, `.nvmrc`, and regex-managed version literals) jointly keep dependencies
-fresh. Pnpm toolchain updates wait two days and require manual review. See
-[dependency-updates.md](dependency-updates.md) for the branch/PR delay, coverage matrix, and how to
-add a new pinned binary.
+Dependabot (npm/docker/github-actions) and Renovate (`.nvmrc` and regex-managed version literals)
+jointly keep dependencies fresh. pnpm itself is not pinned; CI and Docker builds name only a pnpm
+major. See [dependency-updates.md](dependency-updates.md) for the release delays, coverage matrix,
+and how to add a new pinned binary.
 
 ## Reference index
 
@@ -293,7 +292,6 @@ add a new pinned binary.
 - [Vitest 5 Pool and Isolate Matrix](reference-tests-vitest-5-pool-matrix.md)
 - [Vitest Mock Typing](reference-tests-vitest-mock-typing.md)
 - [Vitest Projects](reference-tests-vitest-projects.md)
-- [Vitest Worker-Exit Diagnostics](reference-vitest-worker-exit-diagnostics.md)
 - [Concurrency model](reference-worker-performance-concurrency-model.md)
 - [Native thread pools](reference-worker-performance-native-thread-pools.md)
 - [Node process knobs](reference-worker-performance-node-process-knobs.md)

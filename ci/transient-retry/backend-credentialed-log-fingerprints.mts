@@ -1,31 +1,26 @@
 import picomatch from 'picomatch'
+import { backendCredentialedTestProjects } from '../../test-helpers/vitest-config/backend-credentialed-projects.mts'
+import { backendCredentialedOpenRouterMarkerGroups } from './backend-credentialed-openrouter-markers.mts'
 
 const vitestFailureLinePattern = /\bFAIL\s+\S+\s+\S+\.(?:c|m)?tsx?\b/
 
 /**
- * The credentialed Vitest projects that probe a real external provider, paired
- * with the same `include` glob(s) each project declares in `vitest.config.mts`. Kept as literals
- * here rather than imported from `vitest.config.mts` — that config pulls DB/Valkey alias
- * resolution `decide.mts` must stay dependency-free of — and cross-checked against that config by
- * `repo-owned-literal-freshness.test.mts`.
+ * The credentialed Vitest projects that probe a real external provider, each paired with the
+ * `include` glob(s) it collects. Derived from the same project objects `vitest.config.mts` runs
+ * (`test-helpers/vitest-config/backend-credentialed-projects.mts`), which is a literal-only module
+ * so this Node-run classifier stays free of the DB/Valkey alias resolution in `vitest.config.mts`.
  */
 export const backendCredentialedProjects: ReadonlyArray<{
   project: string
   include: readonly string[]
-}> = [
-  {
-    project: 'backend-aws',
-    include: [
-      'backend/**/*.s3.test.mts',
-      'backend/modules/aws/s3.test.mts',
-      'backend/modules/aws/ses.generated.test.mts',
-    ],
-  },
-  { project: 'backend-bedrock', include: ['backend/**/*.bedrock.test.mts'] },
-  { project: 'backend-openai', include: ['backend/**/*.openai*.test.mts'] },
-  { project: 'backend-openrouter', include: ['backend/**/*.openrouter.test.mts'] },
-  { project: 'backend-stripe', include: ['backend/**/*.stripe.test.mts'] },
-]
+}> = backendCredentialedTestProjects.map(configuration => {
+  const test =
+    typeof configuration === 'object' && 'test' in configuration ? configuration.test : undefined
+  if (typeof test?.name !== 'string' || !test.include?.length) {
+    throw new TypeError('Credentialed Vitest projects need a string name and a non-empty include')
+  }
+  return { project: test.name, include: test.include }
+})
 
 function toEmbeddablePattern(glob: string): string {
   return picomatch.makeRe(glob, { contains: true }).source
@@ -47,18 +42,14 @@ const backendCredentialedProbeFailurePattern = new RegExp(
 
 /**
  * Every one of these must appear in `tests-backend-credentialed.yml`'s "Run backend credentialed
- * tests" step (`repo-owned-literal-freshness.test.mts`'s Table B) — a stale marker here (a renamed
- * wrapper script or a fifth credentialed project added without a matching
- * `--project` flag) would make `hasBackendCredentialedProviderSmokeTestEnvelope` reject every real
- * log forever, taking the whole rule down silently rather than just one probe.
+ * tests" step (asserted by `backend-credentialed-config-agreement.test.mts`) — a stale marker
+ * here (a renamed wrapper script or a project the workflow no longer runs) would make
+ * `hasBackendCredentialedProviderSmokeTestEnvelope` reject every real log forever, taking the
+ * whole rule down silently rather than just one probe.
  */
 export const backendCredentialedVitestCommandMarkers = [
   'pnpm exec ./ci/with-node-test-options vitest run',
-  '--project backend-aws',
-  '--project backend-bedrock',
-  '--project backend-openai',
-  '--project backend-openrouter',
-  '--project backend-stripe',
+  ...backendCredentialedProjects.map(({ project }) => `--project ${project}`),
 ]
 const vitestNonTestTerminalErrorPattern =
   /(^|\n).*(Vitest caught \d+ unhandled errors? during the test run\.|Unhandled (?:Error|Rejection)|Error: .*(?:coverage|global teardown|reporter)|(?:coverage|global teardown|reporter).*failed)/i
@@ -161,28 +152,22 @@ const backendCredentialedOpenAIServerErrorMarkers = [
   'Error: 500 The server had an error processing your request',
   'OpenAI.makeStatusError',
 ]
-const backendCredentialedOpenRouterServerErrorMarkers = [
-  'Structured-decision provider returned HTTP 5',
-]
-const backendCredentialedOpenRouterRateLimitMarkers = [
-  'Structured-decision provider returned HTTP 429',
-]
 
 const backendCredentialedSingleFailureMarkerGroups = [
   backendCredentialedTimeoutMarkers,
   backendCredentialedAwsSdkAbortTimeoutMarkers,
   backendCredentialedBedrockServerErrorMarkers,
   backendCredentialedOpenAIRateLimitMarkers,
-  backendCredentialedOpenRouterRateLimitMarkers,
-  backendCredentialedOpenRouterServerErrorMarkers,
+  ...backendCredentialedOpenRouterMarkerGroups,
 ]
 
 /**
  * True when the log's failure is a credentialed provider probe carrying a known provider-transport
- * marker: either the sole failing test (timeout, AWS-SDK request abort/timeout, Bedrock 500, or
- * OpenAI 429), or — uniquely for the OpenAI 500 case — every simultaneously failing test, since a
- * shared-provider 500 can take out more than one probe in the same run at once (see the dual-block
- * fixture in `backend-credentialed-openai-server-rules.test.mts`).
+ * marker: either the sole failing test (timeout, AWS-SDK request abort/timeout, Bedrock 500,
+ * OpenAI 429, or OpenRouter 429/5xx/flex-tier unavailability), or — uniquely for the OpenAI 500
+ * case — every simultaneously failing test, since a shared-provider 500 can take out more than one
+ * probe in the same run at once (see the dual-block fixture in
+ * `backend-credentialed-openai-server-rules.test.mts`).
  *
  * Callers must gate `hasBackendCredentialedProviderSmokeTestEnvelope` first.
  */

@@ -16,6 +16,10 @@ tooltips, and accessibility.
 
 **Implicit-unfollow cascade**: Adding a mute or block bookmark causes the server to also remove the follow relation for certain entity types (`topic:mute/block`, `user:block`, `rss_feed:mute`, `community:proxy_mute`). The toggling button detects this via a client-side mirror of `backend/services/bookmarks/upsert.mts IMPLICIT_UNFOLLOW` and emits an additional `BookmarkChange` for the implicitly affected follow predicate, so the Follow button refetches and stays current.
 
+### Hide and Save
+
+`HideButton` and `SaveButton` are separate icon toggles. They share [`use-keyed-bookmark-toggle.ts`](../../../web/components/shared/use-keyed-bookmark-toggle.ts) for optimistic active and pending state, controlled overrides, and dropping a response after the entity or initial flag changes. Hide passes predicate `hide` and, only when that request still owns the entity, dispatches `rss-item-hidden` and calls `onHide`. Save passes predicate `save` and does not dispatch that event. Feed responses already include the viewer's bookmark flags, so these buttons do not use `useEntityBookmarkState` and do not fetch or emit sibling invalidation.
+
 ## Radix UI footguns
 
 ### BubbleInput and `<form>` interaction

@@ -81,7 +81,6 @@ backend projects.
 - <a id="explain-test-selection-and-vitest-ownership"></a>[Explain Test Selection and Vitest Ownership](reference-explain-test-selection-and-vitest-ownership.md)
 - <a id="dynamicconfig-cleanup"></a>[DynamicConfig Cleanup](reference-dynamicconfig-cleanup.md)
 - <a id="project-name-reference"></a>[Project Name Reference](reference-project-name-reference.md)
-- <a id="vitest-worker-exit-diagnostics"></a>[Vitest Worker-Exit Diagnostics](reference-vitest-worker-exit-diagnostics.md)
 
 ## Pools, Isolation, and Vitest 5
 
@@ -102,6 +101,7 @@ per-project values:
 
 - Root inheritance default (`pool: 'threads'`): [`vitest.config.mts`](../../vitest.config.mts)
 - Backend forks: [`test-helpers/vitest-config/backend-core-projects.mts`](../../test-helpers/vitest-config/backend-core-projects.mts), [`test-helpers/vitest-config/backend-data-projects.mts`](../../test-helpers/vitest-config/backend-data-projects.mts)
+- Backend credentialed provider probes (also the source of the transient-retry classifier's credentialed boundary): [`test-helpers/vitest-config/backend-credentialed-projects.mts`](../../test-helpers/vitest-config/backend-credentialed-projects.mts)
 - Web / lambdas / Cloudflare: [`test-helpers/vitest-config/web-projects.mts`](../../test-helpers/vitest-config/web-projects.mts)
 - Tooling: [`test-helpers/vitest-config/tooling-projects.mts`](../../test-helpers/vitest-config/tooling-projects.mts)
 - Storybook browser: [`test-helpers/vitest-config/storybook-browser-project.mts`](../../test-helpers/vitest-config/storybook-browser-project.mts)
@@ -132,9 +132,9 @@ object, so a replacement object silently leaks stubbed variables between tests.
 
 Shared-fork leak rules for `isolate: false` backend files live in
 [Parallel-Safety and Test-Root Hygiene](reference-tests-parallel-safety-and-test-root-hygiene.md#live-glidemq-workers-must-not-leak-across-isolatefalse-files).
-`pool: 'threads'` remains not a drop-in for those backend projects; the worker-exit stopping
-condition still forbids a seventh instrumentation pass as a substitute for a scoped threads
-proposal.
+`pool: 'threads'` remains not a drop-in for those backend projects; see
+[Vitest workflow reference](ci/workflows/reference-vitest.md) for the worker-exit restore rule and
+when a scoped threads proposal is warranted.
 
 `fsModuleCache` is on at the root. Leave the remaining Vitest 5 knobs off until a **specific
 project** `Duration` line shows the matching phase dominating. Do not enable them because a blog

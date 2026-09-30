@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { CopyrightStaffLinks } from '@/components/copyright/copyright-staff-links'
 import { createPageMetadata } from '@/lib/seo/metadata'
 
 export const dynamic = 'force-dynamic'
@@ -22,6 +23,23 @@ export default function CopyrightPage() {
         Signed-in members can see accepted case records and a claimant&apos;s current public
         profile. They do not show legal names, contact details, raw email, evidence, or agent
         analysis.
+      </p>
+      <p>
+        Read{' '}
+        <Link
+          className='underline'
+          href='/article/copyright-and-dmca'
+        >
+          Copyright and the DMCA on Voucha
+        </Link>{' '}
+        for how the process works, and{' '}
+        <Link
+          className='underline'
+          href='/article/copyright-complaints'
+        >
+          How copyright complaints work
+        </Link>{' '}
+        before you file a notice or counter-notice.
       </p>
       <div className='space-y-2'>
         <Link
@@ -48,12 +66,7 @@ export default function CopyrightPage() {
         >
           Counter-notice and restoration
         </Link>
-        <Link
-          className='block underline'
-          href='/copyright/review-queue'
-        >
-          Copyright review queue
-        </Link>
+        <CopyrightStaffLinks />
       </div>
     </main>
   )

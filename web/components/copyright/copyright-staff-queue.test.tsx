@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { CopyrightStaffQueue } from './copyright-staff-queue'
 
@@ -107,11 +107,30 @@ describe('CopyrightStaffQueue', () => {
                 action_intents: [],
                 delivery_intents: [],
                 email_correspondence: [],
+                reasons: ['counter_notice_review', 'deadline_due', 'form_intake_review'],
+                waiting_since: '2026-01-01T00:00:00.000Z',
+                next_deadline: {
+                  escalation_at: '2026-01-10T00:00:00.000Z',
+                  restoration_deadline_at: '2026-01-15T00:00:00.000Z',
+                },
               },
             ],
             page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
           }}
         />,
+      )
+      const reasons = within(screen.getByRole('list', { name: 'Queue reasons' }))
+      expect(reasons.getAllByRole('listitem').map(item => item.textContent)).toEqual([
+        'Counter-notice review',
+        'Escalation due',
+        'Intake review',
+      ])
+      expect(screen.getByText(/^Queued/).querySelector('time')).toHaveAttribute(
+        'dateTime',
+        '2026-01-01T00:00:00.000Z',
+      )
+      expect(screen.getByText(/^Next deadline/)).toHaveTextContent(
+        `escalation ${new Date('2026-01-10T00:00:00.000Z').toLocaleString()} · restoration ${new Date('2026-01-15T00:00:00.000Z').toLocaleString()}`,
       )
       expect(screen.getByText('Original photograph.')).toBeInTheDocument()
       const screeningText =

@@ -6,13 +6,13 @@ Stable entitlement sources that project provider or administrator access onto a 
 
 Not partitioned — growth: unbounded.
 
-| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                             |
-| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
-| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                     |
-| `user_id`                        | `uuid`                     | yes      |                              |          |           |           | Current user receiving access; detached during final account purge. |
-| `source_kind`                    | `membership_source_kinds`  | no       |                              |          |           |           | Origin category of the entitlement source.                          |
-| `membership_provider_lineage_id` | `uuid`                     | yes      |                              |          |           |           | Provider lineage for non-admin sources.                             |
-| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                     |
+| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                 |
+| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------- |
+| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                         |
+| `user_id`                        | `uuid`                     | yes      |                              |          |           |           | Retained user identity of the current recipient; provider sources detach it during final account purge. |
+| `source_kind`                    | `membership_source_kinds`  | no       |                              |          |           |           | Origin category of the entitlement source.                                                              |
+| `membership_provider_lineage_id` | `uuid`                     | yes      |                              |          |           |           | Provider lineage for non-admin sources.                                                                 |
+| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                         |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -26,6 +26,7 @@ _none_
 **Foreign keys:**
 
 - `membership_sources_membership_provider_lineage_id_fkey`: `FOREIGN KEY (membership_provider_lineage_id) REFERENCES membership_provider_lineages(id) ON DELETE RESTRICT`
+- `membership_sources_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 

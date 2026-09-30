@@ -48,6 +48,18 @@ full `buildx.build.provenance` object, about 670 lines per image, around a diges
 that no workflow reads. The setting changes only the metadata file and log, not the build output.
 `cache-policy.test.mts` requires it on every such step in a workflow or composite action.
 
+Both `setup-node-pnpm` installs pass `--loglevel=warn`. At the default level each job printed about
+85 to 135 install lines (93 in the install region of run `36216699892`): `Progress: resolved …`
+lines, a `devDependencies:` summary of the root manifest, and every dependency's lifecycle-script
+output, none of which any check reads. At `warn`, pnpm prints warnings and errors only. A successful
+lifecycle script is discarded, a failed required script keeps its command, package and complete
+stdout and stderr, ignored-build warnings stay visible, and a failed supply-chain verification prints
+at error level. A successful or cached verdict is info-level, so a green install no longer prints it.
+That contract is [pnpm/pnpm#16076](https://github.com/pnpm/pnpm/pull/16076), released in pnpm 12.8;
+`version: latest-12` in `pnpm/action-setup` selects a release that has it, and an older 12.x would
+hide a failed script's output at this level. `pnpm-install-policy.test.mts` pins the flag on both
+installs. The direct installer in `postgresql-snapshot-update.yml` is separate and unchanged.
+
 CI is expensive — this includes GitHub Actions artifact and cache storage. The repository artifact
 and log retention setting and every workflow artifact are **1 day**. `artifact-retention-policy.test.mts`
 rejects uploads that omit the literal `retention-days: 1` or substitute another value. Full-LCOV
@@ -58,7 +70,8 @@ window.
 
 Keep workflow triggers narrow, reproduce failures locally before rerunning, and keep tests
 fail-fast-ish (`--bail=3` for Vitest; `maxFailures: CI ? 3 : undefined` for Playwright). Area
-workflows and Gitleaks subscribe to `merge_group` checks requested; merge groups run every area.
+workflows and Gitleaks subscribe to `merge_group` checks requested; a merge group selects only the
+areas its base-to-head diff touches.
 Other workflows keep their path and branch filters. Playwright, web integration, and Docker image
 build filters should skip Markdown-only, Vitest-only, test-helper-only, and Storybook-only changes
 on both pull requests and `main` pushes unless the changed files are directly owned by that
@@ -149,7 +162,7 @@ after the node-versions download while adding Node to the tool cache, is catalog
 
 - <a id="dependency-bot-review-and-main-push-ci"></a>[Dependency bot review and main push CI](reference-ci-standalone-workflow-checks.md#dependency-bot-review-and-main-push-ci)
 
-<a id="area-test-suites"></a>CI never selects individual test files. Each selected area runs its full owning Vitest projects or Playwright specs. A workflow or action change selects every area, docs-only pull requests skip selected areas, and merge groups run every area. Static-analysis failures suppress only the tests and Docker validation builds they gate; suites otherwise begin as soon as their static gate passes or intentionally skips. Main push workflows remain independent with `cancel-in-progress: false`.
+<a id="area-test-suites"></a>CI never selects individual test files. Each selected area runs its full owning Vitest projects or Playwright specs. A workflow or action change selects every area, docs-only pull requests skip selected areas, and a merge group selects the areas its base-to-head diff touches, exactly as a pull request does. Only the nightly schedule and manual dispatch select every area without a diff. Static-analysis failures suppress only the tests and Docker validation builds they gate; suites otherwise begin as soon as their static gate passes or intentionally skips. Main push workflows remain independent with `cancel-in-progress: false`.
 
 <a id="area-workflows"></a>The per-area workflows listed in the [Workflow automation map](ci/workflows/reference-workflow-automation-map.md) run on pull-request events and merge groups. Their names are the [Main ruleset's required gates](../../.github/workflows/AGENTS.md). `static` runs full repository static analysis on every change, including docs-only changes. Every other area starts with `changes` ([`ci-detect-changes.yml`](../../.github/workflows/ci-detect-changes.yml)), which selects its area from shared path filters. A selected area runs every suite it owns in full, gated by its area static checks; credentialed suites skip on untrusted pull requests, and Storybook skips on them unless a dependency bot opened the PR. The job named after the area is its required check and passes when the area is skipped. Its `coverage` job ([`ci-area-coverage.yml`](../../.github/workflows/ci-area-coverage.yml)) enforces the patch coverage rules in `.coverage-rules.yml`, and its `codecov` job uploads each suite's full LCOV under a carryforward flag without gating. Each concurrency group starts with a literal area prefix and cancels only superseded pull-request runs. [`nightly.yml`](../../.github/workflows/nightly.yml) calls every area workflow daily and on manual dispatch, selecting every area for those events.
 

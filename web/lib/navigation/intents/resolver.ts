@@ -4,6 +4,8 @@ const RULES: readonly [string, NavIntentId | null][] = [
   ['/messages', 'messages'],
   ['/fediverse', 'fediverse'],
   ['/posts/review-queue', 'moderation'],
+  ['/copyright/review-queue', 'moderation'],
+  ['/copyright/email-review', 'moderation'],
   ['/admin/modlog', 'moderation'],
   ['/admin/moderation-analytics', 'moderation'],
   ['/admin/oauth-clients', 'moderation'],

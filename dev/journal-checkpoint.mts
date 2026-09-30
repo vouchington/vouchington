@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { fileURLToPath } from 'node:url'
 
 import { resolvePreToolUseRuntime } from './codex-hooks/hook-payload.mts'
 import {
@@ -38,7 +37,7 @@ async function main(): Promise<void> {
   await runCompactCheckpoint(payload, process.env, {}, runtime)
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   main().catch(() => {
     // Fail-open: a checkpoint miss must never surface as hook noise or a nonzero exit.
   })

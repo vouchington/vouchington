@@ -75,8 +75,13 @@ CREATE TABLE copyright_notice_submissions (
   received_at timestamptz NOT NULL,
   source_kind text NOT NULL CHECK (source_kind IN ('signed_in_form', 'guest_form', 'email', 'staff')),
   body_ciphertext text NOT NULL CHECK (char_length(body_ciphertext) BETWEEN 1 AND 1048576),
+  copyright_notice_guest_capability_id uuid,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT copyright_submission_guest_capability_shape CHECK (
+    copyright_notice_guest_capability_id IS NULL
+    OR (source_kind = 'guest_form' AND kind IN ('supplement', 'withdrawal', 'court_or_ccb_hold'))
+  )
 );
 
 CREATE TABLE copyright_notice_evidence_artifacts (
@@ -220,7 +225,8 @@ CREATE TABLE copyright_notice_lifecycle_events (
     'copyright_action_replayed', 'delivery_intent_replayed',
     'media_delivery_registry_replayed', 'restoration_unavailable',
     'restriction_lifted_placement_retained', 'restoration_authorized_pending_delivery',
-    'placement_withheld', 'placement_restored'
+    'placement_withheld', 'placement_restored', 'guest_capability_issued',
+    'guest_capability_revoked', 'guest_capability_revoked_by_withdrawal'
   )),
   actor_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   copyright_notice_submission_id uuid REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
@@ -235,6 +241,7 @@ CREATE TABLE copyright_notice_lifecycle_events (
   copyright_notice_email_intake_id uuid,
   copyright_notice_delivery_intent_id uuid,
   media_delivery_registry_key text,
+  copyright_notice_guest_capability_id uuid,
   review_action text CHECK (review_action IN ('confirm', 'reverse')),
   review_rationale_ciphertext text CHECK (review_rationale_ciphertext IS NULL OR char_length(review_rationale_ciphertext) BETWEEN 1 AND 65536),
   counter_notice_accepted boolean,
@@ -256,7 +263,8 @@ CREATE TABLE copyright_notice_lifecycle_events (
       copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id,
       copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id,
       copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id,
-      copyright_notice_email_intake_id, copyright_notice_delivery_intent_id, media_delivery_registry_key
+      copyright_notice_email_intake_id, copyright_notice_delivery_intent_id, media_delivery_registry_key,
+      copyright_notice_guest_capability_id
     ) = CASE WHEN event_type = 'notice_received' THEN 0 ELSE 1 END
     AND CASE
       WHEN event_type = 'notice_received' THEN true
@@ -279,6 +287,8 @@ CREATE TABLE copyright_notice_lifecycle_events (
       WHEN event_type = 'email_correspondence_rejected' THEN copyright_notice_email_intake_id IS NOT NULL
       WHEN event_type = 'delivery_intent_replayed' THEN copyright_notice_delivery_intent_id IS NOT NULL
       WHEN event_type = 'media_delivery_registry_replayed' THEN media_delivery_registry_key IS NOT NULL
+      WHEN event_type IN ('guest_capability_issued', 'guest_capability_revoked',
+        'guest_capability_revoked_by_withdrawal') THEN copyright_notice_guest_capability_id IS NOT NULL
       ELSE false
     END
   )
@@ -418,6 +428,8 @@ CREATE INDEX idx_copyright_restrictions__target ON copyright_restrictions(copyri
 CREATE INDEX idx_copyright_restrictions__human_reviewer ON copyright_restrictions(human_reviewed_by_id) WHERE human_reviewed_by_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_submissions__notice_received ON copyright_notice_submissions(copyright_notice_id, received_at, id);
 CREATE INDEX idx_copyright_notice_submissions__submitted_by ON copyright_notice_submissions(submitted_by_user_id) WHERE submitted_by_user_id IS NOT NULL;
+CREATE INDEX idx_copyright_notice_submissions__guest_capability ON copyright_notice_submissions(copyright_notice_guest_capability_id, copyright_notice_id) WHERE copyright_notice_guest_capability_id IS NOT NULL;
+CREATE UNIQUE INDEX idx_copyright_notice_submissions__one_guest_court_hold ON copyright_notice_submissions(copyright_notice_guest_capability_id) WHERE kind = 'court_or_ccb_hold' AND copyright_notice_guest_capability_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_assessments__submission ON copyright_notice_submission_assessments(copyright_notice_submission_id, id DESC);
 CREATE INDEX idx_copyright_notice_assessments__assessed_by ON copyright_notice_submission_assessments(assessed_by_id) WHERE assessed_by_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_counter_assessment_targets__target ON copyright_notice_counter_notice_assessment_targets(copyright_notice_target_id, copyright_notice_submission_assessment_id);
@@ -444,6 +456,7 @@ CREATE INDEX idx_copyright_notice_events__action_intent ON copyright_notice_life
 CREATE INDEX idx_copyright_notice_events__email_intake ON copyright_notice_lifecycle_events(copyright_notice_email_intake_id) WHERE copyright_notice_email_intake_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_events__delivery_intent ON copyright_notice_lifecycle_events(copyright_notice_delivery_intent_id) WHERE copyright_notice_delivery_intent_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_events__media_registry ON copyright_notice_lifecycle_events(media_delivery_registry_key) WHERE media_delivery_registry_key IS NOT NULL;
+CREATE INDEX idx_copyright_notice_events__guest_capability ON copyright_notice_lifecycle_events(copyright_notice_guest_capability_id, copyright_notice_id) WHERE copyright_notice_guest_capability_id IS NOT NULL;
 CREATE INDEX idx_copyright_notice_intents__pending ON copyright_notice_action_intents(id) WHERE completed_at IS NULL;
 CREATE INDEX idx_copyright_notice_intents__deadline ON copyright_notice_action_intents(copyright_notice_deadline_id) WHERE copyright_notice_deadline_id IS NOT NULL;
 CREATE INDEX idx_copyright_notices__claimant_user ON copyright_notices(claimant_user_id) WHERE claimant_user_id IS NOT NULL;
@@ -577,6 +590,7 @@ BEGIN
       OLD.received_at,
       OLD.source_kind,
       OLD.body_ciphertext,
+      OLD.copyright_notice_guest_capability_id,
       OLD.created_at,
       OLD.updated_at
     ) IS NOT DISTINCT FROM ROW(
@@ -586,6 +600,7 @@ BEGIN
       NEW.received_at,
       NEW.source_kind,
       NEW.body_ciphertext,
+      NEW.copyright_notice_guest_capability_id,
       NEW.created_at,
       NEW.updated_at
     ) THEN
@@ -853,6 +868,7 @@ COMMENT ON COLUMN copyright_notice_submissions.kind IS 'Submission role: allegat
 COMMENT ON COLUMN copyright_notice_submissions.received_at IS 'Immutable provider or form receipt timestamp for this exact submission.';
 COMMENT ON COLUMN copyright_notice_submissions.source_kind IS 'Authenticated form, guest form, email, or staff-recorded source channel.';
 COMMENT ON COLUMN copyright_notice_submissions.body_ciphertext IS 'Authenticated ciphertext of the private structured submission or preserved message body.';
+COMMENT ON COLUMN copyright_notice_submissions.copyright_notice_guest_capability_id IS 'Guest capability that filed this in-case guest submission; NULL for every other source. One court or CCB hold per capability.';
 
 COMMENT ON TABLE copyright_notice_submission_assessments IS 'Append-only compliance assessment. A compliant counter-notice uses its referenced immutable submission received_at as the statutory clock origin.';
 COMMENT ON COLUMN copyright_notice_submission_assessments.copyright_notice_submission_id IS 'Immutable submission evaluated by this assessment.';
@@ -931,6 +947,7 @@ COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_restriction_id IS 
 COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_email_intake_id IS 'Email intake cited by this event.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_delivery_intent_id IS 'Delivery intent replayed by this event.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.media_delivery_registry_key IS 'Media delivery registry record replayed by this event.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_guest_capability_id IS 'Guest capability issued or revoked by this event; the actor is NULL when a withdrawal revoked it.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.review_action IS 'Human review outcome stored on a mandatory-review event.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.review_rationale_ciphertext IS 'Private encrypted human-review rationale; member timelines project only event type and timestamp.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.counter_notice_accepted IS 'Whether the counter-notice review accepted the counter-notice.';

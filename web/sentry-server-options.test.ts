@@ -31,6 +31,17 @@ describe('createSentryServerInitOptions', () => {
     )
   })
 
+  it('turns off HTTP body capture and gen-AI input and output recording', () => {
+    const expected: ReturnType<typeof createSentryServerInitOptions>['dataCollection'] = {
+      httpBodies: [],
+      genAI: { inputs: false, outputs: false },
+    }
+
+    expect(createSentryServerInitOptions({ NODE_ENV: 'production' }).dataCollection).toEqual(
+      expected,
+    )
+  })
+
   it('stays disabled outside the deployed-environment allowlist', () => {
     const options = createSentryServerInitOptions(
       { NODE_ENV: 'production' },

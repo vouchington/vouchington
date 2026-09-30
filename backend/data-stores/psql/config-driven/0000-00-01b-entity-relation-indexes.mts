@@ -2,6 +2,7 @@ import {
   entityRelationMetadatum,
   type EntityRelationMetadata,
 } from '@voucha/types/entities/entity-relations-metadata'
+import { buildConstraintAddAndValidateSql } from './utils/catalog-guarded-ddl.mts'
 
 const ACTIVE_SUBJECT_BEST_INDEX_COLUMNS =
   'subject_id, votes_score_sort DESC, created_at DESC, object_id DESC'
@@ -92,6 +93,13 @@ BEGIN
   END IF;
 END $$;
 `
+    // The mutation fence table is created by an earlier SQL migration, before this relation table.
+    query += `\n${buildConstraintAddAndValidateSql(
+      'story_post_related_url_projection_relation_mutations',
+      'story_post_url_projection_mutations_relation_fkey',
+      'FOREIGN KEY (post_id, relation_id) REFERENCES relation__post__related__url (subject_id, id) ON DELETE CASCADE',
+      'relation__post__related__url',
+    ).join('\n')}\n`
   }
 
   return query.trim()

@@ -9,104 +9,123 @@ import {
 } from '@/lib/api/client/copyright-guest'
 import onError, { onSuccess } from '@/lib/on-error'
 import { LabeledInput, LabeledTextarea } from './copyright-form-fields'
+import {
+  toDateTimeLocalValue,
+  useCopyrightGuestCapabilities,
+} from './copyright-staff-guest-capability-list'
+import { CopyrightGuestCapabilityRows } from './copyright-staff-guest-capability-rows'
+
+const maxLifetimeMs = 30 * 24 * 60 * 60 * 1000
+
+function latestExpiry() {
+  return toDateTimeLocalValue(Date.now() + maxLifetimeMs)
+}
 
 export function CopyrightStaffGuestCapability({ noticeId }: { noticeId: string }) {
+  const capabilities = useCopyrightGuestCapabilities(noticeId)
+  const [maxExpiry, setMaxExpiry] = useState(() => latestExpiry())
   const [expiresAt, setExpiresAt] = useState('')
-  const [capabilityId, setCapabilityId] = useState<string | null>(null)
-  const [token, setToken] = useState<string | null>(null)
+  const [issued, setIssued] = useState<{ id: string; token: string } | null>(null)
+  const [requestFor, setRequestFor] = useState<string | null>(null)
   const [statement, setStatement] = useState('')
   const [pending, startTransition] = useTransition()
-  function issue() {
-    if (!expiresAt || pending) return
+  function run(action: () => Promise<void>, fallback: string) {
+    if (pending) return
     startTransition(async () => {
       try {
-        const issued = await issueCopyrightGuestCapability(
-          noticeId,
-          new Date(expiresAt).toISOString(),
-        )
-        setCapabilityId(issued.copyright_guest_capability.id)
-        setToken(issued.copyright_guest_capability.token)
-        onSuccess('Guest access issued. Copy the token now. It is shown once.')
+        await action()
       } catch (error) {
-        onError(error, { fallback: 'Could not issue guest access' })
+        onError(error, { fallback })
       }
     })
+  }
+  function issue() {
+    if (!expiresAt) return
+    run(async () => {
+      const response = await issueCopyrightGuestCapability(
+        noticeId,
+        new Date(expiresAt).toISOString(),
+      )
+      const { id, token } = response.copyright_guest_capability
+      setIssued({ id, token })
+      capabilities.reload()
+      onSuccess('Guest access issued. Copy the token now. It is shown once.')
+    }, 'Could not issue guest access')
+  }
+  function revoke(capabilityId: string) {
+    run(async () => {
+      await revokeCopyrightGuestCapability(noticeId, capabilityId)
+      if (issued?.id === capabilityId) setIssued(null)
+      if (requestFor === capabilityId) setRequestFor(null)
+      capabilities.reload()
+      onSuccess('Guest access revoked.')
+    }, 'Could not revoke guest access')
   }
   function requestInformation() {
-    if (!capabilityId || !statement.trim() || pending) return
-    startTransition(async () => {
-      try {
-        await requestCopyrightGuestInformation(noticeId, capabilityId, statement.trim())
-        setStatement('')
-        onSuccess('Information request recorded. Guest access expiry is unchanged.')
-      } catch (error) {
-        onError(error, { fallback: 'Could not request information' })
-      }
-    })
-  }
-  function revoke() {
-    if (!capabilityId || pending) return
-    startTransition(async () => {
-      try {
-        await revokeCopyrightGuestCapability(noticeId, capabilityId)
-        setToken(null)
-        onSuccess('Guest access revoked.')
-      } catch (error) {
-        onError(error, { fallback: 'Could not revoke guest access' })
-      }
-    })
+    const capabilityId = requestFor
+    if (!capabilityId || !statement.trim()) return
+    run(async () => {
+      await requestCopyrightGuestInformation(noticeId, capabilityId, statement.trim())
+      setStatement('')
+      setRequestFor(null)
+      onSuccess('Information request recorded. Guest access expiry is unchanged.')
+    }, 'Could not request information')
   }
   return (
     <section className='space-y-3'>
       <h3 className='font-semibold'>Guest access</h3>
       <p className='text-sm text-muted-foreground'>
-        The claimant opens /copyright/notices/{noticeId}/guest and enters this token.
+        The claimant opens /copyright/notices/{noticeId}/guest and enters a token. Access lasts at
+        most 30 days and ends when the notice is withdrawn.
       </p>
       <LabeledInput
         id={`guest-expires-${noticeId}`}
         label='Access expires'
         type='datetime-local'
+        max={maxExpiry}
+        onFocus={() => setMaxExpiry(latestExpiry())}
         value={expiresAt}
         onChange={event => setExpiresAt(event.target.value)}
       />
-      <div className='flex gap-2'>
-        <Button
-          type='button'
-          disabled={pending}
-          onClick={issue}
-        >
-          Issue guest access
-        </Button>
-        <Button
-          type='button'
-          variant='outline'
-          disabled={pending || !capabilityId}
-          onClick={revoke}
-        >
-          Revoke
-        </Button>
-      </div>
-      {token && (
+      <Button
+        type='button'
+        disabled={pending}
+        onClick={issue}
+      >
+        Issue guest access
+      </Button>
+      {issued && (
         <LabeledInput
           id={`guest-token-${noticeId}`}
           label='Access token'
           readOnly
-          value={token}
+          value={issued.token}
         />
       )}
-      <LabeledTextarea
-        id={`guest-request-${noticeId}`}
-        label='Information request'
-        value={statement}
-        onChange={event => setStatement(event.target.value)}
+      <CopyrightGuestCapabilityRows
+        list={capabilities}
+        pending={pending}
+        onRequest={setRequestFor}
+        onRevoke={revoke}
+        onLoadOlder={() => run(capabilities.loadOlder, 'Could not load older guest access')}
       />
-      <Button
-        type='button'
-        disabled={pending || !capabilityId}
-        onClick={requestInformation}
-      >
-        Request information
-      </Button>
+      {requestFor && (
+        <>
+          <LabeledTextarea
+            id={`guest-request-${noticeId}`}
+            label='Information request'
+            value={statement}
+            onChange={event => setStatement(event.target.value)}
+          />
+          <Button
+            type='button'
+            disabled={pending}
+            onClick={requestInformation}
+          >
+            Send information request
+          </Button>
+        </>
+      )}
     </section>
   )
 }

@@ -25,7 +25,7 @@ flowchart TD
 ```
 
 1. Reporting activity creates detection signals for mass-report patterns.
-2. A flag stores the captured reporter IDs in `details.reporter_user_ids`.
+2. A flag stores each captured reporter as a `report_integrity_flag_reporters` row; the API rebuilds `details.reporter_user_ids` from those rows.
 3. A moderator resolves the flag as dismissed or penalized.
 4. Penalizing inserts `report_abuse_penalties` rows and stamps `users.bad_faith_reporter_at`.
 5. Revocation clears the trust-tier penalty state and invalidates sessions because trust tier is cached in JWT claims.

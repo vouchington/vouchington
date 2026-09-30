@@ -1,5 +1,4 @@
 import { execFile as execFileCb } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
 import { parseArgs as nodeParseArgs, promisify } from 'node:util'
 
 import { decide, type DecisionResult } from './decide.mts'
@@ -166,7 +165,7 @@ export async function main(
   return 0
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   main(process.argv.slice(2))
     .then(exitCode => {
       process.exitCode = exitCode

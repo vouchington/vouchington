@@ -5,8 +5,10 @@ import {
   insertTestReportIntegrityFlag,
   getTestReportAbusePenaltiesByFlagId,
   getTestReportAbusePenaltiesByUserId,
+  getTestReportIntegrityFlagReporterIds,
   getTestReportIntegrityFlagsByUserId,
   getTestUserBadFaithReporterAt,
+  hardDeleteTestUser,
 } from '@voucha/test-helpers'
 import { applyReportAbusePenalty } from './apply-penalty.mts'
 import { revokeReportAbusePenalty } from './revoke-penalty.mts'
@@ -59,14 +61,16 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
   it('skips reporters whose accounts no longer exist', async () => {
     const targetUser = await createTestUserDirect({ username: randomUsername() })
     const reporter = await createTestUserDirect({ username: randomUsername() })
-    // A reporter captured at detection but hard-deleted before actioning. Use a
-    // v7 UUID that does not exist in users — the FK JOIN must skip it, not fail.
-    const missingReporterId = '01923456-789a-7bcd-8ef0-123456789abc'
+    const deletedReporter = await createTestUserDirect({ username: randomUsername() })
 
     const flagId = await insertTestReportIntegrityFlag({
       reportedUserId: targetUser.id,
-      reporterUserIds: [reporter.id, missingReporterId],
+      reporterUserIds: [reporter.id, deletedReporter.id],
     })
+    // A reporter captured at detection but hard-deleted before actioning leaves the reporter set
+    // with the user row (ON DELETE CASCADE), so the penalty applies only to the remaining reporters.
+    await hardDeleteTestUser(deletedReporter.id)
+    await expect(getTestReportIntegrityFlagReporterIds(flagId)).resolves.toEqual([reporter.id])
 
     const result = await applyReportAbusePenalty(adminUser.id, flagId)
     expect(result.penalized_user_count).toBe(1)

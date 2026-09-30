@@ -25,7 +25,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS,
   ['post_admission_claims.lease_id', 'Fencing token, not a durable relation.'],
-  ['post_admission_reservations.committed_post_id', 'Replay snapshot; no foreign key.'],
   ['agent_moderations.moderation_transparency_community_id', 'Trigger-maintained scope snapshot.'],
   ['moderation_appeals.moderation_transparency_community_id', 'Immutable scope snapshot.'],
   [
@@ -105,8 +104,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'moderation_report_judgements.rerun_by_id',
     'Optional FK to moderator who requested re-run; audit snapshot survives user deletion.',
   ],
-  ['post_clearance_changes.changed_by_id', 'Audit records intentionally survive user deletion.'],
-  ['post_moderation_dispositions.actor_user_id', 'Staff audit snapshot survives user deletion.'],
   [
     'session_referral_attributions.session_id',
     'Session attribution UUID from the auth cookie, not a persisted table key.',
@@ -147,7 +144,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'user_deletion_audit_logs.user_id',
     'Compliance audit records intentionally survive user deletion.',
   ],
-  ['user_referral_program_links.last_crawl_id', 'Optional pointer to latest crawl record.'],
 ])
 export const COMMENT_EXEMPT_COLUMN_NAMES = [
   'id',

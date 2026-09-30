@@ -169,6 +169,8 @@ it('uses owned bounds', () => {
   ${scopeCall('getRecoverableOAuthAuthorizationIds', `{ kind: 'ids', ids: ['owned-id'] }`)}
   ${scopeCall('searchCopyrightStaffEmailIntakes', `{ kind: 'ids', ids: ['owned-id'] }`)}
   ${scopeCall('listAvailableNotificationPushIntents', `{ kind: 'ids', ids: ['owned-id'] }`)}
+  ${scopeCall('cleanupRetainedIdentityRoots', `{ kind: 'ids', ids: ['owned-id'] }`)}
+  ${scopeCall('cleanupRetainedRelationIdentities', `{ kind: 'ids', ids: ['owned-id', 'owned-relation-id'] }`)}
 })`,
       },
     ])
@@ -198,6 +200,22 @@ it('uses owned bounds', () => {
       'listAvailableNotificationPushIntents',
       'notification_push_intents',
       `{ kind: 'cursor', id: 'unrelated-id' }`,
+    ],
+    ['cleanupRetainedIdentityRoots', 'retained_identity_cleanup_progress', `{ kind: 'global' }`],
+    [
+      'cleanupRetainedIdentityRoots',
+      'retained_identity_cleanup_progress',
+      `{ kind: 'ids', ids: [] }`,
+    ],
+    [
+      'cleanupRetainedRelationIdentities',
+      'retained_relation_identity_cleanup_progress',
+      `{ kind: 'global' }`,
+    ],
+    [
+      'cleanupRetainedRelationIdentities',
+      'retained_relation_identity_cleanup_progress',
+      `{ kind: 'ids', ids: [] }`,
     ],
   ] as const)('rejects %s calls with %s scope', async (operation, table, scope) => {
     const result = await runFixture([

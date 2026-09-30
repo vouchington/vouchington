@@ -21,13 +21,7 @@ CREATE TABLE IF NOT EXISTS admin_import_batches (
   completed_rows INT NOT NULL DEFAULT 0 CHECK (completed_rows >= 0),
   failed_rows INT NOT NULL DEFAULT 0 CHECK (failed_rows >= 0),
   completed_at TIMESTAMPTZ,
-  metadata_source TEXT CHECK (
-    metadata_source IS NULL OR (
-      char_length(metadata_source) BETWEEN 1 AND 1024
-      AND metadata_source = TRIM(metadata_source)
-    )
-  ),
-  metadata_version INT CHECK (metadata_version IS NULL OR metadata_version >= 0),
+  metadata JSONB,
   CONSTRAINT chk_admin_import_batches__lifecycle CHECK (
     completed_rows + failed_rows <= total_rows
     AND (completed_at IS NOT NULL) = (completed_rows + failed_rows = total_rows)
@@ -71,8 +65,7 @@ COMMENT ON COLUMN admin_import_batches.total_rows IS 'Total number of rows in th
 COMMENT ON COLUMN admin_import_batches.completed_rows IS 'Number of rows successfully imported so far.';
 COMMENT ON COLUMN admin_import_batches.failed_rows IS 'Number of rows that failed to import.';
 COMMENT ON COLUMN admin_import_batches.completed_at IS 'When the entire batch finished processing.';
-COMMENT ON COLUMN admin_import_batches.metadata_source IS 'Optional source label for the import, such as a file name.';
-COMMENT ON COLUMN admin_import_batches.metadata_version IS 'Optional non-negative format version supplied with the import.';
+COMMENT ON COLUMN admin_import_batches.metadata IS 'Optional JSON metadata about the import (e.g., source file name, options).';
 
 CREATE TABLE IF NOT EXISTS admin_import_rows (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
@@ -80,6 +73,7 @@ CREATE TABLE IF NOT EXISTS admin_import_rows (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   batch_id UUID NOT NULL REFERENCES admin_import_batches(id) ON DELETE CASCADE,
   row_index INT NOT NULL CHECK (row_index >= 0),
+  input_data JSONB NOT NULL,
   topic_id UUID REFERENCES topics ON DELETE RESTRICT,
   rss_feed_id UUID REFERENCES rss_feeds ON DELETE RESTRICT,
   completed_at TIMESTAMPTZ,
@@ -148,136 +142,8 @@ CREATE INDEX IF NOT EXISTS idx_admin_import_rows__rss_feed_id
 COMMENT ON TABLE admin_import_rows IS 'Individual rows within an admin import batch, tracking per-row input, status, and errors.';
 COMMENT ON COLUMN admin_import_rows.batch_id IS 'The import batch this row belongs to.';
 COMMENT ON COLUMN admin_import_rows.row_index IS 'Zero-based position of this row within the batch.';
+COMMENT ON COLUMN admin_import_rows.input_data IS 'The raw input data for this row as JSON.';
 COMMENT ON COLUMN admin_import_rows.topic_id IS 'Topic created or updated by this import row.';
-
-CREATE TABLE IF NOT EXISTS admin_import_topic_rows (
-  admin_import_row_id UUID PRIMARY KEY REFERENCES admin_import_rows ON DELETE CASCADE,
-  slug TEXT NOT NULL CHECK (char_length(slug) BETWEEN 1 AND 255),
-  name TEXT,
-  topic_type TEXT,
-  markdown TEXT,
-  rss_feed_url TEXT,
-  rss_feed_title TEXT,
-  feed_type TEXT,
-  aliases TEXT,
-  parent_slugs TEXT,
-  extensions TEXT,
-  notes TEXT,
-  referral_validation_slug TEXT,
-  referral_user_help_text TEXT,
-  referral_hostname TEXT,
-  referral_pathname TEXT,
-  referral_example_url TEXT,
-  referral_company_slug TEXT,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TRIGGER trigger_admin_import_topic_rows_updated_at
-BEFORE UPDATE ON admin_import_topic_rows
-FOR EACH ROW
-EXECUTE FUNCTION fn_update_updated_at();
-
-CREATE TABLE IF NOT EXISTS admin_import_rss_feed_rows (
-  admin_import_row_id UUID PRIMARY KEY REFERENCES admin_import_rows ON DELETE CASCADE,
-  url TEXT NOT NULL CHECK (char_length(url) BETWEEN 1 AND 2083),
-  follow BOOLEAN,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TRIGGER trigger_admin_import_rss_feed_rows_updated_at
-BEFORE UPDATE ON admin_import_rss_feed_rows
-FOR EACH ROW
-EXECUTE FUNCTION fn_update_updated_at();
-
-CREATE OR REPLACE FUNCTION fn_admin_import_topic_row_matches_batch()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  batch_import_type admin_import_types;
-BEGIN
-  SELECT batches.import_type
-  INTO STRICT batch_import_type
-  FROM admin_import_rows rows
-  JOIN admin_import_batches batches ON batches.id = rows.batch_id
-  WHERE rows.id = NEW.admin_import_row_id;
-
-  IF batch_import_type <> 'topic' THEN
-    RAISE EXCEPTION 'topic import input does not match batch import type %', batch_import_type
-      USING ERRCODE = 'check_violation';
-  END IF;
-  IF EXISTS (
-    SELECT 1 FROM admin_import_rss_feed_rows
-    WHERE admin_import_row_id = NEW.admin_import_row_id
-  ) THEN
-    RAISE EXCEPTION 'admin import row cannot own both topic and RSS feed input'
-      USING ERRCODE = 'check_violation';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION fn_admin_import_rss_feed_row_matches_batch()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  batch_import_type admin_import_types;
-BEGIN
-  SELECT batches.import_type
-  INTO STRICT batch_import_type
-  FROM admin_import_rows rows
-  JOIN admin_import_batches batches ON batches.id = rows.batch_id
-  WHERE rows.id = NEW.admin_import_row_id;
-
-  IF batch_import_type <> 'rss_feed' THEN
-    RAISE EXCEPTION 'RSS feed import input does not match batch import type %', batch_import_type
-      USING ERRCODE = 'check_violation';
-  END IF;
-  IF EXISTS (
-    SELECT 1 FROM admin_import_topic_rows
-    WHERE admin_import_row_id = NEW.admin_import_row_id
-  ) THEN
-    RAISE EXCEPTION 'admin import row cannot own both topic and RSS feed input'
-      USING ERRCODE = 'check_violation';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trigger_admin_import_topic_rows_match_batch
-  BEFORE INSERT OR UPDATE ON admin_import_topic_rows
-  FOR EACH ROW
-  EXECUTE FUNCTION fn_admin_import_topic_row_matches_batch();
-
-CREATE TRIGGER trigger_admin_import_rss_feed_rows_match_batch
-  BEFORE INSERT OR UPDATE ON admin_import_rss_feed_rows
-  FOR EACH ROW
-  EXECUTE FUNCTION fn_admin_import_rss_feed_row_matches_batch();
-
-COMMENT ON TABLE admin_import_topic_rows IS 'Typed topic-import input for one admin import row.';
-COMMENT ON COLUMN admin_import_topic_rows.admin_import_row_id IS 'Admin import row that owns this topic input.';
-COMMENT ON COLUMN admin_import_topic_rows.slug IS 'Topic slug to create or update.';
-COMMENT ON COLUMN admin_import_topic_rows.name IS 'Optional topic display name from the import input.';
-COMMENT ON COLUMN admin_import_topic_rows.topic_type IS 'Optional topic type from the import input.';
-COMMENT ON COLUMN admin_import_topic_rows.markdown IS 'Optional topic markdown from the import input.';
-COMMENT ON COLUMN admin_import_topic_rows.rss_feed_url IS 'Optional RSS feed URL attached to an rss_feed topic.';
-COMMENT ON COLUMN admin_import_topic_rows.rss_feed_title IS 'Optional RSS feed title attached to an rss_feed topic.';
-COMMENT ON COLUMN admin_import_topic_rows.feed_type IS 'Optional RSS feed type stored with an rss_feed topic input.';
-COMMENT ON COLUMN admin_import_topic_rows.aliases IS 'Pipe-separated topic aliases from the import input.';
-COMMENT ON COLUMN admin_import_topic_rows.parent_slugs IS 'Pipe-separated parent topic slugs from the import input.';
-COMMENT ON COLUMN admin_import_topic_rows.extensions IS 'Pipe-separated topic extensions from the import input.';
-COMMENT ON COLUMN admin_import_topic_rows.notes IS 'Optional operator note stored with the topic import input.';
-COMMENT ON COLUMN admin_import_topic_rows.referral_validation_slug IS 'Referral program validation slug for topic_type=referral_program.';
-COMMENT ON COLUMN admin_import_topic_rows.referral_user_help_text IS 'Referral program help text from the import input.';
-COMMENT ON COLUMN admin_import_topic_rows.referral_hostname IS 'Referral program hostname from the import input.';
-COMMENT ON COLUMN admin_import_topic_rows.referral_pathname IS 'Referral program pathname from the import input.';
-COMMENT ON COLUMN admin_import_topic_rows.referral_example_url IS 'Referral program example URL from the import input.';
-COMMENT ON COLUMN admin_import_topic_rows.referral_company_slug IS 'Referral program company topic slug from the import input.';
-COMMENT ON TABLE admin_import_rss_feed_rows IS 'Typed RSS-feed import input for one admin import row. NULL follow means the caller omitted it.';
-COMMENT ON COLUMN admin_import_rss_feed_rows.admin_import_row_id IS 'Admin import row that owns this RSS feed input.';
-COMMENT ON COLUMN admin_import_rss_feed_rows.url IS 'RSS feed URL to import.';
-COMMENT ON COLUMN admin_import_rss_feed_rows.follow IS 'Whether to follow the imported feed. NULL when the input omitted follow.';
 COMMENT ON COLUMN admin_import_rows.rss_feed_id IS 'RSS feed created or updated by this import row.';
 COMMENT ON COLUMN admin_import_rows.completed_at IS 'When this row was successfully imported.';
 COMMENT ON COLUMN admin_import_rows.failed_at IS 'When this row failed to import.';

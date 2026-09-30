@@ -10,20 +10,21 @@ row is created for moderator review. Admins can penalise confirmed bad-faith rep
 ## Data model
 
 - `report_integrity_flags` — one flag per (entity, flag_type) while unresolved; deduped by partial unique index.
+- `report_integrity_flag_reporters` — one row per (flag, reporter) captured at detection; deleted with the flag or the reporter. `details.reporter_user_ids` is never stored; flag reads rebuild it from these rows.
 - `report_abuse_penalties` — one row per (reporter, source_flag); cleared when revoked.
 - `users.bad_faith_reporter_at` — denormalised timestamp set/cleared alongside penalties to feed `computeTrustTier`.
 
 ## Key functions
 
-| Function                                         | Description                                                                                                    |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `detectMassReportCampaign(entityType, entityId)` | Count distinct pending reporters in window; return `{ flagged, reporter_count, new_account_reporter_pct }`     |
-| `createReportIntegrityFlag(...)`                 | Insert flag with `ON CONFLICT DO NOTHING` dedup                                                                |
-| `applyReportAbusePenalty(adminId, flagId)`       | Atomically resolve + insert penalties; return the updated flag; stamp `bad_faith_reporter_at`; invalidate JWTs |
-| `getReportIntegrityFlagByIdFromPrimary(id)`      | Exact primary-pool flag read for post-mutation reconciliation                                                  |
-| `getReportAbusePenalties(options)`               | Scoped-cursor penalty ledger with status, user, and source-flag filters                                        |
-| `getReportAbusePenaltyByIdFromPrimary(id)`       | Exact primary-pool penalty read for post-mutation reconciliation                                               |
-| `revokeReportAbusePenalty(adminId, penaltyId)`   | Revoke penalty; clear `bad_faith_reporter_at` if last active penalty                                           |
+| Function                                         | Description                                                                                                                   |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `detectMassReportCampaign(entityType, entityId)` | Count distinct pending reporters in window; return `{ flagged, reporter_count, new_account_reporter_pct, reporter_user_ids }` |
+| `createReportIntegrityFlag(...)`                 | Insert flag and its reporter rows in one statement with `ON CONFLICT DO NOTHING` dedup                                        |
+| `applyReportAbusePenalty(adminId, flagId)`       | Atomically resolve + insert penalties; return the updated flag; stamp `bad_faith_reporter_at`; invalidate JWTs                |
+| `getReportIntegrityFlagByIdFromPrimary(id)`      | Exact primary-pool flag read for post-mutation reconciliation                                                                 |
+| `getReportAbusePenalties(options)`               | Scoped-cursor penalty ledger with status, user, and source-flag filters                                                       |
+| `getReportAbusePenaltyByIdFromPrimary(id)`       | Exact primary-pool penalty read for post-mutation reconciliation                                                              |
+| `revokeReportAbusePenalty(adminId, penaltyId)`   | Revoke penalty; clear `bad_faith_reporter_at` if last active penalty                                                          |
 
 Flag and penalty cursors bind the `id DESC` boundary to their resource and complete normalized
 filter set and reject unscoped simple cursors. Revocation

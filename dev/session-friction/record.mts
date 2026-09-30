@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { fileURLToPath } from 'node:url'
 
 import { recordFriction as recordObservation } from 'vouchington-tooling/session-friction'
 
@@ -80,7 +79,7 @@ export function recordPermissionRequestFriction(
   recordObservation(sessionId, observation, { directory: frictionLogDirectory(env) })
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   try {
     const mode = process.argv[2]
     const payload = readHookPayload()

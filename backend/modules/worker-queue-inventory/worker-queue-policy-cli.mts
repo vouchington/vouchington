@@ -1,5 +1,3 @@
-import { realpathSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { allWorkerQueueNames, formatQueueIncludeList } from './worker-queue-policy.mts'
 
 export function workerQueuePolicyCommandOutput(command: string | undefined): string {
@@ -12,10 +10,7 @@ export function workerQueuePolicyCommandOutput(command: string | undefined): str
 }
 
 /* v8 ignore start -- process I/O wrapper; command dispatch is covered above. */
-if (
-  process.argv[1] &&
-  realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
-) {
+if (import.meta.main) {
   try {
     process.stdout.write(`${workerQueuePolicyCommandOutput(process.argv[2])}\n`)
   } catch (error) {

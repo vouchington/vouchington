@@ -23,11 +23,38 @@ export async function getTestPostCategoryFinalization(
 ): Promise<TestPostCategoryFinalization | undefined> {
   const { rows } = await read<TestPostCategoryFinalization>(sql`
     /* getTestPostCategoryFinalization */
-    SELECT post_id, actor_user_ids, topic_category_owner_id, generation
+    SELECT post_id, fn_post_category_finalization_actor_ids(post_id) AS actor_user_ids,
+      topic_category_owner_id, generation
     FROM post_category_finalizations
     WHERE post_id = ${postId}
   `)
   return rows[0]
+}
+
+export async function getTestAdmissionResponseTopicSnapshot(postId: string): Promise<{
+  responseGeneration: string | null
+  topicCount: number
+} | null> {
+  const { rows } = await read<{
+    admission_response_generation: string | null
+    topic_count: number
+  }>(sql`
+    /* getTestAdmissionResponseTopicSnapshot */
+    SELECT finalization.admission_response_generation::text AS admission_response_generation,
+      (
+        SELECT COUNT(*)::int
+        FROM post_category_finalization_admission_topics topic
+        WHERE topic.post_id = finalization.post_id
+      ) AS topic_count
+    FROM post_category_finalizations finalization
+    WHERE finalization.post_id = ${postId}
+  `)
+  const row = rows[0]
+  if (!row) return null
+  return {
+    responseGeneration: row.admission_response_generation,
+    topicCount: row.topic_count,
+  }
 }
 
 export async function hasTestPostCategoryAdmissionResponseFinalization(
@@ -39,7 +66,7 @@ export async function hasTestPostCategoryAdmissionResponseFinalization(
       SELECT 1 FROM post_category_finalizations
       WHERE post_id = ${postId}
         AND admission_response_generation = generation
-        AND admission_response_topic_ids IS NOT NULL
+        AND admission_response_generation IS NOT NULL
     ) AS exists
   `)
   return rows[0]!.exists

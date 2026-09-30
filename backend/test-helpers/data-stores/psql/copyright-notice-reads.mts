@@ -1,6 +1,10 @@
 import { read, write } from '@data-stores/psql'
-import { encodeScopedPreciseTimestampCursor } from '@modules/pagination'
+import {
+  encodeScopedPreciseTimestampCursor,
+  encodeScopedTierPreciseUuidCursor,
+} from '@modules/pagination'
 import { copyrightStaffQueueCursorScope } from '../../../services/copyright-notices/read-models-staff.mts'
+import { copyrightStaffQueueKeysSql } from '../../../services/copyright-notices/read-models-staff-queue-sql.mts'
 import { copyrightAcceptedNoticeCursorScope } from '../../../services/copyright-notices/read-models.mts'
 import sql from 'sql-template-strings'
 
@@ -31,43 +35,46 @@ export async function readCopyrightAcceptedNoticeCursorBefore(noticeId: string):
 }
 
 /**
- * Staff-queue `after` cursor whose first page starts at the oldest of `noticeIds`. The queue is
- * global and the test database is shared and never cleaned, so a test that reads from the queue
- * head sees other tests' cases; seeking one microsecond before its own oldest case keeps every
- * page on rows at or after the ones it created.
+ * Staff-queue `after` cursor whose first page starts at the first-queued of `noticeIds`. The queue
+ * is global and the test database is shared and never cleaned, so a test that reads from the queue
+ * head sees other tests' cases; seeking one microsecond before its own first queue key
+ * `(urgency, waiting_since, id)` keeps every page on rows at or after it.
  */
 export async function readCopyrightStaffQueueCursorBefore(noticeIds: string[]): Promise<string> {
-  const { rows } = await read<{ id: string; cursor_received_at: string }>(
-    sql`/* readCopyrightStaffQueueCursorBefore */
-      SELECT notice.id, to_char(
-        (notice.received_at - interval '1 microsecond') AT TIME ZONE 'UTC',
-        'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
-      ) AS cursor_received_at
-      FROM copyright_notices notice
-      WHERE notice.id = ANY(${noticeIds}::uuid[])
-      ORDER BY notice.received_at, notice.id
-      LIMIT 1`,
-  )
-  if (!rows[0]) throw new Error('Copyright staff queue fixture has no notices')
-  return encodeScopedPreciseTimestampCursor(
-    rows[0].cursor_received_at,
-    rows[0].id,
+  const [first] = await readCopyrightStaffQueueCursorRows(noticeIds, 1)
+  if (!first) throw new Error('Copyright staff queue fixture has no queued notices')
+  return encodeScopedTierPreciseUuidCursor(
+    first.waiting_since_before,
+    first.urgency,
+    first.id,
     copyrightStaffQueueCursorScope,
   )
 }
 
+/** Queue keys of the given queued notices, in queue order. */
 export async function readCopyrightStaffQueueCursorRows(
   noticeIds: string[],
-): Promise<Array<{ id: string; received_at: string }>> {
-  const { rows } = await read<{ id: string; received_at: string }>(
-    sql`/* readCopyrightStaffQueueCursorRows */
-      SELECT id, to_char(
-        received_at AT TIME ZONE 'UTC',
-        'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
-      ) AS received_at
-      FROM copyright_notices
+  limit = noticeIds.length,
+): Promise<
+  Array<{ id: string; urgency: number; waiting_since: string; waiting_since_before: string }>
+> {
+  const { rows } = await read<{
+    id: string
+    urgency: number
+    waiting_since: string
+    waiting_since_before: string
+  }>(
+    sql`/* readCopyrightStaffQueueCursorRows */`.append(copyrightStaffQueueKeysSql()).append(sql`
+      SELECT id, urgency,
+        to_char(waiting_since AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS waiting_since,
+        to_char(
+          (waiting_since - interval '1 microsecond') AT TIME ZONE 'UTC',
+          'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+        ) AS waiting_since_before
+      FROM queue_key
       WHERE id = ANY(${noticeIds}::uuid[])
-      ORDER BY received_at, id`,
+      ORDER BY urgency, queue_key.waiting_since, id
+      LIMIT ${limit}`),
   )
   return rows
 }

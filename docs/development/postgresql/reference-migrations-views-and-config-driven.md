@@ -24,8 +24,8 @@ so an unmanaged dependent blocks the rebuild without removing any managed object
 Voucha has not launched. Add columns in the owning migration's original `CREATE TABLE`, then
 rebuild disposable databases, including staging through its operator runbook. Do not add a forward
 `ALTER TABLE ADD COLUMN` merely because an earlier application version once used a different shape.
-The existing exact `postgres-no-add-column` exceptions in [`.no-mistakes.yml`](../../../.no-mistakes.yml)
-are prelaunch cleanup debt; do not extend them. Add cross-file `CHECK` and foreign keys as named
+[`.no-mistakes.yml`](../../../.no-mistakes.yml) allows no `postgres-no-add-column` exceptions; do
+not add one. Add cross-file `CHECK` and foreign keys as named
 `NOT VALID` constraints with a matching `VALIDATE CONSTRAINT` where the bootstrap ordering requires
 them. See [prelaunch relational storage](../postgres-schema-rules.md#prelaunch-relational-storage).
 
@@ -163,7 +163,8 @@ config-driven repair generators. Instead, reset the staging schema:
 Use the private infrastructure staging database reset runbook (the "Staging database reset" step of
 the first-deploy checklist in the private `vouchington-infra` repository), which requires
 organization access. This is a manual-only operator procedure, not an automatic migration-failure
-action or a receiver rerun.
+action or a receiver rerun. Coordinate it with the retained media-delivery edge registry and CDN cache
+per the [media-delivery reset and restore runbook](../../runbooks/media-delivery-reset-restore.md).
 
 Production has not launched. Rebuild the disposable database. Follow
 [One current contract](../../../AGENTS.md).

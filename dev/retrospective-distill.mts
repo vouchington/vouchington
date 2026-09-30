@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-import { fileURLToPath } from 'node:url'
-
 import { runDistillClassify } from './retrospective-distill/run.mts'
 
 const USAGE = `Usage: node dev/retrospective-distill.mts <partition-jsonl-path> \\
@@ -24,7 +22,7 @@ async function main(): Promise<void> {
   process.stdout.write(`${await runDistillClassify(argv)}\n`)
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   main().catch((error: unknown) => {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
     process.exit(1)

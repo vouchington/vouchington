@@ -1,7 +1,8 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
-  type CopyrightStaffCase,
+  type CopyrightStaffQueueCase,
+  type CopyrightStaffQueueCursor,
   copyrightStaffQueueCursorScope,
   currentUserCanReviewCopyrightNotices,
   listCopyrightStaffQueue,
@@ -12,17 +13,18 @@ import { apiQuery, apiResponse } from '../../response-contract.mts'
 import { requireAuth } from '../../response-helpers.mts'
 import {
   createPaginationParser,
-  decodeScopedPreciseTimestampCursor,
-  encodeScopedPreciseTimestampCursor,
+  decodeScopedTierPreciseUuidCursor,
+  encodeScopedTierPreciseUuidCursor,
 } from '@modules/pagination'
 
 const staffQueueParser = createPaginationParser({
-  cursor: { type: 'precise_timestamp' },
+  cursor: { type: 'tier' },
   limit: { min: 1, max: 100, default: 100 },
 })
+const invalidCursorMessage = 'Invalid copyright staff queue cursor'
 
 type CopyrightStaffQueueResponse = {
-  copyright_notices: CopyrightStaffCase[]
+  copyright_notices: CopyrightStaffQueueCase[]
   page_info: {
     has_next_page: boolean
     start_cursor: string | null
@@ -42,34 +44,31 @@ app.route('/api/v1/copyright-notices/review-queue').get(async (ctx: Context) => 
   )
   const options = staffQueueParser.parse(ctx.query)
   const after = options.after
-    ? decodeScopedPreciseTimestampCursor(
+    ? decodeScopedTierPreciseUuidCursor(
         options.after,
         copyrightStaffQueueCursorScope,
-        'Invalid copyright staff queue cursor',
+        invalidCursorMessage,
       )
     : undefined
+  // Urgency tiers are 0 (missed deadline), 1 (deadline past escalation), and 2 (other work).
+  ctx.assert(!after || [0, 1, 2].includes(after.tier), 400, invalidCursorMessage)
   const { cases, endCursor, hasNextPage } = await listCopyrightStaffQueue(currentUser, {
     limit: options.limit,
     after,
   })
-  const cursorFor = (staffCase: (typeof cases)[number]) =>
-    encodeScopedPreciseTimestampCursor(
-      staffCase.cursor_received_at,
-      staffCase.id,
+  const encode = (cursor: CopyrightStaffQueueCursor) =>
+    encodeScopedTierPreciseUuidCursor(
+      cursor.timestamp,
+      cursor.tier,
+      cursor.id,
       copyrightStaffQueueCursorScope,
     )
   const response: CopyrightStaffQueueResponse = {
-    copyright_notices: cases.map(({ cursor_received_at: _, ...staffCase }) => staffCase),
+    copyright_notices: cases.map(({ cursor: _, ...staffCase }) => staffCase),
     page_info: {
       has_next_page: hasNextPage,
-      start_cursor: cases[0] ? cursorFor(cases[0]) : null,
-      end_cursor: endCursor
-        ? encodeScopedPreciseTimestampCursor(
-            endCursor.timestamp,
-            endCursor.id,
-            copyrightStaffQueueCursorScope,
-          )
-        : null,
+      start_cursor: cases[0] ? encode(cases[0].cursor) : null,
+      end_cursor: endCursor ? encode(endCursor) : null,
     },
   }
   ctx.json(apiResponse('GET:/api/v1/copyright-notices/review-queue', response))

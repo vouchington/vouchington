@@ -1,6 +1,10 @@
+import { execFileSync } from 'node:child_process'
+import { resolve } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import { decide } from './decide.mts'
+import { playwrightNavigateToHelperPath } from './playwright-rules.mts'
 import { RULES, type WorkflowRunContext } from './rules.mts'
 
 const mainWebPlaywrightShardOneJobName = 'playwright-tests / playwright-tests (1)'
@@ -247,5 +251,20 @@ describe('main-web-playwright-worker-navigation-timeout', () => {
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
+  })
+})
+
+describe('playwright navigate-to helper path', () => {
+  // The rule matches the `::error file=` annotation for this helper, so a renamed or moved helper
+  // would silently stop matching. Tracked, not merely on disk: an ignored file must not satisfy it.
+  it('names a tracked file', () => {
+    const tracked = execFileSync('git', ['ls-files', '-z', '--', playwrightNavigateToHelperPath], {
+      cwd: resolve(import.meta.dirname, '../..'),
+      encoding: 'utf8',
+    })
+      .split('\0')
+      .filter(Boolean)
+
+    expect(tracked).toEqual([playwrightNavigateToHelperPath])
   })
 })

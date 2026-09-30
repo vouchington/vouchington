@@ -5,11 +5,12 @@ import {
   createVoteHandler,
   type CreateVoteHandlerOptions,
 } from '../../election-vote-handler.mts'
-import { getEntityRelationElectionByIdCachedBatch } from '@services/entity-fetch/get'
+import { getEntityRelationElectionByTargetCachedBatch } from '@services/entity-fetch/get'
 import {
   getEntityRelationElectionVotesByElectionId,
   getEntityRelationElectionVotesByUserForEntity,
   getEntityRelationElectionVote,
+  resolveEntityRelationElectionTargetById,
   upsertEntityRelationElectionVotes,
 } from '@services/elections-votes/entity-relation'
 import { getUserTagRelationById } from '@services/entity-relations/user-tags'
@@ -33,8 +34,15 @@ import {
 } from '../../response-contract.mts'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 
-const getEntityRelationElectionForRoute = (id: string) =>
-  getEntityRelationElectionByIdCachedBatch([id]).then(elections => elections[0] ?? null)
+// These routes name a relation by bare id. The resolver returns the one concrete election it
+// belongs to (or 409s when the id exists in several relation tables), so the qualified cache read
+// and the id-keyed vote reads/writes below can only touch that relation.
+async function getEntityRelationElectionForRoute(id: string) {
+  const target = await resolveEntityRelationElectionTargetById(id)
+  if (!target) return null
+  const [election] = await getEntityRelationElectionByTargetCachedBatch([target])
+  return election ?? null
+}
 
 async function refreshUserTagVoteStats(relationId: string): Promise<void> {
   if (await getUserTagRelationById(relationId)) {
