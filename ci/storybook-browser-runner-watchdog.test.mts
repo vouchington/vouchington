@@ -95,7 +95,7 @@ describe('Storybook browser watchdog edge cases', () => {
       deps,
     )
 
-    child.stdout.emit('data', 'VITE v8.0.16  ready in 573 ms')
+    child.stdout.emit('data', 'VITE v0.0.0  ready in 573 ms')
     now = 900
     child.stderr.emit(
       'data',
@@ -211,7 +211,7 @@ describe('Storybook browser watchdog edge cases', () => {
 
     // Attempt 2: Vite prints a startup message but no optimizer output (warm cache).
     await waitFor(() => spawnCalls.length === 2)
-    second.stdout.emit('data', 'VITE v5.0.0 ready in 45ms')
+    second.stdout.emit('data', 'VITE v0.0.0 ready in 45ms')
     // Now silence for longer than hangMs — Chromium wedged, startupComplete still false.
     now = 1051
     intervals[0].callback()

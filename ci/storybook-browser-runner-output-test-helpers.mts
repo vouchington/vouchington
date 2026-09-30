@@ -10,7 +10,7 @@ export function emitProjectAnnotationsFetchFailure(child: Child) {
 export function emitStorybookAddonVitestSetupRunnerMissing(child: Child) {
   child.stderr.emit(
     'data',
-    'Error: Failed to import test file /repo/node_modules/.pnpm/@storybook+addon-vitest@10.4.6/node_modules/@storybook/addon-vitest/dist/vitest-plugin/setup-file.js\n' +
+    'Error: Failed to import test file /repo/node_modules/.pnpm/@storybook+addon-vitest@0.0.0/node_modules/@storybook/addon-vitest/dist/vitest-plugin/setup-file.js\n' +
       'Caused by: Error: Vitest failed to find the runner. One of the following is possible:\n' +
       '- "vitest" is imported directly without running "vitest" command\n' +
       'Test Files 149 failed\n' +
@@ -21,7 +21,7 @@ export function emitStorybookAddonVitestSetupRunnerMissing(child: Child) {
 export function emitStorybookAddonVitestSetupRunnerMissingAnsi(child: Child) {
   child.stderr.emit(
     'data',
-    '\u001B[31mError:\u001B[0m Failed to import test file /repo/node_modules/.pnpm/@storybook+addon-vitest@10.4.6_1abc/node_modules/@storybook/addon-vitest/dist/vitest-plugin/setup-file.js\n' +
+    '\u001B[31mError:\u001B[0m Failed to import test file /repo/node_modules/.pnpm/@storybook+addon-vitest@0.0.0_1abc/node_modules/@storybook/addon-vitest/dist/vitest-plugin/setup-file.js\n' +
       '\u001B[31mCaused by:\u001B[0m Error: Vitest failed to find the runner. One of the following is possible:\n' +
       '\u001B[36m- "vitest" is imported directly without running "vitest" command\u001B[0m\n' +
       '\u001B[33mTest Files 149 failed (149)\u001B[0m\n' +
@@ -32,7 +32,7 @@ export function emitStorybookAddonVitestSetupRunnerMissingAnsi(child: Child) {
 // The realistic path makes one error block exceed the runner's 1000-char rolling window,
 // reproducing the prior nondeterministic two-marker detection failure.
 const oversizedAddonVitestSetupFilePath =
-  '/repo/node_modules/.pnpm/@storybook+addon-vitest@10.4.6_@vitest+browser-playwright@4.1.9_@vitest+browser@4.1.9_@_41fba38e44b442f509d162a1c9342b2a/node_modules/@storybook/addon-vitest/dist/vitest-plugin/setup-file.js'
+  '/repo/node_modules/.pnpm/@storybook+addon-vitest@0.0.0_@vitest+browser-playwright@0.0.0_@vitest+browser@0.0.0_@_41fba38e44b442f509d162a1c9342b2a/node_modules/@storybook/addon-vitest/dist/vitest-plugin/setup-file.js'
 
 export function storybookAddonVitestSetupRunnerMissingOversizedBlock(): string {
   const p = oversizedAddonVitestSetupFilePath
@@ -45,8 +45,8 @@ export function storybookAddonVitestSetupRunnerMissingOversizedBlock(): string {
     '- Otherwise, it might be a Vitest bug. Please report it to https://github.com/vitest-dev/vitest/issues\n' +
     '\n' +
     ` ❯ ${p}:20:0\n` +
-    ' ❯ ../node_modules/.pnpm/@vitest+runner@4.1.9/node_modules/@vitest/runner/dist/index.js:1120:20\n' +
-    ' ❯ ../node_modules/.pnpm/@vitest+browser@4.1.9/node_modules/@vitest/browser/dist/client/tester/runner.js:210:14\n' +
+    ' ❯ ../node_modules/.pnpm/@vitest+runner@0.0.0/node_modules/@vitest/runner/dist/index.js:1120:20\n' +
+    ' ❯ ../node_modules/.pnpm/@vitest+browser@0.0.0/node_modules/@vitest/browser/dist/client/tester/runner.js:210:14\n' +
     '\n' +
     '⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/160]⎯\n' +
     'Test Files 160 failed (160)\n' +
