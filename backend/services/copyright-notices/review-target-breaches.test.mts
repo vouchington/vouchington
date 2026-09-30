@@ -11,6 +11,7 @@ import { readCopyrightReviewTargetBreaches } from './index.mts'
 const HOUR_MS = 60 * 60 * 1000
 const hoursFromNow = (hours: number) => new Date(Date.now() + hours * HOUR_MS)
 const none = { count: 0, noticeIds: [] }
+const noEmails = { count: 0, emailIntakeIds: [] }
 
 /** A notice whose only restriction a moderator has already confirmed, so nothing else waits. */
 async function createReviewedNotice(): Promise<{ noticeId: string; actorUserId: string }> {
@@ -36,6 +37,7 @@ describe('readCopyrightReviewTargetBreaches', () => {
       waitingPastTarget: none,
       missedEscalation: none,
       missedRestorationDeadline: none,
+      emailIntakesWaitingPastTarget: noEmails,
     })
   })
 
@@ -96,11 +98,13 @@ describe('readCopyrightReviewTargetBreaches', () => {
       waitingPastTarget: none,
       missedEscalation: { count: 1, noticeIds: [noticeId] },
       missedRestorationDeadline: none,
+      emailIntakesWaitingPastTarget: noEmails,
     })
     expect(await read(hoursFromNow(48))).toEqual({
       waitingPastTarget: none,
       missedEscalation: { count: 1, noticeIds: [noticeId] },
       missedRestorationDeadline: { count: 1, noticeIds: [noticeId] },
+      emailIntakesWaitingPastTarget: noEmails,
     })
   })
 

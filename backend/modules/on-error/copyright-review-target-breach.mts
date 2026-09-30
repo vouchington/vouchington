@@ -20,22 +20,28 @@ export type CopyrightReviewTargetBreachContext = {
   waitingPastTarget: CopyrightReviewTargetBreachBucket
   missedEscalation: CopyrightReviewTargetBreachBucket
   missedRestorationDeadline: CopyrightReviewTargetBreachBucket
+  emailIntakesWaitingPastTarget: { count: number; emailIntakeIds: readonly string[] }
 }
 
 /**
- * Sends one tagged Sentry warning when copyright cases wait for a moderator past the review target
- * or an open counter-notice deadline passed `escalation_at` or `restoration_deadline_at`. Nothing is
- * sent when every count is zero. The event carries counts and notice ids only, copied field by field
- * so no claimant or poster data can ride along. The five-minute sweep already bounds the rate, so
- * there is no in-process throttle. Returns whether a warning was sent.
+ * Sends one tagged Sentry warning when copyright cases or received emails wait for a moderator past
+ * the review target, or an open counter-notice deadline passed `escalation_at` or
+ * `restoration_deadline_at`. Nothing is sent when every count is zero. The event carries counts and
+ * notice or email intake ids only, copied field by field so no claimant, poster, sender, subject, or
+ * body data can ride along. The five-minute sweep already bounds the rate, so there is no
+ * in-process throttle. Returns whether a warning was sent.
  */
 export function recordCopyrightReviewTargetBreach(
   context: CopyrightReviewTargetBreachContext,
 ): boolean {
   const { waitingPastTarget, missedEscalation, missedRestorationDeadline } = context
-  if (waitingPastTarget.count + missedEscalation.count + missedRestorationDeadline.count === 0) {
-    return false
-  }
+  const emails = context.emailIntakesWaitingPastTarget
+  const total =
+    waitingPastTarget.count +
+    missedEscalation.count +
+    missedRestorationDeadline.count +
+    emails.count
+  if (total === 0) return false
   const extra = {
     reviewTargetMinutes: context.reviewTargetMinutes,
     waitingPastTargetCount: waitingPastTarget.count,
@@ -44,6 +50,8 @@ export function recordCopyrightReviewTargetBreach(
     missedEscalationNoticeIds: [...missedEscalation.noticeIds],
     missedRestorationDeadlineCount: missedRestorationDeadline.count,
     missedRestorationDeadlineNoticeIds: [...missedRestorationDeadline.noticeIds],
+    emailIntakesWaitingPastTargetCount: emails.count,
+    emailIntakesWaitingPastTargetIds: [...emails.emailIntakeIds],
   }
   if (shouldLogToConsole()) {
     console.warn('[copyright] review target breached', extra)
@@ -55,6 +63,7 @@ export function recordCopyrightReviewTargetBreach(
       waiting_past_target: String(waitingPastTarget.count > 0),
       missed_escalation: String(missedEscalation.count > 0),
       missed_restoration_deadline: String(missedRestorationDeadline.count > 0),
+      email_intakes_waiting_past_target: String(emails.count > 0),
     },
     extra,
   })

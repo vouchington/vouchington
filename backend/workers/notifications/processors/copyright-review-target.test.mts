@@ -11,6 +11,7 @@ const noBreaches: CopyrightReviewTargetBreaches = {
   waitingPastTarget: none,
   missedEscalation: none,
   missedRestorationDeadline: none,
+  emailIntakesWaitingPastTarget: { count: 0, emailIntakeIds: [] },
 }
 
 function checkDeps(reviewTargetMinutes: number | null, breaches: CopyrightReviewTargetBreaches) {
@@ -21,7 +22,8 @@ function checkDeps(reviewTargetMinutes: number | null, breaches: CopyrightReview
       context =>
         context.waitingPastTarget.count +
           context.missedEscalation.count +
-          context.missedRestorationDeadline.count >
+          context.missedRestorationDeadline.count +
+          context.emailIntakesWaitingPastTarget.count >
         0,
     ),
   }
@@ -56,6 +58,7 @@ describe('processCheckCopyrightReviewTarget', () => {
     const breaches = {
       ...noBreaches,
       waitingPastTarget: { count: 2, noticeIds: ['notice-a', 'notice-b'] },
+      emailIntakesWaitingPastTarget: { count: 1, emailIntakeIds: ['intake-a'] },
     }
     const deps = checkDeps(240, breaches)
 

@@ -117,6 +117,11 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
                   <p className='text-xs text-muted-foreground'>
                     Received <TimeAgo date={item.received_at} />
                   </p>
+                  {item.parse_status !== 'succeeded' && (
+                    <p className='text-xs text-destructive'>
+                      {item.parse_status === 'failed' ? 'Parse failed' : 'No parse recorded'}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>

@@ -446,22 +446,24 @@ deadline or the delivery obligation.
 
 ## Review-target page
 
-A five-minute sweep sends one Sentry warning when copyright work is late. It counts three sets of
-notices:
+A five-minute sweep sends one Sentry warning when copyright work is late. It counts four sets:
 
 - notices with a staff-queue item, other than a deadline, open longer than `reviewTargetMinutes`;
+- email intakes on the email-review queue received longer than `reviewTargetMinutes` ago;
 - notices with an open counter-notice deadline at or past `escalation_at`; and
 - notices with an open deadline at or past `restoration_deadline_at`.
 
-`reviewTargetMinutes` lives in the audited `copyright` dynamic-config namespace. Its default is `0`,
-which means unset: the waiting count stays off until an operator records an approved target. Missed
-deadlines page whether or not a target is set. The warning carries only counts and at most 20 notice
-IDs per set. It never carries claimant, poster, work, or correspondence fields. When every count is
-zero, nothing is sent.
+The email set uses the email-review queue's own rule: no intake review, and either no notice link
+or a matched reply whose correspondence is neither admitted nor rejected. An intake counts whether
+or not its parse was recorded, and the queue lists an unparsed intake too, so a stuck email is
+never invisible to staff.
 
-The Sentry alert rule and on-call destination for this warning are not in this repository
-([#1230](https://github.com/vouchington/vouchington/issues/1230)). Email intakes that await review
-are not counted yet. See the [runbook](../../runbooks/copyright-notices.md#review-target-page).
+`reviewTargetMinutes` lives in the audited `copyright` dynamic-config namespace. Its default is `0`,
+which means unset: both waiting counts stay off until an operator records an approved target. Missed
+deadlines page whether or not a target is set. The warning carries only counts and at most 20 notice
+or email intake IDs per set. It never carries claimant, poster, work, correspondence, sender,
+subject, or body fields. When every count is zero, nothing is sent. See the
+[runbook](../../runbooks/copyright-notices.md#review-target-page).
 
 ## Activation gates
 

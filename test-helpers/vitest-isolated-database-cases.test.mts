@@ -35,7 +35,7 @@ describe('isolated database case selection', () => {
     expect(getIsolatedDatabaseCase('copyright-staff-email-intakes')).toEqual({
       file: 'backend/services/copyright-notices/email-intakes-staff-queue.test.mts',
       fullName:
-        'searchCopyrightStaffEmailIntakes hides the queue from non-reviewers and lists unreviewed parsed intakes for staff',
+        'searchCopyrightStaffEmailIntakes hides the queue from non-reviewers and lists unreviewed intakes, parsed or not, for staff',
     })
     for (const [caseId, title] of [
       [
