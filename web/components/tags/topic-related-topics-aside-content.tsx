@@ -1,15 +1,12 @@
-import { TagList } from './tag-list'
-import { Card } from '@/components/ui/card'
-import type { Topic } from '@/types/topics'
-import { topicTagsHref } from '@/lib/links/entity-href'
 import type {
   EntityRelation,
   EntityRelationVote,
   EntityRelationsResponse,
 } from '@/lib/api/entity-relations'
+import { topicTagsHref } from '@/lib/links/entity-href'
 import type { useTranslations } from '@/lib/i18n/use-translations'
-import { ManageTagsDialog } from './manage-tags-dialog'
-import { PaginatedEntityTagList } from './paginated-entity-tag-list'
+import type { Topic } from '@/types/topics'
+import { TopicRelationAsideCard } from './topic-relation-aside-card'
 
 interface TopicRelatedTopicsAsideContentProps {
   topic: Topic
@@ -33,53 +30,22 @@ export function TopicRelatedTopicsAsideContent({
   response,
 }: TopicRelatedTopicsAsideContentProps) {
   return (
-    <Card
-      className='p-4'
-      data-pw='topic-related-topics-aside'
-    >
-      <div className='mb-3 flex items-center justify-between'>
-        <h3
-          className='text-sm font-semibold'
-          data-pw='topic-related-topics-heading'
-        >
-          {t('extracted.tags.topicRelatedTopicsAsideContent.relatedTopics_aea370bc')}
-        </h3>
-        {showManageButton && (
-          <ManageTagsDialog
-            entityType='topic'
-            entityId={topic.id}
-            predicate='related'
-            objectType='topic'
-            label={t('extracted.tags.topicRelatedTopicsAsideContent.relatedTopics_aea370bc')}
-            heading={t('extracted.tags.topicRelatedTopicsAsideContent.relatedTopics_aea370bc')}
-            dialogTitle={t('extracted.tags.topicRelatedTopicsAsideContent.manage_5a234448')}
-            triggerLabel={t('extracted.tags.topicRelatedTopicsAsideContent.manage_5a234448')}
-            manageHref={topicTagsHref(topic, 'topic')}
-            loadingText={t('extracted.tags.manageTagsDialog.loading_47d2a515')}
-            errorText={t('extracted.tags.manageTagsDialog.errorLoadingTags_8c1f5154')}
-            isAuthenticated={isAuthenticated}
-          />
-        )}
-      </div>
-      {response ? (
-        <PaginatedEntityTagList
-          entityType='topic'
-          entityId={topic.id}
-          predicate='related'
-          objectType='topic'
-          initialData={response}
-          showVoting={showVoting ?? showManageButton}
-          isAuthenticated={isAuthenticated}
-        />
-      ) : (
-        <TagList
-          relations={relations}
-          electionVotes={electionVotes}
-          objectType='topic'
-          showVoting={showVoting ?? showManageButton}
-          isAuthenticated={isAuthenticated}
-        />
-      )}
-    </Card>
+    <TopicRelationAsideCard
+      topic={topic}
+      relations={relations}
+      electionVotes={electionVotes}
+      showManageButton={showManageButton}
+      showVoting={showVoting ?? showManageButton}
+      isAuthenticated={isAuthenticated}
+      t={t}
+      response={response}
+      asidePw='topic-related-topics-aside'
+      headingPw='topic-related-topics-heading'
+      heading={t('extracted.tags.topicRelatedTopicsAsideContent.relatedTopics_aea370bc')}
+      predicate='related'
+      objectType='topic'
+      manageHref={topicTagsHref(topic, 'topic')}
+      manageLabel={t('extracted.tags.topicRelatedTopicsAsideContent.manage_5a234448')}
+    />
   )
 }
