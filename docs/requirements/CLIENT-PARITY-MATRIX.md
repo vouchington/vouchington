@@ -74,9 +74,12 @@ generated contract before releasing a client that adopts the optional logout bin
 
 Vouchington stages the required nullable claimant public-profile contract in the web API fixtures.
 Web consumes it now. Swift and .NET consumption remains deferred to #853 and #854; native clients
-must not infer a legal identity from the nullable profile. Staff guest-capability management
-(issue, list, revoke, and information requests) is web-only staff tooling; its fixtures, including
-`web.copyright.guest-capabilities.listed`, have only the web consumer.
+must not infer a legal identity from the nullable profile. The case timeline is filtered by the
+server per audience (members and case participants: case-facing events only; staff unfiltered), so
+a native client renders only the event types it receives and must not treat an unrecognized type
+as display-safe. Staff guest-capability management (issue, list, revoke, and information requests)
+is web-only staff tooling; its fixtures, including `web.copyright.guest-capabilities.listed`, have
+only the web consumer.
 
 ### Media placement contract handoff
 

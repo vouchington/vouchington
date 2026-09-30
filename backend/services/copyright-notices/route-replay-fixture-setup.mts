@@ -89,7 +89,15 @@ export async function createCopyrightReplayFixture() {
     item => item.action === 'withhold',
   )
   if (!intent) throw new Error('copyright action replay intent disappeared')
-  return { intentId: intent.id, imageId, moderator, nonModerator, noticeId: notice.id, postId }
+  return {
+    claimant,
+    intentId: intent.id,
+    imageId,
+    moderator,
+    nonModerator,
+    noticeId: notice.id,
+    postId,
+  }
 }
 
 async function applyCopyrightActionAndLoadPlacement(

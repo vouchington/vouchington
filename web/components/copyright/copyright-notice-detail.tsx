@@ -4,6 +4,7 @@ import type {
   CopyrightNoticeDetail,
   CopyrightNoticeResponseEligibility,
 } from '@/types/copyright-notices'
+import { copyrightTimelineEventLabel } from './copyright-timeline-event-label'
 
 export function CopyrightNoticeDetailView({
   notice,
@@ -63,7 +64,8 @@ export function CopyrightNoticeDetailView({
               key={event.id}
               className='text-sm'
             >
-              {event.event_type.replaceAll('_', ' ')}. {new Date(event.created_at).toLocaleString()}
+              {copyrightTimelineEventLabel(event.event_type)}.{' '}
+              {new Date(event.created_at).toLocaleString()}
             </li>
           ))}
         </ol>

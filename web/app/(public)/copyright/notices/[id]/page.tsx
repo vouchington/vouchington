@@ -14,10 +14,12 @@ export default async function CopyrightNoticePage({ params }: { params: Promise<
     getCopyrightParticipantNoticeServer(id),
   ])
   if (!notice) notFound()
+  // The participant read model carries the timeline for the viewer's role (staff: the full one).
+  const visibleNotice = participant ? { ...notice, timeline: participant.timeline } : notice
   return (
     <main className='mx-auto max-w-3xl py-8'>
       <CopyrightNoticeDetailView
-        notice={notice}
+        notice={visibleNotice}
         responseEligibility={
           participant
             ? {

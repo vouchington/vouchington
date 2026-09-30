@@ -24,8 +24,13 @@ describe('CopyrightNoticeDetailView', () => {
           timeline: [
             {
               id: 'event-123',
-              event_type: 'notice_accepted',
+              event_type: 'notice_received',
               created_at: '2026-01-02T00:00:00.000Z',
+            },
+            {
+              id: 'event-124',
+              event_type: 'placement_withheld',
+              created_at: '2026-01-03T00:00:00.000Z',
             },
           ],
         }}
@@ -34,7 +39,9 @@ describe('CopyrightNoticeDetailView', () => {
     )
 
     expect(screen.getByText('Case case-123')).toBeInTheDocument()
-    expect(screen.getByText('notice accepted', { exact: false })).toBeInTheDocument()
+    expect(screen.getByText('Notice received', { exact: false })).toBeInTheDocument()
+    expect(screen.getByText('Material withheld', { exact: false })).toBeInTheDocument()
+    expect(screen.queryByText(/notice_received/)).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Current claimant' })).toHaveAttribute(
       'href',
       '/user/claimant-123',
@@ -72,5 +79,32 @@ describe('CopyrightNoticeDetailView', () => {
       '/copyright/notices/case-123/counter-notice',
     )
     expect(screen.queryByText('Claimant:')).not.toBeInTheDocument()
+  })
+
+  it('names an event type outside the case-facing set by its plain words', () => {
+    render(
+      <CopyrightNoticeDetailView
+        notice={{
+          id: 'case-123',
+          jurisdiction: 'us_dmca',
+          received_at: '2026-01-01T00:00:00.000Z',
+          accepted_at: '2026-01-02T00:00:00.000Z',
+          provisional_withholding_at: null,
+          target_count: 1,
+          claimant: null,
+          targets: [],
+          timeline: [
+            {
+              id: 'event-125',
+              event_type: 'guest_capability_issued',
+              created_at: '2026-01-04T00:00:00.000Z',
+            },
+          ],
+        }}
+        responseEligibility={{ viewer_role: 'staff', respondable_target_ids: [] }}
+      />,
+    )
+
+    expect(screen.getByText('guest capability issued', { exact: false })).toBeInTheDocument()
   })
 })
