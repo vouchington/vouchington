@@ -1,5 +1,55 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { expect, type Mock } from 'vitest'
+import { expect, vi, type Mock } from 'vitest'
+
+const { toastMock } = vi.hoisted(() => {
+  const mock = Object.assign(vi.fn<VitestLooseMock>(), {
+    error: vi.fn<VitestLooseMock>(),
+    success: vi.fn<VitestLooseMock>(),
+  })
+  return { toastMock: mock }
+})
+
+vi.mock(
+  import('@/components/my/mfa-reauth-dialog'),
+  () =>
+    ({
+      MfaReauthDialog: () => null,
+    }) as unknown as typeof import('@/components/my/mfa-reauth-dialog'),
+)
+
+vi.mock(import('@/lib/api/error'), () => {
+  class ApiError extends Error {
+    status: number
+    code?: string
+    constructor(message: string, status: number, code?: string) {
+      super(message)
+      this.name = 'ApiError'
+      this.status = status
+      this.code = code
+    }
+  }
+  return { ApiError }
+})
+
+vi.mock(
+  import('sonner'),
+  () =>
+    ({
+      toast: toastMock,
+    }) as unknown as typeof import('sonner'),
+)
+
+vi.mock(import('@/lib/on-error'), () => ({
+  default: (_err: unknown, options: { fallback: string }) => {
+    toastMock.error(options.fallback)
+    return options.fallback
+  },
+  onSuccess: (message: string) => {
+    toastMock.success(message)
+  },
+}))
+
+export { toastMock }
 
 type ToastMock = { error: Mock; success: Mock }
 
