@@ -18,6 +18,9 @@ relative path, following other PSQL tests without adding a `@data-stores/psql` â
 Route suites that jscpd reports together call one registrar from a literal `describe` in each
 test file. The registrars live next to this README: vote lists, scoped credential pagination,
 community claim and escalation routes, RSS feeds, landing-page analytics, and similarity search.
+Copyright email-intake and form-screening enqueue tests share
+[`copyright-agent-enqueue-recovery-tests.mts`](../../../../backend/test-helpers/copyright-agent-enqueue-recovery-tests.mts).
+Each file keeps its queue name, payload, and expected job options.
 Post, topic, domain, and URL list-item mutations share
 [`describeCommunityListItemRoutes`](../../../../backend/test-helpers/community-list-item-routes.mts).
 Topic list reads stay in the topics suite.
