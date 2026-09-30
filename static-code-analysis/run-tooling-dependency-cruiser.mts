@@ -1,5 +1,4 @@
 import { spawnSync } from 'node:child_process'
-import { pathToFileURL } from 'node:url'
 
 export const TOOLING_DEPENDENCY_CRUISER_ROOTS = [
   'ci',
@@ -50,7 +49,7 @@ export function runToolingDependencyCruiser(
   return result.status ?? 1
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (import.meta.main) {
   try {
     process.exitCode = runToolingDependencyCruiser(process.argv.slice(2))
   } catch (error) {

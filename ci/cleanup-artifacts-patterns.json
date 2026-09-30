@@ -15,7 +15,6 @@
   ],
   "delete": [
     "code-review-payload-*",
-    "vitest-fork-diagnostics-*",
     "lcov-full-*",
     "playwright-otel-output-shard-*",
     "browser-debug-log-storybook",

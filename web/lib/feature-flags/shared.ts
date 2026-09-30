@@ -36,6 +36,26 @@ function getFeatureFlagCookieOptions(): FeatureFlagCookieOptions {
 
 export { FF_COOKIE, type FeatureFlags }
 
+/**
+ * Merges cookie overrides onto a loaded global catalog.
+ *
+ * Only keys present in that catalog can change, matching backend
+ * `getFeatureFlagsWithOverrides`. An empty catalog means the global read failed,
+ * so parsed boolean overrides stay in effect and every other flag stays off.
+ */
+export function mergeFeatureFlagOverrides(
+  globalFlags: FeatureFlags,
+  overrides: FeatureFlags,
+): FeatureFlags {
+  if (Object.keys(globalFlags).length === 0) return { ...overrides }
+
+  const flags = { ...globalFlags }
+  for (const [key, value] of Object.entries(overrides)) {
+    if (Object.hasOwn(flags, key) && typeof value === 'boolean') flags[key] = value
+  }
+  return flags
+}
+
 export function parseFeatureFlagCookie(value: string): FeatureFlags {
   return parseSharedFeatureFlagCookie(value, featureFlagCookieCodec, getFeatureFlagCookieOptions())
 }

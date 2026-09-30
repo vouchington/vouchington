@@ -2,7 +2,6 @@
 
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { parseArgs as nodeParseArgs } from 'node:util'
 
 import { isValidSessionId } from './agent-session-id/valid-id.mts'
@@ -141,7 +140,7 @@ async function main(): Promise<void> {
   process.stdout.write(await run(process.argv.slice(2)))
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   main().catch((err: unknown) => {
     process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
     process.exit(1)

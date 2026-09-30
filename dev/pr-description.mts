@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { fileURLToPath } from 'node:url'
 import { createPullRequest, processDiffCommand, runGh, runGit } from 'vouchington-tooling/gh-cli'
 import { formatProjectAdvisoryReport } from 'vouchington-tooling/github-projects'
 import { failValidation } from './pr-description/fail-validation.mts'
@@ -183,7 +182,7 @@ function main(): Promise<void> {
   process.exit(1)
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   main().catch((err: unknown) => {
     process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
     process.exit(1)

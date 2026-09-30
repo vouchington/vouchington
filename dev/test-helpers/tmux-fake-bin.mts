@@ -26,6 +26,7 @@ const DOCKER_SCRIPT =
 const BASH_SCRIPT = '#!/bin/bash\nexec /bin/bash --noprofile --norc "$@"\n'
 const NODE_SCRIPT = `#!/bin/bash
 printf '%s\n' "$*" >> "\${FAKE_NODE_LOG:?}"
+[[ -n "\${FAKE_NODE_EMPTY:-}" && "$*" == *"\${FAKE_NODE_EMPTY}"* ]] && exit 0
 [[ "$*" == *"dev/localization/local-catalog.mts"* ]] && { printf '%s\n' "$(pwd)/.local/localization/catalog.sqlite"; exit 0; }
 case "\${2:-}" in
   dev-all-queues)

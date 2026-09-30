@@ -6393,9 +6393,6 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
-      uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
     devDependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^

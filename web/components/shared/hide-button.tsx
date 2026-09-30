@@ -1,15 +1,12 @@
 'use client'
 
-import { useLayoutEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { bookmarkEntity, unbookmarkEntity } from '@/lib/api/client/bookmarks'
-import { toast } from 'sonner'
-import { isRateLimitError, getRateLimitMessage } from '@/lib/api/rate-limit-error'
 import { RSS_ITEM_HIDDEN_EVENT } from '@/lib/rss-item-modal'
-import { EntityActionIcons } from './entity-action-icons'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { EntityActionIcons } from './entity-action-icons'
+import { useKeyedBookmarkToggle } from './use-keyed-bookmark-toggle'
 
 interface HideButtonProps {
   entityType: string
@@ -106,71 +103,26 @@ function useHideToggle({
   onHide,
 }: HideButtonProps) {
   const t = useTranslations()
-  const resetKey = `${entityType}:${entityId}:${initialActive}`
-  const [hiddenState, setHiddenState] = useState({ key: resetKey, value: initialActive })
-  const [pendingState, setPendingState] = useState({ key: resetKey, value: false })
-  const isControlled = active !== undefined
-  const isHidden = active ?? (hiddenState.key === resetKey ? hiddenState.value : initialActive)
-  const isPendingControlled = pending !== undefined
-  const isPending = pending ?? (pendingState.key === resetKey && pendingState.value)
-  const renderedResetKeyRef = useRef(resetKey)
-  const activeRequestRef = useRef<{ resetKey: string; token: symbol } | null>(null)
-
-  useLayoutEffect(() => {
-    renderedResetKeyRef.current = resetKey
-  }, [resetKey])
-
-  const setHidden = (next: boolean) => {
-    if (!isControlled) setHiddenState({ key: resetKey, value: next })
-    onActiveChange?.(next)
-  }
-
-  const setPending = (next: boolean) => {
-    if (!isPendingControlled) setPendingState({ key: resetKey, value: next })
-    onPendingChange?.(next)
-  }
-
-  const handleToggle = async () => {
-    if (isPending) return
-    const next = !isHidden
-    const request = Symbol('hide request')
-    activeRequestRef.current = { resetKey, token: request }
-    const ownsRequest = () =>
-      activeRequestRef.current?.token === request &&
-      activeRequestRef.current.resetKey === resetKey &&
-      renderedResetKeyRef.current === resetKey
-    setHidden(next)
-    setPending(true)
-    try {
-      if (next) {
-        await bookmarkEntity(entityType, entityId, 'hide')
-        if (ownsRequest() && entityType === 'rss_feed_item') {
-          window.dispatchEvent(new CustomEvent(RSS_ITEM_HIDDEN_EVENT, { detail: { id: entityId } }))
-        }
-        if (ownsRequest()) onHide?.(entityId)
-      } else {
-        await unbookmarkEntity(entityType, entityId, 'hide')
+  const { handleToggle, isActive, isPending } = useKeyedBookmarkToggle({
+    entityType,
+    entityId,
+    predicate: 'hide',
+    initialActive,
+    active,
+    onActiveChange,
+    pending,
+    onPendingChange,
+    failureMessage: t('extracted.shared.hideButton.failedToUpdatePleaseTryAgain_358a97b9'),
+    onActivated(id) {
+      if (entityType === 'rss_feed_item') {
+        window.dispatchEvent(new CustomEvent(RSS_ITEM_HIDDEN_EVENT, { detail: { id } }))
       }
-    } catch (error) {
-      if (ownsRequest()) {
-        setHidden(!next)
-        if (isRateLimitError(error)) {
-          /* c8 ignore next -- rate-limit branch requires injecting a rate-limit error */
-          toast.error(getRateLimitMessage(error))
-        } else {
-          toast.error(t('extracted.shared.hideButton.failedToUpdatePleaseTryAgain_358a97b9'))
-        }
-      }
-    } finally {
-      if (ownsRequest()) {
-        setPending(false)
-      }
-    }
-  }
-
-  const tooltip = isHidden
+      onHide?.(id)
+    },
+  })
+  const tooltip = isActive
     ? t('extracted.shared.hideButton.unhide_eb2780f7')
     : t('extracted.shared.hideButton.hide_ac20a57b')
 
-  return { handleToggle, isHidden, isPending, tooltip }
+  return { handleToggle, isHidden: isActive, isPending, tooltip }
 }

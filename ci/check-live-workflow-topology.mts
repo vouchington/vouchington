@@ -1,8 +1,5 @@
 #!/usr/bin/env node
 
-import { realpathSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-
 import { createWorkflowTopologyIndex, type WorkflowTopology } from 'no-mistakes'
 
 import {
@@ -18,8 +15,6 @@ import { assertNoWorkflowViolations } from '../.github/test-helpers/workflow-tes
 import { evaluateWorkflowTopologyPolicy } from '../.github/workflows/workflow-topology-policy.mts'
 import { githubWorkflowPaths, loadRepoTopology } from './repo-topology.mts'
 import { writeJobsInventoryDoc } from './render-workflow-runner-inventory.mts'
-
-const __filename = fileURLToPath(import.meta.url)
 
 export function liveTopologyAuditErrors(topology: WorkflowTopology): string[] {
   if (topology.diagnostics.length > 0) {
@@ -43,7 +38,7 @@ export function liveTopologyAuditErrors(topology: WorkflowTopology): string[] {
 }
 
 /* v8 ignore start -- direct-execution entry; live CI check, not a Vitest suite. */
-if (process.argv?.[1] && realpathSync(process.argv[1]) === __filename) {
+if (import.meta.main) {
   try {
     const topology = await loadRepoTopology()
     const errors = liveTopologyAuditErrors(topology)

@@ -1,5 +1,4 @@
 import { appendFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 
 import { GITHUB_MATRIX_MAX_JOBS } from '../shard-limits.mts'
 import { shardedJobPolicies } from './project-ownership-registry.mts'
@@ -58,7 +57,7 @@ function writeOutput(key: string, value: string): void {
   console.log(`[shard-total] ${key}=${value}`)
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   const [job] = process.argv.slice(2)
   if (job === undefined) throw new Error('usage: node ci/vitest/shard-total.mts <job>')
   void resolveShardTotal(job, undefined, process.env['FILES_PER_SHARD_OVERRIDE']).then(total =>

@@ -172,7 +172,7 @@ Under the retired self-hosted runners' CPU contention the close occasionally mis
 `Worker exited unexpectedly`. `vitest.config.mts`'s root-only `teardownTimeout` is now `20_000` for
 contention headroom; a genuine hang still force-kills at that ceiling. On any trip,
 `[vitest-teardown] phase=… start/done ms=…` lines from `teardown()` plus a `[vitest-teardown-overrun]`
-process/handle snapshot from the diagnostics reporter's `onProcessTimeout()` name which phase was
+process/handle snapshot from the teardown-overrun reporter's `onProcessTimeout()` name which phase was
 still in flight. That vocabulary is deliberately neutral — it must never contain a substring
 `hasBackendUnitVitestFailure` (`ci/transient-retry/runner-shutdown-fingerprints.mts`) reads as a
 real failure, which `runner-shutdown-safety-regressions.test.mts` regression-tests.

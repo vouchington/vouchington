@@ -36,6 +36,10 @@ export async function makeStopServicesTmuxFakeBin(testDirs: string[]) {
   log="\${FAKE_COMMAND_LOG:?}"
   printf 'docker %s\\n' "$*" >> "$log"
   if [ "$1" = "ps" ]; then
+    if [ -n "\${FAKE_DOCKER_PS_FAIL:-}" ]; then
+      echo "Cannot connect to the Docker daemon (fake)" >&2
+      exit 1
+    fi
     printf '%s\\n' "\${FAKE_DOCKER_PS:-}"
   fi
   `,

@@ -127,26 +127,8 @@ describe('repo-owned-literal-freshness', () => {
     )
   })
 
-  describe('worker-exit-diagnostics fixture allowlist', () => {
-    // backend-unit-vitest-instrumentation.fixtures.mts uses these as illustrative Vitest module-id
-    // sample values passed to formatWorkerExitDiagnostics() — the diagnostics reporter accepts an
-    // arbitrary module id string, so neither literal is a freshness pin the matcher depends on.
-    // 'flows.test.mts' happens to be a real tracked file under jwt-session/; 'refresh.test.mts' is
-    // not (only flows.test.mts, flows.part-2.test.mts, etc. exist there) — neither fact matters to
-    // the fixture, which is exactly why both are allowlisted here instead of asserted to exist.
-    it('does not require the jwt-session sample module ids to exist on disk', () => {
-      expect(trackedPaths(['backend/services/jwt-session/refresh.test.mts'])).toEqual(new Set())
-    })
-  })
-
   describe('completeness', () => {
     const tableAPaths = new Set([playwrightNavigateToHelperPath, ...backendAwsLiteralIncludePaths])
-    // Reason required inline at the point of use above; duplicated here only as the set the scanner
-    // checks against.
-    const allowlistedLiterals = new Set([
-      'backend/services/jwt-session/flows.test.mts',
-      'backend/services/jwt-session/refresh.test.mts',
-    ])
 
     // A repo-relative source-path *literal*: no glob metacharacters, so the four credentialed
     // projects' own include globs (`backend/**/*.bedrock.test.mts` and siblings, cross-checked
@@ -170,7 +152,7 @@ describe('repo-owned-literal-freshness', () => {
         const contents = readFileSync(filePath, 'utf8')
         for (const match of contents.matchAll(pathLiteralPattern)) {
           const literal = match[1]
-          if (!tableAPaths.has(literal) && !allowlistedLiterals.has(literal)) {
+          if (!tableAPaths.has(literal)) {
             uncovered.push(`${filePath.slice(sourceDir.length + 1)}: ${literal}`)
           }
         }
@@ -179,7 +161,7 @@ describe('repo-owned-literal-freshness', () => {
       return uncovered
     }
 
-    it('every repo-owned path literal in ci/transient-retry/** is covered by Table A or explicitly allowlisted', () => {
+    it('every repo-owned path literal in ci/transient-retry/** is covered by Table A', () => {
       expect(scanForUncoveredLiterals(resolve(repoRoot, 'ci/transient-retry'))).toEqual([])
     })
 
@@ -193,9 +175,7 @@ describe('repo-owned-literal-freshness', () => {
         ),
       ].map(match => match[1])
 
-      expect(
-        found.some(literal => !tableAPaths.has(literal) && !allowlistedLiterals.has(literal)),
-      ).toBe(true)
+      expect(found.some(literal => !tableAPaths.has(literal))).toBe(true)
     })
   })
 

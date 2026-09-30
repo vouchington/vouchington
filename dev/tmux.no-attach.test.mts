@@ -59,6 +59,34 @@ describe('dev/tmux --no-attach', () => {
     )
   })
 
+  it.each([
+    { step: 'localization catalog', emptyOutputFrom: 'local-catalog.mts', reuse: false },
+    { step: 'worker queue', emptyOutputFrom: 'dev-all-queues', reuse: false },
+    { step: 'localization catalog', emptyOutputFrom: 'local-catalog.mts', reuse: true },
+    { step: 'worker queue', emptyOutputFrom: 'dev-all-queues', reuse: true },
+  ])(
+    'fails naming the $step step when its helper prints nothing (session reuse: $reuse)',
+    async ({ step, emptyOutputFrom, reuse }) => {
+      const cwd = await makeRepo()
+      const binDir = await makeFakeBin()
+
+      const result = await runTmux({
+        binDir,
+        cwd,
+        args: ['--no-attach'],
+        extraEnv: {
+          FAKE_NODE_EMPTY: emptyOutputFrom,
+          ...(reuse ? { FAKE_TMUX_DEAD_WINDOWS: 'backend', FAKE_TMUX_HAS_SESSION_EXIT: '0' } : {}),
+        },
+      })
+
+      expect(result.code).toBe(1)
+      expect(result.stderr).toContain(`${step} step`)
+      expect(createdWindowNames(result.log)).toEqual([])
+      expect(result.log).not.toContain('respawn-pane')
+    },
+  )
+
   it('exits 0 without creating windows when session exists and --no-attach is passed', async () => {
     const cwd = await makeRepo()
     const binDir = await makeFakeBin()

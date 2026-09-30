@@ -1,4 +1,3 @@
-import { realpathSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { format } from 'oxfmt'
@@ -87,7 +86,7 @@ export async function generateSchemaSnapshot({
 /* v8 ignore stop */
 
 /* v8 ignore start -- direct-execution entry; db:snapshot:check against a live DB. */
-if (process.argv?.[1] && realpathSync(process.argv[1]) === __filename) {
+if (import.meta.main) {
   const check = process.argv.includes('--check')
   await generateSchemaSnapshot({ check })
   console.log(check ? 'Schema snapshot is up to date.' : 'Schema snapshot written.')

@@ -21,16 +21,14 @@
  * after `no-mistakes check`, so it serializes on the same machine-wide lock. Vitest tests pass a
  * synthetic topology and never call `loadRepoTopology()`.
  */
-import { readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 
 import { format } from 'oxfmt'
 import type { WorkflowJobNode, WorkflowRunsOn, WorkflowTopology } from 'no-mistakes'
 
 import { loadRepoTopology } from './repo-topology.mts'
 
-const __filename = fileURLToPath(import.meta.url)
 const ROOT = path.join(import.meta.dirname, '..')
 const DEFAULT_DOC_PATH = path.join(ROOT, 'docs/development/ci/workflows/JOBS.md')
 
@@ -170,7 +168,7 @@ export async function writeJobsInventoryDoc({
 
 /* v8 ignore start -- direct-execution entry; live check is ci/check-live-workflow-topology.mts.
    writeJobsInventoryDoc (the testable half) is covered in render-workflow-runner-inventory.test.mts. */
-if (process.argv?.[1] && realpathSync(process.argv[1]) === __filename) {
+if (import.meta.main) {
   const check = process.argv.includes('--check')
   try {
     await writeJobsInventoryDoc({ check })

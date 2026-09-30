@@ -82,13 +82,6 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
       replacement: fileURLToPath(new URL('../storybook/mocks/follow-button.tsx', import.meta.url)),
     },
     {
-      // StatusPage is an async Server Component (calls getTranslations(), which reaches
-      // next/headers). React 19 cannot render async components client-side, so stub it
-      // with a synchronous fixture mirroring the real JSX/labels.
-      find: '@/components/shared/status-page',
-      replacement: fileURLToPath(new URL('../storybook/mocks/status-page.tsx', import.meta.url)),
-    },
-    {
       // FeedPageHeader is an async Server Component (calls getTranslations(), which
       // reaches next/headers). React 19 cannot render async components client-side, so
       // stub it with a synchronous fixture mirroring the real JSX/labels.

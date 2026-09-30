@@ -1,7 +1,6 @@
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 import { parseManifest } from './batch/manifest.mts'
@@ -119,6 +118,6 @@ async function main(): Promise<void> {
   process.exitCode = result.exitCode
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   await main()
 }
