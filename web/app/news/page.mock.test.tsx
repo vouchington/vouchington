@@ -1,6 +1,8 @@
-import type { ReactNode } from 'react'
+import { createElement, type ElementType, type ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiError } from '@/lib/api/error'
+import { createItemListSchema } from '@/lib/seo/structured-data'
 import NewsPage from './page'
 
 const { mockGetCurrentUser, mockGetRssFeedItems } = vi.hoisted(() => ({
@@ -25,7 +27,20 @@ vi.mock(
 )
 
 vi.mock(import('@/components/page-with-aside'), () => ({
-  PageWithAside: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  PageWithAside: ({
+    children,
+    aside,
+  }: {
+    children: ReactNode
+    aside?: ElementType | ReactNode
+    showFooter?: boolean
+    mobileHidden?: boolean
+  }) => (
+    <div>
+      {typeof aside === 'function' ? createElement(aside) : null}
+      {children}
+    </div>
+  ),
 }))
 
 vi.mock(import('@/components/ui/breadcrumb'), () => ({
@@ -134,5 +149,38 @@ describe('NewsPage', () => {
         limit: 25,
       },
     })
+  })
+
+  it('includes a resolved feed item in the item list schema', async () => {
+    mockGetRssFeedItems.mockResolvedValue({
+      results: [{ id: 'result-1', entity_id: 'item-1' }],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+      rss_feed_items: {
+        'item-1': {
+          data: { title: 'Open banking guide' },
+          url: { url: 'https://example.com/open-banking' },
+          rss_feed: { title: 'Wire' },
+        },
+      },
+      rss_feed_item_elections: {},
+    })
+
+    await NewsPage({ searchParams: Promise.resolve({}) })
+
+    expect(createItemListSchema).toHaveBeenCalledWith(
+      [{ name: 'Open banking guide', url: 'https://example.com/open-banking' }],
+      'News',
+    )
+  })
+
+  it('renders the feed search error when the query is rejected', async () => {
+    mockGetRssFeedItems.mockRejectedValue(
+      new ApiError('bad query', 422, { message: 'Query is invalid' }),
+    )
+
+    const ui = await NewsPage({ searchParams: Promise.resolve({ q: '???' }) })
+    render(ui)
+
+    expect(screen.getByText('Query is invalid')).toBeDefined()
   })
 })
