@@ -29,7 +29,7 @@ describe('processAIAgentWorkerJob', () => {
   function mockJob(): Job<AIAgentJobData> {
     return {
       data: {} as AIAgentJobData,
-      name: 'chat',
+      name: 'report-judgement',
       id: randomUUID(),
       reportTokens: vi.fn<(count: number) => Promise<void>>(),
     } as unknown as Job<AIAgentJobData>

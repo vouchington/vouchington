@@ -18,7 +18,7 @@ for endpoint-specific details; otherwise the README's inline section is canonica
 | Attribution             | [v1/attribution/README.md](./v1/attribution/README.md)                                            | Referral attribution tracking                   |
 | Auth                    | [v1/auth/README.md](./v1/auth/README.md)                                                          | Login, logout, email auth, Meta auth            |
 | Captcha config          | [v1/captcha-config/README.md](./v1/captcha-config/README.md)                                      | Staging Turnstile always-approve public signal  |
-| Conversations           | [v1/conversations/README.md](./v1/conversations/README.md)                                        | Chat conversations and SSE streaming            |
+| Conversations           | [v1/conversations/README.md](./v1/conversations/README.md)                                        | Chat conversations and client-generated chat    |
 | Copyright notices       | [v1/copyright-notices/README.md](./v1/copyright-notices/README.md)                                | Notice, appeal, counter-notice, and review flow |
 | Crawlers                | [v1/crawlers/README.md](./v1/crawlers/README.md)                                                  | Crawler CRUD and refresh                        |
 | Dynamic config          | [v1/dynamic-config/README.md](./v1/dynamic-config/README.md)                                      | Runtime config namespaces and audit history     |

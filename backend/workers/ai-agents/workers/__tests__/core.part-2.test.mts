@@ -10,7 +10,7 @@ function job(): Job<AIAgentJobData> {
   return {
     data: {} as AIAgentJobData,
     id: randomUUID(),
-    name: 'chat',
+    name: 'report-judgement',
     reportTokens: vi.fn<(count: number) => Promise<void>>(),
     moveToDelayed: vi
       .fn<(timestamp: number, nextStep?: string) => Promise<never>>()
@@ -53,7 +53,7 @@ describe('processAIAgentWorkerJob accounting uncertainty', () => {
     expect(processAIAgent).not.toHaveBeenCalled()
     expect(getDailyAiCostTotalMicrounits).not.toHaveBeenCalled()
     expect(recordOpenAiSpendCapBreach).toHaveBeenCalledExactlyOnceWith({
-      agentJobName: 'chat',
+      agentJobName: 'report-judgement',
       dailyTotalMicrounits: null,
       dailyCapMicrounits: 1_000_000,
       reason: 'accounting_uncertain',

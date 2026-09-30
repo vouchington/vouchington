@@ -16,7 +16,7 @@ import { processAIAgentWorkerJob } from './core.mts'
 function mockJob(): Job<AIAgentJobData> {
   return {
     data: {} as AIAgentJobData,
-    name: 'chat',
+    name: 'report-judgement',
     id: randomUUID(),
     reportTokens: vi.fn<(count: number) => Promise<void>>(),
     moveToDelayed: vi

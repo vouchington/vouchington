@@ -1,7 +1,5 @@
-import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { appendConversationMessageReturning } from './chat-content.mts'
-import type { ConversationMessage } from './types.mts'
 
 export class ChatTurnConflictError extends Error {
   constructor() {
@@ -45,40 +43,4 @@ export async function lockConversationAndAssertNoActiveChatTurn(
     LIMIT 1
   `)
   if (activeTurnResult.rows.length > 0) throw new ChatTurnConflictError()
-}
-
-export async function createHostedChatTurn(params: {
-  conversationId: string
-  createdById: string
-  message: string
-}): Promise<{
-  userMessage: ConversationMessage
-  assistantMessage: ConversationMessage
-}> {
-  const { conversationId, createdById, message } = params
-  await using query = await beginTransaction()
-  await lockConversationAndAssertNoActiveChatTurn(query, conversationId)
-
-  const userInsert = sql`/* createHostedChatTurnUser */
-    INSERT INTO conversation_messages (conversation_id, created_by_id, content)
-    VALUES (${conversationId}, ${createdById}, ${JSON.stringify({ role: 'user', content: message })})
-    RETURNING
-  `
-  appendConversationMessageReturning(userInsert)
-  const userMessageResult = await query<ConversationMessage>(userInsert)
-  const assistantInsert = sql`/* createHostedChatTurnAssistant */
-    INSERT INTO conversation_messages (conversation_id, created_by_id, content)
-    VALUES (${conversationId}, ${createdById}, ${JSON.stringify({ role: 'assistant', content: null })})
-    RETURNING
-  `
-  appendConversationMessageReturning(assistantInsert)
-  const assistantMessageResult = await query<ConversationMessage>(assistantInsert)
-
-  const result = {
-    userMessage: userMessageResult.rows[0]!,
-    assistantMessage: assistantMessageResult.rows[0]!,
-  }
-
-  await query.commit()
-  return result
 }

@@ -7,7 +7,7 @@ import { createAIAgentsWorker, processAIAgentWorkerJob } from './workers/core.mt
 import { processAIAgent } from './processors.mts'
 
 function makeJob(): Job<AIAgentJobData> {
-  return { name: 'chat', data: {} } as Job<AIAgentJobData>
+  return { name: 'report-judgement', data: {} } as Job<AIAgentJobData>
 }
 
 // This suite covers worker construction and OpenAI-429 handling, not the spend cap

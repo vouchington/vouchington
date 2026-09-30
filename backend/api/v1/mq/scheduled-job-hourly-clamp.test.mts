@@ -12,7 +12,6 @@ const NON_PRODUCTION_CLAMP_JOBS = [
   'activitypub-inbox/activitypub-inbox-recovery',
   'ai_agents/reconcileAutoDispatchJudgements',
   'ai_agents/reconcileBackgroundResponses',
-  'ai_agents/reconcileChatRuntimeGenerations',
   'ai_agents/reconcileCopyrightAgentDispatches',
   'ai_agents/reconcilePostClassifierApplications',
   'bedrock-embeddings-batch/backlog_dispatcher',
@@ -54,8 +53,8 @@ describe('staging hourly-floor clamp', () => {
   it('clamps exactly the non-production high-frequency jobs and leaves every other repeat unchanged', async () => {
     const baseline = await captureRegisteredRepeats({ ENVIRONMENT: 'production' })
     const staging = await captureRegisteredRepeats({ ENVIRONMENT: 'staging' })
-    expect(baseline.size).toBe(83)
-    expect(staging.size).toBe(83)
+    expect(baseline.size).toBe(82)
+    expect(staging.size).toBe(82)
     const clamped = [...baseline.keys()].filter(
       key => JSON.stringify(staging.get(key)) !== JSON.stringify(baseline.get(key)),
     )

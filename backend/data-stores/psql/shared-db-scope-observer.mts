@@ -24,7 +24,6 @@ export const sharedDbScopeTables = {
   getRecoverableOAuthAuthorizationIds: 'oauth_authorizations',
   deleteExpiredOAuthAuthorizationBatch: 'oauth_authorizations',
   listAvailableNotificationPushIntents: 'notification_push_intents',
-  getStaleChatRuntimeGenerationJobs: 'conversation_message_agentic_runs',
 } as const
 
 export type SharedDbScopeOperation = keyof typeof sharedDbScopeTables

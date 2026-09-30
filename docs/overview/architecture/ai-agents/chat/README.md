@@ -15,32 +15,12 @@ via hosted model providers.
 
 ## Architecture
 
-```mermaid
-flowchart TD
-  route[POST /api/v1/conversations/:conversationId/chat] --> apiSafety[checkApiMessageSafety]
-  apiSafety --> safety[checkMessageSafety]
-  safety --> turn[createHostedChatTurn]
-  turn --> subscribe[subscribeChatTokens]
-  subscribe --> enqueue[enqueueChat]
-  enqueue --> worker[processChat worker]
-  worker --> stream[streamChatResponse]
-  stream --> openai[OpenAI tool loop]
-  stream --> anthropic[Anthropic stream]
-  stream --> failure[Persist partial response or error]
-  openai -. missing continuation before output .-> replay[Clear matching cursor and rebuild typed history]
-  replay --> openai
-  openai --> tools[execute server-side tools]
-  tools --> runEvents[conversation_message_agentic_runs_events]
-  openai --> publish[publishChatToken]
-  anthropic --> publish
-  failure --> publish
-  publish --> sse[pipeChatTokensToSSE]
-```
-
-The HTTP route creates the user message and assistant placeholder, subscribes to the assistant
-message's token channel, and enqueues a worker job. The worker owns model calls, tool execution,
-run-event persistence, assistant-message updates, and token publishing. The route only bridges
-published chunks back to the client as SSE.
+The hosted chat transport is removed: there is no `POST /api/v1/conversations/:conversationId/chat`
+route, `chat` queue job, worker processor, token pub/sub channel, or stale-run reconciler, and
+native clients generate chat locally and persist it with `client-generated-chat`. This package is
+retained only until the chat agent and its subagents are deleted; nothing in the API or worker calls
+`streamChatResponse()` in production. The agentic-run tables and services it writes are likewise
+left for that removal.
 
 ## Agentic Loop
 

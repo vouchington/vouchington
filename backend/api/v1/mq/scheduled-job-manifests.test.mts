@@ -21,7 +21,6 @@ const EXPECTED_SCHEDULED_JOBS = [
   'activitypub-inbox/activitypub-inbox-cleanup',
   'ai_agents/reconcileAutoDispatchJudgements',
   'ai_agents/reconcileBackgroundResponses',
-  'ai_agents/reconcileChatRuntimeGenerations',
   'ai_agents/reconcileCopyrightAgentDispatches',
   'ai_agents/reconcilePostClassifierApplications',
   'bedrock-embeddings-batch/backlog_dispatcher',
@@ -153,7 +152,7 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(67)
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(66)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,
@@ -167,15 +166,6 @@ describe('scheduled job manifest catalog', () => {
       description: 'Publish class-aggregated GlideMQ depth and staleness to CloudWatch',
       trigger: enqueueGlideMqStats,
     })
-    expect(SCHEDULED_JOBS_REGISTRY).toContainEqual(
-      expect.objectContaining({
-        id: 'reconcileChatRuntimeGenerations',
-        queue_name: 'ai_agents',
-        job_name: 'reconcile-chat-runtime-generations',
-        schedule: '*/5 * * * *',
-        trigger: expect.any(Function),
-      }),
-    )
     expect(SCHEDULED_JOBS_REGISTRY).toContainEqual(
       expect.objectContaining({
         id: 'reconcilePostClassifierApplications',

@@ -117,14 +117,8 @@ export async function processAIAgentWorkerJob(
   }
 }
 
-// Anthropic-routed chat never bills OpenAI generation, so it must not be parked by this cap.
 function jobProducesOpenAiSpend(job: Job<AIAgentJobData>): boolean {
-  if (!AI_AGENT_JOB_PRODUCES_SPEND[job.name as AIAgentJobName]) return false
-  if (job.name === 'chat') {
-    const chatData = job.data as import('@queues/ai-agents/types').ChatJobData
-    return chatData.modelProvider !== 'anthropic'
-  }
-  return true
+  return AI_AGENT_JOB_PRODUCES_SPEND[job.name as AIAgentJobName]
 }
 
 // DB predicates run only after the cheap static filter and an active breach, so spend-free

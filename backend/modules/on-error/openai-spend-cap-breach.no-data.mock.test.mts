@@ -32,7 +32,7 @@ vi.mock<typeof import('@sentry/node')>(import('@sentry/node'), () => ({
 const captureMessage = sentryMocks.captureMessage
 
 const breachContext = {
-  agentJobName: 'chat',
+  agentJobName: 'report-judgement',
   dailyTotalMicrounits: 12_000_000,
   dailyCapMicrounits: 10_000_000,
   reason: 'cap_exceeded' as const,
@@ -63,7 +63,7 @@ describe('recordOpenAiSpendCapBreach', () => {
         level: 'warning',
         tags: {
           reason: 'openai_spend_cap_breach',
-          agent_job_name: 'chat',
+          agent_job_name: 'report-judgement',
           breach_reason: 'cap_exceeded',
         },
         extra: { dailyTotalMicrounits: 12_000_000, dailyCapMicrounits: 10_000_000 },

@@ -15,7 +15,7 @@ import { registerOpenAiSpendCapRecheck } from './spend-cap-recheck.mts'
 function delayedJob(): Job<AIAgentJobData> {
   return {
     id: randomUUID(),
-    name: 'chat',
+    name: 'report-judgement',
     data: {} as AIAgentJobData,
     reportTokens: vi.fn<(count: number) => Promise<void>>(),
     moveToDelayed: vi

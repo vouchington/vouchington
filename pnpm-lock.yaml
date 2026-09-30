@@ -2683,15 +2683,9 @@ importers:
       '@services/analytics':
         specifier: workspace:^
         version: link:../../services/analytics
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
       glide-mq:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
-      uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -10947,9 +10941,6 @@ importers:
       '@agents/autotagger':
         specifier: workspace:^
         version: link:../../agents/autotagger
-      '@agents/chat':
-        specifier: workspace:^
-        version: link:../../agents/chat
       '@agents/community-moderation':
         specifier: workspace:^
         version: link:../../agents/community-moderation
@@ -10977,13 +10968,7 @@ importers:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
-      '@data-stores/valkey-pubsub':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-pubsub
       '@jongleberry/vurst-ai':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@jongleberry/vurst-markdown':
         specifier: ^0.4.3
         version: 0.4.3
       '@modules/on-error':
@@ -10998,9 +10983,6 @@ importers:
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
-      '@modules/sse-lifecycle':
-        specifier: workspace:^
-        version: link:../../modules/sse-lifecycle
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
@@ -11022,9 +11004,6 @@ importers:
       '@services/community-agent-prompts':
         specifier: workspace:^
         version: link:../../services/community-agent-prompts
-      '@services/conversations-messages':
-        specifier: workspace:^
-        version: link:../../services/conversations-messages
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../../services/copyright-notices

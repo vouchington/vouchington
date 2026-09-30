@@ -30,7 +30,7 @@ describe('daily OpenAI spend-cap coordination with real GlideMQ', () => {
     const registryKey = openAiSpendCapDelayedRegistryKey(day)
     const queue = new Queue<AIAgentJobData>(queueName, connection)
     try {
-      const staleJob = await queue.add('chat', {
+      const staleJob = await queue.add('report-judgement', {
         openAiSpendCapDelayedDay: `other-${randomUUID()}`,
       } as AIAgentJobData)
       if (!staleJob) throw new Error('Expected stale spend-cap job')
@@ -60,7 +60,7 @@ describe('daily OpenAI spend-cap coordination with real GlideMQ', () => {
     const registryKey = openAiSpendCapDelayedRegistryKey(day)
     const queue = new Queue<AIAgentJobData>(queueName, connection)
     try {
-      const job = await queue.add('chat', {} as AIAgentJobData)
+      const job = await queue.add('report-judgement', {} as AIAgentJobData)
       if (!job) throw new Error('Expected spend-cap registration job')
       await expect(registerOpenAiSpendCapRecheck(job, day, Date.now())).resolves.toBe(true)
       expect(job.data.openAiSpendCapDelayedDay).toBe(day)

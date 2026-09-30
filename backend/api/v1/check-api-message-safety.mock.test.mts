@@ -66,22 +66,6 @@ describe('checkApiMessageSafety', () => {
     })
   })
 
-  it('checks hosted conversation chat', async () => {
-    moderation.mockResolvedValue(createOpenAIModerationResponse(true, { hate: true }))
-    const user = await createTestUser()
-    const conversation = await createConversation(user.id, 'Hosted safety')
-    const request = createRequest()
-    await request.authenticateAs(user)
-
-    const response = await request
-      .post(`/api/v1/conversations/${conversation.id}/chat`)
-      .send({ message: 'unsafe hosted message' })
-      .expect(400)
-
-    expect(response.body).toMatchObject({ code: 'MODERATION_VIOLATION' })
-    expect(moderation).toHaveBeenCalledOnce()
-  })
-
   it('checks both client-generated conversation messages', async () => {
     moderation
       .mockResolvedValueOnce(createOpenAIModerationResponse())

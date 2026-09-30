@@ -37138,47 +37138,6 @@
         }
       }
     },
-    "/api/v1/conversations/{conversationId}/chat": {
-      "post": {
-        "operationId": "post_api_v1_conversations_conversationId_chat",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "conversationId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "text/event-stream": {
-                "schema": {}
-              }
-            },
-            "description": "OK",
-            "x-schema-unavailable": true,
-            "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
-          },
-          "default": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "x-schema-unavailable": true,
-        "x-schema-unavailable-reason": "SSE event payload sequence is not statically extracted"
-      }
-    },
     "/api/v1/conversations/{conversationId}/client-generated-chat": {
       "post": {
         "operationId": "post_api_v1_conversations_conversationId_client-generated-chat",
@@ -76496,7 +76455,6 @@
     "GET:/api/v1/web-search",
     "PATCH:/api/v1/topics/:idOrSlug/retailer",
     "POST:/api/v1/admin/mcp",
-    "POST:/api/v1/conversations/:conversationId/chat",
     "POST:/api/v1/households/:id/memberships",
     "POST:/api/v1/images/upload-url",
     "POST:/api/v1/mcp"
