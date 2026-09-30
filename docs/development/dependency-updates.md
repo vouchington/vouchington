@@ -48,18 +48,6 @@ Native dependency policy and automation are owned by the
 - <a id="frozen-install-policy"></a>[Frozen-install policy](reference-dependency-updates-frozen-install-policy.md)
 - <a id="optional-peer-instance-keys"></a>[Optional peer instance keys](reference-dependency-updates-frozen-install-policy.md#optional-peer-instance-keys)
 
-### Sentry 10.72/10.73 compatibility hold
-
-`@sentry/nextjs` 10.72.x and 10.73.x throw `TypeError: The URL must be of scheme file` at module
-scope whenever a `document` global exists, which is the normal jsdom state for web Vitest. The four
-direct Sentry JS SDKs are exact-pinned to `10.71.0` (no caret — a caret range still resolves to the
-broken 10.72/10.73 on a fresh install), and `.github/dependabot.yml` ignores `10.72.x` and `10.73.x`
-for `@sentry/nextjs`, `@sentry/node`, `@sentry/cloudflare`, and `@sentry/aws-serverless` under issue
-#10523. Do not replace the pins with a pnpm override or patch.
-
-The exclusion is deliberately only those two minors. Dependabot may propose 10.74 or later. Remove
-the hold only after that PR's web Vitest jsdom import of `@sentry/nextjs` succeeds.
-
 ## Pinning and verification references
 
 - [Docs pinning policy](#docs-pinning-policy)
@@ -97,7 +85,6 @@ Coverlet configuration for native clients lives in the
 [client repository](https://github.com/vouchington/vouchington-clients).
 
 Exact versions in docs are allowed only when they are historical facts that will not be restamped:
-compatibility holds (such as the Sentry exclusion above), incident records, and minimum SHAs such
-as `≥ 652a469`. Dual executable pins that both run (lychee and gitleaks in
-`.mise.toml` and workflow YAML) stay exact in those files and are kept in lockstep by no-mistakes
-`version-pin-consistency`.
+compatibility holds, incident records, and minimum SHAs such as `≥ 652a469`. Dual executable pins
+that both run (lychee and gitleaks in `.mise.toml` and workflow YAML) stay exact in those files and
+are kept in lockstep by no-mistakes `version-pin-consistency`.

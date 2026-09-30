@@ -7,10 +7,6 @@ import {
   processAutotaggerRssFeedItem,
 } from './processors/process-autotagger.mts'
 import {
-  processModerationDispatcher,
-  processModerationPrompt,
-} from './processors/process-moderation.mts'
-import {
   processCommunityModerationDispatcher,
   processCommunityModerationPrompt,
 } from './processors/process-community-moderation.mts'
@@ -59,14 +55,6 @@ export function processAIAgent(
     case 'autotagger-rss-feed-item':
       return processAutotaggerRssFeedItem(
         job as Job<import('@queues/ai-agents/types').AutotaggerRssFeedItemJobData>,
-      )
-    case 'moderation-dispatcher':
-      return processModerationDispatcher(
-        job as Job<import('@queues/ai-agents/types').ModerationDispatcherJobData>,
-      )
-    case 'moderation-prompt':
-      return processModerationPrompt(
-        job as Job<import('@queues/ai-agents/types').ModerationPromptJobData>,
       )
     case 'post-classifier-dispatcher':
       return processPostClassifierDispatcher(

@@ -37,26 +37,6 @@ export async function createPostLLMModerator(
   return rows[0]
 }
 
-export async function getActivePostLLMModerators(): Promise<PostLLMModerator[]> {
-  const { rows } = await read<PostLLMModerator>(sql`/* getActivePostLLMModerators */
-    SELECT
-      a.id,
-      am.slug,
-      a.system_user_id,
-      a.activated_at,
-      a.deactivated_at,
-      a.created_at
-    FROM agents a
-    INNER JOIN agents__moderators am ON am.agent_id = a.id
-    WHERE a.activated_at IS NOT NULL
-      AND a.deactivated_at IS NULL
-      AND a.deleted_at IS NULL
-      AND a.agent_type = 'moderator'
-    ORDER BY am.slug ASC
-  `)
-  return rows
-}
-
 export async function getPostLLMModeratorBySlug(slug: string): Promise<PostLLMModerator | null> {
   const { rows } = await read<PostLLMModerator>(sql`/* getPostLLMModeratorBySlug */
     SELECT

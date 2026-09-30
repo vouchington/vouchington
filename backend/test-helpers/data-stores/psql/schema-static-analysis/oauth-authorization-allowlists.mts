@@ -32,6 +32,10 @@ export const OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS = [
     'oauth_authorization_server_events.grant_id',
     'Immutable audit snapshot intentionally survives OAuth grant deletion.',
   ],
+  [
+    'mcp_call_audit_events.correlation_id',
+    'Server-minted request correlation identifier shared by the rows of one MCP request and echoed in X-Correlation-Id; it identifies no relation.',
+  ],
 ] as const
 
 export const AUTHORIZATION_TABLES_WITHOUT_CREATED_AT = [
@@ -39,6 +43,10 @@ export const AUTHORIZATION_TABLES_WITHOUT_CREATED_AT = [
   [
     'oauth_authorization_server_events',
     'Append-only audit events never update; their immutable occurrence time derives from the UUIDv7 id as occurred_at.',
+  ],
+  [
+    'mcp_call_audit_events',
+    'Append-only MCP call audit events never update; their immutable occurrence time derives from the UUIDv7 id as occurred_at.',
   ],
 ] as const
 /* v8 ignore stop */

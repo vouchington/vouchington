@@ -402,7 +402,6 @@
 {"id":"copy.extracted.apiKeysManager.createApiKeyForm.label_0e66373f","value":"Label"},
 {"id":"copy.extracted.apiKeysManager.createApiKeyForm.mcpServer_d938c816","value":"MCP server"},
 {"id":"copy.extracted.apiKeysManager.createApiKeyForm.rssFeed_8058db69","value":"RSS feed"},
-{"id":"copy.extracted.apiKeysManager.createApiKeyForm.yourAccount_dbb5f637","value":"Your account"},
 {"id":"copy.extracted.apiKeysManager.keyCreatedAlert.copied_8d525e5f","value":"Copied"},
 {"id":"copy.extracted.apiKeysManager.keyCreatedAlert.copyApiKey_013c2b8b","value":"Copy API key"},
 {"id":"copy.extracted.apiKeysManager.keyCreatedAlert.generatedApiKey_3e788b36","value":"Generated API key"},

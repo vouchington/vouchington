@@ -11,7 +11,6 @@ import type { ApiKeyScopeSelection } from './use-api-key-scope-selection'
 interface CreateApiKeyFormProps {
   label: string
   selection: ApiKeyScopeSelection
-  showAudience: boolean
   submitting: boolean
   onCancel: () => void
   onCreate: () => void
@@ -21,7 +20,6 @@ interface CreateApiKeyFormProps {
 export function CreateApiKeyForm({
   label,
   selection,
-  showAudience,
   submitting,
   onCancel,
   onCreate,
@@ -58,26 +56,6 @@ export function CreateApiKeyForm({
         value={selection.keyType}
         onChange={selection.handleKeyTypeChange}
       />
-      {selection.keyType === 'mcp' && showAudience && (
-        <ChoiceRadioGroup
-          idPrefix='api-key-audience'
-          legend={t('extracted.apiKeysManager.createApiKeyForm.audience_545c0235')}
-          options={[
-            {
-              value: 'user',
-              label: t('extracted.apiKeysManager.createApiKeyForm.yourAccount_dbb5f637'),
-              dataPw: 'api-keys-create-audience-user',
-            },
-            {
-              value: 'admin',
-              label: t('extracted.apiKeysManager.createApiKeyForm.administrator_e7d3e769'),
-              dataPw: 'api-keys-create-audience-admin',
-            },
-          ]}
-          value={selection.audience}
-          onChange={selection.handleAudienceChange}
-        />
-      )}
       {selection.keyType === 'mcp' && (
         <ScopePicker
           idPrefix='api-key'

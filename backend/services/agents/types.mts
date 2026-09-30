@@ -20,16 +20,3 @@ export type AgentModerator = {
   created_at: Date
   updated_at: Date
 }
-
-export type AgentPrompt = {
-  id: string
-  prompt: string
-  agent_id: string
-  model_name: AgentModel
-  model_provider: AgentModelProvider
-  created_at: Date
-  updated_at: Date
-  activated_at: Date | null
-  deactivated_at: Date | null
-  deleted_at: Date | null
-}

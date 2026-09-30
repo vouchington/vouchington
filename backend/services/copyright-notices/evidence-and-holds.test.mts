@@ -6,7 +6,7 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import { insertCopyrightEvidenceArtifact } from '@voucha/test-helpers/data-stores/psql/copyright-evidence-retention'
+import { insertCopyrightEvidenceArtifact } from '@voucha/test-helpers/data-stores/psql/copyright-evidence-artifacts'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightLegalHoldAssessment,

@@ -4,10 +4,9 @@ import { createTestUserDirect } from './users.mts'
 import { createRandomString } from '../data.mts'
 import type { AgentModel, AgentModelProvider } from '@voucha/types/entities/agent-model'
 
-// Local copy of @services/agents' AgentPrompt row shape — that service's prompt INSERT/UPDATE
-// queries have no side effects, reimplemented below as raw-primitive direct calls (this package
-// must never depend on a service that already devDeps this package for its own tests). Keep in
-// sync with backend/services/agents/types.mts.
+// The `agent_prompts` row shape, with prompt INSERT/UPDATE queries implemented below as
+// raw-primitive direct calls (this package must never depend on a service that already devDeps
+// this package for its own tests).
 type TestAgentPrompt = {
   id: string
   prompt: string

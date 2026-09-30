@@ -17,6 +17,8 @@ type McpRequestContext = {
   request: Request
   parsedBody: unknown
   config: McpServerConfig
+  // Awaited after an admitted tool call returns an error result, so the caller can record it.
+  onToolError?: (toolName: string) => Promise<void>
 }
 
 export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<Response> {
@@ -33,15 +35,17 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<Resp
     return Promise.resolve({ tools })
   })
 
-  server.setRequestHandler(CallToolRequestSchema, request =>
-    callMcpTool(
+  server.setRequestHandler(CallToolRequestSchema, async request => {
+    const result = await callMcpTool(
       request.params.name,
       request.params.arguments ?? {},
       ctx.user,
       ctx.permissions,
       ctx.config,
-    ),
-  )
+    )
+    if (result.isError) await ctx.onToolError?.(request.params.name)
+    return result
+  })
 
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,

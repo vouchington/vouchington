@@ -70,7 +70,6 @@ backend-credentialed:
   - 'backend/modules/openai-utils/**'
   - 'backend/modules/structured-decisions/**'
   - 'backend/agents/autotagger/**'
-  - 'backend/agents/moderation/**'
   - 'backend/services/openai-moderation/**'
   - 'backend/services/bedrock-embeddings/**'
   - 'backend/services/posts/tools/**'

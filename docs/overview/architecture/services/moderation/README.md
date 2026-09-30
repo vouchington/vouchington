@@ -31,16 +31,14 @@ OpenAI call.
 
 ## Political Content Detection
 
-`politics-averse` is an LLM-backed moderator that runs on both posts and comments through the
-shared post moderation pipeline.
+`politics-averse` is a fixed-label built-in agent that applies to both posts and comments. The
+`@agents/politics-averse` package holds its prompt, tools, and result parsing.
 
 - Allows neutral news/event discussion
 - Allows sourced political analysis
 - Flags partisan persuasion, campaign-style advocacy, and unsupported political claims
 - Uses the `get_domain_ratings` tool to inspect linked domain trust plus RSS-source topic ratings when the linked URL maps to a known feed
-- On flag: tags `political` and moves content into the review queue
-
-Results are stored in `agent_moderations` like other moderators and are visible through the existing admin moderation surfaces.
+- On flag: labels the content `political`
 
 Moderator agents do not write public post votes. Public voting surfaces are reserved for community users without Voucha roles.
 
@@ -54,8 +52,9 @@ Archived communities reject agent toggle writes.
 - Default state: disabled
 - Toggle actors: community owners and moderators
 - Future paid-plan checks: `getCommunityAiAgentEntitlement()`
-- Runtime gate: `getEnabledCommunityAutoTaggerModeratorSlugs(communityId)` before dispatch, and
-  `assertCommunityAutoTaggerAgentEnabled(communityId, slug)` before an individual prompt job runs
+- Runtime read: the post classifier reads a community's toggle rows through
+  `getCurrentPostClassifierLabelToggles` when it builds the label configuration; this package owns
+  only the list, enable, and disable surfaces
 
 The fixed toggle matrix is:
 
@@ -72,4 +71,4 @@ The fixed toggle matrix is:
 ## Related
 
 - AI agents system: [../../queues/ai-agents/README.md](../../queues/ai-agents/README.md)
-- Moderator agent implementation: [../../agents/moderation/README.md](../../ai-agents/moderation/README.md)
+- Community moderation agent: [../../ai-agents/community-moderation/README.md](../../ai-agents/community-moderation/README.md)

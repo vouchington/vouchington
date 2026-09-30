@@ -32,6 +32,7 @@ export const ROOT_FAMILIES = {
       ['oauth_authorization_server_events', 'user_id'],
       ['post_moderation_dispositions', 'actor_user_id'],
       ['post_clearance_changes', 'changed_by_id'],
+      ['mcp_call_audit_events', 'actor_user_id'],
       ...retainedRelationReferences('user'),
     ],
   },

@@ -1,11 +1,15 @@
+import { devices } from 'playwright-core'
+
 export const TEST_USER_EMAIL = process.env.WEB_INTEGRATION_TEST_USER_EMAIL ?? 'tests@voucha.ai'
 export const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'
 export const TEST_USER_USERNAME = 'tests'
 export const GOOGLEBOT_UA = 'Googlebot/2.1 (+http://www.google.com/bot.html)'
 
-// Playwright v1.58 devices['Desktop Chrome'] UA — matches what Playwright sends in headed/debug mode
-export const PLAYWRIGHT_CHROME_UA =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36'
+// A browser-like user agent. Node's default fetch UA is bot-positive under isbot(), so requests
+// without it get a bot tier from the Worker (cloudflare-worker/src/bot-tier.mts) and are treated as
+// unauthenticated by web/proxy.ts. Read it from the installed Playwright device descriptor (data
+// only, no browser is launched) so no browser version is written into this test suite.
+export const PLAYWRIGHT_CHROME_UA = devices['Desktop Chrome'].userAgent
 
 const EXPECTED_PERMISSIONS_POLICY = [
   'accelerometer=()',

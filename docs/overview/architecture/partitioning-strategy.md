@@ -46,6 +46,7 @@ This block is rendered from the typed registry, and its normalized rows are chec
 | `crawls`                                                | RANGE         | `id`                                   | monthly            | cleanupPartitions | retention-window   |
 | `entity_relation_votes`                                 | LIST -> RANGE | `relation_table -> entity_relation_id` | list-default-range | none              | intentional-fanout |
 | `hostname_votes`                                        | RANGE         | `hostname_id`                          | default            | none              | target-scoped      |
+| `mcp_call_audit_events`                                 | RANGE         | `id`                                   | default            | none              | target-scoped      |
 | `notifications`                                         | RANGE         | `user_id`                              | default            | none              | target-scoped      |
 | `post_autotagger_results`                               | RANGE         | `post_id`                              | default            | none              | target-scoped      |
 | `post_classifier_applications`                          | RANGE         | `post_id`                              | default            | none              | target-scoped      |
@@ -161,15 +162,6 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_notice_evidence_artifacts`,
   `copyright_notice_form_intake_reviews`, `copyright_notice_form_intakes`,
   `copyright_notice_form_screening_executions`, `copyright_notice_form_screenings`,
-  `copyright_evidence_retention_disposition_artifacts`,
-  `copyright_evidence_retention_disposition_email_intakes`,
-  `copyright_evidence_retention_dispositions`,
-  `copyright_evidence_retention_policies`,
-  `copyright_evidence_retention_preview_artifacts`,
-  `copyright_evidence_retention_preview_blocks`,
-  `copyright_evidence_retention_preview_email_intakes`,
-  `copyright_evidence_retention_previews`,
-  `copyright_notice_closures`,
   `copyright_notice_guest_capabilities`,
   `copyright_notice_legal_hold_assessments`, `copyright_notice_legal_hold_assessment_targets`,
   `copyright_notice_legal_hold_resolutions`,
@@ -180,8 +172,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_notice_urgent_filings`, `copyright_notices`,
   `copyright_repeat_infringer_dispositions`, `copyright_repeat_infringer_incidents`,
   `copyright_repeat_infringer_reviews`,
-  `copyright_restrictions`, `copyright_staff_alert_acknowledgements`,
-  `copyright_staff_alert_policies`, `copyright_staff_alerts`,
+  `copyright_restrictions`,
   `copyright_territorial_policy_approvals`, `copyright_territorial_policy_withdrawals`,
   `copyright_uk_escalations`, `copyright_uk_notice_acknowledgments`,
   `copyright_uk_notice_receipts`, `copyright_uk_notice_routings`,

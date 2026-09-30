@@ -44,7 +44,6 @@
     "@agents/_shared": "workspace:^",
     "@agents/community-moderation": "workspace:^",
     "@agents/conversation-title": "workspace:^",
-    "@agents/moderation": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@data-stores/valkey-pubsub": "workspace:^",

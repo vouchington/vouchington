@@ -158,44 +158,23 @@ describe('ApiKeysManager scope selection', () => {
     expect(checkbox('cards Write')).not.toBeChecked()
   })
 
-  it('hides the audience choice and admin scopes from non-admin users', async () => {
-    await openMcpForm()
+  it.each([
+    ['non-admin users', undefined],
+    ['administrators', asAdmin(<ApiKeysManager scopeCatalog={scopeCatalog} />)],
+  ])('offers no audience choice or admin scopes to %s', async (_label, ui) => {
+    await openMcpForm(ui)
 
     expect(screen.queryByRole('radio', { name: 'Administrator' })).not.toBeInTheDocument()
     expect(screen.queryByRole('checkbox', { name: 'mcp.admin Read' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'mcp.admin Write' })).not.toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'mcp.user Read' })).toBeInTheDocument()
   })
 
-  it('creates an admin MCP key for administrators', async () => {
-    await openMcpForm(asAdmin(<ApiKeysManager scopeCatalog={scopeCatalog} />))
+  it('renders the user catalogue description through localized copy', async () => {
+    await openMcpForm()
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Administrator' }))
-    expect(screen.queryByRole('checkbox', { name: 'mcp.user Read' })).not.toBeInTheDocument()
-    fireEvent.click(checkbox('mcp.admin Write'))
-    await createWithLabel('Admin agent key')
-
-    await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith('Admin agent key', 'mcp', [
-        'mcp.admin:read',
-        'mcp.admin:write',
-      ])
-    })
-  })
-
-  it('clears chosen scopes when the audience changes', async () => {
-    await openMcpForm(asAdmin(<ApiKeysManager scopeCatalog={scopeCatalog} />))
-
-    fireEvent.click(checkbox('mcp.user Read'))
-    fireEvent.click(screen.getByRole('radio', { name: 'Administrator' }))
-    fireEvent.click(screen.getByRole('radio', { name: 'Your account' }))
-
-    expect(checkbox('mcp.user Read')).not.toBeChecked()
-  })
-
-  it('renders audience-specific catalogue descriptions through localized copy', async () => {
-    await openMcpForm(asAdmin(<ApiKeysManager scopeCatalog={scopeCatalog} />))
     expect(screen.getByText('Full user MCP access')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('radio', { name: 'Administrator' }))
-    expect(screen.getByText('Full administrator MCP access')).toBeInTheDocument()
+    expect(screen.queryByText('Full administrator MCP access')).not.toBeInTheDocument()
   })
 
   it('uses an API-key-type-specific label example', async () => {

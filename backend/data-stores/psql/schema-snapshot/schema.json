@@ -672,15 +672,6 @@
     "fn_guard_copyright_restriction_lifecycle": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright restrictions are retained legal records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(OLD.copyright_notice_target_id, OLD.imposed_at)\n    IS DISTINCT FROM ROW(NEW.copyright_notice_target_id, NEW.imposed_at)\n    OR (OLD.imposed_by_id IS DISTINCT FROM NEW.imposed_by_id AND NEW.imposed_by_id IS NOT NULL) THEN\n    RAISE EXCEPTION 'copyright restriction origin is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.lifted_at IS NOT NULL\n    AND (OLD.lifted_at IS DISTINCT FROM NEW.lifted_at\n      OR (OLD.lifted_by_id IS DISTINCT FROM NEW.lifted_by_id AND NEW.lifted_by_id IS NOT NULL)) THEN\n    RAISE EXCEPTION 'copyright restriction lift is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.human_reviewed_at IS NOT NULL\n    AND (ROW(OLD.human_reviewed_at, OLD.human_review_action)\n      IS DISTINCT FROM ROW(NEW.human_reviewed_at, NEW.human_review_action)\n      OR (OLD.human_reviewed_by_id IS DISTINCT FROM NEW.human_reviewed_by_id\n        AND NEW.human_reviewed_by_id IS NOT NULL)) THEN\n    RAISE EXCEPTION 'copyright restriction human review is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.human_reviewed_at IS NULL\n    AND NEW.human_reviewed_at IS NOT NULL\n    AND NEW.human_reviewed_by_id IS NULL\n    AND NOT (\n      NEW.human_review_action = 'reverse'\n      AND EXISTS (\n        SELECT 1\n        FROM copyright_notice_submission_assessments assessment\n        JOIN copyright_notice_form_intakes intake\n          ON intake.copyright_notice_submission_id = assessment.copyright_notice_submission_id\n        JOIN copyright_notice_form_intake_reviews review\n          ON review.copyright_notice_form_intake_id = intake.id\n        WHERE assessment.id = NEW.authorizing_assessment_id\n          AND assessment.assessed_by_id IS NULL\n          AND assessment.copyright_notice_form_screening_id IS NOT NULL\n          AND NOT review.accepted AND review.reviewed_by_id IS NULL\n      )\n    ) THEN\n    RAISE EXCEPTION 'copyright restriction human review requires an identified actor' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
-    "fn_guard_copyright_staff_alert": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_staff_alert()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright staff alerts are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.copyright_notice_id IS DISTINCT FROM NEW.copyright_notice_id\n    OR OLD.copyright_notice_deadline_id IS DISTINCT FROM NEW.copyright_notice_deadline_id\n    OR OLD.copyright_notice_delivery_intent_id IS DISTINCT FROM NEW.copyright_notice_delivery_intent_id\n    OR OLD.condition IS DISTINCT FROM NEW.condition THEN\n    RAISE EXCEPTION 'copyright staff alert identity is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_guard_copyright_staff_alert_ack": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_staff_alert_ack()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright staff alert acknowledgements are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.copyright_staff_alert_id IS DISTINCT FROM NEW.copyright_staff_alert_id\n    OR OLD.acknowledged_at IS DISTINCT FROM NEW.acknowledged_at\n    OR OLD.condition_opened_at IS DISTINCT FROM NEW.condition_opened_at THEN\n    RAISE EXCEPTION 'copyright staff alert acknowledgement facts are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.acknowledged_by_user_id IS DISTINCT FROM NEW.acknowledged_by_user_id THEN\n    IF OLD.acknowledged_by_user_id IS NULL OR NEW.acknowledged_by_user_id IS NOT NULL THEN\n      RAISE EXCEPTION 'copyright staff alert acknowledger cannot change' USING ERRCODE = 'check_violation';\n    END IF;\n    NEW.acknowledged_by_user_erased_at := CURRENT_TIMESTAMP;\n  ELSIF NEW.acknowledged_by_user_erased_at IS DISTINCT FROM OLD.acknowledged_by_user_erased_at THEN\n    RAISE EXCEPTION 'copyright staff alert acknowledger erasure is system-managed'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_guard_copyright_staff_alert_policy": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_staff_alert_policy()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright staff alert policies are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.approved_at IS DISTINCT FROM NEW.approved_at THEN\n    RAISE EXCEPTION 'copyright staff alert policy approval is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.revoked_at IS NOT NULL AND OLD.revoked_at IS DISTINCT FROM NEW.revoked_at THEN\n    RAISE EXCEPTION 'copyright staff alert policy revocation is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.approved_by_user_id IS DISTINCT FROM NEW.approved_by_user_id THEN\n    IF OLD.approved_by_user_id IS NULL OR NEW.approved_by_user_id IS NOT NULL THEN\n      RAISE EXCEPTION 'copyright staff alert policy approver cannot change' USING ERRCODE = 'check_violation';\n    END IF;\n    NEW.approved_by_user_erased_at := CURRENT_TIMESTAMP;\n  ELSIF NEW.approved_by_user_erased_at IS DISTINCT FROM OLD.approved_by_user_erased_at THEN\n    RAISE EXCEPTION 'copyright staff alert policy approver erasure is system-managed'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
     "fn_guard_copyright_submission_target_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_submission_target_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_submissions submission\n    JOIN copyright_notice_targets target ON target.id = NEW.copyright_notice_target_id\n    WHERE submission.id = NEW.copyright_notice_submission_id\n      AND submission.copyright_notice_id = target.copyright_notice_id\n  ) THEN\n    RAISE EXCEPTION 'copyright submission target must belong to the same notice' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -893,6 +884,9 @@
     },
     "fn_reject_copyright_territorial_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'copyright territorial contract rows are immutable'\n    USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+    },
+    "fn_reject_mcp_call_audit_event_mutation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_mcp_call_audit_event_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'mcp call audit events are append-only' USING ERRCODE = '23514';\nEND $function$\n"
     },
     "fn_reject_membership_administrator_refund_request_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_membership_administrator_refund_request_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN RAISE EXCEPTION 'membership administrator refund requests are immutable'; END $function$\n"
@@ -21235,1194 +21229,6 @@
       },
       "uniqueConstraints": {}
     },
-    "copyright_evidence_retention_disposition_artifacts": {
-      "checkConstraints": {
-        "copyright_evidence_retention_disposition_artifact_outcome_check": "CHECK ((outcome = ANY (ARRAY['refused'::text, 'not_destroyed'::text])))"
-      },
-      "columns": {
-        "copyright_evidence_retention_disposition_id": {
-          "collation": null,
-          "comment": "The disposition this artifact result belongs to.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "copyright_notice_evidence_artifact_id": {
-          "collation": null,
-          "comment": "The evidence artifact this result describes. The object is not deleted.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        },
-        "outcome": {
-          "collation": null,
-          "comment": "Per-artifact result copied from the disposition. The artifact row is kept.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "text"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Per-artifact audit copied from a disposition. The artifact rows stay.",
-      "foreignKeys": {
-        "copyright_evidence_retention_copyright_evidence_retention_fkey5": {
-          "columns": ["copyright_evidence_retention_disposition_id"],
-          "definition": "FOREIGN KEY (copyright_evidence_retention_disposition_id) REFERENCES copyright_evidence_retention_dispositions(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_evidence_retention_dispositions",
-          "validated": true
-        },
-        "copyright_evidence_retention_copyright_notice_evidence_ar_fkey1": {
-          "columns": ["copyright_notice_evidence_artifact_id"],
-          "definition": "FOREIGN KEY (copyright_notice_evidence_artifact_id) REFERENCES copyright_notice_evidence_artifacts(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notice_evidence_artifacts",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_evidence_retention_disposition_artifacts_artifact_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX copyright_evidence_retention_disposition_artifacts_artifact_id ON public.copyright_evidence_retention_disposition_artifacts USING btree (copyright_notice_evidence_artifact_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_evidence_artifact_id",
-              "descending": false,
-              "expression": "copyright_notice_evidence_artifact_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "copyright_evidence_retention_disposition_artifacts_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_evidence_retention_disposition_artifacts_pkey ON public.copyright_evidence_retention_disposition_artifacts USING btree (copyright_evidence_retention_disposition_id, copyright_notice_evidence_artifact_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_evidence_retention_disposition_id",
-              "descending": false,
-              "expression": "copyright_evidence_retention_disposition_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "copyright_notice_evidence_artifact_id",
-              "descending": false,
-              "expression": "copyright_notice_evidence_artifact_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": [
-          "copyright_evidence_retention_disposition_id",
-          "copyright_notice_evidence_artifact_id"
-        ],
-        "definition": "PRIMARY KEY (copyright_evidence_retention_disposition_id, copyright_notice_evidence_artifact_id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
-    "copyright_evidence_retention_disposition_email_intakes": {
-      "checkConstraints": {
-        "copyright_evidence_retention_disposition_email_in_outcome_check": "CHECK ((outcome = ANY (ARRAY['refused'::text, 'not_destroyed'::text])))"
-      },
-      "columns": {
-        "copyright_evidence_retention_disposition_id": {
-          "collation": null,
-          "comment": "The disposition this intake result belongs to.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "copyright_notice_email_intake_id": {
-          "collation": null,
-          "comment": "The email intake this result describes. The raw message is not deleted.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        },
-        "outcome": {
-          "collation": null,
-          "comment": "Per-intake result copied from the disposition. The raw message is kept.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "text"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Per-intake audit copied from a disposition. The raw messages stay.",
-      "foreignKeys": {
-        "copyright_evidence_retention_copyright_evidence_retention_fkey6": {
-          "columns": ["copyright_evidence_retention_disposition_id"],
-          "definition": "FOREIGN KEY (copyright_evidence_retention_disposition_id) REFERENCES copyright_evidence_retention_dispositions(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_evidence_retention_dispositions",
-          "validated": true
-        },
-        "copyright_evidence_retention_copyright_notice_email_intak_fkey1": {
-          "columns": ["copyright_notice_email_intake_id"],
-          "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notice_email_intakes",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_evidence_retention_disposition_email_intakes_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_evidence_retention_disposition_email_intakes_pkey ON public.copyright_evidence_retention_disposition_email_intakes USING btree (copyright_evidence_retention_disposition_id, copyright_notice_email_intake_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_evidence_retention_disposition_id",
-              "descending": false,
-              "expression": "copyright_evidence_retention_disposition_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "copyright_notice_email_intake_id",
-              "descending": false,
-              "expression": "copyright_notice_email_intake_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_cer_disposition_email_intakes__intake": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_cer_disposition_email_intakes__intake ON public.copyright_evidence_retention_disposition_email_intakes USING btree (copyright_notice_email_intake_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_email_intake_id",
-              "descending": false,
-              "expression": "copyright_notice_email_intake_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": [
-          "copyright_evidence_retention_disposition_id",
-          "copyright_notice_email_intake_id"
-        ],
-        "definition": "PRIMARY KEY (copyright_evidence_retention_disposition_id, copyright_notice_email_intake_id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
-    "copyright_evidence_retention_dispositions": {
-      "checkConstraints": {
-        "copyright_evidence_retention_dispositions_outcome_check": "CHECK ((outcome = ANY (ARRAY['refused'::text, 'not_destroyed'::text])))"
-      },
-      "columns": {
-        "attempted_at": {
-          "collation": null,
-          "comment": "When this disposition attempt was recorded.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "copyright_evidence_retention_preview_id": {
-          "collation": null,
-          "comment": "The preview this attempt explains. One disposition per preview.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "outcome": {
-          "collation": null,
-          "comment": "refused when a block remains. not_destroyed when the preview is eligible but destruction authority is absent.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "text"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Audit of a disposition attempt. This table never authorizes object deletion by itself.",
-      "foreignKeys": {
-        "copyright_evidence_retention_copyright_evidence_retention_fkey4": {
-          "columns": ["copyright_evidence_retention_preview_id"],
-          "definition": "FOREIGN KEY (copyright_evidence_retention_preview_id) REFERENCES copyright_evidence_retention_previews(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_evidence_retention_previews",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_evidence_retention__copyright_evidence_retention__key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_evidence_retention__copyright_evidence_retention__key ON public.copyright_evidence_retention_dispositions USING btree (copyright_evidence_retention_preview_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_evidence_retention_preview_id",
-              "descending": false,
-              "expression": "copyright_evidence_retention_preview_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "copyright_evidence_retention_dispositions_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_evidence_retention_dispositions_pkey ON public.copyright_evidence_retention_dispositions USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {
-        "copyright_evidence_retention__copyright_evidence_retention__key": {
-          "columns": ["copyright_evidence_retention_preview_id"],
-          "definition": "UNIQUE (copyright_evidence_retention_preview_id)"
-        }
-      }
-    },
-    "copyright_evidence_retention_gates": {
-      "checkConstraints": {},
-      "columns": {
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "enabled": {
-          "collation": null,
-          "comment": "Whether a later destruction authority may run. False records no deletion.",
-          "defaultExpression": "false",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "boolean"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Single server-owned switch for copyright evidence disposition. The inserted row is disabled.",
-      "foreignKeys": {},
-      "growth": "bounded",
-      "indexes": {
-        "copyright_evidence_retention_gates_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_evidence_retention_gates_pkey ON public.copyright_evidence_retention_gates USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "copyright_evidence_retention_gates_singleton": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX copyright_evidence_retention_gates_singleton ON public.copyright_evidence_retention_gates USING btree ((true))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": null,
-              "descending": false,
-              "expression": "(true)",
-              "nullsFirst": false,
-              "opclass": "bool_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
-    "copyright_evidence_retention_policies": {
-      "checkConstraints": {
-        "copyright_evidence_retention_policies_check": "CHECK (((approved_at IS NULL) = (approved_by_user_id IS NULL)))"
-      },
-      "columns": {
-        "approved_at": {
-          "collation": null,
-          "comment": "When a person approved this policy version. Null means it is not approved.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 2,
-          "type": "timestamp with time zone"
-        },
-        "approved_by_user_id": {
-          "collation": null,
-          "comment": "The person who approved this policy version. Null means it is not approved.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Approved evidence-retention policy versions. No duration is stored here.",
-      "foreignKeys": {
-        "copyright_evidence_retention_policies_approved_by_user_id_fkey": {
-          "columns": ["approved_by_user_id"],
-          "definition": "FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_evidence_retention_policies_approved_by_user_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX copyright_evidence_retention_policies_approved_by_user_id ON public.copyright_evidence_retention_policies USING btree (approved_by_user_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "approved_by_user_id",
-              "descending": false,
-              "expression": "approved_by_user_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "copyright_evidence_retention_policies_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_evidence_retention_policies_pkey ON public.copyright_evidence_retention_policies USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
-    "copyright_evidence_retention_preview_artifacts": {
-      "checkConstraints": {},
-      "columns": {
-        "copyright_evidence_retention_preview_id": {
-          "collation": null,
-          "comment": "The preview that names these artifacts.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "copyright_notice_evidence_artifact_id": {
-          "collation": null,
-          "comment": "The evidence artifact this preview would affect. The object is not deleted.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Evidence artifacts named by one preview. The artifact rows stay.",
-      "foreignKeys": {
-        "copyright_evidence_retention__copyright_notice_evidence_ar_fkey": {
-          "columns": ["copyright_notice_evidence_artifact_id"],
-          "definition": "FOREIGN KEY (copyright_notice_evidence_artifact_id) REFERENCES copyright_notice_evidence_artifacts(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notice_evidence_artifacts",
-          "validated": true
-        },
-        "copyright_evidence_retention_copyright_evidence_retention_fkey2": {
-          "columns": ["copyright_evidence_retention_preview_id"],
-          "definition": "FOREIGN KEY (copyright_evidence_retention_preview_id) REFERENCES copyright_evidence_retention_previews(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_evidence_retention_previews",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_evidence_retention_preview_artifacts_artifact_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX copyright_evidence_retention_preview_artifacts_artifact_id ON public.copyright_evidence_retention_preview_artifacts USING btree (copyright_notice_evidence_artifact_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_evidence_artifact_id",
-              "descending": false,
-              "expression": "copyright_notice_evidence_artifact_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "copyright_evidence_retention_preview_artifacts_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_evidence_retention_preview_artifacts_pkey ON public.copyright_evidence_retention_preview_artifacts USING btree (copyright_evidence_retention_preview_id, copyright_notice_evidence_artifact_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_evidence_retention_preview_id",
-              "descending": false,
-              "expression": "copyright_evidence_retention_preview_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "copyright_notice_evidence_artifact_id",
-              "descending": false,
-              "expression": "copyright_notice_evidence_artifact_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": [
-          "copyright_evidence_retention_preview_id",
-          "copyright_notice_evidence_artifact_id"
-        ],
-        "definition": "PRIMARY KEY (copyright_evidence_retention_preview_id, copyright_notice_evidence_artifact_id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
-    "copyright_evidence_retention_preview_blocks": {
-      "checkConstraints": {
-        "copyright_evidence_retention_preview_blocks_reason_check": "CHECK ((reason = ANY (ARRAY['gate_disabled'::text, 'policy_unapproved'::text, 'case_open'::text, 'legal_hold'::text, 'open_deadline'::text])))"
-      },
-      "columns": {
-        "copyright_evidence_retention_preview_id": {
-          "collation": null,
-          "comment": "The preview these reasons explain.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "reason": {
-          "collation": null,
-          "comment": "One fail-closed reason for this preview.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "text"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Fail-closed reasons recorded for one retention preview.",
-      "foreignKeys": {
-        "copyright_evidence_retention_copyright_evidence_retention_fkey1": {
-          "columns": ["copyright_evidence_retention_preview_id"],
-          "definition": "FOREIGN KEY (copyright_evidence_retention_preview_id) REFERENCES copyright_evidence_retention_previews(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_evidence_retention_previews",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_evidence_retention_preview_blocks_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_evidence_retention_preview_blocks_pkey ON public.copyright_evidence_retention_preview_blocks USING btree (copyright_evidence_retention_preview_id, reason)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_evidence_retention_preview_id",
-              "descending": false,
-              "expression": "copyright_evidence_retention_preview_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "reason",
-              "descending": false,
-              "expression": "reason",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["copyright_evidence_retention_preview_id", "reason"],
-        "definition": "PRIMARY KEY (copyright_evidence_retention_preview_id, reason)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
-    "copyright_evidence_retention_preview_email_intakes": {
-      "checkConstraints": {},
-      "columns": {
-        "copyright_evidence_retention_preview_id": {
-          "collation": null,
-          "comment": "The preview that names these intakes.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "copyright_notice_email_intake_id": {
-          "collation": null,
-          "comment": "The email intake this preview would affect. The raw message is not deleted.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Email intakes named by one preview. The raw messages stay.",
-      "foreignKeys": {
-        "copyright_evidence_retention__copyright_notice_email_intak_fkey": {
-          "columns": ["copyright_notice_email_intake_id"],
-          "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notice_email_intakes",
-          "validated": true
-        },
-        "copyright_evidence_retention_copyright_evidence_retention_fkey3": {
-          "columns": ["copyright_evidence_retention_preview_id"],
-          "definition": "FOREIGN KEY (copyright_evidence_retention_preview_id) REFERENCES copyright_evidence_retention_previews(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_evidence_retention_previews",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_evidence_retention_preview_email_intakes_intake_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX copyright_evidence_retention_preview_email_intakes_intake_id ON public.copyright_evidence_retention_preview_email_intakes USING btree (copyright_notice_email_intake_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_email_intake_id",
-              "descending": false,
-              "expression": "copyright_notice_email_intake_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "copyright_evidence_retention_preview_email_intakes_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_evidence_retention_preview_email_intakes_pkey ON public.copyright_evidence_retention_preview_email_intakes USING btree (copyright_evidence_retention_preview_id, copyright_notice_email_intake_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_evidence_retention_preview_id",
-              "descending": false,
-              "expression": "copyright_evidence_retention_preview_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "copyright_notice_email_intake_id",
-              "descending": false,
-              "expression": "copyright_notice_email_intake_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["copyright_evidence_retention_preview_id", "copyright_notice_email_intake_id"],
-        "definition": "PRIMARY KEY (copyright_evidence_retention_preview_id, copyright_notice_email_intake_id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
-    "copyright_evidence_retention_previews": {
-      "checkConstraints": {},
-      "columns": {
-        "copyright_evidence_retention_policy_id": {
-          "collation": null,
-          "comment": "The approved policy version this preview used. Null when no policy is approved.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "uuid"
-        },
-        "copyright_notice_id": {
-          "collation": null,
-          "comment": "The copyright notice this preview explains.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        },
-        "eligible": {
-          "collation": null,
-          "comment": "True only when the gate, policy, closure, holds, and deadlines all allow a later destruction authority.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "boolean"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Immutable explanation of what a disposition would affect, and why it is blocked.",
-      "foreignKeys": {
-        "copyright_evidence_retention__copyright_evidence_retention_fkey": {
-          "columns": ["copyright_evidence_retention_policy_id"],
-          "definition": "FOREIGN KEY (copyright_evidence_retention_policy_id) REFERENCES copyright_evidence_retention_policies(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_evidence_retention_policies",
-          "validated": true
-        },
-        "copyright_evidence_retention_previews_copyright_notice_id_fkey": {
-          "columns": ["copyright_notice_id"],
-          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notices",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_evidence_retention_previews_copyright_notice_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX copyright_evidence_retention_previews_copyright_notice_id ON public.copyright_evidence_retention_previews USING btree (copyright_notice_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "copyright_evidence_retention_previews_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_evidence_retention_previews_pkey ON public.copyright_evidence_retention_previews USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "copyright_evidence_retention_previews_policy_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX copyright_evidence_retention_previews_policy_id ON public.copyright_evidence_retention_previews USING btree (copyright_evidence_retention_policy_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_evidence_retention_policy_id",
-              "descending": false,
-              "expression": "copyright_evidence_retention_policy_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
     "copyright_legal_hold_restrictions": {
       "checkConstraints": {},
       "columns": {
@@ -23407,175 +22213,6 @@
         "copyright_notice_appeal_revie_copyright_notice_submission_i_key": {
           "columns": ["copyright_notice_submission_id", "copyright_restriction_id"],
           "definition": "UNIQUE (copyright_notice_submission_id, copyright_restriction_id)"
-        }
-      }
-    },
-    "copyright_notice_closures": {
-      "checkConstraints": {},
-      "columns": {
-        "closed_at": {
-          "collation": null,
-          "comment": "When staff recorded the case closed.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "closed_by_user_id": {
-          "collation": null,
-          "comment": "The staff user who recorded the case closed.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "uuid"
-        },
-        "copyright_notice_id": {
-          "collation": null,
-          "comment": "The copyright notice recorded as closed. One closure per notice.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Staff record that a copyright case is closed. Closure does not delete evidence.",
-      "foreignKeys": {
-        "copyright_notice_closures_closed_by_user_id_fkey": {
-          "columns": ["closed_by_user_id"],
-          "definition": "FOREIGN KEY (closed_by_user_id) REFERENCES users(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        },
-        "copyright_notice_closures_copyright_notice_id_fkey": {
-          "columns": ["copyright_notice_id"],
-          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notices",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_notice_closures_closed_by_user_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX copyright_notice_closures_closed_by_user_id ON public.copyright_notice_closures USING btree (closed_by_user_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "closed_by_user_id",
-              "descending": false,
-              "expression": "closed_by_user_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "copyright_notice_closures_copyright_notice_id_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_notice_closures_copyright_notice_id_key ON public.copyright_notice_closures USING btree (copyright_notice_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "copyright_notice_closures_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_notice_closures_pkey ON public.copyright_notice_closures USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {
-        "copyright_notice_closures_copyright_notice_id_key": {
-          "columns": ["copyright_notice_id"],
-          "definition": "UNIQUE (copyright_notice_id)"
         }
       }
     },
@@ -33296,650 +31933,6 @@
         "trigger_copyright_restriction_assessment_scope": "CREATE TRIGGER trigger_copyright_restriction_assessment_scope BEFORE INSERT OR UPDATE OF authorizing_assessment_id ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_assessment_scope()",
         "trigger_copyright_restrictions_lifecycle_guard": "CREATE TRIGGER trigger_copyright_restrictions_lifecycle_guard BEFORE DELETE OR UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_lifecycle()",
         "trigger_copyright_restrictions_updated_at": "CREATE TRIGGER trigger_copyright_restrictions_updated_at BEFORE UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
-    "copyright_staff_alert_acknowledgements": {
-      "checkConstraints": {
-        "copyright_staff_alert_acknowledgements_check": "CHECK (((acknowledged_by_user_erased_at IS NULL) OR (acknowledged_by_user_id IS NULL)))"
-      },
-      "columns": {
-        "acknowledged_at": {
-          "collation": null,
-          "comment": "Time a staff user acknowledged that episode.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "acknowledged_by_user_erased_at": {
-          "collation": null,
-          "comment": "Time account erasure removed the acknowledger reference while retaining the acknowledgement.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        },
-        "acknowledged_by_user_id": {
-          "collation": null,
-          "comment": "Staff user who acknowledged the episode; null after that account is erased.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "uuid"
-        },
-        "condition_opened_at": {
-          "collation": null,
-          "comment": "Episode timestamp that was acknowledged. It matches the alert only while that episode is current.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "timestamp with time zone"
-        },
-        "copyright_staff_alert_id": {
-          "collation": null,
-          "comment": "Alert episode family this acknowledgement belongs to.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 8,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Append-only acknowledgement of one alert episode. A new episode keeps the prior row and becomes visible again.",
-      "foreignKeys": {
-        "copyright_staff_alert_acknowledge_copyright_staff_alert_id_fkey": {
-          "columns": ["copyright_staff_alert_id"],
-          "definition": "FOREIGN KEY (copyright_staff_alert_id) REFERENCES copyright_staff_alerts(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_staff_alerts",
-          "validated": true
-        },
-        "copyright_staff_alert_acknowledgem_acknowledged_by_user_id_fkey": {
-          "columns": ["acknowledged_by_user_id"],
-          "definition": "FOREIGN KEY (acknowledged_by_user_id) REFERENCES users(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_staff_alert_acknowledgements_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_staff_alert_acknowledgements_pkey ON public.copyright_staff_alert_acknowledgements USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_copyright_staff_alert_acks__actor": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_staff_alert_acks__actor ON public.copyright_staff_alert_acknowledgements USING btree (acknowledged_by_user_id) WHERE (acknowledged_by_user_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "acknowledged_by_user_id",
-              "descending": false,
-              "expression": "acknowledged_by_user_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(acknowledged_by_user_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_copyright_staff_alert_acks__episode": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_copyright_staff_alert_acks__episode ON public.copyright_staff_alert_acknowledgements USING btree (copyright_staff_alert_id, condition_opened_at)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_staff_alert_id",
-              "descending": false,
-              "expression": "copyright_staff_alert_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "condition_opened_at",
-              "descending": false,
-              "expression": "condition_opened_at",
-              "nullsFirst": false,
-              "opclass": "timestamptz_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_copyright_staff_alert_acks_guard": "CREATE TRIGGER trigger_copyright_staff_alert_acks_guard BEFORE DELETE OR UPDATE ON public.copyright_staff_alert_acknowledgements FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_staff_alert_ack()",
-        "trigger_copyright_staff_alert_acks_updated_at": "CREATE TRIGGER trigger_copyright_staff_alert_acks_updated_at BEFORE UPDATE ON public.copyright_staff_alert_acknowledgements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
-    "copyright_staff_alert_policies": {
-      "checkConstraints": {
-        "copyright_staff_alert_policies_check": "CHECK (((revoked_at IS NULL) OR (revoked_at >= approved_at)))",
-        "copyright_staff_alert_policies_check1": "CHECK (((approved_by_user_erased_at IS NULL) OR (approved_by_user_id IS NULL)))"
-      },
-      "columns": {
-        "approved_at": {
-          "collation": null,
-          "comment": "Time a staff user approved deriving alerts from current case, deadline, and delivery facts.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "timestamp with time zone"
-        },
-        "approved_by_user_erased_at": {
-          "collation": null,
-          "comment": "Time account erasure removed the approver reference while retaining the policy.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        },
-        "approved_by_user_id": {
-          "collation": null,
-          "comment": "Staff user who approved the policy; null after that account is erased.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "revoked_at": {
-          "collation": null,
-          "comment": "Time this approval was revoked. A revoked policy does not authorize alerts.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Retained approval to derive copyright staff alerts. Absent or revoked rows keep derivation and staff reads closed. The row stores no operator threshold and no notification destination.",
-      "foreignKeys": {
-        "copyright_staff_alert_policies_approved_by_user_id_fkey": {
-          "columns": ["approved_by_user_id"],
-          "definition": "FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_staff_alert_policies_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_staff_alert_policies_pkey ON public.copyright_staff_alert_policies USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_copyright_staff_alert_policies__approved_by": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_staff_alert_policies__approved_by ON public.copyright_staff_alert_policies USING btree (approved_by_user_id) WHERE (approved_by_user_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "approved_by_user_id",
-              "descending": false,
-              "expression": "approved_by_user_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(approved_by_user_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_copyright_staff_alert_policies__one_active": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_copyright_staff_alert_policies__one_active ON public.copyright_staff_alert_policies USING btree ((true)) WHERE (revoked_at IS NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": null,
-              "descending": false,
-              "expression": "(true)",
-              "nullsFirst": false,
-              "opclass": "bool_ops"
-            }
-          ],
-          "predicate": "(revoked_at IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_copyright_staff_alert_policies_guard": "CREATE TRIGGER trigger_copyright_staff_alert_policies_guard BEFORE DELETE OR UPDATE ON public.copyright_staff_alert_policies FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_staff_alert_policy()",
-        "trigger_copyright_staff_alert_policies_updated_at": "CREATE TRIGGER trigger_copyright_staff_alert_policies_updated_at BEFORE UPDATE ON public.copyright_staff_alert_policies FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
-    "copyright_staff_alerts": {
-      "checkConstraints": {
-        "copyright_staff_alerts_condition_check": "CHECK ((condition = ANY (ARRAY['awaiting_review'::text, 'urgent_filing'::text, 'missed_deadline'::text, 'delivery_failed'::text, 'delivery_bounced'::text, 'reconciliation_needed'::text])))",
-        "copyright_staff_alerts_resolved_after_open": "CHECK (((resolved_at IS NULL) OR (resolved_at >= condition_opened_at)))",
-        "copyright_staff_alerts_source_check": "CHECK ((((condition = ANY (ARRAY['awaiting_review'::text, 'urgent_filing'::text])) AND (copyright_notice_deadline_id IS NULL) AND (copyright_notice_delivery_intent_id IS NULL)) OR ((condition = 'missed_deadline'::text) AND (copyright_notice_deadline_id IS NOT NULL) AND (copyright_notice_delivery_intent_id IS NULL)) OR ((condition = ANY (ARRAY['delivery_failed'::text, 'delivery_bounced'::text, 'reconciliation_needed'::text])) AND (copyright_notice_delivery_intent_id IS NOT NULL) AND (copyright_notice_deadline_id IS NULL))))"
-      },
-      "columns": {
-        "condition": {
-          "collation": null,
-          "comment": "Derived condition: awaiting review, urgent filing, missed deadline, delivery failure, bounce, or reconciliation need.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "text"
-        },
-        "condition_opened_at": {
-          "collation": null,
-          "comment": "Source timestamp of the current episode. A later timestamp reopens the alert after acknowledgement.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "timestamp with time zone"
-        },
-        "copyright_notice_deadline_id": {
-          "collation": null,
-          "comment": "Statutory deadline whose missed restoration time opened this alert; null for case and delivery conditions.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "uuid"
-        },
-        "copyright_notice_delivery_intent_id": {
-          "collation": null,
-          "comment": "Delivery obligation whose failure, bounce, or retry opened this alert; null for case and deadline conditions.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "uuid"
-        },
-        "copyright_notice_id": {
-          "collation": null,
-          "comment": "Copyright case that owns the alert.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "resolved_at": {
-          "collation": null,
-          "comment": "Time the source condition cleared. Set again to null when that condition returns.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 9,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "One retained alert per case, deadline, or delivery source and condition. Acknowledgement does not delete the source obligation.",
-      "foreignKeys": {
-        "copyright_staff_alerts_copyright_notice_deadline_id_fkey": {
-          "columns": ["copyright_notice_deadline_id"],
-          "definition": "FOREIGN KEY (copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notice_deadlines",
-          "validated": true
-        },
-        "copyright_staff_alerts_copyright_notice_delivery_intent_id_fkey": {
-          "columns": ["copyright_notice_delivery_intent_id"],
-          "definition": "FOREIGN KEY (copyright_notice_delivery_intent_id) REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notice_delivery_intents",
-          "validated": true
-        },
-        "copyright_staff_alerts_copyright_notice_id_fkey": {
-          "columns": ["copyright_notice_id"],
-          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notices",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_staff_alerts_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_staff_alerts_pkey ON public.copyright_staff_alerts USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_copyright_staff_alerts__case_condition": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_copyright_staff_alerts__case_condition ON public.copyright_staff_alerts USING btree (copyright_notice_id, condition) WHERE ((copyright_notice_deadline_id IS NULL) AND (copyright_notice_delivery_intent_id IS NULL))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "condition",
-              "descending": false,
-              "expression": "condition",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": "((copyright_notice_deadline_id IS NULL) AND (copyright_notice_delivery_intent_id IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_copyright_staff_alerts__deadline_condition": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_copyright_staff_alerts__deadline_condition ON public.copyright_staff_alerts USING btree (copyright_notice_deadline_id, condition) WHERE (copyright_notice_deadline_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_deadline_id",
-              "descending": false,
-              "expression": "copyright_notice_deadline_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "condition",
-              "descending": false,
-              "expression": "condition",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": "(copyright_notice_deadline_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_copyright_staff_alerts__delivery_condition": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_copyright_staff_alerts__delivery_condition ON public.copyright_staff_alerts USING btree (copyright_notice_delivery_intent_id, condition) WHERE (copyright_notice_delivery_intent_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_delivery_intent_id",
-              "descending": false,
-              "expression": "copyright_notice_delivery_intent_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "condition",
-              "descending": false,
-              "expression": "condition",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": "(copyright_notice_delivery_intent_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_copyright_staff_alerts__notice": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_staff_alerts__notice ON public.copyright_staff_alerts USING btree (copyright_notice_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_copyright_staff_alerts_guard": "CREATE TRIGGER trigger_copyright_staff_alerts_guard BEFORE DELETE OR UPDATE ON public.copyright_staff_alerts FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_staff_alert()",
-        "trigger_copyright_staff_alerts_updated_at": "CREATE TRIGGER trigger_copyright_staff_alerts_updated_at BEFORE UPDATE ON public.copyright_staff_alerts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },
@@ -44304,6 +42297,273 @@
       "triggers": {
         "lists_content_provenance_immutable": "CREATE TRIGGER lists_content_provenance_immutable AFTER UPDATE ON public.lists FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_lists_updated_at": "CREATE TRIGGER trigger_lists_updated_at BEFORE UPDATE ON public.lists FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "mcp_call_audit_events": {
+      "checkConstraints": {
+        "mcp_call_audit_events_check": "CHECK (((tool_name IS NULL) OR (jsonrpc_method = 'tools/call'::text)))",
+        "mcp_call_audit_events_jsonrpc_method_check": "CHECK ((jsonrpc_method ~ '^[A-Za-z][A-Za-z0-9_./-]{0,63}$'::text))",
+        "mcp_call_audit_events_outcome_check": "CHECK ((outcome = ANY (ARRAY['accepted'::text, 'tool_error'::text, 'invalid_request'::text, 'invalid_arguments'::text, 'not_found'::text, 'role_denied'::text, 'plan_denied'::text, 'scopes_undeclared'::text, 'insufficient_scope'::text, 'rate_limited'::text])))",
+        "mcp_call_audit_events_resource_check": "CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))",
+        "mcp_call_audit_events_surface_check": "CHECK ((surface = ANY (ARRAY['mcp'::text, 'admin_mcp'::text])))",
+        "mcp_call_audit_events_tool_name_check": "CHECK ((tool_name ~ '^[A-Za-z0-9_.-]{1,64}$'::text))"
+      },
+      "columns": {
+        "actor_user_id": {
+          "collation": null,
+          "comment": "Owner of the verified access token; references the retained user identity so hard deletion preserves the record.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "correlation_id": {
+          "collation": null,
+          "comment": "Server-minted id shared by every row written for one HTTP request; returned to the caller in the X-Correlation-Id response header.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "jsonrpc_method": {
+          "collation": null,
+          "comment": "JSON-RPC method from a fixed allowlist of MCP methods, or NULL when the request was rejected before its body was read or named no supported method.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "oauth_client_id": {
+          "collation": null,
+          "comment": "OAuth client the access token was issued to.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "occurred_at": {
+          "collation": null,
+          "comment": "Time the audit row was written, derived from the UUIDv7 id.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "outcome": {
+          "collation": null,
+          "comment": "Authorization and dispatch result of the call, or tool_error when an admitted tool call failed; never derived from result content.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text"
+        },
+        "resource": {
+          "collation": null,
+          "comment": "Protected resource URL the access token was validated against.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "text"
+        },
+        "surface": {
+          "collation": null,
+          "comment": "MCP surface that received the call: mcp (user) or admin_mcp.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "tool_name": {
+          "collation": null,
+          "comment": "Name of a registered tool on the surface for a tools/call; NULL for other calls and for a requested name that is not a registered tool, so caller-supplied text is never stored.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "text"
+        }
+      },
+      "comment": "Append-only durable audit of MCP calls made with a verified OAuth access token; one row per JSON-RPC message, plus a tool_error follow-up row for an admitted tool call that failed. Arguments, results, tokens, and headers are never stored.",
+      "foreignKeys": {
+        "mcp_call_audit_events_actor_user_id_fkey": {
+          "columns": ["actor_user_id"],
+          "definition": "FOREIGN KEY (actor_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
+        "mcp_call_audit_events_oauth_client_id_fkey": {
+          "columns": ["oauth_client_id"],
+          "definition": "FOREIGN KEY (oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_mcp_call_audit_events__actor_user": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_mcp_call_audit_events__actor_user ON ONLY public.mcp_call_audit_events USING btree (actor_user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "actor_user_id",
+              "descending": false,
+              "expression": "actor_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_mcp_call_audit_events__correlation": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_mcp_call_audit_events__correlation ON ONLY public.mcp_call_audit_events USING btree (correlation_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "correlation_id",
+              "descending": false,
+              "expression": "correlation_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_mcp_call_audit_events__oauth_client": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_mcp_call_audit_events__oauth_client ON ONLY public.mcp_call_audit_events USING btree (oauth_client_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "oauth_client_id",
+              "descending": false,
+              "expression": "oauth_client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "mcp_call_audit_events_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX mcp_call_audit_events_pkey ON ONLY public.mcp_call_audit_events USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": {
+        "accessClass": "target-scoped",
+        "children": "default",
+        "key": "id",
+        "retentionOwner": null,
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (id)",
+        "strategy": "range"
+      },
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "partitioned table",
+      "triggers": {
+        "trigger_mcp_call_audit_events_append_only": "CREATE TRIGGER trigger_mcp_call_audit_events_append_only BEFORE DELETE OR UPDATE ON public.mcp_call_audit_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mcp_call_audit_event_mutation()"
       },
       "uniqueConstraints": {}
     },

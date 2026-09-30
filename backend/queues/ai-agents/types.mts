@@ -20,16 +20,6 @@ export type AutotaggerRssFeedItemJobData = {
   embedding_retries?: number
 }
 
-export type ModerationDispatcherJobData = {
-  id: string
-}
-
-export type ModerationPromptJobData = {
-  id: string
-  moderatorSlug: string
-  source?: 'baseline' | 'community'
-}
-
 export type PostClassifierDispatcherJobData = { postId: string }
 
 export type PostClassifierJobData = {
@@ -110,8 +100,6 @@ export type AIAgentJobData = (
   | ChatJobData
   | AutotaggerPostJobData
   | AutotaggerRssFeedItemJobData
-  | ModerationDispatcherJobData
-  | ModerationPromptJobData
   | PostClassifierDispatcherJobData
   | PostClassifierJobData
   | CommunityModerationDispatcherJobData

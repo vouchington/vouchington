@@ -1,5 +1,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  ApiError,
+  MfaReauthDialogMock,
+  mfaReauthOnErrorModule,
+  mfaReauthStatus as mfaStatus,
+} from '@/test-helpers/components/my/mfa-reauth-dialog.mock-support'
 
 vi.mock(
   import('qrcode.react'),
@@ -21,54 +27,15 @@ vi.mock(
   import('@/components/my/mfa-reauth-dialog'),
   () =>
     ({
-      MfaReauthDialog: ({
-        onClose,
-        onVerified,
-        open,
-      }: {
-        onClose: () => void
-        onVerified: (token: string) => Promise<void>
-        open: boolean
-      }) => (
-        <div
-          data-testid='mfa-reauth-dialog'
-          data-open={String(open)}
-        >
-          <button
-            type='button'
-            onClick={() => void onVerified('reauth-token')}
-          >
-            Verify MFA
-          </button>
-          <button
-            type='button'
-            onClick={onClose}
-          >
-            Close MFA
-          </button>
-        </div>
-      ),
+      MfaReauthDialog: MfaReauthDialogMock,
     }) as unknown as typeof import('@/components/my/mfa-reauth-dialog'),
 )
 
-vi.mock(import('@/lib/api/error'), () => {
-  class ApiError extends Error {
-    status: number
-    code?: string
-    constructor(message: string, status: number, code?: string) {
-      super(message)
-      this.name = 'ApiError'
-      this.status = status
-      this.code = code
-    }
-  }
-  return { ApiError }
-})
-
-vi.mock(import('@/lib/on-error'), () => ({
-  default: vi.fn<VitestLooseMock>(),
-  onSuccess: vi.fn<VitestLooseMock>(),
+vi.mock(import('@/lib/api/error'), () => ({
+  ApiError,
 }))
+
+vi.mock(import('@/lib/on-error'), () => mfaReauthOnErrorModule())
 
 import { deleteTotpAuthenticator } from '@/lib/api/client'
 import type { ListResponse } from '@/types/api-responses'
@@ -76,15 +43,6 @@ import type { TotpAuthenticator } from '@/types/user'
 import { TotpManager } from '../totp-manager'
 
 const mockDelete = vi.mocked(deleteTotpAuthenticator)
-
-const mfaStatus = {
-  passkeys_count: 2,
-  totp_count: 2,
-  mfa_required: false,
-  has_mfa: true,
-  has_password: false,
-  recovery_codes_remaining: 0,
-}
 
 function makeAuth(id: string, name = 'My App'): TotpAuthenticator {
   return {

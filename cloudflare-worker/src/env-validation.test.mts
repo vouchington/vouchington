@@ -11,59 +11,71 @@ function importProductionMode() {
   return import('./production-mode.mts')
 }
 
-describe('warnIfProductionValueInvalid', () => {
-  let errorSpy: ReturnType<typeof vi.spyOn>
+type ConsoleErrorSpy = () => ReturnType<typeof vi.spyOn>
 
+type EnvErrorWarner = 'warnIfProductionValueInvalid' | 'warnIfCspAssetOriginInvalid'
+
+type WarnerEnv = {
+  PRODUCTION?: string
+  CSP_ASSET_ORIGIN?: string
+}
+
+function installConsoleErrorSpy(): ConsoleErrorSpy {
+  let errorSpy: ReturnType<typeof vi.spyOn> | undefined
   beforeEach(() => {
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
   })
-
   afterEach(() => {
     vi.restoreAllMocks()
   })
+  return () => {
+    if (errorSpy === undefined) {
+      throw new Error('console.error spy was not installed')
+    }
+    return errorSpy
+  }
+}
 
-  it("warns for ambiguous value '1'", async () => {
-    const { warnIfProductionValueInvalid } = await importEnvValidation()
-    warnIfProductionValueInvalid({ PRODUCTION: '1' })
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("PRODUCTION is set to '1'"))
+async function runEnvErrorWarner(warner: EnvErrorWarner, envs: readonly WarnerEnv[]) {
+  const loaded = await importEnvValidation()
+  const warn =
+    warner === 'warnIfProductionValueInvalid'
+      ? loaded.warnIfProductionValueInvalid
+      : loaded.warnIfCspAssetOriginInvalid
+  for (const env of envs) {
+    warn(env)
+  }
+}
+
+describe('warnIfProductionValueInvalid', () => {
+  const errorSpy = installConsoleErrorSpy()
+
+  it.each([
+    ['1', "PRODUCTION is set to '1'"],
+    ['yes', "PRODUCTION is set to 'yes'"],
+    ['on', "PRODUCTION is set to 'on'"],
+  ] as const)("warns for ambiguous value '%s'", async (value, message) => {
+    await runEnvErrorWarner('warnIfProductionValueInvalid', [{ PRODUCTION: value }])
+    expect(errorSpy()).toHaveBeenCalledWith(expect.stringContaining(message))
   })
 
-  it("warns for ambiguous value 'yes'", async () => {
-    const { warnIfProductionValueInvalid } = await importEnvValidation()
-    warnIfProductionValueInvalid({ PRODUCTION: 'yes' })
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("PRODUCTION is set to 'yes'"))
-  })
-
-  it("warns for ambiguous value 'on'", async () => {
-    const { warnIfProductionValueInvalid } = await importEnvValidation()
-    warnIfProductionValueInvalid({ PRODUCTION: 'on' })
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("PRODUCTION is set to 'on'"))
-  })
-
-  it("does not warn for 'true'", async () => {
-    const { warnIfProductionValueInvalid } = await importEnvValidation()
-    warnIfProductionValueInvalid({ PRODUCTION: 'true' })
-    expect(errorSpy).not.toHaveBeenCalled()
-  })
-
-  it("does not warn for 'false'", async () => {
-    const { warnIfProductionValueInvalid } = await importEnvValidation()
-    warnIfProductionValueInvalid({ PRODUCTION: 'false' })
-    expect(errorSpy).not.toHaveBeenCalled()
+  it.each(['true', 'false'] as const)("does not warn for '%s'", async value => {
+    await runEnvErrorWarner('warnIfProductionValueInvalid', [{ PRODUCTION: value }])
+    expect(errorSpy()).not.toHaveBeenCalled()
   })
 
   it('does not warn when PRODUCTION is not set', async () => {
-    const { warnIfProductionValueInvalid } = await importEnvValidation()
-    warnIfProductionValueInvalid({})
-    expect(errorSpy).not.toHaveBeenCalled()
+    await runEnvErrorWarner('warnIfProductionValueInvalid', [{}])
+    expect(errorSpy()).not.toHaveBeenCalled()
   })
 
   it('deduplicates warnings — fires at most once per module instance', async () => {
-    const { warnIfProductionValueInvalid } = await importEnvValidation()
-    warnIfProductionValueInvalid({ PRODUCTION: '1' })
-    warnIfProductionValueInvalid({ PRODUCTION: '1' })
-    warnIfProductionValueInvalid({ PRODUCTION: 'yes' })
-    expect(errorSpy).toHaveBeenCalledTimes(1)
+    await runEnvErrorWarner('warnIfProductionValueInvalid', [
+      { PRODUCTION: '1' },
+      { PRODUCTION: '1' },
+      { PRODUCTION: 'yes' },
+    ])
+    expect(errorSpy()).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -90,61 +102,52 @@ describe('isProductionMode', () => {
 })
 
 describe('warnIfCspAssetOriginInvalid', () => {
-  let errorSpy: ReturnType<typeof vi.spyOn>
-
-  beforeEach(() => {
-    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
+  const errorSpy = installConsoleErrorSpy()
 
   it('warns when CSP_ASSET_ORIGIN is set to a non-https URL', async () => {
-    const { warnIfCspAssetOriginInvalid } = await importEnvValidation()
-    warnIfCspAssetOriginInvalid({ CSP_ASSET_ORIGIN: 'http://cdn.example.com' })
-    expect(errorSpy).toHaveBeenCalledWith(
+    await runEnvErrorWarner('warnIfCspAssetOriginInvalid', [
+      { CSP_ASSET_ORIGIN: 'http://cdn.example.com' },
+    ])
+    expect(errorSpy()).toHaveBeenCalledWith(
       expect.stringContaining('CSP_ASSET_ORIGIN failed validation'),
     )
   })
 
   it('warns when CSP_ASSET_ORIGIN is set to a malformed URL', async () => {
-    const { warnIfCspAssetOriginInvalid } = await importEnvValidation()
-    warnIfCspAssetOriginInvalid({ CSP_ASSET_ORIGIN: 'not-a-url' })
-    expect(errorSpy).toHaveBeenCalledWith(
+    await runEnvErrorWarner('warnIfCspAssetOriginInvalid', [{ CSP_ASSET_ORIGIN: 'not-a-url' }])
+    expect(errorSpy()).toHaveBeenCalledWith(
       expect.stringContaining('CSP_ASSET_ORIGIN failed validation'),
     )
   })
 
   it('does not warn when CSP_ASSET_ORIGIN is a valid https URL', async () => {
-    const { warnIfCspAssetOriginInvalid } = await importEnvValidation()
-    warnIfCspAssetOriginInvalid({ CSP_ASSET_ORIGIN: 'https://d1234567.cloudfront.net' })
-    expect(errorSpy).not.toHaveBeenCalled()
+    await runEnvErrorWarner('warnIfCspAssetOriginInvalid', [
+      { CSP_ASSET_ORIGIN: 'https://d1234567.cloudfront.net' },
+    ])
+    expect(errorSpy()).not.toHaveBeenCalled()
   })
 
   it('does not warn when CSP_ASSET_ORIGIN is not set', async () => {
-    const { warnIfCspAssetOriginInvalid } = await importEnvValidation()
-    warnIfCspAssetOriginInvalid({})
-    expect(errorSpy).not.toHaveBeenCalled()
+    await runEnvErrorWarner('warnIfCspAssetOriginInvalid', [{}])
+    expect(errorSpy()).not.toHaveBeenCalled()
   })
 
   it('does not warn when CSP_ASSET_ORIGIN is empty string', async () => {
-    const { warnIfCspAssetOriginInvalid } = await importEnvValidation()
-    warnIfCspAssetOriginInvalid({ CSP_ASSET_ORIGIN: '' })
-    expect(errorSpy).not.toHaveBeenCalled()
+    await runEnvErrorWarner('warnIfCspAssetOriginInvalid', [{ CSP_ASSET_ORIGIN: '' }])
+    expect(errorSpy()).not.toHaveBeenCalled()
   })
 
   it('does not warn when CSP_ASSET_ORIGIN is whitespace-only', async () => {
-    const { warnIfCspAssetOriginInvalid } = await importEnvValidation()
-    warnIfCspAssetOriginInvalid({ CSP_ASSET_ORIGIN: '  ' })
-    expect(errorSpy).not.toHaveBeenCalled()
+    await runEnvErrorWarner('warnIfCspAssetOriginInvalid', [{ CSP_ASSET_ORIGIN: '  ' }])
+    expect(errorSpy()).not.toHaveBeenCalled()
   })
 
   it('deduplicates warnings — fires at most once per module instance', async () => {
-    const { warnIfCspAssetOriginInvalid } = await importEnvValidation()
-    warnIfCspAssetOriginInvalid({ CSP_ASSET_ORIGIN: 'not-a-url' })
-    warnIfCspAssetOriginInvalid({ CSP_ASSET_ORIGIN: 'http://cdn.example.com' })
-    expect(errorSpy).toHaveBeenCalledTimes(1)
+    await runEnvErrorWarner('warnIfCspAssetOriginInvalid', [
+      { CSP_ASSET_ORIGIN: 'not-a-url' },
+      { CSP_ASSET_ORIGIN: 'http://cdn.example.com' },
+    ])
+    expect(errorSpy()).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -227,31 +230,23 @@ describe('isCachePlaceholderNonceValid', () => {
 })
 
 describe('warnIfCachePlaceholderNonceMissing', () => {
-  let errorSpy: ReturnType<typeof vi.spyOn>
-
-  beforeEach(() => {
-    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
+  const errorSpy = installConsoleErrorSpy()
 
   it('warns when CACHE_PLACEHOLDER_NONCE is unset', async () => {
     const { warnIfCachePlaceholderNonceMissing } = await importEnvValidation()
     warnIfCachePlaceholderNonceMissing({})
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('is not set or empty'))
+    expect(errorSpy()).toHaveBeenCalledWith(expect.stringContaining('is not set or empty'))
   })
 
   it('warns when CACHE_PLACEHOLDER_NONCE is shorter than the minimum length', async () => {
     const { warnIfCachePlaceholderNonceMissing } = await importEnvValidation()
     warnIfCachePlaceholderNonceMissing({ CACHE_PLACEHOLDER_NONCE: 'too-short' })
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('is too short'))
+    expect(errorSpy()).toHaveBeenCalledWith(expect.stringContaining('is too short'))
   })
 
   it('does not warn when CACHE_PLACEHOLDER_NONCE meets the minimum length', async () => {
     const { warnIfCachePlaceholderNonceMissing } = await importEnvValidation()
     warnIfCachePlaceholderNonceMissing({ CACHE_PLACEHOLDER_NONCE: 'a'.repeat(32) })
-    expect(errorSpy).not.toHaveBeenCalled()
+    expect(errorSpy()).not.toHaveBeenCalled()
   })
 })

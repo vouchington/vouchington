@@ -1,120 +1,17 @@
 import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { basename, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { realpath, rm } from 'node:fs/promises'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
+import { makeStopServicesRepo, readLog, runScript } from '../test-helpers/stop-services-repo.mts'
 import { makeStopServicesTmuxFakeBin } from '../test-helpers/stop-services-tmux.mts'
 
 const execFileAsync = promisify(execFile)
-const stopServicesPath = fileURLToPath(new URL('../stop-services', import.meta.url))
-const resetPath = fileURLToPath(new URL('../reset', import.meta.url))
-const refuseOnMainPath = fileURLToPath(new URL('../lib/refuse-on-main.sh', import.meta.url))
-const gitWorktreesPath = fileURLToPath(
-  new URL(
-    '../../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
-    import.meta.url,
-  ),
-)
-const dbNameFromUrlPath = fileURLToPath(new URL('../lib/db-name-from-url.sh', import.meta.url))
 const testDirs: string[] = []
 
-async function makeRepo({ isMainWorktree = false, withEnv = true } = {}) {
-  const dir = await mkdtemp(join(tmpdir(), 'voucha-stop-services-'))
-  testDirs.push(dir)
-
-  await mkdir(join(dir, 'dev', 'lib'), { recursive: true })
-  await writeFile(
-    join(dir, 'dev', 'lib', 'git-worktrees.sh'),
-    await readFile(gitWorktreesPath, 'utf8'),
-  )
-  await mkdir(join(dir, 'backend'), { recursive: true })
-  await writeFile(join(dir, 'dev', 'stop-services'), await readFile(stopServicesPath, 'utf8'))
-  await chmod(join(dir, 'dev', 'stop-services'), 0o755)
-  await writeFile(join(dir, 'dev', 'reset'), await readFile(resetPath, 'utf8'))
-  await chmod(join(dir, 'dev', 'reset'), 0o755)
-  await writeFile(
-    join(dir, 'dev', 'db-clean'),
-    '#!/usr/bin/env bash\nprintf "db-clean\\n" >> "${FAKE_COMMAND_LOG:?}"\n',
-  )
-  await chmod(join(dir, 'dev', 'db-clean'), 0o755)
-  await writeFile(
-    join(dir, 'dev', 'lib', 'refuse-on-main.sh'),
-    await readFile(refuseOnMainPath, 'utf8'),
-  )
-  await writeFile(
-    join(dir, 'dev', 'lib', 'db-name-from-url.sh'),
-    await readFile(dbNameFromUrlPath, 'utf8'),
-  )
-  await writeFile(
-    join(dir, 'dev', 'lib', 'worktree-resource-env.sh'),
-    `worktree_resource_clear_env() { unset PORT NEXT_PORT WEB_PORT WORKER_PORT IMAGE_LAMBDA_PORT INSPECTOR_PORT STORYBOOK_PORT VALKEY_URL VALKEY_SESSION_URL VALKEY_CACHE_URL VALKEY_RATE_LIMITER_URL VALKEY_DYNAMIC_CONFIG_URL VALKEY_WORKER_QUEUE_URL VALKEY_CONTAINER DATABASE_URL WORKTREE_DIR; }
-worktree_resource_load_current_env() { worktree_resource_clear_env; [ -f "$1/.env" ] || return 1; set -a; source "$1/.env"; set +a; }; refuse_shared_resources_on_disposable() { :; }
-`,
-  )
-  if (isMainWorktree) {
-    await mkdir(join(dir, '.git'), { recursive: true })
-  } else {
-    await writeFile(join(dir, '.git'), 'gitdir: /fake/.git/worktrees/test\n')
-  }
-
-  if (withEnv) {
-    await writeFile(
-      join(dir, '.env'),
-      `export PORT=3900
-  export NEXT_PORT=3901
-  export WORKER_PORT=3902
-  export IMAGE_LAMBDA_PORT=3903
-  export INSPECTOR_PORT=3904
-  export VALKEY_CONTAINER=voucha-valkey-test
-  export DATABASE_URL=postgres://localhost/voucha-test
-  export WORKTREE_DIR=${basename(dir)}
-  `,
-    )
-  }
-
-  return dir
-}
-
-async function readLog(path: string) {
-  try {
-    return await readFile(path, 'utf8')
-  } catch {
-    return ''
-  }
-}
-
-async function runScript({
-  args = [],
-  binDir,
-  cwd,
-  env = {},
-  script = 'stop-services',
-}: {
-  args?: string[]
-  binDir: string
-  cwd: string
-  env?: Record<string, string>
-  script?: 'reset' | 'stop-services'
-}) {
-  const logPath = join(cwd, 'commands.log')
-  const result = await execFileAsync('bash', [join(cwd, 'dev', script), ...args], {
-    cwd,
-    env: {
-      ...process.env,
-      ...env,
-      FAKE_COMMAND_LOG: logPath,
-      PATH: `${binDir}:/usr/bin:/bin`,
-    },
-  })
-
-  return {
-    log: await readLog(logPath),
-    stderr: result.stderr,
-    stdout: result.stdout,
-  }
+function makeRepo(options: { isMainWorktree?: boolean; withEnv?: boolean } = {}) {
+  return makeStopServicesRepo(testDirs, { ...options, profile: 'tmux' })
 }
 
 describe('dev/stop-services (tmux)', () => {

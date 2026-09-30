@@ -4,7 +4,7 @@ import { setTestApiKeyPermissions } from '@voucha/test-helpers/entities/api-keys
 import { createApiKey } from './create.mts'
 import { revokeApiKey } from './revoke.mts'
 import { rebuildApiKeyBloomFilter } from './bloom-filter.mts'
-import { validateApiKey, validateApiKeyForMcpAudience } from './validate.mts'
+import { validateApiKey, validateApiKeyForUserMcp } from './validate.mts'
 import { bloomFilterConfig } from '@services/bloom-filter-config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
@@ -96,7 +96,7 @@ describe('validate', () => {
     })
   })
 
-  describe('validateApiKeyForMcpAudience', () => {
+  describe('validateApiKeyForUserMcp', () => {
     it('accepts a user-scoped MCP key after a bloom-filter probe', async () => {
       const user = await createTestUser()
       const { rawKey } = await createApiKey(
@@ -110,13 +110,26 @@ describe('validate', () => {
         apiKeyBloomFilterEnabled: true,
       })
       try {
-        await expect(validateApiKeyForMcpAudience(rawKey, 'user')).resolves.toMatchObject({
+        await expect(validateApiKeyForUserMcp(rawKey)).resolves.toMatchObject({
           valid: true,
           apiKey: { permissions: ['mcp.user:read'] },
         })
       } finally {
         restoreBloomFilterConfig()
       }
+    })
+
+    it('rejects a key whose stored scopes were tampered into the admin audience', async () => {
+      const user = await createTestUser({ administrator: true })
+      const { rawKey, apiKey } = await createApiKey(
+        user.id,
+        'mcp',
+        `MCP tampered ${Math.random().toString(36).slice(2, 8)}`,
+        ['mcp.user:read'],
+      )
+      await setTestApiKeyPermissions(apiKey.id, ['mcp.admin:read'])
+
+      await expect(validateApiKeyForUserMcp(rawKey)).resolves.toEqual({ valid: false })
     })
   })
 })

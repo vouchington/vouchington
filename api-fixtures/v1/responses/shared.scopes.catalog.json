@@ -79,7 +79,7 @@
       "requires": null,
       "resource": "mcp.admin",
       "scope": "mcp.admin:read",
-      "surfaces": ["api-key", "oauth"]
+      "surfaces": ["oauth"]
     },
     {
       "action": "write",
@@ -88,7 +88,7 @@
       "requires": "mcp.admin:read",
       "resource": "mcp.admin",
       "scope": "mcp.admin:write",
-      "surfaces": ["api-key", "oauth"]
+      "surfaces": ["oauth"]
     },
     {
       "action": "read",

@@ -69,9 +69,6 @@ function reconcileDeps(pages: SweepPages = {}) {
     enqueueApplyCopyrightAction: vi.fn<Deps['enqueueApplyCopyrightAction']>(async id => {
       log.push(`enqueue ${id}`)
     }),
-    syncStaffAlerts: async () => {
-      log.push('sync staff alerts')
-    },
     now: () => NOW,
   }
   return { deps, log }
@@ -112,7 +109,6 @@ describe('processReconcileCopyrightActionIntents', () => {
       'enqueue intent-2',
       'search action intents',
       'enqueue intent-3',
-      'sync staff alerts',
     ])
     expect(deps.searchFormReviews.mock.calls).toEqual([[{}], [{ after: 'review-cursor' }]])
     expect(deps.searchEnforcementRequests.mock.calls).toEqual([[{}], [{ after: 'request-cursor' }]])

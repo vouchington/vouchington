@@ -10,7 +10,6 @@ import {
   searchReconcilableCopyrightEnforcementRequestIds,
   searchRecoverableCopyrightActionIntentIds,
   searchRecoverableCopyrightFormReviewIntakeIds,
-  syncCopyrightStaffAlertsFromRecovery,
 } from '@services/copyright-notices'
 import {
   enqueueEveryCopyrightSweepPage,
@@ -32,7 +31,6 @@ export type ReconcileCopyrightActionIntentsDeps = {
   createDueRestoreIntents: typeof createDueStatutoryCopyrightRestoreIntentsForDeadline
   searchActionIntents: typeof searchRecoverableCopyrightActionIntentIds
   enqueueApplyCopyrightAction: typeof enqueueApplyCopyrightAction
-  syncStaffAlerts: typeof syncCopyrightStaffAlertsFromRecovery
   now: () => Date
 }
 
@@ -48,15 +46,14 @@ const defaultDeps: ReconcileCopyrightActionIntentsDeps = {
   createDueRestoreIntents: createDueStatutoryCopyrightRestoreIntentsForDeadline,
   searchActionIntents: searchRecoverableCopyrightActionIntentIds,
   enqueueApplyCopyrightAction,
-  syncStaffAlerts: syncCopyrightStaffAlertsFromRecovery,
   now: () => new Date(),
 }
 
 /**
  * Walks every page of each copyright action sweep in stage order: rejected form reviews, missing
  * enforcement requests, pending enforcement, blocked hold restorations, due statutory restorations,
- * recoverable action intents, then staff-alert sync. A failed item, page read, or stage does not
- * stop the rest; the job fails afterwards with every error so its retry covers what is still pending.
+ * then recoverable action intents. A failed item, page read, or stage does not stop the rest; the
+ * job fails afterwards with every error so its retry covers what is still pending.
  */
 export async function processReconcileCopyrightActionIntents(
   dependencyOverrides: Partial<ReconcileCopyrightActionIntentsDeps> = {},
@@ -110,11 +107,6 @@ export async function processReconcileCopyrightActionIntents(
         page => deps.searchActionIntents({ now: evaluatedAt, ...page }),
         id => deps.enqueueApplyCopyrightAction(id),
       ),
-    () =>
-      runCopyrightSweepStage(tally, async () => {
-        await deps.syncStaffAlerts()
-        return []
-      }),
   ]
   for (const stage of stages) {
     // oxlint-disable-next-line no-await-in-loop -- each sweep consumes durable work produced by preceding stages.

@@ -180,7 +180,9 @@ describe the surrounding lifecycle.
 
 ## MCP challenges
 
-The MCP routes accept an OAuth access token or an MCP API key as the bearer credential.
+The user MCP route accepts an OAuth access token or an MCP API key as the bearer credential. The
+admin MCP route accepts only an OAuth access token: an API key there is an unrecognized credential
+and gets the same `401` as an unknown token.
 
 - A missing credential gets `401` with
   `WWW-Authenticate: Bearer resource_metadata="…", scope="mcp.<audience>:read mcp.<audience>:write"`.
@@ -192,6 +194,13 @@ The MCP routes accept an OAuth access token or an MCP API key as the bearer cred
 - Role and plan denials, JSON-RPC batches, and API keys keep in-band JSON-RPC errors: re-consent
   cannot fix a role or plan, a batch has no single tool to step up for, and an API key cannot be
   re-authorized.
+- The admin route additionally answers `403` before reading the body when the token's owner is no
+  longer an administrator, and `403 insufficient_scope` naming `mcp.admin:read` when the token holds
+  no admin-audience scope.
+- Every call a verified token makes to the admin route, accepted or rejected, is written to the
+  append-only `mcp_call_audit_events` table before it runs, and the response carries the row's
+  `X-Correlation-Id`. If the audit row cannot be stored the request fails closed with `503`. See the
+  [MCP tools architecture](../../overview/architecture/services/mcp-tools/README.md#admin-mcp-audit-log).
 
 ## Related
 

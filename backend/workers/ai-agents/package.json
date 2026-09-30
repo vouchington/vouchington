@@ -22,7 +22,6 @@
     "@agents/copyright-email-intake": "workspace:^",
     "@agents/copyright-form-screening": "workspace:^",
     "@agents/dispute-resolution": "workspace:^",
-    "@agents/moderation": "workspace:^",
     "@agents/post-classifier": "workspace:^",
     "@agents/report-judgement": "workspace:^",
     "@agents/story-post": "workspace:^",
@@ -64,10 +63,8 @@
   },
   "devDependencies": {
     "@modules/structured-decisions": "workspace:^",
-    "@services/elections-votes": "workspace:^",
     "@services/moderation-appeals": "workspace:^",
     "@services/rss-feeds": "workspace:^",
-    "@services/topics": "workspace:^",
     "@services/urls": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "undici": "^8.11.2",

@@ -19,12 +19,10 @@ type Story = StoryObj<typeof meta>
 function selection(overrides: Partial<ApiKeyScopeSelection>): ApiKeyScopeSelection {
   return {
     keyType: 'rss',
-    audience: 'user',
     rows: scopeResourceRows(storybookScopeCatalog, 'api-key', ['user']),
     mcpScopes: [],
     permissions: ['rss:read'],
     handleKeyTypeChange: fn(),
-    handleAudienceChange: fn(),
     handleScopeToggle: fn(),
     ...overrides,
   }
@@ -40,7 +38,6 @@ export const CreateRssKey: Story = {
       <CreateApiKeyForm
         label='Feed reader'
         selection={selection({})}
-        showAudience={false}
         submitting={false}
         onCancel={fn()}
         onCreate={fn()}
@@ -50,19 +47,16 @@ export const CreateRssKey: Story = {
   ),
 }
 
-export const CreateAdminMcpKey: Story = {
+export const CreateUserMcpKey: Story = {
   render: () => (
     <Frame>
       <CreateApiKeyForm
-        label='Admin agent'
+        label='Cards agent'
         selection={selection({
           keyType: 'mcp',
-          audience: 'admin',
-          rows: scopeResourceRows(storybookScopeCatalog, 'api-key', ['admin']),
-          mcpScopes: ['mcp.admin:read', 'mcp.admin:write'],
-          permissions: ['mcp.admin:read', 'mcp.admin:write'],
+          mcpScopes: ['mcp.user:read', 'mcp.user:write'],
+          permissions: ['mcp.user:read', 'mcp.user:write'],
         })}
-        showAudience
         submitting={false}
         onCancel={fn()}
         onCreate={fn()}

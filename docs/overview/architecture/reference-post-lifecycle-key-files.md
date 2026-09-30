@@ -14,7 +14,6 @@
 | Community review add            | `backend/services/communities/publications/add.mts`                    |
 | Community review moderation     | `backend/services/communities/publications/moderate.mts`               |
 | Community moderation dispatcher | `backend/queues/ai-agents/processors/process-community-moderation.mts` |
-| Global LLM moderator dispatcher | `backend/queues/ai-agents/processors/process-moderation.mts`           |
 | Spam detection                  | `backend/queues/spam-detection/processors.mts`                         |
 | Notification reconciliation     | `backend/queues/notifications/enqueues.mts`                            |
 
