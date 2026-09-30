@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
 import sql from 'sql-template-strings'
@@ -9,6 +9,7 @@ import {
 import {
   claimClassifierRun,
   requestClassifierRuns,
+  requestRssFeedItemClassifierRuns,
   reserveClassifierRun,
   type ClassifierRunLease,
 } from '../../../../services/classifier-runs/index.mts'
@@ -140,16 +141,20 @@ export function requestAutotaggerRun(fixture: {
   })
 }
 
+/** The request approval writes, then the reservation the dispatcher makes, without queueing a job. */
+export async function reserveAutotaggerRun(fixture: Parameters<typeof requestAutotaggerRun>[0]) {
+  await requestAutotaggerRun(fixture)
+  const reserved = await reserveClassifierRun(createAutotaggerRunAdapter(), fixture.subject)
+  if (reserved.kind !== 'reserved') throw new Error(`Expected a reservation, got ${reserved.kind}`)
+  return reserved.run
+}
+
 /** A live lease on the subject's freshly reserved run, for exercising C6's input building directly. */
 export async function claimAutotaggerLease(
   fixture: Parameters<typeof requestAutotaggerRun>[0],
 ): Promise<ClassifierRunLease<AutotaggerRunConfiguration>> {
-  await requestAutotaggerRun(fixture)
-  const adapter = createAutotaggerRunAdapter()
-  const reserved = await reserveClassifierRun(adapter, fixture.subject)
-  if (reserved.kind !== 'reserved') throw new Error(`Expected a reservation, got ${reserved.kind}`)
-  const { run } = reserved
-  const claim = await claimClassifierRun(adapter, {
+  const run = await reserveAutotaggerRun(fixture)
+  const claim = await claimClassifierRun(createAutotaggerRunAdapter(), {
     runId: run.runId,
     subject: run.subject,
     inputSha256: run.inputSha256,
@@ -158,6 +163,21 @@ export async function claimAutotaggerLease(
   })
   if (claim.kind !== 'claimed') throw new Error(`Expected a claim, got ${claim.kind}`)
   return claim.lease
+}
+
+/** The upsert's request write for feed items, as the RSS upsert transaction makes it. */
+export function requestAutotaggerFeedItems(itemIds: readonly string[]) {
+  return requestRssFeedItemClassifierRuns(write, itemIds, [TAGGING_CLASSIFIER_SLUG])
+}
+
+/** Moves a feed item to new content, as a re-upsert of a changed item does; returns the new digest. */
+export async function reviseAutotaggerFeedItem(itemId: string): Promise<Buffer> {
+  const inputSha256 = randomBytes(32)
+  await write(sql`/* reviseAutotaggerFeedItem */
+    UPDATE rss_feed_items SET bedrock_nova_multimodal_v1_content_sha256 = ${inputSha256}
+    WHERE id = ${itemId}
+  `)
+  return inputSha256
 }
 
 /** Topics a run voted on, from the durable vote-application receipts of its subject. */
