@@ -159,7 +159,6 @@ backend/services/post-clearance/     — clearance gate (approve/reject/in_revie
 backend/services/spam-detection/     — spam signal checks
 backend/services/openai-moderation/  — OpenAI API integration
 backend/services/moderation/         — LLM agent moderator management
-backend/agents/moderation/           — LLM moderator orchestration
 backend/services/moderation-reports/ — user report submission and listing
 backend/services/communities/publications/moderate.mts — community mod queue
 backend/agents/community-moderation/ — community LLM prompt runner

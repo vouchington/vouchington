@@ -29,7 +29,6 @@ Shared safety, tool, testing, and orchestration guidance plus package-level agen
 - [Copyright Form Screening](copyright-form-screening/README.md)
 - [Discovery Agent](discovery-agent/README.md)
 - [Dispute Resolution](dispute-resolution/README.md)
-- [Moderation](moderation/README.md)
 - [Politics Averse](politics-averse/README.md)
 - [Post Classifier](post-classifier/README.md)
 - [Profile Agent](profile-agent/README.md)
