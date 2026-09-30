@@ -442,7 +442,7 @@ deadline or the delivery obligation.
 A five-minute sweep sends one Sentry warning when copyright work is late. It counts three sets of
 notices:
 
-- notices with an item waiting for a moderator longer than `reviewTargetMinutes`;
+- notices with a staff-queue item, other than a deadline, open longer than `reviewTargetMinutes`;
 - notices with an open counter-notice deadline at or past `escalation_at`; and
 - notices with an open deadline at or past `restoration_deadline_at`.
 

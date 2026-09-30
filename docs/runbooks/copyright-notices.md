@@ -214,12 +214,16 @@ The `copyright-review-target-page` job on the `notifications` queue runs every f
 any count below is above zero, it sends one Sentry warning named `copyright_review_target_breach`.
 Its `reason` tag has the same value, and one boolean tag per count shows which counts are set:
 
-- `waiting_past_target` counts notices with an item waiting for a moderator longer than
-  `reviewTargetMinutes`. The items are:
-  - a form intake in the staff queue, timed from its receipt;
+- `waiting_past_target` counts notices with a staff-queue item open longer than
+  `reviewTargetMinutes`. It uses the queue's own items, so the page and the queue agree:
+  - a form intake awaiting review, an appeal or counter-notice with no moderator review, or a court
+    or CCB filing awaiting assessment or resolution, timed from receipt;
   - an active restriction with no human review, timed from when it was imposed;
-  - an appeal or counter-notice with no moderator review, timed from its receipt; and
-  - a court or CCB filing with no assessment, timed from its receipt.
+  - a failed media action or failed or bounced delivery, timed from the failure; and
+  - an enforcement request that has not completed, timed from its creation.
+
+  Deadline items are left out here because the two counts below cover them.
+
 - `missed_escalation` counts notices with an open deadline at or past `escalation_at`.
 - `missed_restoration_deadline` counts notices with an open deadline at or past
   `restoration_deadline_at`. Those notices also count as missed escalations.

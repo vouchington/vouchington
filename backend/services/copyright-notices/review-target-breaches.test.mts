@@ -123,6 +123,25 @@ describe('readCopyrightReviewTargetBreaches', () => {
     expect(breaches.missedEscalation).toEqual(none)
   })
 
+  it('counts a deadline past escalation only as missed, not also as waiting', async () => {
+    const { noticeId, actorUserId } = await createReviewedNotice()
+    await insertOpenCopyrightDeadline({
+      noticeId,
+      actorUserId,
+      escalationAt: hoursFromNow(-3),
+      restorationDeadlineAt: hoursFromNow(24),
+    })
+
+    const breaches = await readCopyrightReviewTargetBreaches({
+      now: new Date(),
+      reviewTargetMinutes: 60,
+      noticeIds: [noticeId],
+    })
+
+    expect(breaches.waitingPastTarget).toEqual(none)
+    expect(breaches.missedEscalation).toEqual({ count: 1, noticeIds: [noticeId] })
+  })
+
   it('ignores a cancelled deadline', async () => {
     const { noticeId, actorUserId } = await createReviewedNotice()
     const deadlineId = await insertOpenCopyrightDeadline({
