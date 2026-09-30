@@ -10,12 +10,18 @@ import {
   getReportIntegrityFlagByIdFromPrimary,
   getReportIntegrityFlags,
   INTEGRITY_FLAG_STATUSES,
-  REPORT_INTEGRITY_PATCH_RESOLUTIONS,
   resolveReportIntegrityFlag,
   type IntegrityFlagStatus,
   type ReportIntegrityPatchResolution,
 } from '@services/report-integrity'
-import { requireAuthAndRateLimit, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuthAndRateLimit,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
+
+type ResolveReportIntegrityFlagRequest = { resolution: ReportIntegrityPatchResolution }
 
 const flagsParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -54,6 +60,7 @@ app.route('/api/v1/report-integrity/flags/:id').get(async (ctx: Context) => {
   )
 
   const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'GET:/api/v1/report-integrity/flags/:id', { path: ctx.params })
   const flag = await getReportIntegrityFlagByIdFromPrimary(id)
   ctx.assert(flag, 404, 'Flag not found')
 
@@ -73,25 +80,13 @@ app.route('/api/v1/report-integrity/flags/:id').patch(async (ctx: Context) => {
   )
 
   const id = validateUUIDParam(ctx, 'id')
-  const body = await ctx.request.json('10kb')
-  ctx.assert(
-    body !== null && typeof body === 'object' && !Array.isArray(body),
-    422,
-    'Invalid request body',
-  )
-  const { resolution } = body as Record<string, unknown>
-  const patchResolution =
-    typeof resolution === 'string' &&
-    REPORT_INTEGRITY_PATCH_RESOLUTIONS.includes(resolution as ReportIntegrityPatchResolution)
-      ? (resolution as ReportIntegrityPatchResolution)
-      : null
-  ctx.assert(
-    patchResolution,
-    422,
-    'resolution must be dismissed; use POST /flags/:id/penalties to penalize',
-  )
+  const body = await parseJsonBody<ResolveReportIntegrityFlagRequest>(ctx, '10kb')
+  validateRequestContract(ctx, 'PATCH:/api/v1/report-integrity/flags/:id', {
+    body,
+    path: ctx.params,
+  })
 
-  const flag = await resolveReportIntegrityFlag(id, currentUser.id, patchResolution)
+  const flag = await resolveReportIntegrityFlag(id, currentUser.id, body.resolution)
   ctx.json({ flag })
 })
 
@@ -106,6 +101,9 @@ app.route('/api/v1/report-integrity/flags/:id/penalties').post(async (ctx: Conte
   )
 
   const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'POST:/api/v1/report-integrity/flags/:id/penalties', {
+    path: ctx.params,
+  })
 
   // applyReportAbusePenalty resolves the flag as penalized and inserts penalties
   // atomically in one transaction (404 if missing, 409 if already resolved).
