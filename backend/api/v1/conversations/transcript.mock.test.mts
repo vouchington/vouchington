@@ -6,6 +6,7 @@ import {
   createConversation,
   createConversationMessage,
   claimChatConversationMessageAgenticRun,
+  createClientGeneratedChatTurn,
 } from '@services/conversations-messages/create'
 import { hasActiveChatTurnByConversationId } from '@services/conversations-messages/agentic-runs'
 import { getConversationMessagesByConversationId } from '@services/conversations-messages/messages'
@@ -54,6 +55,19 @@ describe('member transcript contract', () => {
     expect(retry.body).toEqual(first.body)
     await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(3)
     expect(moderation).toHaveBeenCalledTimes(2)
+    const storedRetry = await createClientGeneratedChatTurn({
+      conversationId: conversation.id,
+      createdById: user.id,
+      userMessageId: body.user_message_id,
+      assistantMessageId: body.assistant_message_id,
+      message: body.message,
+      assistantContent: body.assistant_content,
+      modelProvider: 'apple_foundation',
+      modelName: 'apple-foundation-system',
+    })
+    expect(storedRetry.userMessage.id).toBe(body.user_message_id)
+    expect(storedRetry.assistantMessage.id).toBe(body.assistant_message_id)
+    await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(3)
   })
 
   it('rejects changed text and partial identity reuse atomically', async () => {
