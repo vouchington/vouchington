@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
 import { createTestUser, overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers'
 import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-config'
+import { readTestMcpCallAuditEvents } from '@voucha/test-helpers/entities/mcp-call-audit'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { rateLimitConfig } from '@services/user-rate-limits/config'
 import { issueTestOAuthTokens } from '@services/oauth-authorization-server/test-support'
@@ -45,7 +46,8 @@ describe('POST /api/v1/mcp rate limits', () => {
       // Distinct from any fallback, so Retry-After must carry the configured window.
       write_ttl: 45,
     })
-    const { access_token: accessToken } = await issueTestOAuthTokens(await createTestUser())
+    const user = await createTestUser()
+    const { access_token: accessToken } = await issueTestOAuthTokens(user)
     const ip = nextTestRequestIp()
     const post = () =>
       createRequest()
@@ -59,5 +61,12 @@ describe('POST /api/v1/mcp rate limits', () => {
     const limited = await post().expect(429)
 
     expect(limited.headers['retry-after']).toBe('45')
+    // The refused call is audited too, under the same correlation id the response returns.
+    const events = await readTestMcpCallAuditEvents(user.id)
+    expect(events.map(event => event.outcome)).toEqual([
+      ...Array.from({ length: ALLOWED_CALLS }, () => 'accepted'),
+      'rate_limited',
+    ])
+    expect(events.at(-1)?.correlation_id).toBe(limited.headers['x-correlation-id'])
   })
 })

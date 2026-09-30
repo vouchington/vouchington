@@ -1,6 +1,7 @@
 export {
   createMcpCallAuditContext,
   recordMcpCallAudit,
+  type McpCallAuditCredential,
   type McpCallAuditEvent,
   type McpCallAuditOutcome,
 } from './audit.mts'

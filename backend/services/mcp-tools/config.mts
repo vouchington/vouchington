@@ -21,7 +21,7 @@ export const USER_MCP_SERVER_CONFIG: McpServerConfig = {
   routePath: OAUTH_PROTECTED_RESOURCE_PATHS.user,
   surface: 'mcp',
   acceptsApiKeys: true,
-  auditCalls: false,
+  auditCalls: true,
 }
 
 export const ADMIN_MCP_SERVER_CONFIG: McpServerConfig = {
