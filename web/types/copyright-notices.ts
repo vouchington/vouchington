@@ -92,6 +92,11 @@ export type CopyrightStaffQueueItem = {
       rationale: string | null
       guidance: CopyrightFormGuidance | null
     } | null
+    review: {
+      accepted: boolean
+      reviewed_at: string
+      reviewed_by_id: string | null
+    } | null
   } | null
   restrictions: Array<{
     id: string

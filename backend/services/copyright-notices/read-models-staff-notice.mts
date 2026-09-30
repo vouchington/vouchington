@@ -36,6 +36,11 @@ export async function selectStaffEvidence(
   return rows.map(row => ({ ...row, sha256: row.sha256.toString('hex') }))
 }
 
+/**
+ * The case's form intake with its screening and guidance, whether or not a moderator has reviewed
+ * it, so later reviewers still see what the reviewer saw. `review` is the recorded decision, or
+ * null while the intake awaits one.
+ */
 export async function selectStaffFormReview(
   noticeId: string,
   query: Awaited<ReturnType<typeof beginTransaction>>,
@@ -47,13 +52,17 @@ export async function selectStaffFormReview(
     recommendation: string | null
     rationale_ciphertext: string | null
     guidance_ciphertext: string | null
+    review_accepted: boolean | null
+    reviewed_at: Date | null
+    reviewed_by_id: string | null
   }>(sql`/* getPendingCopyrightStaffCase:formReview */
-    SELECT intake.id AS intake_id, submission.source_kind, execution.state, screening.recommendation, screening.rationale_ciphertext, screening.guidance_ciphertext
+    SELECT intake.id AS intake_id, submission.source_kind, execution.state, screening.recommendation, screening.rationale_ciphertext, screening.guidance_ciphertext,
+      review.accepted AS review_accepted, review.reviewed_at, review.reviewed_by_id
     FROM copyright_notice_form_intakes intake JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id
     LEFT JOIN copyright_notice_form_screening_executions execution ON execution.copyright_notice_form_intake_id = intake.id
     LEFT JOIN copyright_notice_form_screenings screening ON screening.id = execution.copyright_notice_form_screening_id AND execution.state = 'completed'
     LEFT JOIN copyright_notice_form_intake_reviews review ON review.copyright_notice_form_intake_id = intake.id
-    WHERE intake.copyright_notice_id = ${noticeId} AND review.id IS NULL
+    WHERE intake.copyright_notice_id = ${noticeId}
     LIMIT 1
   `)
   const row = rows[0]
@@ -76,5 +85,13 @@ export async function selectStaffFormReview(
             : null,
         }
       : null,
+    review:
+      row.review_accepted === null || row.reviewed_at === null
+        ? null
+        : {
+            accepted: row.review_accepted,
+            reviewed_at: row.reviewed_at,
+            reviewed_by_id: row.reviewed_by_id,
+          },
   }
 }

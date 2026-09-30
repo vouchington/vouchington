@@ -77,6 +77,7 @@ describe('CopyrightStaffQueue', () => {
                     rationale: state === 'completed' ? 'Needs review.' : null,
                     guidance: state === 'completed' ? guidance : null,
                   },
+                  review: null,
                 },
                 restrictions: [
                   {
@@ -174,6 +175,69 @@ describe('CopyrightStaffQueue', () => {
       fireEvent.change(screen.getByLabelText('Review rationale'), {
         target: { value: 'The intake is complete.' },
       })
+    },
+  )
+
+  it.each([
+    { accepted: true, reviewedById: 'moderator-123', decision: 'Approved by moderator-123' },
+    { accepted: false, reviewedById: null, decision: 'Rejected by a deleted moderator account' },
+  ])(
+    'keeps the screening and AI guidance beside a recorded review ($decision) without offering the decision',
+    ({ accepted, reviewedById, decision }) => {
+      render(
+        <CopyrightStaffQueue
+          data={{
+            copyright_notices: [
+              {
+                id: 'case-456',
+                jurisdiction: 'us_dmca',
+                received_at: '2026-01-01T00:00:00.000Z',
+                claimant: { display_name: 'Claimant', contact: 'claimant@example.test' },
+                work_description: 'Original photograph.',
+                targets: [],
+                evidence: [],
+                form_review: {
+                  intake_id: 'intake-456',
+                  source_kind: 'guest_form',
+                  screening: {
+                    state: 'completed',
+                    recommendation: 'invalid_or_spam',
+                    rationale: 'Needs review.',
+                    guidance,
+                  },
+                  review: {
+                    accepted,
+                    reviewed_at: '2026-01-02T00:00:00.000Z',
+                    reviewed_by_id: reviewedById,
+                  },
+                },
+                restrictions: [],
+                appeals: [],
+                counter_notices: [],
+                legal_holds: [],
+                action_intents: [],
+                delivery_intents: [],
+                email_correspondence: [],
+                reasons: ['deadline_due'],
+                waiting_since: '2026-01-05T00:00:00.000Z',
+                next_deadline: {
+                  escalation_at: '2026-01-05T00:00:00.000Z',
+                  restoration_deadline_at: '2026-01-15T00:00:00.000Z',
+                },
+              },
+            ],
+            page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+          }}
+        />,
+      )
+      expect(screen.getByRole('heading', { name: 'Form review recorded' })).toBeVisible()
+      expect(screen.getByText(new RegExp(`^${decision} on `))).toBeVisible()
+      expect(screen.getByText('Agent: invalid_or_spam. Needs review.')).toBeVisible()
+      expect(screen.getByRole('region', { name: 'AI guidance — not a decision' })).toBeVisible()
+      expect(screen.getByText('Claims an unlicensed copy of a photograph.')).toBeVisible()
+      expect(screen.queryByText('Pending form review')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Approve intake' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Reject intake' })).not.toBeInTheDocument()
     },
   )
 })

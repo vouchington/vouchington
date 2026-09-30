@@ -60,6 +60,14 @@ suggested action. The model sees no claimant contact details, email, address, or
 The staff case labels it "AI guidance — not a decision"; no workflow predicate reads it, so it
 never creates an assessment or restriction.
 
+The staff case keeps the screening and guidance after a moderator records the intake review, so a
+later reviewer of a restriction, appeal, or counter-notice sees what the intake reviewer saw. The
+case's `form_review.review` is null while the intake awaits a decision. Once decided it holds the
+`accepted` decision, `reviewed_at`, and `reviewed_by_id`, which is null after the reviewer's
+account is erased. The moderator's rationale is not part of that projection. Only an unreviewed
+intake offers the approve and reject actions; the intake review reason still leaves the queue once
+the decision is recorded.
+
 Restriction admission and screening start serialize under the form fence. A restriction admitted
 first stays effective, including before its action delivery runs. A newer pending attempt blocks
 remaining targets in a partially processed request. Re-screening never lifts an existing takedown,

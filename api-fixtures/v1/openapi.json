@@ -3280,6 +3280,36 @@
                   "intake_id": {
                     "type": "string"
                   },
+                  "review": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "accepted": {
+                            "type": "boolean"
+                          },
+                          "reviewed_at": {
+                            "type": "string"
+                          },
+                          "reviewed_by_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": ["accepted", "reviewed_at", "reviewed_by_id"],
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "screening": {
                     "anyOf": [
                       {
@@ -3332,7 +3362,7 @@
                     "type": "string"
                   }
                 },
-                "required": ["intake_id", "screening", "source_kind"],
+                "required": ["intake_id", "review", "screening", "source_kind"],
                 "type": "object"
               },
               {
