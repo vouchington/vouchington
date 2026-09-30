@@ -1,6 +1,6 @@
 /* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
 import { render, screen } from '@testing-library/react'
-import { beforeAll, expect, test } from 'vitest'
+import { beforeAll, expect, test, type Mock } from 'vitest'
 import { createTranslator, type Translator } from '@ts-shared/ui-messages'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import type { ReactNode } from 'react'
@@ -37,7 +37,7 @@ export function registerTopicTagAsideContentTests(options: {
   cardManageHref: string
   rewardsProgramManageHref: string
   referralProgramManageHref: string
-  mockManageTagsDialog: VitestLooseMock
+  mockManageTagsDialog: Mock<VitestLooseMock>
 }): void {
   const {
     Component,
