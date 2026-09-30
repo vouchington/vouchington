@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeAll } from 'vitest'
+import type { PrivateUser } from '@services/users/types'
 import {
   createRandomString,
   createTestPost,
@@ -11,8 +12,205 @@ import {
   insertTestProxyMuteCommunity,
   insertTestTopic,
 } from '@voucha/test-helpers'
+import type { Community } from '@voucha/types/entities/community'
 import { searchCommunities } from '../search.mts'
-import type { PrivateUser } from '@services/users/types'
+import type { CommunityFeedCategory } from '../search-types.mts'
+
+type MineFeedMembership = 'member' | 'proxy-follow' | 'proxy-mute' | 'member-and-mute' | 'none'
+type MineFeedListItem = 'topic' | 'rss_feed' | 'post'
+
+type MineFeedCommunitySpec = {
+  key: string
+  name: string
+  slugSuffix: string
+  membership: MineFeedMembership
+  listItems: readonly MineFeedListItem[]
+}
+
+type MineFeedFixtures = {
+  topicId: string
+  feedId: string | undefined
+  postId: string | undefined
+}
+
+type MineFeedScope = {
+  communityId: (key: string) => string
+  search: (feedCategory: CommunityFeedCategory) => Promise<readonly string[]>
+}
+
+function mineFeedCommunity(
+  key: string,
+  name: string,
+  slugSuffix: string,
+  membership: MineFeedMembership,
+  listItems: readonly MineFeedListItem[],
+): MineFeedCommunitySpec {
+  return { key, name, slugSuffix, membership, listItems }
+}
+
+const postsMineFeedCommunities = [
+  mineFeedCommunity('joined', 'Joined', 'mine-joined', 'member', ['topic']),
+  mineFeedCommunity('proxy', 'Proxy', 'mine-proxy', 'proxy-follow', ['topic']),
+  mineFeedCommunity('muted', 'Muted', 'mine-muted', 'proxy-mute', ['topic']),
+  mineFeedCommunity('joined-muted', 'Joined Muted', 'mine-joined-muted', 'member-and-mute', [
+    'topic',
+  ]),
+  mineFeedCommunity('other', 'Other', 'mine-other', 'none', ['topic']),
+] as const satisfies readonly MineFeedCommunitySpec[]
+
+const newsMineFeedCommunities = [
+  mineFeedCommunity('joined-rss', 'News Joined RSS', 'news-joined-rss', 'member', ['rss_feed']),
+  mineFeedCommunity('proxy-topic', 'News Proxy Topic', 'news-proxy-topic', 'proxy-follow', [
+    'topic',
+  ]),
+  mineFeedCommunity('muted-rss', 'News Muted RSS', 'news-muted-rss', 'proxy-mute', ['rss_feed']),
+  mineFeedCommunity('other-rss', 'News Other RSS', 'news-other-rss', 'none', ['rss_feed']),
+  mineFeedCommunity('posts-only', 'News Posts Only', 'news-posts-only', 'none', ['post']),
+] as const satisfies readonly MineFeedCommunitySpec[]
+
+const newsSubfeedCommunities = [
+  mineFeedCommunity('rss-only', 'RSS Only', 'rss-only', 'member', ['rss_feed']),
+  mineFeedCommunity('topic-only', 'Topic Only', 'topic-only', 'member', ['topic']),
+  mineFeedCommunity('both', 'Both', 'both', 'member', ['rss_feed', 'topic']),
+] as const satisfies readonly MineFeedCommunitySpec[]
+
+function requireCommunity(communities: ReadonlyMap<string, Community>, key: string): Community {
+  const community = communities.get(key)
+  if (!community) throw new Error(`missing feed-scope community ${key}`)
+  return community
+}
+
+function membershipWrites(
+  viewerId: string,
+  communityId: string,
+  membership: MineFeedMembership,
+): Promise<unknown>[] {
+  switch (membership) {
+    case 'member':
+      return [insertTestCommunityMember({ communityId, userId: viewerId })]
+    case 'proxy-follow':
+      return [insertTestProxyFollowCommunity(viewerId, communityId)]
+    case 'proxy-mute':
+      return [insertTestProxyMuteCommunity(viewerId, communityId)]
+    case 'member-and-mute':
+      return [
+        insertTestCommunityMember({ communityId, userId: viewerId }),
+        insertTestProxyMuteCommunity(viewerId, communityId),
+      ]
+    case 'none':
+      return []
+  }
+}
+
+function listItemEntityId(itemType: MineFeedListItem, fixtures: MineFeedFixtures): string {
+  switch (itemType) {
+    case 'topic':
+      return fixtures.topicId
+    case 'rss_feed': {
+      if (fixtures.feedId === undefined) {
+        throw new Error('rss_feed list item requires an RSS feed fixture')
+      }
+      return fixtures.feedId
+    }
+    case 'post': {
+      if (fixtures.postId === undefined) {
+        throw new Error('post list item requires a post fixture')
+      }
+      return fixtures.postId
+    }
+  }
+}
+
+async function insertScenarioCommunities(
+  ownerId: string,
+  rand: string,
+  specs: readonly MineFeedCommunitySpec[],
+): Promise<ReadonlyMap<string, Community>> {
+  const created = await Promise.all(
+    specs.map(spec =>
+      insertTestCommunity({
+        createdById: ownerId,
+        name: `${rand} ${spec.name}`,
+        slug: `${rand}-${spec.slugSuffix}`,
+      }),
+    ),
+  )
+  const communities = new Map<string, Community>()
+  for (const [index, spec] of specs.entries()) {
+    const community = created[index]
+    if (!community) throw new Error(`missing inserted community ${spec.key}`)
+    communities.set(spec.key, community)
+  }
+  return communities
+}
+
+async function createScenarioFixtures(
+  owner: PrivateUser,
+  rand: string,
+  specs: readonly MineFeedCommunitySpec[],
+): Promise<MineFeedFixtures> {
+  const topicId = await insertTestTopic({
+    name: `Feed Topic ${rand}`,
+    slug: `feed-topic-${rand}`,
+    createdById: owner.id,
+  })
+  const feedId = specs.some(spec => spec.listItems.includes('rss_feed'))
+    ? await createTestRssFeedWithTiming(topicId)
+    : undefined
+  const post = specs.some(spec => spec.listItems.includes('post'))
+    ? await createTestPost({ user: owner })
+    : undefined
+  return { topicId, feedId, postId: post?.id }
+}
+
+async function attachScenarioRelations(
+  viewerId: string,
+  communities: ReadonlyMap<string, Community>,
+  specs: readonly MineFeedCommunitySpec[],
+  fixtures: MineFeedFixtures,
+): Promise<void> {
+  await Promise.all(
+    specs.flatMap(spec => {
+      const community = requireCommunity(communities, spec.key)
+      return [
+        ...membershipWrites(viewerId, community.id, spec.membership),
+        ...spec.listItems.map(itemType =>
+          insertTestCommunityListItem({
+            communityId: community.id,
+            itemType,
+            entityId: listItemEntityId(itemType, fixtures),
+          }),
+        ),
+      ]
+    }),
+  )
+}
+
+async function createMineFeedScope(
+  owner: PrivateUser,
+  specs: readonly MineFeedCommunitySpec[],
+): Promise<MineFeedScope> {
+  const rand = createRandomString(8)
+  const [viewer, communities, fixtures] = await Promise.all([
+    createTestUser(),
+    insertScenarioCommunities(owner.id, rand, specs),
+    createScenarioFixtures(owner, rand, specs),
+  ])
+  await attachScenarioRelations(viewer.id, communities, specs, fixtures)
+  return {
+    communityId: key => requireCommunity(communities, key).id,
+    search: async feedCategory => {
+      const result = await searchCommunities({
+        currentUser: viewer,
+        listScope: 'mine',
+        feedCategory,
+        hasListItems: true,
+        search: rand,
+      })
+      return result.results.map(community => community.id)
+    },
+  }
+}
 
 describe('search.feed-scope', () => {
   let user: PrivateUser
@@ -23,260 +221,40 @@ describe('search.feed-scope', () => {
 
   describe('searchCommunities listScope=mine feed filters', () => {
     it('returns joined and proxy-followed list communities relevant to posts', async () => {
-      const rand = createRandomString(8)
-      const viewer = await createTestUser()
-      const [
-        joinedCommunity,
-        proxyCommunity,
-        mutedCommunity,
-        joinedMutedCommunity,
-        unrelatedCommunity,
-      ] = await Promise.all([
-        insertTestCommunity({
-          createdById: user.id,
-          name: `${rand} Joined`,
-          slug: `${rand}-mine-joined`,
-        }),
-        insertTestCommunity({
-          createdById: user.id,
-          name: `${rand} Proxy`,
-          slug: `${rand}-mine-proxy`,
-        }),
-        insertTestCommunity({
-          createdById: user.id,
-          name: `${rand} Muted`,
-          slug: `${rand}-mine-muted`,
-        }),
-        insertTestCommunity({
-          createdById: user.id,
-          name: `${rand} Joined Muted`,
-          slug: `${rand}-mine-joined-muted`,
-        }),
-        insertTestCommunity({
-          createdById: user.id,
-          name: `${rand} Other`,
-          slug: `${rand}-mine-other`,
-        }),
-      ])
-      const topicId = await insertTestTopic({
-        name: `Mine Topic ${rand}`,
-        slug: `mine-topic-${rand}`,
-        createdById: user.id,
-      })
-      await Promise.all([
-        insertTestCommunityMember({ communityId: joinedCommunity.id, userId: viewer.id }),
-        insertTestCommunityMember({ communityId: joinedMutedCommunity.id, userId: viewer.id }),
-        insertTestProxyFollowCommunity(viewer.id, proxyCommunity.id),
-        insertTestProxyMuteCommunity(viewer.id, mutedCommunity.id),
-        insertTestProxyMuteCommunity(viewer.id, joinedMutedCommunity.id),
-        insertTestCommunityListItem({
-          communityId: joinedCommunity.id,
-          itemType: 'topic',
-          entityId: topicId,
-        }),
-        insertTestCommunityListItem({
-          communityId: proxyCommunity.id,
-          itemType: 'topic',
-          entityId: topicId,
-        }),
-        insertTestCommunityListItem({
-          communityId: mutedCommunity.id,
-          itemType: 'topic',
-          entityId: topicId,
-        }),
-        insertTestCommunityListItem({
-          communityId: joinedMutedCommunity.id,
-          itemType: 'topic',
-          entityId: topicId,
-        }),
-        insertTestCommunityListItem({
-          communityId: unrelatedCommunity.id,
-          itemType: 'topic',
-          entityId: topicId,
-        }),
-      ])
+      const scope = await createMineFeedScope(user, postsMineFeedCommunities)
+      const ids = await scope.search('posts')
 
-      const result = await searchCommunities({
-        currentUser: viewer,
-        listScope: 'mine',
-        feedCategory: 'posts',
-        hasListItems: true,
-        search: rand,
-      })
-      const ids = result.results.map(r => r.id)
-
-      expect(ids).toContain(joinedCommunity.id)
-      expect(ids).toContain(proxyCommunity.id)
-      expect(ids).not.toContain(mutedCommunity.id)
-      expect(ids).not.toContain(joinedMutedCommunity.id)
-      expect(ids).not.toContain(unrelatedCommunity.id)
+      expect(ids).toContain(scope.communityId('joined'))
+      expect(ids).toContain(scope.communityId('proxy'))
+      expect(ids).not.toContain(scope.communityId('muted'))
+      expect(ids).not.toContain(scope.communityId('joined-muted'))
+      expect(ids).not.toContain(scope.communityId('other'))
     })
 
     it('returns joined and proxy-followed list communities relevant to news', async () => {
-      const rand = createRandomString(8)
-      const viewer = await createTestUser()
-      const [
-        joinedRssCommunity,
-        proxyTopicCommunity,
-        mutedRssCommunity,
-        unrelatedRssCommunity,
-        postsOnlyCommunity,
-      ] = await Promise.all([
-        insertTestCommunity({
-          createdById: user.id,
-          name: `${rand} News Joined RSS`,
-          slug: `${rand}-news-joined-rss`,
-        }),
-        insertTestCommunity({
-          createdById: user.id,
-          name: `${rand} News Proxy Topic`,
-          slug: `${rand}-news-proxy-topic`,
-        }),
-        insertTestCommunity({
-          createdById: user.id,
-          name: `${rand} News Muted RSS`,
-          slug: `${rand}-news-muted-rss`,
-        }),
-        insertTestCommunity({
-          createdById: user.id,
-          name: `${rand} News Other RSS`,
-          slug: `${rand}-news-other-rss`,
-        }),
-        insertTestCommunity({
-          createdById: user.id,
-          name: `${rand} News Posts Only`,
-          slug: `${rand}-news-posts-only`,
-        }),
-      ])
-      const topicId = await insertTestTopic({
-        name: `News Mine Topic ${rand}`,
-        slug: `news-mine-topic-${rand}`,
-        createdById: user.id,
-      })
-      const feedId = await createTestRssFeedWithTiming(topicId)
-      const post = await createTestPost({ user })
-      await Promise.all([
-        insertTestCommunityMember({ communityId: joinedRssCommunity.id, userId: viewer.id }),
-        insertTestProxyFollowCommunity(viewer.id, proxyTopicCommunity.id),
-        insertTestProxyMuteCommunity(viewer.id, mutedRssCommunity.id),
-        insertTestCommunityListItem({
-          communityId: joinedRssCommunity.id,
-          itemType: 'rss_feed',
-          entityId: feedId,
-        }),
-        insertTestCommunityListItem({
-          communityId: proxyTopicCommunity.id,
-          itemType: 'topic',
-          entityId: topicId,
-        }),
-        insertTestCommunityListItem({
-          communityId: mutedRssCommunity.id,
-          itemType: 'rss_feed',
-          entityId: feedId,
-        }),
-        insertTestCommunityListItem({
-          communityId: unrelatedRssCommunity.id,
-          itemType: 'rss_feed',
-          entityId: feedId,
-        }),
-        insertTestCommunityListItem({
-          communityId: postsOnlyCommunity.id,
-          itemType: 'post',
-          entityId: post.id,
-        }),
-      ])
+      const scope = await createMineFeedScope(user, newsMineFeedCommunities)
+      const ids = await scope.search('news')
 
-      const result = await searchCommunities({
-        currentUser: viewer,
-        listScope: 'mine',
-        feedCategory: 'news',
-        hasListItems: true,
-        search: rand,
-      })
-      const ids = result.results.map(r => r.id)
-
-      expect(ids).toContain(joinedRssCommunity.id)
-      expect(ids).toContain(proxyTopicCommunity.id)
-      expect(ids).not.toContain(mutedRssCommunity.id)
-      expect(ids).not.toContain(unrelatedRssCommunity.id)
-      expect(ids).not.toContain(postsOnlyCommunity.id)
+      expect(ids).toContain(scope.communityId('joined-rss'))
+      expect(ids).toContain(scope.communityId('proxy-topic'))
+      expect(ids).not.toContain(scope.communityId('muted-rss'))
+      expect(ids).not.toContain(scope.communityId('other-rss'))
+      expect(ids).not.toContain(scope.communityId('posts-only'))
     })
 
     it('filters news list communities by source or topic subfeed category', async () => {
-      const rand = createRandomString(8)
-      const viewer = await createTestUser()
-      const [rssOnlyCommunity, topicOnlyCommunity, bothCommunity] = await Promise.all([
-        insertTestCommunity({
-          createdById: user.id,
-          name: `${rand} RSS Only`,
-          slug: `${rand}-rss-only`,
-        }),
-        insertTestCommunity({
-          createdById: user.id,
-          name: `${rand} Topic Only`,
-          slug: `${rand}-topic-only`,
-        }),
-        insertTestCommunity({
-          createdById: user.id,
-          name: `${rand} Both`,
-          slug: `${rand}-both`,
-        }),
-      ])
-      const topicId = await insertTestTopic({
-        name: `News Scoped Topic ${rand}`,
-        slug: `news-scoped-topic-${rand}`,
-        createdById: user.id,
-      })
-      const feedId = await createTestRssFeedWithTiming(topicId)
-      await Promise.all([
-        insertTestCommunityMember({ communityId: rssOnlyCommunity.id, userId: viewer.id }),
-        insertTestCommunityMember({ communityId: topicOnlyCommunity.id, userId: viewer.id }),
-        insertTestCommunityMember({ communityId: bothCommunity.id, userId: viewer.id }),
-        insertTestCommunityListItem({
-          communityId: rssOnlyCommunity.id,
-          itemType: 'rss_feed',
-          entityId: feedId,
-        }),
-        insertTestCommunityListItem({
-          communityId: topicOnlyCommunity.id,
-          itemType: 'topic',
-          entityId: topicId,
-        }),
-        insertTestCommunityListItem({
-          communityId: bothCommunity.id,
-          itemType: 'rss_feed',
-          entityId: feedId,
-        }),
-        insertTestCommunityListItem({
-          communityId: bothCommunity.id,
-          itemType: 'topic',
-          entityId: topicId,
-        }),
+      const scope = await createMineFeedScope(user, newsSubfeedCommunities)
+      const [sourceIds, topicIds] = await Promise.all([
+        scope.search('news_sources'),
+        scope.search('news_topics'),
       ])
 
-      const sourceResult = await searchCommunities({
-        currentUser: viewer,
-        listScope: 'mine',
-        feedCategory: 'news_sources',
-        hasListItems: true,
-        search: rand,
-      })
-      const topicResult = await searchCommunities({
-        currentUser: viewer,
-        listScope: 'mine',
-        feedCategory: 'news_topics',
-        hasListItems: true,
-        search: rand,
-      })
-      const sourceIds = sourceResult.results.map(r => r.id)
-      const topicIds = topicResult.results.map(r => r.id)
-
-      expect(sourceIds).toContain(rssOnlyCommunity.id)
-      expect(sourceIds).toContain(bothCommunity.id)
-      expect(sourceIds).not.toContain(topicOnlyCommunity.id)
-      expect(topicIds).toContain(topicOnlyCommunity.id)
-      expect(topicIds).toContain(bothCommunity.id)
-      expect(topicIds).not.toContain(rssOnlyCommunity.id)
+      expect(sourceIds).toContain(scope.communityId('rss-only'))
+      expect(sourceIds).toContain(scope.communityId('both'))
+      expect(sourceIds).not.toContain(scope.communityId('topic-only'))
+      expect(topicIds).toContain(scope.communityId('topic-only'))
+      expect(topicIds).toContain(scope.communityId('both'))
+      expect(topicIds).not.toContain(scope.communityId('rss-only'))
     })
   })
 })
