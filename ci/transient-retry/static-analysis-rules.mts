@@ -7,16 +7,6 @@ import type { TransientRetryRule, WorkflowRunContext } from './types.mts'
 
 const staticAnalysisJobName = 'static-code-analysis / static-code-analysis'
 
-// checks-static.yml job `static-cloudflare` runs the Cloudflare Worker tsc step.
-// GitHub names a reusable-workflow job `<caller> / <called>`.
-export const ciCloudflareWorkerStaticJobName = 'static-cloudflare-worker / static-cloudflare'
-export const mainCloudflareWorkerStaticJobName = 'static-checks / static-cloudflare'
-
-const cloudflareWorkerStaticJobByWorkflow = new Map<string, string>([
-  ['Cloudflare Worker', ciCloudflareWorkerStaticJobName],
-  ['Main CI (cloudflare-worker)', mainCloudflareWorkerStaticJobName],
-])
-
 function isStaticAnalysisCheckRun(name: string): boolean {
   return name === staticAnalysisJobName
 }
@@ -46,18 +36,17 @@ export const cloudflareWorkerTscRuntimeCrashRule: TransientRetryRule = {
   description:
     'Cloudflare Worker static typecheck fails because the TypeScript-Go runtime crashes with an unknown caller pc.',
   rationale:
-    'The failure is a Go runtime crash inside microsoft/typescript-go during parsing, not a TypeScript diagnostic. The typecheck step runs in checks-static.yml job static-cloudflare.',
+    'The failure is a Go runtime crash inside microsoft/typescript-go during parsing, not a TypeScript diagnostic. The typecheck step runs unconditionally in the Static workflow.',
   exampleRunIds: ['26734765264'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {
     if (ctx.conclusion !== 'failure') return false
-    const cloudflareJobName = cloudflareWorkerStaticJobByWorkflow.get(ctx.workflowName)
-    if (cloudflareJobName === undefined) return false
-    if (!hasOnlyNamedJobAndAggregateFailures(ctx, cloudflareJobName)) return false
+    if (ctx.workflowName !== 'Static') return false
+    if (!hasOnlyNamedJobAndAggregateFailures(ctx, staticAnalysisJobName)) return false
 
     const logs = await ctx.failedJobLogs()
-    return hasCloudflareWorkerTscRuntimeCrash(logs.get(cloudflareJobName) ?? '')
+    return hasCloudflareWorkerTscRuntimeCrash(logs.get(staticAnalysisJobName) ?? '')
   },
 }
 

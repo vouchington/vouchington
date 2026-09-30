@@ -32,7 +32,7 @@ const cancelling = (scope: readonly ConcurrencyScope[]) =>
 export const concurrencyTopologyPolicy = {
   '.github/workflows/actionlint.yml': conditional(['pull-request', 'sha']),
   '.github/workflows/backend.yml': conditional(['event', 'pull-request', 'sha']),
-  '.github/workflows/cleanup-artifacts.yml': retained(['input-resource']),
+  '.github/workflows/cleanup-artifacts.yml': retained(['fixed-resource']),
   '.github/workflows/cloudflare-worker.yml': conditional(['event', 'pull-request', 'sha']),
   '.github/workflows/dispatch-completed-deploy.yml': retained(['event']),
   '.github/workflows/docs-publish.yml': retained(['run']),
@@ -46,7 +46,6 @@ export const concurrencyTopologyPolicy = {
   '.github/workflows/lambdas.yml': conditional(['event', 'pull-request', 'sha']),
   '.github/workflows/lint-links.yml': conditional(['pull-request', 'sha']),
   '.github/workflows/main-backend.yml': retained(['run']),
-  '.github/workflows/main-checks.yml': retained(['fixed-resource']),
   '.github/workflows/main-cloudflare-worker.yml': retained(['fixed-resource']),
   '.github/workflows/main-lambdas.yml': retained(['fixed-resource']),
   '.github/workflows/main-storybook.yml': retained(['fixed-resource']),

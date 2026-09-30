@@ -16,18 +16,17 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
 
 describe('RULES catalogue', () => {
   describe('workflow-cancelled-without-failure-signal', () => {
-    it('ignores Main CI web selector cancellations when stateful fan-out jobs were skipped', async () => {
-      const failedJobName = 'playwright-tests / select'
+    it('ignores Main CI web publication-selector cancellations when publication jobs were skipped', async () => {
+      const failedJobName = 'detect-image-publication'
       const result = await decide(
         makeCtx({
           workflowName: 'Main CI (web)',
           conclusion: 'cancelled',
-          jobNames: [failedJobName, 'build', 'main-pre-deploy-eligibility', 'deploy-web'],
+          jobNames: [failedJobName, 'publish-web-images / build', 'web-deploy-intent'],
           jobConclusions: new Map([
             [failedJobName, 'cancelled'],
-            ['build', 'skipped'],
-            ['main-pre-deploy-eligibility', 'skipped'],
-            ['deploy-web', 'skipped'],
+            ['publish-web-images / build', 'skipped'],
+            ['web-deploy-intent', 'skipped'],
           ]),
           failedJobNames: [failedJobName],
         }),
@@ -38,15 +37,15 @@ describe('RULES catalogue', () => {
     })
 
     it('does not ignore Main CI web cancellations after a stateful deploy job completed', async () => {
-      const failedJobName = 'playwright-tests / select'
+      const failedJobName = 'detect-image-publication'
       const result = await decide(
         makeCtx({
           workflowName: 'Main CI (web)',
           conclusion: 'cancelled',
-          jobNames: [failedJobName, 'deploy-web'],
+          jobNames: [failedJobName, 'publish-web-images / build'],
           jobConclusions: new Map([
             [failedJobName, 'cancelled'],
-            ['deploy-web', 'success'],
+            ['publish-web-images / build', 'success'],
           ]),
           failedJobNames: [failedJobName],
         }),
@@ -57,17 +56,17 @@ describe('RULES catalogue', () => {
     })
 
     it('does not ignore Main CI web cancellations after a stateful deploy job was cancelled', async () => {
-      const failedJobName = 'playwright-tests / select'
+      const failedJobName = 'detect-image-publication'
       const result = await decide(
         makeCtx({
           workflowName: 'Main CI (web)',
           conclusion: 'cancelled',
-          jobNames: [failedJobName, 'deploy-web'],
+          jobNames: [failedJobName, 'publish-web-images / build'],
           jobConclusions: new Map([
             [failedJobName, 'cancelled'],
-            ['deploy-web', 'cancelled'],
+            ['publish-web-images / build', 'cancelled'],
           ]),
-          failedJobNames: [failedJobName, 'deploy-web'],
+          failedJobNames: [failedJobName, 'publish-web-images / build'],
         }),
         RULES,
       )

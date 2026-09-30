@@ -1,6 +1,6 @@
 name: Static Checks
 
-# Area-gated, non-Vitest gates (typecheck, dependency-cruiser, `next build`, smoke,
+# Area-gated, non-Vitest gates (dependency-cruiser, `next build`, smoke,
 # `wrangler --dry-run`) lifted out of the per-area Vitest workflows so they run
 # independently of the sharded Vitest jobs. API fixture snapshot regeneration belongs
 # to the static backend gate. See docs/development/ci.md.
@@ -51,10 +51,6 @@ jobs:
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 6
-      - name: Typecheck backend and email templates
-        shell: bash
-        run: pnpm exec tsc --noEmit --incremental --project backend/tsconfig.json && pnpm exec tsc --noEmit --project email-templates/tsconfig.json
-        timeout-minutes: 3
       - name: Check backend dependencies
         run: pnpm exec depcruise --config backend/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content backend ts-shared
         timeout-minutes: 3
@@ -82,14 +78,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-      - name: Typecheck web
-        working-directory: web
-        timeout-minutes: 3
-        shell: bash
-        run: pnpm exec next typegen && pnpm exec tsc --noEmit --incremental
-        env:
-          NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: '1x00000000000000000000AA'
-          ALLOW_TURNSTILE_TEST_KEY: 'true'
       - name: Next.js pages-router check
         timeout-minutes: 1
         run: |
@@ -123,10 +111,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-      - name: Typecheck lambdas
-        shell: bash
-        run: pnpm exec tsc --noEmit --project lambdas/tsconfig.json
-        timeout-minutes: 3
       - name: Check lambda dependencies
         run: pnpm exec depcruise --config lambdas/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content lambdas
         timeout-minutes: 3
@@ -144,10 +128,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-      - name: Typecheck Cloudflare Worker
-        shell: bash
-        run: pnpm exec tsc --noEmit --project cloudflare-worker/tsconfig.json
-        timeout-minutes: 2
       - name: Smoke test Cloudflare Worker runtime
         working-directory: cloudflare-worker
         run: |

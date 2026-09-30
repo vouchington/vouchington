@@ -19,7 +19,6 @@ const idempotentWorkflowNames = new Set([
   'Lambdas',
   'Tooling',
   'Main CI (backend)',
-  'Main CI (checks)',
   'Main CI (cloudflare-worker)',
   'Main CI (lambdas)',
   'Main CI (storybook)',

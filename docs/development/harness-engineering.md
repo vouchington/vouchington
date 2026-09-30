@@ -2,7 +2,7 @@
 
 Harness engineering means building scaffolding around coding agents so they can
 iterate without waiting for a human to translate raw logs. For this repo, the
-first practical step is to turn local Playwright and `main` CI failures into
+first practical step is to turn local Playwright and opt-in CI diagnostics into
 queryable observability signals: Sentry for errors, OpenTelemetry for traces and
 logs, and MCP access for agent triage.
 
@@ -22,20 +22,15 @@ through MCP, agents hunt deployed errors with
 ## Current State
 
 Staging is the preferred observability source once the environment is healthy.
-When staging is unavailable, the system falls back to two sources:
+When staging is unavailable, the system falls back to local tracing or a manually requested CI diagnostic run:
 
-| Source           | Signals                                                               | Access pattern                                                      |
-| ---------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| CI on `main`     | Same-run Playwright OTel traces/logs uploaded to S3                   | Object fetch under the `AWS_OTEL_STORE_URI` secret prefix           |
-| Local Playwright | OTel traces to Jaeger and raw webServer logs under the temp directory | `./dev/otel-up`, Playwright run, Jaeger at `http://localhost:16686` |
+| Source               | Signals                                                               | Access pattern                                                      |
+| -------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Manual Playwright CI | Opt-in OTel traces/logs in short-lived GitHub debug artifacts         | Dispatch the Playwright workflow with `otel_enabled`                |
+| Local Playwright     | OTel traces to Jaeger and raw webServer logs under the temp directory | `./dev/otel-up`, Playwright run, Jaeger at `http://localhost:16686` |
 
-OTel export is deliberately **main-only** for CI. PR branches do not start the
-OTel collector, keeping intentional PR failures and forked/untrusted code out of
-the exported traces. The CI gate is:
-
-```text
-github.event_name == 'push' && github.ref == 'refs/heads/main'
-```
+OTel export is opt-in for manual Playwright diagnostics. Area and main publication
+workflows leave the collector disabled.
 
 ## Sentry
 
@@ -91,16 +86,9 @@ TracerProvider and OTLP export to the OTel Collector; the Sentry SDK registers n
 (the web server sets `enableOpenTelemetrySetup: false` to that end). Cloudflare
 Worker/workerd OTel is out of scope.
 
-CI-main OTel runs inside the normal sharded Playwright job. The same main run
-starts an OTel Collector, writes collector trace/log files, and captures raw
-webServer logs as short-lived GitHub artifacts — Sentry itself stays disabled for
-this run, since CI is not in the deployed-environment allowlist. A main-only
-follow-up store job, which does not execute PR-controlled Playwright code,
-downloads those artifacts and uploads them to:
-
-```text
-${AWS_OTEL_STORE_URI}/<sha>/<run-id>-<attempt>/shard-<n>/
-```
+When manually enabled, the sharded Playwright job starts an OTel Collector and
+uploads collector output and raw webServer logs as short-lived GitHub debug artifacts.
+Sentry stays disabled because CI is outside the deployed-environment allowlist.
 
 ## MCP
 
@@ -120,12 +108,12 @@ access token.
 
 ## Roadmap
 
-| Phase  | Work                                                                                                                                                                             |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Now    | Staging/production Sentry via the fail-closed deployed-environment gate; local Playwright OTel to Jaeger; same-run main-only Playwright OTel files to S3; Sentry MCP docs/config |
-| Next   | Richer trace/log correlation tags and helper scripts for fetching OTel S3 bundles                                                                                                |
-| Future | Replace S3 dumps with a hosted OTel backend such as Tempo/Grafana or vendor search, expose CloudWatch metrics through MCP, add replay and richer debug context                   |
+| Phase  | Work                                                                                                                                                                               |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Now    | Staging/production Sentry via the fail-closed deployed-environment gate; local Playwright OTel to Jaeger; opt-in manual CI Playwright OTel debug artifacts; Sentry MCP docs/config |
+| Next   | Richer trace/log correlation tags and helper scripts for fetching diagnostic artifacts                                                                                             |
+| Future | Add a hosted OTel backend such as Tempo/Grafana or vendor search, expose CloudWatch metrics through MCP, add replay and richer debug context                                       |
 
 The explicit current gap is a hosted queryable OTel backend. Until it exists,
 staging/production Sentry and local Playwright OTel are the harness observability
-sources; CI-main contributes OTel traces/logs only, never Sentry events.
+sources; manually enabled CI diagnostics contribute OTel traces/logs only, never Sentry events.

@@ -68,7 +68,7 @@ describe('deriveRuleAttempts', () => {
         rules,
         runAttempt: 3,
         runId: '123',
-        workflowName: 'Main CI (checks)',
+        workflowName: 'Tooling',
       }),
     ).resolves.toEqual(
       new Map([

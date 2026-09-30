@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 
+import YAML from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 const mainWeb = readFileSync('.github/workflows/main-web.yml', 'utf8')
@@ -15,18 +16,14 @@ function jobSection(workflow: string, jobName: string): string {
 }
 
 describe('main-web workflow', () => {
-  it('fans out web unit, API, integration, and Playwright test stages directly from static-checks', () => {
-    for (const job of [
-      'test-web',
-      'test-web-api',
-      'test-web-integration',
-      'playwright-tests',
-      'playwright-credentialed-tests',
-    ]) {
-      const section = jobSection(mainWeb, job)
-      expect(section).toContain('needs: [static-checks]')
-      expect(section).not.toContain('max-parallel')
-    }
+  it('contains only image publication selection, intent, and publication jobs', () => {
+    const parsed = YAML.parse(mainWeb) as { jobs?: Record<string, unknown> }
+
+    expect(Object.keys(parsed.jobs ?? {}).toSorted()).toEqual([
+      'detect-image-publication',
+      'publish-web-images',
+      'web-deploy-intent',
+    ])
   })
 
   it('runs producer-owned main workflows when shared API fixtures change', () => {
@@ -47,11 +44,12 @@ describe('main-web workflow', () => {
     expect(mainWeb).not.toContain("needs.wait-infra-apply.result == 'success'")
   })
 
-  it('gates web checks on the static-checks workflow', () => {
-    const staticChecksJob = jobSection(mainWeb, 'static-checks')
+  it('publishes only when the shared publication-intent detector selects web images', () => {
+    const publish = jobSection(mainWeb, 'publish-web-images')
 
-    expect(staticChecksJob).toContain('uses: ./.github/workflows/checks-static.yml')
-    expect(staticChecksJob).toContain('web: true')
+    expect(publish).toContain('needs: [detect-image-publication]')
+    expect(publish).toContain("if: needs.detect-image-publication.outputs.publish == 'true'")
+    expect(mainWeb).not.toContain('store-playwright-otel')
   })
 
   it('leaves source-only deployment metadata to the completed-run receiver', () => {

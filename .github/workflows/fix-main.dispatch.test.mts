@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import {
   workflowHasMainPushTrigger,
   workflowRunSubscriptions,
+  workflowTriggerNames,
 } from '../test-helpers/workflow-test-helpers.mts'
 import {
   fixMain,
@@ -37,11 +38,30 @@ function mainPushWorkflowNames(): string[] {
   })
 }
 
+function nightlyRecoveryWorkflowNames(): string[] {
+  return workflowPaths.flatMap(path => {
+    const workflow = readWorkflow(path)
+    const triggers = workflowTriggerNames(workflow.on)
+    if (
+      workflow.name !== 'Nightly' ||
+      !triggers.includes('schedule') ||
+      !triggers.includes('workflow_dispatch')
+    ) {
+      return []
+    }
+    return [workflow.name]
+  })
+}
+
 describe('fix-main workflow', () => {
-  it('subscribes to main push workflows and the completed-deploy dispatcher', () => {
+  it('subscribes to main push workflows, Nightly, and the completed-deploy dispatcher', () => {
     const on = load(fixMain) as Workflow
     const subscribed = workflowRunSubscriptions(on.on)
-    const expected = [...mainPushWorkflowNames(), ...recoveryOnlyWorkflowNames]
+    const expected = [
+      ...mainPushWorkflowNames(),
+      ...nightlyRecoveryWorkflowNames(),
+      ...recoveryOnlyWorkflowNames,
+    ]
 
     expect(expected.length).toBeGreaterThan(0)
     expect([...subscribed].sort()).toEqual([...expected].sort())
@@ -77,12 +97,44 @@ describe('fix-main workflow', () => {
     const triageJob = parsedMain.jobs?.['triage-and-rerun']
     expect(triageJob?.needs).toBeUndefined()
     expect(triageJob?.if).toContain("github.event.workflow_run.event == 'push'")
+    expect(triageJob?.if).toContain("github.event.workflow_run.event == 'schedule'")
+    expect(triageJob?.if).toContain("github.event.workflow_run.event == 'workflow_dispatch'")
+    expect(triageJob?.if).toContain("github.event.workflow_run.name == 'Nightly'")
     expect(triageJob?.if).toContain("github.event.workflow_run.event == 'workflow_run'")
     expect(triageJob?.if).toContain("github.event.workflow_run.name == 'Dispatch completed deploy'")
     expect(triageJob?.if).toContain("github.event.workflow_run.head_branch == 'main'")
+    expect(triageJob?.if).toContain(
+      'github.event.workflow_run.head_repository.full_name == github.repository',
+    )
     expect(triageJob?.if).toContain('failure')
     expect(triageJob?.if).toContain('timed_out')
     expect(triageJob?.if).toContain('cancelled')
+  })
+
+  it('admits manual and scheduled recovery only for Nightly', () => {
+    const condition = parsedMain.jobs?.['triage-and-rerun']?.if ?? ''
+    expect(condition.replace(/\s+/g, ' ').trim()).toBe(
+      [
+        "vars.HARNESS_DISPATCH_ENABLED == 'true' &&",
+        "vars.HARNESS_FIX_MAIN_ENABLED == 'true' &&",
+        '(',
+        "github.event.workflow_run.event == 'push' ||",
+        '(',
+        "(github.event.workflow_run.event == 'schedule' ||",
+        "github.event.workflow_run.event == 'workflow_dispatch') &&",
+        "github.event.workflow_run.name == 'Nightly'",
+        ') ||',
+        '(',
+        "github.event.workflow_run.event == 'workflow_run' &&",
+        "github.event.workflow_run.name == 'Dispatch completed deploy'",
+        ')',
+        ') &&',
+        "github.event.workflow_run.head_branch == 'main' &&",
+        'github.event.workflow_run.head_repository.full_name == github.repository &&',
+        'contains(fromJSON(\'["failure", "timed_out", "cancelled"]\'),',
+        'github.event.workflow_run.conclusion)',
+      ].join(' '),
+    )
   })
 
   it('lets related-candidates fail or yield no output without blocking dispatch or escalation', () => {

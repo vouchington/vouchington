@@ -94,14 +94,14 @@ export const targets = {
       workflowCommand(
         'backend typecheck',
         'pnpm exec tsc --noEmit --incremental --project backend/tsconfig.json && pnpm exec tsc --noEmit --project email-templates/tsconfig.json',
-        'checks-static.yml',
+        'static-code-analysis.yml',
         'pnpm exec tsc --noEmit --incremental --project backend/tsconfig.json && pnpm exec tsc --noEmit --project email-templates/tsconfig.json',
       ),
       {
         ...workflowCommand(
           'web typecheck',
           'cd web && pnpm exec next typegen && pnpm exec tsc --noEmit --incremental',
-          'checks-static.yml',
+          'static-code-analysis.yml',
           'pnpm exec next typegen && pnpm exec tsc --noEmit --incremental',
         ),
         env: WEB_TYPECHECK_ENV,
@@ -109,12 +109,12 @@ export const targets = {
       workflowCommand(
         'cloudflare-worker typecheck',
         'pnpm exec tsc --noEmit --project cloudflare-worker/tsconfig.json',
-        'checks-static.yml',
+        'static-code-analysis.yml',
       ),
       workflowCommand(
         'lambdas typecheck',
         'pnpm exec tsc --noEmit --project lambdas/tsconfig.json',
-        'checks-static.yml',
+        'static-code-analysis.yml',
       ),
     ],
   },

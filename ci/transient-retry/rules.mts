@@ -11,10 +11,7 @@ import {
   lintLinksSetupLycheeDownloadFlakeRule,
 } from './lint-links-rules.mts'
 import { planCompletionSetupNodeToolCacheTimeoutRule } from './plan-completion-rules.mts'
-import {
-  mainWebPlaywrightSetupAptLockRule,
-  mainWebPlaywrightWorkerNavigationTimeoutRule,
-} from './playwright-rules.mts'
+import { mainWebPlaywrightSetupAptLockRule } from './playwright-rules.mts'
 import { runnerShutdownLeafRerunRule } from './runner-shutdown-rules.mts'
 import {
   cloudflareWorkerTscRuntimeCrashRule,
@@ -22,12 +19,8 @@ import {
 } from './static-analysis-rules.mts'
 import { storybookBrowserStartupTransientRule } from './storybook-rules.mts'
 import type { TransientRetryRule } from './types.mts'
-import { mainWebStaticBuildSilentExitRule } from './web-build-rules.mts'
 import { webIntegrationWranglerSocketClosedRule } from './web-integration-rules.mts'
-import {
-  mainWebVitestWorkerStartTimeoutAfterPassRule,
-  webVitestSigsegvRule,
-} from './web-vitest-rules.mts'
+import { webVitestSigsegvRule } from './web-vitest-rules.mts'
 
 export type { TransientRetryRule, WorkflowRunContext } from './types.mts'
 
@@ -42,11 +35,8 @@ export const RULES: TransientRetryRule[] = [
   mainBackendImageRegistryLayerBlobNotFoundRule,
   backendCredentialedProviderSmokeTestTransientRule,
   mainWebPlaywrightSetupAptLockRule,
-  mainWebPlaywrightWorkerNavigationTimeoutRule,
   webIntegrationWranglerSocketClosedRule,
   runnerShutdownLeafRerunRule,
-  mainWebStaticBuildSilentExitRule,
-  mainWebVitestWorkerStartTimeoutAfterPassRule,
   storybookBrowserStartupTransientRule,
   webVitestSigsegvRule,
   cloudflareWorkerTscRuntimeCrashRule,

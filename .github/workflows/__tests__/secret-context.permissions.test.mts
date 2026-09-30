@@ -124,12 +124,14 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     }
   })
 
-  it('passes trusted_secret_context to main backend credentialed tests', () => {
-    const workflow = read('.github/workflows/main-backend.yml')
+  it('passes trusted_secret_context only to backend area credentialed tests', () => {
+    const workflow = read('.github/workflows/backend.yml')
     const credentialedJob = jobSection(workflow, 'test-backend-credentialed')
 
     expect(credentialedJob).toContain('uses: ./.github/workflows/tests-backend-credentialed.yml')
-    expect(credentialedJob).toContain('trusted_secret_context: true')
+    expect(credentialedJob).toContain('trusted_secret_context:')
+    expect(credentialedJob).toContain('needs.changes.outputs.trusted-secret-context')
+    expect(read('.github/workflows/main-backend.yml')).not.toContain('test-backend-credentialed:')
   })
 
   it('runs Storybook tests through the web area after static analysis', () => {

@@ -7,12 +7,12 @@ import {
 } from './runner-shutdown-fingerprints.mts'
 import { hasStorybookBrowserSessionConnectionTimeout } from './storybook-browser-session-rules.mts'
 import {
+  ciStorybookJobName,
   failedStorybookJobName,
   hasStorybookBrowserViteReady,
   hasStorybookViteOptimizerNewDepsReload,
   matchesStorybookSingleJob,
   storybookBrowserAttemptMarker,
-  storybookLogJobName,
   stripAnsi,
 } from './storybook-shared.mts'
 
@@ -161,7 +161,7 @@ export const storybookBrowserStartupTransientRule: TransientRetryRule = {
     const targetedJobName = failedStorybookJobName(ctx)
     const singleStorybookFailure = matchesStorybookSingleJob(ctx)
     if (targetedJobName === undefined && !singleStorybookFailure) return false
-    const jobName = targetedJobName ?? storybookLogJobName(ctx)
+    const jobName = targetedJobName ?? ciStorybookJobName
     const logs = ctx.jobLogs ? await ctx.jobLogs([jobName]) : await ctx.failedJobLogs()
     const log = logs.get(jobName) ?? ''
     if (hasStorybookBrowserAddonVitestSetupRunnerMissing(log)) return true

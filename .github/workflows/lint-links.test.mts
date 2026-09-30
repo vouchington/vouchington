@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 type Workflow = {
   on?: {
     pull_request?: null | { paths?: string[] }
-    push?: { branches?: string[]; paths?: string[] }
+    schedule?: unknown
   }
   jobs?: Record<
     string,
@@ -25,9 +25,10 @@ type Workflow = {
 const workflow = load(readFileSync('.github/workflows/lint-links.yml', 'utf8')) as Workflow
 
 describe('lint-links workflow', () => {
-  it('runs for every PR and main push so non-Markdown target deletions are checked', () => {
+  it('runs for every PR and on the weekly schedule', () => {
     expect(workflow.on?.pull_request).toBeNull()
-    expect(workflow.on?.push).toEqual({ branches: ['main'] })
+    expect(workflow.on).not.toHaveProperty('push')
+    expect(workflow.on).toHaveProperty('schedule')
   })
 
   it('passes the GitHub token to Lychee for GitHub link checks', () => {

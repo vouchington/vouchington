@@ -117,7 +117,7 @@ describe('backend-credentialed-provider-smoke-test-transient (Bedrock variants)'
 
   it('matches the Bedrock Runtime InternalFailure on Main CI backend attempt 1', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (backend)',
+      workflowName: 'Backend',
       failedJobNames: [backendCredentialedJobName],
       failedJobLogs: () =>
         Promise.resolve(new Map([[backendCredentialedJobName, matchingBedrockInternalFailureLog]])),
@@ -131,7 +131,7 @@ describe('backend-credentialed-provider-smoke-test-transient (Bedrock variants)'
     const ctx = makeCtx({
       runAttempt: 3,
       ruleAttempts: new Map([['backend-credentialed-provider-smoke-test-transient', 3]]),
-      workflowName: 'Main CI (backend)',
+      workflowName: 'Backend',
       failedJobNames: [backendCredentialedJobName],
       failedJobLogs: () =>
         Promise.resolve(new Map([[backendCredentialedJobName, matchingBedrockInternalFailureLog]])),

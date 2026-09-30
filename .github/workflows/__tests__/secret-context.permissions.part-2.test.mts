@@ -109,18 +109,7 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(playwrightJob).not.toContain('otel_enabled:')
     expect(playwrightJob).not.toContain('secrets: inherit')
 
-    // store-playwright-otel moved to main-web.yml (main-only push workflow)
-    const mainWebWorkflow = read('.github/workflows/main-web.yml')
-    const playwrightOtelStoreJob = jobSection(mainWebWorkflow, 'store-playwright-otel')
-    expect(playwrightOtelStoreJob).toContain(
-      "(needs.playwright-tests.result == 'success' || needs.playwright-tests.result == 'failure')",
-    )
-    expect(playwrightOtelStoreJob).toContain(
-      'role-to-assume: ${{ secrets.AWS_OTEL_STORE_ROLE_ARN }}',
-    )
-    expect(playwrightOtelStoreJob).not.toContain('role-to-assume: ${{ secrets.AWS_TEST_ROLE_ARN }}')
-    expect(playwrightOtelStoreJob).toContain('id-token: write')
-    expect(playwrightOtelStoreJob).not.toContain('secrets: inherit')
+    expect(read('.github/workflows/main-web.yml')).not.toContain('AWS_OTEL_STORE_ROLE_ARN')
   })
 
   it('downscopes non-secret orchestration jobs that execute local shell', () => {

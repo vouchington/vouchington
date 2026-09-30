@@ -28,7 +28,7 @@ export const jobInventory = {
   '.github/workflows/checks-backend-smoke.yml': jobs('smoke'),
   '.github/workflows/ci-detect-changes.yml': jobs('detect-changes'),
   '.github/workflows/ci-upload-codecov.yml': jobs('upload-codecov'),
-  '.github/workflows/cleanup-artifacts.yml': jobs('cleanup-run cleanup-sweep'),
+  '.github/workflows/cleanup-artifacts.yml': jobs('cleanup-sweep'),
   '.github/workflows/harness-dispatch.yml': jobs('dispatch'),
   '.github/workflows/fix-dependabot.yml': jobs(
     'check-duplicates comment-session dispatch escalate render-prompt revalidate-dispatch triage-and-rerun',
@@ -56,18 +56,13 @@ export const jobInventory = {
   '.github/workflows/label-pr.yml': jobs('label'),
   '.github/workflows/lint-links.yml': jobs('lint-links'),
   '.github/workflows/main-backend.yml': jobs(
-    'backend-deploy-intent backend-smoke detect-image-publication postgres-schema-tests publish-backend-images static-checks test-backend-credentialed test-backend-modules test-backend-unit',
+    'backend-deploy-intent detect-image-publication publish-backend-images',
   ),
-  '.github/workflows/main-checks.yml': jobs(
-    'cleanup-artifacts explain-analyze select-main-checks tooling-tests ts-shared-tests',
-  ),
-  '.github/workflows/main-cloudflare-worker.yml': jobs(
-    'cloudflare-worker-tests publish-cloudflare-worker static-checks',
-  ),
-  '.github/workflows/main-lambdas.yml': jobs('lambdas-tests publish-image-resize static-checks'),
-  '.github/workflows/main-storybook.yml': jobs('publish-storybook storybook-build'),
+  '.github/workflows/main-cloudflare-worker.yml': jobs('publish-cloudflare-worker'),
+  '.github/workflows/main-lambdas.yml': jobs('publish-image-resize'),
+  '.github/workflows/main-storybook.yml': jobs('publish-storybook'),
   '.github/workflows/main-web.yml': jobs(
-    'cleanup-artifacts detect-image-publication playwright-credentialed-tests playwright-tests publish-web-images static-checks store-playwright-otel test-web test-web-api test-web-integration web-deploy-intent',
+    'detect-image-publication publish-web-images web-deploy-intent',
   ),
   '.github/workflows/pnpm-dedupe.yml': jobs('dedupe'),
   '.github/workflows/postgresql-snapshot-update.yml': jobs('generate prepare publish'),

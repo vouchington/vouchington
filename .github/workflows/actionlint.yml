@@ -13,20 +13,6 @@ on:
       - '.mise.toml'
       - 'ci/curl-to.sh'
       - 'ci/exec-vouchington-gha.sh'
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/**'
-      - '.github/actions/**'
-      - '.github/dependabot.yml'
-      - '.github/actionlint.yaml'
-      - '.github/actionlint.yml'
-      - '.github/zizmor.yml'
-      - '.github/zizmor.yaml'
-      - '.mise.toml'
-      - 'ci/curl-to.sh'
-      - 'ci/exec-vouchington-gha.sh'
-
 permissions:
   contents: read
 

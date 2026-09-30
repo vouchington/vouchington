@@ -46,10 +46,33 @@ describe('static-code-analysis workflow', () => {
     expect(workflow).not.toContain('ci/static-analysis-pnpm-install.sh')
   })
 
-  it('runs compiler gates before fallible repository static-analysis commands', () => {
-    expect(workflow.indexOf('      - name: Typecheck scripts')).toBeLessThan(
-      workflow.indexOf('      - name: Install CI tools via mise'),
+  it('unconditionally owns every repository compiler gate before fallible analysis commands', () => {
+    const mise = workflow.indexOf('      - name: Install CI tools via mise')
+    const emailBuild = workflow.indexOf('      - name: Build backend email templates')
+    const backendTypecheck = workflow.indexOf('      - name: Typecheck backend and email templates')
+    for (const step of [
+      'Typecheck scripts',
+      'Typecheck ts-shared',
+      'Typecheck playwright',
+      'Typecheck test-helpers',
+      'Typecheck integration-tests',
+      'Typecheck backend and email templates',
+      'Typecheck web',
+      'Typecheck lambdas',
+      'Typecheck Cloudflare Worker',
+    ]) {
+      const position = workflow.indexOf(`      - name: ${step}`)
+      expect(position).toBeGreaterThanOrEqual(0)
+      expect(position).toBeLessThan(mise)
+    }
+
+    expect(workflow).toContain('pnpm exec next typegen && pnpm exec tsc --noEmit --incremental')
+    expect(workflow).toContain(
+      "NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: '1x00000000000000000000AA'",
     )
+    expect(workflow).toContain("ALLOW_TURNSTILE_TEST_KEY: 'true'")
+    expect(emailBuild).toBeGreaterThanOrEqual(0)
+    expect(emailBuild).toBeLessThan(backendTypecheck)
   })
 
   it('checks the row catalog through the no-write Platform formatter', () => {
@@ -155,7 +178,7 @@ describe('static-code-analysis workflow', () => {
     }
   })
 
-  it('retains only cross-workspace dependency and type checks', () => {
+  it('retains cross-workspace dependency checks and all compiler gates', () => {
     expect(workflow).toContain(
       'node static-code-analysis/run-tooling-dependency-cruiser.mts --cache',
     )
@@ -165,14 +188,19 @@ describe('static-code-analysis workflow', () => {
     expect(workflow).toContain('pnpm exec tsc --noEmit --project playwright/tsconfig.json')
     expect(workflow).toContain('pnpm exec tsc --noEmit --project test-helpers/tsconfig.json')
     expect(workflow).toContain('pnpm exec tsc --noEmit --project integration-tests/tsconfig.json')
+    for (const compiler of [
+      'backend/tsconfig.json',
+      'cloudflare-worker/tsconfig.json',
+      'lambdas/tsconfig.json',
+    ]) {
+      expect(workflow).toContain(compiler)
+    }
+    expect(workflow).toContain('working-directory: web')
+    expect(workflow).toContain('pnpm exec next typegen && pnpm exec tsc --noEmit --incremental')
     for (const delegated of [
       'backend/.dependency-cruiser.cjs',
       'web/.dependency-cruiser.cjs',
       'lambdas/.dependency-cruiser.cjs',
-      'backend/tsconfig.json',
-      'web/tsconfig.json',
-      'cloudflare-worker/tsconfig.json',
-      'lambdas/tsconfig.json',
       'pnpm exec squawk',
       'Next.js pages-router check',
     ]) {

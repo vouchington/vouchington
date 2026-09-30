@@ -31,19 +31,6 @@ function readRepoFile(path: string): string {
   return readFileSync(`${repoRoot}/${path}`, 'utf8')
 }
 
-function mainChecksPushPaths(): string[] {
-  return parseYaml(readRepoFile('.github/workflows/main-checks.yml')).on.push.paths
-}
-
-function mainChecksToolingFilter(): string[] {
-  const workflow = parseYaml(readRepoFile('.github/workflows/main-checks.yml')) as {
-    jobs: { 'select-main-checks': { steps: Array<{ with?: { filters?: string } }> } }
-  }
-  const filterStep = workflow.jobs['select-main-checks'].steps.find(step => step.with?.filters)
-  const filters = parseYaml(filterStep?.with?.filters ?? '') as { tooling: string[] }
-  return filters.tooling
-}
-
 function toolingFilter(): string[] {
   return parseYaml(readRepoFile('.github/ci-path-filters.yml')).tooling
 }
@@ -131,13 +118,12 @@ describe('CI fixture documentation classifier', () => {
   })
 
   it.each(['README.md', 'views.md', 'tables/widgets.md', 'nested/schema.md'])(
-    'keeps generated Markdown fixture %s out of docs-only skipping and selects main tooling checks',
+    'keeps generated Markdown fixture %s out of docs-only skipping and selects the tooling area',
     file => {
       const path = `docs/development/postgresql/schema-snapshot/markdown/${file}`
       expect(docsOnly([path])).toBe(false)
       expect(docsOnly([path, 'docs/development/tests.md'])).toBe(false)
-      expect(mainChecksPushPaths().some(glob => picomatch.isMatch(path, glob))).toBe(true)
-      expect(mainChecksToolingFilter().some(glob => picomatch.isMatch(path, glob))).toBe(true)
+      expect(toolingFilter().some(glob => picomatch.isMatch(path, glob))).toBe(true)
     },
   )
 
@@ -168,7 +154,7 @@ describe('CI fixture documentation classifier', () => {
     )
   })
 
-  it('covers every markdown file under the fixture-doc trees across all four inventories', () => {
+  it('covers every markdown file under the fixture-doc trees in the classifier and tooling filter', () => {
     for (const tree of FIXTURE_DOC_TREES) {
       const markdown = execFileSync('git', ['ls-files', '-z', '--', `${tree}/**`], {
         encoding: 'utf8',
@@ -178,9 +164,7 @@ describe('CI fixture documentation classifier', () => {
 
       expect(markdown.length).toBeGreaterThan(0) // an empty glob must not pass vacuously
       for (const path of markdown) expect(docsOnly([path])).toBe(false) // (a) -- the new coverage
-      expect(toolingFilter()).toContain(`${tree}/**`) // (c) -- restates main-checks.test.mts:49-50
-      expect(mainChecksPushPaths()).toContain(`${tree}/**`) // (d) -- restates main-checks.test.mts:33-34
-      expect(mainChecksToolingFilter()).toContain(`${tree}/**`) // (d)
+      expect(toolingFilter()).toContain(`${tree}/**`)
     }
   })
 })

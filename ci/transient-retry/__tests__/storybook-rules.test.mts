@@ -4,7 +4,7 @@ import { RULES } from '../rules.mts'
 import { makeCtx } from '../../test-helpers/transient-retry/helpers.mts'
 describe('Storybook transient retry rules', () => {
   describe('storybook-browser-startup-transient watchdog shutdown', () => {
-    const storybookJobName = 'storybook-build / storybook'
+    const storybookJobName = 'storybook / storybook'
     const watchdogShutdownLog = [
       'VITEST_STORYBOOK_BROWSER: 1',
       '[storybook-browser] starting attempt 1/3 with cache /runner/_temp/storybook-attempt-1',
@@ -17,7 +17,7 @@ describe('Storybook transient retry rules', () => {
     it('reruns a watchdog shutdown with no OOM evidence', async () => {
       const result = await decide(
         makeCtx({
-          workflowName: 'Main CI (storybook)',
+          workflowName: 'Web',
           failedJobNames: [storybookJobName],
           failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, watchdogShutdownLog]])),
         }),
@@ -37,7 +37,7 @@ describe('Storybook transient retry rules', () => {
       ].join('\n')
       const result = await decide(
         makeCtx({
-          workflowName: 'Main CI (storybook)',
+          workflowName: 'Web',
           failedJobNames: [storybookJobName],
           failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
         }),
@@ -48,7 +48,7 @@ describe('Storybook transient retry rules', () => {
   })
 
   describe('storybook-browser-startup-transient watchdog variant', () => {
-    const storybookJobName = 'storybook-build / storybook'
+    const storybookJobName = 'storybook / storybook'
     const ciStorybookJobName = 'storybook / storybook'
     const setupFileLog =
       'Error: Failed to import test file /work/filaments/web/.storybook/vitest.setup.ts\n' +
@@ -62,7 +62,7 @@ describe('Storybook transient retry rules', () => {
 
     it('matches the Main CI Storybook project-annotations virtual-module fetch failure', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })
@@ -86,7 +86,7 @@ describe('Storybook transient retry rules', () => {
         'Caused by: TypeError: Failed to fetch dynamically imported module: http://localhost:48728/work/filaments/web/storybook/design-system/dropdown-menu.stories.tsx?import&browserv=1\n' +
         '##[error]Process completed with exit code 1.'
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
       })
@@ -97,7 +97,7 @@ describe('Storybook transient retry rules', () => {
 
     it('does not match the same fingerprint after the retry cap is exhausted', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         runAttempt: 2,
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
@@ -114,7 +114,7 @@ describe('Storybook transient retry rules', () => {
         '[vite] (client) optimized dependencies changed. reloading',
       ].join('\n')
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
       })
@@ -125,7 +125,7 @@ describe('Storybook transient retry rules', () => {
 
     it('does not match Storybook assertion failures', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
@@ -139,7 +139,7 @@ describe('Storybook transient retry rules', () => {
 
     it('does not match when another Main CI job also needs investigation', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName, 'publish'],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })
@@ -150,7 +150,7 @@ describe('Storybook transient retry rules', () => {
   })
 
   describe('storybook-browser-startup-transient', () => {
-    const storybookJobName = 'storybook-build / storybook'
+    const storybookJobName = 'storybook / storybook'
     const ciStorybookJobName = 'storybook / storybook'
     const matchingLog =
       'VITEST_STORYBOOK_BROWSER: 1\n' +
@@ -161,7 +161,7 @@ describe('Storybook transient retry rules', () => {
 
     it('matches a Main CI Storybook browser timeout during Vite optimizer startup', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })
@@ -183,7 +183,7 @@ describe('Storybook transient retry rules', () => {
 
     it('matches the same timeout fingerprint when the workflow timeout duration changes', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
@@ -196,7 +196,7 @@ describe('Storybook transient retry rules', () => {
     })
     it('does not match the same timeout after the single outer rerun is exhausted', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         runAttempt: 2,
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
@@ -208,7 +208,7 @@ describe('Storybook transient retry rules', () => {
 
     it('does not match the same timeout after the retry cap is exhausted', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         runAttempt: 3,
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
@@ -220,7 +220,7 @@ describe('Storybook transient retry rules', () => {
 
     it('does not match Storybook assertion failures that emit reports', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
@@ -239,7 +239,7 @@ describe('Storybook transient retry rules', () => {
 
     it('does not match Vite timeouts that did not reach the optimizer scan', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
@@ -271,7 +271,7 @@ describe('Storybook transient retry rules', () => {
 
     it('does not match when another Main CI job also needs investigation', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName, 'publish'],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })

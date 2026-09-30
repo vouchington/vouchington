@@ -1,7 +1,6 @@
 import type { WorkflowRunContext } from './types.mts'
 import { isAreaGateJob } from './ci-aggregate-jobs.mts'
 
-export const storybookJobName = 'storybook-build / storybook'
 export const ciStorybookJobName = 'storybook / storybook'
 export const storybookBrowserAttemptMarker = '[storybook-browser] starting attempt'
 
@@ -9,21 +8,15 @@ const ansiEscapePattern = new RegExp(String.raw`\u001B\[[0-?]*[ -/]*[@-~]`, 'g')
 
 export const matchesStorybookSingleJob = (ctx: WorkflowRunContext): boolean =>
   ctx.conclusion === 'failure' &&
-  ((ctx.workflowName === 'Main CI (storybook)' &&
-    ctx.failedJobNames.length === 1 &&
-    ctx.failedJobNames[0] === storybookJobName) ||
-    (ctx.workflowName === 'Web' &&
-      ctx.failedJobNames.includes(ciStorybookJobName) &&
-      ctx.failedJobNames.every(
-        jobName => jobName === ciStorybookJobName || isAreaGateJob(ctx.workflowName, jobName),
-      )))
-
-export const storybookLogJobName = (ctx: WorkflowRunContext): string =>
-  ctx.failedJobNames.includes(ciStorybookJobName) ? ciStorybookJobName : storybookJobName
+  ctx.workflowName === 'Web' &&
+  ctx.failedJobNames.includes(ciStorybookJobName) &&
+  ctx.failedJobNames.every(
+    jobName => jobName === ciStorybookJobName || isAreaGateJob(ctx.workflowName, jobName),
+  )
 
 export const failedStorybookJobName = (ctx: WorkflowRunContext): string | undefined => {
-  if (ctx.workflowName !== 'Web' && ctx.workflowName !== 'Main CI (storybook)') return undefined
-  const jobName = ctx.workflowName === 'Web' ? ciStorybookJobName : storybookJobName
+  if (ctx.workflowName !== 'Web') return undefined
+  const jobName = ciStorybookJobName
   if (ctx.jobConclusions !== undefined) {
     return ctx.jobConclusions.get(jobName) === 'failure' ? jobName : undefined
   }

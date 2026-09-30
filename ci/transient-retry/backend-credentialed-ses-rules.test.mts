@@ -42,7 +42,7 @@ describe('backend-credentialed-provider-smoke-test-transient (SES variant)', () 
 
   it('matches the SES sendEmail timeout on Main CI backend attempt 1', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (backend)',
+      workflowName: 'Backend',
       failedJobNames: [backendCredentialedJobName],
       failedJobLogs: () => Promise.resolve(new Map([[backendCredentialedJobName, matchingSesLog]])),
     })
@@ -53,7 +53,7 @@ describe('backend-credentialed-provider-smoke-test-transient (SES variant)', () 
 
   it('does not match unrelated SES assertion failures', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (backend)',
+      workflowName: 'Backend',
       failedJobNames: [backendCredentialedJobName],
       failedJobLogs: () =>
         Promise.resolve(
@@ -103,7 +103,7 @@ describe('backend-credentialed-provider-smoke-test-transient (SES variant)', () 
       '##[error]Process completed with exit code 1.',
     ].join('\n')
     const ctx = makeCtx({
-      workflowName: 'Main CI (backend)',
+      workflowName: 'Backend',
       failedJobNames: [backendCredentialedJobName],
       failedJobLogs: () =>
         Promise.resolve(new Map([[backendCredentialedJobName, mixedFailureLog]])),
@@ -131,7 +131,7 @@ describe('backend-credentialed-provider-smoke-test-transient (SES variant)', () 
     const ctx = makeCtx({
       runAttempt: 3,
       ruleAttempts: new Map([['backend-credentialed-provider-smoke-test-transient', 3]]),
-      workflowName: 'Main CI (backend)',
+      workflowName: 'Backend',
       failedJobNames: [backendCredentialedJobName],
       failedJobLogs: () => Promise.resolve(new Map([[backendCredentialedJobName, matchingSesLog]])),
     })

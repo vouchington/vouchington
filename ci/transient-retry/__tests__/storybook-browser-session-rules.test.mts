@@ -5,7 +5,7 @@ import { RULES } from '../rules.mts'
 import { makeCtx } from '../../test-helpers/transient-retry/helpers.mts'
 
 describe('storybook-browser-session-connection-timeout', () => {
-  const storybookJobName = 'storybook-build / storybook'
+  const storybookJobName = 'storybook / storybook'
   const ciStorybookJobName = 'storybook / storybook'
   const matchingLog =
     'VITEST_STORYBOOK_BROWSER: 1\n' +
@@ -20,7 +20,7 @@ describe('storybook-browser-session-connection-timeout', () => {
 
   it('matches the Main CI Storybook browser-session connection timeout', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
     })
@@ -42,7 +42,7 @@ describe('storybook-browser-session-connection-timeout', () => {
 
   it('does not match when another Main CI job also needs investigation', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       failedJobNames: [storybookJobName, 'publish'],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
     })
@@ -64,7 +64,7 @@ describe('storybook-browser-session-connection-timeout', () => {
 
   it('does not match on the second outer attempt', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       runAttempt: 2,
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
@@ -76,7 +76,7 @@ describe('storybook-browser-session-connection-timeout', () => {
 
   it('does not match on the third outer attempt', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       runAttempt: 3,
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
@@ -92,7 +92,7 @@ describe('storybook-browser-session-connection-timeout', () => {
       '2026-07-10T16:28:14.432Z vite:deps (client) hash is consistent; skipping dependency scan',
     )
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       runAttempt: 3,
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, warmCacheLog]])),
@@ -104,7 +104,7 @@ describe('storybook-browser-session-connection-timeout', () => {
 
   it('does not match the same timeout after the retry cap is exhausted', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       runAttempt: 4,
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
@@ -116,7 +116,7 @@ describe('storybook-browser-session-connection-timeout', () => {
 
   it('matches after a prior zero-job cancellation leaves this as the first signal attempt', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       runAttempt: 2,
       ruleAttempt: 1,
       failedJobNames: [storybookJobName],
@@ -129,7 +129,7 @@ describe('storybook-browser-session-connection-timeout', () => {
 
   it('does not match browser-session timeouts after Storybook browser output starts', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       failedJobNames: [storybookJobName],
       failedJobLogs: () =>
         Promise.resolve(
@@ -151,7 +151,7 @@ describe('storybook-browser-session-connection-timeout', () => {
 
   it('does not match when only an earlier browser attempt reached Vite ready', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       failedJobNames: [storybookJobName],
       failedJobLogs: () =>
         Promise.resolve(
@@ -179,7 +179,7 @@ describe('storybook-browser-session-connection-timeout', () => {
 
   it('does not match Storybook assertion failures', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       failedJobNames: [storybookJobName],
       failedJobLogs: () =>
         Promise.resolve(

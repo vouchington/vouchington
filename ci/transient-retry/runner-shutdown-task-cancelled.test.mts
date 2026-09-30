@@ -7,7 +7,7 @@ import type { WorkflowRunContext } from './types.mts'
 // runner-shutdown-production-rule.test.mts. This direct matcher suite covers the A-task-cancelled
 // marker variant.
 
-const playwrightShardJobName = 'playwright-tests / playwright-tests (1)'
+const playwrightShardJobName = 'test-playwright / playwright-tests (1)'
 
 const serviceInitTaskCancelledLog = [
   'Waiting for all services to be ready',
@@ -17,7 +17,7 @@ const serviceInitTaskCancelledLog = [
 ].join('\n')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'Main CI (web)',
+  workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [playwrightShardJobName],
@@ -28,7 +28,7 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
 })
 
 describe('runnerShutdownLeafRerunMatch task-cancelled variant', () => {
-  it('reruns when a Main CI web Playwright shard is shutdown during service initialization', async () => {
+  it('reruns when a Web Playwright shard is shutdown during service initialization', async () => {
     expect(await runnerShutdownLeafRerunMatch(makeCtx())).toBe(true)
   })
 
