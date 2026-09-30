@@ -97,11 +97,7 @@ jobs:
           pnpm exec depcruise --config .dependency-cruiser.cjs --output-type err --cache --cache-strategy content --do-not-follow "^(?!playwright/tests/)" playwright/tests
       - run: pnpm exec knip --treat-config-hints-as-errors
         timeout-minutes: 5
-      - name: Knip production exports
-        # Deletes the tracked test files for the run and restores them from HEAD before it ends,
-        # so the later `git diff --exit-code` step sees a clean tree. See
-        # static-code-analysis/knip-production-exports/.
-        run: pnpm run knip:production-exports
+      - run: pnpm run knip:production-exports
         timeout-minutes: 5
       - run: pnpm exec oxfmt --check
         timeout-minutes: 2

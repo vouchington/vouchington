@@ -11,7 +11,9 @@
       "types": "./*.mts",
       "import": "./*.mts",
       "default": "./*.mts"
-    }
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
   },
   "dependencies": {
     "@ts-shared/feed-capabilities": "workspace:^",

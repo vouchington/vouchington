@@ -324,37 +324,33 @@ not scanned.
 
 ## Knip Production Exports
 
-`pnpm run knip:production-exports` finds exports that only tests keep alive. Almost every backend
-package declares a wildcard manifest export (`"./*"`), which Knip expands into `**/*.mts`
-production entries. That makes `*.test.mts` files entries, and their imports keep test-only exports
-reachable; no Knip option separates them. The
-[wrapper](../../../../static-code-analysis/knip-production-exports/cli.mts) therefore deletes the
-tracked test files, runs Knip with the previous arguments plus `--reporter json`, and restores the
-files from `HEAD` before it exits.
+`pnpm run knip:production-exports` finds backend exports that only tests keep alive. Almost every
+backend package declares a wildcard manifest export (`"./*"`), which Knip expands into `**/*.mts`
+production entries. Knip applies its test-file negations to configured entries but not to entries
+derived from manifest exports, so `*.test.mts` files would be entries and their imports would keep
+test-only exports reachable. A `null` export target does become a negated pattern, so each of those
+manifests also declares `"./*.test.mts": null` and `"./*/__tests__/*": null`. Node and TypeScript
+honor the single-star key and ignore the multi-star one, and nothing imports a test file by package
+specifier. Add both keys to any new backend package that declares `"./*"`.
 
-- **Test set.** `git ls-files` with the glob pathspecs in
-  [`config.mts`](../../../../static-code-analysis/knip-production-exports/config.mts): backend
-  `*.test.mts`, `__tests__/**`, `test-helpers.mts`, `*.test-helpers.mts`, and `.mts` files under any
-  `test-helpers/` directory. The shared `backend/test-helpers` package keeps its `package.json`,
-  because `pnpm` verifies the workspace layout before it runs anything.
-- **Safety.** It refuses to start when a file in the test set is modified, staged, deleted, or
-  untracked, because restoring from `HEAD` would discard that work. It restores in `finally` and on
-  `SIGINT`, `SIGTERM`, and `SIGHUP`, so the tree is byte-identical afterwards and the later
-  `git diff --exit-code` CI step stays green. `SIGKILL` cannot be handled; the next run then refuses
-  and prints the `git restore` command.
-- **Failures.** `--max-issues` is raised so findings never change Knip's exit status. A nonzero
-  exit, a crash, empty output, or invalid JSON fails with Knip's own output and is never reported as
-  a baseline mismatch. Only `exports` and `types` findings are tracked; any other non-empty issue
-  type fails. Knip disables configuration hints under `--production`, so
+- **Baseline.** [`baseline.txt`](../../../../static-code-analysis/knip-production-exports/baseline.txt)
+  lists one `<issue type> <repo-relative path> <symbol>` line per known finding, sorted, without line
+  numbers. The [preprocessor](../../../../static-code-analysis/knip-production-exports/baseline.mts)
+  is passed to Knip with `--preprocessor` and drops baselined findings before Knip computes its exit
+  status, so a new finding fails the run. A line that matches no finding is stale and also fails,
+  so the file only shrinks.
+- **Update.** `pnpm run knip:production-exports:update` rewrites the baseline from the current
+  findings. Run it after deleting exports to remove their stale lines; a diff that adds lines accepts
+  new debt and needs review.
+- **Fixing a new finding.** Delete the export, make it module-private, move a test-only helper into
+  test helpers, or mark a deliberate seam with a JSDoc `@public` tag and a reason, which Knip never
+  reports. Config-driven migration default exports carry that tag because the migration runner loads
+  them by path.
+- **Limits.** `test-helpers.mts`, `*.test-helpers.mts`, and the shared `backend/test-helpers`
+  package are still production entries. Their own exports are baselined, and the exports they import
+  are not reported.
+- **Config hints.** Knip disables configuration hints under `--production`, so
   `pnpm exec knip --treat-config-hints-as-errors` remains the check for stale `knip.jsonc` entries.
-- **Baseline.** [`baseline.json`](../../../../static-code-analysis/knip-production-exports/baseline.json)
-  lists `exports` and `types` symbols grouped by file, sorted, with no line numbers. New findings
-  fail, and so do stale entries, so the file only shrinks. The failure message prints the exact
-  regeneration command, `pnpm run knip:production-exports --update`, and how to fix a new finding:
-  delete the export, make it module-private, move a test-only helper to a `test-helpers` location,
-  or mark a deliberate public seam with a JSDoc `@public` tag, which Knip never reports.
-  Config-driven migration default exports carry that tag because the migration runner loads them
-  by path.
 
 The baseline follows [Rolling Out A Repo-Wide Guard](#rolling-out-a-repo-wide-guard): the guard and
 its seeded baseline land first, and remediation removes entries in later changes.

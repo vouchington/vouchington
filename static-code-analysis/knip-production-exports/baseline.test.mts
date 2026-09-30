@@ -1,86 +1,89 @@
-import { describe, expect, it } from 'vitest'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
-import { BaselineError, diffFindings, parseBaseline, serializeBaseline } from './baseline.mts'
-import type { Finding } from './report.mts'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const finding = (file: string, symbol: string, type: Finding['type'] = 'exports'): Finding => ({
-  file,
-  symbol,
-  type,
+import baseline from './baseline.mts'
+
+const issue = { severity: 'error' }
+const findings = () => ({
+  report: { exports: true, types: true, files: false },
+  issues: {
+    exports: {
+      'a/one.mts': { kept: issue, kept2: issue, listed: issue },
+      'a/two.mts': { listed: issue },
+    },
+    types: { 'b/three.mts': { Listed: issue } },
+    files: { 'c/unreported.mts': { 'c/unreported.mts': issue } },
+  },
+  counters: { exports: 4, types: 1, files: 1 },
 })
+const listed = ['exports a/one.mts listed', 'exports a/two.mts listed', 'types b/three.mts Listed']
 
-describe('serializeBaseline', () => {
-  it('groups by file and type, sorted, with no line numbers', () => {
-    const text = serializeBaseline([
-      finding('backend/b.mts', 'zeta'),
-      finding('backend/a.mts', 'Shape', 'types'),
-      finding('backend/b.mts', 'alpha'),
-      finding('backend/a.mts', 'run'),
-    ])
-    expect(JSON.parse(text)).toEqual({
-      'backend/a.mts': { exports: ['run'], types: ['Shape'] },
-      'backend/b.mts': { exports: ['alpha', 'zeta'] },
+describe('knip production-exports baseline preprocessor', () => {
+  const errors = vi.spyOn(console, 'error').mockReturnValue(undefined)
+  let dir = ''
+  let file = ''
+  const write = (lines: string[]) => writeFileSync(file, `${lines.join('\n')}\n`)
+  // Runs the preprocessor and detaches the `exit` listener it may have registered.
+  const run = () => {
+    const before = process.listeners('exit')
+    const result = baseline(findings(), file)
+    const [onExit] = process.listeners('exit').filter(listener => !before.includes(listener))
+    if (onExit) process.off('exit', onExit)
+    return { result, onExit }
+  }
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'knip-baseline-'))
+    file = join(dir, 'baseline.txt')
+    errors.mockClear()
+  })
+  afterEach(() => {
+    rmSync(dir, { recursive: true })
+    vi.unstubAllEnvs()
+  })
+
+  it('drops baselined findings, decrements their counters, and keeps new ones', () => {
+    write(listed)
+    const { result, onExit } = run()
+
+    expect(result.issues).toEqual({
+      exports: { 'a/one.mts': { kept: issue, kept2: issue } },
+      types: {},
+      files: findings().issues.files,
     })
-    expect(Object.keys(JSON.parse(text))).toEqual(['backend/a.mts', 'backend/b.mts'])
-    expect(text.endsWith('\n')).toBe(true)
-    expect(text).not.toMatch(/line|col|pos/)
+    expect(result.counters).toEqual({ exports: 2, types: 0, files: 1 })
+    expect(errors).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('New exports'))
+    expect(onExit).toBeUndefined()
   })
 
-  it('is deterministic regardless of input order and repeats', () => {
-    const findings = [finding('backend/a.mts', 'x'), finding('backend/a.mts', 'y')]
-    expect(serializeBaseline(findings.toReversed())).toBe(serializeBaseline(findings))
-    expect(serializeBaseline([...findings, findings[0]!])).toBe(serializeBaseline(findings))
+  it('reports stale baseline entries and fails the process on exit', () => {
+    const stale = 'exports a/gone.mts removedExport'
+    write([...listed, 'exports a/one.mts kept', 'exports a/one.mts kept2', stale])
+    const { onExit } = run()
+
+    expect(errors).toHaveBeenCalledExactlyOnceWith(expect.stringContaining(stale))
+    try {
+      onExit?.(0)
+      expect(process.exitCode).toBe(1)
+    } finally {
+      process.exitCode = undefined
+    }
   })
 
-  it('serializes no findings as an empty object', () => {
-    expect(serializeBaseline([])).toBe('{}\n')
-  })
-})
+  it('rewrites the baseline from all reported findings when updating', () => {
+    write(['exports a/gone.mts removedExport'])
+    vi.stubEnv('KNIP_BASELINE_UPDATE', '1')
+    const { result, onExit } = run()
 
-describe('parseBaseline', () => {
-  it('reads back what serializeBaseline wrote', () => {
-    const findings = [
-      finding('backend/a.mts', 'Shape', 'types'),
-      finding('backend/a.mts', 'run'),
-      finding('backend/b.mts', 'go'),
-    ]
-    expect(parseBaseline(serializeBaseline(findings))).toEqual([
-      finding('backend/a.mts', 'run'),
-      finding('backend/a.mts', 'Shape', 'types'),
-      finding('backend/b.mts', 'go'),
-    ])
-  })
-
-  it.each([
-    ['text that is not JSON', 'nope', 'not valid JSON'],
-    ['an array', '[]', 'JSON object keyed by file'],
-    ['null', 'null', 'JSON object keyed by file'],
-    ['a file entry that is not an object', '{"a.mts":[]}', 'entry for a.mts'],
-    ['an unknown issue type', '{"a.mts":{"files":["x"]}}', 'a.mts.files'],
-    ['symbols that are not a list', '{"a.mts":{"exports":"x"}}', 'a.mts.exports'],
-    ['a symbol that is not a string', '{"a.mts":{"exports":[1]}}', 'only list symbol names'],
-  ])('rejects %s', (_name, text, message) => {
-    expect(() => parseBaseline(text)).toThrow(BaselineError)
-    expect(() => parseBaseline(text)).toThrow(message)
-  })
-})
-
-describe('diffFindings', () => {
-  it('reports new findings and stale baseline entries separately', () => {
-    const kept = finding('backend/a.mts', 'kept')
-    const diff = diffFindings(
-      [kept, finding('backend/a.mts', 'fresh'), finding('backend/a.mts', 'kept', 'types')],
-      [kept, finding('backend/b.mts', 'gone')],
+    expect(readFileSync(file, 'utf8')).toBe(
+      `${['exports a/one.mts kept', 'exports a/one.mts kept2', ...listed].join('\n')}\n`,
     )
-    expect(diff.added).toEqual([
-      finding('backend/a.mts', 'fresh'),
-      finding('backend/a.mts', 'kept', 'types'),
-    ])
-    expect(diff.removed).toEqual([finding('backend/b.mts', 'gone')])
-  })
-
-  it('reports nothing when both sides match', () => {
-    const findings = [finding('backend/a.mts', 'x')]
-    expect(diffFindings(findings, findings)).toEqual({ added: [], removed: [] })
+    expect(result.issues).toEqual({ exports: {}, types: {}, files: findings().issues.files })
+    expect(result.counters).toEqual({ exports: 0, types: 0, files: 1 })
+    expect(errors).not.toHaveBeenCalled()
+    expect(onExit).toBeUndefined()
   })
 })

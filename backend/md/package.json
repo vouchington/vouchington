@@ -16,7 +16,9 @@
       "types": "./*.mts",
       "import": "./*.mts",
       "default": "./*.mts"
-    }
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
   },
   "dependencies": {
     "@jongleberry/api-server": "^2.1.0",

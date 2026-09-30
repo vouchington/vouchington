@@ -1,77 +1,68 @@
-import {
-  compareFindings,
-  FINDING_TYPES,
-  findingKey,
-  isRecord,
-  type Finding,
-  type FindingType,
-} from './report.mts'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 
-/** The baseline file is not usable: not JSON, or not `{file: {exports?: [...], types?: [...]}}`. */
-export class BaselineError extends Error {}
-
-type BaselineFile = Record<string, Partial<Record<FindingType, string[]>>>
-
-export interface BaselineDiff {
-  /** Reported by knip now but absent from the baseline. */
-  added: Finding[]
-  /** In the baseline but no longer reported. */
-  removed: Finding[]
+interface Options {
+  report: Record<string, boolean>
+  issues: Record<string, Record<string, Record<string, unknown>>>
+  counters: Record<string, number>
 }
 
-/** Sorted, grouped by file, no line numbers: the same findings always serialize identically. */
-export function serializeBaseline(findings: readonly Finding[]): string {
-  const grouped: BaselineFile = {}
-  for (const finding of findings.toSorted(compareFindings)) {
-    const entry = grouped[finding.file] ?? {}
-    grouped[finding.file] = entry
-    const symbols = entry[finding.type] ?? []
-    entry[finding.type] = symbols
-    if (symbols.at(-1) !== finding.symbol) symbols.push(finding.symbol)
-  }
-  return `${JSON.stringify(grouped, null, 2)}\n`
-}
-
-const isFindingType = (value: string): value is FindingType =>
-  FINDING_TYPES.some(type => type === value)
-
-export function parseBaseline(text: string): Finding[] {
-  let data: unknown
-  try {
-    data = JSON.parse(text)
-  } catch (error) {
-    throw new BaselineError(`The baseline is not valid JSON: ${String(error)}`, { cause: error })
-  }
-  if (!isRecord(data)) throw new BaselineError('The baseline must be a JSON object keyed by file.')
-  const findings: Finding[] = []
-  for (const [file, entry] of Object.entries(data)) {
-    if (!isRecord(entry))
-      throw new BaselineError(`The baseline entry for ${file} must be an object.`)
-    for (const [type, symbols] of Object.entries(entry)) {
-      if (!isFindingType(type) || !Array.isArray(symbols)) {
-        throw new BaselineError(
-          `The baseline entry ${file}.${type} must be an exports or types array.`,
-        )
-      }
-      for (const symbol of symbols) {
-        if (typeof symbol !== 'string') {
-          throw new BaselineError(`The baseline entry ${file}.${type} must only list symbol names.`)
-        }
-        findings.push({ file, symbol, type })
+/**
+ * Knip `--preprocessor` for `pnpm run knip:production-exports`. Drops the findings listed in
+ * `baseline.txt` (one `<issueType> <path> <symbol>` line each) so Knip fails only on new ones, and
+ * fails on baseline lines that no longer match a finding. `KNIP_BASELINE_UPDATE=1` rewrites the
+ * baseline from the current findings first. Knip keys `issues` by cwd-relative POSIX path.
+ */
+export default function baseline(
+  options: Options,
+  file = join(import.meta.dirname, 'baseline.txt'),
+): Options {
+  const found = []
+  for (const [type, files] of Object.entries(options.issues)) {
+    if (!options.report[type]) continue
+    options.issues[type] = {}
+    for (const [path, symbols] of Object.entries(files)) {
+      for (const [symbol, issue] of Object.entries(symbols)) {
+        found.push({ type, path, symbol, issue, line: `${type} ${path} ${symbol}` })
       }
     }
   }
-  return findings.toSorted(compareFindings)
-}
-
-export function diffFindings(
-  current: readonly Finding[],
-  baseline: readonly Finding[],
-): BaselineDiff {
-  const currentKeys = new Set(current.map(findingKey))
-  const baselineKeys = new Set(baseline.map(findingKey))
-  return {
-    added: current.filter(finding => !baselineKeys.has(findingKey(finding))),
-    removed: baseline.filter(finding => !currentKeys.has(findingKey(finding))),
+  if (process.env.KNIP_BASELINE_UPDATE === '1') {
+    writeFileSync(
+      file,
+      found
+        .map(finding => `${finding.line}\n`)
+        .toSorted()
+        .join(''),
+    )
   }
+  const stale = new Set(readFileSync(file, 'utf8').split('\n').filter(Boolean))
+  let hasNewFindings = false
+  for (const { type, path, symbol, issue, line } of found) {
+    if (stale.delete(line)) {
+      options.counters[type]--
+    } else {
+      ;(options.issues[type][path] ??= {})[symbol] = issue
+      hasNewFindings = true
+    }
+  }
+  if (hasNewFindings) {
+    console.error(
+      'New exports only tests use: delete the export, make it module-private, move a test-only ' +
+        'helper into test helpers, or mark a deliberate seam @public with a reason. ' +
+        'See docs/development/quality/static-code-analysis/README.md#knip-production-exports.',
+    )
+  }
+  for (const line of stale) {
+    console.error(
+      `Stale baseline entry, remove it with pnpm run knip:production-exports:update: ${line}`,
+    )
+  }
+  // Knip resets `process.exitCode` to 0 after preprocessing, so fail from the `exit` event.
+  if (stale.size > 0) {
+    process.once('exit', () => {
+      process.exitCode = 1
+    })
+  }
+  return options
 }
