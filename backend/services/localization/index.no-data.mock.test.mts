@@ -14,7 +14,7 @@ import {
   setLocalizationDatabaseForTests,
 } from './index.mts'
 import { DEFAULT_LOCALIZATION_SQLITE_PATH } from './database.mts'
-import { installSampleLocalizationDatabase } from './fixtures.mts'
+import { installSampleLocalizationDatabase } from '@voucha/test-helpers/services/localization/fixtures'
 
 describe('localization service', () => {
   afterEach(() => {

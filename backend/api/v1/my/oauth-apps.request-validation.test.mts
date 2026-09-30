@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { createOwnedOAuthApp, listOwnedOAuthApps } from '@services/oauth-authorization-server'
-import { randomTestOAuthRedirectUri } from '@services/oauth-authorization-server/test-support'
+import { randomTestOAuthRedirectUri } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import type { PrivateUser } from '@services/users/types'
 
 const APP_ID = '00000000-0000-7000-8000-000000000001'

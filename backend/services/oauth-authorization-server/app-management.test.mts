@@ -9,7 +9,7 @@ import {
 import {
   createTestApprovedOAuthAuthorization,
   randomTestOAuthRedirectUri,
-} from './test-support.mts'
+} from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
   authenticateOAuthClient,
   createOwnedOAuthApp,

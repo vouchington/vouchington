@@ -6,7 +6,7 @@ import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
 import {
   TEST_OAUTH_RESOURCE,
   createTestApprovedOAuthAuthorization,
-} from '../../../backend/services/oauth-authorization-server/test-support.mts'
+} from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import { revokeTestOAuthGrant } from '../../../backend/test-helpers/entities/oauth-authorization-server.mts'
 
 async function openConnectedAppWithGrant(page: Page) {

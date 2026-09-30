@@ -7,7 +7,7 @@ import {
   createTestApprovedOAuthAuthorization,
   createTestPendingOAuthAuthorization,
   issueTestOAuthTokens,
-} from './test-support.mts'
+} from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
   beginOAuthAuthorizationRequest,
   decideOAuthAuthorizationRequest,

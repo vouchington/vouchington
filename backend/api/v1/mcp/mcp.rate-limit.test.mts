@@ -5,7 +5,7 @@ import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-co
 import { readTestMcpCallAuditEvents } from '@voucha/test-helpers/entities/mcp-call-audit'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { rateLimitConfig } from '@services/user-rate-limits/config'
-import { issueTestOAuthTokens } from '@services/oauth-authorization-server/test-support'
+import { issueTestOAuthTokens } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 
 const MCP_LIST_BODY = { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }
 // POST:/api/v1/mcp multiplies the write threshold by 4, and a threshold of 4 admits three calls.

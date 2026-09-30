@@ -12,7 +12,7 @@ import {
   createTestPendingOAuthAuthorization,
   randomTestOAuthRedirectUri,
   TEST_OAUTH_RESOURCE,
-} from './test-support.mts'
+} from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
   createOAuthBrowserBindingHash,
   decideOAuthAuthorizationRequest,

@@ -7,7 +7,7 @@ import {
   createTestApprovedOAuthAuthorization,
   TEST_OAUTH_RESOURCE,
   TEST_OAUTH_SCOPE,
-} from './test-support.mts'
+} from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
   beginOAuthAuthorizationRequest,
   createOAuthBrowserBindingHash,

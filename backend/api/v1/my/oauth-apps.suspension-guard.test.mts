@@ -4,7 +4,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, suspendTestUser, unsuspendTestUser } from '@voucha/test-helpers'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
 import { createOwnedOAuthApp, listOwnedOAuthApps } from '@services/oauth-authorization-server'
-import { randomTestOAuthRedirectUri } from '@services/oauth-authorization-server/test-support'
+import { randomTestOAuthRedirectUri } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 
 describe('OAuth app suspension guards', () => {
   const suspendedUserIds: string[] = []

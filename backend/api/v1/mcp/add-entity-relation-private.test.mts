@@ -18,7 +18,7 @@ import {
 import {
   createTestApprovedOAuthAuthorization,
   issueTestOAuthTokens,
-} from '@services/oauth-authorization-server/test-support'
+} from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import type { PrivateUser } from '@services/users/types'
 
 const ordinaryScopes = ['entity-relations:read', 'entity-relations:write'] as const

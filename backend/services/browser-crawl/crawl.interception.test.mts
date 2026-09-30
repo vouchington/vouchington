@@ -15,7 +15,7 @@ import {
   mockRename,
   mockWriteFile,
   resetCrawlMocks,
-} from './crawl-fixtures.mts'
+} from '@voucha/test-helpers/services/browser-crawl/crawl-fixtures'
 import { getBlocker, resetBlockerForTesting } from './adblocker-cache.mts'
 import { crawlWithBrowser } from './crawl.mts'
 

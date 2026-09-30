@@ -8,7 +8,7 @@ import {
   listOwnedOAuthApps,
   verifyOAuthClient,
 } from '@services/oauth-authorization-server'
-import { randomTestOAuthRedirectUri } from '@services/oauth-authorization-server/test-support'
+import { randomTestOAuthRedirectUri } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 
 describe('OAuth client verification suspension guards', () => {
   const suspendedUserIds: string[] = []

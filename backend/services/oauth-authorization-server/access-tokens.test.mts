@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { isOAuthAccessToken } from './access-tokens.mts'
-import { issueTestOAuthTokens } from './test-support.mts'
+import { issueTestOAuthTokens } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 
 describe('isOAuthAccessToken', () => {
   it('recognizes issued access tokens but not refresh tokens or API keys', async () => {
