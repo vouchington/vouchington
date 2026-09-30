@@ -49,8 +49,8 @@ The hosted streaming route, its `chat` and `reconcile-chat-runtime-generations` 
 Valkey token channel, and the stale-run reconciler are removed
 ([A6a, #1542](https://github.com/vouchington/vouchington/issues/1542)), so
 `POST /api/v1/conversations/:conversationId/chat` returns 404. The agentic-run records and their
-services are removed by [A6 (#185)](https://github.com/vouchington/vouchington/issues/185), and the unused
-`@agents/chat` package and subagents by #183. Under decision D1, server removal proceeds without
+services remain until [A6 (#185)](https://github.com/vouchington/vouchington/issues/185) removes them,
+and the unused `@agents/chat` package and subagents remain until #183 removes them. Under decision D1, server removal proceeds without
 waiting on native client migrations; clients adopt independently. These retained paths are not a web
 product surface and must not gain new web consumers.
 
