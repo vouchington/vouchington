@@ -27,14 +27,23 @@ export async function issueTestOAuthTokens(
   user: TestUser,
   options?: TestOAuthAuthorizationOptions,
 ) {
+  return (await issueTestOAuthTokensForClient(user, options)).tokens
+}
+
+// The same flow, also returning the registered client's public client_id.
+export async function issueTestOAuthTokensForClient(
+  user: TestUser,
+  options?: TestOAuthAuthorizationOptions,
+) {
   const approved = await createTestApprovedOAuthAuthorization(user, options)
-  return exchangeOAuthAuthorizationCode({
+  const tokens = await exchangeOAuthAuthorizationCode({
     clientId: approved.client.client_id,
     clientSecret: approved.client.client_secret,
     code: approved.code,
     codeVerifier: approved.verifier,
     redirectUri: approved.redirectUri,
   })
+  return { clientId: approved.client.client_id, tokens }
 }
 
 export async function createTestApprovedOAuthAuthorization(

@@ -17,14 +17,12 @@ export interface ScopeResourceRow {
   write: ScopeCatalogEntry | null
 }
 
-/** An MCP API key carries scopes of exactly one of these audiences. */
-export type ApiKeyAudience = Extract<ScopeAudience, 'admin' | 'user'>
-
 /**
  * OAuth tokens are bound to the user or admin MCP resource, so an app may mix only those
- * audiences; admin scopes are offered only to administrators.
+ * audiences; admin scopes are offered only to administrators. API keys are user-only, because
+ * administrator MCP access is OAuth-only.
  */
-export function oauthScopeAudiences(isAdmin: boolean): ApiKeyAudience[] {
+export function oauthScopeAudiences(isAdmin: boolean): Extract<ScopeAudience, 'admin' | 'user'>[] {
   return isAdmin ? ['user', 'admin'] : ['user']
 }
 

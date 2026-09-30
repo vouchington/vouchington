@@ -20,7 +20,6 @@ export function ApiKeysManager({
 }) {
   const t = useTranslations()
   const {
-    isAdmin,
     keys,
     loading,
     loadError,
@@ -112,7 +111,6 @@ export function ApiKeysManager({
               label={newLabel}
               submitting={submitting}
               selection={selection}
-              showAudience={isAdmin}
               onCancel={() => {
                 setCreating(false)
                 setNewLabel('')

@@ -54,10 +54,16 @@ describe('validateScopeSet', () => {
   it('rejects mixed audiences when the credential surface forbids them', () => {
     expect(
       validateScopeSet(['mcp.user:read', 'mcp.admin:read'], {
-        surface: 'api-key',
+        surface: 'oauth',
         allowMixedAudiences: false,
       }),
     ).toMatchObject({ valid: false, code: 'mixed-audiences' })
+  })
+
+  it('rejects administrator MCP scopes on API keys, which are OAuth-only', () => {
+    expect(
+      validateScopeSet(['mcp.admin:read'], { surface: 'api-key', allowMixedAudiences: false }),
+    ).toEqual({ valid: false, code: 'unsupported-surface', scope: 'mcp.admin:read' })
   })
 
   it('allows OAuth grants to combine resource audiences', () => {

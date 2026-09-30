@@ -18,20 +18,7 @@ export async function createApiKey(
   try {
     await using query = await beginTransaction()
     await query(sql`/* createApiKey */ SELECT fn_lock_active_user_for_mutation(${userId})`)
-    const ownerResult = await query(sql`/* createApiKey owner roles */
-      SELECT EXISTS (
-        SELECT 1
-        FROM user_roles
-        JOIN user_roles_types ON user_roles_types.id = user_roles.role_type_id
-        WHERE user_roles.user_id = ${userId}::uuid
-          AND user_roles_types.slug = 'administrator'
-      ) AS is_administrator
-    `)
-    const permissionResult = validateApiKeyCreationScopeSet(
-      { roles: ownerResult.rows[0]?.is_administrator === true ? ['administrator'] : [] },
-      type,
-      permissions,
-    )
+    const permissionResult = validateApiKeyCreationScopeSet(type, permissions)
     if (!permissionResult.valid) throw new Error(`createApiKey: ${permissionResult.error}`)
     const result = await query(sql`/* createApiKey */
         INSERT INTO api_keys (user_id, prefix, key_hash, type, label, permissions)

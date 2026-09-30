@@ -22,7 +22,7 @@ export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
     audience: 'admin',
     descriptionKey: 'mcp_admin_full_access',
     resource: 'mcp.admin',
-    surfaces: ['api-key', 'oauth'],
+    surfaces: ['oauth'],
   },
   'mcp.admin:write': {
     action: 'write',
@@ -30,7 +30,7 @@ export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
     descriptionKey: 'mcp_admin_full_access',
     requires: 'mcp.admin:read',
     resource: 'mcp.admin',
-    surfaces: ['api-key', 'oauth'],
+    surfaces: ['oauth'],
   },
   'mcp.user:read': {
     action: 'read',

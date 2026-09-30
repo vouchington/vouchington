@@ -32,7 +32,7 @@ signature, bearer, OAuth-state, or public-discovery boundary remains in force.
 | Path                                                     | Methods       | Caller              | Auth mechanism                       |
 | -------------------------------------------------------- | ------------- | ------------------- | ------------------------------------ |
 | `/api/v1/mcp`                                            | `POST`        | MCP clients         | Bearer API key or OAuth access token |
-| `/api/v1/admin/mcp`                                      | `POST`        | MCP clients         | Bearer API key or OAuth access token |
+| `/api/v1/admin/mcp`                                      | `POST`        | MCP clients         | Bearer OAuth access token            |
 | `/api/v1/memberships/apple-app-store/notifications`      | `POST`        | Apple App Store     | signed payload at backend            |
 | `/api/v1/memberships/google-play/notifications`          | `POST`        | Google Pub/Sub      | OIDC JWT at backend                  |
 | `/.well-known/webfinger`                                 | `GET`         | Fediverse servers   | none (public discovery)              |

@@ -8,21 +8,24 @@ describe('createApiKey', () => {
   })
 
   it('canonicalizes permission order before persistence', async () => {
-    const admin = await createTestUser({ administrator: true })
-    const { apiKey } = await createApiKey(admin.id, 'mcp', 'Canonical scopes', [
-      'mcp.admin:write',
-      'mcp.admin:read',
+    const user = await createTestUser()
+    const { apiKey } = await createApiKey(user.id, 'mcp', 'Canonical scopes', [
+      'mcp.user:write',
+      'mcp.user:read',
     ])
 
-    expect(apiKey.permissions).toEqual(['mcp.admin:read', 'mcp.admin:write'])
+    expect(apiKey.permissions).toEqual(['mcp.user:read', 'mcp.user:write'])
   })
 
-  it('rejects admin scopes for a non-admin direct service caller', async () => {
-    const user = await createTestUser()
+  it.each([
+    ['administrator', true],
+    ['non-administrator', false],
+  ])('never creates an admin MCP key for a %s', async (_name, administrator) => {
+    const user = await createTestUser({ administrator })
 
     await expect(
       createApiKey(user.id, 'mcp', 'Invalid admin scope', ['mcp.admin:read']),
-    ).rejects.toThrow('admin mcp scopes require administrator role')
+    ).rejects.toThrow('scope is not supported for API keys: mcp.admin:read')
   })
 
   it('rejects the wrong scope namespace for a key type', async () => {

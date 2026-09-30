@@ -8,14 +8,16 @@ import {
   hasTestRetainedIdentityRoot,
 } from '@voucha/test-helpers'
 import {
+  appendOnlyRetainedUserAuditTables,
   insertTestRetainedUserAuditRow,
   retainedUserAuditReferences,
 } from '@voucha/test-helpers/entities/retained-user-audit-references'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 
-// The OAuth server event log is append-only, so its rows cannot be removed to release a root.
+// The OAuth server event log and the MCP call audit are append-only, so their rows cannot be
+// removed to release a root.
 const postOwnedAuditReferences = retainedUserAuditReferences.filter(
-  ({ table }) => table !== 'oauth_authorization_server_events',
+  ({ table }) => !appendOnlyRetainedUserAuditTables.includes(table),
 )
 
 describe('retained user root cleanup with audit references', () => {

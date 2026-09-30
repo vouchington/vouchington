@@ -6,7 +6,8 @@ import { dispatchMcpRequest, rejectMcpMethod } from '../../mcp-helpers.mts'
 import { apiRequestContract } from '../../response-contract.mts'
 
 // POST /api/v1/admin/mcp — administrator-only MCP Streamable HTTP endpoint.
-// Auth: an admin-resource OAuth access token or an admin MCP API key, plus the administrator role.
+// Auth: an admin-resource OAuth access token only (API keys never authenticate here), the
+// administrator role, and an admin-audience scope. Every call of a verified principal is audited.
 app.route('/api/v1/admin/mcp').post(async (ctx: Context) => {
   // JSON-RPC messages are validated by the MCP SDK, so the contract body stays open.
   apiRequestContract<'POST:/api/v1/admin/mcp', unknown>('POST:/api/v1/admin/mcp')

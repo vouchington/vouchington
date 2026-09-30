@@ -37,7 +37,8 @@ How Voucha steers AI agents to its API and MCP server instead of the website.
 - Tools are discovered by calling `tools/list` with that credential. Public discovery does not link
   the MCP catalog page on the docs site, because that page requires Basic Auth.
 - The admin MCP server never appears in public discovery. Staff docs own it, in the
-  [admin API README](../api/v1/admin/README.md#mcp-clients).
+  [admin API README](../api/v1/admin/README.md#mcp-clients). It accepts OAuth access tokens only, never
+  API keys, and audits every call.
 - Discovery documents never contain credentials or URLs that carry credentials.
 
 ## Adding an Advertised Interface

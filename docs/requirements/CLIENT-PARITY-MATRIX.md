@@ -100,6 +100,13 @@ consent from nullable last use, and retain truthful state when revocation fails.
 OAuth app management and administrator verification remain web-only. Native delivery is tracked by
 [vouchington-clients#177](https://github.com/vouchington/vouchington-clients/issues/177).
 
+Administrator MCP access is OAuth-only: `mcp.admin:*` scopes accept only the `oauth` surface and
+`POST /api/v1/my/api-keys` rejects them for every owner. API-key pickers therefore drop the
+administrator audience choice, which the `api-key` surface filter already does for a catalogue
+consumer. Native clients that still offer an administrator API-key audience must remove it; the
+`native.credentials.adminAudience` and `native.credentials.audience` claims stay in the manifest
+until the linked native change lands.
+
 ### Client ID Metadata Document boundary
 
 Native OAuth coordinators open the hosted browser flow rather than render consent copy. Client ID

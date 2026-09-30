@@ -47,12 +47,21 @@ describe('listScopeCatalog', () => {
   it('pairs every write scope with a read prerequisite that validates', () => {
     for (const entry of listScopeCatalog().filter(item => item.action === 'write')) {
       expect(entry.requires).not.toBeNull()
-      expect(
-        validateScopeSet(withScopePrerequisites([entry.scope as ApiScope]), {
-          surface: 'api-key',
-          allowMixedAudiences: false,
-        }).valid,
-      ).toBe(true)
+      for (const surface of entry.surfaces) {
+        expect(
+          validateScopeSet(withScopePrerequisites([entry.scope as ApiScope]), {
+            surface,
+            allowMixedAudiences: false,
+          }).valid,
+        ).toBe(true)
+      }
+    }
+  })
+
+  it('keeps administrator MCP scopes off API keys', () => {
+    const catalog = listScopeCatalog()
+    for (const scope of ['mcp.admin:read', 'mcp.admin:write']) {
+      expect(catalog.find(entry => entry.scope === scope)?.surfaces).toEqual(['oauth'])
     }
   })
 })

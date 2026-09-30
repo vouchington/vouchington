@@ -19,10 +19,11 @@ nullable `description_key` is stable presentation metadata, not server-owned dis
 all other entries return `null`. Each client maps recognized identifiers through its own typed
 localized catalogue and rejects unknown identifiers rather than rendering server English.
 
-API-key type and owner-role policy remains in `@services/api-keys`. MCP tool records declare their
+API-key type policy remains in `@services/api-keys`. MCP tool records declare their
 required canonical scopes in registry metadata; the registry validates surface audience and both
-listing and calling enforce the same requirement. `mcp.user:*` and `mcp.admin:*` remain explicit
-compatibility grants for existing keys, while new keys can request a resource scope.
+listing and calling enforce the same requirement. `mcp.user:*` remains an explicit compatibility
+grant for existing keys, while new keys can request a resource scope. `mcp.admin:*` accepts only
+the `oauth` surface: administrator MCP access is OAuth-only, so no API key can carry it.
 
 `post-relations.owned-private:write` is an exact, non-inheritable user capability. It requires
 `entity-relations:write` (and therefore read) for API keys and OAuth grants, but broad

@@ -5,6 +5,7 @@ import { getPartitionRows } from '../../../test-helpers/data-stores/psql/electio
 const DEFERRED_RANGE_LEDGER_TABLES = [
   'ai_usage_records',
   'community_post_review_changes',
+  'mcp_call_audit_events',
   'post_clearance_changes',
 ]
 const USER_KEY_RANGE_TABLES = [

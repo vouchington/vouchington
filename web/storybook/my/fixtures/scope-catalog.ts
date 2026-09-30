@@ -18,7 +18,8 @@ function scope(
           ? 'mcp_user_full_access'
           : null,
     requires,
-    surfaces: ['api-key', 'oauth'],
+    // Administrator MCP scopes are OAuth-only; API keys never carry them.
+    surfaces: audience === 'admin' ? ['oauth'] : ['api-key', 'oauth'],
   }
 }
 

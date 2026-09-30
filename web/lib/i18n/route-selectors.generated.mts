@@ -181,7 +181,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/messages/new", selectorId: "web.route.b009d6eef588855f.0da36502fcfec2e3", hasMembership: true },
   { pattern: "/moderation-transparency", selectorId: "web.route.0ecba66d5516c7fb.c6eb61d74418174b", hasMembership: true },
   { pattern: "/my/account-status", selectorId: "web.route.42fdde238b93a48d.b638c8e09aecf52a", hasMembership: true },
-  { pattern: "/my/api-keys", selectorId: "web.route.7cd261273758042a.12c26fc0baf97a0b", hasMembership: true },
+  { pattern: "/my/api-keys", selectorId: "web.route.7cd261273758042a.181719c9d6c30bb7", hasMembership: true },
   { pattern: "/my/appeals", selectorId: "web.route.53a9b6a86f39e607.974a676d39fbc02b", hasMembership: true },
   { pattern: "/my/bans", selectorId: "web.route.29a29674656352c7.ca6a356684620910", hasMembership: true },
   { pattern: "/my/cards", selectorId: "web.route.ad548c6d6d0db8bc.ec785dac5ce9bda4", hasMembership: true },
