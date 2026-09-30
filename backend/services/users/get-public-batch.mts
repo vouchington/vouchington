@@ -3,42 +3,45 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import createError from 'http-errors'
 import { isUUID, isUsername } from '@modules/utils'
 import {
-  buildOrderedInputCtes,
-  normalizeBatchIdentifiers,
-  partitionBatchIdentifiers,
-  scatterOrderedRows,
+  queryOrderedIdentifierBatch,
+  type NormalizedBatchIdentifier,
+  type OrderedBatchPartition,
 } from '@services/batch-lookup'
 import type { PublicUser } from './types.mts'
+
+const publicUserBatchPartitions: readonly OrderedBatchPartition<'id' | 'username'>[] = [
+  { cteName: 'id_input', sqlType: 'uuid', type: 'id' },
+  { cteName: 'username_input', sqlType: 'text', type: 'username' },
+]
 
 export const getPublicUsersByAnyBatch = async (
   identifiers: string[],
   options: QueryOptions = {},
-): Promise<Array<PublicUser | null | undefined>> => {
-  if (identifiers.length === 0) {
-    return []
-  }
-
-  const normalizedInputs = normalizeBatchIdentifiers(identifiers, input => {
-    const trimmed = input.trim()
-
-    if (isUUID(trimmed)) {
-      return { value: trimmed, type: 'id' }
-    }
-    if (isUsername(trimmed)) {
-      return { value: trimmed.toLowerCase(), type: 'username' }
-    }
-    throw createError(422, `Invalid user identifier: ${input}`)
+): Promise<Array<PublicUser | null | undefined>> =>
+  queryOrderedIdentifierBatch<PublicUser, 'id' | 'username', QueryOptions>(identifiers, options, {
+    normalize: normalizePublicUserBatchIdentifier,
+    partitions: publicUserBatchPartitions,
+    statement: publicUserBatchStatement,
+    readRows: readPublicUserBatchRows,
   })
 
-  const partitions = partitionBatchIdentifiers(normalizedInputs)
-  const inputCtes = buildOrderedInputCtes([
-    { cteName: 'id_input', sqlType: 'uuid', inputs: partitions.get('id') ?? [] },
-    { cteName: 'username_input', sqlType: 'text', inputs: partitions.get('username') ?? [] },
-  ])
+function normalizePublicUserBatchIdentifier(
+  input: string,
+): Omit<NormalizedBatchIdentifier<'id' | 'username'>, 'index'> {
+  const trimmed = input.trim()
 
-  const { rows } = await read<PublicUser & { input_order: number }>(
-    `/* getPublicUsersByAnyBatch */
-    WITH ${inputCtes.ctes},
+  if (isUUID(trimmed)) {
+    return { value: trimmed, type: 'id' }
+  }
+  if (isUsername(trimmed)) {
+    return { value: trimmed.toLowerCase(), type: 'username' }
+  }
+  throw createError(422, `Invalid user identifier: ${input}`)
+}
+
+function publicUserBatchStatement(inputCtes: string): string {
+  return `/* getPublicUsersByAnyBatch */
+    WITH ${inputCtes},
     id_lookups AS (
       SELECT u.id, id_input.input_order
       FROM users u
@@ -60,13 +63,14 @@ export const getPublicUsersByAnyBatch = async (
     FROM view_users_public vup
     JOIN combined_ids ci ON ci.id = vup.id
     ORDER BY ci.input_order
-  `,
-    inputCtes.values,
-    options,
-  )
+  `
+}
 
-  return scatterOrderedRows(identifiers.length, rows, row => {
-    const { input_order: _input_order, ...userData } = row
-    return userData as PublicUser
-  })
+async function readPublicUserBatchRows(
+  sql: string,
+  values: unknown[],
+  options: QueryOptions,
+): Promise<ReadonlyArray<PublicUser & { input_order: number }>> {
+  const { rows } = await read<PublicUser & { input_order: number }>(sql, values, options)
+  return rows
 }
