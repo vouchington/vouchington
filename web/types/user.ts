@@ -59,7 +59,7 @@ export interface User {
     | 'linkedin'
     | 'microsoft'
     | 'github'
-  display_account?: { id?: string; name: string | null } | null
+  display_account?: { name: string | null } | null
   facebook_account?: OAuthAccountInfo
   apple_account?: OAuthAccountInfo
   google_account?: OAuthAccountInfo
@@ -150,7 +150,7 @@ export interface PublicUser {
     | 'linkedin'
     | 'microsoft'
     | 'github'
-  display_account?: { id?: string; name: string | null } | null
+  display_account?: { name: string | null } | null
 }
 export type UserSearchResult = PublicUser & {
   email_address?: string

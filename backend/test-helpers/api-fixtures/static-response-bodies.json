@@ -676,7 +676,6 @@
       {
         "__entity_type": "user",
         "display_account": {
-          "id": "00000000-0000-7000-8000-000000000003",
           "name": "Bob Brown"
         },
         "id": "00000000-0000-7000-8000-000000000003",
@@ -2372,7 +2371,6 @@
     "appeals": {
       "accepted": 1,
       "denied": 1,
-      "dismissed": 1,
       "reduced": 1,
       "success_rate": 0.67,
       "total_closed": 3

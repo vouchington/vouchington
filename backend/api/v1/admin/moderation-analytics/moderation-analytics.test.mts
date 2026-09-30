@@ -37,6 +37,8 @@ describe('GET /api/v1/admin/moderation-analytics', () => {
     expect(response.body).toHaveProperty('automod_performance')
     expect(response.body).toHaveProperty('moderator_workload')
     expect(response.body).toHaveProperty('appeals')
+    expect(response.body.appeals).not.toHaveProperty('dismissed')
+    expect(response.body.appeals).toHaveProperty('denied')
     expect(response.body).toHaveProperty('new_user_friction')
     expect(Array.isArray(response.body.queue_volume.reports_over_time)).toBe(true)
     expect(Array.isArray(response.body.moderator_workload.moderators)).toBe(true)
