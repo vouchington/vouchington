@@ -1,11 +1,13 @@
-/* eslint-disable no-mistakes/vitest-mock-test-file-naming -- Routed to backend-mocks for the project-level @sentry/node mock (vitest.setup.sentry-mock.mts); asserts sentryCaptureMessageMock. @modules/utils does not depend on @sentry/node directly (only transitively via @modules/on-error), so this file relies on the global setup mock rather than declaring its own in-file vi.mock. No in-file vi.mock, so the rule's unnecessaryMock branch fires; the .mock suffix is load-bearing for routing. */
+/* eslint-disable no-mistakes/vitest-mock-test-file-naming -- Routed to backend-no-data-mocks for the project-level @sentry/node mock (vitest.setup.sentry-mock.mts); asserts sentryCaptureMessageMock. @modules/utils does not depend on @sentry/node directly (only transitively via @modules/on-error), so this file relies on the global setup mock rather than declaring its own in-file vi.mock. No in-file vi.mock, so the rule's unnecessaryMock branch fires; the .mock suffix is load-bearing for routing. */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureMessageMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
-import {
-  classifyEgressOrigin,
-  createEgressGuardrailInterceptor,
-  resetEgressGuardrailDedupeForTest,
-} from './http-egress-guardrail.mts'
+let guardrail: typeof import('./http-egress-guardrail.mts')
+
+async function loadFreshGuardrail() {
+  vi.resetModules()
+  guardrail = await import('./http-egress-guardrail.mts')
+  sentryCaptureMessageMock.mockClear()
+}
 
 const SENTRY_DSN = ['https://', 'a'.repeat(32), '@o', 12345, '.ingest.eu.sentry.io/', 67890].join(
   '',
@@ -13,36 +15,34 @@ const SENTRY_DSN = ['https://', 'a'.repeat(32), '@o', 12345, '.ingest.eu.sentry.
 const SENTRY_ORIGIN = new URL(SENTRY_DSN).origin
 
 describe('classifyEgressOrigin', () => {
+  beforeEach(loadFreshGuardrail)
   it('classifies a non-allowlisted host as off-allowlist', () => {
-    expect(classifyEgressOrigin('https://api.stripe.com')).toBe('off-allowlist')
+    expect(guardrail.classifyEgressOrigin('https://api.stripe.com')).toBe('off-allowlist')
   })
 
   it('does not treat a configured but unaudited Sentry host as IPv6-allowlisted', () => {
-    expect(classifyEgressOrigin(SENTRY_ORIGIN)).toBe('off-allowlist')
+    expect(guardrail.classifyEgressOrigin(SENTRY_ORIGIN)).toBe('off-allowlist')
   })
 
   it('classifies a loopback origin as exempt', () => {
-    expect(classifyEgressOrigin('http://127.0.0.1:3000')).toBe('exempt')
+    expect(guardrail.classifyEgressOrigin('http://127.0.0.1:3000')).toBe('exempt')
   })
 
   it('classifies an undefined origin as exempt', () => {
-    expect(classifyEgressOrigin(undefined)).toBe('exempt')
+    expect(guardrail.classifyEgressOrigin(undefined)).toBe('exempt')
   })
 
   it('classifies an unparseable origin string as exempt', () => {
-    expect(classifyEgressOrigin('not a valid url')).toBe('exempt')
+    expect(guardrail.classifyEgressOrigin('not a valid url')).toBe('exempt')
   })
 })
 
 describe('createEgressGuardrailInterceptor', () => {
-  beforeEach(() => {
-    sentryCaptureMessageMock.mockClear()
-    resetEgressGuardrailDedupeForTest()
-  })
+  beforeEach(loadFreshGuardrail)
 
   it('delegates to dispatch and reports an off-allowlist host to Sentry', () => {
     const stubDispatch = vi.fn<() => boolean>(() => true)
-    const interceptor = createEgressGuardrailInterceptor()
+    const interceptor = guardrail.createEgressGuardrailInterceptor()
     const dispatch = interceptor(stubDispatch)
 
     const result = dispatch(
@@ -63,7 +63,7 @@ describe('createEgressGuardrailInterceptor', () => {
 
   it('strips the query string from the reported path', () => {
     const stubDispatch = vi.fn<() => boolean>(() => true)
-    const dispatch = createEgressGuardrailInterceptor()(stubDispatch)
+    const dispatch = guardrail.createEgressGuardrailInterceptor()(stubDispatch)
 
     dispatch(
       { origin: 'https://api.stripe.com', path: '/v1/search?q=secret+term', method: 'GET' },
@@ -77,7 +77,7 @@ describe('createEgressGuardrailInterceptor', () => {
 
   it('does not report the same off-allowlist host to Sentry twice', () => {
     const stubDispatch = vi.fn<() => boolean>(() => true)
-    const dispatch = createEgressGuardrailInterceptor()(stubDispatch)
+    const dispatch = guardrail.createEgressGuardrailInterceptor()(stubDispatch)
 
     dispatch({ origin: 'https://api.stripe.com', path: '/v1/charges', method: 'POST' }, {})
     dispatch({ origin: 'https://api.stripe.com', path: '/v1/customers', method: 'GET' }, {})
@@ -88,7 +88,7 @@ describe('createEgressGuardrailInterceptor', () => {
 
   it('reports a configured but unaudited Sentry origin and still delegates', () => {
     const stubDispatch = vi.fn<() => boolean>(() => true)
-    const dispatch = createEgressGuardrailInterceptor()(stubDispatch)
+    const dispatch = guardrail.createEgressGuardrailInterceptor()(stubDispatch)
 
     const result = dispatch(
       {
@@ -110,7 +110,7 @@ describe('createEgressGuardrailInterceptor', () => {
 
   it('does not report an exempt origin to Sentry, but still delegates', () => {
     const stubDispatch = vi.fn<() => boolean>(() => true)
-    const dispatch = createEgressGuardrailInterceptor()(stubDispatch)
+    const dispatch = guardrail.createEgressGuardrailInterceptor()(stubDispatch)
 
     const result = dispatch({ origin: 'http://127.0.0.1:3000', path: '/', method: 'GET' }, {})
 

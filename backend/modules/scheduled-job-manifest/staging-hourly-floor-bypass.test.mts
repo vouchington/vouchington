@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { ScheduledJobDefinition, ScheduledJobQueue } from './types.mts'
+import type { ScheduledJobDefinition } from './types.mts'
 import {
   defineScheduledJobManifest,
   projectScheduledJobs,
   upsertScheduledJobManifest,
 } from './index.mts'
+
+type ScheduledJobQueue = Parameters<typeof upsertScheduledJobManifest>[0]
 
 describe('scheduled-job staging hourly-floor bypass', () => {
   it('preserves an opted-in sub-hourly cadence in runtime and projection', async () => {
