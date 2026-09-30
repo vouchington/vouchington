@@ -84,6 +84,22 @@ describe('GET /api/v1/moderation-transparency', () => {
     expect(response.body.buckets).toEqual(expect.any(Array))
   })
 
+  it('answers 403 before the query contract and settles unknown ranges to 30d', async () => {
+    const outsider = createRequest()
+    await outsider.authenticateAs(free)
+    const denied = await outsider.get('/api/v1/moderation-transparency?range=nope&after=x')
+    expect(denied.status).toBe(403)
+    expect(denied.text).not.toMatch(/schema|must be|invalid/i)
+
+    const request = createRequest()
+    await request.authenticateAs(activePlus)
+    for (const query of ['range=nope', 'range=7d&range=30d', 'range=7d&unknown=1']) {
+      await request.get(`/api/v1/moderation-transparency?${query}`).expect(200)
+    }
+    const settled = await request.get('/api/v1/moderation-transparency?range=nope').expect(200)
+    expect(settled.body.range).toBe('30d')
+  })
+
   it('returns 400 for an all-time cursor beyond the UUIDv7 timestamp range', async () => {
     const request = createRequest()
     await request.authenticateAs(activePlus)
