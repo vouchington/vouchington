@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { registerAppealsDisputesPageCases } from '@/test-helpers/app/reports/appeals-disputes-page-cases'
 
 const { mockGetModerationAppeals, mockGetCurrentUser, mockHeaders } = vi.hoisted(() => ({
   mockGetModerationAppeals: vi.fn<VitestLooseMock>(),
@@ -32,7 +33,7 @@ import Loading from './loading'
 
 const baseResponse = {
   appeals: [],
-  page_info: { has_next_page: false, end_cursor: null },
+  page_info: { has_next_page: false as const, end_cursor: null },
 }
 
 describe('Loading', () => {
@@ -43,59 +44,20 @@ describe('Loading', () => {
 })
 
 describe('ModerationAppealsPage', () => {
-  it('renders staff description for an administrator user', async () => {
-    mockGetCurrentUser.mockResolvedValue({ roles: ['administrator'] })
-    mockGetModerationAppeals.mockResolvedValueOnce(baseResponse)
-
-    render(await ModerationAppealsPage({ searchParams: Promise.resolve({}) }))
-
-    expect(screen.getByText('Moderation Appeals')).toBeVisible()
-    expect(
-      screen.getByText('Review appeals filed by members against moderation decisions.'),
-    ).toBeVisible()
-  })
-
-  it('renders member description for a non-staff user', async () => {
-    mockGetCurrentUser.mockResolvedValue({ roles: [] })
-    mockGetModerationAppeals.mockResolvedValueOnce(baseResponse)
-
-    render(await ModerationAppealsPage({ searchParams: Promise.resolve({}) }))
-
-    expect(screen.getByText('Appeals against moderation decisions on this platform.')).toBeVisible()
-  })
-
-  it('renders staff description for a moderator user', async () => {
-    mockGetCurrentUser.mockResolvedValue({ roles: ['moderator'] })
-    mockGetModerationAppeals.mockResolvedValueOnce(baseResponse)
-
-    render(await ModerationAppealsPage({ searchParams: Promise.resolve({}) }))
-
-    expect(
-      screen.getByText('Review appeals filed by members against moderation decisions.'),
-    ).toBeVisible()
-  })
-
-  it('fetches appeals with cursor and status when provided', async () => {
-    mockGetCurrentUser.mockResolvedValue({ roles: [] })
-    mockGetModerationAppeals.mockResolvedValueOnce(baseResponse)
-
-    render(
-      await ModerationAppealsPage({
-        searchParams: Promise.resolve({ cursor: 'abc123', status: 'resolved' }),
-      }),
-    )
-
-    expect(mockGetModerationAppeals).toHaveBeenCalledWith({
+  registerAppealsDisputesPageCases({
+    Page: ModerationAppealsPage,
+    title: 'Moderation Appeals',
+    staffCopy: 'Review appeals filed by members against moderation decisions.',
+    memberCopy: 'Appeals against moderation decisions on this platform.',
+    getCurrentUser: mockGetCurrentUser,
+    fetchList: mockGetModerationAppeals,
+    baseResponse,
+    fetchSearchParams: { cursor: 'abc123', status: 'resolved' },
+    expectedFetchArgs: {
       searchParams: { limit: 50, cursor: 'abc123', status: 'resolved' },
-    })
-  })
-
-  it('renders the appeals client component', async () => {
-    mockGetCurrentUser.mockResolvedValue({ roles: [] })
-    mockGetModerationAppeals.mockResolvedValueOnce(baseResponse)
-
-    const { container } = render(await ModerationAppealsPage({ searchParams: Promise.resolve({}) }))
-
-    expect(container.querySelector('[data-pw="appeals-client"]')).not.toBeNull()
+    },
+    clientSelector: '[data-pw="appeals-client"]',
+    fetchCaseName: 'fetches appeals with cursor and status when provided',
+    clientCaseName: 'renders the appeals client component',
   })
 })
