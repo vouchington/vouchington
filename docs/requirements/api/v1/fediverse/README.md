@@ -19,6 +19,9 @@ endpoints are always mounted; the `fediverse` feature flag gates frontend visibi
     (`?q=a&q=b`) is rejected with 422 `Invalid q`. An empty `q=` is treated as an empty result.
     A non-string or repeated `after` (`?after=a&after=b`) is rejected with 422 `Invalid after`.
     An empty `after=` is treated as the first page.
+  - `limit` is clamped, not rejected: authenticated callers up to 100, anonymous callers up to 25, and a
+    fractional value is truncated. Unknown query keys are ignored. `type` and `providers` values outside
+    the lists above return 400.
   - `api-egress-proxy.fediverse_search_enabled` selects the outbound HTTP transport at request time.
     Search always executes in the API process; when enabled, provider requests use the configured
     HTTP CONNECT proxy and fail closed if the proxy is unavailable.
@@ -44,6 +47,8 @@ endpoints are always mounted; the `fediverse` feature flag gates frontend visibi
     already exists for the hostname (including a concurrent-creation race) — upvotes its topic
     election and returns `200` with `{ status: 'upvoted', topic_id, topic_slug }`. Any authenticated,
     non-suspended user may call this; subject to `fediverse_instance` contribution-gating limits.
+  - A body that is not exactly `{ hostname }` (a wrong-typed `hostname` or an unknown key) returns `422`
+    before any write. See [Staff and operations validation](../../reference-staff-operations-request-validation.md).
   - Best-effort classifies the hostname through the same provider transport flag at creation time (see
     [the anatomy doc](../../../anatomy/fediverse-instance.md#data-model) for
     which hosts that currently covers) — a classification failure never fails the request.
