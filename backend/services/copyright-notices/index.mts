@@ -4,12 +4,17 @@ export { createCopyrightNoticeAggregate } from './create.mts'
 export { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 export { createCopyrightFormIntake, createCopyrightGuestIdentity } from './form-intakes.mts'
 export {
-  appendCopyrightGuestFiling,
   authorizeCopyrightGuestCapability,
+  copyrightGuestCapabilityMaxLifetimeMs,
   issueCopyrightGuestCapability,
   requestCopyrightGuestInformation,
   revokeCopyrightGuestCapability,
 } from './guest-capabilities.mts'
+export { appendCopyrightGuestFiling } from './guest-filings.mts'
+export {
+  copyrightGuestCapabilityCursorScope,
+  listCopyrightGuestCapabilities,
+} from './guest-capability-listing.mts'
 export { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 export { reviewCopyrightFormIntake } from './form-reviews.mts'
 export { createCopyrightAppeal, createCopyrightCounterNotice } from './submissions.mts'

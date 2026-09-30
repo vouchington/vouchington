@@ -9,6 +9,12 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 
+const dayMs = 24 * 60 * 60 * 1000
+
+function daysFromNow(days: number): string {
+  return new Date(Date.now() + days * dayMs).toISOString()
+}
+
 async function openNotice() {
   const owner = await createTestUser()
   const imageId = await insertTestImage(owner.id)
@@ -56,27 +62,51 @@ describe('copyright guest capability routes', () => {
     const guest = createRequest()
     await guest
       .post(`/api/v1/copyright-notices/${noticeId}/guest-capabilities`)
-      .send({ expires_at: '2026-07-03T12:00:00.000Z' })
+      .send({ expires_at: daysFromNow(7) })
       .expect(401)
     const member = createRequest()
     await member.authenticateAs(outsider)
     await member
       .post(`/api/v1/copyright-notices/${noticeId}/guest-capabilities`)
-      .send({ expires_at: '2026-07-03T12:00:00.000Z' })
+      .send({ expires_at: daysFromNow(7) })
       .expect(403)
+    await member.get(`/api/v1/copyright-notices/${noticeId}/guest-capabilities`).expect(403)
     const staff = createRequest()
     await staff.authenticateAs(moderator)
     await staff
       .post(`/api/v1/copyright-notices/${noticeId}/guest-capabilities`)
       .send({ expires_at: '2020-01-01T00:00:00.000Z' })
       .expect(422)
+    await staff
+      .post(`/api/v1/copyright-notices/${noticeId}/guest-capabilities`)
+      .send({ expires_at: daysFromNow(31) })
+      .expect(422)
+    const expiresAt = daysFromNow(7)
     const issued = await staff
       .post(`/api/v1/copyright-notices/${noticeId}/guest-capabilities`)
-      .send({ expires_at: '2099-07-03T12:00:00.000Z' })
+      .send({ expires_at: expiresAt })
       .expect(201)
     const capability = issued.body.copyright_guest_capability
     expect(capability.token).toEqual(expect.any(String))
     expect(capability.id).toEqual(expect.any(String))
+    const listed = await staff
+      .get(`/api/v1/copyright-notices/${noticeId}/guest-capabilities`)
+      .expect(200)
+    expect(listed.headers['cache-control']).toBe('private, no-store')
+    expect(listed.body).toEqual({
+      copyright_guest_capabilities: [
+        {
+          id: capability.id,
+          issued_at: expect.any(String),
+          issued_by_id: moderator.id,
+          issued_by_username: moderator.username,
+          expires_at: expiresAt,
+          revoked_at: null,
+        },
+      ],
+      page_info: expect.objectContaining({ has_next_page: false }),
+    })
+    expect(JSON.stringify(listed.body)).not.toContain(capability.token)
     const statement = 'This filing corrects the work description.'
     await guest
       .post(`/api/v1/copyright-notices/${noticeId}/guest-filings`)
@@ -114,6 +144,12 @@ describe('copyright guest capability routes', () => {
       id: capability.id,
       revoked_at: expect.any(String),
     })
+    const relisted = await staff
+      .get(`/api/v1/copyright-notices/${noticeId}/guest-capabilities`)
+      .expect(200)
+    expect(relisted.body.copyright_guest_capabilities[0].revoked_at).toBe(
+      revoked.body.copyright_guest_capability.revoked_at,
+    )
     await guest
       .post(`/api/v1/copyright-notices/${noticeId}/guest-filings`)
       .set('Copyright-Guest-Capability', capability.token)

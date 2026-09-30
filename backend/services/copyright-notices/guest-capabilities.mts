@@ -10,34 +10,61 @@ import {
   copyrightCorrespondencePurpose,
   createOutboundCopyrightCorrespondence,
 } from './correspondence.mts'
-import { copyrightSubmissionPurpose } from './submissions.mts'
 
-const guestCapabilityPurpose = 'copyright-guest-capability'
+export const copyrightGuestCapabilityPurpose = 'copyright-guest-capability'
+export const copyrightGuestCapabilityMaxLifetimeMs = 30 * 24 * 60 * 60 * 1000
 
 export async function issueCopyrightGuestCapability(input: {
+  currentUser: PrivateUser
   noticeId: string
   expiresAt: Date
 }): Promise<{ id: string; token: string }> {
+  assert(
+    currentUserCanReviewCopyrightNotices(input.currentUser),
+    403,
+    'Only copyright staff can issue guest capabilities',
+  )
+  const issuedAtMs = Date.now()
+  assert(
+    input.expiresAt.getTime() - issuedAtMs <= copyrightGuestCapabilityMaxLifetimeMs,
+    422,
+    'Guest capabilities expire within 30 days',
+  )
+  // The id's timestamp is the issue instant that the database expiry cap measures from.
+  const id = uuidv7({ msecs: issuedAtMs })
   const token = randomBytes(32).toString('base64url')
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{ id: string }>(sql`/* issueCopyrightGuestCapability */
-    INSERT INTO copyright_notice_guest_capabilities (copyright_notice_id, token_hash, expires_at)
-    SELECT notice.id, ${hashToken(guestCapabilityPurpose, token)}, ${input.expiresAt}
+    INSERT INTO copyright_notice_guest_capabilities (
+      id, copyright_notice_id, token_hash, issued_by_id, expires_at
+    )
+    SELECT ${id}, notice.id, ${hashToken(copyrightGuestCapabilityPurpose, token)},
+      ${input.currentUser.id}, ${input.expiresAt}
     FROM copyright_notices notice
     WHERE notice.id = ${input.noticeId}
     RETURNING id
   `)
-  const capability = rows[0]
-  assert(capability, 404, 'Copyright notice was not found')
+  assert(rows[0], 404, 'Copyright notice was not found')
+  await transaction(sql`/* issueCopyrightGuestCapability:event */
+    INSERT INTO copyright_notice_lifecycle_events (
+      copyright_notice_id, event_type, actor_user_id, copyright_notice_guest_capability_id
+    ) VALUES (${input.noticeId}, 'guest_capability_issued', ${input.currentUser.id}, ${id})
+  `)
   await transaction.commit()
-  return { id: capability.id, token }
+  return { id, token }
 }
 
 export async function revokeCopyrightGuestCapability(input: {
+  currentUser: PrivateUser
   noticeId: string
   capabilityId: string
   revokedAt: Date
 }): Promise<void> {
+  assert(
+    currentUserCanReviewCopyrightNotices(input.currentUser),
+    403,
+    'Only copyright staff can revoke guest capabilities',
+  )
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{ id: string }>(sql`/* revokeCopyrightGuestCapability */
     UPDATE copyright_notice_guest_capabilities
@@ -48,6 +75,13 @@ export async function revokeCopyrightGuestCapability(input: {
     RETURNING id
   `)
   assert(rows[0], 404, 'Copyright guest capability was not found')
+  await transaction(sql`/* revokeCopyrightGuestCapability:event */
+    INSERT INTO copyright_notice_lifecycle_events (
+      copyright_notice_id, event_type, actor_user_id, copyright_notice_guest_capability_id
+    ) VALUES (
+      ${input.noticeId}, 'guest_capability_revoked', ${input.currentUser.id}, ${input.capabilityId}
+    )
+  `)
   await transaction.commit()
 }
 
@@ -60,69 +94,12 @@ export async function authorizeCopyrightGuestCapability(input: {
   const { rows } = await transaction<{ id: string }>(sql`/* authorizeCopyrightGuestCapability */
     SELECT id FROM copyright_notice_guest_capabilities
     WHERE copyright_notice_id = ${input.noticeId}
-      AND token_hash = ${hashToken(guestCapabilityPurpose, input.token)}
+      AND token_hash = ${hashToken(copyrightGuestCapabilityPurpose, input.token)}
       AND revoked_at IS NULL
       AND expires_at > ${input.now}
   `)
   await transaction.commit()
   return rows[0]?.id ?? null
-}
-
-const guestFilingKinds = ['supplement', 'withdrawal', 'court_or_ccb_hold'] as const
-type GuestFilingKind = (typeof guestFilingKinds)[number]
-
-function guestFilingEvent(kind: GuestFilingKind): string {
-  return `${kind}_received`
-}
-
-export async function appendCopyrightGuestFiling(input: {
-  noticeId: string
-  token: string
-  now: Date
-  kind: GuestFilingKind
-  statement: string
-}): Promise<{ id: string; kind: GuestFilingKind; received_at: Date }> {
-  assert(input.statement.trim().length > 0, 422, 'Guest filing statement is required')
-  assert(guestFilingKinds.includes(input.kind), 422, 'Unsupported guest filing')
-  const submissionId = uuidv7()
-  await using transaction = await beginTransaction()
-  const { rows: capabilities } = await transaction<{ id: string }>(
-    sql`/* appendCopyrightGuestFiling:capability */
-    SELECT id FROM copyright_notice_guest_capabilities
-    WHERE copyright_notice_id = ${input.noticeId}
-      AND token_hash = ${hashToken(guestCapabilityPurpose, input.token)}
-      AND revoked_at IS NULL
-      AND expires_at > ${input.now}
-    FOR UPDATE
-  `,
-  )
-  assert(capabilities[0], 403, 'Copyright guest capability is not valid for this notice')
-  const { rows } = await transaction<{ id: string; kind: GuestFilingKind; received_at: Date }>(
-    sql`/* appendCopyrightGuestFiling */
-    INSERT INTO copyright_notice_submissions (
-      id, copyright_notice_id, kind, received_at, source_kind, submitted_by_user_id, body_ciphertext
-    ) VALUES (
-      ${submissionId}, ${input.noticeId}, ${input.kind}, ${input.now}, 'guest_form', NULL,
-      ${encryptSecret(input.statement, copyrightSubmissionPurpose(submissionId))}
-    )
-    RETURNING id, kind, received_at
-  `,
-  )
-  const submission = rows[0]
-  assert(submission, 500, 'Copyright guest filing was not created')
-  await transaction(sql`/* appendCopyrightGuestFiling:event */
-    INSERT INTO copyright_notice_lifecycle_events (
-      copyright_notice_id, event_type, copyright_notice_submission_id
-    ) VALUES (${input.noticeId}, ${guestFilingEvent(input.kind)}, ${submission.id})
-  `)
-  if (input.kind === 'court_or_ccb_hold') {
-    await transaction(sql`/* appendCopyrightGuestFiling:urgent */
-      INSERT INTO copyright_notice_urgent_filings (copyright_notice_submission_id, classified_at)
-      VALUES (${submission.id}, ${input.now})
-    `)
-  }
-  await transaction.commit()
-  return submission
 }
 
 export async function requestCopyrightGuestInformation(input: {

@@ -11090,6 +11090,145 @@
       "source": "backend/api/v1/copyright-notices/index.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/copyright-notices/:id/guest-capabilities": {
+      "bodyKind": "content",
+      "hash": "248be0ea458957b4f05337cd399dd7934eb2c41a55fc98126b8b8f59b5367056",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-notices/:id/guest-capabilities",
+      "schema": {
+        "definitions": {
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_guest_capabilities": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "expires_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "issued_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "issued_by_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "issued_by_username": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "revoked_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/guest-capability-list-route.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/copyright-notices/:id/participant": {
       "bodyKind": "content",
       "hash": "0af7d2ab4683e0f42402b6e1d7416a96971e9e5470eb57557e9d949a86008235",
@@ -82302,7 +82441,7 @@
       ],
       "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000830/guest-capabilities",
       "requestBody": {
-        "expires_at": "2099-07-03T12:00:00.000Z"
+        "expires_at": "2026-08-01T12:00:00.000Z"
       },
       "responseSchema": {
         "hash": "54042215731992c250907470d52261c9dfd64d47be398f7652c4dc5ef89a8edb",
@@ -82318,6 +82457,33 @@
         "caseFile": "backend/test-helpers/api-fixtures/web-copyright-guest-cases.mts"
       },
       "status": 201
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/guest-capabilities",
+      "bodyFile": "responses/web.copyright.guest-capabilities.listed.json",
+      "consumers": ["web"],
+      "id": "web.copyright.guest-capabilities.listed",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/guest-capability-list-route.mts",
+        "web/lib/api/client/copyright-guest.ts"
+      ],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000830/guest-capabilities",
+      "responseSchema": {
+        "hash": "35e1f86dac2d6fc402507b51414d4608cef4c6f4c077c661f47b4dd0950c465b",
+        "key": "web.copyright.guest-capabilities.listed"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000830"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/guest-capabilities"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-guest-cases.mts"
+      },
+      "status": 200
     },
     {
       "auth": "fixture-admin",

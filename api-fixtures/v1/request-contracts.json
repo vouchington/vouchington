@@ -23730,6 +23730,31 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/copyright-notices/:id/guest-capabilities": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/copyright-notices/:id/participant": {
       "path": {
         "properties": {

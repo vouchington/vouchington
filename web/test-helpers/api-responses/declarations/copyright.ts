@@ -5,6 +5,7 @@ import webCopyrightNoticeDetailPopulated from '../../../../api-fixtures/v1/respo
 import webCopyrightNoticeDetailNullClaimant from '../../../../api-fixtures/v1/responses/web.copyright.notice.detail.null-claimant.json'
 import webCopyrightNoticeParticipantPopulated from '../../../../api-fixtures/v1/responses/web.copyright.notice.participant.populated.json'
 import webCopyrightNoticeParticipantNullClaimant from '../../../../api-fixtures/v1/responses/web.copyright.notice.participant.null-claimant.json'
+import webCopyrightGuestCapabilitiesListed from '../../../../api-fixtures/v1/responses/web.copyright.guest-capabilities.listed.json'
 import webCopyrightGuestCapabilityIssued from '../../../../api-fixtures/v1/responses/web.copyright.guest-capability.issued.json'
 import webCopyrightGuestCapabilityRevoked from '../../../../api-fixtures/v1/responses/web.copyright.guest-capability.revoked.json'
 import webCopyrightGuestFilingReceived from '../../../../api-fixtures/v1/responses/web.copyright.guest-filing.received.json'
@@ -17,6 +18,7 @@ import type {
   CopyrightParticipantNoticeDetail,
   CopyrightStaffQueuePage,
 } from '@/types/copyright-notices'
+import type { CopyrightGuestCapabilitiesPage } from '@/lib/api/client/copyright-guest'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
 export const COPYRIGHT_DECLARATIONS = [
@@ -105,8 +107,16 @@ export const COPYRIGHT_DECLARATIONS = [
   }>()('web.copyright.guest-capability.issued', webCopyrightGuestCapabilityIssued, context =>
     context.client.copyrightGuest.issueCopyrightGuestCapability(
       '00000000-0000-7000-8000-000000000830',
-      '2099-07-03T12:00:00.000Z',
+      '2026-08-01T12:00:00.000Z',
     ),
+  ),
+  defineWebApiFixture<CopyrightGuestCapabilitiesPage>()(
+    'web.copyright.guest-capabilities.listed',
+    webCopyrightGuestCapabilitiesListed,
+    context =>
+      context.client.copyrightGuest.listCopyrightGuestCapabilities(
+        '00000000-0000-7000-8000-000000000830',
+      ),
   ),
   defineWebApiFixture<{
     copyright_guest_capability: { id: string; revoked_at: string }

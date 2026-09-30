@@ -261,6 +261,10 @@
       ],
       "hash": "588a69c994513fea3ffd3f9d0b2942a0e6864c00794838a4bbbacd5c3ea720cc"
     },
+    "GET:/api/v1/copyright-notices/:id/guest-capabilities": {
+      "fixtureIds": ["web.copyright.guest-capabilities.listed"],
+      "hash": "248be0ea458957b4f05337cd399dd7934eb2c41a55fc98126b8b8f59b5367056"
+    },
     "GET:/api/v1/copyright-notices/:id/participant": {
       "fixtureIds": [
         "web.copyright.notice.participant.null-claimant",
@@ -2623,6 +2627,10 @@
     "web.copyright.email-intake-queue.default": {
       "fixtureIds": ["web.copyright.email-intake-queue.default"],
       "hash": "8a1b695335a766e2a4b3a708026f9bb34cad58eb05e3fc788bb90cfd8cb2513b"
+    },
+    "web.copyright.guest-capabilities.listed": {
+      "fixtureIds": ["web.copyright.guest-capabilities.listed"],
+      "hash": "35e1f86dac2d6fc402507b51414d4608cef4c6f4c077c661f47b4dd0950c465b"
     },
     "web.copyright.guest-capability.issued": {
       "fixtureIds": ["web.copyright.guest-capability.issued"],

@@ -37819,6 +37819,116 @@
       }
     },
     "/api/v1/copyright-notices/{id}/guest-capabilities": {
+      "get": {
+        "operationId": "get_api_v1_copyright-notices_id_guest-capabilities",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_guest_capabilities": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "expires_at": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "issued_at": {
+                            "type": "string"
+                          },
+                          "issued_by_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "issued_by_username": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "revoked_at": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "expires_at",
+                          "id",
+                          "issued_at",
+                          "issued_by_id",
+                          "issued_by_username",
+                          "revoked_at"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "page_info": {
+                      "$ref": "#/components/schemas/PageInfo"
+                    }
+                  },
+                  "required": ["copyright_guest_capabilities", "page_info"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
       "post": {
         "operationId": "post_api_v1_copyright-notices_id_guest-capabilities",
         "parameters": [
