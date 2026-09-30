@@ -10,6 +10,42 @@
       "required": ["email_address"],
       "type": "object"
     },
+    "AddHouseholdMembershipBody": {
+      "additionalProperties": false,
+      "properties": {
+        "individual_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "relationship": {
+          "type": "string"
+        }
+      },
+      "required": ["individual_id"],
+      "type": "object"
+    },
+    "AddListPostBody": {
+      "additionalProperties": false,
+      "properties": {
+        "post_id": {
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "required": ["post_id"],
+      "type": "object"
+    },
+    "AddListRssFeedItemBody": {
+      "additionalProperties": false,
+      "properties": {
+        "rss_feed_item_id": {
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "required": ["rss_feed_item_id"],
+      "type": "object"
+    },
     "AddParticipantRequest": {
       "additionalProperties": false,
       "properties": {
@@ -305,6 +341,33 @@
       ],
       "type": "object"
     },
+    "AppAttestAttestBody": {
+      "additionalProperties": false,
+      "properties": {
+        "attestation": {
+          "type": "string"
+        },
+        "challengeId": {
+          "type": "string"
+        },
+        "keyId": {
+          "type": "string"
+        }
+      },
+      "required": ["attestation", "challengeId", "keyId"],
+      "type": "object"
+    },
+    "AppAttestChallengeBody": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["assertion", "attestation"],
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
     "AppAttestEnvironment": {
       "enum": ["development", "production"],
       "type": "string"
@@ -434,6 +497,68 @@
       "properties": {
         "category_text": {},
         "topic_id": {}
+      },
+      "type": "object"
+    },
+    "AttributionReferrerBody": {
+      "additionalProperties": false,
+      "properties": {
+        "landing_url": {
+          "type": "string"
+        },
+        "referrer": {
+          "type": "string"
+        },
+        "utm": {
+          "$ref": "#/components/schemas/AttributionReferrerUtmBody"
+        }
+      },
+      "required": ["landing_url", "referrer"],
+      "type": "object"
+    },
+    "AttributionReferrerUtmBody": {
+      "additionalProperties": false,
+      "properties": {
+        "utm_campaign": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "utm_content": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "utm_medium": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "utm_source": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
       },
       "type": "object"
     },
@@ -4437,6 +4562,11 @@
         }
       ]
     },
+    "CreateHouseholdBody": {
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object"
+    },
     "CreateInstanceResult": {
       "additionalProperties": false,
       "properties": {
@@ -4487,6 +4617,30 @@
         }
       },
       "required": ["slug", "title"],
+      "type": "object"
+    },
+    "CreateListBody": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "visibility": {
+          "enum": ["private", "public", "unlisted"],
+          "type": "string"
+        }
+      },
+      "required": ["name"],
       "type": "object"
     },
     "CreateOAuthAppRequest": {
@@ -7426,6 +7580,16 @@
       ],
       "type": "object"
     },
+    "ImportCommunityListBody": {
+      "additionalProperties": false,
+      "properties": {
+        "community_slug": {
+          "type": "string"
+        }
+      },
+      "required": ["community_slug"],
+      "type": "object"
+    },
     "ImportRow": {
       "additionalProperties": false,
       "properties": {
@@ -8101,6 +8265,21 @@
       "required": ["can_create_landing_pages", "profile_links", "referral_links", "reviews"],
       "type": "object"
     },
+    "LandingPageClickBody": {
+      "additionalProperties": false,
+      "properties": {
+        "group_member_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "landing_page_item_id": {
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "required": ["landing_page_item_id"],
+      "type": "object"
+    },
     "LandingPageItem": {
       "anyOf": [
         {
@@ -8379,6 +8558,27 @@
         }
       ]
     },
+    "LandingPageVisitBody": {
+      "additionalProperties": false,
+      "properties": {
+        "referrer": {
+          "type": "string"
+        },
+        "utm_campaign": {
+          "type": "string"
+        },
+        "utm_content": {
+          "type": "string"
+        },
+        "utm_medium": {
+          "type": "string"
+        },
+        "utm_source": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "LandingPagesPage": {
       "additionalProperties": false,
       "properties": {
@@ -8584,6 +8784,15 @@
     "ManualCrawlTarget": {
       "enum": ["html_url", "referral_link", "rss_feed"],
       "type": "string"
+    },
+    "MarkdownPreviewBody": {
+      "additionalProperties": false,
+      "properties": {
+        "markdown": {
+          "type": "string"
+        }
+      },
+      "type": "object"
     },
     "MemberUserWarningListItem": {
       "additionalProperties": false,
@@ -19488,6 +19697,55 @@
       },
       "type": "object"
     },
+    "UpdateHostnameBody": {
+      "additionalProperties": false,
+      "properties": {
+        "blocked": {
+          "type": "boolean"
+        },
+        "crawlable": {
+          "type": "boolean"
+        },
+        "ignore_robots_txt": {
+          "anyOf": [
+            {
+              "const": false
+            },
+            {
+              "const": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "link_rel_follow": {
+          "type": "boolean"
+        },
+        "skip_web_risk": {
+          "type": "boolean"
+        },
+        "unreliable_status_codes": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "UpdateHouseholdBody": {
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object"
+    },
     "UpdateIdentityRequest": {
       "additionalProperties": false,
       "properties": {
@@ -19556,6 +19814,29 @@
           "type": "object"
         }
       ]
+    },
+    "UpdateListBody": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "visibility": {
+          "enum": ["private", "public", "unlisted"],
+          "type": "string"
+        }
+      },
+      "type": "object"
     },
     "UpdateOAuthAppRequest": {
       "additionalProperties": false,
@@ -20003,6 +20284,32 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "UpsertHostnameBody": {
+      "additionalProperties": false,
+      "properties": {
+        "blocked": {
+          "type": "boolean"
+        },
+        "hostname": {
+          "type": "string"
+        }
+      },
+      "required": ["hostname"],
+      "type": "object"
+    },
+    "UpsertPlaybackPositionBody": {
+      "additionalProperties": false,
+      "properties": {
+        "completed": {
+          "type": "boolean"
+        },
+        "position_seconds": {
+          "type": "number"
+        }
+      },
+      "required": ["position_seconds"],
       "type": "object"
     },
     "UrlCrawlHistory": {
@@ -25296,6 +25603,21 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/lists": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/lists/:id": {
       "path": {
         "properties": {
@@ -25315,6 +25637,25 @@
           }
         },
         "required": ["id"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "media_type": {
+            "type": "string"
+          },
+          "read": {
+            "type": "boolean"
+          }
+        },
         "type": "object"
       }
     },
@@ -26841,6 +27182,20 @@
         },
         "required": ["id"],
         "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
       }
     },
     "GET:/api/v1/urls/:id/crawls/:crawlId": {
@@ -27533,7 +27888,7 @@
     },
     "PATCH:/api/v1/hostnames/:id": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateHostnameBody"
       },
       "path": {
         "properties": {
@@ -27546,6 +27901,9 @@
       }
     },
     "PATCH:/api/v1/households/:id": {
+      "body": {
+        "$ref": "#/components/schemas/UpdateHouseholdBody"
+      },
       "path": {
         "properties": {
           "id": {
@@ -27558,27 +27916,7 @@
     },
     "PATCH:/api/v1/lists/:id": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "description": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "visibility": {
-            "enum": ["private", "public", "unlisted"],
-            "type": "string"
-          }
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/UpdateListBody"
       },
       "path": {
         "properties": {
@@ -28243,22 +28581,12 @@
     },
     "POST:/api/v1/app-attestation/attest": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "attestation": {},
-          "challengeId": {},
-          "keyId": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/AppAttestAttestBody"
       }
     },
     "POST:/api/v1/app-attestation/challenge": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "type": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/AppAttestChallengeBody"
       }
     },
     "POST:/api/v1/appeals": {
@@ -28319,7 +28647,7 @@
     },
     "POST:/api/v1/attribution/referrer": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/AttributionReferrerBody"
       }
     },
     "POST:/api/v1/auth/bluesky/link": {
@@ -29811,15 +30139,17 @@
     },
     "POST:/api/v1/hostnames": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpsertHostnameBody"
       }
     },
     "POST:/api/v1/households": {
-      "body": {}
+      "body": {
+        "$ref": "#/components/schemas/CreateHouseholdBody"
+      }
     },
     "POST:/api/v1/households/:id/memberships": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/AddHouseholdMembershipBody"
       },
       "path": {
         "properties": {
@@ -29858,7 +30188,7 @@
     },
     "POST:/api/v1/landing-pages/:landingPageId/clicks": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/LandingPageClickBody"
       },
       "path": {
         "properties": {
@@ -29872,7 +30202,7 @@
     },
     "POST:/api/v1/landing-pages/:landingPageId/visits": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/LandingPageVisitBody"
       },
       "path": {
         "properties": {
@@ -29886,33 +30216,12 @@
     },
     "POST:/api/v1/lists": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "description": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "visibility": {
-            "enum": ["private", "public", "unlisted"],
-            "type": "string"
-          }
-        },
-        "required": ["name"],
-        "type": "object"
+        "$ref": "#/components/schemas/CreateListBody"
       }
     },
     "POST:/api/v1/lists/:id/import": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "community_slug": {
-            "type": "string"
-          }
-        },
-        "required": ["community_slug"],
-        "type": "object"
+        "$ref": "#/components/schemas/ImportCommunityListBody"
       },
       "path": {
         "properties": {
@@ -29926,14 +30235,7 @@
     },
     "POST:/api/v1/lists/:id/items/posts": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "post_id": {
-            "type": "string"
-          }
-        },
-        "required": ["post_id"],
-        "type": "object"
+        "$ref": "#/components/schemas/AddListPostBody"
       },
       "path": {
         "properties": {
@@ -29947,14 +30249,7 @@
     },
     "POST:/api/v1/lists/:id/items/rss-feed-items": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "rss_feed_item_id": {
-            "type": "string"
-          }
-        },
-        "required": ["rss_feed_item_id"],
-        "type": "object"
+        "$ref": "#/components/schemas/AddListRssFeedItemBody"
       },
       "path": {
         "properties": {
@@ -29968,11 +30263,7 @@
     },
     "POST:/api/v1/markdown/preview": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "markdown": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/MarkdownPreviewBody"
       }
     },
     "POST:/api/v1/mcp": {
@@ -31222,13 +31513,7 @@
     },
     "PUT:/api/v1/podcast-episodes/:id/playback-position": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "completed": {},
-          "position_seconds": {}
-        },
-        "required": ["position_seconds"],
-        "type": "object"
+        "$ref": "#/components/schemas/UpsertPlaybackPositionBody"
       },
       "path": {
         "properties": {
