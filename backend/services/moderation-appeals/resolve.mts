@@ -7,7 +7,11 @@ import type { ModerationAppeal } from './config.mts'
 import { appendAppealLifecycleChange } from './lifecycle.mts'
 import { logAppealResolution } from './resolution-modlog.mts'
 import { revokeUserWarning } from '@services/user-warnings'
-import { APPEAL_RETURNING } from './resolve-shared.mts'
+import {
+  APPEAL_RETURNING,
+  finalizeDeliveredModerationAppeal,
+  REDUCE_DELIVERED_APPEAL_RESOLUTION,
+} from './resolve-shared.mts'
 import { maybeResolveCase } from '@services/moderation-cases'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { getModerationAppealAfterMutation } from './get.mts'
@@ -135,59 +139,9 @@ export async function resolveModerationAppealReduce(
   staffUserId: string,
   appealId: string,
 ): Promise<ModerationAppealResponse> {
-  await assertModerationAppealDelivered(appealId)
-  const now = new Date()
-  await using query = await beginTransaction()
-  const { rows } = await query(
-    sql`/* resolveModerationAppealReduce */
-      UPDATE moderation_appeals
-      SET resolution_action = 'reduce',
-          resolved_at = ${now},
-          resolved_by_id = ${staffUserId},
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${appealId} AND sent_at IS NOT NULL AND resolved_at IS NULL
-      RETURNING `.append(APPEAL_RETURNING),
-  )
-  const row = rows[0] as ModerationAppeal | undefined
-  assert(row, 404, 'Appeal not found or already resolved')
-
-  const lifecycleId = await appendAppealLifecycleChange(
-    appealId,
-    'resolve_reduce',
+  return finalizeDeliveredModerationAppeal(
     staffUserId,
-    { resolved_at: row.resolved_at, resolution_action: 'reduce' },
-    { query },
+    appealId,
+    REDUCE_DELIVERED_APPEAL_RESOLUTION,
   )
-  await Promise.all([
-    query(sql`/* resolveModerationAppealReduce:setLifecycle */
-        UPDATE moderation_appeals SET latest_lifecycle_change_id = ${lifecycleId} WHERE id = ${appealId}
-      `),
-    recordModerationTrainingFeedback(
-      {
-        sourceType: 'moderation_appeal',
-        eventType: 'appeal_resolved',
-        label: 'edited',
-        humanAction: 'resolve_reduce',
-        actorUserId: staffUserId,
-        communityId: row.community_id,
-        postId: row.post_id,
-        moderationAppealId: appealId,
-        metadata: { recommended_action: row.recommended_action },
-      },
-      { query },
-    ),
-  ])
-  const updated = row
-  await query.commit()
-  await Promise.all([
-    logAppealResolution(
-      staffUserId,
-      'resolve_appeal',
-      appealId,
-      updated.appellant_id,
-      updated.community_id,
-    ),
-    maybeResolveCase(updated.case_id, staffUserId),
-  ])
-  return await getModerationAppealAfterMutation(appealId)
 }
