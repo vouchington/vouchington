@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ComponentProps } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 const mockRefresh = vi.fn<() => void>()
@@ -117,9 +117,15 @@ describe('ReportsClient clustered staff reports', () => {
     mockResolveModerationReport.mockResolvedValue(undefined)
     const { rerender } = renderStaffReports()
 
-    fireEvent.click(screen.getAllByRole('button', { name: /review all/i })[0]!)
+    // The resolve handler runs in an async React transition. Once the cluster is removed the card
+    // (and its loading/disabled state) is gone, so nothing visible marks the action as settled.
+    // Await `act` so the transition finishes before the next wave arrives; a synchronous
+    // `rerender` that races a pending transition suspends inside `act` and is never rendered.
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: /review all/i })[0]!)
+    })
 
-    await waitFor(() => expect(screen.queryByText('Reported post')).not.toBeInTheDocument())
+    expect(screen.queryByText('Reported post')).not.toBeInTheDocument()
     rerender(
       <ReportsClient
         viewerTier='staff'
@@ -129,7 +135,7 @@ describe('ReportsClient clustered staff reports', () => {
         }}
       />,
     )
-    await waitFor(() => expect(screen.getByText('Reported post')).toBeInTheDocument())
+    expect(screen.getByText('Reported post')).toBeInTheDocument()
   })
 
   it('removes comment targets from a cluster', async () => {
