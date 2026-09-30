@@ -42,11 +42,11 @@ are described separately in [fediverse-instance.md](./fediverse-instance.md).
 
 ## States
 
-| State        | Predicate                                                 | Behavior                                      |
-| ------------ | --------------------------------------------------------- | --------------------------------------------- |
-| Active       | `deleted_at IS NULL AND merged_into_topic_id IS NULL`     | Normal visible topic                          |
-| Merged       | `merged_into_topic_id IS NOT NULL AND deleted_at IS NULL` | Alias/redirect; content stays in place        |
-| Soft-deleted | `deleted_at IS NOT NULL`                                  | Hidden; can be revived by upsert on slug/name |
+| State        | Predicate                                                 | Behavior                                               |
+| ------------ | --------------------------------------------------------- | ------------------------------------------------------ |
+| Active       | `deleted_at IS NULL AND merged_into_topic_id IS NULL`     | Normal visible topic                                   |
+| Merged       | `merged_into_topic_id IS NOT NULL AND deleted_at IS NULL` | Alias/redirect; content stays in place                 |
+| Soft-deleted | `deleted_at IS NOT NULL`                                  | Hidden; `createTopic` revives it from its source alias |
 
 Merge is one level deep (chains are prevented at the service layer). Hard-delete is intentionally
 unsupported — use merge instead.
