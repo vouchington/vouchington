@@ -1530,8 +1530,8 @@
             "web/components/my/rewards-program-statuses-manager.tsx"
           ],
           "behaviorTests": [
-            "web/components/my/__tests__/rewards-program-statuses-manager.mock.test.tsx",
-            "web/components/my/__tests__/rewards-program-statuses-manager.part-2.mock.test.tsx"
+            "web/components/my/__tests__/rewards-program-statuses-manager.test.tsx",
+            "web/components/my/__tests__/rewards-program-statuses-manager.part-2.test.tsx"
           ]
         },
         "swift": {
