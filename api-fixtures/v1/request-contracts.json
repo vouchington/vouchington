@@ -6060,59 +6060,6 @@
       "required": ["message"],
       "type": "object"
     },
-    "EuCopyrightAcknowledgment": {
-      "additionalProperties": false,
-      "properties": {
-        "acknowledged_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "attempt_count": {
-          "type": "number"
-        },
-        "escalated": {
-          "type": "boolean"
-        },
-        "exhausted_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "last_attempt_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "required": [
-        "acknowledged_at",
-        "attempt_count",
-        "escalated",
-        "exhausted_at",
-        "id",
-        "last_attempt_at"
-      ],
-      "type": "object"
-    },
     "EuCopyrightRedressDecision": {
       "additionalProperties": false,
       "properties": {
@@ -17964,6 +17911,59 @@
       "required": ["evidence"],
       "type": "object"
     },
+    "TerritorialCopyrightAcknowledgment": {
+      "additionalProperties": false,
+      "properties": {
+        "acknowledged_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "attempt_count": {
+          "type": "number"
+        },
+        "escalated": {
+          "type": "boolean"
+        },
+        "exhausted_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "last_attempt_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "acknowledged_at",
+        "attempt_count",
+        "escalated",
+        "exhausted_at",
+        "id",
+        "last_attempt_at"
+      ],
+      "type": "object"
+    },
     "TerritorialCopyrightJurisdiction": {
       "enum": ["eu_dsa", "uk"],
       "type": "string"
@@ -18660,59 +18660,6 @@
         }
       },
       "required": ["page_info", "referral_programs"],
-      "type": "object"
-    },
-    "UkCopyrightAcknowledgment": {
-      "additionalProperties": false,
-      "properties": {
-        "acknowledged_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "attempt_count": {
-          "type": "number"
-        },
-        "escalated": {
-          "type": "boolean"
-        },
-        "exhausted_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "last_attempt_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "required": [
-        "acknowledged_at",
-        "attempt_count",
-        "escalated",
-        "exhausted_at",
-        "id",
-        "last_attempt_at"
-      ],
       "type": "object"
     },
     "UkCopyrightRedressDecision": {
