@@ -106,11 +106,11 @@ describe('POST /api/v1/my/cards', () => {
       .expect(415)
   })
 
-  it('returns 400 when card_id is missing', async () => {
+  it('returns 422 when card_id is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    await request.post('/api/v1/my/cards').send({}).expect(400)
+    await request.post('/api/v1/my/cards').send({}).expect(422)
   })
 
   it('creates a card successfully', async () => {

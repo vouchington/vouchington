@@ -147,11 +147,11 @@ describe('POST /api/v1/my/rewards-program-statuses', () => {
       .expect(415)
   })
 
-  it('returns 400 when rewards_program_status_id is missing', async () => {
+  it('returns 422 when rewards_program_status_id is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    await request.post('/api/v1/my/rewards-program-statuses').send({}).expect(400)
+    await request.post('/api/v1/my/rewards-program-statuses').send({}).expect(422)
   })
 
   it('creates a rewards program status successfully', async () => {

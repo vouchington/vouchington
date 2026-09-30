@@ -4412,6 +4412,16 @@
         "required": ["hostname"],
         "type": "object"
       },
+      "CreateCardRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "card_id": {
+            "type": "string"
+          }
+        },
+        "required": ["card_id"],
+        "type": "object"
+      },
       "CreateInstanceResult": {
         "additionalProperties": false,
         "properties": {
@@ -4471,6 +4481,45 @@
           }
         },
         "required": ["client_name", "redirect_uris", "scopes"],
+        "type": "object"
+      },
+      "CreatePointValuationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "rewards_program_id": {
+            "type": "string"
+          },
+          "value_per_point": {
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "maximum": 9999999999,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "currency": {
+                "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                "type": "string"
+              },
+              "scale": {
+                "const": 6
+              }
+            },
+            "required": ["amount", "currency", "scale"],
+            "type": "object"
+          }
+        },
+        "required": ["rewards_program_id", "value_per_point"],
         "type": "object"
       },
       "CreatePostRatingBody": {
@@ -4799,6 +4848,16 @@
         "required": ["slug"],
         "type": "object"
       },
+      "CreateRewardsProgramStatusRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "rewards_program_status_id": {
+            "type": "string"
+          }
+        },
+        "required": ["rewards_program_status_id"],
+        "type": "object"
+      },
       "CreateRssFeedBody": {
         "additionalProperties": false,
         "properties": {
@@ -4830,6 +4889,31 @@
           }
         },
         "required": ["rss_feed_id", "status", "topic_id", "topic_slug"],
+        "type": "object"
+      },
+      "CreateSpendingCategoryRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "household_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "spending_category_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "spending_frequency": {
+            "enum": ["annually", "monthly"],
+            "type": "string"
+          }
+        },
+        "required": ["amount", "spending_category_id"],
         "type": "object"
       },
       "CreateTopicAliasesBody": {
@@ -18992,6 +19076,75 @@
         "required": ["category_text", "item_count", "rejected"],
         "type": "object"
       },
+      "UpdateCardRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "authorized_user_of_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "closed_on": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "credit_limit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_authorized_user": {
+            "type": "boolean"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "opened_on": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "received_sign_up_bonus_on": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
       "UpdateCommunityPostTypeSettingsInput": {
         "additionalProperties": false,
         "properties": {
@@ -19117,6 +19270,41 @@
             "minItems": 1,
             "type": "array",
             "uniqueItems": true
+          }
+        },
+        "type": "object"
+      },
+      "UpdatePointValuationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "value_per_point": {
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "maximum": 9999999999,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "currency": {
+                "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                "type": "string"
+              },
+              "scale": {
+                "const": 6
+              }
+            },
+            "required": ["amount", "currency", "scale"],
+            "type": "object"
           }
         },
         "type": "object"
@@ -19266,6 +19454,32 @@
         },
         "type": "object"
       },
+      "UpdateRewardsProgramStatusRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "since": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "until": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
       "UpdateRssFeedBody": {
         "additionalProperties": false,
         "properties": {
@@ -19319,6 +19533,29 @@
                 "type": "null"
               }
             ]
+          }
+        },
+        "type": "object"
+      },
+      "UpdateSpendingCategoryRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "spending_frequency": {
+            "enum": ["annually", "monthly"],
+            "type": "string"
           }
         },
         "type": "object"
@@ -50146,7 +50383,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateCardRequest"
               }
             }
           }
@@ -50213,7 +50450,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateCardRequest"
               }
             }
           }
@@ -54691,7 +54928,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreatePointValuationRequest"
               }
             }
           }
@@ -54758,7 +54995,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdatePointValuationRequest"
               }
             }
           }
@@ -54833,7 +55070,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateRewardsProgramStatusRequest"
               }
             }
           }
@@ -54900,7 +55137,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateRewardsProgramStatusRequest"
               }
             }
           }
@@ -54975,7 +55212,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateSpendingCategoryRequest"
               }
             }
           }
@@ -55042,7 +55279,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateSpendingCategoryRequest"
               }
             }
           }
