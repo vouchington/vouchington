@@ -1,71 +1,21 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  listFiltersNav,
+  resetListFiltersNav,
+  restoreListFiltersNav,
+} from '@/test-helpers/components/shared/list-filters.mock-support'
 
 import { fireEvent, render, screen } from '@testing-library/react'
-
-import type { ReactNode } from 'react'
-
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { ListFilters } from '../list-filters'
 
-vi.mock(
-  import('next/navigation'),
-  () => navMockModule as unknown as typeof import('next/navigation'),
-)
-
-const mockNav = createNavMock()
-
-vi.mock(
-  import('@/components/ui/select'),
-  () =>
-    ({
-      Select: ({
-        children,
-        value,
-        onValueChange,
-      }: {
-        children: ReactNode
-        value: string
-        onValueChange: (value: string) => void
-      }) => (
-        <select
-          aria-label='Sort list'
-          value={value}
-          onChange={event => onValueChange(event.target.value)}
-        >
-          {children}
-        </select>
-      ),
-      SelectContent: ({ children }: { children: ReactNode }) => children,
-      SelectItem: ({
-        children,
-        title,
-        value,
-      }: {
-        children: ReactNode
-        title?: string
-        value: string
-      }) => (
-        <option
-          title={title}
-          value={value}
-        >
-          {children}
-        </option>
-      ),
-      SelectTrigger: ({ children }: { children: ReactNode }) => children,
-      SelectValue: () => null,
-    }) as unknown as typeof import('@/components/ui/select'),
-)
-
 describe('ListFilters', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockNav.reset()
+    resetListFiltersNav()
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    restoreListFiltersNav()
   })
 
   it('updates URL when sort dropdown changes', () => {
@@ -82,13 +32,13 @@ describe('ListFilters', () => {
 
     fireEvent.change(screen.getByLabelText('Sort list'), { target: { value: 'best' } })
 
-    expect(mockNav.push).toHaveBeenCalledWith('?sort=best', { scroll: false })
+    expect(listFiltersNav.push).toHaveBeenCalledWith('?sort=best', { scroll: false })
     // Guard against duplicate-call regressions (note: mock uses native <select>, not Radix BubbleInput)
-    expect(mockNav.push).toHaveBeenCalledTimes(1)
+    expect(listFiltersNav.push).toHaveBeenCalledTimes(1)
   })
 
   it('falls back to default sort when the URL sort is unsupported', () => {
-    mockNav.setSearchParams('sort=unsupported')
+    listFiltersNav.setSearchParams('sort=unsupported')
 
     render(
       <ListFilters
@@ -127,7 +77,7 @@ describe('ListFilters', () => {
   })
 
   it('clears searchDefaultSort when clearing search while it is active', () => {
-    mockNav.setSearchParams('q=hello&sort=relevance')
+    listFiltersNav.setSearchParams('q=hello&sort=relevance')
 
     render(
       <ListFilters
@@ -146,11 +96,11 @@ describe('ListFilters', () => {
     fireEvent.change(input, { target: { value: '' } })
     fireEvent.submit(input.closest('form')!)
 
-    expect(mockNav.push).toHaveBeenCalledWith('?', { scroll: false })
+    expect(listFiltersNav.push).toHaveBeenCalledWith('?', { scroll: false })
   })
 
   it('trims whitespace before submit and clears on X click', () => {
-    mockNav.setSearchParams('q=hello')
+    listFiltersNav.setSearchParams('q=hello')
     render(
       <ListFilters
         placeholder='Search topics...'
@@ -161,13 +111,13 @@ describe('ListFilters', () => {
     const input = screen.getByPlaceholderText('Search topics...')
     fireEvent.change(input, { target: { value: 'world  ' } })
     fireEvent.submit(input.closest('form')!)
-    expect(mockNav.push).toHaveBeenCalledWith('?q=world', { scroll: false })
+    expect(listFiltersNav.push).toHaveBeenCalledWith('?q=world', { scroll: false })
     fireEvent.click(screen.getByRole('button', { name: 'Clear search' }))
-    expect(mockNav.push).toHaveBeenLastCalledWith('?', { scroll: false })
+    expect(listFiltersNav.push).toHaveBeenLastCalledWith('?', { scroll: false })
   })
 
   it('does not override user-selected non-default sort with searchDefaultSort when starting a search', () => {
-    mockNav.setSearchParams('sort=best')
+    listFiltersNav.setSearchParams('sort=best')
 
     render(
       <ListFilters
@@ -186,7 +136,7 @@ describe('ListFilters', () => {
     fireEvent.change(input, { target: { value: 'hello' } })
     fireEvent.submit(input.closest('form')!)
 
-    expect(mockNav.push).toHaveBeenCalledWith('?sort=best&q=hello', { scroll: false })
+    expect(listFiltersNav.push).toHaveBeenCalledWith('?sort=best&q=hello', { scroll: false })
   })
 
   it('renders the search submit button as the last interactive control in the row', () => {
