@@ -7,6 +7,8 @@ import {
 } from '@services/feeds'
 import app from '../../../app.mts'
 import { requireAuth } from '../../../response-helpers.mts'
+import { apiQuery } from '../../../response-contract.mts'
+import { parseAndValidatePaginatedRequest } from '../../../validate-paginated-query.mts'
 
 const referralLinksFeedParser = createPaginationParser({
   cursor: { type: 'simple' as const },
@@ -15,6 +17,7 @@ const referralLinksFeedParser = createPaginationParser({
 })
 
 app.route('/api/v1/feeds/referral_links/:feed_type').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/feeds/referral_links/:feed_type', referralLinksFeedParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/feeds/referral_links/:feed_type')
   const feedType = ctx.params.feed_type
   ctx.assert(
@@ -22,7 +25,12 @@ app.route('/api/v1/feeds/referral_links/:feed_type').get(async (ctx: Context) =>
     404,
     `Invalid feed_type. Must be one of: ${VALID_REFERRAL_LINKS_FEED_TYPES.join(', ')}`,
   )
-  const paginationOptions = referralLinksFeedParser.parse(ctx.query)
+  const paginationOptions = parseAndValidatePaginatedRequest(
+    ctx,
+    'GET:/api/v1/feeds/referral_links/:feed_type',
+    referralLinksFeedParser,
+    { path: true },
+  )
   const result = await getReferralLinksFeed(
     currentUser,
     feedType as ReferralLinksFeedType,

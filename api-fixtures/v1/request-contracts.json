@@ -24949,6 +24949,62 @@
         },
         "required": ["feed_type"],
         "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "community": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "min_score_follow_topics": {
+            "type": "number"
+          },
+          "min_score_follow_users": {
+            "type": "number"
+          },
+          "post_types": {
+            "items": {
+              "enum": [
+                "discussion",
+                "review",
+                "data_point",
+                "comment",
+                "link",
+                "article",
+                "blog_post",
+                "story"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "q": {
+            "type": "string"
+          },
+          "semantic_search_query": {
+            "type": "string"
+          },
+          "sort": {
+            "enum": ["new", "hot"],
+            "type": "string"
+          },
+          "text_search_query": {
+            "type": "string"
+          },
+          "time_range": {
+            "enum": ["1d", "1w", "1m", "1y", "all"],
+            "type": "string"
+          }
+        },
+        "type": "object"
       }
     },
     "GET:/api/v1/feeds/referral_links/:feed_type": {
@@ -24960,6 +25016,20 @@
         },
         "required": ["feed_type"],
         "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
       }
     },
     "GET:/api/v1/feeds/rss_feed_items/:feed_type": {
@@ -24970,6 +25040,56 @@
           }
         },
         "required": ["feed_type"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "community": {
+            "type": "string"
+          },
+          "has_related_posts": {
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "media_type": {
+            "enum": ["article", "audio", "video"],
+            "type": "string"
+          },
+          "media_types": {
+            "items": {
+              "enum": ["article", "audio", "video"],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "min_score_follow_rss_feeds": {
+            "type": "number"
+          },
+          "min_score_follow_topics": {
+            "type": "number"
+          },
+          "q": {
+            "type": "string"
+          },
+          "semantic_search_query": {
+            "type": "string"
+          },
+          "text_search_query": {
+            "type": "string"
+          },
+          "time_range": {
+            "enum": ["1d", "1w", "1m", "1y", "all"],
+            "type": "string"
+          }
+        },
         "type": "object"
       }
     },

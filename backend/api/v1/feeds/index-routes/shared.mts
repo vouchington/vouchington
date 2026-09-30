@@ -1,4 +1,10 @@
-import { createPaginationParser } from '@modules/pagination'
+import {
+  createPaginationParser,
+  defineQueryContract,
+  queryBoolean,
+  queryNumber,
+  queryString,
+} from '@modules/pagination'
 import { loadCommunityForViewer } from '@services/communities'
 import type { PostFeedType, RssFeedItemFeedType } from '@services/feeds/types'
 import { resolveHashtagTopicSearch } from '@services/search-params'
@@ -23,6 +29,23 @@ export const rssFeedItemFeedParser = createPaginationParser({
     search: true,
     mediaTypes: true,
   },
+})
+
+/** Query keys the posts feed handler reads beside the pagination parser. */
+export const postFeedExtraQuery = defineQueryContract({
+  community: queryString(),
+  min_score_follow_topics: queryNumber(),
+  min_score_follow_users: queryNumber(),
+  q: queryString(),
+})
+
+/** Query keys the RSS feed item feed handler reads beside the pagination parser. */
+export const rssFeedItemFeedExtraQuery = defineQueryContract({
+  community: queryString(),
+  has_related_posts: queryBoolean(),
+  min_score_follow_rss_feeds: queryNumber(),
+  min_score_follow_topics: queryNumber(),
+  q: queryString(),
 })
 
 export async function parseHashtagFeedSearchOptions(query: Record<string, unknown>) {
