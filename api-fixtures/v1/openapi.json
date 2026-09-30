@@ -3343,7 +3343,7 @@
             ]
           },
           "parse_status": {
-            "enum": ["failed", "succeeded"],
+            "enum": ["failed", "succeeded", "unparsed"],
             "type": "string"
           },
           "received_at": {

@@ -3,10 +3,13 @@ import { createTestUser } from '@voucha/test-helpers'
 import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
 import { rejectCopyrightEmailIntake, searchCopyrightStaffEmailIntakes } from './index.mts'
-import { createParsedCopyrightEmailIntake } from './email-intake-test-fixtures.mts'
+import {
+  createParsedCopyrightEmailIntake,
+  createUnparsedCopyrightEmailIntake,
+} from './email-intake-test-fixtures.mts'
 
 describe('searchCopyrightStaffEmailIntakes', () => {
-  it('hides the queue from non-reviewers and lists unreviewed parsed intakes for staff', async () => {
+  it('hides the queue from non-reviewers and lists unreviewed intakes, parsed or not, for staff', async () => {
     const anchor = new Date('2020-01-01T00:00:00.000Z')
     if (getIsolatedDatabaseCaseMode('copyright-staff-email-intakes') === 'parent') {
       await createParsedCopyrightEmailIntake(new Date(anchor.getTime() - 1))
@@ -23,6 +26,7 @@ describe('searchCopyrightStaffEmailIntakes', () => {
     const second = await createParsedCopyrightEmailIntake(new Date(anchor.getTime() + 5))
     const third = await createParsedCopyrightEmailIntake(new Date(anchor.getTime() + 6))
     const rejected = await createParsedCopyrightEmailIntake(new Date(anchor.getTime() + 7))
+    const unparsed = await createUnparsedCopyrightEmailIntake(new Date(anchor.getTime() + 8))
     await rejectCopyrightEmailIntake({
       currentUser: moderator,
       intakeId: rejected.id,
@@ -60,7 +64,8 @@ describe('searchCopyrightStaffEmailIntakes', () => {
       limit: 2,
       after: { timestamp: last.cursor_received_at, id: last.id },
     })
-    expect(nextPage.intakes.map(intake => intake.id)).toEqual([third.id])
+    expect(nextPage.intakes.map(intake => intake.id)).toEqual([third.id, unparsed.id])
+    expect(nextPage.intakes[1]).toMatchObject({ parse_status: 'unparsed', review_path: 'initial' })
     expect(nextPage.hasNextPage).toBe(false)
   }, 240_000)
 })

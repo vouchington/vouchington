@@ -224,26 +224,33 @@ Its `reason` tag has the same value, and one boolean tag per count shows which c
 
   Deadline items are left out here because the two counts below cover them.
 
+- `email_intakes_waiting_past_target` counts email intakes on the email-review queue received
+  longer than `reviewTargetMinutes` ago. It uses the queue's own rule, so the page and the queue
+  agree. An intake counts even when its parse was never recorded; the queue lists it with
+  `parse_status` `unparsed`.
 - `missed_escalation` counts notices with an open deadline at or past `escalation_at`.
 - `missed_restoration_deadline` counts notices with an open deadline at or past
   `restoration_deadline_at`. Those notices also count as missed escalations.
 
 `reviewTargetMinutes` is in the `copyright` dynamic-config namespace. Only a developer or an
 administrator can change it, and the namespace history records each change. The default is `0`,
-which means unset: `waiting_past_target` stays off. Set it to the approved target in whole minutes,
+which means unset: both waiting counts stay off. Set it to the approved target in whole minutes,
 at most 10,080 (one week). The service targets above are not applied until someone sets this value.
 Missed deadlines page even while the target is unset.
 
-The event holds each count and up to 20 notice IDs per count, oldest first. It has no claimant,
-poster, work, or correspondence fields. Open each case from the staff queue by notice ID and triage
-it as described in [Queue triage](#queue-triage). Treat a missed restoration deadline under
-[Incident response](#incident-response).
+The event holds each count and up to 20 notice or email intake IDs per count, oldest first. It
+has no claimant, poster, work, correspondence, sender, subject, or body fields. Open each case from
+the staff queue by notice ID and triage it as described in [Queue triage](#queue-triage). Open each
+email from the email-review queue by intake ID. A `failed` or `unparsed` email has no parsed fields
+or agent recommendation, so review the original MIME object and record a manual-fallback reason
+with the decision. An email is `unparsed` for a moment while the SES worker runs. One that stays
+`unparsed` for more than a few minutes means the worker keeps failing before it records a parse,
+or copyright intake was switched off mid-flight: check the worker's errors. Treat a missed
+restoration deadline under [Incident response](#incident-response).
 
 The Sentry alert rule that routes this warning and its on-call destination are not in this
-repository ([#1230](https://github.com/vouchington/vouchington/issues/1230)). Until they exist, the
-warning appears only as a Sentry issue. Email intakes that await review are not counted yet. The
-job has no throttle beyond its five-minute schedule, so a breach repeats every sweep until it
-clears.
+repository. Until they exist, the warning appears only as a Sentry issue. The job has no throttle
+beyond its five-minute schedule, so a breach repeats every sweep until it clears.
 
 A qualifying court or CCB hold blocks the restore but does not cancel or resolve the deadline. A
 deadline held open that way keeps paging as a missed restoration deadline, as the

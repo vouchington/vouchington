@@ -1,9 +1,9 @@
 // Email intake fixtures belong in the copyright service test support, beside the route fixtures.
 import { createCopyrightEmailIntake, recordCopyrightEmailParse } from './index.mts'
 
-// A received copyright email whose MIME parse succeeded, so it awaits staff review.
-export async function createParsedCopyrightEmailIntake(receivedAt = new Date()) {
-  const sesMessageId = `ses-parsed-${crypto.randomUUID()}`
+// A received copyright email whose parse was never recorded, as when the SES worker keeps failing.
+export async function createUnparsedCopyrightEmailIntake(receivedAt = new Date()) {
+  const sesMessageId = `ses-email-${crypto.randomUUID()}`
   const { intake } = await createCopyrightEmailIntake({
     sesMessageId,
     receivedAt,
@@ -12,6 +12,12 @@ export async function createParsedCopyrightEmailIntake(receivedAt = new Date()) 
     rawMimeType: 'message/rfc822',
     rawByteSize: 12,
   })
+  return intake
+}
+
+// A received copyright email whose MIME parse succeeded, so it awaits staff review.
+export async function createParsedCopyrightEmailIntake(receivedAt = new Date()) {
+  const intake = await createUnparsedCopyrightEmailIntake(receivedAt)
   await recordCopyrightEmailParse(intake, {
     status: 'succeeded',
     fromEmail: `claimant-${crypto.randomUUID()}@example.test`,

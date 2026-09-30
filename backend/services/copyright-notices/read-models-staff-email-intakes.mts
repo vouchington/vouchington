@@ -7,11 +7,13 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { copyrightEmailIntakeAwaitingReviewSql } from './read-models-staff-email-intakes-sql.mts'
 
 export type CopyrightStaffEmailIntakeQueueItem = {
   id: string
   received_at: Date
-  parse_status: 'succeeded' | 'failed'
+  // 'unparsed' until the SES worker records a parse; a stuck parse stays here for staff to see.
+  parse_status: 'succeeded' | 'failed' | 'unparsed'
   recommendation_id: string | null
   review_path: 'initial' | 'unresolved_thread' | 'matched_thread'
   linked_notice_id: string | null
@@ -36,8 +38,8 @@ export async function searchCopyrightStaffEmailIntakes(
   observeSharedDbScope('searchCopyrightStaffEmailIntakes', sharedDbCursorScope(options.after?.id))
   await using transaction = await beginTransaction()
   const query = sql`/* searchCopyrightStaffEmailIntakes */
-    SELECT intake.id, intake.received_at, parse.status AS parse_status, recommendation.id AS recommendation_id,
-      link.link_kind, link.copyright_notice_id AS linked_notice_id,
+    SELECT intake.id, intake.received_at, COALESCE(parse.status, 'unparsed') AS parse_status,
+      recommendation.id AS recommendation_id, link.link_kind, link.copyright_notice_id AS linked_notice_id,
       to_char(
         intake.received_at AT TIME ZONE 'UTC',
         'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
@@ -48,23 +50,12 @@ export async function searchCopyrightStaffEmailIntakes(
           AND reference.reference_kind = 'reply_reference'
       ) AS has_reply_reference
     FROM copyright_notice_email_intakes intake
-    JOIN copyright_notice_email_intake_parses parse ON parse.copyright_notice_email_intake_id = intake.id
+    LEFT JOIN copyright_notice_email_intake_parses parse
+      ON parse.copyright_notice_email_intake_id = intake.id
     LEFT JOIN LATERAL (SELECT id FROM copyright_notice_email_intake_recommendations WHERE copyright_notice_email_intake_id = intake.id ORDER BY id DESC LIMIT 1) recommendation ON true
     LEFT JOIN copyright_notice_email_intake_notice_links link
       ON link.copyright_notice_email_intake_id = intake.id
-    WHERE NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review WHERE review.copyright_notice_email_intake_id = intake.id)
-      AND (
-        link.link_kind IS NULL
-        OR (
-          link.link_kind = 'thread'
-          AND NOT EXISTS (
-            SELECT 1 FROM copyright_notice_email_correspondence_reviews review
-            WHERE review.copyright_notice_email_intake_id = intake.id
-              AND review.action IN ('admitted', 'rejected')
-          )
-        )
-      )
-  `
+    WHERE`.append(copyrightEmailIntakeAwaitingReviewSql())
   if (options.after) {
     query.append(sql`
       AND (intake.received_at, intake.id) > (${options.after.timestamp}::timestamptz, ${options.after.id})`)
@@ -76,7 +67,7 @@ export async function searchCopyrightStaffEmailIntakes(
   const { rows } = await transaction<{
     id: string
     received_at: Date
-    parse_status: 'succeeded' | 'failed'
+    parse_status: 'succeeded' | 'failed' | 'unparsed'
     recommendation_id: string | null
     link_kind: 'initial' | 'thread' | null
     linked_notice_id: string | null

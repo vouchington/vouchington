@@ -36,9 +36,10 @@ Glide Queue system for reconciling notifications and delivering browser push mes
   `AggregateError` of every failure so the queue retries it. The same job then refreshes copyright
   staff alerts. A failed alert refresh is included in that error and does not roll back enforcement.
 - `processCheckCopyrightReviewTarget` runs every five minutes. It reads
-  `copyright.reviewTargetMinutes`, counts copyright cases waiting past that target and open
-  counter-notice deadlines past escalation or restoration, and sends one tagged Sentry warning with
-  counts and notice IDs. It sends nothing when every count is zero. See the
+  `copyright.reviewTargetMinutes`, counts copyright cases and received emails waiting past that
+  target and open counter-notice deadlines past escalation or restoration, and sends one tagged
+  Sentry warning with counts and notice or email intake IDs. It sends nothing when every count is
+  zero. See the
   [copyright runbook](../../../../runbooks/copyright-notices.md#review-target-page).
 - `delete-notification`
   - Performs asynchronous soft deletion for user-initiated deletes

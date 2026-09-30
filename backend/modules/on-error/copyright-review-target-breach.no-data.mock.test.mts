@@ -32,14 +32,17 @@ vi.mock<typeof import('@sentry/node')>(import('@sentry/node'), () => ({
 
 const captureMessage = sentryMocks.captureMessage
 const none = { count: 0, noticeIds: [] }
+const noEmails = { count: 0, emailIntakeIds: [] }
 const noticeId = '0199a000-0000-7000-8000-000000000001'
 const olderNoticeId = '0199a000-0000-7000-8000-000000000002'
+const emailIntakeId = '0199a000-0000-7000-8000-000000000003'
 
 const breach = {
   reviewTargetMinutes: 240,
   waitingPastTarget: { count: 3, noticeIds: [olderNoticeId, noticeId] },
   missedEscalation: { count: 1, noticeIds: [olderNoticeId] },
   missedRestorationDeadline: none,
+  emailIntakesWaitingPastTarget: { count: 2, emailIntakeIds: [emailIntakeId] },
 }
 
 const expectedExtra = {
@@ -50,6 +53,8 @@ const expectedExtra = {
   missedEscalationNoticeIds: [olderNoticeId],
   missedRestorationDeadlineCount: 0,
   missedRestorationDeadlineNoticeIds: [],
+  emailIntakesWaitingPastTargetCount: 2,
+  emailIntakesWaitingPastTargetIds: [emailIntakeId],
 }
 
 describe('recordCopyrightReviewTargetBreach', () => {
@@ -71,6 +76,7 @@ describe('recordCopyrightReviewTargetBreach', () => {
       waitingPastTarget: none,
       missedEscalation: none,
       missedRestorationDeadline: none,
+      emailIntakesWaitingPastTarget: noEmails,
     })
 
     expect(sent).toBe(false)
@@ -78,11 +84,18 @@ describe('recordCopyrightReviewTargetBreach', () => {
     expect(consoleWarn).not.toHaveBeenCalled()
   })
 
-  it('sends one tagged warning with only counts and notice ids', () => {
+  it('sends one tagged warning with only counts and ids, never claimant or email fields', () => {
     const withClaimant = {
       ...breach,
       claimantContact: 'claimant@example.test',
       waitingPastTarget: { ...breach.waitingPastTarget, posterHandle: 'poster' },
+      senderEmail: 'sender@example.test',
+      emailIntakesWaitingPastTarget: {
+        ...breach.emailIntakesWaitingPastTarget,
+        senderEmail: 'sender@example.test',
+        subject: 'Copyright complaint',
+        bodyText: 'This is a copyright complaint.',
+      },
     }
 
     expect(recordCopyrightReviewTargetBreach(withClaimant)).toBe(true)
@@ -96,9 +109,36 @@ describe('recordCopyrightReviewTargetBreach', () => {
         waiting_past_target: 'true',
         missed_escalation: 'true',
         missed_restoration_deadline: 'false',
+        email_intakes_waiting_past_target: 'true',
       },
       extra: expectedExtra,
     })
+    expect(JSON.stringify(captureMessage.mock.calls)).not.toMatch(/sender|subject|body|claimant/i)
+  })
+
+  it('pages an email waiting past the target when no case is overdue', () => {
+    const sent = recordCopyrightReviewTargetBreach({
+      reviewTargetMinutes: 60,
+      waitingPastTarget: none,
+      missedEscalation: none,
+      missedRestorationDeadline: none,
+      emailIntakesWaitingPastTarget: { count: 1, emailIntakeIds: [emailIntakeId] },
+    })
+
+    expect(sent).toBe(true)
+    expect(captureMessage).toHaveBeenCalledWith(
+      'copyright_review_target_breach',
+      expect.objectContaining({
+        tags: expect.objectContaining({
+          waiting_past_target: 'false',
+          email_intakes_waiting_past_target: 'true',
+        }),
+        extra: expect.objectContaining({
+          emailIntakesWaitingPastTargetCount: 1,
+          emailIntakesWaitingPastTargetIds: [emailIntakeId],
+        }),
+      }),
+    )
   })
 
   it('pages a missed deadline while the review target is unset', () => {
@@ -107,6 +147,7 @@ describe('recordCopyrightReviewTargetBreach', () => {
       waitingPastTarget: none,
       missedEscalation: { count: 1, noticeIds: [noticeId] },
       missedRestorationDeadline: { count: 1, noticeIds: [noticeId] },
+      emailIntakesWaitingPastTarget: noEmails,
     })
 
     expect(captureMessage).toHaveBeenCalledOnce()
@@ -118,6 +159,7 @@ describe('recordCopyrightReviewTargetBreach', () => {
           waiting_past_target: 'false',
           missed_escalation: 'true',
           missed_restoration_deadline: 'true',
+          email_intakes_waiting_past_target: 'false',
         },
         extra: expect.objectContaining({
           reviewTargetMinutes: null,

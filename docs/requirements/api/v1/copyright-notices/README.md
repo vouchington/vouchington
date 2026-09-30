@@ -48,8 +48,10 @@ so a case whose deadline passes between pages moves to an earlier tier.
 
 The staff email intake queue, `GET /api/v1/copyright-email-intakes/review-queue`, uses the same
 bounded `after` and `limit` contract with its own cursor scope. It orders unreviewed intakes by
-immutable `(received_at, id)`, oldest first, so every parsed email awaiting staff review remains
-reachable after the first page. A reviewer's decision refreshes the queue from its first page.
+immutable `(received_at, id)`, oldest first, so every email awaiting staff review remains
+reachable after the first page. That includes an email whose parse was never recorded: its
+`parse_status` is `unparsed`, beside `succeeded` and `failed`, and staff review it from the original
+MIME object. A reviewer's decision refreshes the queue from its first page.
 
 Staff repeat-infringer actions are separate from that queue payload.
 `GET /api/v1/copyright-notices/:id/repeat-infringer-accounts` lists incidents for one case.

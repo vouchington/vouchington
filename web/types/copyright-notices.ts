@@ -146,7 +146,8 @@ export type CopyrightStaffQueuePage = {
 export type CopyrightEmailIntakeQueueItem = {
   id: string
   received_at: string
-  parse_status: 'succeeded' | 'failed'
+  // 'unparsed' means the inbound worker never recorded a parse; staff review the original email.
+  parse_status: 'succeeded' | 'failed' | 'unparsed'
   recommendation_id: string | null
   review_path: 'initial' | 'unresolved_thread' | 'matched_thread'
   linked_notice_id: string | null
