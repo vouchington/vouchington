@@ -124,7 +124,7 @@ function validateImplementedComposition(
   const requiredSymbolGroups = {
     'direct-boundary': ['canViewPost', 'canViewPostsBatch'],
     'direct-sql': ['buildDirectPostEligibilityFilter', 'buildDirectPostAccessFilter'],
-    'descendants-boundary': ['getVisibleCommentDescendantIdsPage'],
+    'descendants-boundary': ['getCommentDescendantsPage'],
     'mixed-discovery-sql': [
       'buildPublicPostEligibilityFilter',
       'buildViewerPostDiscoveryEligibilityFilter',

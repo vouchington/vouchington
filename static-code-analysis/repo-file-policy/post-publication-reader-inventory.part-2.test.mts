@@ -17,7 +17,7 @@ const cases = [
     title: 'requires the descendants route to call the candidate-filtering boundary',
     classification: 'descendants-boundary',
     direct: "import { canViewPost } from '@services/posts'\ncanViewPost()",
-    expected: 'must compose getVisibleCommentDescendantIdsPage',
+    expected: 'must compose getCommentDescendantsPage',
   },
   {
     title: 'rejects a public-view reader that only names the view in a comment',
