@@ -177,6 +177,36 @@ tests:
         - module: playwright/helpers/aside-locator.mts
           export: getAsideLocator
           testIdArgument: 1
+        - module: playwright/helpers/authenticated-manager-page.mts
+          export: assertManagerHeading
+          testIdArgument: 1
+        - module: playwright/helpers/authenticated-manager-page.mts
+          export: assertSeededName
+          testIdArgument: 1
+        - module: playwright/helpers/authenticated-manager-page.mts
+          export: assertExactValue
+          testIdArgument: 1
+        - module: playwright/helpers/authenticated-manager-page.mts
+          export: assertContainedValue
+          testIdArgument: 1
+        - module: playwright/helpers/authenticated-manager-page.mts
+          export: assertManagerControlVisible
+          testIdArgument: 1
+        - module: playwright/helpers/authenticated-manager-page.mts
+          export: assertFirstManagerControlVisible
+          testIdArgument: 1
+        - module: playwright/helpers/authenticated-manager-page.mts
+          export: clickFirstManagerControl
+          testIdArgument: 1
+        - module: playwright/helpers/authenticated-manager-page.mts
+          export: clickManagerControl
+          testIdArgument: 1
+        - module: playwright/helpers/authenticated-manager-page.mts
+          export: clearManagerInputWithFill
+          testIdArgument: 1
+        - module: playwright/helpers/authenticated-manager-page.mts
+          export: clearManagerInputWithSelectAll
+          testIdArgument: 1
         - module: playwright/helpers/semantic-vote.mts
           export: chooseVote
           testIdArgument: 1

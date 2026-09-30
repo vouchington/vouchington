@@ -1,6 +1,18 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
+import {
+  clearManagerInputWithFill,
+  clickFirstManagerControl,
+  clickManagerControl,
+  assertExactValue,
+  assertFirstManagerControlVisible,
+  assertManagerControlVisible,
+  assertManagerErrorToast,
+  assertManagerHeading,
+  assertSeededName,
+  useIphoneSeViewport,
+} from '../../helpers/authenticated-manager-page.mts'
 
 test.describe('My Point Valuations', () => {
   test.use({ storageState: AUTH_STATE })
@@ -10,50 +22,38 @@ test.describe('My Point Valuations', () => {
   })
 
   test('displays page heading', async ({ page }) => {
-    await expect(page.getByTestId('point-valuations-heading')).toContainText('Point Valuations')
+    await assertManagerHeading(page, 'point-valuations-heading', 'Point Valuations')
   })
 
   test('displays seeded point valuation', async ({ page }) => {
-    await expect(
-      page
-        .getByTestId('point-valuation-program-name')
-        .filter({ hasText: 'Chase Ultimate Rewards' }),
-    ).toBeVisible()
+    await assertSeededName(page, 'point-valuation-program-name', 'Chase Ultimate Rewards')
   })
 
   test('displays currency-aware value per point', async ({ page }) => {
-    await expect(page.getByTestId('point-valuation-cpp-display').first()).toHaveText(
-      '$0.02 per point',
-    )
+    await assertExactValue(page, 'point-valuation-cpp-display', '$0.02 per point')
   })
 
   test('add form is always visible without clicking any button', async ({ page }) => {
-    await expect(page.getByTestId('point-valuations-manager')).toBeVisible()
-    await expect(page.getByTestId('point-valuations-add-form-heading')).toBeVisible()
-    await expect(page.getByTestId('point-valuations-add-cpp-label')).toBeVisible()
+    await assertManagerControlVisible(page, 'point-valuations-manager')
+    await assertManagerControlVisible(page, 'point-valuations-add-form-heading')
+    await assertManagerControlVisible(page, 'point-valuations-add-cpp-label')
   })
 
   test('shows edit button', async ({ page }) => {
-    await expect(page.getByTestId('point-valuation-edit-button').first()).toBeVisible()
+    await assertFirstManagerControlVisible(page, 'point-valuation-edit-button')
   })
 
   test('edit form validates empty value per point', async ({ page }) => {
-    await page.getByTestId('point-valuation-edit-button').first().click()
-    await page.getByTestId('point-valuation-edit-cpp-input').fill('')
-    await page.getByTestId('point-valuation-edit-save-button').click()
-    await expect(page.locator('[data-sonner-toast][data-type="error"]')).toContainText(
-      'Please enter a valid value per point',
-    )
+    await clickFirstManagerControl(page, 'point-valuation-edit-button')
+    await clearManagerInputWithFill(page, 'point-valuation-edit-cpp-input')
+    await clickManagerControl(page, 'point-valuation-edit-save-button')
+    await assertManagerErrorToast(page, 'Please enter a valid value per point')
   })
 
   test('responsive layout on mobile', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 667 })
+    await useIphoneSeViewport(page)
     await navigateTo(page, '/my/rewards-program-point-valuations')
-    await expect(page.getByTestId('point-valuations-heading')).toContainText('Point Valuations')
-    await expect(
-      page
-        .getByTestId('point-valuation-program-name')
-        .filter({ hasText: 'Chase Ultimate Rewards' }),
-    ).toBeVisible()
+    await assertManagerHeading(page, 'point-valuations-heading', 'Point Valuations')
+    await assertSeededName(page, 'point-valuation-program-name', 'Chase Ultimate Rewards')
   })
 })

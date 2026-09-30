@@ -2,6 +2,18 @@ import { test, expect } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
+import {
+  clearManagerInputWithSelectAll,
+  clickFirstManagerControl,
+  clickManagerControl,
+  assertContainedValue,
+  assertFirstManagerControlVisible,
+  assertManagerControlVisible,
+  assertManagerErrorToast,
+  assertManagerHeading,
+  assertSeededName,
+  useIphoneSeViewport,
+} from '../../helpers/authenticated-manager-page.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
 import { requireTestValue } from '../../helpers/assertions.mts'
 import { createTestUserDirect } from '../../../backend/test-helpers/entities/users-direct.mts'
@@ -23,52 +35,40 @@ test.describe('My Spending Categories', () => {
   })
 
   test('displays page heading', async ({ page }) => {
-    await expect(page.getByTestId('spending-categories-heading')).toContainText(
-      'Spending Categories',
-    )
+    await assertManagerHeading(page, 'spending-categories-heading', 'Spending Categories')
   })
 
   test('displays seeded spending category', async ({ page }) => {
-    await expect(
-      page.getByTestId('spending-category-name').filter({ hasText: 'Groceries' }),
-    ).toBeVisible()
+    await assertSeededName(page, 'spending-category-name', 'Groceries')
   })
 
   test('displays amount and frequency', async ({ page }) => {
-    await expect(page.getByTestId('spending-category-amount').first()).toContainText('Monthly')
+    await assertContainedValue(page, 'spending-category-amount', 'Monthly')
   })
 
   test('add form is always visible without clicking any button', async ({ page }) => {
-    await expect(page.getByTestId('spending-categories-manager')).toBeVisible()
-    await expect(page.getByTestId('spending-categories-add-form-heading')).toBeVisible()
-    await expect(page.getByTestId('spending-categories-add-amount-label')).toBeVisible()
-    await expect(page.getByTestId('spending-categories-add-frequency-label')).toBeVisible()
+    await assertManagerControlVisible(page, 'spending-categories-manager')
+    await assertManagerControlVisible(page, 'spending-categories-add-form-heading')
+    await assertManagerControlVisible(page, 'spending-categories-add-amount-label')
+    await assertManagerControlVisible(page, 'spending-categories-add-frequency-label')
   })
 
   test('shows edit button', async ({ page }) => {
-    await expect(page.getByTestId('spending-category-edit-button').first()).toBeVisible()
+    await assertFirstManagerControlVisible(page, 'spending-category-edit-button')
   })
 
   test('edit form validates empty amount', async ({ page }) => {
-    await page.getByTestId('spending-category-edit-button').first().click()
-    const amountInput = page.getByTestId('spending-category-edit-amount-input')
-    await amountInput.press('ControlOrMeta+A')
-    await amountInput.press('Backspace')
-    await page.getByTestId('spending-category-edit-save-button').click()
-    await expect(page.locator('[data-sonner-toast][data-type="error"]')).toContainText(
-      'Please enter a valid amount',
-    )
+    await clickFirstManagerControl(page, 'spending-category-edit-button')
+    await clearManagerInputWithSelectAll(page, 'spending-category-edit-amount-input')
+    await clickManagerControl(page, 'spending-category-edit-save-button')
+    await assertManagerErrorToast(page, 'Please enter a valid amount')
   })
 
   test('responsive layout on mobile', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 667 })
+    await useIphoneSeViewport(page)
     await navigateTo(page, '/my/spending-categories')
-    await expect(page.getByTestId('spending-categories-heading')).toContainText(
-      'Spending Categories',
-    )
-    await expect(
-      page.getByTestId('spending-category-name').filter({ hasText: 'Groceries' }),
-    ).toBeVisible()
+    await assertManagerHeading(page, 'spending-categories-heading', 'Spending Categories')
+    await assertSeededName(page, 'spending-category-name', 'Groceries')
   })
 })
 
