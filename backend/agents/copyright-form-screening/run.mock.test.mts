@@ -80,7 +80,9 @@ describe('copyright form screening agent', () => {
       statutory_fields_complete: true,
       claimant_display_name: 'Claimant',
       work_description: 'A photograph',
-      hosted_use_urls: [expect.stringMatching(/^https:\/\/voucha\.ai\/posts\//)],
+      hosted_use_urls: [
+        expect.stringMatching(/^https:\/\/voucha\.ai\/[a-z-]+\/form-agent-[0-9a-f-]+$/),
+      ],
       has_claimant_contact: true,
       has_claimant_email: true,
       has_electronic_signature: true,
