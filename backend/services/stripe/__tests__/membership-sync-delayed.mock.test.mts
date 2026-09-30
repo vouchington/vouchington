@@ -40,26 +40,28 @@ describe('delayed Stripe membership synchronization', () => {
     vi.clearAllMocks()
   })
 
-  it('uses provider lifecycle clocks when a terminal subscription arrives late', async () => {
+  async function arrangeLateTerminalSubscription(input: {
+    idPrefix: string
+    includeProviderStart: boolean
+  }) {
     const member = await createTestUser()
     const sku = await createTestSku({
       plan: 'plus',
       provider_application_id: applicationContext.applicationId,
     })
-    const subscriptionId = `sub_delayed_${randomUUID()}`
+    const subscriptionId = `sub_${input.idPrefix}_${randomUUID()}`
+    const eventId = `evt_${input.idPrefix}_${randomUUID()}`
     const effectiveAt = new Date('2020-01-01T00:00:00.000Z')
     const expiresAt = new Date('2020-02-01T00:00:00.000Z')
     const endedAt = new Date('2020-02-02T00:00:00.000Z')
-    const eventId = `evt_delayed_${randomUUID()}`
     await insertStripeEvent(makeStripeSubscriptionEvent(eventId, subscriptionId))
-
     mockGetStripeCustomer.mockResolvedValue({ metadata: { userId: member.id } } as never)
     mockGetStripeSubscription.mockResolvedValue({
       id: subscriptionId,
       livemode: true,
       status: 'canceled',
       cancel_at_period_end: false,
-      start_date: effectiveAt.getTime() / 1000,
+      ...(input.includeProviderStart ? { start_date: effectiveAt.getTime() / 1000 } : {}),
       ended_at: endedAt.getTime() / 1000,
       items: {
         data: [
@@ -70,13 +72,21 @@ describe('delayed Stripe membership synchronization', () => {
         ],
       },
     } as never)
-
     await ensureMembershipFromStripeSubscription(
       eventId,
       subscriptionId,
-      `cus_delayed_${randomUUID()}`,
+      `cus_${input.idPrefix}_${randomUUID()}`,
       applicationContext,
     )
+    return { member, subscriptionId, eventId, effectiveAt, expiresAt, endedAt }
+  }
+
+  it('uses provider lifecycle clocks when a terminal subscription arrives late', async () => {
+    const { member, subscriptionId, eventId, effectiveAt, expiresAt, endedAt } =
+      await arrangeLateTerminalSubscription({
+        idPrefix: 'delayed',
+        includeProviderStart: true,
+      })
 
     await expect(
       getMembershipByStripeSubscriptionId(
@@ -166,40 +176,11 @@ describe('delayed Stripe membership synchronization', () => {
   })
 
   it('clamps a missing provider start to an elapsed period end', async () => {
-    const member = await createTestUser()
-    const sku = await createTestSku({
-      plan: 'plus',
-      provider_application_id: applicationContext.applicationId,
-    })
-    const subscriptionId = `sub_missing_start_${randomUUID()}`
-    const expiresAt = new Date('2020-02-01T00:00:00.000Z')
-    const endedAt = new Date('2020-02-02T00:00:00.000Z')
-    const eventId = `evt_missing_start_${randomUUID()}`
-    await insertStripeEvent(makeStripeSubscriptionEvent(eventId, subscriptionId))
-
-    mockGetStripeCustomer.mockResolvedValue({ metadata: { userId: member.id } } as never)
-    mockGetStripeSubscription.mockResolvedValue({
-      id: subscriptionId,
-      livemode: true,
-      status: 'canceled',
-      cancel_at_period_end: false,
-      ended_at: endedAt.getTime() / 1000,
-      items: {
-        data: [
-          {
-            price: { id: sku.stripe_price_id, unit_amount: 1_000, currency: 'usd' },
-            current_period_end: expiresAt.getTime() / 1000,
-          },
-        ],
-      },
-    } as never)
-
-    await ensureMembershipFromStripeSubscription(
-      eventId,
-      subscriptionId,
-      `cus_missing_start_${randomUUID()}`,
-      applicationContext,
-    )
+    const { member, subscriptionId, eventId, expiresAt, endedAt } =
+      await arrangeLateTerminalSubscription({
+        idPrefix: 'missing_start',
+        includeProviderStart: false,
+      })
 
     await expect(
       getMembershipByStripeSubscriptionId(
