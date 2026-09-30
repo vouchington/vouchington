@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { registerFollowedRssFeedPageTests } from '@/test-helpers/app/my/followed-rss-feed-page'
 
 const { mockRequireCurrentUser, mockGetUserRssFeedsCollection } = vi.hoisted(() => ({
   mockRequireCurrentUser: vi.fn<VitestLooseMock>(),
@@ -41,27 +41,10 @@ import MyChannelsPage from './page'
 const baseUser = { id: 'user-1', username: 'alice' }
 
 describe('MyChannelsPage', () => {
-  beforeEach(() => {
-    mockRequireCurrentUser.mockReset()
-    mockGetUserRssFeedsCollection.mockReset()
-    mockGetUserRssFeedsCollection.mockResolvedValue({
-      results: [],
-      page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
-      topic_elections: {},
-      hostname_elections: {},
-    })
-  })
-
-  it('redirects to /login when not authenticated', async () => {
-    mockRequireCurrentUser.mockRejectedValue(new Error('redirect:/login'))
-    await expect(MyChannelsPage()).rejects.toThrow('redirect:/login')
-    expect(mockRequireCurrentUser).toHaveBeenCalled()
-  })
-
-  it('renders the page heading when authenticated', async () => {
-    mockRequireCurrentUser.mockResolvedValue(baseUser)
-    render(await MyChannelsPage())
-    expect(screen.getByTestId('bookmark-page-header')).toBeDefined()
+  registerFollowedRssFeedPageTests({
+    loadPage: () => MyChannelsPage(),
+    requireCurrentUser: mockRequireCurrentUser,
+    getUserRssFeedsCollection: mockGetUserRssFeedsCollection,
   })
 
   it('calls getUserRssFeedsCollection with video type', async () => {
@@ -72,23 +55,5 @@ describe('MyChannelsPage', () => {
       'following',
       expect.objectContaining({ feedType: 'video' }),
     )
-  })
-
-  it('renders RssFeedListItem for each result when results are non-empty', async () => {
-    mockRequireCurrentUser.mockResolvedValue(baseUser)
-    mockGetUserRssFeedsCollection.mockResolvedValue({
-      results: [
-        { id: 'feed-1', topic: { id: 'topic-1' }, hostname: null },
-        { id: 'feed-2', topic: { id: 'topic-2' }, hostname: null },
-      ],
-      page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
-      topic_elections: {},
-      hostname_elections: {},
-      bookmarks: {},
-      election_votes: {},
-    })
-    render(await MyChannelsPage())
-    const items = screen.getAllByTestId('rss-feed-list-item')
-    expect(items).toHaveLength(2)
   })
 })
