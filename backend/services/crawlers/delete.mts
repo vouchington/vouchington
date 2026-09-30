@@ -1,3 +1,5 @@
+import { recordModeratorAction } from '@services/moderator-actions'
+import { crawlerHistorySnapshot } from './history.mts'
 import type { PrivateUser } from '@services/users/types'
 import { beginTransaction, write } from '@data-stores/psql'
 import { getCrawlerById } from './get.mts'
@@ -5,6 +7,10 @@ import sql from 'sql-template-strings'
 
 export const deleteCrawler = async (deleter: PrivateUser, crawlerId: string): Promise<void> => {
   await using query = await beginTransaction()
+
+  await query(
+    sql`/* deleteCrawler:lock */ SELECT id FROM crawlers WHERE id = ${crawlerId} AND deleted_at IS NULL FOR UPDATE`,
+  )
 
   // Check if crawler exists and is not already deleted
   const crawler = await getCrawlerById(crawlerId, { query })
@@ -23,5 +29,14 @@ export const deleteCrawler = async (deleter: PrivateUser, crawlerId: string): Pr
     { query },
   )
 
+  await recordModeratorAction(
+    deleter.id,
+    {
+      actionType: 'crawler_delete',
+      crawlerId,
+      metadata: { before: crawlerHistorySnapshot(crawler), after: { deleted: true } },
+    },
+    { query },
+  )
   await query.commit()
 }

@@ -1,3 +1,4 @@
+import { recordModeratorAction } from '@services/moderator-actions'
 import { assertWhitelistedSqlIdentifier, read, beginTransaction } from '@data-stores/psql'
 import {
   VOTE_ENTITY_ID_COLUMN_IDENTIFIERS,
@@ -100,6 +101,15 @@ export async function applyVoteRingPenalty(
           query,
           enqueueRecalculation: false,
         })
+  await recordModeratorAction(
+    adminUserId,
+    {
+      actionType: 'vote_integrity_penalty_apply',
+      voteIntegrityFlagId: flagId,
+      metadata: { after: { penalized_user_count: userIds.length } },
+    },
+    { query },
+  )
   await query.commit()
 
   if (userIds.length > 0) {

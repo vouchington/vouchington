@@ -1,3 +1,4 @@
+import { expectStaffOperationHistory } from '@voucha/test-helpers/staff-operation-history'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
@@ -110,6 +111,7 @@ describe('index', () => {
         const response = await request.post('/api/v1/mq/queues/psql/pause').expect(200)
 
         expect(response.body).toEqual({ success: true })
+        await expectStaffOperationHistory(admin.id, 'queue_pause')
       })
     })
 
@@ -137,6 +139,7 @@ describe('index', () => {
         const response = await request.post('/api/v1/mq/queues/psql/resume').expect(200)
 
         expect(response.body).toEqual({ success: true })
+        await expectStaffOperationHistory(admin.id, 'queue_resume')
       })
     })
   })

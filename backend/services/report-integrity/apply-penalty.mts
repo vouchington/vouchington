@@ -1,3 +1,4 @@
+import { recordModeratorAction } from '@services/moderator-actions'
 import { beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import { markJwtStaleBatch } from '@services/jwt-session/invalidation'
@@ -35,6 +36,18 @@ export async function applyReportAbusePenalty(
 
   await using query = await beginTransaction()
   const result = await applyPenaltyInTransaction()
+  await recordModeratorAction(
+    currentUserId,
+    {
+      actionType: 'report_integrity_penalty_apply',
+      reportIntegrityFlagId: flagId,
+      metadata: {
+        before: { resolution: null },
+        after: { resolution: 'penalized', penalized_user_count: result.penalties.length },
+      },
+    },
+    { query },
+  )
   await query.commit()
 
   // Fire-and-forget: invalidate the JWT tt claim for each penalized user so

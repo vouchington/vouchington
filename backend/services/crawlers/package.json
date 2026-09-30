@@ -27,6 +27,7 @@
     "@jongleberry/vurst-html": "^0.4.3",
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/moderator-actions": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/config": "workspace:^",

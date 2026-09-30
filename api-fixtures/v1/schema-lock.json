@@ -166,7 +166,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/moderator-stats": {
       "fixtureIds": ["web.communities.moderator-stats.default"],
-      "hash": "297780f52fb8dde3da349ef3c16c15958f91b94ea79ea981b17530fdc5e06341"
+      "hash": "217c7e4b0aa8bbadd3ebf978f8d6e550d3000bb339d14f3a1bce07a8e2e6b769"
     },
     "GET:/api/v1/communities/:communitySlug/moderator-vacation": {
       "fixtureIds": ["web.communities.moderator-vacation.default"],

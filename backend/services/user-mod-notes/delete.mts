@@ -1,4 +1,5 @@
-import { read, write } from '@data-stores/psql'
+import { recordModeratorAction } from '@services/moderator-actions'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
@@ -10,15 +11,16 @@ export async function deleteUserModNote(
   noteId: string,
   targetUserId: string,
 ): Promise<void> {
-  const { rows } = await read(sql`/* deleteUserModNote */
-    SELECT id, target_user_id, author_user_id, community_id
+  await using query = await beginTransaction()
+  const { rows } = await query(sql`/* deleteUserModNote */
+    SELECT id, target_user_id, author_user_id, community_id, body
     FROM user_mod_notes
     WHERE id = ${noteId}
       AND deleted_at IS NULL
-    LIMIT 1
+    FOR UPDATE
   `)
   const note = rows[0] as
-    | Pick<UserModNote, 'id' | 'target_user_id' | 'author_user_id' | 'community_id'>
+    | Pick<UserModNote, 'id' | 'target_user_id' | 'author_user_id' | 'community_id' | 'body'>
     | undefined
   assert(note, 404, 'Note not found')
   assert(note.target_user_id === targetUserId, 404, 'Note not found')
@@ -34,10 +36,22 @@ export async function deleteUserModNote(
     }
   }
 
-  await write(sql`/* deleteUserModNote */
+  await query(sql`/* deleteUserModNote */
     UPDATE user_mod_notes
     SET deleted_at = now()
     WHERE id = ${noteId}
       AND deleted_at IS NULL
   `)
+  await recordModeratorAction(
+    currentUser.id,
+    {
+      actionType: 'mod_note_delete',
+      userModNoteId: noteId,
+      targetUserId,
+      communityId: note.community_id,
+      metadata: { before: { body: note.body, deleted: false }, after: { deleted: true } },
+    },
+    { query },
+  )
+  await query.commit()
 }

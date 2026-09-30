@@ -1,3 +1,5 @@
+import { recordModeratorAction } from '@services/moderator-actions'
+import { crawlerHistorySnapshot } from './history.mts'
 import type { PrivateUser } from '@services/users/types'
 import { isUUID } from '@modules/utils'
 import { beginTransaction, write } from '@data-stores/psql'
@@ -12,6 +14,14 @@ export const createCrawler = async (
   updates: CreateCrawlerUpdates,
   options: QueryOptions = {},
 ): Promise<Crawler> => {
+  if (!options.query) {
+    await using query = await beginTransaction(
+      options.client ? { client: options.client } : undefined,
+    )
+    const crawler = await createCrawler(creator, updates, { query })
+    await query.commit()
+    return crawler
+  }
   assert(updates.crawler_type, 422, 'Crawler type is required')
   assert(
     ['fetch', 'automation'].includes(updates.crawler_type),
@@ -51,7 +61,19 @@ export const createCrawler = async (
     options,
   )
 
-  return (await getCrawlerById(rows[0].id, options))!
+  const crawler = (await getCrawlerById(rows[0].id, options))!
+  if (creator?.roles.includes('administrator')) {
+    await recordModeratorAction(
+      creator.id,
+      {
+        actionType: 'crawler_create',
+        crawlerId: crawler.id,
+        metadata: { after: crawlerHistorySnapshot(crawler) },
+      },
+      options,
+    )
+  }
+  return crawler
 }
 
 const createCrawlerForHostname = async (

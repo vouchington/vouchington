@@ -9,7 +9,8 @@ import {
   backdateModQueueClaim,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { claimModerationQueueItem, releaseModerationQueueItem } from '../create.mts'
+import { claimModerationQueueItem } from '../create.mts'
+import { releaseModerationQueueItem } from '../release.mts'
 
 async function createTestCommunity(ownerId: string) {
   const community = await insertTestCommunity({ createdById: ownerId })

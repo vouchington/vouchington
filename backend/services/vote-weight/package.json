@@ -25,6 +25,7 @@
     "@modules/on-error": "workspace:^",
     "@queues/elections": "workspace:^",
     "@services/elections-votes": "workspace:^",
+    "@services/moderator-actions": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
     "sql-template-strings": "^2.2.2",

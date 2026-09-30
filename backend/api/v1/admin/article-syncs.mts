@@ -1,3 +1,4 @@
+import { recordStaffOperation } from '@services/moderator-actions'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isHttpError } from 'http-errors'
@@ -16,10 +17,15 @@ import { apiResponse } from '../../response-contract.mts'
 app.route('/api/v1/article-syncs').post(async (ctx: Context) => {
   const currentUser = await requireAuthAndRateLimit(ctx, isAdminUser, 'POST:/api/v1/article-syncs')
 
-  const job = await enqueueArticleSync(currentUser.id)
-  if (!job) {
-    ctx.throw(409, 'An article sync was already triggered recently')
-  }
+  const job = await recordStaffOperation(
+    currentUser.id,
+    { actionType: 'article_sync_run', queueName: articleSync.name },
+    async () => {
+      const queued = await enqueueArticleSync(currentUser.id)
+      if (!queued) ctx.throw(409, 'An article sync was already triggered recently')
+      return queued
+    },
+  )
 
   ctx.setStatus(202)
   ctx.json({ jobId: job.id })

@@ -6,7 +6,8 @@ import {
   insertTestModerationReport,
   insertTestPost,
 } from '@voucha/test-helpers'
-import { claimModerationQueueItem, releaseModerationQueueItem } from '../create.mts'
+import { claimModerationQueueItem } from '../create.mts'
+import { releaseModerationQueueItem } from '../release.mts'
 
 async function createOwnedCommunity(ownerId: string) {
   const community = await insertTestCommunity({ createdById: ownerId })

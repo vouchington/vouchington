@@ -28,6 +28,7 @@
     "@modules/queue-errors": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/entity-relations": "workspace:^",
+    "@services/moderator-actions": "workspace:^",
     "@services/referral-program-link-validations": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/topics": "workspace:^",

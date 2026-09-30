@@ -24,7 +24,43 @@ BEGIN
     'resolve_report',
     'dismiss_report',
     'resolve_appeal',
-    'dismiss_appeal'
+    'dismiss_appeal',
+    'topic_claim_verify',
+    'topic_claim_reject',
+    'topic_claim_revoke',
+    'report_claim',
+    'report_unclaim',
+    'report_escalate',
+    'report_deescalate',
+    'report_integrity_flag_review',
+    'report_integrity_penalty_apply',
+    'report_integrity_penalty_revoke',
+    'vote_integrity_flag_review',
+    'vote_integrity_penalty_apply',
+    'vote_integrity_penalty_revoke',
+    'vote_weight_set',
+    'vote_weight_reset',
+    'agent_moderation_vote_set',
+    'agent_moderation_vote_delete',
+    'mod_note_delete',
+    'report_judgement_rerun',
+    'appeal_resolution_draft_rerun',
+    'dispute_resolution_draft_rerun',
+    'oauth_client_verify',
+    'oauth_client_unverify',
+    'crawler_create',
+    'crawler_update',
+    'crawler_delete',
+    'rss_category_assign',
+    'rss_category_reject',
+    'rss_category_unreject',
+    'queue_pause',
+    'queue_resume',
+    'queue_retry_failed',
+    'scheduled_job_run',
+    'backfill_run',
+    'article_sync_run',
+    'import_batch_create'
   );
 EXCEPTION
   WHEN duplicate_object THEN NULL;
@@ -51,6 +87,22 @@ CREATE TABLE IF NOT EXISTS moderator_actions (
   moderation_appeal_id uuid,
   -- guardrails-disable-next-line uuid-must-be-key
   community_application_id uuid REFERENCES community_applications (id) ON DELETE SET NULL,
+  topic_claim_id uuid REFERENCES topic_claims (id) ON DELETE SET NULL,
+  report_integrity_flag_id uuid,
+  report_abuse_penalty_id uuid,
+  vote_integrity_flag_id uuid REFERENCES vote_integrity_flags (id) ON DELETE SET NULL,
+  vote_weight_penalty_id uuid REFERENCES vote_weight_penalties (id) ON DELETE SET NULL,
+  agent_moderation_id uuid REFERENCES agent_moderations (id) ON DELETE SET NULL,
+  oauth_client_id uuid,
+  user_mod_note_id uuid REFERENCES user_mod_notes (id) ON DELETE SET NULL,
+  crawler_id uuid REFERENCES crawlers (id) ON DELETE SET NULL,
+  topic_id uuid REFERENCES topics (id) ON DELETE SET NULL,
+  operation_request_id uuid REFERENCES moderator_actions (id) ON DELETE SET NULL,
+  queue_name text,
+  scheduled_job_key text,
+  backfill_key text,
+  rss_category_text text,
+  admin_import_batch_id uuid REFERENCES admin_import_batches (id) ON DELETE SET NULL,
   reason text,
   metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -111,3 +163,40 @@ CREATE INDEX IF NOT EXISTS idx_moderator_actions__review_dispute_id
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__target_user_id
   ON moderator_actions (target_user_id)
   WHERE target_user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__topic_claim_id
+  ON moderator_actions (topic_claim_id) WHERE topic_claim_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__report_integrity_flag_id
+  ON moderator_actions (report_integrity_flag_id) WHERE report_integrity_flag_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__report_abuse_penalty_id
+  ON moderator_actions (report_abuse_penalty_id) WHERE report_abuse_penalty_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__vote_integrity_flag_id
+  ON moderator_actions (vote_integrity_flag_id) WHERE vote_integrity_flag_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__vote_weight_penalty_id
+  ON moderator_actions (vote_weight_penalty_id) WHERE vote_weight_penalty_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__agent_moderation_id
+  ON moderator_actions (agent_moderation_id) WHERE agent_moderation_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__oauth_client_id
+  ON moderator_actions (oauth_client_id) WHERE oauth_client_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__user_mod_note_id
+  ON moderator_actions (user_mod_note_id) WHERE user_mod_note_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__crawler_id
+  ON moderator_actions (crawler_id) WHERE crawler_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__topic_id
+  ON moderator_actions (topic_id) WHERE topic_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__operation_request_id
+  ON moderator_actions (operation_request_id) WHERE operation_request_id IS NOT NULL;
+
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__admin_import_batch_id
+  ON moderator_actions (admin_import_batch_id) WHERE admin_import_batch_id IS NOT NULL;

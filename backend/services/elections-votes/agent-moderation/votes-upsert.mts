@@ -1,3 +1,4 @@
+import { recordModeratorAction } from '@services/moderator-actions'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueBulkUpdateAgentModerationElectionVoteStats } from '@queues/elections/enqueues'
@@ -66,6 +67,17 @@ export async function upsertAgentModerationElectionVotes(
     userId,
     values.map(vote => vote.agentModerationId),
   )
+  const { rows: previousVotes } = await query<{
+    agent_moderation_id: string
+    score: ElectionVoteScore
+  }>(sql`/* upsertAgentModerationElectionVotes:previous */
+    SELECT DISTINCT ON (agent_moderation_id) agent_moderation_id, score
+    FROM agent_moderation_votes
+    WHERE user_id = ${userId}
+      AND agent_moderation_id = ANY(${values.map(vote => vote.agentModerationId)}::uuid[])
+    ORDER BY agent_moderation_id, id DESC
+  `)
+  const previousScores = new Map(previousVotes.map(vote => [vote.agent_moderation_id, vote.score]))
   const result = await query(sql`/* upsertAgentModerationElectionVotes */
   WITH input_votes AS (
     SELECT *
@@ -95,6 +107,23 @@ export async function upsertAgentModerationElectionVotes(
   if (onVote) {
     await Promise.all(inserted.map(vote => onVote(vote, query)))
   }
+  await Promise.all(
+    inserted.map(vote =>
+      recordModeratorAction(
+        userId,
+        {
+          actionType:
+            vote.score === null ? 'agent_moderation_vote_delete' : 'agent_moderation_vote_set',
+          agentModerationId: vote.entity_id,
+          metadata: {
+            before: { score: previousScores.get(vote.entity_id) ?? null },
+            after: { score: vote.score },
+          },
+        },
+        { query },
+      ),
+    ),
+  )
   const rows = inserted
 
   await query.commit()

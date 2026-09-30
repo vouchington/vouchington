@@ -1,3 +1,4 @@
+import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestUserWarning } from '@voucha/test-helpers'
@@ -171,6 +172,17 @@ describe('POST /api/v1/appeals/:id/resolution-drafts — rerun AI', () => {
       .expect(202)
     expect(response.body.queued).toBe(true)
     expect(response.body.rerun_by_id).toBe(staff.id)
+    const history = (await readStaffActionHistory(staff.id)).filter(
+      row =>
+        row.action_type === 'appeal_resolution_draft_rerun' &&
+        row.moderation_appeal_id === appeal.id,
+    )
+    expect(history).toHaveLength(2)
+    expect(history[0]).toMatchObject({ metadata: { phase: 'requested' } })
+    expect(history[1]).toMatchObject({
+      operation_request_id: history[0]!.id,
+      metadata: { phase: 'finished', outcome: 'succeeded' },
+    })
   })
 
   it('returns 422 after the resolution has been sent', async () => {

@@ -23,7 +23,9 @@ Append-only unified log of moderator and admin actions across the platform.
 | `metadata`                 | `jsonb`        | Structured context snapshot (e.g. role for `change_role`, topic slugs for `tag`)                                                                                                                     |
 | `created_at`               | `timestamptz`  | Virtual, derived from UUIDv7 `id` via `uuid_extract_timestamp()`                                                                                                                                     |
 
-At least one of the entity FK columns must be non-null (enforced by a CHECK constraint).
+Targets use nullable concrete foreign keys with `ON DELETE SET NULL`. There is no non-null-target
+constraint: deleting a target must not delete its audit history. Queue names, scheduled-job keys,
+backfill keys and RSS category text have separate typed text columns because they are not row IDs.
 
 ## Usage
 
@@ -63,3 +65,25 @@ const { results, page_info } = await searchModeratorActions({
 
 - `currentUserCanViewCommunityModlog(currentUser, community, membership)` — `true` for owners, moderators, and moderation staff.
 - Global admin access is gated by `isAdminUser` from `@services/users`.
+
+## Staff action history
+
+Database-backed staff mutations write their history through the same transaction as the change.
+This includes appeal/dispute resolution, topic claims, report ownership/escalation, integrity reviews
+and penalties, vote weights, moderation votes, note deletion, OAuth verification, crawler CRUD,
+RSS-category management and staff import-batch creation. Draft edits retain before/after text in
+their existing lifecycle history. OAuth verification retains the vouched-for name and redirect URIs.
+Targets are typed columns, not metadata IDs. Metadata holds before/after values and operation outcomes.
+
+External administrative operations use `recordStaffOperation`: persist `phase: requested`, execute
+GlideMQ, then append `phase: finished` with `outcome: succeeded` or `failed`. The outcome's
+`operation_request_id` references the request row. Retry-failed records attempted/retried counts,
+including partial success. If the process dies or outcome persistence fails, the request remains
+visible without an outcome; it does not claim success or automatically retry a possibly executed
+operation. PostgreSQL cannot roll back Valkey. This exception applies to admin queue controls,
+scheduled/backfill runs, article sync and queued moderation reruns, not ordinary queue processing.
+
+All these rows are available through the staff global modlog (`GET /api/v1/admin/modlog`).
+Community-scoped moderation continues to appear in that community's modlog. Request-channel
+provenance remains owned by #237/#611; this audit records the authenticated acting user and does
+not infer that an API caller is AI-generated.

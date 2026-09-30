@@ -22,7 +22,7 @@ describe('recalculateUserVoteWeight', () => {
     const user = await createTestUserDirect({ username: randomUsername() })
     const userId = user!.id
 
-    await adminSetVoteWeight(userId, 999)
+    await adminSetVoteWeight(userId, userId, 999)
 
     const result = await recalculateUserVoteWeight(userId)
     // Should skip and return the current (admin-set) weight
@@ -38,7 +38,7 @@ describe('recalculateUserVoteWeight', () => {
     const user = await createTestUserDirect({ username: randomUsername() })
     const userId = user!.id
 
-    await adminSetVoteWeight(userId, 999)
+    await adminSetVoteWeight(userId, userId, 999)
 
     const result = await recalculateUserVoteWeight(userId, { forceRecalculate: true })
     // Should recalculate (not 999) and clear admin_set_at
@@ -54,7 +54,7 @@ describe('recalculateUserVoteWeight', () => {
     const userId = user!.id
 
     // Force weight to 1.0 via admin set then force recalculate
-    await adminSetVoteWeight(userId, 1.0)
+    await adminSetVoteWeight(userId, userId, 1.0)
 
     const result = await recalculateUserVoteWeight(userId, { forceRecalculate: true })
     // Admin multiplier is 10000, so weight >> 1.0

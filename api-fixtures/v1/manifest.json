@@ -7954,7 +7954,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/moderator-stats": {
       "bodyKind": "content",
-      "hash": "297780f52fb8dde3da349ef3c16c15958f91b94ea79ea981b17530fdc5e06341",
+      "hash": "217c7e4b0aa8bbadd3ebf978f8d6e550d3000bb339d14f3a1bce07a8e2e6b769",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -7973,7 +7973,7 @@
               "counts": {
                 "required": true,
                 "schema": {
-                  "name": "Partial<Record<\"remove\" | \"warn\" | \"approve\" | \"reject\" | \"ban\" | \"lift_ban\" | \"activate_restriction\" | \"lift_restriction\" | \"lock\" | \"unlock\" | \"pin\" | \"unpin\" | \"tag\" | \"suspend\" | \"unsuspend\" | \"remove_member\" | \"change_role\" | \"resolve_report\" | \"dismiss_report\" | \"resolve_appeal\" | \"dismiss_appeal\",number>>",
+                  "name": "Partial<Record<\"remove\" | \"warn\" | \"approve\" | \"reject\" | \"ban\" | \"lift_ban\" | \"activate_restriction\" | \"lift_restriction\" | \"lock\" | \"unlock\" | \"pin\" | \"unpin\" | \"tag\" | \"suspend\" | \"unsuspend\" | \"remove_member\" | \"change_role\" | \"resolve_report\" | \"dismiss_report\" | \"resolve_appeal\" | \"dismiss_appeal\" | \"topic_claim_verify\" | \"topic_claim_reject\" | \"topic_claim_revoke\" | \"report_claim\" | \"report_unclaim\" | \"report_escalate\" | \"report_deescalate\" | \"report_integrity_flag_review\" | \"report_integrity_penalty_apply\" | \"report_integrity_penalty_revoke\" | \"vote_integrity_flag_review\" | \"vote_integrity_penalty_apply\" | \"vote_integrity_penalty_revoke\" | \"vote_weight_set\" | \"vote_weight_reset\" | \"agent_moderation_vote_set\" | \"agent_moderation_vote_delete\" | \"mod_note_delete\" | \"report_judgement_rerun\" | \"appeal_resolution_draft_rerun\" | \"dispute_resolution_draft_rerun\" | \"oauth_client_verify\" | \"oauth_client_unverify\" | \"crawler_create\" | \"crawler_update\" | \"crawler_delete\" | \"rss_category_assign\" | \"rss_category_reject\" | \"rss_category_unreject\" | \"queue_pause\" | \"queue_resume\" | \"queue_retry_failed\" | \"scheduled_job_run\" | \"backfill_run\" | \"article_sync_run\" | \"import_batch_create\",number>>",
                   "type": "ref"
                 }
               },
@@ -7986,7 +7986,7 @@
             },
             "type": "object"
           },
-          "Partial<Record<\"remove\" | \"warn\" | \"approve\" | \"reject\" | \"ban\" | \"lift_ban\" | \"activate_restriction\" | \"lift_restriction\" | \"lock\" | \"unlock\" | \"pin\" | \"unpin\" | \"tag\" | \"suspend\" | \"unsuspend\" | \"remove_member\" | \"change_role\" | \"resolve_report\" | \"dismiss_report\" | \"resolve_appeal\" | \"dismiss_appeal\",number>>": {
+          "Partial<Record<\"remove\" | \"warn\" | \"approve\" | \"reject\" | \"ban\" | \"lift_ban\" | \"activate_restriction\" | \"lift_restriction\" | \"lock\" | \"unlock\" | \"pin\" | \"unpin\" | \"tag\" | \"suspend\" | \"unsuspend\" | \"remove_member\" | \"change_role\" | \"resolve_report\" | \"dismiss_report\" | \"resolve_appeal\" | \"dismiss_appeal\" | \"topic_claim_verify\" | \"topic_claim_reject\" | \"topic_claim_revoke\" | \"report_claim\" | \"report_unclaim\" | \"report_escalate\" | \"report_deescalate\" | \"report_integrity_flag_review\" | \"report_integrity_penalty_apply\" | \"report_integrity_penalty_revoke\" | \"vote_integrity_flag_review\" | \"vote_integrity_penalty_apply\" | \"vote_integrity_penalty_revoke\" | \"vote_weight_set\" | \"vote_weight_reset\" | \"agent_moderation_vote_set\" | \"agent_moderation_vote_delete\" | \"mod_note_delete\" | \"report_judgement_rerun\" | \"appeal_resolution_draft_rerun\" | \"dispute_resolution_draft_rerun\" | \"oauth_client_verify\" | \"oauth_client_unverify\" | \"crawler_create\" | \"crawler_update\" | \"crawler_delete\" | \"rss_category_assign\" | \"rss_category_reject\" | \"rss_category_unreject\" | \"queue_pause\" | \"queue_resume\" | \"queue_retry_failed\" | \"scheduled_job_run\" | \"backfill_run\" | \"article_sync_run\" | \"import_batch_create\",number>>": {
             "additionalProperties": false,
             "properties": {
               "activate_restriction": {
@@ -7995,7 +7995,37 @@
                   "type": "number"
                 }
               },
+              "agent_moderation_vote_delete": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "agent_moderation_vote_set": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "appeal_resolution_draft_rerun": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
               "approve": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "article_sync_run": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "backfill_run": {
                 "required": false,
                 "schema": {
                   "type": "number"
@@ -8013,6 +8043,24 @@
                   "type": "number"
                 }
               },
+              "crawler_create": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "crawler_delete": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "crawler_update": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
               "dismiss_appeal": {
                 "required": false,
                 "schema": {
@@ -8020,6 +8068,18 @@
                 }
               },
               "dismiss_report": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "dispute_resolution_draft_rerun": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "import_batch_create": {
                 "required": false,
                 "schema": {
                   "type": "number"
@@ -8043,7 +8103,43 @@
                   "type": "number"
                 }
               },
+              "mod_note_delete": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "oauth_client_unverify": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "oauth_client_verify": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
               "pin": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "queue_pause": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "queue_resume": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "queue_retry_failed": {
                 "required": false,
                 "schema": {
                   "type": "number"
@@ -8067,6 +8163,54 @@
                   "type": "number"
                 }
               },
+              "report_claim": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "report_deescalate": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "report_escalate": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "report_integrity_flag_review": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "report_integrity_penalty_apply": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "report_integrity_penalty_revoke": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "report_judgement_rerun": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "report_unclaim": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
               "resolve_appeal": {
                 "required": false,
                 "schema": {
@@ -8079,6 +8223,30 @@
                   "type": "number"
                 }
               },
+              "rss_category_assign": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "rss_category_reject": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "rss_category_unreject": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "scheduled_job_run": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
               "suspend": {
                 "required": false,
                 "schema": {
@@ -8086,6 +8254,24 @@
                 }
               },
               "tag": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "topic_claim_reject": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "topic_claim_revoke": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "topic_claim_verify": {
                 "required": false,
                 "schema": {
                   "type": "number"
@@ -8104,6 +8290,36 @@
                 }
               },
               "unsuspend": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "vote_integrity_flag_review": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "vote_integrity_penalty_apply": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "vote_integrity_penalty_revoke": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "vote_weight_reset": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "vote_weight_set": {
                 "required": false,
                 "schema": {
                   "type": "number"

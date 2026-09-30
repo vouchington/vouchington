@@ -163,3 +163,10 @@ and manifest shapes are unchanged. The native client source audit found no hardc
 scope consumers to migrate; clients consume the reduced generated catalog. Topic Wikipedia IDs
 and URLs remain content fields and are unaffected. Hosted research/discovery package deletion
 remains owned by #1546; this change only removes their references to retired tools.
+## Staff action history handoff
+
+Issue #635 extends the shared moderator-action catalog and transcript of staff actions with typed
+nullable targets and external-operation request/outcome links. Web consumes the updated generated
+contract and localized action labels. Native modlog readers must consume the regenerated contract
+and recognize these action types before release; staff mutation controls remain web-only where
+specified by the domain matrix. External-operation requests without outcomes must not imply success.

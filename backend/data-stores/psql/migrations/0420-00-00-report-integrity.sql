@@ -157,3 +157,13 @@ COMMENT ON COLUMN report_abuse_penalties.revoked_by_id IS 'Moderator who revoked
 CREATE INDEX IF NOT EXISTS idx_report_abuse_penalties__user_id
   ON report_abuse_penalties (user_id)
   WHERE user_id IS NOT NULL;
+
+ALTER TABLE moderator_actions DROP CONSTRAINT IF EXISTS fk_moderator_actions__report_integrity_flag_id;
+ALTER TABLE moderator_actions ADD CONSTRAINT fk_moderator_actions__report_integrity_flag_id
+  FOREIGN KEY (report_integrity_flag_id) REFERENCES report_integrity_flags (id) ON DELETE SET NULL NOT VALID;
+ALTER TABLE moderator_actions VALIDATE CONSTRAINT fk_moderator_actions__report_integrity_flag_id;
+
+ALTER TABLE moderator_actions DROP CONSTRAINT IF EXISTS fk_moderator_actions__report_abuse_penalty_id;
+ALTER TABLE moderator_actions ADD CONSTRAINT fk_moderator_actions__report_abuse_penalty_id
+  FOREIGN KEY (report_abuse_penalty_id) REFERENCES report_abuse_penalties (id) ON DELETE SET NULL NOT VALID;
+ALTER TABLE moderator_actions VALIDATE CONSTRAINT fk_moderator_actions__report_abuse_penalty_id;

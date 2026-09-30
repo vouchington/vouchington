@@ -43,6 +43,7 @@
     "@services/elections-votes": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/entity-relations": "workspace:^",
+    "@services/moderator-actions": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/urls": "workspace:^",

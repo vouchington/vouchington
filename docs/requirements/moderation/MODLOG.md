@@ -27,3 +27,15 @@ Each row stores an actor, action type, optional community/post/user/report/dispu
 - Platform enforcement: `suspend`, `unsuspend`, `tag`
 
 See also: [Moderation System Users](./MODERATION-SYSTEM-USERS.md).
+
+## Staff history and external operations
+
+The global staff modlog also records topic claims, integrity reviews and penalties, vote changes,
+moderator-note deletion, OAuth verification, crawler changes, RSS-category decisions and staff
+import batches. Row targets use concrete foreign keys; queue names and other non-row targets have
+separate typed columns. Draft lifecycle history preserves replaced public responses/internal notes.
+
+Database changes and history commit together. Administrative queue controls and queued reruns
+record intent before external execution and a linked outcome afterward. A request without an
+outcome means its result is unknown, not that execution failed or can safely be repeated.
+See [staff audit mechanics](../../overview/architecture/services/moderator-actions/README.md#staff-action-history).

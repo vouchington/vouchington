@@ -1,3 +1,8 @@
+import {
+  readStaffActionHistory,
+  readStaffActionTarget,
+  withRejectedStaffActionHistory,
+} from '@voucha/test-helpers/staff-action-history'
 import { randomBytes } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
@@ -50,6 +55,33 @@ describe('staff OAuth client verification', () => {
   beforeAll(async () => {
     admin = await createTestUserDirect()
   })
+
+  it.each(['verify', 'unverify'] as const)(
+    'atomically audits OAuth %s with the reviewed identity',
+    async action => {
+      const actor = await createTestUserDirect()
+      const client = await registerTestClient()
+      if (action === 'unverify') await verifyOAuthClient(admin.id, client.id, client.reviewed)
+      const before = await readStaffActionTarget('oauth_client', client.id)
+      const mutate = () =>
+        action === 'verify'
+          ? verifyOAuthClient(actor.id, client.id, client.reviewed)
+          : unverifyOAuthClient(actor.id, client.id)
+      await withRejectedStaffActionHistory(actor.id, async () => {
+        await expect(mutate()).rejects.toThrow('staff history rejected for test')
+      })
+      expect(await readStaffActionTarget('oauth_client', client.id)).toEqual(before)
+      expect(await readStaffActionHistory(actor.id)).toEqual([])
+      await mutate()
+      const history = await readStaffActionHistory(actor.id)
+      expect(history).toHaveLength(1)
+      expect(history[0]).toMatchObject({
+        action_type: `oauth_client_${action}`,
+        oauth_client_id: client.id,
+        metadata: { [action === 'verify' ? 'after' : 'before']: client.reviewed },
+      })
+    },
+  )
 
   it('allows only administrators to verify clients', () => {
     expect(currentUserCanVerifyOAuthClients({ roles: ['administrator'] })).toBe(true)
@@ -132,9 +164,9 @@ describe('staff OAuth client verification', () => {
     const client = await registerTestClient()
     await verifyOAuthClient(admin.id, client.id, client.reviewed)
 
-    await expect(unverifyOAuthClient(client.id)).resolves.toBe(true)
+    await expect(unverifyOAuthClient(admin.id, client.id)).resolves.toBe(true)
     await expect(listedIds('unverified')).resolves.toContain(client.id)
-    await expect(unverifyOAuthClient(MISSING_ID)).resolves.toBe(false)
+    await expect(unverifyOAuthClient(admin.id, MISSING_ID)).resolves.toBe(false)
   })
 
   it('pages clients newest first', async () => {

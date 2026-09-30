@@ -1,3 +1,4 @@
+import { recordStaffOperation } from '@services/moderator-actions'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { currentUserCanAccessQueueStats } from '@services/queue-monitoring'
@@ -18,7 +19,7 @@ app.route('/api/v1/mq/scheduled-jobs').get(async (ctx: Context) => {
 
 // POST /api/v1/mq/scheduled-jobs/:id/runs - Manually trigger a scheduled job
 app.route('/api/v1/mq/scheduled-jobs/:id/runs').post(async (ctx: Context) => {
-  await requireAuthAndRateLimit(
+  const currentUser = await requireAuthAndRateLimit(
     ctx,
     currentUserCanAccessQueueStats,
     'POST:/api/v1/mq/scheduled-jobs/:id/runs',
@@ -27,6 +28,10 @@ app.route('/api/v1/mq/scheduled-jobs/:id/runs').post(async (ctx: Context) => {
   const job = SCHEDULED_JOBS_REGISTRY.find(j => j.id === ctx.params.id)
   ctx.assert(job, 404, 'Scheduled job not found')
 
-  await job!.trigger()
+  await recordStaffOperation(
+    currentUser.id,
+    { actionType: 'scheduled_job_run', scheduledJobKey: job!.id },
+    async () => job!.trigger(),
+  )
   ctx.json({ success: true })
 })
