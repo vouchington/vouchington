@@ -7,9 +7,7 @@ import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
   createCopyrightDeliveryIntent,
-  createCopyrightNoticeAggregate,
   createOutboundCopyrightCorrespondence,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightEnforcementRequest,
 } from './index.mts'
 import {
@@ -19,6 +17,8 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 async function createEnforcementFixture() {
   const [claimant, moderatorRecord] = await Promise.all([

@@ -1,17 +1,7 @@
-import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightNoticeRecord, CreateCopyrightNoticeAggregateInput } from './types.mts'
-
-export async function createCopyrightNoticeAggregate(
-  input: CreateCopyrightNoticeAggregateInput,
-): Promise<CopyrightNoticeRecord> {
-  await using transaction = await beginTransaction()
-  const notice = await createCopyrightNoticeAggregateInTransaction(input, transaction)
-  await transaction.commit()
-  return notice
-}
 
 /** Internal transaction-aware variant for admission records which must commit with a legal case. */
 export async function createCopyrightNoticeAggregateInTransaction(

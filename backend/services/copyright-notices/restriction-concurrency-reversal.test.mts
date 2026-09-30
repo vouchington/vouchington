@@ -13,10 +13,10 @@ import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
   completeCopyrightMandatoryHumanReview,
-  createCopyrightNoticeAggregate,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
 } from './index.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright restriction reversal concurrency', () => {
   it('cancels a queued withhold after reversal restores the placement', async () => {

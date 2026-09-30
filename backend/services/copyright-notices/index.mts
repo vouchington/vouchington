@@ -1,6 +1,4 @@
-export { createCounterNoticeDeadline } from './deadlines.mts'
 export { assertCopyrightIntakeEnabled, isCopyrightIntakeEnabled } from './activation.mts'
-export { createCopyrightNoticeAggregate } from './create.mts'
 export { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 export { createCopyrightFormIntake, createCopyrightGuestIdentity } from './form-intakes.mts'
 export {
@@ -18,7 +16,6 @@ export {
 export { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 export { reviewCopyrightFormIntake } from './form-reviews.mts'
 export { createCopyrightAppeal, createCopyrightCounterNotice } from './submissions.mts'
-export { appendCopyrightEvidenceArtifact } from './evidence.mts'
 export { createCopyrightEmailIntake } from './email-intakes.mts'
 export { loadCopyrightEmailRawEvidence } from './email-raw-evidence.mts'
 export { recordCopyrightEmailParse } from './email-intake-parses.mts'
@@ -36,7 +33,6 @@ export {
   prepareCopyrightEmailIntakeResponseDelivery,
   searchRecoverableCopyrightEmailIntakeResponseIds,
 } from './email-intake-responses.mts'
-export { getCopyrightNoticePrivateAggregate } from './get.mts'
 export {
   getCopyrightStaffEmailIntake,
   getCopyrightParticipantNoticeDetail,
@@ -72,10 +68,7 @@ export {
   searchBlockedCopyrightHoldRestorationNoticeIds,
   recoverBlockedCopyrightHoldRestorations,
 } from './hold-restoration-recovery.mts'
-export {
-  approveCopyrightCorrespondence,
-  createOutboundCopyrightCorrespondence,
-} from './correspondence.mts'
+export { createOutboundCopyrightCorrespondence } from './correspondence.mts'
 export { createEligibleCopyrightRestoreIntent } from './restoration.mts'
 export {
   createDueStatutoryCopyrightRestoreIntentsForDeadline,

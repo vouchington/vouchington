@@ -1,6 +1,7 @@
 import {
   clearCopyrightEvidenceRetentionPolicy,
   insertApprovedCopyrightEvidenceRetentionPolicy,
+  insertCopyrightEvidenceArtifact,
   insertUnresolvedCopyrightLegalHold,
   readCopyrightEvidenceStorageKey,
   readCopyrightNoticeSubmissionId,
@@ -17,12 +18,11 @@ import {
 import assert from 'node:assert'
 import { describe, expect, it } from 'vitest'
 import {
-  appendCopyrightEvidenceArtifact,
   closeCopyrightNoticeCase,
-  createCopyrightNoticeAggregate,
   previewCopyrightEvidenceRetention,
   recordCopyrightEvidenceRetentionDisposition,
 } from './index.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 
 async function openNotice() {
   const owner = await createTestUserDirect()
@@ -68,7 +68,7 @@ describe('copyright evidence retention preview', () => {
     const staff = await createTestUserDirect({ administrator: true })
     const submissionId = await readCopyrightNoticeSubmissionId(notice.id)
     const storageKey = `evidence/${crypto.randomUUID()}`
-    const artifact = await appendCopyrightEvidenceArtifact({
+    const artifactId = await insertCopyrightEvidenceArtifact({
       submissionId,
       storageKey,
       sha256: Buffer.alloc(32, 7),
@@ -99,13 +99,13 @@ describe('copyright evidence retention preview', () => {
       'legal_hold',
       'open_deadline',
     ])
-    expect(preview.evidenceArtifactIds).toEqual([artifact.id])
+    expect(preview.evidenceArtifactIds).toEqual([artifactId])
     expect(JSON.stringify(preview)).not.toContain(storageKey)
     const disposition = await recordCopyrightEvidenceRetentionDisposition(preview.id)
     expect(disposition.outcome).toBe('refused')
     const again = await recordCopyrightEvidenceRetentionDisposition(preview.id)
     expect(again).toEqual(disposition)
-    expect(await readCopyrightEvidenceStorageKey(artifact.id)).toBe(storageKey)
+    expect(await readCopyrightEvidenceStorageKey(artifactId)).toBe(storageKey)
   })
 
   it('records not_destroyed when the case is clear and still keeps the object', async () => {
@@ -113,7 +113,7 @@ describe('copyright evidence retention preview', () => {
     const staff = await createTestUserDirect({ administrator: true })
     const submissionId = await readCopyrightNoticeSubmissionId(notice.id)
     const storageKey = `evidence/${crypto.randomUUID()}`
-    const artifact = await appendCopyrightEvidenceArtifact({
+    const artifactId = await insertCopyrightEvidenceArtifact({
       submissionId,
       storageKey,
       sha256: Buffer.alloc(32, 9),
@@ -135,11 +135,11 @@ describe('copyright evidence retention preview', () => {
       expect(preview).toMatchObject({
         eligible: true,
         reasons: [],
-        evidenceArtifactIds: [artifact.id],
+        evidenceArtifactIds: [artifactId],
       })
       const disposition = await recordCopyrightEvidenceRetentionDisposition(preview.id)
       expect(disposition.outcome).toBe('not_destroyed')
-      expect(await readCopyrightEvidenceStorageKey(artifact.id)).toBe(storageKey)
+      expect(await readCopyrightEvidenceStorageKey(artifactId)).toBe(storageKey)
     } finally {
       await clearCopyrightEvidenceRetentionPolicy(policyId)
       await setCopyrightEvidenceRetentionGate(false)

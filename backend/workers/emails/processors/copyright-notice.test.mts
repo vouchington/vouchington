@@ -9,11 +9,11 @@ import {
 import {
   createCopyrightEmailIntake,
   createCopyrightFormIntake,
-  getCopyrightNoticePrivateAggregate,
   recordCopyrightEmailParse,
   rejectCopyrightEmailIntake,
 } from '@services/copyright-notices'
 import { processSendCopyrightNoticeEmail } from './copyright-notice.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 async function createEmailDeliveryIntent(): Promise<{ intentId: string; noticeId: string }> {
   const claimant = await createTestUser()

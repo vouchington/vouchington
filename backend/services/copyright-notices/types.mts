@@ -1,7 +1,4 @@
 /* oxlint-disable max-lines -- Copyright domain records stay together as the aggregate's canonical contract. */
-import type { CopyrightDeliveryIntentRecord } from './delivery-types.mts'
-export type { CopyrightDeliveryIntentRecord } from './delivery-types.mts'
-
 export type CopyrightJurisdiction = 'us_dmca' | 'eu_dsa' | 'uk' | 'other'
 export type CopyrightHumanReviewAction = 'confirm' | 'reverse'
 type CopyrightFormSubmissionKind = 'notice' | 'appeal' | 'counter_notice' | 'withdrawal'
@@ -245,24 +242,4 @@ export type CopyrightEmailCorrespondenceReviewRecord = {
   kind: 'supplement' | 'appeal' | 'counter_notice' | 'withdrawal' | 'court_or_ccb_hold' | null
   reviewed_at: Date | null
   reviewed_by_id: string | null
-}
-
-export type CopyrightNoticePrivateAggregate = {
-  notice: CopyrightNoticeRecord
-  targets: CopyrightNoticeTargetRecord[]
-  restrictions: CopyrightRestrictionRecord[]
-  submissions: CopyrightNoticeSubmissionRecord[]
-  appealRecommendations: CopyrightAppealRecommendationRecord[]
-  appealReviews: CopyrightAppealReviewRecord[]
-  counterNoticeReviews: CopyrightCounterNoticeReviewRecord[]
-  emailCorrespondenceReviews: CopyrightEmailCorrespondenceReviewRecord[]
-  assessments: CopyrightNoticeSubmissionAssessmentRecord[]
-  deadlines: CopyrightNoticeDeadlineRecord[]
-  holdAssessments: CopyrightLegalHoldAssessmentRecord[]
-  holdResolutions: CopyrightLegalHoldResolutionRecord[]
-  evidenceArtifacts: CopyrightEvidenceArtifactRecord[]
-  correspondence: CopyrightCorrespondenceRecord[]
-  lifecycleEvents: CopyrightLifecycleEventRecord[]
-  actionIntents: CopyrightActionIntentRecord[]
-  deliveryIntents: CopyrightDeliveryIntentRecord[]
 }

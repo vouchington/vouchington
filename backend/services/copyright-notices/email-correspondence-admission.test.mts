@@ -9,8 +9,6 @@ import { decryptSecret } from '@modules/token-secrets'
 import {
   admitCopyrightEmailCorrespondence,
   createCopyrightEmailIntake,
-  createCopyrightNoticeAggregate,
-  getCopyrightNoticePrivateAggregate,
   prepareCopyrightEmailDelivery,
   recordCopyrightEmailParse,
   rejectCopyrightEmailCorrespondence,
@@ -19,6 +17,8 @@ import {
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright email correspondence admission', () => {
   it('keeps the original email separate from structured counter-notice fields', async () => {

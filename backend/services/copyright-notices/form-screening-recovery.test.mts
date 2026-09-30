@@ -14,7 +14,6 @@ import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/co
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightEnforcementRequest,
   recoverRejectedCopyrightFormReviewEffect,
   searchReconcilableCopyrightEnforcementRequestIds,
@@ -27,6 +26,7 @@ import {
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 async function expectFormEffect(submissionId: string): Promise<void> {
   await expect(readTestPendingCopyrightAgentDispatches(submissionId)).resolves.toEqual([

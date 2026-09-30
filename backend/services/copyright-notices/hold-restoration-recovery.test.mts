@@ -17,7 +17,6 @@ import {
 import {
   appendCopyrightNoticeSubmission,
   appendCopyrightSubmissionAssessment,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
   recoverBlockedCopyrightHoldRestorations,
   searchBlockedCopyrightHoldRestorationNoticeIds,
@@ -30,6 +29,7 @@ import {
   recordOrdinaryCopyrightHold,
 } from './restoration-hold-scene.mts'
 import { createCounterNoticeRestoreIntent } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 const publish: CopyrightTestDeliveryPublisher = async () => undefined
 

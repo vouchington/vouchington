@@ -7,7 +7,7 @@ import {
   readCopyrightTerritorialContractShape,
   withRolledBackTerritorialTransaction,
 } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
-import { createCopyrightFormIntake, createCopyrightNoticeAggregate } from './index.mts'
+import { createCopyrightFormIntake } from './index.mts'
 import {
   acknowledgeEuCopyrightNotice,
   recordEuCopyrightAcknowledgmentFailure,
@@ -25,6 +25,7 @@ import {
   withdrawCopyrightTerritorialPolicyApproval,
 } from './territorial-policy.mts'
 import type { TerritorialNoticeRequest } from './territorial-fields.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 
 function noticeRequest(): TerritorialNoticeRequest {
   const suffix = crypto.randomUUID()

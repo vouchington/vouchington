@@ -5,10 +5,8 @@ import {
   searchRecoverableCopyrightActionIntentIds,
 } from './action-delivery-state.mts'
 import { createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
-import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  getCopyrightNoticePrivateAggregate,
-} from './index.mts'
+import { acceptCopyrightNoticeAndImposeRestriction } from './index.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 function readRecoverableIntentIds(intentId: string, now: Date): Promise<string[]> {
   return readTestOwnedCopyrightSweepIds(

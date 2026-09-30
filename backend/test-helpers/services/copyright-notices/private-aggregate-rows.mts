@@ -1,107 +1,18 @@
-/* oxlint-disable max-lines -- The private aggregate keeps transaction-consistent selectors together. */
-import { beginTransaction } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type {
-  CopyrightCorrespondenceRecord,
   CopyrightAppealRecommendationRecord,
   CopyrightEvidenceArtifactRecord,
   CopyrightLegalHoldAssessmentRecord,
   CopyrightLegalHoldResolutionRecord,
-  CopyrightLifecycleEventRecord,
-  CopyrightNoticeDeadlineRecord,
-  CopyrightNoticePrivateAggregate,
-  CopyrightNoticeRecord,
   CopyrightNoticeSubmissionAssessmentRecord,
-  CopyrightNoticeSubmissionRecord,
   CopyrightNoticeTargetRecord,
   CopyrightRestrictionRecord,
-} from './types.mts'
-import { selectCopyrightActionIntents } from './get-action-intents.mts'
-import { selectCopyrightDeliveryIntents } from './get-delivery-intents.mts'
-import { selectCopyrightReviews } from './get-reviews.mts'
+} from '../../../services/copyright-notices/types.mts'
 
-export async function getCopyrightNoticePrivateAggregate(
+export async function selectAppealRecommendations(
   noticeId: string,
-): Promise<CopyrightNoticePrivateAggregate | null> {
-  await using transaction = await beginTransaction()
-  const { rows: notices } =
-    await transaction<CopyrightNoticeRecord>(sql`/* getCopyrightNoticePrivateAggregate */
-    SELECT id, jurisdiction, legal_basis, received_at, accepted_at, provisional_withholding_at,
-      claimant_user_id,
-      claimant_display_name, claimant_contact_ciphertext, work_description, policy_version
-    FROM copyright_notices WHERE id = ${noticeId} LIMIT 1
-  `)
-  const notice = notices[0]
-  if (!notice) {
-    await transaction.commit()
-    return null
-  }
-  const [
-    targets,
-    restrictions,
-    submissions,
-    appealRecommendations,
-    assessments,
-    deadlines,
-    holdAssessments,
-    holdResolutions,
-    evidenceArtifacts,
-    correspondence,
-    lifecycleEvents,
-    actionIntents,
-    deliveryIntents,
-    reviews,
-  ] = await Promise.all([
-    selectTargets(noticeId, transaction),
-    selectRestrictions(noticeId, transaction),
-    selectRows<CopyrightNoticeSubmissionRecord>(
-      'copyright_notice_submissions',
-      noticeId,
-      transaction,
-    ),
-    selectAppealRecommendations(noticeId, transaction),
-    selectAssessments(noticeId, transaction),
-    selectRows<CopyrightNoticeDeadlineRecord>('copyright_notice_deadlines', noticeId, transaction),
-    selectHoldAssessments(noticeId, transaction),
-    selectHoldResolutions(noticeId, transaction),
-    selectEvidenceArtifacts(noticeId, transaction),
-    selectRows<CopyrightCorrespondenceRecord>(
-      'copyright_notice_correspondence_messages',
-      noticeId,
-      transaction,
-    ),
-    selectRows<CopyrightLifecycleEventRecord>(
-      'copyright_notice_lifecycle_events',
-      noticeId,
-      transaction,
-    ),
-    selectCopyrightActionIntents(noticeId, transaction),
-    selectCopyrightDeliveryIntents(noticeId, transaction),
-    selectCopyrightReviews(noticeId, transaction),
-  ])
-  await transaction.commit()
-  return {
-    notice,
-    targets,
-    restrictions,
-    submissions,
-    appealRecommendations,
-    ...reviews,
-    assessments,
-    deadlines,
-    holdAssessments,
-    holdResolutions,
-    evidenceArtifacts,
-    correspondence,
-    lifecycleEvents,
-    actionIntents,
-    deliveryIntents,
-  }
-}
-
-async function selectAppealRecommendations(
-  noticeId: string,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<CopyrightAppealRecommendationRecord[]> {
   const { rows } = await query<CopyrightAppealRecommendationRecord>(
     sql`/* getCopyrightNoticePrivateAggregate:appealRecommendations */
@@ -116,10 +27,10 @@ async function selectAppealRecommendations(
   return rows
 }
 
-async function selectRows<T extends Record<string, unknown>>(
+export async function selectRows<T extends Record<string, unknown>>(
   table: string,
   noticeId: string,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<T[]> {
   const { rows } = await query<T>(
     sql`/* getCopyrightNoticePrivateAggregate:rows */
@@ -130,9 +41,9 @@ async function selectRows<T extends Record<string, unknown>>(
   return rows
 }
 
-async function selectTargets(
+export async function selectTargets(
   noticeId: string,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<CopyrightNoticeTargetRecord[]> {
   const { rows } =
     await query<CopyrightNoticeTargetRecord>(sql`/* getCopyrightNoticePrivateAggregate:targets */
@@ -145,9 +56,9 @@ async function selectTargets(
   return rows
 }
 
-async function selectRestrictions(
+export async function selectRestrictions(
   noticeId: string,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<CopyrightRestrictionRecord[]> {
   const { rows } =
     await query<CopyrightRestrictionRecord>(sql`/* getCopyrightNoticePrivateAggregate:restrictions */
@@ -158,9 +69,9 @@ async function selectRestrictions(
   return rows
 }
 
-async function selectAssessments(
+export async function selectAssessments(
   noticeId: string,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<CopyrightNoticeSubmissionAssessmentRecord[]> {
   const { rows } =
     await query<CopyrightNoticeSubmissionAssessmentRecord>(sql`/* getCopyrightNoticePrivateAggregate:assessments */
@@ -171,9 +82,9 @@ async function selectAssessments(
   return rows
 }
 
-async function selectHoldAssessments(
+export async function selectHoldAssessments(
   noticeId: string,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<CopyrightLegalHoldAssessmentRecord[]> {
   const { rows } =
     await query<CopyrightLegalHoldAssessmentRecord>(sql`/* getCopyrightNoticePrivateAggregate:holdAssessments */
@@ -192,9 +103,9 @@ async function selectHoldAssessments(
   return rows
 }
 
-async function selectEvidenceArtifacts(
+export async function selectEvidenceArtifacts(
   noticeId: string,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<CopyrightEvidenceArtifactRecord[]> {
   const { rows } = await query<CopyrightEvidenceArtifactRecord>(
     sql`/* getCopyrightNoticePrivateAggregate:evidence */
@@ -209,9 +120,9 @@ async function selectEvidenceArtifacts(
   return rows
 }
 
-async function selectHoldResolutions(
+export async function selectHoldResolutions(
   noticeId: string,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<CopyrightLegalHoldResolutionRecord[]> {
   const { rows } =
     await query<CopyrightLegalHoldResolutionRecord>(sql`/* getCopyrightNoticePrivateAggregate:holdResolutions */

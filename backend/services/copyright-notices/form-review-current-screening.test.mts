@@ -5,7 +5,6 @@ import {
   createClearScreenedForm,
   isTestCopyrightStaffCaseQueued,
 } from '@voucha/test-helpers/services/copyright-notices/screened-form'
-import { getCopyrightNoticePrivateAggregate } from './index.mts'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
 import { appendCopyrightFormScreening } from './form-screenings.mts'
 import {
@@ -13,6 +12,7 @@ import {
   failCopyrightFormScreening,
 } from './form-screening-executions.mts'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('human form review with changing screening authority', () => {
   it('allows human approval of a completed-clear intake whose requester was erased', async () => {

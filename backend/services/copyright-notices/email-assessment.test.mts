@@ -5,12 +5,10 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import {
-  appendCopyrightSubmissionAssessment,
-  createCopyrightNoticeAggregate,
-  getCopyrightNoticePrivateAggregate,
-} from './index.mts'
+import { appendCopyrightSubmissionAssessment } from './index.mts'
 import { getOrCreateEmailAssessment } from './email-assessment.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('getOrCreateEmailAssessment', () => {
   it('reuses the current compliant assessment when concurrent reviewers race', async () => {

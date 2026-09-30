@@ -9,13 +9,11 @@ import {
   markImageDeleted,
   markImageModerationFlagged,
 } from '@voucha/test-helpers'
-import {
-  createCopyrightNoticeAggregate,
-  resolveCopyrightImagePlacement,
-} from '@services/copyright-notices'
+import { resolveCopyrightImagePlacement } from '@services/copyright-notices'
 import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { applyImageBatchUpdates } from './orchestrator/save-images.mts'
 import { findCopyrightImageSimilarityCandidates } from './image-similarity.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 
 describe('findCopyrightImageSimilarityCandidates', () => {
   it('returns only delivery-eligible placement candidates without exposing the source vector', async () => {

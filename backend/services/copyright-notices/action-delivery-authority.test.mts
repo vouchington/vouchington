@@ -24,12 +24,9 @@ import {
 } from '@voucha/test-helpers/entities/media-delivery-repair'
 import { lockImageDeliveryLegalAuthority } from '../media-delivery-safety/delivery-authority.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  appendCopyrightNoticeSubmission,
-  getCopyrightNoticePrivateAggregate,
-  processCopyrightActionIntent,
-} from './index.mts'
+import { appendCopyrightNoticeSubmission, processCopyrightActionIntent } from './index.mts'
 import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright action persisted delivery authority', () => {
   afterEach(() => {

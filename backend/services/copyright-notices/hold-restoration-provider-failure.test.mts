@@ -8,7 +8,6 @@ import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/co
 import {
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
   searchRecoverableCopyrightActionIntentIds,
 } from './index.mts'
@@ -22,6 +21,7 @@ import {
   recordOrdinaryCopyrightHold,
 } from './restoration-hold-scene.mts'
 import { createCounterNoticeRestoreIntent } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 const publish = async () => undefined
 
