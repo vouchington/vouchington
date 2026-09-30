@@ -31,6 +31,40 @@ describe('entity-relations', () => {
     return `${base} ${crypto.randomUUID().slice(0, 8)}`
   }
 
+  async function insertPostWithTwoCategoryTopics(titleToken: string, slugToken: string) {
+    const postId = await insertTestPost({
+      title: `Test Post ${titleToken}`,
+      slug: randomSlug(`test-post-${slugToken}`),
+      createdById: user!.id,
+      markdown: 'Test content',
+    })
+    const topicId1 = await insertTestTopic({
+      name: randomName(`Test Topic ${titleToken}`),
+      slug: randomSlug(`test-topic-${slugToken}-1`),
+      topicType: 'card',
+      createdById: user!.id,
+    })
+    const topicId2 = await insertTestTopic({
+      name: randomName(`Test Topic ${titleToken}`),
+      slug: randomSlug(`test-topic-${slugToken}-2`),
+      topicType: 'card',
+      createdById: user!.id,
+    })
+    const metadata = entityRelationMetadatum.find(
+      m => m.subject_type === 'post' && m.object_type === 'topic' && m.predicate === 'category',
+    )!
+    const relation1 = (
+      await upsertEntityRelation(user!, metadata, { id: postId }, [{ id: topicId1 }])
+    )[0]
+    const relation2 = (
+      await upsertEntityRelation(user!, metadata, { id: postId }, [{ id: topicId2 }])
+    )[0]
+    await Promise.all(
+      [relation1, relation2].map(relation => refreshEntityRelationVoteStatsById(relation.id!)),
+    )
+    return { postId, topicId1, topicId2, relation2 }
+  }
+
   beforeAll(async () => {
     user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
   })
@@ -156,37 +190,9 @@ describe('entity-relations', () => {
       })
 
       it('should filter by minNetVoteScore when specified', async () => {
-        // Create a post and two topics
-        const postId = await insertTestPost({
-          title: 'Test Post Filter',
-          slug: randomSlug('test-post-filter'),
-          createdById: user!.id,
-          markdown: 'Test content',
-        })
-        const topicId1 = await insertTestTopic({
-          name: randomName('Test Topic Filter'),
-          slug: randomSlug('test-topic-filter-1'),
-          topicType: 'card',
-          createdById: user!.id,
-        })
-        const topicId2 = await insertTestTopic({
-          name: randomName('Test Topic Filter'),
-          slug: randomSlug('test-topic-filter-2'),
-          topicType: 'card',
-          createdById: user!.id,
-        })
-        // Create two entity relations
-        const metadata = entityRelationMetadatum.find(
-          m => m.subject_type === 'post' && m.object_type === 'topic' && m.predicate === 'category',
-        )!
-        const relation1 = (
-          await upsertEntityRelation(user!, metadata, { id: postId }, [{ id: topicId1 }])
-        )[0]
-        const relation2 = (
-          await upsertEntityRelation(user!, metadata, { id: postId }, [{ id: topicId2 }])
-        )[0]
-        await Promise.all(
-          [relation1, relation2].map(relation => refreshEntityRelationVoteStatsById(relation.id!)),
+        const { postId, topicId1, topicId2, relation2 } = await insertPostWithTwoCategoryTopics(
+          'Filter',
+          'filter',
         )
 
         // Downvote one relation
@@ -220,35 +226,9 @@ describe('entity-relations', () => {
       })
 
       it('should filter by positiveNetVoteScore when specified', async () => {
-        const postId = await insertTestPost({
-          title: 'Test Post PosScore',
-          slug: randomSlug('test-post-posscore'),
-          createdById: user!.id,
-          markdown: 'Test content',
-        })
-        const topicId1 = await insertTestTopic({
-          name: randomName('Test Topic PosScore'),
-          slug: randomSlug('test-topic-posscore-1'),
-          topicType: 'card',
-          createdById: user!.id,
-        })
-        const topicId2 = await insertTestTopic({
-          name: randomName('Test Topic PosScore'),
-          slug: randomSlug('test-topic-posscore-2'),
-          topicType: 'card',
-          createdById: user!.id,
-        })
-        const metadata = entityRelationMetadatum.find(
-          m => m.subject_type === 'post' && m.object_type === 'topic' && m.predicate === 'category',
-        )!
-        const relation1 = (
-          await upsertEntityRelation(user!, metadata, { id: postId }, [{ id: topicId1 }])
-        )[0]
-        const relation2 = (
-          await upsertEntityRelation(user!, metadata, { id: postId }, [{ id: topicId2 }])
-        )[0]
-        await Promise.all(
-          [relation1, relation2].map(relation => refreshEntityRelationVoteStatsById(relation.id!)),
+        const { postId, topicId1, topicId2, relation2 } = await insertPostWithTwoCategoryTopics(
+          'PosScore',
+          'posscore',
         )
 
         const voteRequest = createRequest()
