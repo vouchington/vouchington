@@ -119,6 +119,71 @@ Query carriers not validated: `GET /my/rewards-program-point-valuations`,
 `GET /my/rewards-program-statuses`, and `GET /my/spending-categories`. `GET /my/cards` paginates
 through `createPaginationParser` but declares no `apiQuery` contract, so it has no query schema.
 
+## Messaging, imports, notifications, and landing pages
+
+Covers the direct-message routes under `/my/messages`, the assistant conversation routes under
+`/my/conversations`, `POST /my/import/topics`, `POST /my/import/rss-feeds` and
+`GET /my/import/rss-feeds/:importId`, the landing-page routes, the web-push subscription routes,
+`GET /my/communities`, and `GET /my/friend-recommendations`.
+
+Status changes from `400` to `422`:
+
+- `POST /my/messages` with a non-object body, neither `user_id` nor `user_ids`, or `user_ids` empty,
+  longer than 25, or holding a non-string.
+- `POST /my/messages/:conversationId/messages` with a non-object body or a non-string `text`.
+- `POST /my/messages/:conversationId/participants` and `PATCH /my/messages/:conversationId` with a
+  non-object body. A missing or invalid `user_id` and an unknown `participant_add_policy` were
+  already `422`.
+- `PATCH /my/conversations/:conversationId` with a missing or non-string `title`.
+- `POST /my/import/topics` with a non-object body, `names` missing, empty, not an array, or longer
+  than 500, and an `Idempotency-Key` that is not a UUID.
+- `POST /my/import/rss-feeds` with a non-object body, no source key or more than one, a non-string
+  `opml`, `csv`, or `urls`, or a non-boolean `follow`.
+- `POST`/`PATCH /my/landing-pages` with a missing or `null` `title` or `slug`, or a wrong-typed
+  `subtitle`.
+- `PUT /my/landing-pages/:pageId/items` with `items` that is not an array, an unknown item `type`, a
+  non-UUID reference id, or a non-string link `label` or `url`.
+- `POST /my/notifications/push-subscriptions` with a non-object body, or a missing or non-string
+  `endpoint`, `p256dh`, or `auth`.
+
+Other behavior changes:
+
+- `POST /my/messages` with both `user_id` and `user_ids` used to take `user_id` and ignore the
+  list. It is now `422`.
+- A non-string entry in `names` (`POST /my/import/topics`) or in `urls`
+  (`POST /my/import/rss-feeds`) used to be dropped silently. It is now `422`.
+- A numeric `title` or `slug` on a landing page used to be coerced to a string. It is now `422`.
+
+Checks the schema does not replace keep their own status:
+
+- `POST /my/messages/:conversationId/messages` still answers `400` for blank `text`.
+- `POST /my/notifications/push-subscriptions` still answers `400` for an unparseable or non-HTTPS
+  `endpoint` and for a short or long `p256dh` or `auth`. A negative or fractional
+  `expiration_time_ms` is `422`.
+- `POST /my/import/topics` still answers `400` when every name is blank, and
+  `POST /my/import/rss-feeds` still answers `400` when a list has no URL column, no non-empty URL,
+  or more than 500 URLs.
+
+Ordering notes:
+
+- Membership on the thread routes under `/my/messages/:conversationId/**` and ownership on
+  `/my/conversations/:conversationId/**` are checked before the schema, so a stranger sees `403`
+  and an unknown id `404` even for a malformed body.
+- `POST /my/messages/:conversationId/participants` and `PATCH /my/messages/:conversationId` check
+  the conversation role in the handler (`currentUserCanManageParticipants`,
+  `currentUserCanChangeParticipantPolicy`) before the schema, so a member or outsider without the
+  role gets `403` for a malformed body. `PATCH /my/landing-pages/:pageId` and
+  `PUT /my/landing-pages/:pageId/items` call `getLandingPageRowForUser` first, so a page the caller
+  does not own is `404`. The services still repeat these checks. Before this change a caller with
+  no access saw a validation status for a malformed body on these routes.
+- `GET /my/messages/:conversationId`, `GET /my/import/rss-feeds/:importId`, and
+  `GET`/`DELETE /my/landing-pages/:pageId` validate only their path carrier, ahead of the service's
+  ownership lookup. The path schema is a plain string that cannot fail, so the order does not change
+  what a caller sees.
+
+Query carriers not validated: `GET /my/communities`, `GET /my/friend-recommendations`, and
+`GET /my/notifications/push-subscriptions` build their query with `createPaginationParser`.
+
 ## Cross-client verification
 
 Every web caller that builds a body for these routes was read against the generated schemas. None
@@ -134,3 +199,7 @@ against the field lists in `request-contracts.json`.
   was checked against a client here.
 - Cards, rewards programs, and spending: the web callers for cards, spending categories, rewards
   program statuses, and point valuations conform, including their `Money` and `ScaledMoney` values.
+- Messaging, imports, notifications, and landing pages: the web callers for messages,
+  participants, the add policy, topic and RSS imports, landing pages, and push subscriptions
+  conform. A push subscription with no expiration sends `expiration_time_ms: null`, which the
+  schema allows. The web client has no caller for `/my/conversations/*`.

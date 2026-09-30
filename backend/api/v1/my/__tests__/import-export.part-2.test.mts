@@ -40,14 +40,14 @@ describe('POST /api/v1/my/import/topics', () => {
       .expect(401)
   })
 
-  it('returns 400 when names is missing', async () => {
+  it('returns 422 when names is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
     await request
       .post('/api/v1/my/import/topics')
       .set('Content-Type', 'application/json')
       .send({})
-      .expect(400)
+      .expect(422)
   })
 
   it('rejects a malformed import attempt identity before importing topics', async () => {
@@ -58,7 +58,7 @@ describe('POST /api/v1/my/import/topics', () => {
       .set('Content-Type', 'application/json')
       .set('Idempotency-Key', 'not-a-uuid')
       .send({ names: ['Technology'] })
-      .expect(400)
+      .expect(422)
   })
 
   it('imports topic names and returns results', async () => {

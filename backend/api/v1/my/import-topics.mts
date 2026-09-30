@@ -1,10 +1,11 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { parseJsonBody, requireAuth } from '../../response-helpers.mts'
-import { apiHeaders, apiResponse } from '../../response-contract.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { apiHeaders, apiResponse, type ApiArrayContract } from '../../response-contract.mts'
 import { CONTRIBUTION_ADMISSION_IN_PROGRESS } from '@modules/on-error/error-codes'
 import { assertCanContribute } from '@services/contribution-gating/assert'
 import { resolveAdmissionIdentity } from '@services/contribution-gating/admission'
+import { parseIdempotencyKeyHeader } from '@services/contribution-gating/admit-route-contribution'
 import { getUserActivePlan } from '@services/memberships'
 import {
   importTopics,
@@ -15,6 +16,10 @@ import { assertNotSuspended } from '@services/users/suspension'
 
 const MAX_TOPICS_PER_IMPORT = 500
 const MAX_TOPIC_IMPORT_BYTES = '2mb'
+
+type ImportTopicsRequest = {
+  names: ApiArrayContract<string, 1, typeof MAX_TOPICS_PER_IMPORT, false>
+}
 
 app.route('/api/v1/my/import/topics').post(async (ctx: Context) => {
   apiHeaders('POST:/api/v1/my/import/topics', {
@@ -38,28 +43,20 @@ app.route('/api/v1/my/import/topics').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/import/topics')
   assertNotSuspended(currentUser)
 
-  const body = await parseJsonBody<Record<string, unknown>>(ctx, MAX_TOPIC_IMPORT_BYTES)
-  ctx.assert(
-    body !== null && typeof body === 'object' && !Array.isArray(body),
-    400,
-    'Invalid JSON body',
-  )
-  ctx.assert(Array.isArray(body.names), 400, 'names (array) is required')
+  const body = await parseJsonBody<ImportTopicsRequest>(ctx, MAX_TOPIC_IMPORT_BYTES)
+  validateRequestContract(ctx, 'POST:/api/v1/my/import/topics', {
+    header: ctx.req.headers,
+    body,
+  })
 
-  const names = (body.names as unknown[]).filter(
-    (n): n is string => typeof n === 'string' && n.trim().length > 0,
-  )
+  // The schema fixes the array's type and size; blank names are dropped semantically.
+  const names = body.names.filter(n => n.trim().length > 0)
   ctx.assert(names.length > 0, 400, 'At least one topic name is required')
-  ctx.assert(
-    names.length <= MAX_TOPICS_PER_IMPORT,
-    400,
-    `Maximum ${MAX_TOPICS_PER_IMPORT} names per import`,
-  )
 
   const membershipPlan = await getUserActivePlan(currentUser.id)
-  const idempotencyKeyHeader = ctx.req.headers['idempotency-key']
-  ctx.assert(!Array.isArray(idempotencyKeyHeader), 400, 'Idempotency-Key must be a single UUID')
-  const importIdentity = resolveAdmissionIdentity(idempotencyKeyHeader ?? null)
+  const importIdentity = resolveAdmissionIdentity(
+    parseIdempotencyKeyHeader(ctx.req.headers['idempotency-key']),
+  )
   let results: ImportTopicResult[]
   try {
     results = await importTopics(currentUser, names, {

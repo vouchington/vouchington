@@ -23,6 +23,17 @@
         "required": ["email_address"],
         "type": "object"
       },
+      "AddParticipantRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "user_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["user_id"],
+        "type": "object"
+      },
       "AdminOAuthClientView": {
         "additionalProperties": false,
         "properties": {
@@ -4422,6 +4433,38 @@
         "required": ["card_id"],
         "type": "object"
       },
+      "CreateConversationRequest": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "user_id": {
+                "format": "uuid",
+                "type": "string"
+              }
+            },
+            "required": ["user_id"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "user_ids": {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 25,
+                "minItems": 1,
+                "type": "array",
+                "uniqueItems": false
+              }
+            },
+            "required": ["user_ids"],
+            "type": "object"
+          }
+        ]
+      },
       "CreateInstanceResult": {
         "additionalProperties": false,
         "properties": {
@@ -4449,6 +4492,29 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "CreateLandingPageRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["slug", "title"],
         "type": "object"
       },
       "CreateOAuthAppRequest": {
@@ -5098,6 +5164,35 @@
           }
         },
         "required": ["name", "slug"],
+        "type": "object"
+      },
+      "CreateWebPushSubscriptionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "auth": {
+            "type": "string"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "expiration_time_ms": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "p256dh": {
+            "type": "string"
+          },
+          "user_agent": {
+            "type": "string"
+          }
+        },
+        "required": ["auth", "endpoint", "p256dh"],
         "type": "object"
       },
       "CuratedAsideItem": {
@@ -7435,6 +7530,52 @@
         ],
         "type": "object"
       },
+      "ImportRssFeedsRequest": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "csv": {
+                "type": "string"
+              },
+              "follow": {
+                "type": "boolean"
+              }
+            },
+            "required": ["csv"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "follow": {
+                "type": "boolean"
+              },
+              "opml": {
+                "type": "string"
+              }
+            },
+            "required": ["opml"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "follow": {
+                "type": "boolean"
+              },
+              "urls": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": ["urls"],
+            "type": "object"
+          }
+        ]
+      },
       "ImportTopicResult": {
         "additionalProperties": false,
         "properties": {
@@ -7456,6 +7597,22 @@
           }
         },
         "required": ["input", "status"],
+        "type": "object"
+      },
+      "ImportTopicsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": false
+          }
+        },
+        "required": ["names"],
         "type": "object"
       },
       "ImportType": {
@@ -8086,6 +8243,88 @@
         "required": ["click_count", "item_id", "item_type"],
         "type": "object"
       },
+      "LandingPageItemRequest": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "entries": {
+                "items": {
+                  "$ref": "#/components/schemas/LandingPageTopicEntryRequest"
+                },
+                "type": "array"
+              },
+              "topic_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": {
+                "const": "topic_group"
+              }
+            },
+            "required": ["entries", "topic_id", "type"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "type": {
+                "const": "link"
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": ["label", "type", "url"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "profile_link_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": {
+                "const": "profile_link"
+              }
+            },
+            "required": ["profile_link_id", "type"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "referral_link_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": {
+                "const": "referral_link"
+              }
+            },
+            "required": ["referral_link_id", "type"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "review_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": {
+                "const": "review"
+              }
+            },
+            "required": ["review_id", "type"],
+            "type": "object"
+          }
+        ]
+      },
       "LandingPageTopic": {
         "additionalProperties": false,
         "properties": {
@@ -8104,6 +8343,38 @@
         },
         "required": ["id", "name", "slug", "topic_type"],
         "type": "object"
+      },
+      "LandingPageTopicEntryRequest": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "referral_link_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": {
+                "const": "referral_link"
+              }
+            },
+            "required": ["referral_link_id", "type"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "review_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": {
+                "const": "review"
+              }
+            },
+            "required": ["review_id", "type"],
+            "type": "object"
+          }
+        ]
       },
       "LandingPageTopicGroupEntry": {
         "anyOf": [
@@ -16296,6 +16567,19 @@
         "required": ["ids"],
         "type": "object"
       },
+      "ReplaceLandingPageItemsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LandingPageItemRequest"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["items"],
+        "type": "object"
+      },
       "ReportAbusePenalty": {
         "additionalProperties": false,
         "properties": {
@@ -17645,6 +17929,16 @@
             "type": "object"
           }
         ]
+      },
+      "SendMessageRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["text"],
+        "type": "object"
       },
       "SessionBody": {
         "additionalProperties": false,
@@ -19157,6 +19451,16 @@
         },
         "type": "object"
       },
+      "UpdateConversationTitleRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["title"],
+        "type": "object"
+      },
       "UpdateCrawlerUpdates": {
         "additionalProperties": false,
         "properties": {
@@ -19256,6 +19560,42 @@
         },
         "type": "object"
       },
+      "UpdateLandingPageRequest": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "is_default": {
+                "const": true
+              }
+            },
+            "required": ["is_default"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "slug": {
+                "type": "string"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "title": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
       "UpdateOAuthAppRequest": {
         "additionalProperties": false,
         "properties": {
@@ -19272,6 +19612,17 @@
             "uniqueItems": true
           }
         },
+        "type": "object"
+      },
+      "UpdateParticipantAddPolicyRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "participant_add_policy": {
+            "enum": ["all_members", "owner_only"],
+            "type": "string"
+          }
+        },
+        "required": ["participant_add_policy"],
         "type": "object"
       },
       "UpdatePointValuationRequest": {
@@ -50751,7 +51102,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateConversationTitleRequest"
               }
             }
           }
@@ -52803,7 +53154,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/ImportRssFeedsRequest"
               }
             }
           }
@@ -52883,7 +53234,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/ImportTopicsRequest"
               }
             }
           }
@@ -52982,7 +53333,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateLandingPageRequest"
               }
             }
           }
@@ -53162,7 +53513,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateLandingPageRequest"
               }
             }
           }
@@ -53312,7 +53663,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/ReplaceLandingPageItemsRequest"
               }
             }
           }
@@ -53476,7 +53827,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateConversationRequest"
               }
             }
           }
@@ -53604,7 +53955,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateParticipantAddPolicyRequest"
               }
             }
           }
@@ -53617,6 +53968,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "participant_add_policy": {
+                      "enum": ["all_members", "owner_only"],
                       "type": "string"
                     }
                   },
@@ -53718,7 +54070,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/SendMessageRequest"
               }
             }
           }
@@ -53805,7 +54157,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/AddParticipantRequest"
               }
             }
           }
@@ -54037,7 +54389,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateWebPushSubscriptionRequest"
               }
             }
           }

@@ -16,6 +16,9 @@ const parser = createPaginationParser({
 })
 
 // GET /api/v1/my/friend-recommendations
+//
+// The query carrier is not schema-validated: the pagination parser owns limit clamping and
+// malformed-cursor 400s, and the generated schema has no unknown-parameter or coercion rules.
 app.route('/api/v1/my/friend-recommendations').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/friend-recommendations', parser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/friend-recommendations')

@@ -10,6 +10,8 @@ const myCommunitiesParser = createPaginationParser({
   limit: { min: 1, max: 100, default: 25 },
 })
 
+// The query carrier is not schema-validated: the pagination parser owns limit clamping and
+// malformed-cursor 400s, and the generated schema has no unknown-parameter or coercion rules.
 async function handleListMyCommunities(ctx: Context) {
   apiQuery('GET:/api/v1/my/communities', myCommunitiesParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/communities')

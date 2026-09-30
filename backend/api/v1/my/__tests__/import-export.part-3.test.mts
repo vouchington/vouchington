@@ -150,25 +150,25 @@ describe('POST /api/v1/my/import/rss-feeds — CSV via JSON body', () => {
     expect(response.body.import).toBeDefined()
   })
 
-  it('accepts a urls array, ignoring non-string and blank entries', async () => {
+  it('accepts a urls array, ignoring blank entries', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
     const response = await request
       .post('/api/v1/my/import/rss-feeds')
       .set('Content-Type', 'application/json')
-      .send({ urls: ['https://example.com/rss', 123, '   ', ''], follow: true })
+      .send({ urls: ['https://example.com/rss', '   ', ''], follow: true })
       .expect(201)
 
     expect(response.body.import).toBeDefined()
   })
 
-  it('returns 400 when no opml, csv, or urls field is present', async () => {
+  it('returns 422 when no opml, csv, or urls field is present', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
     await request
       .post('/api/v1/my/import/rss-feeds')
       .set('Content-Type', 'application/json')
       .send({ follow: true })
-      .expect(400)
+      .expect(422)
   })
 })
