@@ -13,4 +13,3 @@ export type {
   NodeSavedSessionStore,
   OAuthSession,
 } from '@atproto/oauth-client-node'
-export type { Keyset } from '@atproto/jwk'
