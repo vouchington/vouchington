@@ -1,183 +1,27 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-
-import { randomUUID } from 'node:crypto'
-
-import http from 'node:http'
-
-import serverApp from '../../../../backend/entrypoints/api/index.mts'
-
-import * as clientRoutes from '@/lib/api/client'
-
+import { describe, expect, it } from 'vitest'
 import * as serverRoutes from '@/lib/api/server'
+import { createTestUser, safeUsername } from '../../../../backend/test-helpers/index.mts'
+import { installRoutesExtendedHarness } from '../../../test-helpers/routes-extended-harness.mts'
 
-import {
-  createTestPost,
-  createTestTopic,
-  createTestUser,
-  createTestUserWithAge,
-  insertTestCommunity,
-  createReferralProgramFixture,
-  safeUsername,
-} from '../../../../backend/test-helpers/index.mts'
-
-import { createWebApiTestCookieHeader, listenOnFetchSafeLoopback } from '../../routes.mts'
-
-import type { CookieHeader } from '../../routes-extended.mts'
+function unset(target: object, key: string) {
+  delete (target as Record<string, unknown>)[key]
+}
 
 describe('routes-extended', () => {
-  let backendServer: http.Server
-
-  let previousApiBaseUrl: string | undefined
-
-  let previousPublicApiBaseUrl: string | undefined
-
-  let previousFetch: typeof globalThis.fetch
-
-  let hadWindow: boolean
-
-  let previousWindow: unknown
-
-  let backendBaseUrl: string
-
-  let clientRuntimeActive = false
-
-  let clientCookieValue: string | undefined
-
-  let userCookieHeader: CookieHeader
-
-  let adminCookieHeader: CookieHeader
-
-  let userUsername: string
-
-  beforeAll(async () => {
-    previousApiBaseUrl = process.env.API_BASE_URL
-    previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
-
-    backendServer = http.createServer(serverApp.callback())
-    backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
-    process.env.API_BASE_URL = backendBaseUrl
-    process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
-
-    previousFetch = globalThis.fetch
-    hadWindow = Object.hasOwn(globalThis, 'window')
-    previousWindow = (globalThis as { window?: unknown }).window
-    globalThis.fetch = (input, init) => {
-      if (!clientRuntimeActive || typeof input !== 'string' || !input.startsWith('/')) {
-        return previousFetch(input, init)
-      }
-
-      const headers = new Headers(init?.headers)
-      if (process.env.CF_WORKER_SECRET) {
-        headers.set('X-CF-Worker-Secret', process.env.CF_WORKER_SECRET)
-      }
-      if (clientCookieValue) {
-        headers.set('Cookie', clientCookieValue)
-        if ((init?.method ?? 'GET').toUpperCase() !== 'GET') {
-          headers.set('Origin', backendBaseUrl)
-        }
-      }
-
-      return previousFetch(`${backendBaseUrl}${input}`, {
-        ...init,
-        headers,
-      })
-    }
-
-    const EIGHT_DAYS_MS = 8 * 24 * 60 * 60 * 1000
-    const user = await createTestUserWithAge(EIGHT_DAYS_MS)
-    const admin = await createTestUser({ administrator: true })
-    userUsername = user.username!
-
-    userCookieHeader = await createWebApiTestCookieHeader(user.id)
-    adminCookieHeader = await createWebApiTestCookieHeader(admin.id)
-
-    await createTestTopic({ user: admin })
-
-    const compareTopicsId = randomUUID()
-    await createTestTopic({
-      user: admin,
-      slug: `ext-compare-a-${compareTopicsId}`,
-      name: `Extended Compare Topic A ${compareTopicsId}`,
-    })
-    await createTestTopic({
-      user: admin,
-      slug: `ext-compare-b-${compareTopicsId}`,
-      name: `Extended Compare Topic B ${compareTopicsId}`,
-    })
-
-    await createTestPost({ user })
-
-    await insertTestCommunity({ createdById: admin.id })
-
-    await createReferralProgramFixture({ createdById: admin.id })
-
-    const topicRecommendationId = randomUUID()
-    await withClientRuntime(
-      () =>
-        clientRoutes.createTopicRecommendation({
-          markdown: 'A great topic recommendation for testing',
-          topic_title: `Extended Test Topic ${topicRecommendationId}`,
-          topic_slug: `ext-test-topic-rec-${topicRecommendationId}`,
-        }),
-      userCookieHeader,
-    )
-  }, 20_000)
-
-  afterAll(async () => {
-    await new Promise<void>(resolve => {
-      backendServer.close(() => resolve())
-    })
-    if (previousApiBaseUrl === undefined) {
-      delete process.env.API_BASE_URL
-    } else {
-      process.env.API_BASE_URL = previousApiBaseUrl
-    }
-
-    if (previousPublicApiBaseUrl === undefined) {
-      delete process.env.NEXT_PUBLIC_API_BASE_URL
-    } else {
-      process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
-    }
-
-    globalThis.fetch = previousFetch
-    if (hadWindow) {
-      ;(globalThis as { window?: unknown }).window = previousWindow
-    } else {
-      delete (globalThis as { window?: unknown }).window
-    }
-  }, 15_000)
-
-  async function withClientRuntime<T>(
-    run: () => Promise<T>,
-    cookieHeader?: Record<string, string>,
-  ): Promise<T> {
-    clientRuntimeActive = true
-    clientCookieValue = cookieHeader?.Cookie
-    ;(globalThis as { window?: unknown }).window = {}
-
-    try {
-      return await run()
-    } finally {
-      clientRuntimeActive = false
-      clientCookieValue = undefined
-
-      if (hadWindow) {
-        ;(globalThis as { window?: unknown }).window = previousWindow
-      } else {
-        delete (globalThis as { window?: unknown }).window
-      }
-    }
-  }
+  const harness = installRoutesExtendedHarness({
+    unset,
+    workerSecret: 'always',
+  })
 
   describe('users server routes', () => {
     it('getUserTopicsCollection returns an empty result for a user following no topics', async () => {
-      const result = await serverRoutes.getUserTopicsCollection(userUsername, 'following')
+      const result = await serverRoutes.getUserTopicsCollection(harness.user.username!, 'following')
       expect(result).not.toBeNull()
       expect(result?.results).toEqual([])
     })
 
     it('getUserUsersCollection returns an empty result for a user following no users', async () => {
-      const result = await serverRoutes.getUserUsersCollection(userUsername, 'following')
+      const result = await serverRoutes.getUserUsersCollection(harness.user.username!, 'following')
       expect(result).not.toBeNull()
       expect(result?.results).toEqual([])
     })
@@ -189,6 +33,7 @@ describe('routes-extended', () => {
       // returnNullForMissingEntity's nullStatusCodes converts to null. Assert the raw status
       // directly so a regression that instead 404s (broken route, missing target) can't produce
       // the same null through a different failure mode and slip past this test.
+      const userUsername = harness.user.username!
       await expect(
         serverRoutes.serverApi.get(
           `/api/v1/users/${encodeURIComponent(userUsername)}/rss-feed-items/saved`,
@@ -221,7 +66,7 @@ describe('routes-extended', () => {
         positive_by_following: { total: number; users: unknown[] }
         negative_by_following: { total: number; users: unknown[] }
       }>(`/api/v1/users/${encodeURIComponent(target.id)}/vouch-context`, {
-        headers: userCookieHeader,
+        headers: harness.userCookieHeader,
       })
       expect(raw.positive_by_following).toMatchObject({ total: expect.any(Number) })
       expect(raw.negative_by_following).toMatchObject({ total: expect.any(Number) })
@@ -229,7 +74,7 @@ describe('routes-extended', () => {
     it('GET /api/v1/topics/user-tags returns the curated moderation catalog', async () => {
       const raw = await serverRoutes.serverApi.get<{
         user_tags: Array<{ id: string; slug: string; label: string }>
-      }>('/api/v1/topics/user-tags', { headers: adminCookieHeader })
+      }>('/api/v1/topics/user-tags', { headers: harness.adminCookieHeader })
 
       expect(raw.user_tags).toEqual([
         expect.objectContaining({ slug: 'bot', label: 'Bot' }),
