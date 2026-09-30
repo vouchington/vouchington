@@ -7,7 +7,7 @@ import {
   claimTestDelivery,
   exhaustTestDelivery,
   rejectTestDelivery,
-} from './durable-delivery-transitions.test-support.mts'
+} from '@voucha/test-helpers/services/ap-inbox-activities/durable-delivery-transitions.test-support'
 
 function makeEnvelope(): ActivityPubInboxEnvelope {
   const suffix = randomUUID()

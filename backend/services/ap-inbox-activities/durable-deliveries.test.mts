@@ -14,7 +14,7 @@ import {
   rejectTestDelivery as deleteActivityPubInboxDelivery,
   releaseTestDelivery as releaseActivityPubInboxDeliveryForRetry,
   verifyTestDelivery as markActivityPubInboxDeliveryVerified,
-} from './durable-delivery-transitions.test-support.mts'
+} from '@voucha/test-helpers/services/ap-inbox-activities/durable-delivery-transitions.test-support'
 import { createRemoteActorFixture } from './test-fixtures.mts'
 
 const claimRecoverableActivityPubInboxDeliveries = activityPubInboxDeliveryTransitions.recover

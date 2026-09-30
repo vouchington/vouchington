@@ -5,11 +5,14 @@ import { activityPubInboxConfig } from '@services/ap-inbox-activities'
 import {
   claimTestDelivery,
   rejectTestDelivery,
-} from '@services/ap-inbox-activities/durable-delivery-transitions.test-support'
+} from '@voucha/test-helpers/services/ap-inbox-activities/durable-delivery-transitions.test-support'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { activityPubInboxDeliveryExistsOnPrimaryForTest } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { createRemoteActorFixture, randomSuffix } from './inbox.test-helpers.mts'
+import {
+  createRemoteActorFixture,
+  randomSuffix,
+} from '@voucha/test-helpers/api/activitypub/inbox.test-helpers'
 
 const INBOX_HOST = 'inbox-async-test.example'
 const INBOX_URL = `http://${INBOX_HOST}/ap/inbox`

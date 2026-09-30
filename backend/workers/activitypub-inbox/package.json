@@ -32,7 +32,6 @@
   },
   "devDependencies": {
     "@modules/http-signatures": "workspace:^",
-    "@services/remote-actors": "workspace:^",
     "@services/route-rate-limits": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }

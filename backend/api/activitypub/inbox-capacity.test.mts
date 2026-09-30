@@ -9,7 +9,10 @@ import {
   setActivityPubInboxStorageCountersForTest,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { createRemoteActorFixture, randomSuffix } from './inbox.test-helpers.mts'
+import {
+  createRemoteActorFixture,
+  randomSuffix,
+} from '@voucha/test-helpers/api/activitypub/inbox.test-helpers'
 
 const INBOX_HOST = 'inbox-capacity-test.example'
 const INBOX_URL = `http://${INBOX_HOST}/ap/inbox`

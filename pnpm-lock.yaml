@@ -10528,6 +10528,9 @@ importers:
       '@libpg-query/parser':
         specifier: ^18.0.0
         version: 18.0.0
+      '@modules/http-signatures':
+        specifier: workspace:^
+        version: link:../modules/http-signatures
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../modules/openai-utils
@@ -10892,9 +10895,6 @@ importers:
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../../modules/http-signatures
-      '@services/remote-actors':
-        specifier: workspace:^
-        version: link:../../services/remote-actors
       '@services/route-rate-limits':
         specifier: workspace:^
         version: link:../../services/route-rate-limits

@@ -7,14 +7,14 @@ import { activityPubInboxDeliveryTransitions } from '@services/ap-inbox-activiti
 import {
   claimTestDelivery,
   rejectTestDelivery,
-} from '@services/ap-inbox-activities/durable-delivery-transitions.test-support'
+} from '@voucha/test-helpers/services/ap-inbox-activities/durable-delivery-transitions.test-support'
 import { processDelivery } from '../processors.mts'
 import {
   approveInstance,
   createApprovedRemoteActor,
   createSignedDelivery,
   makeUnavailableActor,
-} from '../test-support.mts'
+} from '@voucha/test-helpers/workers/activitypub-inbox/test-support'
 
 const rearmFailedActivityPubInboxDeliveries = activityPubInboxDeliveryTransitions.rearm
 

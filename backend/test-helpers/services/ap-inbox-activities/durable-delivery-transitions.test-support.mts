@@ -1,5 +1,5 @@
-import { activityPubInboxDeliveryTransitions } from './durable-delivery-transitions.mts'
-import type { ActivityPubInboxEnvelope } from './durable-delivery-transition-contract.mts'
+import { activityPubInboxDeliveryTransitions } from '../../../services/ap-inbox-activities/durable-delivery-transitions.mts'
+import type { ActivityPubInboxEnvelope } from '../../../services/ap-inbox-activities/durable-delivery-transition-contract.mts'
 
 export async function acceptTestDelivery(envelope: ActivityPubInboxEnvelope) {
   const result = await activityPubInboxDeliveryTransitions.accept(envelope)

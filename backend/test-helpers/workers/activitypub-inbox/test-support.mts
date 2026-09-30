@@ -3,8 +3,8 @@ import { buildSignatureHeaders, generateRsaSha256KeyPair } from '@modules/http-s
 import {
   activityPubInboxDeliveryTransitions,
   type ActivityPubInboxEnvelope,
-} from '@services/ap-inbox-activities'
-import { getOrFetchRemoteActorByKeyId } from '@services/remote-actors'
+} from '../../../services/ap-inbox-activities/index.mts'
+import { getOrFetchRemoteActorByKeyId } from '../../../services/remote-actors/index.mts'
 import { insertApprovedTestFediverseInstance as approveInstance } from '@voucha/test-helpers'
 
 export { approveInstance }
