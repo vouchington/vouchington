@@ -124,7 +124,7 @@ CREATE INDEX IF NOT EXISTS idx_moderator_actions__id
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__actor__id
   ON moderator_actions (actor_id, id DESC);
 
-CREATE INDEX IF NOT EXISTS idx_moderator_actions__agent_moderation_post_id__agent_moderation_id
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__agent_moderation_target
   ON moderator_actions (agent_moderation_post_id, agent_moderation_id);
 
 COMMENT ON TABLE moderator_actions IS 'Append-only unified log of moderator/admin actions.';
