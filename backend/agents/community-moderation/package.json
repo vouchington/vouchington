@@ -22,11 +22,12 @@
   "scripts": {},
   "dependencies": {
     "@agents/_shared": "workspace:^",
-    "@agents/moderation": "workspace:^",
+    "@agents/politics-averse": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/community-agent-prompts": "workspace:^",
+    "@services/entity-relations": "workspace:^",
     "@services/moderation": "workspace:^",
     "@services/posts": "workspace:^",
     "openai": "^7.23.0"

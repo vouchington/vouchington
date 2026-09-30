@@ -30,17 +30,6 @@ export async function insertTestAgentPrompt(options: {
   return rows[0].id as string
 }
 
-/**
- * Soft delete a moderation prompt
- */
-export async function softDeleteModerationPrompt(promptId: string): Promise<void> {
-  await write(sql`
-    UPDATE agent_prompts
-    SET deleted_at = CURRENT_TIMESTAMP
-    WHERE id = ${promptId}
-  `)
-}
-
 /** Sets prompt lifecycle time exactly, including restoring a previously deleted prompt. */
 export async function setTestModerationPromptDeletedAt(
   promptId: string,
@@ -101,21 +90,6 @@ export async function getTestCommunityAgentPromptLockFunctionDefinition(): Promi
     ) AS definition
   `)
   return rows[0]!.definition
-}
-
-/**
- * Get moderation prompt activation status
- */
-export async function getModerationPromptStatus(promptId: string): Promise<{
-  activated_at: Date | null
-  deactivated_at: Date | null
-} | null> {
-  const { rows } = await read<{ activated_at: Date | null; deactivated_at: Date | null }>(sql`
-    SELECT activated_at, deactivated_at
-    FROM agent_prompts
-    WHERE id = ${promptId}
-  `)
-  return rows[0] || null
 }
 
 /**

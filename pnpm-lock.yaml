@@ -428,9 +428,9 @@ importers:
       '@agents/_shared':
         specifier: workspace:^
         version: link:../_shared
-      '@agents/moderation':
+      '@agents/politics-averse':
         specifier: workspace:^
-        version: link:../moderation
+        version: link:../politics-averse
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -443,6 +443,9 @@ importers:
       '@services/community-agent-prompts':
         specifier: workspace:^
         version: link:../../services/community-agent-prompts
+      '@services/entity-relations':
+        specifier: workspace:^
+        version: link:../../services/entity-relations
       '@services/moderation':
         specifier: workspace:^
         version: link:../../services/moderation
@@ -587,55 +590,6 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/agents/moderation:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@agents/politics-averse':
-        specifier: workspace:^
-        version: link:../politics-averse
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
-      '@services/elections-votes':
-        specifier: workspace:^
-        version: link:../../services/elections-votes
-      '@services/entity-relations':
-        specifier: workspace:^
-        version: link:../../services/entity-relations
-      '@services/moderation':
-        specifier: workspace:^
-        version: link:../../services/moderation
-      '@services/moderators':
-        specifier: workspace:^
-        version: link:../../services/moderators
-      '@services/post-clearance':
-        specifier: workspace:^
-        version: link:../../services/post-clearance
-      '@services/posts':
-        specifier: workspace:^
-        version: link:../../services/posts
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      openai:
-        specifier: ^7.23.0
-        version: 7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
-      uuid:
-        specifier: ^14.0.2
-        version: 14.0.2
-    devDependencies:
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../../services/topics
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -865,9 +819,6 @@ importers:
       '@agents/conversation-title':
         specifier: workspace:^
         version: link:../agents/conversation-title
-      '@agents/moderation':
-        specifier: workspace:^
-        version: link:../agents/moderation
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../data-stores/valkey
@@ -11020,9 +10971,6 @@ importers:
       '@agents/dispute-resolution':
         specifier: workspace:^
         version: link:../../agents/dispute-resolution
-      '@agents/moderation':
-        specifier: workspace:^
-        version: link:../../agents/moderation
       '@agents/post-classifier':
         specifier: workspace:^
         version: link:../../agents/post-classifier
@@ -11141,18 +11089,12 @@ importers:
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
-      '@services/elections-votes':
-        specifier: workspace:^
-        version: link:../../services/elections-votes
       '@services/moderation-appeals':
         specifier: workspace:^
         version: link:../../services/moderation-appeals
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../../services/topics
       '@services/urls':
         specifier: workspace:^
         version: link:../../services/urls

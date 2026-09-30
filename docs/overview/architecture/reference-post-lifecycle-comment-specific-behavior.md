@@ -16,8 +16,8 @@ Comments use the same `createPost()` path with `post_type='comment'`. Key differ
 | Review topic ratings  | Not applicable                                          |
 | `handleCommentAction` | Refreshes metrics for ALL ancestor posts (up the chain) |
 
-Comments also use the same global moderator dispatcher after clearance approval, so moderators such
-as `politics-averse` run on comments without a separate comment-only pipeline.
+Comments also use the same post-classifier dispatch after clearance approval, so label classifiers
+such as `politics-averse` run on comments without a separate comment-only pipeline.
 
 ---
 

@@ -48,11 +48,9 @@ flowchart TD
   Incomplete -- yes --> Flagged{Either check flagged?}
   Flagged -- yes --> Rejected[Clearance rejected]
   Flagged -- no --> Approved
-  Approved --> LLM[LLM agent moderation dispatcher]
-  LLM --> Builtins[Baseline and community-enabled agents]
-  Builtins --> Review{on_flag_action = review_queue?}
-  Review -- yes --> InReview[Move to review queue]
-  Review -- no --> Tags[Store moderation result / tags]
+  Approved --> Classifier[Post classifier dispatcher]
+  Classifier --> Builtins[Baseline and community-enabled label classifiers]
+  Builtins --> Tags[Apply topic votes and tags]
   Post --> Community{Community post?}
   Community -- yes --> Manual[Community moderation queue]
   Community -- yes --> CommunityAgents[Community agent prompts]
@@ -68,9 +66,9 @@ flowchart TD
 - Post stays `pending` until both spam detection AND OpenAI moderation have completed (`_created_at` columns set)
 - If either is flagged → post becomes `rejected`
 - If both complete and neither flagged → post becomes `approved`
-- On approval → enqueues LLM agent moderation dispatcher
+- On approval → enqueues the post classifier dispatcher
 - Admin-created non-story posts start as `approved` and skip create-time spam detection, OpenAI
-  moderation, and LLM moderator dispatch. Community publication approval still applies when the
+  moderation, and create-time moderation dispatch. Community publication approval still applies when the
   target community requires post approval or raid-mode approval. `processPostCreated` bases the
   automated-moderation bypass on the post's own derived `clearance_status`, not the creator's
   current role, so role changes between insert and async processing do not change the

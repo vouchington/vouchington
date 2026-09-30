@@ -12,8 +12,6 @@ export type AIAgentJobName =
   | 'chat'
   | 'autotagger-post'
   | 'autotagger-rss-feed-item'
-  | 'moderation-dispatcher'
-  | 'moderation-prompt'
   | 'post-classifier-dispatcher'
   | 'post-classifier'
   | 'reconcile-post-classifier-applications'
@@ -36,9 +34,7 @@ export type AIAgentJobName =
 
 export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   chat: 1,
-  'moderation-prompt': 3,
   'community-moderation-prompt': 3,
-  'moderation-dispatcher': 8,
   'post-classifier-dispatcher': 8,
   'post-classifier': 3,
   'reconcile-post-classifier-applications': 100,
@@ -69,17 +65,10 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // blocking it on the spend cap would increase spend, not bound it. `auto-dispatch-judgement` is
 // exempt for the same reason: it only applies an already-computed judgement (remove content, warn
 // a user, escalate, resolve a report) -- it never calls OpenAI itself, and blocking it on the cap
-// would leave harmful content live and reports unactioned. `moderation-dispatcher` is exempt for
-// the same reason too: `processModerationDispatcher()` only computes which moderators still need
-// to run and enqueues `moderation-prompt` jobs -- it never calls OpenAI itself. Gating the
-// dispatcher would also block the spend-free `ai-generated` moderator (it runs the local
-// `@jongleberry/vurst-ai` detector, not OpenAI) from ever being dispatched during a breach.
-// `community-moderation-dispatcher` has no such spend-free moderator, so it stays gated -- every
-// `community-moderation-prompt` job it can enqueue calls OpenAI. `chat` here is necessary but not
-// sufficient: `core.mts`'s gate also excludes Anthropic-routed chat jobs
-// (`job.data.modelProvider === 'anthropic'`), which never call OpenAI at all -- and
-// `moderation-prompt` is likewise necessary but not sufficient: `core.mts`'s gate also excludes
-// `moderatorSlug === AI_GENERATED_MODERATOR_SLUG` prompt jobs for the reason above.
+// would leave harmful content live and reports unactioned. `community-moderation-dispatcher`
+// stays gated: every `community-moderation-prompt` job it can enqueue calls OpenAI. `chat` here is
+// necessary but not sufficient: `core.mts`'s gate also excludes Anthropic-routed chat jobs
+// (`job.data.modelProvider === 'anthropic'`), which never call OpenAI at all.
 // `autotagger-post` and `autotagger-rss-feed-item` (C6) dispatch through the classifier path
 // (`@agents/autotagger/dispatch-classifier.mts`), which calls the seeded `tagging` classifier over
 // OpenRouter/Jev via `createStructuredDecisionClient`, never through the shared `runToolLoop`
@@ -90,8 +79,7 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // `assertOpenAiSpendCapNotBreached`/`recordAgentResponseUsage`/`latchAccountingUncertainty`
 // (issue #616), so C6's OpenRouter/Jev spend is recorded to `ai_usage_records` and subject to the
 // same daily cap as every other job type below, despite never calling OpenAI itself. `story-post`
-// is necessary but not sufficient, the same shape as `chat`/`moderation-prompt` above: a
-// non-force retry against a post
+// is necessary but not sufficient, the same shape as `chat` above: a non-force retry against a post
 // that already has `ai_summary_markdown` set only re-persists the existing summary to re-trigger
 // the downstream moderation/spam/embedding jobs (`updateStoryPostAgentResult`) -- it never calls
 // `callStoryPostAgent`. Blocking that recovery path on the cap would delay it until midnight even
@@ -99,9 +87,7 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // `wouldStoryPostCallOpenAI` (`backend/workers/ai-agents/processors/process-story-post.mts`) for it.
 export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   chat: true,
-  'moderation-prompt': true,
   'community-moderation-prompt': true,
-  'moderation-dispatcher': false,
   // The dispatcher only reserves durable intent. The child can finish local-only/effect replay
   // without provider spend; its structured-decision client performs the authoritative pre-call cap check.
   'post-classifier-dispatcher': false,

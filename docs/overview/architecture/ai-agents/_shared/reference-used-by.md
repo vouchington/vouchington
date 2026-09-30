@@ -7,7 +7,7 @@
 - `@agents/autotagger` — auto-tags posts and RSS items with related topics
 - `@agents/chat` — personal finance assistant with streaming responses
 - `@agents/conversation-title` — generates a short title for a conversation
-- `@agents/moderation` — LLM-based content moderation
+- `@agents/community-moderation` — community prompt moderation
 - `@agents/research-agent` — deep research subagent for the chat orchestrator
 - `@agents/profile-agent` — profile management subagent for the chat orchestrator
 - `@agents/discovery-agent` — discovery subagent (trending/recommendations) for the chat orchestrator

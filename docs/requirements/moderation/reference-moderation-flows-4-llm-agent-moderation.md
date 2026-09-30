@@ -4,7 +4,8 @@
 
 ## 4. LLM Agent Moderation
 
-**Trigger:** Post clearance approved (enqueues dispatcher).
+**Trigger:** Post clearance approved (enqueues `post-classifier-dispatcher`). Community prompts run
+separately through `community-moderation-dispatcher` and `community-moderation-prompt`.
 
 **Baseline vs community-opt-in moderators:**
 
@@ -22,16 +23,18 @@ Moderators with `is_baseline = true` run on every post site-wide, regardless of 
 | `vague-post`      | no       | Too vague to be useful                      | `none`         |
 | `shit-post`       | no       | Low-effort noise                            | `none`         |
 
-**Processing (`backend/agents/moderation/run.mts`):**
+**Processing (community prompts, `backend/agents/community-moderation/run.mts`):**
 
-1. Skips if OpenAI omni already flagged the post
-2. Checks content SHA256 for deduplication (existing results reused)
-3. Calls OpenAI LLM (or local Rust for ai-generated)
-4. Stores result in `agent_moderations`
-5. On flag: executes `on_flag_action` by tagging and/or moving to review queue; moderator agents
-   do not write public election votes
-6. Tags flagged posts with relevant topics
-7. Records LLM token usage and cost to `ai_usage_ledger` (fire-and-forget; flex-tier calls only)
+1. Checks content SHA256 for deduplication (existing results reused)
+2. Calls the OpenAI moderation helper (`callOpenAIModeration` in
+   `backend/agents/community-moderation/openai-moderation.mts`)
+3. Stores result in `agent_moderations`
+4. On flag with `on_flag_action = 'unpublish'`: unpublishes the post from the community as the agent
+5. Records LLM token usage and cost to `ai_usage_ledger` (fire-and-forget; flex-tier calls only)
+
+The fixed-label built-in agents apply through the post classifier
+(`backend/agents/post-classifier/`), which records durable receipts and applies topic votes and
+tags after clearance approval.
 
 Automated review-queue moves are attributed to `automod` in `post_clearance_changes`. They do not create modlog rows because `in_review` is a triage state, not a terminal action.
 
@@ -44,4 +47,4 @@ JSON-safe range.
 
 **Database:** `agents__moderators` (`is_baseline`), `agent_moderations`, `agent_prompts`, `ai_usage_records`
 
-**Services:** `backend/agents/moderation/`, `backend/services/moderation/`, `backend/services/ai-usage/`
+**Services:** `backend/agents/community-moderation/`, `backend/services/moderation/`, `backend/services/ai-usage/`

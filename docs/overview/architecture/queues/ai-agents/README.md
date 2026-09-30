@@ -13,8 +13,6 @@ single coordinator that releases jobs when an operator relaxes the daily cap.
 | `processChat`                                | `chat`                                   | Runs hosted chat responses and publishes token chunks through Valkey pub/sub                                                                                   |
 | `processAutotaggerPost`                      | `autotagger-post`                        | Runs the autotagger agent on a post                                                                                                                            |
 | `processAutotaggerRssFeedItem`               | `autotagger-rss-feed-item`               | Runs the autotagger agent on an RSS feed item                                                                                                                  |
-| `processModerationDispatcher`                | `moderation-dispatcher`                  | Dispatches enabled built-in community AI agent jobs for a post                                                                                                 |
-| `processModerationPrompt`                    | `moderation-prompt`                      | Runs a single built-in moderation prompt on a post after rechecking community enablement                                                                       |
 | `processPostClassifierDispatcher`            | `post-classifier-dispatcher`             | Reserves one approved post/content/configuration receipt and awaits its classifier child enqueue                                                               |
 | `processPostClassifier`                      | `post-classifier`                        | Applies one fixed classifier receipt after primary approval and fingerprint revalidation                                                                       |
 | `processReconcilePostClassifierApplications` | `reconcile-post-classifier-applications` | Re-enqueues unfinished classifier receipts; terminal uncommitted remote failures stay terminal                                                                 |
@@ -48,7 +46,7 @@ new coordinator instead of deduplicating against the old active job. Coordinator
 explicitly reported best-effort optimization: if the dedicated queue is unavailable after
 registration, the source job still reaches its midnight delay fallback.
 
-> **Chat starvation risk**: `chat` jobs use priority 1, but all worker slots can be occupied by long-running background jobs (autotagger and moderation) before a chat job arrives. If interactive chat latency spikes, tune `WORKER_CONCURRENCY_AI_AGENTS` or split chat into a dedicated queue.
+> **Chat starvation risk**: `chat` jobs use priority 1, but all worker slots can be occupied by long-running background jobs (autotagger and community moderation) before a chat job arrives. If interactive chat latency spikes, tune `WORKER_CONCURRENCY_AI_AGENTS` or split chat into a dedicated queue.
 
 ## Enqueue Files
 
@@ -59,7 +57,6 @@ registration, the source job still reaches its midnight delay fallback.
 - [`enqueues/copyright-form-screening.mts`](../../../../../backend/queues/ai-agents/enqueues/copyright-form-screening.mts) — stable-ID structured form anti-spam jobs
 - [`enqueues/copyright-appeal-recommendation.mts`](../../../../../backend/queues/ai-agents/enqueues/copyright-appeal-recommendation.mts) — stable-ID advisory appeal recommendation jobs
 - [`enqueues/reconcile-copyright-agent-dispatches.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-copyright-agent-dispatches.mts) - copyright agent delivery recovery job
-- [`enqueues/moderation.mts`](../../../../../backend/queues/ai-agents/enqueues/moderation.mts) — moderation jobs
 - [`enqueues/post-classifier.mts`](../../../../../backend/queues/ai-agents/enqueues/post-classifier.mts) — durable post-classifier dispatch and child jobs
 - [`enqueues/reconcile-post-classifier-applications.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-post-classifier-applications.mts) — five-minute receipt recovery
 - [`enqueues/story-clustering.mts`](../../../../../backend/queues/ai-agents/enqueues/story-clustering.mts) — story clustering jobs
@@ -73,16 +70,6 @@ registration, the source job still reaches its midnight delay fallback.
 It selects at most 100 stale top-level conversation runs, signals only that immutable batch to stop
 the matching worker, and atomically terminalizes each selected run and assistant message. This
 prevents a worker crash from leaving a conversation permanently unable to accept another turn.
-
-## Built-In Community AI Agents
-
-`moderation-dispatcher` loads the post's community and checks `community_auto_tagger_agents` before
-dispatching fixed global label agents such as `self-promotion`, `marketplace`, and `ai-generated`.
-The agent definitions always remain global; only enablement is scoped to `community_id`.
-
-`moderation-prompt` repeats the enablement check before running the specific agent. If a moderator
-disables an agent after dispatch but before execution, the job exits as skipped and does not write a
-moderation result.
 
 Chat jobs use the `ai_agents` queue for background model execution and Valkey pub/sub for the SSE
 bridge:
