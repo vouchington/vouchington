@@ -1,70 +1,17 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { RefundableCharge } from '@/types/api-responses'
-import { MembershipRefundForm } from '../membership-refund-form'
-
-const {
-  mockRefresh,
+import {
   mockCreateMembershipRefund,
+  mockRefresh,
+  mockToastError,
   mockToastSuccess,
   mockToastWarning,
-  mockToastError,
-} = vi.hoisted(() => ({
-  mockRefresh: vi.fn<VitestLooseMock>(),
-  mockCreateMembershipRefund: vi.fn<VitestLooseMock>(),
-  mockToastSuccess: vi.fn<VitestLooseMock>(),
-  mockToastWarning: vi.fn<VitestLooseMock>(),
-  mockToastError: vi.fn<VitestLooseMock>(),
-}))
+  onReload,
+  renderMembershipRefundForm as renderRefundForm,
+  resetMembershipRefundFormTest,
+} from '@/test-helpers/app/user/membership-refund-form.mock-support'
 
-vi.mock(
-  import('next/navigation'),
-  () =>
-    ({
-      useRouter: () => ({ refresh: mockRefresh }),
-    }) as unknown as typeof import('next/navigation'),
-)
-
-vi.mock(
-  import('sonner'),
-  () =>
-    ({
-      toast: {
-        success: mockToastSuccess,
-        warning: mockToastWarning,
-        error: mockToastError,
-      },
-    }) as unknown as typeof import('sonner'),
-)
-
-vi.mock(import('@/lib/api/client/memberships'), () => ({
-  fetchRefundableCharges: vi.fn<VitestLooseMock>(),
-  createMembershipRefund: mockCreateMembershipRefund,
-}))
-
-const fakeCharge: RefundableCharge = {
-  charge_id: 'ch_test',
-  payment_intent_id: null,
-  invoice_id: 'in_test',
-  amount: { amount: 2000, currency: 'usd' },
-  amount_refunded: { amount: 0, currency: 'usd' },
-  created_at: '2026-01-15T00:00:00.000Z',
-  description: 'Annual plan',
-}
-
-const onReload = vi.fn<VitestLooseMock>()
 const storageMethodSpies: Array<{ mockRestore(): void }> = []
-
-function renderRefundForm(charges: RefundableCharge[] = [fakeCharge], actorUserId = 'admin-1') {
-  return render(
-    <MembershipRefundForm
-      actorUserId={actorUserId}
-      userId='user-1'
-      charges={charges}
-      onReload={onReload}
-    />,
-  )
-}
 
 function makeStorageMethodThrow(method: 'setItem' | 'removeItem') {
   const storagePrototype = Object.getPrototypeOf(sessionStorage) as Storage
@@ -76,15 +23,7 @@ function makeStorageMethodThrow(method: 'setItem' | 'removeItem') {
 }
 
 describe('MembershipRefundForm', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    sessionStorage.clear()
-    mockCreateMembershipRefund.mockResolvedValue({
-      outcome: 'completed',
-      refund: { id: 're_test' },
-      cancellation_status: 'not_requested',
-    })
-  })
+  beforeEach(resetMembershipRefundFormTest)
 
   afterEach(() => {
     for (const spy of storageMethodSpies.splice(0)) spy.mockRestore()
@@ -108,9 +47,9 @@ describe('MembershipRefundForm', () => {
   it('keeps a pending reconciliation locked in memory when storage persistence fails', async () => {
     makeStorageMethodThrow('setItem')
     mockCreateMembershipRefund.mockResolvedValueOnce({
+      cancellation_status: 'pending',
       outcome: 'completed',
       refund: { id: 're_pending' },
-      cancellation_status: 'pending',
     })
     const { container } = renderRefundForm()
 
@@ -147,9 +86,9 @@ describe('MembershipRefundForm', () => {
     mockCreateMembershipRefund
       .mockRejectedValueOnce(new Error('Response lost'))
       .mockResolvedValueOnce({
+        cancellation_status: 'not_requested',
         outcome: 'completed',
         refund: { id: 're_retry' },
-        cancellation_status: 'not_requested',
       })
     const firstRender = renderRefundForm()
 
@@ -171,9 +110,9 @@ describe('MembershipRefundForm', () => {
     mockCreateMembershipRefund
       .mockRejectedValueOnce(new Error('Response lost'))
       .mockResolvedValueOnce({
+        cancellation_status: 'not_requested',
         outcome: 'completed',
         refund: { id: 're_retry' },
-        cancellation_status: 'not_requested',
       })
     const { container } = renderRefundForm()
 
@@ -193,9 +132,9 @@ describe('MembershipRefundForm', () => {
     mockCreateMembershipRefund
       .mockRejectedValueOnce(new Error('Response lost'))
       .mockResolvedValueOnce({
+        cancellation_status: 'not_requested',
         outcome: 'completed',
         refund: { id: 're_changed' },
-        cancellation_status: 'not_requested',
       })
     const { container } = renderRefundForm()
 
