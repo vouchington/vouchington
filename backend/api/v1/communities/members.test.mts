@@ -93,66 +93,64 @@ describe('Community Members Routes', () => {
     })
   })
 
+  async function createAuthenticatedMemberRoute(options: {
+    slugPrefix: string
+    actorRole: 'owner' | 'member'
+  }): Promise<{
+    request: ReturnType<typeof createRequest>
+    communitySlug: string
+    targetId: string
+  }> {
+    const [owner, target] = await Promise.all([createTestUser(), createTestUser()])
+    const actor = options.actorRole === 'owner' ? owner : await createTestUser()
+    const community = await insertTestCommunity({
+      createdById: owner.id,
+      slug: `${options.slugPrefix}-${createRandomString(8)}`,
+    })
+    await Promise.all([
+      insertTestCommunityMember({
+        communityId: community.id,
+        userId: actor.id,
+        role: options.actorRole,
+      }),
+      insertTestCommunityMember({
+        communityId: community.id,
+        userId: target.id,
+        role: 'member',
+      }),
+    ])
+
+    const request = createRequest()
+    await request.authenticateAs(actor)
+    return {
+      request,
+      communitySlug: community.slug,
+      targetId: target.id,
+    }
+  }
+
   describe('PATCH /api/v1/communities/:slug/members/:userId', () => {
     it('returns 403 as non-owner', async () => {
-      const [owner, mod, target] = await Promise.all([
-        createTestUser(),
-        createTestUser(),
-        createTestUser(),
-      ])
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: owner!.id,
-        slug: `members-role-403-${random}`,
+      const { request, communitySlug, targetId } = await createAuthenticatedMemberRoute({
+        slugPrefix: 'members-role-403',
+        actorRole: 'member',
       })
-      await Promise.all([
-        insertTestCommunityMember({
-          communityId: community.id,
-          userId: mod!.id,
-          role: 'member',
-        }),
-        insertTestCommunityMember({
-          communityId: community.id,
-          userId: target!.id,
-          role: 'member',
-        }),
-      ])
-
-      const request = createRequest()
-      await request.authenticateAs(mod!)
 
       await request
-        .patch(`/api/v1/communities/${community.slug}/members/${target!.id}`)
+        .patch(`/api/v1/communities/${communitySlug}/members/${targetId}`)
         .set('Content-Type', 'application/json')
         .send({ role: 'moderator' })
         .expect(403)
     })
 
     it('updates member role and returns 204 as owner', async () => {
-      const [owner, target] = await Promise.all([createTestUser(), createTestUser()])
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: owner!.id,
-        slug: `members-role-ok-${random}`,
+      const { request, communitySlug, targetId } = await createAuthenticatedMemberRoute({
+        slugPrefix: 'members-role-ok',
+        actorRole: 'owner',
       })
-      await Promise.all([
-        insertTestCommunityMember({
-          communityId: community.id,
-          userId: owner!.id,
-          role: 'owner',
-        }),
-        insertTestCommunityMember({
-          communityId: community.id,
-          userId: target!.id,
-          role: 'member',
-        }),
-      ])
-
-      const request = createRequest()
-      await request.authenticateAs(owner!)
 
       await request
-        .patch(`/api/v1/communities/${community.slug}/members/${target!.id}`)
+        .patch(`/api/v1/communities/${communitySlug}/members/${targetId}`)
         .set('Content-Type', 'application/json')
         .send({ role: 'moderator' })
         .expect(204)
@@ -161,63 +159,21 @@ describe('Community Members Routes', () => {
 
   describe('DELETE /api/v1/communities/:slug/members/:userId', () => {
     it('returns 403 as non-mod', async () => {
-      const [owner, regular, target] = await Promise.all([
-        createTestUser(),
-        createTestUser(),
-        createTestUser(),
-      ])
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: owner!.id,
-        slug: `members-remove-403-${random}`,
+      const { request, communitySlug, targetId } = await createAuthenticatedMemberRoute({
+        slugPrefix: 'members-remove-403',
+        actorRole: 'member',
       })
-      await Promise.all([
-        insertTestCommunityMember({
-          communityId: community.id,
-          userId: regular!.id,
-          role: 'member',
-        }),
-        insertTestCommunityMember({
-          communityId: community.id,
-          userId: target!.id,
-          role: 'member',
-        }),
-      ])
 
-      const request = createRequest()
-      await request.authenticateAs(regular!)
-
-      await request
-        .delete(`/api/v1/communities/${community.slug}/members/${target!.id}`)
-        .expect(403)
+      await request.delete(`/api/v1/communities/${communitySlug}/members/${targetId}`).expect(403)
     })
 
     it('removes member and returns 204 as owner', async () => {
-      const [owner, target] = await Promise.all([createTestUser(), createTestUser()])
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: owner!.id,
-        slug: `members-remove-ok-${random}`,
+      const { request, communitySlug, targetId } = await createAuthenticatedMemberRoute({
+        slugPrefix: 'members-remove-ok',
+        actorRole: 'owner',
       })
-      await Promise.all([
-        insertTestCommunityMember({
-          communityId: community.id,
-          userId: owner!.id,
-          role: 'owner',
-        }),
-        insertTestCommunityMember({
-          communityId: community.id,
-          userId: target!.id,
-          role: 'member',
-        }),
-      ])
 
-      const request = createRequest()
-      await request.authenticateAs(owner!)
-
-      await request
-        .delete(`/api/v1/communities/${community.slug}/members/${target!.id}`)
-        .expect(204)
+      await request.delete(`/api/v1/communities/${communitySlug}/members/${targetId}`).expect(204)
     })
   })
 
