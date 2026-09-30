@@ -1,7 +1,12 @@
+/** Stored in the batch document. */
 export type BatchMetadata = {
-  url_id?: string
-  crawl_id?: string
   inputSizeMB?: number
+}
+
+/** Stored only in the batch's url_id and crawl_id foreign-key columns. */
+export type BatchSource = {
+  urlId?: string
+  crawlId?: string
 }
 
 export type BatchResultItem = {

@@ -35,16 +35,13 @@ export async function resolveCrawlOEmbed(
   }
   const { rowCount } = await write(
     `/* resolveCrawlOEmbed */
-    WITH updated AS (
-      UPDATE crawls
-      SET embed_oembed_resolved_at = NOW()
-      WHERE id = $2
-        AND url_id = $3
-        AND embed_oembed_url = $4
-        AND embed_oembed_resolved_at IS NULL
-      RETURNING id
-    )
-    SELECT fn_apply_crawl_embed(id, $1::jsonb) FROM updated`,
+    UPDATE crawls
+    SET embed_metadata = $1,
+        embed_oembed_resolved_at = NOW()
+    WHERE id = $2
+      AND url_id = $3
+      AND embed_oembed_url = $4
+      AND embed_oembed_resolved_at IS NULL`,
     [JSON.stringify(metadata), pending.crawlId, pending.urlId, pending.oEmbedUrl],
   )
   return rowCount === 0 ? 'skipped' : 'resolved'

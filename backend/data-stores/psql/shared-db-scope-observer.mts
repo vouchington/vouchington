@@ -19,6 +19,9 @@ export const sharedDbScopeTables = {
   stageAllCurrentImagePlacementDeliveryRecords: 'media_delivery_registry_records',
   reconcileMediaDeliveryRepairMarkers: 'media_delivery_repair_markers',
   cleanupRetainedMediaBindings: 'retained_image_placement_bindings',
+  // Each spans several retained tables; the shared cursor table is what an unscoped call advances.
+  cleanupRetainedIdentityRoots: 'retained_identity_cleanup_progress',
+  cleanupRetainedRelationIdentities: 'retained_relation_identity_cleanup_progress',
   recoverActivityPubInboxDeliveries: 'ap_inbox_deliveries',
   rearmFailedActivityPubInboxDeliveries: 'ap_inbox_deliveries',
   getRecoverableOAuthAuthorizationIds: 'oauth_authorizations',

@@ -10,6 +10,7 @@ import {
   oauthAccountExistsByProviderUserId,
   createRandomString,
   createTestRetentionWindow,
+  createTestSku,
   hardDeleteTestUser,
   hasTestRetainedIdentityRoot,
   insertTestUserDeletionAudit,
@@ -20,10 +21,12 @@ import {
   createTestPost,
   createTestTopic,
   createTestUser,
+  deleteTestAdmissionReservation,
   deleteTestRetainedRelationImpact,
   getEntityRelation,
   hasTestRetainedRelationIdentity,
   insertEntityRelation,
+  insertTestCommittedAdmissionReservation,
   insertTestRetainedRelationImpact,
 } from '@voucha/test-helpers'
 
@@ -42,6 +45,7 @@ import {
 } from '../cleanup.mts'
 
 import { deleteOrphanedOAuthAccountBatch } from '../cleanup-batches.mts'
+import { grantMembership } from '../../memberships/create.mts'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 import { cleanupRetainedRelationIdentities } from '../cleanup-retained-relation-identities.mts'
 import { retainPublicationIdentityBridges } from '@services/post-publication/identity-bridges'
@@ -73,6 +77,21 @@ describe('retained user identity cleanup', () => {
     expect(await hasTestRetainedIdentityRoot('user', target.id)).toBe(true)
     expect(await hasTestRetainedIdentityRoot('user', requester.id)).toBe(true)
   })
+
+  it('keeps recipient and administrator owners while membership lineage rows reference them', async () => {
+    const [recipient, administrator] = await Promise.all([
+      createTestUserDirect(),
+      createTestUserDirect(),
+    ])
+    const sku = await createTestSku({ plan: 'plus' })
+    await grantMembership(administrator.id, recipient.id, 'plus', sku.id, 30)
+    await hardDeleteTestUser(recipient.id)
+    await hardDeleteTestUser(administrator.id)
+
+    await cleanupRetainedIdentityRoots(1_000, { user: [recipient.id, administrator.id] })
+    expect(await hasTestRetainedIdentityRoot('user', recipient.id)).toBe(true)
+    expect(await hasTestRetainedIdentityRoot('user', administrator.id)).toBe(true)
+  })
 })
 
 describe('retained publication identity cleanup', () => {
@@ -92,6 +111,22 @@ describe('retained publication identity cleanup', () => {
     expect(await hasTestRetainedIdentityRoot('post', id)).toBe(true)
     await capture.commit()
     expect(await readTestPublicationIdentityBridge('post', id)).toEqual({ id, live_id: null })
+  })
+
+  it('keeps a post root while a committed admission replay references it', async () => {
+    const user = await createTestUser()
+    const id = v7()
+    await insertTestRetainedIdentityRoot('post', id)
+    const reservationId = await insertTestCommittedAdmissionReservation({
+      actorId: user.id,
+      postId: id,
+    })
+    await cleanupRetainedIdentityRoots(1_000, { post: [id] })
+    expect(await hasTestRetainedIdentityRoot('post', id)).toBe(true)
+
+    await deleteTestAdmissionReservation(reservationId)
+    await cleanupRetainedIdentityRoots(1_000, { post: [id] })
+    expect(await hasTestRetainedIdentityRoot('post', id)).toBe(false)
   })
 })
 

@@ -25,6 +25,8 @@ import {
   itemCategories,
   itemContentEncoded,
   itemGuid,
+  itemJsonContentHtml,
+  itemJsonContentText,
   itemLink,
   feedTextValue,
 } from '@services/rss-feed-items/clean-helpers'
@@ -123,7 +125,10 @@ function buildFeedItem(
   feedUrl?: string,
 ): RssFeedItemToUpsert {
   const contentEncoded = itemContentEncoded(item)
-  const content = feedTextValue(item.content) ?? contentEncoded
+  const content = feedTextValue(item.content) ?? contentEncoded ?? itemJsonContentHtml(item)
+  const description =
+    (typeof item.description === 'string' ? item.description : undefined) ??
+    itemJsonContentText(item)
   const mediaDescription = extractMediaDescription(item)
   const mediaStarRating = extractMediaStarRating(item)
   const mediaStatistics = extractMediaStatistics(item)
@@ -162,7 +167,7 @@ function buildFeedItem(
     title: feedTextValue(item.title),
     content,
     'content:encoded': contentEncoded,
-    description: typeof item.description === 'string' ? item.description : undefined,
+    description,
     summary: feedTextValue(item.summary),
     contentSnippet: typeof item.contentSnippet === 'string' ? item.contentSnippet : undefined,
     'content:encodedSnippet':

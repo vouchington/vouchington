@@ -6,22 +6,22 @@ Immutable administrator refund request facts, bound one-to-one to the provider o
 
 Not partitioned — growth: unbounded.
 
-| Column                            | Type                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                |
-| --------------------------------- | --------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------- |
-| `id`                              | `uuid`                      | no       | `uuidv7()`                   |          |           |           |                                                                                        |
-| `membership_operation_id`         | `uuid`                      | no       |                              |          |           |           | Administrator refund operation created for this exact request.                         |
-| `administrator_request_key`       | `text`                      | no       |                              |          |           |           | Administrator idempotency key bound to this immutable request.                         |
-| `membership_id`                   | `uuid`                      | no       |                              |          |           |           | Membership selected by the administrator when the request was submitted.               |
-| `issued_by_id`                    | `uuid`                      | no       |                              |          |           |           | Administrator identity captured without an FK so audit history survives user deletion. |
-| `provider_payment_reference`      | `text`                      | no       |                              |          |           |           | Provider payment reference selected as the refund target.                              |
-| `provider_subscription_reference` | `text`                      | yes      |                              |          |           |           | Provider subscription selected for cancellation when cancel_requested is true.         |
-| `amount_minor_units`              | `bigint`                    | no       |                              |          |           |           | Requested refund amount in the provider currency minor unit.                           |
-| `currency_code`                   | `text`                      | no       |                              |          |           |           | ISO 4217 currency code requested for the refund.                                       |
-| `reason`                          | `membership_refund_reasons` | no       |                              |          |           |           | Administrator-selected refund reason.                                                  |
-| `cancel_requested`                | `boolean`                   | no       |                              |          |           |           | Whether the request also asks the provider subscription to be cancelled.               |
-| `request_fingerprint`             | `text`                      | no       |                              |          |           |           | SHA-256 fingerprint of the exact immutable administrator request payload.              |
-| `note`                            | `text`                      | yes      |                              |          |           |           | Optional administrator note captured with the request.                                 |
-| `created_at`                      | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                        |
+| Column                            | Type                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                 |
+| --------------------------------- | --------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------- |
+| `id`                              | `uuid`                      | no       | `uuidv7()`                   |          |           |           |                                                                                                         |
+| `membership_operation_id`         | `uuid`                      | no       |                              |          |           |           | Administrator refund operation created for this exact request.                                          |
+| `administrator_request_key`       | `text`                      | no       |                              |          |           |           | Administrator idempotency key bound to this immutable request.                                          |
+| `membership_id`                   | `uuid`                      | no       |                              |          |           |           | Membership selected by the administrator when the request was submitted.                                |
+| `issued_by_id`                    | `uuid`                      | no       |                              |          |           |           | Retained user identity of the requesting administrator; outlives the live account and never authorizes. |
+| `provider_payment_reference`      | `text`                      | no       |                              |          |           |           | Provider payment reference selected as the refund target.                                               |
+| `provider_subscription_reference` | `text`                      | yes      |                              |          |           |           | Provider subscription selected for cancellation when cancel_requested is true.                          |
+| `amount_minor_units`              | `bigint`                    | no       |                              |          |           |           | Requested refund amount in the provider currency minor unit.                                            |
+| `currency_code`                   | `text`                      | no       |                              |          |           |           | ISO 4217 currency code requested for the refund.                                                        |
+| `reason`                          | `membership_refund_reasons` | no       |                              |          |           |           | Administrator-selected refund reason.                                                                   |
+| `cancel_requested`                | `boolean`                   | no       |                              |          |           |           | Whether the request also asks the provider subscription to be cancelled.                                |
+| `request_fingerprint`             | `text`                      | no       |                              |          |           |           | SHA-256 fingerprint of the exact immutable administrator request payload.                               |
+| `note`                            | `text`                      | yes      |                              |          |           |           | Optional administrator note captured with the request.                                                  |
+| `created_at`                      | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                         |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -43,6 +43,7 @@ Not partitioned — growth: unbounded.
 
 - `membership_administrator_refund_op_membership_operation_id_fkey`: `FOREIGN KEY (membership_operation_id) REFERENCES membership_operations(id) ON DELETE RESTRICT`
 - `membership_administrator_refund_operation_re_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
+- `membership_administrator_refund_operation_req_issued_by_id_fkey`: `FOREIGN KEY (issued_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 

@@ -29,8 +29,39 @@ export async function searchModeratorActions(
     cursorId = cursor.id
   }
 
+  // Restriction ids are child rows, not stored metadata; rebuild `restriction_ids` (activate)
+  // and `restriction_id` (lift) so the returned metadata keeps its shape.
   const query = sql`/* searchModeratorActions */
-    SELECT ma.*
+    SELECT
+      ma.id,
+      ma.community_id,
+      ma.moderation_transparency_community_id,
+      ma.actor_id,
+      ma.action_type,
+      ma.post_id,
+      ma.target_user_id,
+      ma.report_id,
+      ma.review_dispute_id,
+      ma.moderation_appeal_id,
+      ma.community_application_id,
+      ma.reason,
+      ma.metadata || CASE ma.action_type
+        WHEN 'activate_restriction' THEN jsonb_build_object('restriction_ids', COALESCE((
+          SELECT jsonb_agg(restriction.id ORDER BY restriction.restriction_type, restriction.id)
+          FROM moderator_action_community_restrictions link
+          JOIN community_restrictions restriction ON restriction.id = link.community_restriction_id
+          WHERE link.moderator_action_id = ma.id
+        ), '[]'::jsonb))
+        WHEN 'lift_restriction' THEN jsonb_build_object('restriction_id', (
+          SELECT link.community_restriction_id
+          FROM moderator_action_community_restrictions link
+          WHERE link.moderator_action_id = ma.id
+          ORDER BY link.community_restriction_id
+          LIMIT 1
+        ))
+        ELSE '{}'::jsonb
+      END AS metadata,
+      ma.created_at
     FROM moderator_actions ma
     WHERE TRUE
   `

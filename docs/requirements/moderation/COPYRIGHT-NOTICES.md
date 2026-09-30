@@ -8,9 +8,16 @@ reusing staff authorization, notifications, modlog, and approved-correspondence 
 The implementation remains disabled by default through `COPYRIGHT_INTAKE_ENABLED`. It must not be
 enabled until CAPTCHA, agent recovery, notification, reversible-media, staff UI, and production
 evidence-storage dependencies are deployed and the activation checklist below is complete.
-The flag controls only new form/email intake and new agent disclosure. Disabling intake must never
-hide accepted complaints or interrupt an existing case's staff review, appeal, counter-notice,
-hold, delivery, enforcement, or restoration obligations.
+The flag controls only new claimant intake and new agent disclosure. While it is off, one shared
+guard returns 503 from the three new-intake routes: the signed-in and guest form
+(`POST /api/v1/copyright-notices`) and EU and UK notice submission. Every designated-agent email,
+including a reply on an existing case, enters through email intake, so the SES worker leaves inbound
+mail unprocessed in storage until the switch is on again and staff watch that inbox directly (see the
+[runbook](../../runbooks/copyright-notices.md#intake-activation)). Disabling intake must never hide accepted complaints or
+interrupt an existing case's staff review, appeal, counter-notice, court or CCB filing, correction,
+withdrawal, EU or UK redress, hold, delivery, enforcement, or restoration obligations. Those in-case
+routes and every staff decision route stay open. A route test classifies every non-GET copyright
+route as new intake, in-case response, or staff and fails on an unclassified route.
 
 ## Ownership boundaries
 
@@ -207,19 +214,39 @@ US cases and project case identifier, dates, target URL, restriction state, a me
 lifecycle timeline, and the claimant's current public profile when one exists. They never expose
 legal claimant or poster identity, email, mailing address, signature, raw email, evidence artifacts,
 encrypted fields, moderator rationale, or agent recommendation. A guest or erased claimant has no
-member-visible profile link. A guest who is not signed in acts only with a hashed, expiring,
-revocable capability for one case. Staff issue that token once. The guest sends it in the
-Copyright-Guest-Capability header. Mail, a thread, or a token for another case does not authorize
-a correction, withdrawal, or court filing. A correction does not move the original receipt time
-or an existing restoration deadline. A withdrawal records the filing and leaves existing
-restrictions in place until staff assess it. A court or CCB filing is classified urgent and does
-not itself block restoration. Staff may ask for more information without extending the capability.
+member-visible profile link.
+
+A guest who is not signed in acts only with a hashed, expiring, revocable capability for one case.
+Staff issue that token once, with an expiry no more than 30 days after issue. The capability records
+the issuing staff member, and issue and revocation each append a lifecycle event that names the
+acting staff member. The guest sends the token in the Copyright-Guest-Capability header. Mail, a
+thread, or a token for another case does not authorize a correction, withdrawal, or court filing.
+Each guest filing records the capability that authorized it. A correction does not move the
+original receipt time or an existing restoration deadline. A withdrawal records the filing and
+leaves existing restrictions in place until staff assess it. Receiving a withdrawal, whether filed
+by a guest or admitted from claimant email, revokes every live capability on the case in the same
+transaction and appends an actorless `guest_capability_revoked_by_withdrawal` event for each one. A
+court or CCB filing is classified urgent and does not itself block restoration. A capability may
+file at most one court or CCB hold; a second attempt is refused with a conflict. Staff may ask for
+more information without extending the capability. Staff list a case's capabilities, newest first
+with issuer, expiry, and revocation state but never the token, at
+`GET /api/v1/copyright-notices/:id/guest-capabilities`, so they can revoke tokens after a reload.
 
 Claimants and affected posters receive a participant projection for their own submissions. Copyright
 review staff receive a separate queue and private case projection. Staff-only routes may expose
 evidence metadata and agent recommendations needed to perform human review, but not to ordinary
 members. All mutation routes remain server-authorized even when an authenticated page renders an
 appeal or counter-notice form.
+
+The staff queue lists a case while it has any open item: an unreviewed form intake, restriction,
+appeal, counter-notice, or qualifying court or CCB filing; a failed action or delivery; an
+incomplete enforcement request; or an open restoration deadline at or past `escalation_at`. An open
+deadline before escalation does not queue a case by itself. Each case carries its distinct
+`reasons`, the `waiting_since` time of its oldest open item, and its earliest open deadline. The
+queue orders cases by urgency: a missed restoration deadline first, then a deadline past escalation,
+then all other work, each oldest wait first. Urgency depends on the clock, so a case can move to an
+earlier tier between pages. The staff pages are reached from the Moderation sidebar's Copyright
+group, and the public policy page shows its staff queue links only to administrators and moderators.
 
 The web uses Turnstile for each notice, appeal, and counter-notice form. Native clients use the
 attestation route described by the CAPTCHA boundary. CAPTCHA is an intake abuse control, not a
@@ -330,7 +357,9 @@ or unassessed filings and another independent restriction never lose their prote
 
 US timing does not govern EU or UK cases. The public form and email intake still accept only
 `us_dmca`. EU and UK use separate contracts and stay unavailable until an unwithdrawn territorial
-policy approval exists. That approval is an operator record, not a seeded row and not
+policy approval exists. That approval is an operator record, not a seeded row. New EU and UK notices
+need both it and `COPYRIGHT_INTAKE_ENABLED`, and neither replaces the other. Redress, supervised
+complaints, and staff decisions on an existing EU or UK notice do not depend on
 `COPYRIGHT_INTAKE_ENABLED`. Representatives, counsel review, and the activation checklist remain
 required before any live intake is advertised. Conflicting grounds go to qualified staff or
 counsel, and removing one ground cannot remove another.

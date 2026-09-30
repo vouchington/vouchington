@@ -53,6 +53,7 @@ export interface WebFixtureClientEndpointContext {
   readonly copyrightGuest: Pick<
     typeof import('@/lib/api/client/copyright-guest'),
     | 'issueCopyrightGuestCapability'
+    | 'listCopyrightGuestCapabilities'
     | 'requestCopyrightGuestInformation'
     | 'revokeCopyrightGuestCapability'
     | 'submitCopyrightGuestFiling'

@@ -85,6 +85,7 @@ describe('copyright pages', () => {
 
   it('renders the public policy pages', () => {
     render(<CopyrightPage />)
+    expect(screen.queryByRole('link', { name: 'Copyright review queue' })).toBeNull()
     expect(screen.getByRole('heading', { name: 'Copyright policy' })).toBeInTheDocument()
     render(<CounterNoticePage />)
     expect(
@@ -96,6 +97,24 @@ describe('copyright pages', () => {
     expect(screen.getByRole('heading', { name: 'Repeat-infringer policy' })).toBeInTheDocument()
     render(<CopyrightNoticesLayout>layout child</CopyrightNoticesLayout>)
     expect(screen.getByText('layout child')).toBeInTheDocument()
+  })
+
+  it('links the copyright articles from the policy and counter-notice pages', () => {
+    const { unmount } = render(<CopyrightPage />)
+    expect(screen.getByRole('link', { name: 'Copyright and the DMCA on Voucha' })).toHaveAttribute(
+      'href',
+      '/article/copyright-and-dmca',
+    )
+    expect(screen.getByRole('link', { name: 'How copyright complaints work' })).toHaveAttribute(
+      'href',
+      '/article/copyright-complaints',
+    )
+    unmount()
+    render(<CounterNoticePage />)
+    expect(screen.getByRole('link', { name: 'How copyright complaints work' })).toHaveAttribute(
+      'href',
+      '/article/copyright-complaints',
+    )
   })
 
   it('loads signed-in notice list, create, and staff queues', async () => {

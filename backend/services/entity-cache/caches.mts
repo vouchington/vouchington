@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { CACHE_TTLS_SECONDS } from './config.mts'
+import {
+  serializeEntityRelationElectionCacheKey,
+  type EntityRelationElectionCacheKey,
+} from './entity-relation-election-key.mts'
 import { entityCacheBloomFilters, entityCacheBloomFilterEnabled } from './backfill-bloom-filter.mts'
 
 const PUBLIC_USER_SHAPE_CACHE_VERSION = 'v2'
@@ -54,9 +58,10 @@ export const caches = {
     prefix: 'agent_moderation_elections',
     ttlSeconds: CACHE_TTLS_SECONDS.agent_moderation_elections,
   }),
-  entity_relation_elections: new ValkeyCache({
+  entity_relation_elections: new ValkeyCache<EntityRelationElectionCacheKey>({
     prefix: 'entity_relation_elections',
     ttlSeconds: CACHE_TTLS_SECONDS.entity_relation_elections,
+    keySerializer: serializeEntityRelationElectionCacheKey,
   }),
   posts: new ValkeyCache({
     prefix: `posts:${PUBLIC_USER_SHAPE_CACHE_VERSION}`,

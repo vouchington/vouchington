@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { createLocalTestUser } from './users.mts'
 
 type QueryResult = { rowCount: number | null }
 type ProviderLineageTransition = 'fillAccount' | 'rewriteAccount' | 'rewriteLineage'
@@ -135,7 +136,7 @@ export async function createTestGrantActivationPeriod(): Promise<string> {
   const { rows: products } = await read<{ id: string }>(
     sql`/* getTestGrantActivationProduct */ SELECT id FROM membership_products WHERE plan = 'plus' AND billing_interval = 'monthly'`,
   )
-  const userId = randomUUID()
+  const userId = (await createLocalTestUser()).id
   const { rows } = await write<{ id: string }>(sql`/* createImmutableTestGrantActivation */
     WITH source AS (INSERT INTO membership_sources (user_id, source_kind) VALUES (${userId}, 'admin_grant') RETURNING id, user_id),
     grant_row AS (INSERT INTO membership_grants (membership_source_id, user_id, membership_product_id, calendar_days, issuer_snapshot) SELECT id, user_id, ${products[0]!.id}, 30, 'Test issuer' FROM source RETURNING id, user_id)

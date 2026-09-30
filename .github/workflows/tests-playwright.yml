@@ -184,10 +184,12 @@ jobs:
           echo "LOCALIZATION_SQLITE_PATH=$sqlite_path" >> "$GITHUB_ENV"
       - name: Run Playwright tests
         id: run-playwright
-        # Sized to PLAYWRIGHT_EXECUTION_BUDGET_SECONDS (ci/playwright/shard-total.mts): a
-        # 350s/shard execution budget plus a per-shard warm-up/variance buffer, rounded up to a
-        # whole minute since GitHub Actions timeout-minutes literals in this repo stay integral.
-        timeout-minutes: 9
+        # PLAYWRIGHT_EXECUTION_BUDGET_SECONDS (ci/playwright/shard-total.mts) sizes shards to about
+        # 300s of average test time (about 350s for the heaviest); this ceiling adds a slow-runner
+        # tail on top of it. Merge-queue shards still recording passes were killed at 9 minutes
+        # with ~50 tests left at ~80 passes per 2.5 minutes (#1185), so 12 covers that tail.
+        # Assertion failures still fail the step.
+        timeout-minutes: 12
         env:
           GIT_COMMIT: ${{ github.sha }}
           NEXT_PUBLIC_GIT_COMMIT: ${{ github.sha }}

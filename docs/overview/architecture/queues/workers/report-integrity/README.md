@@ -8,6 +8,6 @@ fire-and-forget by `@services/moderation-reports/integrity` after each new moder
 ## Job: processReportIntegrityCheck
 
 Calls `detectMassReportCampaign(entityType, entityId)`. If flagged, inserts a
-`report_integrity_flags` row via `createReportIntegrityFlag` (idempotent — deduped by partial
-unique index). Jobs are debounced per entity (30 s TTL) so rapid report bursts collapse into
+`report_integrity_flags` row and its `report_integrity_flag_reporters` rows via
+`createReportIntegrityFlag` (idempotent — deduped by partial unique index). Jobs are debounced per entity (30 s TTL) so rapid report bursts collapse into
 one check.

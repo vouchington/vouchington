@@ -73,7 +73,6 @@ export async function main(argv: string[]): Promise<number> {
   return 2
 }
 
-const invokedPath = process.argv[1]
-if (invokedPath !== undefined && fileURLToPath(import.meta.url) === resolve(invokedPath)) {
+if (import.meta.main) {
   process.exit(await main(process.argv.slice(2)))
 }

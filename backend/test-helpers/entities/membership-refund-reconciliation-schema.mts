@@ -93,7 +93,7 @@ export async function createTestAdministratorRefundRequest(operationId: string):
       amount_minor_units, currency_code, reason, cancel_requested, request_fingerprint,
       administrator_request_key, note
     ) VALUES (
-      ${operationId}, ${randomUUID()}, ${randomUUID()}, ${`payment-${randomUUID()}`},
+      ${operationId}, ${randomUUID()}, (SELECT id FROM users ORDER BY id LIMIT 1), ${`payment-${randomUUID()}`},
       100, 'usd', 'requested', true, ${'a'.repeat(64)}, ${`request-${randomUUID()}`},
       'Customer requested a refund'
     ) RETURNING id`)
@@ -160,7 +160,7 @@ export async function createTestLinkedRefundReceiptRequest(
       provider_payment_reference, amount_minor_units, currency_code, reason, cancel_requested,
       request_fingerprint
     ) VALUES (
-      ${operationId}, ${requestKey}, ${randomUUID()}, ${randomUUID()}, ${`ch_${randomUUID()}`},
+      ${operationId}, ${requestKey}, ${randomUUID()}, (SELECT id FROM users ORDER BY id LIMIT 1), ${`ch_${randomUUID()}`},
       100, 'usd', 'requested', false, ${'b'.repeat(64)}
     )`)
   return { requestKey }
@@ -192,7 +192,7 @@ export async function insertTestLinkedOperationRefundReceipt(
     ) VALUES (
       ${operation.id}, ${randomUUID()}, ${operation.membershipSourceId}, ${`re_linked_${randomUUID()}`},
       ${`ch_linked_${randomUUID()}`}, ${requestKey}, ${'b'.repeat(64)},
-      100, 'usd', 'requested', FALSE, ${randomUUID()}, 'admin'
+      100, 'usd', 'requested', FALSE, (SELECT id FROM users ORDER BY id LIMIT 1), 'admin'
     )`)
   return result.rowCount ?? 0
 }

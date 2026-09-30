@@ -199,6 +199,18 @@ pages. It pins owned intent timestamps to one isolated cursor window, exposes a 
 snapshot and endpoint-state readers, and deletes only its owned notifications after the callback
 settles.
 
+## Copyright Intake Environment
+
+Call `useCopyrightIntakeEnvironment()` from
+`@voucha/test-helpers/services/copyright-notices/intake-environment` inside a `describe` block
+whose tests reach a new-intake route (`POST /api/v1/copyright-notices`,
+`POST /api/v1/copyright-eu-notices`, `POST /api/v1/copyright-uk-notices`). Before each test it
+stubs `COPYRIGHT_INTAKE_ENABLED` plus the evidence, email, and media-delivery settings that
+`assertCopyrightIntakeEnabled()` requires, and it unstubs every environment variable after each
+test. Pass `{ enabled: false }` to keep that configuration but turn the switch off, so a 503 proves
+the switch alone closed intake. The helper does not mock AWS; add `installTestMediaDeliveryEdge()`
+when the test publishes delivery changes.
+
 ## Surviving a Dirty Database
 
 The DB accumulates rows from every test run and is never cleaned. These patterns prevent flaky tests.
@@ -346,7 +358,13 @@ head sees other tests' rows, so its own row falls off the first page once enough
 and any other test's unreadable row fails the request. Seek to the test's own rows instead:
 `readCopyrightStaffQueueCursorBefore(noticeIds)` from
 `@voucha/test-helpers/data-stores/psql/copyright-notice-reads` returns an `after` cursor positioned
-just before the oldest of the given notices, so every page starts at rows the test created.
+just before the first-queued of the given notices by `(urgency, waiting_since, id)`, so every page
+starts at rows the test created. `readCopyrightStaffQueueCursorRows(noticeIds)` returns those
+notices' queue keys in queue order. Because urgency tiers sort ahead of wait time, a test that mixes
+deadline tiers seeks from its most urgent notice. Global urgency ordering, where another fixture's
+missed deadline would change the result, runs in the isolated `copyright-staff-queue-urgency` case.
+`@voucha/test-helpers/data-stores/psql/copyright-staff-queue` records a form intake review and adds
+an open due or missed counter-notice deadline for those cases.
 The staff email intake queue (`GET /api/v1/copyright-email-intakes/review-queue`) applies the same
 keyset ordering, but its global query cannot prove fixture ownership from an `after` cursor alone.
 Its exact global pagination cases run against fresh disposable databases through

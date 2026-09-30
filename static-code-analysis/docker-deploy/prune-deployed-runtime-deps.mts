@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import { pathToFileURL } from 'node:url'
-
 import {
   pruneDeployedRuntimeDeps,
   runPruneDeployedRuntimeDepsCli as runPublished,
@@ -20,6 +18,6 @@ export function runPruneDeployedRuntimeDepsCli(options: Parameters<typeof runPub
 runPruneDeployedRuntimeDepsCli({
   args: process.argv.slice(2),
   env: process.env,
-  isMain: Boolean(process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href),
+  isMain: import.meta.main,
   stdout: console.log,
 })

@@ -1,5 +1,8 @@
+import type { ComponentProps } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { ReferralValidationsSettings } from '@/components/topics/settings/referral-validations-settings'
+import { referralValidationsSettingsLabels } from '@/components/topics/settings/referral-validations-settings-labels'
+import { ReferralValidationsSettingsView } from '@/components/topics/settings/referral-validations-settings-view'
+import { useTranslations } from '@/lib/i18n/use-translations'
 import {
   clearStoryMutationFixture,
   setStoryMutationFixture,
@@ -7,6 +10,18 @@ import {
 import { StoryFrame } from '@/storybook/story-frame'
 import { now } from '@/storybook/entities/fixtures/shared'
 import { topics } from '@/storybook/entities/fixtures/topics'
+
+function ReferralValidationsSettings(
+  props: Omit<ComponentProps<typeof ReferralValidationsSettingsView>, 'labels'>,
+) {
+  const t = useTranslations()
+  return (
+    <ReferralValidationsSettingsView
+      {...props}
+      labels={referralValidationsSettingsLabels(t)}
+    />
+  )
+}
 
 const program = topics.find(topic => topic.topic_type === 'referral_program')!
 

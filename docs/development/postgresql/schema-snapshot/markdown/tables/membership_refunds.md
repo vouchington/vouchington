@@ -6,27 +6,27 @@ Append-only financial ledger of Stripe refunds issued or reconciled.
 
 Not partitioned — growth: unbounded.
 
-| Column                      | Type                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                           |
-| --------------------------- | --------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------- |
-| `id`                        | `uuid`                      | no       | `uuidv7()`                   |          |           |           |                                                                                   |
-| `membership_operation_id`   | `uuid`                      | yes      |                              |          |           |           | Operation that reconciled this refund.                                            |
-| `membership_id`             | `uuid`                      | no       |                              |          |           |           | Membership projection against which the refund was issued.                        |
-| `membership_source_id`      | `uuid`                      | no       |                              |          |           |           | Immutable entitlement source whose provider lineage supplied the refunded charge. |
-| `user_id`                   | `uuid`                      | yes      |                              |          |           |           | Member recorded as refunded; retained after final account purge.                  |
-| `stripe_refund_id`          | `text`                      | no       |                              |          |           |           | Stripe Refund object identity and primary replay key.                             |
-| `stripe_charge_id`          | `text`                      | no       |                              |          |           |           | Stripe Charge identity that was refunded.                                         |
-| `stripe_payment_intent_id`  | `text`                      | yes      |                              |          |           |           | Optional Stripe PaymentIntent identity for the charge.                            |
-| `stripe_idempotency_key`    | `text`                      | yes      |                              |          |           |           | Administrator-request idempotency key; absent for dashboard reconciliation.       |
-| `admin_request_fingerprint` | `text`                      | yes      |                              |          |           |           | SHA-256 fingerprint paired with the administrator idempotency key.                |
-| `amount_minor_units`        | `bigint`                    | no       |                              |          |           |           | This receipt amount in the currency minor unit.                                   |
-| `currency_code`             | `text`                      | no       |                              |          |           |           | Lowercase ISO currency code reported by Stripe.                                   |
-| `reason`                    | `membership_refund_reasons` | no       |                              |          |           |           | Categorized reason for the refund.                                                |
-| `revoked_access`            | `boolean`                   | no       | `false`                      |          |           |           | Whether this refund also revoked membership access.                               |
-| `issued_by_id`              | `uuid`                      | yes      |                              |          |           |           | Administrator identity retained without an FK for audit persistence.              |
-| `source`                    | `membership_refund_sources` | no       |                              |          |           |           | Whether the refund was administrator initiated or dashboard reconciled.           |
-| `stripe_event_id`           | `text`                      | yes      |                              |          |           |           | Stripe event that created this reconciliation receipt.                            |
-| `note`                      | `text`                      | yes      |                              |          |           |           | Optional bounded administrative refund note.                                      |
-| `created_at`                | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                   |
+| Column                      | Type                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                              |
+| --------------------------- | --------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------- |
+| `id`                        | `uuid`                      | no       | `uuidv7()`                   |          |           |           |                                                                                                      |
+| `membership_operation_id`   | `uuid`                      | yes      |                              |          |           |           | Operation that reconciled this refund.                                                               |
+| `membership_id`             | `uuid`                      | no       |                              |          |           |           | Membership projection against which the refund was issued.                                           |
+| `membership_source_id`      | `uuid`                      | no       |                              |          |           |           | Immutable entitlement source whose provider lineage supplied the refunded charge.                    |
+| `user_id`                   | `uuid`                      | yes      |                              |          |           |           | Retained user identity of the refunded member; outlives the live account.                            |
+| `stripe_refund_id`          | `text`                      | no       |                              |          |           |           | Stripe Refund object identity and primary replay key.                                                |
+| `stripe_charge_id`          | `text`                      | no       |                              |          |           |           | Stripe Charge identity that was refunded.                                                            |
+| `stripe_payment_intent_id`  | `text`                      | yes      |                              |          |           |           | Optional Stripe PaymentIntent identity for the charge.                                               |
+| `stripe_idempotency_key`    | `text`                      | yes      |                              |          |           |           | Administrator-request idempotency key; absent for dashboard reconciliation.                          |
+| `admin_request_fingerprint` | `text`                      | yes      |                              |          |           |           | SHA-256 fingerprint paired with the administrator idempotency key.                                   |
+| `amount_minor_units`        | `bigint`                    | no       |                              |          |           |           | This receipt amount in the currency minor unit.                                                      |
+| `currency_code`             | `text`                      | no       |                              |          |           |           | Lowercase ISO currency code reported by Stripe.                                                      |
+| `reason`                    | `membership_refund_reasons` | no       |                              |          |           |           | Categorized reason for the refund.                                                                   |
+| `revoked_access`            | `boolean`                   | no       | `false`                      |          |           |           | Whether this refund also revoked membership access.                                                  |
+| `issued_by_id`              | `uuid`                      | yes      |                              |          |           |           | Retained user identity of the issuing administrator; outlives the live account and never authorizes. |
+| `source`                    | `membership_refund_sources` | no       |                              |          |           |           | Whether the refund was administrator initiated or dashboard reconciled.                              |
+| `stripe_event_id`           | `text`                      | yes      |                              |          |           |           | Stripe event that created this reconciliation receipt.                                               |
+| `note`                      | `text`                      | yes      |                              |          |           |           | Optional bounded administrative refund note.                                                         |
+| `created_at`                | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                      |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -44,10 +44,13 @@ _none_
 
 - `fk_membership_refunds__administrator_request`: `FOREIGN KEY (membership_operation_id, stripe_idempotency_key) REFERENCES membership_administrator_refund_operation_requests(membership_operation_id, administrator_request_key) ON DELETE RESTRICT`
 - `fk_membership_refunds__operation_source`: `FOREIGN KEY (membership_operation_id, membership_source_id) REFERENCES membership_operations(id, membership_source_id) ON DELETE RESTRICT`
+- `membership_refunds_issued_by_id_fkey`: `FOREIGN KEY (issued_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `membership_refunds_membership_source_id_fkey`: `FOREIGN KEY (membership_source_id) REFERENCES membership_sources(id) ON DELETE RESTRICT`
+- `membership_refunds_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
+- `idx_mrefunds__issued_by_id`: `CREATE INDEX idx_mrefunds__issued_by_id ON public.membership_refunds USING btree (issued_by_id) WHERE (issued_by_id IS NOT NULL)`
 - `idx_mrefunds__membership_id`: `CREATE INDEX idx_mrefunds__membership_id ON public.membership_refunds USING btree (membership_id)`
 - `idx_mrefunds__operation_id`: `CREATE INDEX idx_mrefunds__operation_id ON public.membership_refunds USING btree (membership_operation_id, id DESC) WHERE (membership_operation_id IS NOT NULL)`
 - `idx_mrefunds__operation_receipt`: `CREATE UNIQUE INDEX idx_mrefunds__operation_receipt ON public.membership_refunds USING btree (membership_operation_id) WHERE (membership_operation_id IS NOT NULL)`

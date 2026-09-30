@@ -21,7 +21,11 @@ export function bootWorkerServe(
     workers?: ReturnType<typeof makeWorker>[]
     onError?: (error: Error) => void
     flushSentry?: () => Promise<void>
-    createServer?: () => { listen: () => void }
+    createServer?: (...args: unknown[]) => {
+      listen: (port?: number) => void
+      close?: (callback?: () => void) => void
+      closeAllConnections?: () => void
+    }
     env?: NodeJS.ProcessEnv
     exits?: number[]
     shutdownCallbacks?: ShutdownCallback[]

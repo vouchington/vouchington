@@ -11,6 +11,7 @@ import {
   createAppAttestAssertionHeaders,
   useAppAttestBypassConfig,
   getContributionAdmissionConsumptionCountForTest,
+  executeTestAdmittedPost,
 } from '@voucha/test-helpers'
 import { insertTestImage } from '@voucha/test-helpers/entities/images'
 import { normalizeRouteAdmissionIntent } from '@services/contribution-gating/admit-route-contribution'
@@ -129,7 +130,7 @@ describe('POST /api/v1/posts CAPTCHA', () => {
         claimed.resolve()
         await release.promise
       },
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     await claimed.promise
 

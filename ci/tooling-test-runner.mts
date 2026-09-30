@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
 
 import {
   toolingTestProjectNames,
@@ -143,7 +142,7 @@ export async function runToolingTestsWatched(
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   runToolingTestsWatched(process.argv.slice(2))
     .then(propagateVitestChildCompletion)
     .catch(error => {

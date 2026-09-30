@@ -34,7 +34,9 @@ OpenID Connect, ID-token, or UserInfo flows.
   access token derived from that family.
 - Consent requests are bound to the signed-in user, device, and session and are not cacheable.
 - Consent decisions, explicit revocations, and refresh-token reuse detection produce immutable
-  lifecycle evidence that survives short-lived credential retention and identity deletion.
+  lifecycle evidence that survives short-lived credential retention and identity deletion. Each event
+  references the grant owner's retained user identity with `ON DELETE RESTRICT`, so the identity root
+  stays for as long as the append-only events do.
 - Protocol and consent responses use `no-store`; the edge never caches these routes.
 - Cross-site `POST /register`, `POST /token`, and `POST /revoke` requests pass the listener CSRF
   guard only after the Worker-secret boundary; those endpoints ignore browser cookies and enforce

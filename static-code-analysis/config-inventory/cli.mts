@@ -1,7 +1,4 @@
 #!/usr/bin/env node
-import { realpathSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-
 import { buildSharedContext } from 'vouchington-tooling/shared-context'
 import { collectConfigInventory, formatConfigInventoryMarkdown } from './index.mts'
 
@@ -50,16 +47,7 @@ export async function runConfigInventoryCli(options: CliOptions): Promise<string
     : formatConfigInventoryMarkdown(inventory)
 }
 
-function isInvokedAsScript(): boolean {
-  if (!process.argv[1]) return false
-  try {
-    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
-  } catch {
-    return false
-  }
-}
-
-if (isInvokedAsScript()) {
+if (import.meta.main) {
   const options = parseConfigInventoryArgs(process.argv.slice(2))
   ;(options.help ? Promise.resolve(getConfigInventoryUsage()) : runConfigInventoryCli(options))
     .then(output => {

@@ -48,6 +48,12 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
           action_intents: [],
           delivery_intents: [],
           email_correspondence: [],
+          reasons: ['deadline_due', 'form_intake_review'],
+          waiting_since: '2026-07-01T12:00:00.000Z',
+          next_deadline: {
+            escalation_at: '2026-07-14T12:00:00.000Z',
+            restoration_deadline_at: '2026-07-15T12:00:00.000Z',
+          },
         },
       ],
       page_info: {

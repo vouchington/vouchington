@@ -98,3 +98,27 @@ export async function countCopyrightGuestCapabilities(noticeId: string): Promise
     WHERE copyright_notice_id = ${noticeId}`)
   return Number(rows[0]?.count ?? 0)
 }
+
+export async function readCopyrightGuestCapabilityState(
+  capabilityId: string,
+): Promise<{ issued_by_id: string | null; revoked_at: Date | null }> {
+  const { rows } = await read<{ issued_by_id: string | null; revoked_at: Date | null }>(
+    sql`/* readCopyrightGuestCapabilityState */
+      SELECT issued_by_id, revoked_at FROM copyright_notice_guest_capabilities
+      WHERE id = ${capabilityId}`,
+  )
+  if (!rows[0]) throw new Error(`Copyright guest capability not found: ${capabilityId}`)
+  return rows[0]
+}
+
+export async function listCopyrightGuestCapabilityEvents(
+  capabilityId: string,
+): Promise<Array<{ event_type: string; actor_user_id: string | null }>> {
+  const { rows } = await read<{ event_type: string; actor_user_id: string | null }>(
+    sql`/* listCopyrightGuestCapabilityEvents */
+      SELECT event_type, actor_user_id FROM copyright_notice_lifecycle_events
+      WHERE copyright_notice_guest_capability_id = ${capabilityId}
+      ORDER BY id`,
+  )
+  return rows
+}

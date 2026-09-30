@@ -8,6 +8,7 @@ import {
   createTestUrlWithHostname,
   softDeleteRssFeedItemsForTest,
   suspendTestUser,
+  executeTestAdmittedPost,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import { setRssFeedDiscoverabilityAsSystem } from '@services/rss-feeds/discoverability'
@@ -127,7 +128,7 @@ describe('discussion', () => {
           claimed.resolve()
           await release.promise
         },
-        execute: async () => ({ post: { id: randomUUID() } }),
+        execute: executeTestAdmittedPost,
       })
       await claimed.promise
 

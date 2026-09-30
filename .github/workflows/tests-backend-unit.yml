@@ -109,30 +109,11 @@ jobs:
           VITEST_CI_REPORTERS: run
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
           VITEST_JUNIT_OUTPUT_FILE: test-report.junit.xml
-          VITEST_FORK_DIAGNOSTIC_DIR: .vitest-reports/fork-diagnostics-${{ matrix.shard }}
         run: pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-real-glide-mq --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
         # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) push real per-shard
         # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog
         # now matches the repo's 10-minute-hard-ceiling CI runtime target instead of the stale 5m.
         timeout-minutes: 10
-      - name: Vitest fork diagnostic report summary
-        if: failure()
-        continue-on-error: true
-        timeout-minutes: 1
-        env:
-          VITEST_FORK_DIAGNOSTIC_DIR: .vitest-reports/fork-diagnostics-${{ matrix.shard }}
-        run: node ci/vitest-diagnostic-report-summary.mts
-      - if: failure()
-        continue-on-error: true
-        timeout-minutes: 1
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          overwrite: true
-          name: vitest-fork-diagnostics-backend-shard-${{ matrix.shard }}
-          path: .vitest-reports/fork-diagnostics-${{ matrix.shard }}
-          include-hidden-files: true
-          retention-days: 1
-          if-no-files-found: ignore
       - name: Preserve full backend-shard-${{ matrix.shard }} LCOV
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash

@@ -1,15 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  diagnosticReportSummaryBlock,
-  forkExitSentinelLine,
   hostPressureDiagnosticsBlock,
   teardownInstrumentationLines,
-  valkeySaturationLine,
-  workerExitAfterPassLogWithNewInstrumentation,
   workerExitAfterPassLogWithTeardownOverrun,
-  workerExitDiagnosticsBlock,
-  workerExitInstrumentationLines,
 } from './backend-unit-vitest-instrumentation.fixtures.mts'
 import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
 import {
@@ -129,14 +123,8 @@ describe('runnerShutdownLeafRerunMatch safety regressions', () => {
     expect(hasBackendUnitVitestFailure(workerExitAfterPassLogWithTeardownOverrun)).toBe(false)
   })
 
-  it('does not classify #8940 fork-exit and diagnostics instrumentation as a backend-unit Vitest failure', () => {
-    expect(hasBackendUnitVitestFailure(forkExitSentinelLine)).toBe(false)
-    expect(hasBackendUnitVitestFailure(valkeySaturationLine)).toBe(false)
-    expect(hasBackendUnitVitestFailure(workerExitDiagnosticsBlock)).toBe(false)
-    expect(hasBackendUnitVitestFailure(diagnosticReportSummaryBlock)).toBe(false)
+  it('does not classify host-pressure diagnostics as a backend-unit Vitest failure', () => {
     expect(hasBackendUnitVitestFailure(hostPressureDiagnosticsBlock)).toBe(false)
-    expect(hasBackendUnitVitestFailure(workerExitInstrumentationLines)).toBe(false)
-    expect(hasBackendUnitVitestFailure(workerExitAfterPassLogWithNewInstrumentation)).toBe(false)
   })
 
   it('does NOT treat Patch Coverage as downstream of a Playwright-only shutdown', async () => {

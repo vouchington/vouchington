@@ -143,6 +143,20 @@ describe('dev/stop-services (Valkey and reset)', () => {
     expect(result.log).toContain('docker stop voucha-valkey-test')
   })
 
+  it('fails instead of reporting Valkey as not running when Docker is unreachable', async () => {
+    const cwd = await makeRepo()
+    const binDir = await makeStopServicesTmuxFakeBin(testDirs)
+
+    await expect(
+      runScript({ binDir, cwd, env: { FAKE_DOCKER_PS_FAIL: '1' } }),
+    ).rejects.toMatchObject({
+      code: 1,
+      stderr: expect.stringContaining("'docker ps' failed"),
+      stdout: expect.not.stringMatching(/not running|Service stop complete/),
+    })
+    expect(await readLog(join(cwd, 'commands.log'))).not.toContain('docker stop')
+  })
+
   it('keeps Valkey running when requested', async () => {
     const cwd = await makeRepo()
     const binDir = await makeStopServicesTmuxFakeBin(testDirs)

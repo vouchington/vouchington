@@ -54,12 +54,6 @@ CREATE TABLE IF NOT EXISTS post_publication_identity_snapshot_keys (
   CHECK ((post_type IS NULL) = (day IS NULL))
 );
 
-ALTER TABLE post_publication_projection_receipts
-  -- squawk-ignore adding-required-field -- Pre-launch receipts require a real snapshot; incompatible disposable databases must be recreated explicitly, not backfilled.
-  ADD COLUMN applied_snapshot_id UUID NOT NULL;
--- squawk-ignore ban-drop-column -- Pre-launch snapshot-only receipts replace JSON entirely; no mixed-version compatibility path is retained.
-ALTER TABLE post_publication_projection_receipts DROP COLUMN applied_identity;
-
 CREATE INDEX IF NOT EXISTS idx_post_publication_projection_receipts__applied_snapshot_id
   ON post_publication_projection_receipts (applied_snapshot_id);
 
@@ -73,7 +67,7 @@ BEFORE UPDATE ON post_publication_identity_snapshots FOR EACH ROW EXECUTE FUNCTI
 
 COMMENT ON COLUMN post_publication_identity_snapshots.dirty_work_id IS 'Live owning work FK; acknowledgement clears it without deleting accepted storage.';
 COMMENT ON COLUMN post_publication_identity_snapshots.generation IS 'Captured work generation fencing this attempt.';
-COMMENT ON COLUMN post_publication_identity_snapshots.post_identity_id IS 'Durable post identity FK added by the concrete identities migration.';
+COMMENT ON COLUMN post_publication_identity_snapshots.post_identity_id IS 'Concrete durable post identity FK; live post access follows the bridge post_id FK.';
 COMMENT ON COLUMN post_publication_identity_snapshots.eligibility_fingerprint IS 'Scalar candidate and root eligibility version.';
 COMMENT ON COLUMN post_publication_identity_snapshots.is_public IS 'Eligibility captured for this attempt.';
 COMMENT ON COLUMN post_publication_identity_snapshots.source_cursor_kind IS 'Native source branch advanced by the last atomically staged physical row page.';
@@ -89,7 +83,6 @@ COMMENT ON COLUMN post_publication_identity_snapshot_keys.post_type IS 'Post typ
 COMMENT ON COLUMN post_publication_identity_snapshot_keys.day IS 'UTC publication day of a sitemap tuple.';
 COMMENT ON TABLE post_publication_identity_snapshots IS 'Immutable-at-acceptance bounded identity materialization attempts; intentionally independent from dirty work.';
 COMMENT ON TABLE post_publication_identity_snapshot_keys IS 'Typed exact projection identities for a publication snapshot; delete explicitly in bounded pages before removing a snapshot.';
-COMMENT ON COLUMN post_publication_projection_receipts.applied_snapshot_id IS 'Complete snapshot accepted after projection effects; required for every receipt.';
 COMMENT ON COLUMN post_publication_identity_snapshot_keys.topic_key IS 'Immutable topic key projection value; never joined to a live entity.';
 COMMENT ON COLUMN post_publication_identity_snapshot_keys.author_key IS 'Immutable author key projection value; never joined to a live entity.';
 COMMENT ON COLUMN post_publication_identity_snapshot_keys.author_username IS 'Immutable author username projection value; never joined to a live entity.';

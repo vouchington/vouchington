@@ -1,6 +1,6 @@
 import { write } from '@data-stores/psql'
+import { mintUUIDv7 } from '@modules/utils/ids'
 import { MediaError, validateMediaUpload } from '@vouchington/media'
-import { v7 } from 'uuid'
 import { SUPPORTED_IMAGE_FORMATS } from './constants.mts'
 import { presignImageUploadUrl } from './presign-upload-url.mts'
 import createHttpError from 'http-errors'
@@ -25,7 +25,7 @@ export async function createImageUploadUrl(user: { id: string }, options: Create
   const dependencies = { ...defaultDependencies, ...options.dependencies }
   const { contentType: normalizedContentType } = validateImageUpload(options)
 
-  const imageId = v7()
+  const imageId = mintUUIDv7()
   const s3Key = imageId
 
   const uploadUrl = await dependencies.presignImageUploadUrl({

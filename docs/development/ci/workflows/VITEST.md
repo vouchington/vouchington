@@ -4,8 +4,8 @@
 
 Every Vitest project defined in [`../../vitest.config.mts`](../../../../vitest.config.mts) must be listed here and owned by exactly one CI workflow. An owning workflow may run the project in multiple platform jobs or shards.
 
-Each area workflow starts its owning projects when its area path filter matches, and every area runs
-its full suites for a merge group; CI never selects individual test files.
+Each area workflow starts its owning projects when its area path filter matches the pull-request or
+merge-group diff, and a selected area runs its full suites; CI never selects individual test files.
 [`ci/vitest/project-ownership-registry.mts`](../../../../ci/vitest/project-ownership-registry.mts) derives
 the project → job map and shard policies from `VITEST_OWNERSHIP`. See [area test suites](../../ci.md#area-test-suites).
 
@@ -22,9 +22,8 @@ Reporter policy:
 - CI Vitest commands set `VITEST_CI_REPORTERS: run` and `VITEST_JUNIT_OUTPUT_FILE`; do not pass
   reporter or output-file CLI flags.
 - `vitest.config.mts` owns the CI reporter list: `minimal`, configured `github-actions`, `junit`,
-  `hanging-process`, and the CI-only worker-exit diagnostics reporter. The diagnostics reporter
-  prints bounded worker-exit context, including recent modules, stderr tail, process resources,
-  and serialized unhandled errors.
+  `hanging-process`, and the CI-only teardown-overrun reporter, which prints process and
+  active-resource context when Vitest's exit watchdog fires at `teardownTimeout`.
 - The `github-actions` reporter must keep job summaries disabled and file links configured from GitHub environment variables.
 
 <!-- BEGIN GENERATED: vitest-ownership -->

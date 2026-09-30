@@ -10,6 +10,7 @@ import { createCopyrightNotice } from '@/lib/api/client/copyright-notices'
 import type { CopyrightNoticeResolvedTarget } from '@/lib/api/client/copyright-notice-targets'
 import onError, { onSuccess } from '@/lib/on-error'
 import { DeclarationCheckbox, LabeledInput, LabeledTextarea } from './copyright-form-fields'
+import { CopyrightMisrepresentationWarning } from './copyright-misrepresentation-warning'
 import { CopyrightNoticeTargetPicker } from './copyright-notice-target-picker'
 import { useAuth } from '@/lib/auth/context'
 import { userHref } from '@/lib/links/entity-href'
@@ -155,6 +156,7 @@ export function CopyrightNoticeForm() {
         onChange={set('signature')}
         required
       />
+      <CopyrightMisrepresentationWarning kind='notice' />
       <TurnstileField turnstile={turnstile} />
       <Button
         type='submit'

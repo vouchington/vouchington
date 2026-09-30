@@ -89,6 +89,7 @@ export type CopyrightNoticeSubmissionRecord = {
   source_kind: CopyrightSubmissionSourceKind
   submitted_by_user_id: string | null
   body_ciphertext: string
+  copyright_notice_guest_capability_id: string | null
 }
 
 export type CopyrightNoticeSubmissionAssessmentRecord = {
@@ -180,6 +181,7 @@ export type CopyrightLifecycleEventRecord = {
   copyright_notice_email_intake_id: string | null
   copyright_notice_delivery_intent_id: string | null
   media_delivery_registry_key: string | null
+  copyright_notice_guest_capability_id: string | null
   review_action: CopyrightHumanReviewAction | null
   review_rationale_ciphertext: string | null
   counter_notice_accepted: boolean | null

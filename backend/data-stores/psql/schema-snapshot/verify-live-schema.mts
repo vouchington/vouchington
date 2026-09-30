@@ -50,10 +50,11 @@ export function normalizeExtensionVersionsForLiveComparison(
  * Exercised against a real database by `backend-postgres-schema` Vitest tests
  * (`../__tests__/schema-snapshot-verification.test.mts`), covering the resolve path and both
  * halves of the incident (missing column, missing table). Like `generateSchemaSnapshot`'s live-DB
- * path, this function is still marked v8-ignore below: `backend-postgres-schema` runs as its own
- * CI job (`tests-postgres-schema.yml`) without `--coverage`, outside `ci.yml`'s `test-coverage`
- * producer set, so no project that actually calls this function ever contributes LCOV to the
- * backend patch-coverage gate -- see docs/development/reference-tests-schema-checks.md.
+ * path, this function is still marked v8-ignore below: `backend-postgres-schema` runs in
+ * `backend.yml`'s `test-postgres-schema` job (`tests-postgres-schema.yml`) without `--coverage`,
+ * and the backend area's `coverage` job merges LCOV only from the module, unit, and credentialed
+ * suites, so no project that actually calls this function contributes LCOV to that gate -- see
+ * docs/development/reference-tests-schema-checks.md.
  *
  * Intentionally does not attempt to pinpoint or repair the diff -- see
  * `reference-migrations-views-and-config-driven.md#staging-schema-drift-pre-launch-only` for why
@@ -61,7 +62,7 @@ export function normalizeExtensionVersionsForLiveComparison(
  */
 /* v8 ignore start -- calls the live-DB readSchemaCatalog(); exercised for real only by
    backend-postgres-schema Vitest tests (../__tests__/schema-snapshot-verification.test.mts),
-   which don't feed the backend patch-coverage LCOV pipeline -- see
+   which run without --coverage and feed no LCOV to the backend area coverage job -- see
    docs/development/reference-tests-schema-checks.md */
 export async function verifyLiveSchemaMatchesSnapshot({
   root = __dirname,

@@ -6,11 +6,12 @@ Complete normalized category snapshots owned by each RSS feed source for a share
 
 Not partitioned — growth: bounded.
 
-| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                           |
-| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------- |
-| `rss_feed_id`      | `uuid`                     | no       |                     |          |           |           | RSS feed that supplied this category snapshot.                    |
-| `rss_feed_item_id` | `uuid`                     | no       |                     |          |           |           | Shared RSS feed item described by the source snapshot.            |
-| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this source supplied its current complete category snapshot. |
+| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                           |
+| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
+| `rss_feed_id`      | `uuid`                     | no       |                     |          |           |           | RSS feed that supplied this category snapshot.                                                                    |
+| `rss_feed_item_id` | `uuid`                     | no       |                     |          |           |           | Shared RSS feed item described by the source snapshot.                                                            |
+| `categories`       | `jsonb`                    | no       |                     |          |           |           | Normalized category strings supplied by this feed, including an empty array when the feed removed all categories. |
+| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this source supplied its current complete category snapshot.                                                 |
 
 **Primary key:** `PRIMARY KEY (rss_feed_id, rss_feed_item_id)`
 
@@ -18,7 +19,8 @@ Not partitioned — growth: bounded.
 _none_
 
 **Check constraints:**
-_none_
+
+- `rss_feed_item_source_category_snapshots_categories_check`: `CHECK ((jsonb_typeof(categories) = 'array'::text))`
 
 **Foreign keys:**
 

@@ -73,7 +73,7 @@ export async function labelsFromPaths(paths: string[], labelerPath: string): Pro
   return [...matched]
 }
 
-if (process.argv[1] === import.meta.filename) {
+if (import.meta.main) {
   const { labelerPath, paths } = parseLabelsFromPathsArgs(process.argv.slice(2))
   const labels = await labelsFromPaths(paths, labelerPath)
   for (const label of labels) {

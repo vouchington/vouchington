@@ -2,6 +2,12 @@ import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 
+import {
+  createPostPageEmptySearchParams,
+  createPostPageUser,
+  registerCreatePostPageCases,
+} from '@/test-helpers/app/create-post-page-cases'
+
 const {
   mockGetCurrentUser,
   mockGetMyContributionStatus,
@@ -59,14 +65,6 @@ vi.mock(import('@/lib/seo/metadata'), () => ({
 
 import CreateReviewPage from './page'
 
-const user = { id: 'user-1', roles: [] }
-const allowedStatus = { contribution_status: { allowed: true }, admission: { allowed: true } }
-const gatedStatus = {
-  contribution_status: { allowed: false, reason: 'account_too_new' },
-  admission: { allowed: true },
-}
-const emptySearchParams = Promise.resolve({})
-
 describe('CreateReviewPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -77,70 +75,19 @@ describe('CreateReviewPage', () => {
     })
   })
 
-  it('redirects to /login when unauthenticated', async () => {
-    mockGetCurrentUser.mockResolvedValue(null)
-    mockGetMyContributionStatus.mockResolvedValue(allowedStatus)
-    await expect(CreateReviewPage({ searchParams: emptySearchParams })).rejects.toThrow(
-      'redirect:/login',
-    )
-  })
-
-  it('renders post form when contribution is allowed', async () => {
-    mockGetCurrentUser.mockResolvedValue(user)
-    mockGetMyContributionStatus.mockResolvedValue(allowedStatus)
-    const result = await CreateReviewPage({ searchParams: emptySearchParams })
-    render(result)
-    expect(screen.getByTestId('post-form')).toBeDefined()
-    expect(screen.queryByTestId('contribution-gated-cta')).toBeNull()
-  })
-
-  it('passes eligible community options and initial community slug to the post form', async () => {
-    mockGetCurrentUser.mockResolvedValue(user)
-    mockGetMyContributionStatus.mockResolvedValue(allowedStatus)
-    mockGetEligibleCommunityPostOptions.mockResolvedValue({
-      communityOptions: [{ id: 'community-1', name: 'Reviews', slug: 'reviews' }],
-      initialCommunitySlug: 'reviews',
-    })
-    const result = await CreateReviewPage({
-      searchParams: Promise.resolve({ community: 'reviews' }),
-    })
-    render(result)
-
-    expect(mockGetEligibleCommunityPostOptions).toHaveBeenCalledWith('review', 'reviews')
-    expect(mockPostForm).toHaveBeenCalledWith(
-      expect.objectContaining({
-        postType: 'review',
-        communityOptions: [{ id: 'community-1', name: 'Reviews', slug: 'reviews' }],
-        initialCommunitySlug: 'reviews',
-      }),
-      undefined,
-    )
-  })
-
-  it('renders CTA and hides form when account_too_new', async () => {
-    mockGetCurrentUser.mockResolvedValue(user)
-    mockGetMyContributionStatus.mockResolvedValue(gatedStatus)
-    const result = await CreateReviewPage({ searchParams: emptySearchParams })
-    render(result)
-    expect(screen.getByTestId('contribution-gated-cta')).toBeDefined()
-    expect(screen.queryByTestId('post-form')).toBeNull()
-    expect(screen.getByText('write a review')).toBeDefined()
-  })
-
-  it('renders CTA and hides form when email_verification_required', async () => {
-    mockGetCurrentUser.mockResolvedValue(user)
-    mockGetMyContributionStatus.mockResolvedValue({
-      contribution_status: { allowed: false, reason: 'email_verification_required' },
-      admission: { allowed: true },
-    })
-    const result = await CreateReviewPage({ searchParams: emptySearchParams })
-    render(result)
-    expect(screen.getByTestId('contribution-gated-cta')).toBeDefined()
-    expect(screen.queryByTestId('post-form')).toBeNull()
+  registerCreatePostPageCases({
+    Page: CreateReviewPage,
+    postType: 'review',
+    actionNoun: 'write a review',
+    community: { id: 'community-1', name: 'Reviews', slug: 'reviews' },
+    mockGetCurrentUser,
+    mockGetMyContributionStatus,
+    mockGetEligibleCommunityPostOptions,
+    mockPostForm,
   })
 
   it('renders CTA and hides form when action limit is reached', async () => {
-    mockGetCurrentUser.mockResolvedValue(user)
+    mockGetCurrentUser.mockResolvedValue(createPostPageUser)
     mockGetMyContributionStatus.mockResolvedValue({
       contribution_status: { allowed: true },
       admission: {
@@ -149,18 +96,9 @@ describe('CreateReviewPage', () => {
         retry_after_seconds: 60,
       },
     })
-    const result = await CreateReviewPage({ searchParams: emptySearchParams })
+    const result = await CreateReviewPage({ searchParams: createPostPageEmptySearchParams })
     render(result)
     expect(screen.getByTestId('contribution-gated-cta')).toBeDefined()
     expect(screen.queryByTestId('post-form')).toBeNull()
-  })
-
-  it('renders form when getMyContributionStatus fails', async () => {
-    mockGetCurrentUser.mockResolvedValue(user)
-    mockGetMyContributionStatus.mockRejectedValue(new Error('API error'))
-    const result = await CreateReviewPage({ searchParams: emptySearchParams })
-    render(result)
-    expect(screen.getByTestId('post-form')).toBeDefined()
-    expect(screen.queryByTestId('contribution-gated-cta')).toBeNull()
   })
 })

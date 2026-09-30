@@ -11,6 +11,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 STOP_VALKEY=true
+VALKEY_CHECK_FAILED=false
 
 usage() {
     cat <<'USAGE'
@@ -313,7 +314,18 @@ stop_valkey_container() {
     fi
 
     echo -e "${YELLOW}Stopping Valkey container $VALKEY_CONTAINER...${NC}"
-    if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$VALKEY_CONTAINER"; then
+    # Capture the listing and its exit status separately: an unreachable Docker daemon must not
+    # look like "the container is not running".
+    local running_containers
+    local ps_exit=0
+    running_containers="$(docker ps --format '{{.Names}}')" || ps_exit=$?
+    if [ "$ps_exit" -ne 0 ]; then
+        echo -e "${RED}Warning: 'docker ps' failed (exit $ps_exit); cannot tell whether $VALKEY_CONTAINER is running. Is Docker running?${NC}" >&2
+        VALKEY_CHECK_FAILED=true
+        echo ""
+        return 0
+    fi
+    if grep -qx "$VALKEY_CONTAINER" <<<"$running_containers"; then
         docker stop "$VALKEY_CONTAINER" >/dev/null 2>&1 \
             && echo -e "${GREEN}  ✓ Stopped Valkey${NC}" \
             || echo -e "${YELLOW}  Could not stop Valkey container${NC}"
@@ -338,5 +350,10 @@ stop_valkey_container
 # A caller may be in a pane it added to the managed session. Close that
 # session after all other cleanup so killing its pane cannot interrupt us.
 stop_tmux_services
+
+if $VALKEY_CHECK_FAILED; then
+    echo -e "${RED}✗ Service stop incomplete: could not check the Valkey container $VALKEY_CONTAINER (start Docker and rerun, or pass --keep-valkey)${NC}" >&2
+    exit 1
+fi
 
 echo -e "${GREEN}✓ Service stop complete${NC}"

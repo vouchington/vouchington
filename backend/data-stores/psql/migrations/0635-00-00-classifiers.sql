@@ -434,7 +434,7 @@ CREATE TABLE IF NOT EXISTS classifier_decision_batches (
   post_id UUID REFERENCES posts ON DELETE CASCADE,
   rss_feed_item_id UUID REFERENCES rss_feed_items ON DELETE CASCADE,
   scope_category TEXT NOT NULL,
-  scope_community_id UUID,
+  scope_community_id UUID REFERENCES communities ON DELETE CASCADE,
   completed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -457,7 +457,7 @@ CREATE INDEX IF NOT EXISTS idx_classifier_decision_batches__post
 CREATE INDEX IF NOT EXISTS idx_classifier_decision_batches__rss_feed_item
   ON classifier_decision_batches (rss_feed_item_id, id);
 CREATE INDEX IF NOT EXISTS idx_classifier_decision_batches__scope
-  ON classifier_decision_batches (scope_community_id, id) WHERE scope_category = 'community_ai';
+  ON classifier_decision_batches (scope_community_id, id) WHERE scope_community_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_classifier_decision_batches__classifier
   ON classifier_decision_batches (classifier_id);
 CREATE INDEX IF NOT EXISTS idx_classifier_decision_batches__prompt_classifier
@@ -941,7 +941,7 @@ COMMENT ON COLUMN classifier_decision_batches.prompt_version_id IS 'Exact prompt
 COMMENT ON COLUMN classifier_decision_batches.post_id IS 'Classified post subject; mutually exclusive with rss_feed_item_id.';
 COMMENT ON COLUMN classifier_decision_batches.rss_feed_item_id IS 'Classified RSS item subject; mutually exclusive with post_id.';
 COMMENT ON COLUMN classifier_decision_batches.scope_category IS 'Decision scope: global or community_ai.';
-COMMENT ON COLUMN classifier_decision_batches.scope_community_id IS 'Immutable community provenance for community_ai scope; no FK so history survives community deletion.';
+COMMENT ON COLUMN classifier_decision_batches.scope_community_id IS 'Immutable community for community_ai scope; deleting the community cascades to its scoped batches and their results.';
 COMMENT ON COLUMN classifier_decision_batches.completed_at IS 'Completion marker set only after every call and result for this batch is durable.';
 
 COMMENT ON COLUMN classifier_decision_calls.batch_id IS 'Logical decision batch containing this provider call.';

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { fileURLToPath } from 'node:url'
 
 import {
   buildSessionFrictionReport,
@@ -70,7 +69,7 @@ export async function runReport(
   return buildReport(sessionId, env, entriesClient)
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   main().catch((err: unknown) => {
     process.stderr.write(`Error: ${err instanceof Error ? err.message : String(err)}\n`)
     process.exit(1)

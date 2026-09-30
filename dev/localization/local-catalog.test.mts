@@ -5,6 +5,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -22,17 +23,22 @@ function artifactSnapshot(path: string) {
   return existsSync(path) ? readFileSync(path) : undefined
 }
 
-function runLocalCatalogCli(cwd: string) {
-  return execFileSync(process.execPath, ['--experimental-strip-types', LOCAL_CATALOG_CLI], {
+function runLocalCatalogCli(cwd: string, script = LOCAL_CATALOG_CLI) {
+  return execFileSync(process.execPath, ['--experimental-strip-types', script], {
     cwd,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim()
 }
 
+function makeTempDirectory(prefix: string) {
+  const directory = mkdtempSync(join(tmpdir(), prefix))
+  directories.push(directory)
+  return directory
+}
+
 function makeCatalogFixture() {
-  const root = mkdtempSync(join(tmpdir(), 'localization-catalog-'))
-  directories.push(root)
+  const root = makeTempDirectory('localization-catalog-')
   const source = join(root, 'catalog')
   cpSync('localization/normalized-fixture', source, { recursive: true })
   return { output: join(root, 'generated', 'catalog.sqlite'), source }
@@ -98,5 +104,18 @@ describe('ensureLocalLocalizationCatalog', () => {
     expect(rootOutput).toBe(join(WORKTREE_ROOT, '.local', 'localization', 'catalog.sqlite'))
     expect(subdirectoryOutput).toBe(rootOutput)
     expect(artifactSnapshot(callerArtifact)).toEqual(before)
+  })
+
+  it('still prints the catalog path when started through a symlinked directory', () => {
+    // Node resolves the main module through realpath, so argv[1] keeps the symlinked spelling
+    // that import.meta.url loses (macOS temp directories are such a symlink); a hand-rolled
+    // argv[1] guard silently printed nothing here (#778).
+    const linkRoot = makeTempDirectory('localization-catalog-link-')
+    const linkedDirectory = join(linkRoot, 'linked-localization')
+    symlinkSync(dirname(LOCAL_CATALOG_CLI), linkedDirectory)
+
+    const output = runLocalCatalogCli(WORKTREE_ROOT, join(linkedDirectory, 'local-catalog.mts'))
+
+    expect(output).toBe(join(WORKTREE_ROOT, '.local', 'localization', 'catalog.sqlite'))
   })
 })

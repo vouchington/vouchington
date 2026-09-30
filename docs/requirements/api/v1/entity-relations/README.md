@@ -45,7 +45,7 @@ contains the full deterministic order including the object UUID tie-breaker, and
 
 Response: `{ results: [...], page_info: {...}, entity_relations: {...}, entity_relation_elections: {...} }`. For authenticated users, also includes `election_votes`.
 
-- `entity_relation_elections` — Record keyed by relation ID with vote summaries (`votes_score_net`, `votes_count_up`, `votes_count_down`). Returned for all users (5-min cache TTL, separate from relation data).
+- `entity_relation_elections` — Record keyed by relation ID with vote summaries (`votes_score_net`, `votes_count_up`, `votes_count_down`). Returned for all users (5-min cache TTL, separate from relation data). A list serves one relation table, so the summaries and each viewer's `election_votes` entry are read for that table only, even when another relation table holds a row with the same ID.
 
 Visibility follows the reader:
 
@@ -82,6 +82,8 @@ When the subject or object is a post the caller cannot open, or its ID is not a 
 
 Admins list all voters; other authenticated users see only their own vote.
 
+`PUT` and `DELETE /api/v1/entity-relations/:id/vote` and this route name a relation by ID alone. A relation ID is unique only within its relation table, so all three return `404` when no election relation has the ID and `409` when more than one election relation table has it.
+
 Query parameters:
 
 - `after` — opaque cursor from `page_info.end_cursor`; advances to the next page. Returns 400 for an invalid or cross-resource/cross-branch cursor.
@@ -95,8 +97,8 @@ Response includes `results` and `page_info`.
 | -------------------------------------------------------------------------- | ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | GET /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType  | 2           | HTTP: anon Cache-Control (short); Entities: Valkey batch | Search IDs, then parallel streaming (elections, votes)                                                      |
 | POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType | 4-7         | None (write)                                             | Auth, parse, upsert, read-back; post tuples add a visibility check; community relations add 2 extra lookups |
-| PUT /api/v1/entity-relations/:id/vote                                      | 4           | Entities: Valkey batch                                   | Standard vote handler (auth, plan check, entity lookup, upsert)                                             |
-| GET /api/v1/entity-relations/:id/votes                                     | 3           | Entities: Valkey batch                                   | Auth, cached entity lookup, votes query                                                                     |
+| PUT /api/v1/entity-relations/:id/vote                                      | 5           | Entities: Valkey batch                                   | Standard vote handler (auth, plan check, relation-table lookup, entity lookup, upsert)                      |
+| GET /api/v1/entity-relations/:id/votes                                     | 4           | Entities: Valkey batch                                   | Auth, relation-table lookup, cached entity lookup, votes query                                              |
 
 ## Related
 

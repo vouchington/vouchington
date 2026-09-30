@@ -11,6 +11,14 @@ eligible for provisional restriction. The recommendation is not a legal merits
 assessment and cannot fill a statutory field. A moderator must subsequently review every
 provisional restriction.
 
+`COPYRIGHT_INTAKE_ENABLED` is the intake kill switch. While it is off, or while the evidence
+bucket, copyright sender and reply-to addresses, or media-delivery enforcement is unconfigured,
+`POST /api/v1/copyright-notices`, `POST /api/v1/copyright-eu-notices`, and
+`POST /api/v1/copyright-uk-notices` return `503` before authentication. New EU and UK notices need
+this switch in addition to the territorial policy approval. In-case responses (appeals,
+counter-notices, guest filings, EU and UK redress, EU supervised complaints) and every staff route
+stay available so existing cases keep their statutory paths.
+
 Browser clients must send a Cloudflare Turnstile token in `cf_turnstile_response` for every
 copyright notice, appeal, and counter-notice submission. Native iOS clients may instead use the
 equivalent verified App Attest assertion path with the endpoint's action tag; browser clients do
@@ -30,8 +38,13 @@ It uses the canonical opaque `after` cursor and bounded `limit` (1–100; defaul
 `page_info` so the member-visible index can continue beyond its first page.
 
 The staff review queue uses the same bounded `after` and `limit` contract. Its cursor is scoped to
-the actionable queue and orders by immutable `(received_at, id)`, so every actionable case,
-including pending statutory deadlines, remains reachable after the first page.
+the actionable queue and orders by `(urgency, waiting_since, id)`: a missed restoration deadline
+first, then a deadline past escalation, then all other open work, each oldest wait first. Every
+queued case, including one whose only open item is a deadline past escalation, remains reachable
+after the first page. Each item adds `reasons` (the distinct open-item kinds), `waiting_since` (the
+oldest open item's time), and `next_deadline` (the earliest open deadline's `escalation_at` and
+`restoration_deadline_at`, or null). Urgency is evaluated against the current time on each request,
+so a case whose deadline passes between pages moves to an earlier tier.
 
 The staff email intake queue, `GET /api/v1/copyright-email-intakes/review-queue`, uses the same
 bounded `after` and `limit` contract with its own cursor scope. It orders unreviewed intakes by
@@ -44,6 +57,17 @@ Reviewers record incident dispositions and warning or no-action review outcomes.
 record restrict, terminate, and reinstatement. Restrict and terminate suspend the account.
 Reinstatement does not unsuspend it.
 
+Staff issue a one-case guest capability with `POST /api/v1/copyright-notices/:id/guest-capabilities`.
+The expiry must be no more than 30 days after issue, and the token is returned only in that
+response. `GET /api/v1/copyright-notices/:id/guest-capabilities` lists the case's capabilities
+newest first with issuer, expiry, and revocation state, using the bounded `after` and `limit`
+(1–100; default 25) contract with a case-scoped cursor; it never returns a token. Staff revoke one
+with `POST .../guest-capabilities/:capabilityId/revocation` and record a request for more
+information with `POST .../guest-capabilities/:capabilityId/information-requests`. A guest files
+with `POST /api/v1/copyright-notices/:id/guest-filings` and the `Copyright-Guest-Capability`
+header. A capability files at most one court or CCB hold (409 on a repeat), and a received
+withdrawal revokes every live capability on the case.
+
 ## Performance
 
 Mutation routes are uncached. An EU or UK receipt writes the notice, routing, and acknowledgment
@@ -55,4 +79,6 @@ one legal aggregate transaction. Appeals and counter-notices use one bounded own
 one transaction. Email approval resolves at most 20 placements, admits one aggregate, then imposes
 target-scoped restrictions. A repeat-infringer account read is one query. A review outcome,
 disposition, or reinstatement is one transaction. Restrict and terminate then call account
-suspension.
+suspension. The guest capability list is private, uncached, and one primary-database query walking
+the `(copyright_notice_id, id)` index. A guest filing locks its capability row, then appends the
+filing and any withdrawal revocations in one transaction.

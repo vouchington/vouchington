@@ -1,6 +1,4 @@
 import { spawn } from 'node:child_process'
-import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { toolingTestProjectNames } from '../test-helpers/vitest-config/tooling-project-registry.mts'
 
 const dockerFreeBackendProjects = [
@@ -170,8 +168,7 @@ async function main(): Promise<void> {
   propagateVitestChildCompletion(result)
 }
 
-const invokedPath = process.argv[1]
-if (invokedPath !== undefined && fileURLToPath(import.meta.url) === resolve(invokedPath)) {
+if (import.meta.main) {
   main().catch(error => {
     console.error(error instanceof Error ? error.message : error)
     process.exitCode = 1

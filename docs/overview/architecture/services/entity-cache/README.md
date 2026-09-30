@@ -25,6 +25,11 @@ elections with `get*ElectionByIdCachedBatch()` and return them as sidecar maps o
 fields. Do not fetch elections individually from client-facing routes, and do not embed election
 summaries or raw vote aggregate fields in entity VIEW payloads.
 
+Entity-relation elections are the exception to `get*ElectionByIdCachedBatch()`. A relation UUID is
+unique only within its relation table, so `getEntityRelationElectionByTargetCachedBatch()` takes
+`{ entityRelationId, relationTable }` keys, and `invalidate.entity_relation_elections()` takes the
+same keys. Never fetch, cache or invalidate an entity-relation election by bare UUID.
+
 ## Implementation Notes
 
 - When using cache keys, always use the `.trim().toLowerCase()`ed version of the string

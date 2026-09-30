@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS post_admission_reservations (
   state TEXT NOT NULL DEFAULT 'in_progress',
   response JSONB,
   replay_metadata JSONB,
-  committed_post_id UUID,
+  committed_post_id UUID REFERENCES retained_post_identities (id) ON DELETE RESTRICT,
   committed_status TEXT,
   retryable_failure JSONB,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -63,14 +63,15 @@ COMMENT ON COLUMN post_admission_reservations.policy_revision IS 'Contribution-p
 COMMENT ON COLUMN post_admission_reservations.state IS 'Admission lifecycle: in_progress, committed, retryable_failed, or expired.';
 COMMENT ON COLUMN post_admission_reservations.response IS 'Serialized successful response retained for exact idempotent replay.';
 COMMENT ON COLUMN post_admission_reservations.replay_metadata IS 'Bounded route and scope metadata paired with the replay response.';
-COMMENT ON COLUMN post_admission_reservations.committed_post_id IS 'Created post UUID retained in the replay record after the post may be deleted.';
+COMMENT ON COLUMN post_admission_reservations.committed_post_id IS 'Retained identity of the created post, kept in the replay record after the live post may be deleted. A retained identity never authorizes the deleted post.';
 COMMENT ON COLUMN post_admission_reservations.committed_status IS 'Successful response status retained with the exact replay payload.';
 COMMENT ON COLUMN post_admission_reservations.retryable_failure IS 'Serialized transient failure retained while the request can be retried.';
 COMMENT ON COLUMN post_admission_reservations.committed_at IS 'Clock timestamp at which the protected mutation committed.';
 COMMENT ON COLUMN post_admission_reservations.expires_at IS 'Replay expiration for committed admission records.';
 COMMENT ON COLUMN post_admission_reservations.retention_expires_at IS 'Indexed deletion boundary for committed replays and abandoned nonterminal reservations.';
 
--- Current indexes for fresh schema bootstrap.
+-- Current indexes for fresh schema bootstrap. The predicate is implied by every
+-- `committed_post_id = $1` lookup, so the retained-identity FK and cleanup checks can use it.
 CREATE INDEX IF NOT EXISTS idx_post_admission_reservations__committed_post_retention
   ON post_admission_reservations (committed_post_id, retention_expires_at)
-  WHERE state = 'committed';
+  WHERE committed_post_id IS NOT NULL;

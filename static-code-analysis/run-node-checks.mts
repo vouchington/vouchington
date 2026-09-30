@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import { fileURLToPath } from 'node:url'
-
 import { buildSharedContext, type SharedContext } from 'vouchington-tooling/shared-context'
 
 import { checkConfigInventoryPolicy } from './config-inventory/index.mts'
@@ -13,7 +11,7 @@ import {
   runRepoFilePolicyInWorker,
   type RunRepoFilePolicyInWorker,
 } from './repo-file-policy-worker-client.mts'
-import { isInvokedAsScript, runNodeChecksCli } from './run-node-checks-cli.mts'
+import { runNodeChecksCli } from './run-node-checks-cli.mts'
 export type { CheckName, CheckResult } from './node-check-types.mts'
 
 async function runOne(check: CheckName, ctx: SharedContext): Promise<CheckResult> {
@@ -84,7 +82,7 @@ void runNodeChecksCli({
   cwd: process.cwd(),
   error: console.error,
   exit: process.exit,
-  isMain: isInvokedAsScript(process.argv[1], fileURLToPath(import.meta.url)),
+  isMain: import.meta.main,
   log: console.log,
   run: runNodeChecksCliParallel,
 })
