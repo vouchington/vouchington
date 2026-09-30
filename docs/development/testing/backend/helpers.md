@@ -18,6 +18,9 @@ relative path, following other PSQL tests without adding a `@data-stores/psql` â
 Route suites that jscpd reports together call one registrar from a literal `describe` in each
 test file. The registrars live next to this README: vote lists, scoped credential pagination,
 community claim and escalation routes, RSS feeds, landing-page analytics, and similarity search.
+Post, topic, domain, and URL list-item mutations share
+[`describeCommunityListItemRoutes`](../../../../backend/test-helpers/community-list-item-routes.mts).
+Topic list reads stay in the topics suite.
 Captcha route tests share the Turnstile fixture token from
 [`captcha/test-captcha-token.mts`](../../../../backend/test-helpers/captcha/test-captcha-token.mts). The Turnstile `fetch` mock
 factory stays in [`captcha/undici-mock.mts`](../../../../backend/test-helpers/captcha/undici-mock.mts); each consumer keeps its own
