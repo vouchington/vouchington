@@ -26,6 +26,14 @@ export interface PostRelatedEntityAsideContentProps {
 }
 
 type AsideTranslator = NonNullable<PostRelatedEntityAsideContentProps['t']>
+type PostRelationObjectType = 'post' | 'topic' | 'url'
+
+interface AsideCopy {
+  title: string
+  manage: string
+  predicate: 'related' | 'category'
+  objectType: PostRelationObjectType
+}
 
 function translated(
   t: PostRelatedEntityAsideContentProps['t'],
@@ -35,7 +43,10 @@ function translated(
   return t ? t(key) : fallback
 }
 
-function asideCopy(kind: PostRelatedAsideKind, t: PostRelatedEntityAsideContentProps['t']) {
+function asideCopy(
+  kind: PostRelatedAsideKind,
+  t: PostRelatedEntityAsideContentProps['t'],
+): AsideCopy {
   if (kind === 'posts') {
     return {
       title: translated(
