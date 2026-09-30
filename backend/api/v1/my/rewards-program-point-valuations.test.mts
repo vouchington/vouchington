@@ -115,17 +115,17 @@ describe('POST /api/v1/my/rewards-program-point-valuations', () => {
       .expect(415)
   })
 
-  it('returns 400 when rewards_program_id is missing', async () => {
+  it('returns 422 when rewards_program_id is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
     await request
       .post('/api/v1/my/rewards-program-point-valuations')
       .send({ value_per_point: { amount: 10_000, currency: 'usd', scale: 6 } })
-      .expect(400)
+      .expect(422)
   })
 
-  it('returns 400 when value_per_point is missing', async () => {
+  it('returns 422 when value_per_point is missing', async () => {
     const programId = await insertTestRewardsProgram({ createdById: user.id })
     const request = createRequest()
     await request.authenticateAs(user)
@@ -133,7 +133,7 @@ describe('POST /api/v1/my/rewards-program-point-valuations', () => {
     await request
       .post('/api/v1/my/rewards-program-point-valuations')
       .send({ rewards_program_id: programId })
-      .expect(400)
+      .expect(422)
   })
 
   it('returns 422 for a negative point value', async () => {
@@ -164,7 +164,7 @@ describe('POST /api/v1/my/rewards-program-point-valuations', () => {
       })
       .expect(422)
 
-    expect(response.body.message).toBe('note must be a string or null')
+    expect(response.body.message).toBe('Invalid request body')
   })
 
   it('creates a point valuation successfully', async () => {

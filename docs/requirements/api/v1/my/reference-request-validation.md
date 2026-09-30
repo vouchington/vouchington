@@ -92,6 +92,33 @@ Other behavior changes:
 
 Query carriers not validated: `GET /my/email-addresses`.
 
+## Cards, rewards programs, and spending
+
+Covers `POST`/`PATCH`/`DELETE` on `/my/cards`, `/my/rewards-program-point-valuations`,
+`/my/rewards-program-statuses`, and `/my/spending-categories`.
+
+`Money` and `ScaledMoney` fields (`credit_limit`, `amount`, `value_per_point`) are validated by the
+generated schema: a strict object with an integer minor-unit amount, a known currency, and, for
+`ScaledMoney`, `scale: 6`. It replaces the per-field `isMoney`/`isScaledMoney` asserts, which
+answered `422` for the same inputs. Spending-category `spending_frequency` is an enum of `monthly`
+and `annually`, and `spending_category_id` and `household_id` are UUIDs.
+
+Status changes from `400` to `422`:
+
+- A missing required field (`card_id`, `rewards_program_id`, `value_per_point`,
+  `rewards_program_status_id`, `spending_category_id`, `amount`) or a non-object body.
+
+Other behavior changes:
+
+- Unrecognized fields used to be ignored and are now `422`.
+
+Money, frequency, date-string, and note type errors that these handlers already answered with `422`
+keep that status; only the source of the diagnostic moved to the shared validator.
+
+Query carriers not validated: `GET /my/rewards-program-point-valuations`,
+`GET /my/rewards-program-statuses`, and `GET /my/spending-categories`. `GET /my/cards` paginates
+through `createPaginationParser` but declares no `apiQuery` contract, so it has no query schema.
+
 ## Cross-client verification
 
 Every web caller that builds a body for these routes was read against the generated schemas. None
@@ -105,3 +132,5 @@ against the field lists in `request-contracts.json`.
   preferences, financial profile, identity-verification display preferences, and email addresses
   conform. The web client has no caller for `/my/consents` or `/my/aside-preferences`, so neither
   was checked against a client here.
+- Cards, rewards programs, and spending: the web callers for cards, spending categories, rewards
+  program statuses, and point valuations conform, including their `Money` and `ScaledMoney` values.
