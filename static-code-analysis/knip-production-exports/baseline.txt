@@ -81,7 +81,6 @@ exports backend/modules/structured-decisions/transport.mts fetchStructuredDecisi
 exports backend/modules/utils/compression.mts gzipBytes
 exports backend/modules/utils/gtin.mts assertValidGTIN
 exports backend/modules/utils/http-dispatchers.mts resetHttpDispatchersForTest
-exports backend/modules/utils/http-egress-guardrail.mts resetEgressGuardrailDedupeForTest
 exports backend/modules/utils/image-origin.mts getSideloadImageUrlPrefix
 exports backend/modules/utils/search.mts createGetSearchParameters
 exports backend/modules/utils/search.mts getTypesFromQuery
@@ -399,8 +398,6 @@ types backend/data-stores/valkey-rate-limiter/index.mts RetryRateLimiterSaturati
 types backend/data-stores/valkey/types.mts DynamicConfigField
 types backend/entrypoints/api/valkey-admin-command.mts ParsedValkeyAdminCommand
 types backend/entrypoints/api/verify-ipv6-egress-checks.mts HostResult
-types backend/modules/scheduled-job-manifest/index.mts ScheduledJobQueue
-types backend/modules/utils/http.mts httpUtils.ReadResponseBodyOptions
 types backend/services/ap-inbox-activities/durable-delivery-transition-contract.mts ActivityPubInboxDeliveryTransitionDimensions
 types backend/services/contribution-gating/admission.mts ContributionAdmissionAudit
 types backend/services/copyright-notices/index.mts CopyrightAgentDispatchPage

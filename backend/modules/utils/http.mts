@@ -8,11 +8,7 @@ import { HttpRateLimitError, HttpServerError } from '@modules/on-error/errors'
 import onError from '@modules/on-error'
 import undici from 'undici'
 import { getExternalRequestDispatcher, getPinnedRequestDispatcher } from './http-dispatchers.mts'
-export {
-  readResponseBody,
-  readResponseBodyAsBuffer,
-  type ReadResponseBodyOptions,
-} from './http-body.mts'
+export { readResponseBody, readResponseBodyAsBuffer } from './http-body.mts'
 
 export { getHeaderValue }
 export const getRetryAfterDurationMs = parseRetryAfter
