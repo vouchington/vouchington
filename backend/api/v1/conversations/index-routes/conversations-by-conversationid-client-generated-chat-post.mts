@@ -1,5 +1,10 @@
+import { hasActiveChatTurnByConversationId } from '@services/conversations-messages/agentic-runs'
 import { apiResponse } from '../../../response-contract.mts'
-import { getErrorStatus } from '../../../error-response.mts'
+import {
+  getErrorStatus,
+  getErrorResponseMessage,
+  getErrorResponseCode,
+} from '../../../error-response.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
   normalizeFixedClientGeneratedChatModelName,
@@ -10,6 +15,7 @@ import { ChatTurnConflictError } from '@services/conversations-messages/chat-tur
 import { getConversationByIdForMutation } from '@services/conversations-messages/conversations'
 import {
   createClientGeneratedChatTurn,
+  getClientGeneratedChatTurnReplay,
   ClientGeneratedTurnIdentityConflictError,
 } from '@services/conversations-messages/client-generated-chat'
 import { toMessageTranscript } from '@services/conversations-messages/transcript'
@@ -36,7 +42,12 @@ app
         'POST:/api/v1/conversations/:conversationId/client-generated-chat',
       )
     } catch (error) {
-      if (getErrorStatus(error) !== 401) throw error
+      if (
+        getErrorStatus(error) !== 401 ||
+        getErrorResponseMessage(error, 401) !== 'Unauthorized' ||
+        getErrorResponseCode(error, 401) !== undefined
+      )
+        throw error
       ctx.setStatus(401)
       ctx.json(
         apiResponse(
@@ -135,21 +146,28 @@ app
       }
     }
 
-    await checkApiMessageSafety(message)
-    await checkApiMessageSafety(assistantContent)
-
+    const params = {
+      conversationId,
+      userMessageId,
+      assistantMessageId,
+      createdById: currentUser.id,
+      message,
+      assistantContent,
+      modelProvider,
+      modelName,
+    }
     let result: Awaited<ReturnType<typeof createClientGeneratedChatTurn>>
     try {
-      result = await createClientGeneratedChatTurn({
-        conversationId,
-        userMessageId,
-        assistantMessageId,
-        createdById: currentUser.id,
-        message,
-        assistantContent,
-        modelProvider,
-        modelName,
-      })
+      const replay = await getClientGeneratedChatTurnReplay(params)
+      if (replay) {
+        result = replay
+      } else {
+        const isRunning = await hasActiveChatTurnByConversationId(conversationId)
+        ctx.assert(!isRunning, 409, 'A message is already being processed')
+        await checkApiMessageSafety(message)
+        await checkApiMessageSafety(assistantContent)
+        result = await createClientGeneratedChatTurn(params)
+      }
     } catch (error) {
       if (
         error instanceof ChatTurnConflictError ||

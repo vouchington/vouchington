@@ -27,7 +27,7 @@ describe('index.generated', () => {
 
       expect(response.body.conversation).toHaveProperty('id')
       expect(response.body.conversation).toHaveProperty('title', 'Test Conversation')
-      expect(response.body.conversation).toHaveProperty('created_by_id', user.id)
+      expect(response.body.conversation).not.toHaveProperty('created_by_id')
     })
 
     it('should create conversation with empty title when not provided', async () => {

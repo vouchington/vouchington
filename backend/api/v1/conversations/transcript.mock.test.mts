@@ -5,7 +5,9 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createConversation,
   createConversationMessage,
+  claimChatConversationMessageAgenticRun,
 } from '@services/conversations-messages/create'
+import { hasActiveChatTurnByConversationId } from '@services/conversations-messages/agentic-runs'
 import { getConversationMessagesByConversationId } from '@services/conversations-messages/messages'
 import { requestOpenAIModeration } from '@modules/openai-utils/moderate'
 
@@ -51,6 +53,7 @@ describe('member transcript contract', () => {
     const retry = await request.post(path).send(body).expect(200)
     expect(retry.body).toEqual(first.body)
     await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(3)
+    expect(moderation).toHaveBeenCalledTimes(2)
   })
 
   it('rejects changed text and partial identity reuse atomically', async () => {
@@ -87,6 +90,40 @@ describe('member transcript contract', () => {
       .send({ ...turn(), user_message_id: 'not-a-uuid' })
       .expect(400)
     await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(0)
+  })
+
+  it('keeps active placeholders and claims scoped when another conversation reuses a message ID', async () => {
+    const user = await createTestUser()
+    const hosted = await createConversation(user.id, 'Incomplete transcript')
+    const placeholder = await createConversationMessage(hosted.id, user.id, {
+      role: 'assistant',
+      content: null,
+    })
+    const local = await createConversation(user.id, 'Local transcript')
+    const request = createRequest()
+    await request.authenticateAs(user)
+    await request
+      .post(`/api/v1/conversations/${local.id}/client-generated-chat`)
+      .send({
+        ...turn(),
+        user_message_id: user.id,
+        assistant_message_id: placeholder.id,
+      })
+      .expect(200)
+    await expect(hasActiveChatTurnByConversationId(hosted.id)).resolves.toBe(true)
+    await request
+      .post(`/api/v1/conversations/${hosted.id}/client-generated-chat`)
+      .send(turn())
+      .expect(409)
+    expect(moderation).toHaveBeenCalledTimes(2)
+    const run = await claimChatConversationMessageAgenticRun({
+      conversationId: hosted.id,
+      conversationMessageId: placeholder.id,
+      modelName: 'gpt-5.4-nano',
+      modelProvider: 'openai',
+      input: { message: 'Hello' },
+    })
+    expect(run).toBeDefined()
   })
 
   it('paginates history with completion metadata and omits generation internals from conversations', async () => {

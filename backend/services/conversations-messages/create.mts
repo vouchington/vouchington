@@ -131,7 +131,8 @@ export async function claimChatConversationMessageAgenticRun(params: {
         ${params.modelProvider}, ${JSON.stringify(params.input)}
       WHERE NOT EXISTS (
         SELECT 1 FROM conversation_message_agentic_runs
-        WHERE conversation_message_id = ${params.conversationMessageId}
+        WHERE conversation_id = ${params.conversationId}
+          AND conversation_message_id = ${params.conversationMessageId}
           AND parent_agentic_run_id IS NULL
           AND deleted_at IS NULL
       )

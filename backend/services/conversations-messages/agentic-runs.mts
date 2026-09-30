@@ -134,7 +134,8 @@ export async function hasActiveChatTurnByConversationId(conversationId: string):
       AND NOT EXISTS (
         SELECT 1
         FROM conversation_message_agentic_runs cmar
-        WHERE cmar.conversation_message_id = cm.id
+        WHERE cmar.conversation_id = cm.conversation_id
+          AND cmar.conversation_message_id = cm.id
           AND cmar.deleted_at IS NULL
       )
     LIMIT 1
