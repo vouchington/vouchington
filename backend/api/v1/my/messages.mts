@@ -11,13 +11,14 @@ import { getPrivateUserByAny } from '@services/users/get'
 import { assertNotSuspended } from '@services/users'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
-import type { ApiArrayContract } from '../../response-contract.mts'
+import { apiQuery, type ApiArrayContract } from '../../response-contract.mts'
 import {
   buildPageInfo,
   decodeUuidCursor,
   isPreciseTimestampCursor,
   preciseTimestampPaginationParser,
 } from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const MAX_RECIPIENTS = 25
 
@@ -27,9 +28,13 @@ type CreateConversationRequest =
 
 // GET /api/v1/my/messages
 app.route('/api/v1/my/messages').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/my/messages', preciseTimestampPaginationParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/messages')
 
   const { after: encodedAfter, limit } = preciseTimestampPaginationParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, preciseTimestampPaginationParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/messages', { query })
   const after = encodedAfter
     ? decodeUuidCursor(encodedAfter, isPreciseTimestampCursor, 'Invalid conversation cursor')
     : undefined

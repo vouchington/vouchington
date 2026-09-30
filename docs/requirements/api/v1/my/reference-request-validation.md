@@ -14,7 +14,10 @@ redacted diagnostic. The schema is generated from the DTO type each handler cast
 `pnpm run openapi:generate` and `pnpm run api-fixtures:generate`.
 
 API keys and the assistant chat routes are validated with their own slice and are not described
-here. `oauth-apps` and `oauth-grants` were already validated before this page existed.
+here, except for their list reads: the paginated `GET /my/api-keys`, `/my/oauth-apps`, and
+`/my/oauth-grants` validate their query like every other `/my` list, under
+[Query carriers](#query-carriers). `oauth-apps` and `oauth-grants` bodies were already validated
+before this page existed.
 
 ## Ordering
 
@@ -51,20 +54,27 @@ the raw query. Each handler parses first and validates the values it settled on:
 Unknown query parameters are ignored, as on every other validated query carrier: the generated
 query schemas never set `additionalProperties: false`, and step 2 drops undeclared keys. After the
 parser accepts a request the schema cannot fail, so it is a drift guard between the source and the
-published contract, and the parser or handler status stays the contract. No query carrier on these
-routes can fail its schema, so this adds no status change. The RSS export publishes `feed_type` as
-a string, so a value outside the feed types still reaches the service and fails the database enum
-cast with a `500`.
+published contract, and the parser or handler status stays the contract. Only the RSS export's
+`feed_type` can fail its schema, and that is the one status change here: a value outside the feed
+types used to reach the service and fail the database enum cast with a `500`, and it is now a `422`
+before the export limit is read or anything streams.
 
-| Route                                                                                                                  | Query                                                     | Status on failure                                                                                                                                                                                                                                                  |
-| ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GET /my/email-addresses`                                                                                              | `after`, `limit`                                          | `400` from the parser                                                                                                                                                                                                                                              |
-| `GET /my/rewards-program-point-valuations`, `/rewards-program-statuses`, `/spending-categories`                        | `after`, `limit`                                          | `400` from the parser, or from the cursor decoder for a malformed cursor                                                                                                                                                                                           |
-| `GET /my/notifications/push-subscriptions`, `/communities`, `/friend-recommendations`, `/warnings`, `/referral-clicks` | `after`, `limit`                                          | `400` from the parser                                                                                                                                                                                                                                              |
-| `GET /my/bans`, `GET /my/removed-posts`                                                                                | `after`, `limit`, and `include_platform` on removed posts | None from the schema. A `limit` that is not a positive integer uses `25`, a larger one is clamped to `100`, a repeated or empty `after` is ignored, and only `include_platform=true` includes platform removals. A malformed cursor is still `400`.                |
-| `GET /my/contribution-status`                                                                                          | `action`                                                  | `400` for an unknown or repeated `action`, checked before the plan lookup                                                                                                                                                                                          |
-| `GET /my/export/rss-feeds`                                                                                             | `feed_type`, `format`, `preflight`                        | None. An empty `feed_type` is no filter, any `format` other than `json` or `csv` exports OPML, and only `preflight=1` answers `204`. A `feed_type` outside `article`, `podcast`, `video`, `mixed`, or a repeated one, still reaches the service and answers `500`. |
-| `GET /my/export/topics`                                                                                                | `download`, `preflight`                                   | None. Only the literal `1` switches to the bare array or the `204` preflight.                                                                                                                                                                                      |
+The paginated reads below run the parser first, so their `400` and their clamped `limit` are
+unchanged. On the thread routes under `/my/messages/:conversationId/**`, conversation membership
+(`403`) is checked first, so a stranger or an unknown conversation gets `403` for a malformed query
+and never a schema diagnostic.
+
+| Route                                                                                                                  | Query                                                     | Status on failure                                                                                                                                                                                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /my/email-addresses`                                                                                              | `after`, `limit`                                          | `400` from the parser                                                                                                                                                                                                                                                                      |
+| `GET /my/rewards-program-point-valuations`, `/rewards-program-statuses`, `/spending-categories`                        | `after`, `limit`                                          | `400` from the parser, or from the cursor decoder for a malformed cursor                                                                                                                                                                                                                   |
+| `GET /my/notifications/push-subscriptions`, `/communities`, `/friend-recommendations`, `/warnings`, `/referral-clicks` | `after`, `limit`                                          | `400` from the parser                                                                                                                                                                                                                                                                      |
+| `GET /my/cards`, `GET /my/notifications`, `GET /my/api-keys`, `GET /my/oauth-apps`, `GET /my/oauth-grants`             | `after`, `limit`                                          | `400` from the parser, or from the cursor decoder for a malformed cursor                                                                                                                                                                                                                   |
+| `GET /my/messages`, `GET /my/messages/:conversationId/messages`, `GET /my/messages/:conversationId/participants`       | `after`, `limit`                                          | `400` from the parser or the cursor decoder. The two thread reads answer `403` to a non-member before the query is read.                                                                                                                                                                   |
+| `GET /my/bans`, `GET /my/removed-posts`                                                                                | `after`, `limit`, and `include_platform` on removed posts | None from the schema. A `limit` that is not a positive integer uses `25`, a larger one is clamped to `100`, a repeated or empty `after` is ignored, and only `include_platform=true` includes platform removals. A malformed cursor is still `400`.                                        |
+| `GET /my/contribution-status`                                                                                          | `action`                                                  | `400` for an unknown or repeated `action`, checked before the plan lookup                                                                                                                                                                                                                  |
+| `GET /my/export/rss-feeds`                                                                                             | `feed_type`, `format`, `preflight`                        | `422` for a `feed_type` outside `article`, `podcast`, `video`, `mixed` (case-sensitive), or a repeated one, before the export runs. Previously `500`. An empty `feed_type` is still no filter, any `format` other than `json` or `csv` exports OPML, and only `preflight=1` answers `204`. |
+| `GET /my/export/topics`                                                                                                | `download`, `preflight`                                   | None. Only the literal `1` switches to the bare array or the `204` preflight.                                                                                                                                                                                                              |
 
 ## Routes with no request contract
 
@@ -72,11 +82,8 @@ Some `/my` operations have no entry in the generated request-contract bundle, so
 to validate against and they are unchanged. They are mostly `GET` list and read routes that declare
 no carrier (for example `GET /my/profile`), plus `POST /my/notifications/read-all` and
 `POST /my/identity-verification/checkout-sessions`, which take no input. `GET /my/topic-claims`
-reads no query. The paginated `GET /my/cards`, `GET /my/notifications`, `GET /my/messages`,
-`GET /my/messages/:conversationId/messages`, and the two `GET /my/conversations` reads still parse
-their query with `createPaginationParser` and declare no `apiQuery` contract; declaring them is a
-follow-up. `GET /my/api-keys`, `/my/oauth-apps`, and `/my/oauth-grants` declare a query contract
-but skip runtime validation for now.
+reads no query. The two `GET /my/conversations` reads still parse their query with
+`createPaginationParser` and declare no `apiQuery` contract; declaring them is a follow-up.
 
 ## Account, profile, and preferences
 
@@ -138,8 +145,8 @@ Other behavior changes:
 Money, frequency, date-string, and note type errors that these handlers already answered with `422`
 keep that status; only the source of the diagnostic moved to the shared validator.
 
-`GET /my/cards` paginates through `createPaginationParser` but declares no `apiQuery` contract, so it
-has no query schema.
+`GET /my/cards` declares and validates its `after` and `limit` query under
+[Query carriers](#query-carriers).
 
 ## Messaging, imports, notifications, and landing pages
 
@@ -222,3 +229,7 @@ against the field lists in `request-contracts.json`.
   participants, the add policy, topic and RSS imports, landing pages, and push subscriptions
   conform. A push subscription with no expiration sends `expiration_time_ms: null`, which the
   schema allows. The web client has no caller for `/my/conversations/*`.
+- RSS export `feed_type`: the web callers of `GET /my/export/rss-feeds` send `article`, `podcast`,
+  or `video` from the source-type dropdown, or omit `feed_type` for "all". None sends `mixed`, a
+  repeated key, an empty value, or a value outside the enum, so the `500` to `422` change is not
+  reachable from the web client. The native clients were not checked (see above).

@@ -134,9 +134,26 @@ describe('protected my query carrier validation', () => {
       'exports for feed_type=%j (an empty value is no filter)',
       async feedType => {
         const request = await signedIn()
-        await request.get(`/api/v1/my/export/rss-feeds?feed_type=${feedType}`).expect(200)
+        const response = await request
+          .get(`/api/v1/my/export/rss-feeds?feed_type=${feedType}`)
+          .expect(200)
+        expect(response.headers['content-disposition']).toContain('rss-feeds.opml')
       },
     )
+
+    // The one status change: a feed_type outside the enum used to fail in the database enum cast
+    // (500); it is now a 422 before the export limit read or any streaming.
+    it.each([
+      ['an unknown value', 'feed_type=bogus'],
+      ['a repeated value', 'feed_type=article&feed_type=video'],
+      ['a wrong-case value', 'feed_type=ARTICLE'],
+      ['an unknown value on a preflight', 'feed_type=bogus&preflight=1'],
+    ])('answers 422 without exporting for %s', async (_label, query) => {
+      const request = await signedIn()
+      const response = await request.get(`/api/v1/my/export/rss-feeds?${query}`).expect(422)
+      expect(response.text).toContain('Invalid request query')
+      expect(response.headers['content-disposition']).toBeUndefined()
+    })
 
     it('keeps the format fallback: json, csv, and OPML for anything else', async () => {
       const request = await signedIn()

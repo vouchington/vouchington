@@ -43,9 +43,13 @@ function parseEndpointUrl(endpoint: string): URL | null {
 }
 
 app.route('/api/v1/my/notifications').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/my/notifications', notificationsParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/notifications')
 
   const options = notificationsParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, notificationsParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/notifications', { query })
   ctx.json(await listNotifications(currentUser.id, options))
 })
 
