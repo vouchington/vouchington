@@ -1,6 +1,7 @@
 import type { Context } from '@jongleberry/api-server'
-import { buildPageInfo, decodeScopedUuidCursor } from '@modules/pagination'
+import { buildPageInfo, decodeScopedUuidCursor, type QueryContract } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users/suspension'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
@@ -76,10 +77,16 @@ function validateReAuthToken(
 // Shared by the passkey and TOTP-authenticator list routes, which page through a user's own items
 // with an identical scoped-uuid-cursor shape. The route itself makes its own `apiQuery(...)` call
 // and passes the result of this function to its own `ctx.json(...)` call (see this file's header).
+// After authentication the parser runs first and keeps its 400 for a bad limit or cursor and its
+// limit clamping; the generated query contract then validates the values it settled on, before the
+// cursor decode and the service read.
 export async function listMfaFactors<T extends { id: string }>(
   ctx: Context,
   operation: string,
-  parser: { parse: (query: Record<string, unknown>) => { limit: number; after?: string } },
+  parser: {
+    parse: (query: Record<string, unknown>) => { limit: number; after?: string }
+    queryContract: QueryContract
+  },
   scopePrefix: string,
   fetchFn: (
     userId: string,
@@ -88,6 +95,9 @@ export async function listMfaFactors<T extends { id: string }>(
 ): Promise<{ results: T[]; page_info: PageInfo }> {
   const currentUser = await requireAuth(ctx, operation)
   const { limit, after } = parser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, parser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = limit
+  validateRequestContract(ctx, operation, { query })
   const scope = `${scopePrefix}:${currentUser.id}:created-at-asc-id-asc`
   const afterId = after
     ? decodeScopedUuidCursor(after, scope, 'Invalid cursor format').id

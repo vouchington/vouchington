@@ -39,10 +39,13 @@ app.route('/api/v1/auth/oauth/:provider/connect').put(async ctx => {
 })
 
 // DELETE /api/v1/auth/oauth/:provider/connect - Disconnect OAuth account. Same protected-route
-// ordering as PUT connect above: requireAuth() before assertValidProvider().
+// ordering as PUT connect above: requireAuth() before the path contract and assertValidProvider().
 app.route('/api/v1/auth/oauth/:provider/connect').delete(async ctx => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/auth/oauth/:provider/connect')
   assertNotSuspended(currentUser)
+  validateRequestContract(ctx, 'DELETE:/api/v1/auth/oauth/:provider/connect', {
+    path: ctx.params,
+  })
   const provider = assertValidProvider(ctx.params.provider ?? '')
   await disconnectOAuthAccount(currentUser.id, provider)
   ctx.setStatus(204)

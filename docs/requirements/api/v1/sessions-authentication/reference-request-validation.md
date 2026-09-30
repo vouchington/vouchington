@@ -39,13 +39,30 @@ each bullet below. This pattern is used by:
   runs before the schema check, so a caller that has already exhausted attempts sees the existing
   limit response rather than a schema diagnostic for a request that will be blocked regardless.
 
+## Query and path carriers on protected routes
+
+`GET /api/v1/auth/sessions`, `GET /api/v1/auth/passkeys`, `GET /api/v1/auth/totp`,
+`DELETE /api/v1/auth/sessions/:id`, and `DELETE /api/v1/auth/oauth/:provider/connect` carry no JSON
+body. Each calls `validateRequestContract` on its declared query or path carrier after `requireAuth`
+and (for the two `DELETE` routes) `assertNotSuspended`, so an unauthenticated caller still gets a
+bare `401` with no schema diagnostic, and before any service call.
+
+- The three list routes run the pagination parser first, which keeps its `400` for a non-integer,
+  non-positive, empty, or repeated value and its clamping of an oversized `limit` to `100`. The
+  contract is then run on `prepareQueryForValidation` of the query with `limit` overwritten by the
+  parsed value, so `limit=500` stays a `200` rather than becoming a `422`. Unknown query parameters
+  stay ignored. The parser's `400` is the real query contract; the schema is a drift guard.
+  `GET /api/v1/auth/sessions` does all of this, and decodes its cursor, before it repairs the
+  current session row, so a rejected query touches no session state.
+- The path schemas only declare a string, so the handler's own checks stay authoritative:
+  `DELETE /api/v1/auth/sessions/:id` returns `422 Invalid ID` for a non-UUID id, and
+  `DELETE /api/v1/auth/oauth/:provider/connect` returns `400 Invalid OAuth provider` for an unknown
+  provider.
+- No status code changed for any of these routes; the only observable difference is the ordering of
+  the session-row repair above.
+
 ## Endpoints without a request-contract schema
 
-- `GET /api/v1/auth/sessions`, `GET /api/v1/auth/passkeys`, and `GET /api/v1/auth/totp` carry no
-  JSON body (list endpoints, query/path only). Each has a `query`-only entry in the generated
-  operations map (from the route's own `apiQuery(...)` call, for OpenAPI documentation), but no
-  route calls `validateRequestContract` for it — the query is parsed and validated manually
-  (`createPaginationParser`/`totpParser`) instead.
 - `GET /api/v1/auth/mfa/status` carries no JSON body and has no entry in the generated operations
   map at all.
 - `GET /api/v1/auth/oauth/:provider/broker-callback` and `GET /api/v1/auth/bluesky/callback` are
