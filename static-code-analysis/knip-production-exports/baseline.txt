@@ -326,6 +326,7 @@ exports backend/services/posts/search/test-support.mts waitForPostMatchingRelate
 exports backend/services/posts/test-support.mts createCommunityPostFixture
 exports backend/services/posts/test-support.mts createTestPost
 exports backend/services/queue-monitoring/get-queue-stats-cached.mts clearQueueStatsCacheForTesting
+exports backend/services/queue-monitoring/remove-queue-scheduler.mts removeQueueScheduler
 exports backend/services/read-states/catalog.mts getReadStateStorageConfig
 exports backend/services/read-states/catalog.mts readStateStorageCatalog
 exports backend/services/recaptcha/authorization.mts currentUserCanUpdateRecaptchaConfig
