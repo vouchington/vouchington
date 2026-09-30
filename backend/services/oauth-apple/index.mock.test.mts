@@ -69,7 +69,6 @@ describe('apple oauth', () => {
       )
 
       const account = await upsertAppleAccount(credential, { name: 'Apple Test User' }, nonce)
-
       expect(account.provider_user_id).toBe(appleUserId)
       expect(account.provider_user_email_address).toBe(email)
       expect(fetchSpy).toHaveBeenCalledWith(
@@ -123,7 +122,6 @@ describe('apple oauth', () => {
         firstNonce,
       )
       const secondAccount = await upsertAppleAccount(secondCredential, undefined, secondNonce)
-
       expect(secondCredential).not.toBe(firstCredential)
       expect(secondAccount).toEqual(firstAccount)
       expect(secondAccount.provider_user_data.name).toBe('Apple Recovery User')
@@ -173,7 +171,6 @@ describe('apple oauth', () => {
       )
 
       const account = await upsertAppleAccount(credential)
-
       expect(account.provider_user_id).toBe('apple-native-audience')
     })
 
@@ -214,7 +211,6 @@ describe('apple oauth', () => {
       const account = await upsertAppleAccount(credential, undefined, undefined, {
         requireVerifiedEmail: false,
       })
-
       expect(account.provider_user_id).toBe(appleUserId)
       expect(account.provider_user_email_address).toBeNull()
     })
