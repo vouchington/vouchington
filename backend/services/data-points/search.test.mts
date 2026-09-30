@@ -1,76 +1,69 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
-import { insertTestDataPoint } from '@voucha/test-helpers/entities/data-points'
-import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
+import {
+  insertTestCardTopicsWithDataPoints,
+  type CardTopicDataPointFixture,
+  type CardTopicFixture,
+} from '@voucha/test-helpers/entities/card-topic-data-points'
 import { searchDataPoints } from './search.mts'
-import type { PrivateUser } from '@services/users/types'
+
+const suffix = crypto.randomUUID().slice(0, 8)
+
+const topics: readonly CardTopicFixture[] = [
+  { name: `Search DP Topic ${suffix}`, slug: `search-dp-topic-${suffix}` },
+  { name: `Other DP Topic ${suffix}`, slug: `other-dp-topic-${suffix}` },
+]
+
+// Create a variety of data points for filtering tests
+const dataPoints: readonly CardTopicDataPointFixture[] = [
+  {
+    title: `Approved CC 670-739 ${suffix}`,
+    slug: `dp-approved-670-${suffix}`,
+    topicIndex: 0,
+    vertical: 'credit_card',
+    result: 'approved',
+    creditScoreRange: '670-739',
+    creditLimit: { amount: 1_000_000, currency: 'usd' },
+  },
+  {
+    title: `Denied CC 580-669 ${suffix}`,
+    slug: `dp-denied-580-${suffix}`,
+    topicIndex: 0,
+    vertical: 'credit_card',
+    result: 'denied',
+    creditScoreRange: '580-669',
+  },
+  {
+    title: `Pending CC 740-799 ${suffix}`,
+    slug: `dp-pending-740-${suffix}`,
+    topicIndex: 0,
+    vertical: 'credit_card',
+    result: 'pending',
+    creditScoreRange: '740-799',
+  },
+  {
+    title: `Approved BA ${suffix}`,
+    slug: `dp-approved-ba-${suffix}`,
+    topicIndex: 0,
+    vertical: 'bank_account',
+    result: 'approved',
+  },
+  {
+    title: `Other Topic DP ${suffix}`,
+    slug: `dp-other-topic-${suffix}`,
+    topicIndex: 1,
+    vertical: 'credit_card',
+    result: 'approved',
+  },
+]
 
 describe('searchDataPoints', () => {
-  let user: PrivateUser
   let topicId: string
   let otherTopicId: string
-  const suffix = crypto.randomUUID().slice(0, 8)
 
   beforeAll(async () => {
-    user = await createTestUser()
-    topicId = await insertTestTopic({
-      name: `Search DP Topic ${suffix}`,
-      slug: `search-dp-topic-${suffix}`,
-      createdById: user.id,
-      topicType: 'card',
-    })
-    otherTopicId = await insertTestTopic({
-      name: `Other DP Topic ${suffix}`,
-      slug: `other-dp-topic-${suffix}`,
-      createdById: user.id,
-      topicType: 'card',
-    })
-
-    // Create a variety of data points for filtering tests
-    await insertTestDataPoint({
-      title: `Approved CC 670-739 ${suffix}`,
-      slug: `dp-approved-670-${suffix}`,
-      createdById: user.id,
-      vertical: 'credit_card',
-      topicId,
-      result: 'approved',
-      creditScoreRange: '670-739',
-      creditLimit: { amount: 1_000_000, currency: 'usd' },
-    })
-    await insertTestDataPoint({
-      title: `Denied CC 580-669 ${suffix}`,
-      slug: `dp-denied-580-${suffix}`,
-      createdById: user.id,
-      vertical: 'credit_card',
-      topicId,
-      result: 'denied',
-      creditScoreRange: '580-669',
-    })
-    await insertTestDataPoint({
-      title: `Pending CC 740-799 ${suffix}`,
-      slug: `dp-pending-740-${suffix}`,
-      createdById: user.id,
-      vertical: 'credit_card',
-      topicId,
-      result: 'pending',
-      creditScoreRange: '740-799',
-    })
-    await insertTestDataPoint({
-      title: `Approved BA ${suffix}`,
-      slug: `dp-approved-ba-${suffix}`,
-      createdById: user.id,
-      vertical: 'bank_account',
-      topicId,
-      result: 'approved',
-    })
-    await insertTestDataPoint({
-      title: `Other Topic DP ${suffix}`,
-      slug: `dp-other-topic-${suffix}`,
-      createdById: user.id,
-      vertical: 'credit_card',
-      topicId: otherTopicId,
-      result: 'approved',
-    })
+    const seeded = await insertTestCardTopicsWithDataPoints({ topics, dataPoints })
+    topicId = seeded.topicIds[0]
+    otherTopicId = seeded.topicIds[1]
   })
 
   it('returns data points filtered by topic_id', async () => {

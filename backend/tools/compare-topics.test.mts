@@ -1,84 +1,79 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import compareTopicsTool from './compare-topics.mts'
-import { createTestUser } from '@voucha/test-helpers'
-import { insertTestDataPoint } from '@voucha/test-helpers/entities/data-points'
+import {
+  insertTestCardTopicsWithDataPoints,
+  type CardTopicDataPointFixture,
+  type CardTopicFixture,
+} from '@voucha/test-helpers/entities/card-topic-data-points'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import type { PrivateUser } from '@services/users/types'
+
+const suffix = crypto.randomUUID().slice(0, 8)
+
+const topics: readonly CardTopicFixture[] = [
+  { name: `Compare Topic A ${suffix}`, slug: `compare-topic-a-${suffix}` },
+  { name: `Compare Topic B ${suffix}`, slug: `compare-topic-b-${suffix}` },
+]
+
+const dataPoints: readonly CardTopicDataPointFixture[] = [
+  // Topic A: 2 approved, 1 denied
+  {
+    title: `Compare A Approved 1 ${suffix}`,
+    slug: `cmp-a-approved-1-${suffix}`,
+    topicIndex: 0,
+    vertical: 'credit_card',
+    result: 'approved',
+    creditScoreRange: '670-739',
+  },
+  {
+    title: `Compare A Approved 2 ${suffix}`,
+    slug: `cmp-a-approved-2-${suffix}`,
+    topicIndex: 0,
+    vertical: 'credit_card',
+    result: 'approved',
+    creditScoreRange: '740-799',
+  },
+  {
+    title: `Compare A Denied ${suffix}`,
+    slug: `cmp-a-denied-${suffix}`,
+    topicIndex: 0,
+    vertical: 'credit_card',
+    result: 'denied',
+  },
+  // Topic B: 1 approved, 2 denied
+  {
+    title: `Compare B Approved ${suffix}`,
+    slug: `cmp-b-approved-${suffix}`,
+    topicIndex: 1,
+    vertical: 'credit_card',
+    result: 'approved',
+  },
+  {
+    title: `Compare B Denied 1 ${suffix}`,
+    slug: `cmp-b-denied-1-${suffix}`,
+    topicIndex: 1,
+    vertical: 'credit_card',
+    result: 'denied',
+  },
+  {
+    title: `Compare B Denied 2 ${suffix}`,
+    slug: `cmp-b-denied-2-${suffix}`,
+    topicIndex: 1,
+    vertical: 'credit_card',
+    result: 'denied',
+  },
+]
 
 describe('compare_topics tool — real DB', () => {
   let user: PrivateUser
   let topicIdA: string
   let topicIdB: string
-  const suffix = crypto.randomUUID().slice(0, 8)
 
   beforeAll(async () => {
-    user = await createTestUser()
-    topicIdA = await insertTestTopic({
-      name: `Compare Topic A ${suffix}`,
-      slug: `compare-topic-a-${suffix}`,
-      createdById: user.id,
-      topicType: 'card',
-    })
-    topicIdB = await insertTestTopic({
-      name: `Compare Topic B ${suffix}`,
-      slug: `compare-topic-b-${suffix}`,
-      createdById: user.id,
-      topicType: 'card',
-    })
-
-    // Topic A: 2 approved, 1 denied
-    await insertTestDataPoint({
-      title: `Compare A Approved 1 ${suffix}`,
-      slug: `cmp-a-approved-1-${suffix}`,
-      createdById: user.id,
-      vertical: 'credit_card',
-      topicId: topicIdA,
-      result: 'approved',
-      creditScoreRange: '670-739',
-    })
-    await insertTestDataPoint({
-      title: `Compare A Approved 2 ${suffix}`,
-      slug: `cmp-a-approved-2-${suffix}`,
-      createdById: user.id,
-      vertical: 'credit_card',
-      topicId: topicIdA,
-      result: 'approved',
-      creditScoreRange: '740-799',
-    })
-    await insertTestDataPoint({
-      title: `Compare A Denied ${suffix}`,
-      slug: `cmp-a-denied-${suffix}`,
-      createdById: user.id,
-      vertical: 'credit_card',
-      topicId: topicIdA,
-      result: 'denied',
-    })
-
-    // Topic B: 1 approved, 2 denied
-    await insertTestDataPoint({
-      title: `Compare B Approved ${suffix}`,
-      slug: `cmp-b-approved-${suffix}`,
-      createdById: user.id,
-      vertical: 'credit_card',
-      topicId: topicIdB,
-      result: 'approved',
-    })
-    await insertTestDataPoint({
-      title: `Compare B Denied 1 ${suffix}`,
-      slug: `cmp-b-denied-1-${suffix}`,
-      createdById: user.id,
-      vertical: 'credit_card',
-      topicId: topicIdB,
-      result: 'denied',
-    })
-    await insertTestDataPoint({
-      title: `Compare B Denied 2 ${suffix}`,
-      slug: `cmp-b-denied-2-${suffix}`,
-      createdById: user.id,
-      vertical: 'credit_card',
-      topicId: topicIdB,
-      result: 'denied',
-    })
+    const seeded = await insertTestCardTopicsWithDataPoints({ topics, dataPoints })
+    user = seeded.user
+    topicIdA = seeded.topicIds[0]
+    topicIdB = seeded.topicIds[1]
   })
 
   it('returns success with topic_a and topic_b', async () => {
