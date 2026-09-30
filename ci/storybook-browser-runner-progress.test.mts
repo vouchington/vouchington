@@ -9,7 +9,7 @@ import {
   makeDeps,
   storybookAddonVitestSetupRunnerMissingOversizedBlock,
   waitFor,
-} from './storybook-browser-runner-test-helpers.mts'
+} from './storybook-browser-runner-fixtures.mts'
 
 describe('Storybook browser startup progress detection', () => {
   it('retries a transient localhost module fetch failure after semantic progress', async () => {

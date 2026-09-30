@@ -14,7 +14,7 @@ import {
   setLocalizationDatabaseForTests,
 } from './index.mts'
 import { DEFAULT_LOCALIZATION_SQLITE_PATH } from './database.mts'
-import { installSampleLocalizationDatabase } from './test-helpers.mts'
+import { installSampleLocalizationDatabase } from './fixtures.mts'
 
 describe('localization service', () => {
   afterEach(() => {

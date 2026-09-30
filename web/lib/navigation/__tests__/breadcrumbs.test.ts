@@ -8,7 +8,7 @@ import {
   LEAF,
   makeAuthOnlyIntent,
   makeIntent,
-} from '../../../test-helpers/lib/navigation/breadcrumbs-test-helpers'
+} from '../../../test-helpers/lib/navigation/breadcrumbs-fixtures'
 
 describe('buildBreadcrumbs', () => {
   describe('plain-Home mode (no intent)', () => {

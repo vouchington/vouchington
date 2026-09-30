@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { setupRepoFilePolicyTest } from '../repo-file-policy-test-helpers.mts'
+import { setupRepoFilePolicyTest } from '../../test-helpers/repo-file-policy-fixtures.mts'
 
 describe('repo-file-policy', () => {
   const { makeRepo, run, track, trackPostEnumSurfaces } = setupRepoFilePolicyTest()

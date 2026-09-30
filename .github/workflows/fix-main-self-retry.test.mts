@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   workflowRunSubscriptions,
   workflowTriggerNames,
-} from '../test-helpers/workflow-test-helpers.mts'
+} from '../test-helpers/workflow-fixtures.mts'
 
 type Step = {
   name?: string

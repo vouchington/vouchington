@@ -4,7 +4,7 @@ import {
   checkDocumentedPartitionTables,
   renderPartitionInventory,
 } from '../partition-inventory-doc.mts'
-import { setupRepoFilePolicyTest } from '../repo-file-policy-test-helpers.mts'
+import { setupRepoFilePolicyTest } from '../../test-helpers/repo-file-policy-fixtures.mts'
 
 describe('repo-file-policy schema doc drift reverse checks', () => {
   const { makeRepo, run, track } = setupRepoFilePolicyTest()

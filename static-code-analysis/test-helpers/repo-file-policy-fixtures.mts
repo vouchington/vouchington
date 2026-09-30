@@ -8,28 +8,31 @@ import {
   publicPostSlugMap,
   topicRouteConfigSource,
   topicTypesSource,
-} from './repo-file-policy-test-sources.mts'
+} from '../repo-file-policy/repo-file-policy-test-sources.mts'
 import { afterEach } from 'vitest'
 
 import type { SharedContext } from 'vouchington-tooling/shared-context'
-import { checkRepoFilePolicy } from './index.mts'
+import { checkRepoFilePolicy } from '../repo-file-policy/index.mts'
 import {
   type ModerationDocsOverrides,
   trackModerationDocs,
-} from './moderation-policy-test-fixtures.mts'
-import { emptySchemaSnapshot, partitionedSnapshotTable } from './schema-snapshot-test-fixtures.mts'
+} from '../repo-file-policy/moderation-policy-test-fixtures.mts'
+import {
+  emptySchemaSnapshot,
+  partitionedSnapshotTable,
+} from '../repo-file-policy/schema-snapshot-test-fixtures.mts'
 import {
   type LifecycleScenarioFixture,
   writeValidLifecycleScenarioFixture,
-} from './lifecycle-scenario-test-fixtures.mts'
-import { writeValidLocalLlmEndpointPolicyFixture } from './local-llm-endpoint-policy-test-fixtures.mts'
+} from '../repo-file-policy/lifecycle-scenario-test-fixtures.mts'
+import { writeValidLocalLlmEndpointPolicyFixture } from '../repo-file-policy/local-llm-endpoint-policy-test-fixtures.mts'
 export { mkdir, rm, writeFile } from 'node:fs/promises'
 export { join } from 'node:path'
-export { checkRepoFilePolicy } from './index.mts'
-export { parseTopicTypeEntries } from './finite-enum-ripple-parsers.mts'
+export { checkRepoFilePolicy } from '../repo-file-policy/index.mts'
+export { parseTopicTypeEntries } from '../repo-file-policy/finite-enum-ripple-parsers.mts'
 // Kept here (not just in repo-file-policy-test-sources.mts) so every existing consumer's
 // import path stays unchanged; the constant itself moved to stay under this file's line cap.
-export { SYNCED_MODERATION_POLICY_MATRIX_DOC } from './repo-file-policy-test-sources.mts'
+export { SYNCED_MODERATION_POLICY_MATRIX_DOC } from '../repo-file-policy/repo-file-policy-test-sources.mts'
 
 export function setupRepoFilePolicyTest() {
   const testDirs: string[] = []

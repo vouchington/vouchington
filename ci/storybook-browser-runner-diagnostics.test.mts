@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { runStorybookBrowserTests } from './storybook-browser-runner.mts'
-import { makeChild, makeDeps } from './storybook-browser-runner-test-helpers.mts'
+import { makeChild, makeDeps } from './storybook-browser-runner-fixtures.mts'
 
 const oneMiB = 1024 * 1024
 

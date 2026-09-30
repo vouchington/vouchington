@@ -714,6 +714,8 @@ rules:
     scope: repository
     options:
       bannedPaths:
+        - glob: '**/*test-helpers*'
+          message: File basenames must not contain test-helpers; use a descriptive name under an allowed helper directory.
         - glob: '*/*/**/test-helpers/**'
           message: Test helpers must live under test-helpers/** or <top-level>/test-helpers/**.
         - glob: '**/test-helper/**'

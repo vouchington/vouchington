@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { runStorybookBrowserTests } from './storybook-browser-runner.mts'
-import { makeChild, makeDeps, waitFor } from './storybook-browser-runner-test-helpers.mts'
+import { makeChild, makeDeps, waitFor } from './storybook-browser-runner-fixtures.mts'
 
 const networkChange =
   '[PW Error] script request failed for http://localhost:47957/@fs/repo/.cache/vite/storybook-browser/deps/rolldown-runtime.js?v=20626967 url: net::ERR_NETWORK_CHANGED'

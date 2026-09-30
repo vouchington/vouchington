@@ -6,7 +6,7 @@ import {
   makeTextResponse,
   makeToolCallResponse,
   makeToolCall,
-} from '../../../test-helpers/agents/_shared/run-tool-loop-test-helpers.mts'
+} from '../../../test-helpers/agents/_shared/run-tool-loop-fixtures.mts'
 
 type OnAfterIteration = NonNullable<RunToolLoopConfig['onAfterIteration']>
 type OnIteration = NonNullable<RunToolLoopConfig['onIteration']>

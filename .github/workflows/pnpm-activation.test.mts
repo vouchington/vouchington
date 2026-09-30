@@ -5,7 +5,7 @@ import {
   inlineLocalComposites,
   stepLists,
   type PolicyStep,
-} from '../test-helpers/pnpm-policy.test-helpers.mts'
+} from '../test-helpers/pnpm-policy.fixtures.mts'
 
 const isNodeSetup = (step: PolicyStep) => step.uses?.startsWith('actions/setup-node@') === true
 const isPnpmSetup = (step: PolicyStep) => step.uses?.startsWith('pnpm/action-setup@') === true

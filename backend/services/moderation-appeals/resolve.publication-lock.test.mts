@@ -11,7 +11,7 @@ import { lockPostPublication } from '@services/post-publication'
 import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
 import { resolveModerationAppealAccept } from './resolve.mts'
-import { deliverModerationAppealForTest } from './resolution.test-helpers.mts'
+import { deliverModerationAppealForTest } from './resolution.fixtures.mts'
 
 describe('resolveModerationAppealAccept publication lock', () => {
   it('takes the post publication lock before waiting on a community review row', async () => {

@@ -25,7 +25,7 @@ import {
 } from '@services/post-publication'
 import { describe, expect, it, vi } from 'vitest'
 import { processReconcilePostPublication } from './processors.mts'
-import { makeDependencies, makeResult, post } from './processors/test-helpers.mts'
+import { makeDependencies, makeResult, post } from './processors/fixtures.mts'
 
 describe('post publication orphan-receipt processor', () => {
   it('fans retained RSS items out to notification reconciliation', async () => {

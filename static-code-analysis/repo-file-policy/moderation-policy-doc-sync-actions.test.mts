@@ -5,7 +5,7 @@ import {
   extractFirstColumnTokens,
   extractTableRowCells,
 } from './moderation-policy-doc-sync-markdown.mts'
-import { setupRepoFilePolicyTest } from './repo-file-policy-test-helpers.mts'
+import { setupRepoFilePolicyTest } from '../test-helpers/repo-file-policy-fixtures.mts'
 
 const ACTIONS = 'docs/requirements/navigation/ACTIONS.md'
 const ACTIONS_CHILD = 'docs/requirements/navigation/reference-actions-action-buttons-by-entity.md'

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { runStorybookBrowserTests } from './storybook-browser-runner.mts'
-import { makeChild, makeDeps } from './storybook-browser-runner-test-helpers.mts'
+import { makeChild, makeDeps } from './storybook-browser-runner-fixtures.mts'
 
 describe('Storybook browser runner lifecycle adapters', () => {
   it('returns a non-retryable failure when spawn has no process group ID', async () => {

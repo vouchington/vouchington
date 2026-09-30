@@ -1,6 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import '@/test-helpers/components/comment-tree-test-helpers'
+import '@/test-helpers/components/comment-tree-fixtures'
 import { CommentTree } from '../comment-tree'
 import type { User } from '@/types/user'
 import {
@@ -8,7 +8,7 @@ import {
   makeData,
   renderWithAuth,
   type PostElection,
-} from '@/test-helpers/components/comment-tree-test-helpers'
+} from '@/test-helpers/components/comment-tree-fixtures'
 
 describe('comment-tree', () => {
   beforeEach(() => {

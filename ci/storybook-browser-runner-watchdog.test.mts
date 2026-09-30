@@ -6,7 +6,7 @@ import {
   makeChild,
   makeDeps,
   waitFor,
-} from './storybook-browser-runner-test-helpers.mts'
+} from './storybook-browser-runner-fixtures.mts'
 
 describe('Storybook browser watchdog edge cases', () => {
   it('does not refresh optimizer progress from stale rolling-buffer output', async () => {

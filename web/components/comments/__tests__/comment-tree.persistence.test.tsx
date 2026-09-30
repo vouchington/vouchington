@@ -1,6 +1,6 @@
 import { act, fireEvent, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import '@/test-helpers/components/comment-tree-test-helpers'
+import '@/test-helpers/components/comment-tree-fixtures'
 import { CommentTree } from '../comment-tree'
 import { getPreference, setPreference } from '@/lib/preferences/storage'
 import type { PostsResponseBody } from '@/types/api-responses'
@@ -8,7 +8,7 @@ import {
   makeComment,
   makeData,
   renderWithAuth,
-} from '@/test-helpers/components/comment-tree-test-helpers'
+} from '@/test-helpers/components/comment-tree-fixtures'
 
 describe('comment-tree', () => {
   beforeEach(() => {

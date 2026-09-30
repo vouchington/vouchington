@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-import { setupRepoFilePolicyTest } from '../../static-code-analysis/repo-file-policy/repo-file-policy-test-helpers.mts'
+import { setupRepoFilePolicyTest } from '../../static-code-analysis/test-helpers/repo-file-policy-fixtures.mts'
 import {
   checkTransientRetryPromptGuard,
   TRANSIENT_RETRY_PROMPT_PATH,

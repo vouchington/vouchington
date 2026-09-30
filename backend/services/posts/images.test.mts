@@ -23,7 +23,7 @@ import {
 import { lockPostPublication } from '@services/post-publication'
 import { getPostImages, setPostImages } from './images.mts'
 import { rollbackPostImages } from './images-rollback.mts'
-import { createPostImageRollbackFixture } from './images.test-helpers.mts'
+import { createPostImageRollbackFixture } from './images.fixtures.mts'
 
 describe('setPostImages', () => {
   afterEach(() => {

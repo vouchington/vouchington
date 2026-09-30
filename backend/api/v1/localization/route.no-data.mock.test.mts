@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock<typeof import('node:fs')>(import('node:fs'), async importOriginal => importOriginal())
 import { localizationRoute } from './route.mts'
 import { setLocalizationDatabaseForTests } from '@services/localization'
-import { installSampleLocalizationDatabase } from '@services/localization/test-helpers'
+import { installSampleLocalizationDatabase } from '@services/localization/fixtures'
 
 function createContext(query: Record<string, unknown>, ifNoneMatch?: string) {
   const ctx = {

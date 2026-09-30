@@ -6,7 +6,7 @@ import {
   makeChild,
   makeDeps,
   waitFor,
-} from './storybook-browser-runner-test-helpers.mts'
+} from './storybook-browser-runner-fixtures.mts'
 
 describe('Storybook browser runner cache policy', () => {
   it('reuses the ready Vite cache across browser-only process recycling', async () => {

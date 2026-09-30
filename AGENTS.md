@@ -29,5 +29,6 @@
 - Tests use synthetic Git refs; keep production pins, checksums, and intentional historical refs exact.
   Test helpers belong only in `test-helpers/**` or immediately below
   a top-level workspace; never add nested helpers or `test-support` directories.
+  File basenames must not contain `test-helpers`.
 - Before committing or pushing, follow the [commit checklist](docs/checklists/commit.md).
   [Tests](docs/development/tests.md) and [CI](docs/development/ci.md) own validation commands.

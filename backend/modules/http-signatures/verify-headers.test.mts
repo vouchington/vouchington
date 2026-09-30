@@ -10,7 +10,7 @@ import {
   KEY_ID,
   METHOD,
   PATH,
-} from '@voucha/test-helpers/modules/http-signatures/verify-test-helpers'
+} from '@voucha/test-helpers/modules/http-signatures/verify-fixtures'
 
 describe('verifySignature additionalHeaders', () => {
   it('verifies a signature that also covers content-type via additionalHeaders', () => {

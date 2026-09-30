@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { AdmissionIdempotency } from './admission-idempotency'
 import { ADMISSION_RETENTION_MS } from './admission-idempotency-storage-entry'
-import { MemoryLockManager, MemoryStorage } from './admission-idempotency-test-helpers'
+import { MemoryLockManager, MemoryStorage } from './admission-idempotency-fixtures'
 
 describe('AdmissionIdempotency persistence', () => {
   it('reuses a persisted key after a fresh client instance reloads', async () => {

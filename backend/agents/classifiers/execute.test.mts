@@ -16,7 +16,7 @@ import {
   topicAId,
   topicBId,
   threeNoulBindings,
-} from '@voucha/test-helpers/agents/classifiers/test-helpers'
+} from '@voucha/test-helpers/agents/classifiers/fixtures'
 import type { ClassifierContextPolicy, ExecuteClassifierDecisionInput } from './types.mts'
 
 describe('executeClassifierDecision', () => {

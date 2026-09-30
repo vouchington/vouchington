@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api/error'
-import { MemoryLockManager } from '@/lib/api/client/admission-idempotency-test-helpers'
+import { MemoryLockManager } from '@/lib/api/client/admission-idempotency-fixtures'
 import { clearPushBinding } from '@/lib/push-service-worker'
 import { waitForActiveServiceWorker } from '@/lib/service-worker-activation'
 import { clearRuntimePublicConfigForTest } from '@/test-helpers/runtime-public-config'

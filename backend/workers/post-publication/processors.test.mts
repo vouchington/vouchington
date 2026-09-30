@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { processReconcilePostPublication } from './processors.mts'
-import { makeDependencies, makeResult, post, work } from './processors/test-helpers.mts'
+import { makeDependencies, makeResult, post, work } from './processors/fixtures.mts'
 
 describe('post publication reconciliation processor', () => {
   it('acknowledges a short page and immediately continues to the next dirty-work scope', async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { AdmissionIdempotency } from './admission-idempotency'
-import { MemoryLockManager, MemoryStorage } from './admission-idempotency-test-helpers'
+import { MemoryLockManager, MemoryStorage } from './admission-idempotency-fixtures'
 
 describe('AdmissionIdempotency storage fallback', () => {
   it('does not submit when authenticated browser storage writes reject', async () => {

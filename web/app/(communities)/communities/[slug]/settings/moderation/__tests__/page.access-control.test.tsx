@@ -8,7 +8,7 @@ import {
   makeUser,
   makeCommunityData,
   resetModerationPageMocks,
-} from '@/test-helpers/components/community-moderation-page-test-helpers'
+} from '@/test-helpers/components/community-moderation-page-fixtures'
 import { resetCommunityModerationModmailMocks } from '@/test-helpers/components/community-moderation-modmail-test-helper'
 
 import CommunityModerationPage from '../page'

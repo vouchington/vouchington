@@ -11,7 +11,7 @@ import {
   storedCandidateAId,
   topicAId,
   topicBId,
-} from '@voucha/test-helpers/agents/classifiers/test-helpers'
+} from '@voucha/test-helpers/agents/classifiers/fixtures'
 
 describe('prepareSingleCallClassifierDecision', () => {
   it('prepares full persisted lineage with exactly one provider call and no persistence dependency', async () => {

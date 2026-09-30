@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parsedDependabot } from '../test-helpers/fix-dependabot.test-helpers.mts'
+import { parsedDependabot } from '../test-helpers/fix-dependabot.fixtures.mts'
 
 type Completion = {
   branch: string

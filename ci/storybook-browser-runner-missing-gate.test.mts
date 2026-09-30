@@ -5,7 +5,7 @@ import {
   emitStorybookAddonVitestSetupRunnerMissing,
   makeChild,
   makeDeps,
-} from './storybook-browser-runner-test-helpers.mts'
+} from './storybook-browser-runner-fixtures.mts'
 
 describe('Storybook browser runner-missing gate after module progress', () => {
   it('does not retry runner-missing after |web-storybook-browser output even with module markers', async () => {

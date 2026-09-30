@@ -10,7 +10,7 @@ import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-co
 import { moderationAiConfig } from '@services/moderation'
 import { getLatestJudgementForEntity } from '@services/moderation-reports/judgements'
 import { runReportJudgementAgent } from './run.mts'
-import { makeReportJudgementModelResponse } from '@voucha/test-helpers/agents/report-judgement/test-helpers'
+import { makeReportJudgementModelResponse } from '@voucha/test-helpers/agents/report-judgement/fixtures'
 
 describe('runReportJudgementAgent manual reruns', () => {
   afterAll(async () => {

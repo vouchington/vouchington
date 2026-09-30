@@ -4,7 +4,7 @@ import { renderPartitionInventory } from '../partition-inventory-doc.mts'
 import {
   SYNCED_MODERATION_POLICY_MATRIX_DOC,
   setupRepoFilePolicyTest,
-} from '../repo-file-policy-test-helpers.mts'
+} from '../../test-helpers/repo-file-policy-fixtures.mts'
 
 const reportServiceDoc = 'docs/overview/architecture/services/moderation-reports/README.md'
 

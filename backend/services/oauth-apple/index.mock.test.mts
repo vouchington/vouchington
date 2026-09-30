@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createHash } from 'node:crypto'
 import { createRandomString } from '@voucha/test-helpers'
-import { createSignedJwt, makeAppleJwk, makeFetchResponse } from './test-helpers.mts'
+import { createSignedJwt, makeAppleJwk, makeFetchResponse } from './fixtures.mts'
 import type { fetch as undiciFetch } from 'undici'
 
 const fetchSpy = vi.fn<typeof undiciFetch>()

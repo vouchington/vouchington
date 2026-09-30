@@ -3,7 +3,7 @@ import type { SchemaSnapshot, SchemaTableSnapshot } from '@vouchington/postgres/
 
 import { checkRelationalStorage } from './relational-storage-guard.mts'
 import { emptySchemaSnapshot, plainSnapshotTable } from './schema-snapshot-test-fixtures.mts'
-import { setupRepoFilePolicyTest } from './repo-file-policy-test-helpers.mts'
+import { setupRepoFilePolicyTest } from '../test-helpers/repo-file-policy-fixtures.mts'
 import { verifyEntityRelationVotePartitionForeignKeys } from './partition-foreign-key-proof.mts'
 import createEntityRelationsSql from '../../backend/data-stores/psql/config-driven/0000-00-01-entity-relations.mts'
 
