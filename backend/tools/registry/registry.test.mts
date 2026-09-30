@@ -16,6 +16,7 @@ const NON_TOOL_FILES = new Set([
   'get-domain-ratings-output-schema.mts',
   'index.mts',
   'output-schema-shapes.mts',
+  'paged-search.mts',
   'private-user.mts',
   'resolve-topic.mts',
   'route-response-schema.mts',

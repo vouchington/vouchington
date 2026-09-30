@@ -64,8 +64,8 @@ describe('handleMcpHttpRequest', () => {
   })
 
   it('rejects malformed authorized envelopes before any tool invocation', async () => {
-    const tool = ALL_TOOLS.find(candidate => candidate.schema.name === 'search_topics_text')
-    if (!tool) throw new Error('Expected search_topics_text tool')
+    const tool = ALL_TOOLS.find(candidate => candidate.schema.name === 'search_topics')
+    if (!tool) throw new Error('Expected search_topics tool')
     const invoke = vi.spyOn(tool, 'function')
 
     try {
@@ -90,7 +90,7 @@ describe('handleMcpHttpRequest', () => {
       jsonrpc: '2.0',
       id: 2,
       method: 'tools/call',
-      params: { name: 'search_topics_text', arguments: { text_search_query: 'hello' } },
+      params: { name: 'search_topics', arguments: { text_search_query: 'hello' } },
     })
 
     expect(response.status).toBe(200)

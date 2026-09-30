@@ -59,11 +59,11 @@ describe('search-posts tool', () => {
     expect(results.length).toBeLessThanOrEqual(1)
   })
 
-  it('should enforce max limit of 10', async () => {
+  it('clamps an oversized limit to the REST maximum of 100 instead of refusing it', async () => {
     const tool = searchPostsTool.function(testUser)
-    const { results } = await tool({ text_search_query: 'credit', limit: 100 })
+    const { results } = await tool({ text_search_query: 'credit', limit: 100_000 })
 
-    expect(results.length).toBeLessThanOrEqual(10)
+    expect(results.length).toBeLessThanOrEqual(100)
   })
 
   it('should work with sort parameter', async () => {
@@ -78,7 +78,11 @@ describe('search-posts tool', () => {
     const tool = searchPostsTool.function(testUser)
     const result = await tool({ text_search_query: 'nonexistentquery12345' })
 
-    expect(result).toEqual({ success: true, results: [] })
+    expect(result).toEqual({
+      success: true,
+      results: [],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    })
   })
 
   it('should work without query parameter', async () => {

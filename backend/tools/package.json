@@ -36,6 +36,7 @@
     "@services/recommended-topics": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/rss-feeds": "workspace:^",
+    "@services/search-params": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/trending-posts": "workspace:^",
     "@services/trending-topics": "workspace:^",

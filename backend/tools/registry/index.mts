@@ -24,11 +24,8 @@ import searchCrawlChunksTool from '../search-crawl-chunks.mts'
 import searchCrawlsSemanticTool from '../search-crawls-semantic.mts'
 import searchCrawlsTool from '../search-crawls.mts'
 import searchDataPointsTool from '../search-data-points.mts'
-import searchPostsSemanticTool from '../search-posts-semantic.mts'
 import searchPostsTool from '../search-posts.mts'
 import searchRssFeedItemsTool from '../search-rss-feed-items.mts'
-import searchTopicsSemanticTool from '../search-topics-semantic.mts'
-import searchTopicsTextTool from '../search-topics-text.mts'
 import searchTopicsTool from '../search-topics.mts'
 import searchWikipediaTool from '../search-wikipedia.mts'
 import updateMyFinancialProfileTool from '../update-my-financial-profile.mts'
@@ -61,11 +58,8 @@ export const ALL_TOOLS: readonly Tool[] = [
   searchCrawlsSemanticTool,
   searchCrawlsTool,
   searchDataPointsTool,
-  searchPostsSemanticTool,
   searchPostsTool,
   searchRssFeedItemsTool,
-  searchTopicsSemanticTool,
-  searchTopicsTextTool,
   searchTopicsTool,
   searchWikipediaTool,
   updateMyFinancialProfileTool,
