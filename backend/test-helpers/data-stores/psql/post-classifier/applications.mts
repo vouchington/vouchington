@@ -13,6 +13,7 @@ type ApplicationRow = {
   community_identity_id: string | null
   decision_batch_id: string | null
   provider_attempts_started: number
+  sweep_enqueue_count: number
   lease_token: string | null
   outcomes_persisted_at: Date | null
   votes_applied_at: Date | null
@@ -71,8 +72,8 @@ export async function createPostClassifierApplicationFixture(options?: {
     read: async () => {
       const result = await read<ApplicationRow>(sql`/* readPostClassifierApplicationFixture */
         SELECT id, post_id, community_identity_id, decision_batch_id,
-          provider_attempts_started, lease_token, outcomes_persisted_at, votes_applied_at,
-          tags_applied_at, completed_at
+          provider_attempts_started, sweep_enqueue_count, lease_token, outcomes_persisted_at,
+          votes_applied_at, tags_applied_at, completed_at
         FROM post_classifier_applications WHERE post_id = ${post.id} AND id = ${id}
       `)
       return result.rows[0]

@@ -5,10 +5,8 @@ import {
 } from '@services/classifiers/read-complete-decision'
 import type { PersistedClassifierDecision } from '@services/classifiers/types'
 import sql from 'sql-template-strings'
-import {
-  assertPersistedDecisionMatchesConfiguration,
-  type PostClassifierLocalOutcome,
-} from './application-outcomes.mts'
+import { assertPersistedDecisionMatchesConfiguration } from './application-outcomes.mts'
+import type { PostClassifierLocalOutcome } from './application-local-outcome.mts'
 import type { PostClassifierApplicationLease } from './application-identity.mts'
 
 type OutcomeRow = {

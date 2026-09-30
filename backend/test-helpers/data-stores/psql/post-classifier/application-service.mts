@@ -7,6 +7,8 @@ export type PostClassifierApplicationFacts = {
   configuration_sha256: Buffer
   decision_batch_id: string | null
   provider_attempts_started: number
+  sweep_enqueue_count: number
+  terminal_remote_failure_kind: string | null
   terminal_remote_failed_at: Date | null
   superseded_at: Date | null
   lease_token: string | null
@@ -15,6 +17,12 @@ export type PostClassifierApplicationFacts = {
   tags_applied_at: Date | null
   completed_at: Date | null
   local_flagged: boolean | null
+  local_reason: string | null
+  local_confidence_score: number | null
+  local_confidence_threshold: number | null
+  local_classification: string | null
+  local_detector: string | null
+  local_detector_model_version: string | null
 }
 
 export async function setPostClassifierPostHashForTest(
@@ -38,6 +46,17 @@ export async function expirePostClassifierLeaseForTest(
   `)
 }
 
+export async function setPostClassifierSweepEnqueueCountForTest(
+  postId: string,
+  applicationId: string,
+  count: number,
+): Promise<void> {
+  await write(sql`/* setPostClassifierSweepEnqueueCountForTest */
+    UPDATE post_classifier_applications SET sweep_enqueue_count = ${count}
+    WHERE post_id = ${postId} AND id = ${applicationId}
+  `)
+}
+
 export async function getPostClassifierApplicationFacts(
   postId: string,
   query: QueryExecutor = read,
@@ -45,8 +64,11 @@ export async function getPostClassifierApplicationFacts(
   const { rows } = await query<PostClassifierApplicationFacts>(sql`
     /* getPostClassifierApplicationFacts */
     SELECT id, input_sha256, configuration_sha256, decision_batch_id,
-    provider_attempts_started, terminal_remote_failed_at, superseded_at, lease_token,
-      outcomes_persisted_at, votes_applied_at, tags_applied_at, completed_at, local_flagged
+      provider_attempts_started, sweep_enqueue_count, terminal_remote_failure_kind,
+      terminal_remote_failed_at, superseded_at, lease_token,
+      outcomes_persisted_at, votes_applied_at, tags_applied_at, completed_at, local_flagged,
+      local_reason, local_confidence_score, local_confidence_threshold, local_classification,
+      local_detector, local_detector_model_version
     FROM post_classifier_applications WHERE post_id = ${postId} ORDER BY id
   `)
   return rows
