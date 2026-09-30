@@ -5,7 +5,7 @@ import {
   createTestUserWithApiKey,
   recordTestApiKeyCallAudit,
 } from '@voucha/test-helpers/mcp-user-credentials'
-import { deleteUserAndDrainForTest } from '@services/users/delete-test-support'
+import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 
 async function createApiKeyOwner(audited: boolean) {
