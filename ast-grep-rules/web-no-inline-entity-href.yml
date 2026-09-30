@@ -18,7 +18,7 @@ rule:
             inside:
               kind: jsx_attribute
               regex: '^basePath='
-        - regex: '^`/(?:@|agent/|article/|bank-account/|blog-post/|card/|chat/|compare/|crm/|crawler/|data-point/|discussion/|domain/|messages/|my/landing-page/|referral-program/|referral-programs/|review/|rewards-program/|rewards-program-status/|source/|story/|support/|topic/|topic-claims/|topic-recommendations/|url/|user/)'
+        - regex: '^`/(?:@|agent/|article/|bank-account/|blog-post/|card/|chat/|compare/|crawler/|data-point/|discussion/|domain/|messages/|my/landing-page/|referral-program/|referral-programs/|review/|rewards-program/|rewards-program-status/|source/|story/|topic/|topic-claims/|topic-recommendations/|url/|user/)'
     - all:
         - kind: template_string
         - inside:

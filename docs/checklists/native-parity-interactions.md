@@ -2,7 +2,7 @@
 
 Use this checklist when a Swift or .NET change touches a user-facing native interaction surface:
 lists, detail views, tab switches, load-more flows, notification targets, media controls, streaming
-chat/support flows, analytics panels, security-sensitive transport, or role-gated navigation.
+chat flows, analytics panels, security-sensitive transport, or role-gated navigation.
 
 ## Check
 

@@ -62,7 +62,7 @@ those pointers. Files in `moderation/` are additionally guard-pinned; see
 
 ### Admin
 
-- [Admin docs](./admin/README.md) — customer support, growth dashboard, and landing page analytics
+- [Admin docs](./admin/README.md) — growth dashboard and landing page analytics
 
 ### Platform
 

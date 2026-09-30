@@ -92,7 +92,7 @@ describe('worker fetch handler - machine-readable discovery', () => {
       'https://voucha.ai/api/v1/my/profile',
       'https://voucha.ai/My/profile',
       'https://voucha.ai/API/v1/my/profile',
-      'https://voucha.ai/crm',
+      'https://voucha.ai/growth',
       'https://voucha.ai/topic/abc-123/settings/about',
       'https://voucha.ai/topic/abc-123/tags/topic',
       'https://voucha.ai/referral-program/abc-123/validations/new',
