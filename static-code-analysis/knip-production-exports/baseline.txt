@@ -279,7 +279,6 @@ exports backend/services/post-publication/test-fixtures.mts reconcileTestPublica
 exports backend/services/post-publication/test-fixtures.mts recordTestStoryTopicPublicationChange
 exports backend/services/posts/create-link-post.mts createLinkPost
 exports backend/services/posts/privacy-filter.mts buildPrivacyFilter
-exports backend/services/posts/review-successions/audit.mts REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE
 exports backend/services/posts/review-successions/index.mts listReviewSuccessionsForPostIds
 exports backend/services/posts/review-successions/index.mts terminalizeActiveReviewSuccessionForManualPost
 exports backend/services/posts/review-successions/list.mts listReviewSuccessionsForPostIds
@@ -387,7 +386,6 @@ types backend/services/ap-inbox-activities/durable-delivery-transition-contract.
 types backend/services/copyright-notices/index.mts CopyrightAgentDispatchPage
 types backend/services/copyright-notices/index.mts CopyrightReviewTargetBreaches
 types backend/services/post-publication/capture-keys.mts PostPublicationRetainedKey
-types backend/services/post-publication/shadow-audit.mts ShadowAuditCandidate
 types backend/services/review-disputes/index.mts ReviewDispute
 types backend/services/topic-claims/index.mts TopicClaim
 types backend/services/topic-claims/index.mts TopicClaimState
