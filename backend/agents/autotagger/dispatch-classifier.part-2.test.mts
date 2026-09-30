@@ -18,10 +18,13 @@ import {
 import {
   dispatchAutotaggerClassifier,
   resolveStructuredDecisionApiKey,
-  type AutotaggerClassifierCandidate,
   type AutotaggerClassifierDispatchInput,
 } from './dispatch-classifier.mts'
 import { buildAutotaggerClassifierBindingsAndDigest } from './dispatch-classifier-bindings.mts'
+
+type AutotaggerClassifierCandidate = Parameters<
+  typeof dispatchAutotaggerClassifier
+>[0]['candidates'][number]
 
 // Continues dispatch-classifier.test.mts, split to stay under the repository's per-test-file line
 // cap; see that file for the pre-write `tagging`-classifier conflict audit.

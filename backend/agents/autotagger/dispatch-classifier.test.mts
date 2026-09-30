@@ -20,10 +20,13 @@ import {
 import { getAutotaggerClassifierSystemUserId } from '@services/users/system-users'
 import {
   dispatchAutotaggerClassifier,
-  type AutotaggerClassifierCandidate,
   type AutotaggerClassifierDispatchInput,
 } from './dispatch-classifier.mts'
 import { buildAutotaggerClassifierBindingsAndDigest } from './dispatch-classifier-bindings.mts'
+
+type AutotaggerClassifierCandidate = Parameters<
+  typeof dispatchAutotaggerClassifier
+>[0]['candidates'][number]
 
 // The seeded classifier every test in this file dispatches against (0635-00-02-seed-tagging-
 // classifier.mts). Every conflicting `tagging`-classifier test was audited before this file was
