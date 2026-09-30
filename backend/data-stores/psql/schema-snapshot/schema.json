@@ -28771,6 +28771,7 @@
     },
     "copyright_notice_form_screenings": {
       "checkConstraints": {
+        "copyright_notice_form_screenings_guidance_ciphertext_check": "CHECK (((char_length(guidance_ciphertext) >= 1) AND (char_length(guidance_ciphertext) <= 1048576)))",
         "copyright_notice_form_screenings_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))",
         "copyright_notice_form_screenings_model_check": "CHECK (((char_length(model) >= 1) AND (char_length(model) <= 255)))",
         "copyright_notice_form_screenings_prompt_version_check": "CHECK (((char_length(prompt_version) >= 1) AND (char_length(prompt_version) <= 100)))",
@@ -28797,8 +28798,19 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
+        },
+        "guidance_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted strictly validated moderator guidance: summary, section 512(c)(3) element checklist, risk notes, and advisory suggested action. Staff-visible only; no workflow predicate reads it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text"
         },
         "id": {
           "collation": null,
@@ -28874,11 +28886,11 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Immutable advisory anti-spam recommendations. Only a workflow service, never an agent, may decide whether a clear signed-in intake gets a provisional restriction.",
+      "comment": "Immutable advisory anti-spam recommendations with moderator guidance. Only a workflow service, never an agent or its guidance, may decide whether a clear signed-in intake gets a provisional restriction.",
       "foreignKeys": {
         "copyright_notice_form_screeni_copyright_notice_form_intake_fkey": {
           "columns": ["copyright_notice_form_intake_id"],
