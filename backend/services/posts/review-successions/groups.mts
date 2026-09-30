@@ -22,12 +22,15 @@ export async function listReviewSuccessionGroups(
         AND review.created_by_id IS NOT NULL
       GROUP BY review.id, review.created_by_id
     ), active_history_groups AS (
-      SELECT succession.author_user_id, succession.topic_ids
+      SELECT succession.author_user_id,
+        ARRAY_AGG(topic.topic_id ORDER BY topic.topic_id) AS topic_ids
       FROM review_successions succession
+      JOIN review_succession_topics topic ON topic.review_succession_id = succession.id
       WHERE (succession.predecessor_post_id = ANY($1::uuid[])
           OR succession.successor_post_id = ANY($1::uuid[]))
         AND succession.automatically_restored_at IS NULL
         AND succession.manual_override_at IS NULL
+      GROUP BY succession.id, succession.author_user_id
     )
     SELECT DISTINCT author_user_id, topic_ids
     FROM (

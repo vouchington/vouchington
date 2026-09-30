@@ -1,5 +1,5 @@
-import { write } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import { beginTransaction, withTransactionOptions, write } from '@data-stores/psql'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { enqueueReconcilePostCategoryFinalizations } from '@queues/entity-listeners/enqueues'
 import { getPrivateUserByAny } from '@services/users/get'
 import { finalizePostHashtagCategoryVotes } from './hashtag-votes.mts'
@@ -33,75 +33,85 @@ export async function persistPostCategoryFinalization(
   origin: PostCategoryFinalizationOrigin,
   options: QueryOptions,
 ): Promise<PostCategoryFinalization> {
-  const { rows } = await write<PostCategoryFinalization>(
-    `/* persistPostCategoryFinalization */ WITH response_topics AS MATERIALIZED (
-      SELECT CASE WHEN $4 = 'create' THEN ARRAY(
-        SELECT topic_id FROM (
-          SELECT topic_id FROM post_explicit_topic_categories
-          WHERE post_id = $1
-          UNION
-          SELECT topic_id FROM post_data_point_topics
-          WHERE post_id = $1
-        ) persisted_topics
-        ORDER BY topic_id
-      ) ELSE NULL::UUID[] END AS topic_ids
-    ), finalization AS (
-      INSERT INTO post_category_finalizations
-        (
-          post_id,
-          actor_user_ids,
-          topic_category_owner_id,
-          generation,
-          admission_response_generation,
-          admission_response_topic_ids
-        )
-      SELECT
-        $1,
-        ARRAY[$2]::UUID[],
-        $3,
-        1,
-        CASE WHEN response_topics.topic_ids IS NULL THEN NULL ELSE 1 END,
-        response_topics.topic_ids
-      FROM response_topics
-      ORDER BY $1 ASC NULLS LAST
+  const persist = async (query: TransactionQuery) => {
+    const { rows } = await query<{ admission_response_generation: string | null }>(
+      `/* persistPostCategoryFinalization */
+      INSERT INTO post_category_finalizations (
+        post_id, topic_category_owner_id, generation, admission_response_generation
+      )
+      VALUES ($1, $2, 1, CASE WHEN $3 = 'create' THEN 1 ELSE NULL END)
       ON CONFLICT (post_id) DO UPDATE
-      SET actor_user_ids = ARRAY(
-            SELECT DISTINCT actor_user_id
-            FROM unnest(
-              post_category_finalizations.actor_user_ids || EXCLUDED.actor_user_ids
-            ) AS actor_user_id
-            ORDER BY actor_user_id
-          ),
-          topic_category_owner_id = EXCLUDED.topic_category_owner_id,
-          generation = post_category_finalizations.generation + 1,
-          admission_response_generation = CASE
-            WHEN EXCLUDED.admission_response_topic_ids IS NULL THEN NULL
-            ELSE post_category_finalizations.generation + 1
-          END,
-          admission_response_topic_ids = EXCLUDED.admission_response_topic_ids,
-          updated_at = CURRENT_TIMESTAMP
-      RETURNING post_id, actor_user_ids, topic_category_owner_id, generation
-    ), complete_response_without_refresh AS (
-      UPDATE post_admission_reservations
-      SET replay_metadata = replay_metadata || '{"finalization":"complete"}'::jsonb,
-        updated_at = NOW()
-      WHERE committed_post_id = $1
-        AND state = 'committed'
-        AND $4 = 'update'
-        AND COALESCE(replay_metadata->>'finalization', 'pending') <> 'complete'
+      SET topic_category_owner_id = EXCLUDED.topic_category_owner_id,
+        generation = post_category_finalizations.generation + 1,
+        admission_response_generation = CASE
+          WHEN $3 = 'create' THEN post_category_finalizations.generation + 1
+          ELSE NULL
+        END,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING admission_response_generation`,
+      [postId, topicCategoryOwnerId, origin],
     )
-    SELECT post_id, actor_user_ids, topic_category_owner_id, generation
-    FROM finalization`,
-    [postId, actorUserId, topicCategoryOwnerId, origin],
-    options,
-  )
-  return rows[0]!
+    await query(
+      `/* persistPostCategoryFinalizationActor */
+      INSERT INTO post_category_finalization_actors (post_id, user_id)
+      VALUES ($1, $2)
+      ON CONFLICT (post_id, user_id) DO NOTHING`,
+      [postId, actorUserId],
+    )
+    await query(
+      `/* persistPostCategoryFinalizationTopics */
+      DELETE FROM post_category_finalization_admission_topics WHERE post_id = $1`,
+      [postId],
+    )
+    if (rows[0]?.admission_response_generation != null) {
+      await query(
+        `/* persistPostCategoryFinalizationTopics */
+        INSERT INTO post_category_finalization_admission_topics (post_id, topic_id)
+        SELECT $1, topic_id
+        FROM (
+          SELECT topic_id FROM post_explicit_topic_categories WHERE post_id = $1
+          UNION
+          SELECT topic_id FROM post_data_point_topics WHERE post_id = $1
+        ) persisted_topics
+        ORDER BY $1 ASC NULLS LAST, topic_id ASC NULLS LAST
+        ON CONFLICT (post_id, topic_id) DO NOTHING`,
+        [postId],
+      )
+    }
+    if (origin === 'update') {
+      await query(
+        `/* persistPostCategoryFinalization */
+        UPDATE post_admission_reservations
+        SET replay_metadata = replay_metadata || '{"finalization":"complete"}'::jsonb,
+          updated_at = NOW()
+        WHERE committed_post_id = $1
+          AND state = 'committed'
+          AND COALESCE(replay_metadata->>'finalization', 'pending') <> 'complete'`,
+        [postId],
+      )
+    }
+    const { rows: finalized } = await query<PostCategoryFinalization>(
+      `/* persistPostCategoryFinalization */
+      SELECT post_id, fn_post_category_finalization_actor_ids(post_id) AS actor_user_ids,
+        topic_category_owner_id, generation
+      FROM post_category_finalizations
+      WHERE post_id = $1`,
+      [postId],
+    )
+    return finalized[0]!
+  }
+  if (options.query || options.client) return withTransactionOptions(options, persist)
+  await using transaction = await beginTransaction()
+  const finalization = await persist(transaction)
+  await transaction.commit()
+  return finalization
 }
 
 export async function reconcilePostCategoryFinalizations(): Promise<{ reconciled: number }> {
   const { rows } = await write<PostCategoryFinalization>(
     `/* reconcilePostCategoryFinalizations */
-      SELECT post_id, actor_user_ids, topic_category_owner_id, generation
+      SELECT post_id, fn_post_category_finalization_actor_ids(post_id) AS actor_user_ids,
+        topic_category_owner_id, generation
       FROM post_category_finalizations
       ORDER BY updated_at, post_id
       LIMIT $1`,
@@ -163,7 +173,8 @@ async function getCurrentPostCategoryFinalization(
 ): Promise<PostCategoryFinalization | undefined> {
   const { rows } = await write<PostCategoryFinalization>(
     `/* getCurrentPostCategoryFinalization */
-      SELECT post_id, actor_user_ids, topic_category_owner_id, generation
+      SELECT post_id, fn_post_category_finalization_actor_ids(post_id) AS actor_user_ids,
+        topic_category_owner_id, generation
       FROM post_category_finalizations
       WHERE post_id = $1`,
     [postId],

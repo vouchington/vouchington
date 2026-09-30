@@ -202,7 +202,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `moderation_appeals`, `moderation_cases`, `moderation_report_judgements`, `moderation_reports`,
   `moderation_transparency_daily_rollups`, `moderation_transparency_released_daily_rollups`,
   `moderator_actions`, `oauth_authorization_server_events`, `report_integrity_flags`,
-  `review_dispute_lifecycle_changes`, `review_successions`,
+  `review_dispute_lifecycle_changes`, `review_successions`, `review_succession_topics`,
   `review_disputes`, `ses_bounce_events`, `stripe_events`, `support_agent_runs`,
   `support_message_lifecycle_changes`, `support_messages`, `support_thread_lifecycle_changes`,
   `user_data_request_attempts`, `user_data_requests`, `user_deletion_audit_logs`,

@@ -50,6 +50,22 @@ CREATE OR REPLACE FUNCTION public.fn_assert_follower_distribution_recipient_boun
  LANGUAGE plpgsql
 ```
 
+## `fn_assert_post_category_finalization_children`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_assert_post_category_finalization_children()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_assert_review_succession_topics`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_assert_review_succession_topics()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_assert_web_push_endpoint_owner_subscription`
 
 ```sql
@@ -587,6 +603,14 @@ CREATE OR REPLACE FUNCTION public.fn_guard_review_succession_mutation()
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_review_succession_topic_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_review_succession_topic_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_terminal_lifecycle`
 
 ```sql
@@ -772,6 +796,15 @@ CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_ent
  RETURNS jsonb
  LANGUAGE sql
  IMMUTABLE
+```
+
+## `fn_post_category_finalization_actor_ids(target_post_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_post_category_finalization_actor_ids(target_post_id uuid)
+ RETURNS uuid[]
+ LANGUAGE sql
+ STABLE
 ```
 
 ## `fn_preserve_notification_publication_target`
@@ -1211,15 +1244,6 @@ CREATE OR REPLACE FUNCTION public.fn_retire_deleted_user_image_surfaces()
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)
  RETURNS text
- LANGUAGE sql
- IMMUTABLE STRICT
-```
-
-## `fn_review_succession_topic_ids_are_sorted_distinct(topic_ids uuid[])`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_review_succession_topic_ids_are_sorted_distinct(topic_ids uuid[])
- RETURNS boolean
  LANGUAGE sql
  IMMUTABLE STRICT
 ```

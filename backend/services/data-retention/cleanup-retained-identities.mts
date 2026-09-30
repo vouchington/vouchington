@@ -20,6 +20,7 @@ export const ROOT_FAMILIES = {
       ['user_deletion_audit_logs', 'user_id'],
       ['user_deletion_audit_logs', 'requested_by_id'],
       ['post_publication_author_identities', 'id'],
+      ['post_category_finalization_actors', 'user_id'],
       ['membership_changes', 'user_id'],
       ['membership_changes', 'changed_by_id'],
       ['membership_grants', 'granted_by_id'],
@@ -36,7 +37,12 @@ export const ROOT_FAMILIES = {
   },
   topic: {
     table: 'retained_topic_identities',
-    references: [['topics', 'id'], ...retainedRelationReferences('topic')],
+    references: [
+      ['topics', 'id'],
+      ['post_category_finalization_admission_topics', 'topic_id'],
+      ['review_succession_topics', 'topic_id'],
+      ...retainedRelationReferences('topic'),
+    ],
   },
   post: {
     table: 'retained_post_identities',

@@ -537,6 +537,12 @@
     "fn_assert_follower_distribution_recipient_bounds": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_follower_distribution_recipient_bounds()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  distribution_ids UUID[] := ARRAY[]::UUID[];\n  checked_distribution_id UUID;\n  audience_value follower_distribution_audiences;\n  recipient_count INTEGER;\nBEGIN\n  IF TG_TABLE_NAME = 'follower_distributions' THEN\n    distribution_ids := ARRAY[COALESCE(NEW.id, OLD.id)];\n  ELSE\n    distribution_ids := ARRAY[COALESCE(NEW.distribution_id, OLD.distribution_id)];\n    IF TG_OP = 'UPDATE' AND OLD.distribution_id IS DISTINCT FROM NEW.distribution_id THEN\n      distribution_ids := distribution_ids || OLD.distribution_id;\n    END IF;\n  END IF;\n\n  FOREACH checked_distribution_id IN ARRAY distribution_ids LOOP\n    SELECT audience INTO audience_value\n    FROM follower_distributions\n    WHERE id = checked_distribution_id;\n    IF NOT FOUND THEN\n      CONTINUE;\n    END IF;\n\n    SELECT COUNT(*) INTO recipient_count\n    FROM follower_distribution_selected_recipients\n    WHERE follower_distribution_selected_recipients.distribution_id = checked_distribution_id;\n\n    IF audience_value = 'all_followers' AND recipient_count <> 0 THEN\n      RAISE EXCEPTION 'all_followers distributions cannot store selected recipients'\n        USING ERRCODE = '23514';\n    END IF;\n\n    IF audience_value = 'selected_followers' AND recipient_count > 100 THEN\n      RAISE EXCEPTION 'selected_followers distributions require between 1 and 100 recipients'\n        USING ERRCODE = '23514';\n    END IF;\n\n    IF audience_value = 'selected_followers'\n      AND recipient_count < 1\n      AND NOT (\n        TG_TABLE_NAME = 'follower_distribution_selected_recipients'\n        AND TG_OP = 'DELETE'\n      ) THEN\n      RAISE EXCEPTION 'selected_followers distributions require between 1 and 100 recipients'\n        USING ERRCODE = '23514';\n    END IF;\n  END LOOP;\n\n  RETURN NULL;\nEND;\n$function$\n"
     },
+    "fn_assert_post_category_finalization_children": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_post_category_finalization_children()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  target_post_id UUID;\n  actor_count INTEGER;\n  topic_count INTEGER;\n  response_generation BIGINT;\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    target_post_id := OLD.post_id;\n  ELSE\n    target_post_id := NEW.post_id;\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1 FROM post_category_finalizations WHERE post_id = target_post_id\n  ) THEN\n    RETURN NULL;\n  END IF;\n  SELECT admission_response_generation INTO response_generation\n  FROM post_category_finalizations WHERE post_id = target_post_id;\n  SELECT COUNT(*) INTO actor_count\n  FROM post_category_finalization_actors WHERE post_id = target_post_id;\n  SELECT COUNT(*) INTO topic_count\n  FROM post_category_finalization_admission_topics WHERE post_id = target_post_id;\n  IF actor_count < 1 THEN\n    RAISE EXCEPTION 'post category finalization requires at least one actor'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF response_generation IS NULL AND topic_count <> 0 THEN\n    RAISE EXCEPTION 'absent admission response cannot retain topic snapshots'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NULL;\nEND;\n$function$\n"
+    },
+    "fn_assert_review_succession_topics": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_review_succession_topics()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  succession_id UUID;\n  topic_count INTEGER;\nBEGIN\n  IF TG_TABLE_NAME = 'review_successions' THEN\n    IF TG_OP = 'DELETE' THEN\n      succession_id := OLD.id;\n    ELSE\n      succession_id := NEW.id;\n    END IF;\n  ELSIF TG_OP = 'DELETE' THEN\n    succession_id := OLD.review_succession_id;\n  ELSE\n    succession_id := NEW.review_succession_id;\n  END IF;\n  IF NOT EXISTS (SELECT 1 FROM review_successions WHERE id = succession_id) THEN\n    RETURN NULL;\n  END IF;\n  SELECT COUNT(*) INTO topic_count\n  FROM review_succession_topics\n  WHERE review_succession_id = succession_id;\n  IF topic_count < 1 THEN\n    RAISE EXCEPTION 'review succession topic set must be nonempty' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NULL;\nEND;\n$function$\n"
+    },
     "fn_assert_web_push_endpoint_owner_subscription": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_web_push_endpoint_owner_subscription()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  checked_endpoint_digest BYTEA := COALESCE(NEW.endpoint_digest, OLD.endpoint_digest);\nBEGIN\n  IF EXISTS (\n    SELECT 1\n    FROM web_push_endpoint_owners owner\n    WHERE owner.endpoint_digest = checked_endpoint_digest\n      AND NOT EXISTS (\n        SELECT 1\n        FROM web_push_subscriptions subscription\n        WHERE subscription.user_id = owner.user_id\n          AND subscription.id = owner.subscription_id\n          AND subscription.endpoint = owner.endpoint\n          AND subscription.deleted_at IS NULL\n      )\n  ) OR (\n    TG_OP <> 'INSERT'\n    AND EXISTS (\n      SELECT 1\n      FROM web_push_subscriptions subscription\n      WHERE subscription.user_id = OLD.user_id\n        AND subscription.id = OLD.subscription_id\n        AND subscription.endpoint = OLD.endpoint\n        AND subscription.deleted_at IS NULL\n        AND NOT EXISTS (\n          SELECT 1\n          FROM web_push_endpoint_owners owner\n          WHERE owner.endpoint_digest = OLD.endpoint_digest\n            AND owner.endpoint = OLD.endpoint\n            AND owner.user_id = OLD.user_id\n            AND owner.subscription_id = OLD.subscription_id\n        )\n    )\n  ) THEN\n    RAISE EXCEPTION 'web push endpoint owner requires one exact active subscription';\n  END IF;\n\n  RETURN NULL;\nEND;\n$function$\n"
     },
@@ -736,7 +742,10 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_review_dispute_subject_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.post_id IS DISTINCT FROM NEW.post_id\n    OR OLD.topic_id IS DISTINCT FROM NEW.topic_id\n    OR OLD.disputed_rating IS DISTINCT FROM NEW.disputed_rating THEN\n    RAISE EXCEPTION 'review dispute subject snapshot cannot change'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_review_succession_mutation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_review_succession_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF ROW(\n    NEW.id,\n    NEW.predecessor_post_id,\n    NEW.successor_post_id,\n    NEW.author_user_id,\n    NEW.topic_ids,\n    NEW.predecessor_archived_at\n  ) IS DISTINCT FROM ROW(\n    OLD.id,\n    OLD.predecessor_post_id,\n    OLD.successor_post_id,\n    OLD.author_user_id,\n    OLD.topic_ids,\n    OLD.predecessor_archived_at\n  ) THEN\n    RAISE EXCEPTION 'review succession identity and archive epoch are immutable';\n  END IF;\n\n  IF OLD.automatically_restored_at IS NULL\n    AND OLD.manual_override_at IS NULL\n    AND (\n      (NEW.automatically_restored_at IS NOT NULL AND NEW.manual_override_at IS NULL)\n      OR (NEW.automatically_restored_at IS NULL AND NEW.manual_override_at IS NOT NULL)\n    )\n  THEN\n    RETURN NEW;\n  END IF;\n\n  RAISE EXCEPTION 'review succession only allows one terminal lifecycle transition';\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_review_succession_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF ROW(\n    NEW.id,\n    NEW.predecessor_post_id,\n    NEW.successor_post_id,\n    NEW.author_user_id,\n    NEW.predecessor_archived_at\n  ) IS DISTINCT FROM ROW(\n    OLD.id,\n    OLD.predecessor_post_id,\n    OLD.successor_post_id,\n    OLD.author_user_id,\n    OLD.predecessor_archived_at\n  ) THEN\n    RAISE EXCEPTION 'review succession identity and archive epoch are immutable';\n  END IF;\n\n  IF OLD.automatically_restored_at IS NULL\n    AND OLD.manual_override_at IS NULL\n    AND (\n      (NEW.automatically_restored_at IS NOT NULL AND NEW.manual_override_at IS NULL)\n      OR (NEW.automatically_restored_at IS NULL AND NEW.manual_override_at IS NOT NULL)\n    )\n  THEN\n    RETURN NEW;\n  END IF;\n\n  RAISE EXCEPTION 'review succession only allows one terminal lifecycle transition';\nEND;\n$function$\n"
+    },
+    "fn_guard_review_succession_topic_mutation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_review_succession_topic_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    IF EXISTS (SELECT 1 FROM review_successions WHERE id = OLD.review_succession_id) THEN\n      RAISE EXCEPTION 'review succession topics are immutable' USING ERRCODE = 'check_violation';\n    END IF;\n    RETURN OLD;\n  END IF;\n  RAISE EXCEPTION 'review succession topics are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
     "fn_guard_terminal_lifecycle": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_terminal_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  terminal_column TEXT;\n  old_row JSONB := to_jsonb(OLD);\n  new_row JSONB := to_jsonb(NEW);\n  was_terminal BOOLEAN := FALSE;\nBEGIN\n  FOREACH terminal_column IN ARRAY TG_ARGV LOOP\n    IF old_row -> terminal_column <> 'null'::jsonb THEN\n      was_terminal := TRUE;\n    END IF;\n  END LOOP;\n\n  IF was_terminal THEN\n    FOREACH terminal_column IN ARRAY TG_ARGV LOOP\n      IF old_row -> terminal_column IS DISTINCT FROM new_row -> terminal_column THEN\n        RAISE EXCEPTION '% terminal lifecycle cannot transition after completion', TG_TABLE_NAME\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END LOOP;\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
@@ -806,6 +815,9 @@
     },
     "fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE\n    WHEN notification_entity_type IN (\n      'community_application_decision',\n      'community_role_change',\n      'community_ownership_transfer'\n    ) THEN jsonb_build_object('__entity_type', 'community', 'id', notification_community_id)\n    ELSE NULL\n  END\n$function$\n"
+    },
+    "fn_post_category_finalization_actor_ids(target_post_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_post_category_finalization_actor_ids(target_post_id uuid)\n RETURNS uuid[]\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT COALESCE(ARRAY_AGG(actor.user_id ORDER BY actor.user_id), '{}'::uuid[])\n  FROM post_category_finalization_actors actor\n  WHERE actor.post_id = target_post_id;\n$function$\n"
     },
     "fn_preserve_notification_publication_target": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_preserve_notification_publication_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    NEW.publication_post_id := COALESCE(NEW.publication_post_id, NEW.post_id);\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id\n    );\n  ELSE\n    NEW.publication_post_id := COALESCE(\n      NEW.publication_post_id,\n      NEW.post_id,\n      OLD.publication_post_id,\n      OLD.post_id\n    );\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id,\n      OLD.publication_rss_feed_item_id,\n      OLD.rss_feed_item_id\n    );\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -972,9 +984,6 @@
     "fn_reverse_hostname_labels(p_hostname text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE STRICT\nAS $function$\n  SELECT array_to_string(array_reverse(string_to_array(p_hostname, '.')), '.')\n$function$\n"
     },
-    "fn_review_succession_topic_ids_are_sorted_distinct(topic_ids uuid[])": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_review_succession_topic_ids_are_sorted_distinct(topic_ids uuid[])\n RETURNS boolean\n LANGUAGE sql\n IMMUTABLE STRICT\nAS $function$\n  SELECT cardinality(topic_ids) > 0\n    AND array_position(topic_ids, NULL::uuid) IS NULL\n    AND topic_ids = ARRAY(\n      SELECT DISTINCT topic_id\n      FROM unnest(topic_ids) AS input(topic_id)\n      ORDER BY topic_id\n    );\n$function$\n"
-    },
     "fn_stamp_agent_moderation_transparency": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_stamp_agent_moderation_transparency()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE v_community_id uuid; v_post_community_id uuid; v_current_community_id uuid; v_agent_deleted_at timestamptz; v_prompt_deleted_at timestamptz; v_cap_deleted_at timestamptz;\nBEGIN\n  -- Lock the FK parents before taking the projection locks. A concurrent hard\n  -- delete already owns the parent row before its row trigger can take an\n  -- advisory lock; reversing this order would form a parent-row/advisory-lock\n  -- cycle with this INSERT.\n  PERFORM 1 FROM agents WHERE id = NEW.agent_id FOR KEY SHARE;\n  PERFORM 1 FROM agent_prompts WHERE id = NEW.prompt_id FOR KEY SHARE;\n  -- Do not lock the post here: community deletion owns the community before\n  -- cascading to posts, so a post-to-community lock would invert that order.\n  -- Snapshot and revalidate instead; an unstable post scope is withheld.\n  SELECT community_id INTO v_post_community_id FROM posts WHERE id = NEW.post_id;\n  SELECT community_id, deleted_at INTO v_community_id, v_cap_deleted_at\n  FROM community_agent_prompts WHERE id = NEW.prompt_id;\n  IF v_community_id IS NOT NULL THEN\n    PERFORM 1 FROM communities WHERE id = v_community_id FOR KEY SHARE;\n    IF NOT FOUND THEN\n      v_community_id := NULL;\n      v_cap_deleted_at := NULL;\n    END IF;\n  END IF;\n  SELECT community_id, deleted_at INTO v_current_community_id, v_cap_deleted_at\n  FROM community_agent_prompts WHERE id = NEW.prompt_id FOR SHARE;\n  IF v_current_community_id IS NULL THEN\n    v_community_id := NULL;\n    v_cap_deleted_at := NULL;\n  ELSIF v_current_community_id IS DISTINCT FROM v_community_id THEN\n    RAISE EXCEPTION 'community prompt changed during moderation projection' USING ERRCODE = '40001';\n  END IF;\n  IF (SELECT community_id FROM posts WHERE id = NEW.post_id)\n      IS DISTINCT FROM v_post_community_id THEN\n    NEW.moderation_transparency_category := NULL;\n    NEW.moderation_transparency_community_id := NULL;\n    RETURN NEW;\n  END IF;\n  -- Every caller then takes agent before prompt, which prevents an event from\n  -- observing a cap assignment half-way through its lifecycle transaction.\n  PERFORM fn_lock_moderation_transparency_projection('agent', NEW.agent_id);\n  PERFORM fn_lock_moderation_transparency_projection('prompt', NEW.prompt_id);\n  SELECT agent.deleted_at, prompt.deleted_at\n    INTO v_agent_deleted_at, v_prompt_deleted_at\n  FROM agents agent JOIN agent_prompts prompt ON prompt.id = NEW.prompt_id\n  WHERE agent.id = NEW.agent_id;\n  v_agent_deleted_at := date_trunc('milliseconds', v_agent_deleted_at);\n  v_prompt_deleted_at := date_trunc('milliseconds', v_prompt_deleted_at);\n  v_cap_deleted_at := date_trunc('milliseconds', v_cap_deleted_at);\n  NEW.moderation_transparency_category := NULL;\n  NEW.moderation_transparency_community_id := NULL;\n  IF NEW.deleted_at IS NOT NULL\n    OR (v_agent_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_agent_deleted_at)\n    OR (v_prompt_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_prompt_deleted_at)\n    OR (v_cap_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_cap_deleted_at) THEN\n    RETURN NEW;\n  END IF;\n  -- A community prompt remains a community-AI event. A platform agent keeps\n  -- its platform category, but its post scope must still exclude it from the\n  -- global projection because raw community analytics can identify the event.\n  NEW.moderation_transparency_category := CASE WHEN v_community_id IS NULL THEN 'agent_moderation' ELSE 'community_ai' END;\n  NEW.moderation_transparency_community_id := COALESCE(v_community_id, v_post_community_id);\n  RETURN NEW;\nEND $function$\n"
     },
@@ -1057,7 +1066,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.membership_grant_remaining_duration(grant_id uuid)\n RETURNS interval\n LANGUAGE sql\n STABLE PARALLEL SAFE\nAS $function$\n  SELECT make_interval(days => grant_row.calendar_days) - COALESCE(\n    (\n      SELECT SUM(GREATEST(INTERVAL '0', COALESCE(period.ended_at, CURRENT_TIMESTAMP) - period.started_at))\n      FROM membership_grant_activation_periods period\n      WHERE period.membership_grant_id = grant_row.id\n    ),\n    INTERVAL '0'\n  )\n  FROM membership_grants grant_row\n  WHERE grant_row.id = grant_id\n$function$\n"
     },
     "repair_post_category_finalization_admission_response_on_delete": {
-      "definition": "CREATE OR REPLACE FUNCTION public.repair_post_category_finalization_admission_response_on_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  finalized_topics JSONB;\nBEGIN\n  -- A posts cascade has no replayable post response to repair. Every ordinary acknowledgement\n  -- reaches the update below.\n  IF NOT EXISTS (SELECT 1 FROM posts WHERE id = OLD.post_id) THEN\n    RETURN OLD;\n  END IF;\n\n  SELECT COALESCE(\n    jsonb_agg(TO_JSONB(topic.*) ORDER BY selected.votes_score_net DESC, selected.object_id),\n    '[]'::jsonb\n  )\n  INTO finalized_topics\n  FROM (\n    SELECT relation.object_id, relation.votes_score_net\n    FROM relation__post__category__topic relation\n    WHERE relation.subject_id = OLD.post_id\n      AND OLD.admission_response_generation = OLD.generation\n      AND relation.object_id = ANY(OLD.admission_response_topic_ids)\n      AND relation.deleted_at IS NULL\n      AND relation.votes_score_net > 0\n    ORDER BY relation.votes_score_net DESC, relation.object_id\n    LIMIT 5\n  ) selected\n  INNER JOIN view_embedded_topics topic ON topic.id = selected.object_id;\n\n  UPDATE post_admission_reservations\n  SET response = CASE\n        WHEN OLD.admission_response_generation = OLD.generation\n          AND OLD.admission_response_topic_ids IS NOT NULL\n        THEN CASE\n          WHEN jsonb_typeof(response) = 'object'\n            AND jsonb_typeof(response->'post') = 'object'\n          THEN jsonb_set(response, '{post,post_related_topics}', finalized_topics)\n          WHEN jsonb_typeof(response) = 'object'\n          THEN jsonb_set(response, '{post_related_topics}', finalized_topics)\n          ELSE response\n        END\n        ELSE response\n      END,\n      replay_metadata = replay_metadata || '{\"finalization\":\"complete\"}'::jsonb,\n      updated_at = NOW()\n  WHERE committed_post_id = OLD.post_id\n    AND state = 'committed'\n    AND retention_expires_at > NOW();\n\n  RETURN OLD;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.repair_post_category_finalization_admission_response_on_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  finalized_topics JSONB;\nBEGIN\n  -- A posts cascade has no replayable post response to repair. Every ordinary acknowledgement\n  -- reaches the update below.\n  IF NOT EXISTS (SELECT 1 FROM posts WHERE id = OLD.post_id) THEN\n    RETURN OLD;\n  END IF;\n\n  SELECT COALESCE(\n    jsonb_agg(TO_JSONB(topic.*) ORDER BY selected.votes_score_net DESC, selected.object_id),\n    '[]'::jsonb\n  )\n  INTO finalized_topics\n  FROM (\n    SELECT relation.object_id, relation.votes_score_net\n    FROM relation__post__category__topic relation\n    WHERE relation.subject_id = OLD.post_id\n      AND OLD.admission_response_generation = OLD.generation\n      AND EXISTS (\n        SELECT 1\n        FROM post_category_finalization_admission_topics admission_topic\n        WHERE admission_topic.post_id = OLD.post_id\n          AND admission_topic.topic_id = relation.object_id\n      )\n      AND relation.deleted_at IS NULL\n      AND relation.votes_score_net > 0\n    ORDER BY relation.votes_score_net DESC, relation.object_id\n    LIMIT 5\n  ) selected\n  INNER JOIN view_embedded_topics topic ON topic.id = selected.object_id;\n\n  UPDATE post_admission_reservations\n  SET response = CASE\n        WHEN OLD.admission_response_generation = OLD.generation\n          AND OLD.admission_response_generation IS NOT NULL\n        THEN CASE\n          WHEN jsonb_typeof(response) = 'object'\n            AND jsonb_typeof(response->'post') = 'object'\n          THEN jsonb_set(response, '{post,post_related_topics}', finalized_topics)\n          WHEN jsonb_typeof(response) = 'object'\n          THEN jsonb_set(response, '{post_related_topics}', finalized_topics)\n          ELSE response\n        END\n        ELSE response\n      END,\n      replay_metadata = replay_metadata || '{\"finalization\":\"complete\"}'::jsonb,\n      updated_at = NOW()\n  WHERE committed_post_id = OLD.post_id\n    AND state = 'committed'\n    AND retention_expires_at > NOW();\n\n  RETURN OLD;\nEND;\n$function$\n"
     }
   },
   "policies": {},
@@ -66902,45 +66911,286 @@
       },
       "uniqueConstraints": {}
     },
-    "post_category_finalizations": {
-      "checkConstraints": {
-        "post_category_finalizations_actor_user_ids_check": "CHECK ((cardinality(actor_user_ids) > 0))",
-        "post_category_finalizations_admission_response_check": "CHECK ((((admission_response_generation IS NULL) AND (admission_response_topic_ids IS NULL)) OR ((admission_response_generation IS NOT NULL) AND (admission_response_generation > 0) AND (admission_response_topic_ids IS NOT NULL))))",
-        "post_category_finalizations_generation_check": "CHECK ((generation > 0))"
-      },
+    "post_category_finalization_actors": {
+      "checkConstraints": {},
       "columns": {
-        "actor_user_ids": {
+        "created_at": {
           "collation": null,
-          "comment": "The deduplicated editors whose hashtag relation votes must be finalized.",
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": "Finalization row these editors belong to. Deleting the finalization removes the actor set.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "user_id": {
+          "collation": null,
+          "comment": "Retained user identity of an editor included in this finalization.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2,
-          "type": "uuid[]"
+          "type": "uuid"
+        }
+      },
+      "comment": "Finalization-owned editors whose hashtag relation votes must be finalized. user_id is a retained identity and does not authorize a deleted user.",
+      "foreignKeys": {
+        "post_category_finalization_actors_post_id_fkey": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES post_category_finalizations(post_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["post_id"],
+          "referencedTable": "post_category_finalizations",
+          "validated": true
         },
+        "post_category_finalization_actors_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_post_category_finalization_actors__user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_category_finalization_actors__user_id ON public.post_category_finalization_actors USING btree (user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "post_category_finalization_actors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_category_finalization_actors_pkey ON public.post_category_finalization_actors USING btree (post_id, user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["post_id", "user_id"],
+        "definition": "PRIMARY KEY (post_id, user_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_post_category_finalization_actors_children": "CREATE CONSTRAINT TRIGGER trigger_post_category_finalization_actors_children AFTER INSERT OR DELETE OR UPDATE ON public.post_category_finalization_actors DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_post_category_finalization_children()",
+        "trigger_post_category_finalization_actors_updated_at": "CREATE TRIGGER trigger_post_category_finalization_actors_updated_at BEFORE UPDATE ON public.post_category_finalization_actors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "post_category_finalization_admission_topics": {
+      "checkConstraints": {},
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": "Finalization whose create-time topic snapshot these rows belong to.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "topic_id": {
+          "collation": null,
+          "comment": "Retained topic identity captured at create time. It does not authorize a deleted topic.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Create-time explicit and data-point topic snapshot for admission-response repair. Zero rows with a non-null admission_response_generation is an explicit empty snapshot.",
+      "foreignKeys": {
+        "post_category_finalization_admission_topics_post_id_fkey": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES post_category_finalizations(post_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["post_id"],
+          "referencedTable": "post_category_finalizations",
+          "validated": true
+        },
+        "post_category_finalization_admission_topics_topic_id_fkey": {
+          "columns": ["topic_id"],
+          "definition": "FOREIGN KEY (topic_id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_topic_identities",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_post_category_finalization_admission_topics__topic_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_category_finalization_admission_topics__topic_id ON public.post_category_finalization_admission_topics USING btree (topic_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "post_category_finalization_admission_topics_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_category_finalization_admission_topics_pkey ON public.post_category_finalization_admission_topics USING btree (post_id, topic_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["post_id", "topic_id"],
+        "definition": "PRIMARY KEY (post_id, topic_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_post_category_finalization_admission_topics_children": "CREATE CONSTRAINT TRIGGER trigger_post_category_finalization_admission_topics_children AFTER INSERT OR DELETE OR UPDATE ON public.post_category_finalization_admission_topics DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_post_category_finalization_children()",
+        "trigger_post_category_finalization_admission_topics_updated_at": "CREATE TRIGGER trigger_post_category_finalization_admission_topics_updated_at BEFORE UPDATE ON public.post_category_finalization_admission_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "post_category_finalizations": {
+      "checkConstraints": {
+        "post_category_finalizations_admission_response_generation_check": "CHECK (((admission_response_generation IS NULL) OR (admission_response_generation > 0)))",
+        "post_category_finalizations_generation_check": "CHECK ((generation > 0))"
+      },
+      "columns": {
         "admission_response_generation": {
           "collation": null,
-          "comment": "Exact category-finalization generation whose create response may be repaired; NULL or a mismatch means no repair remains.",
+          "comment": "Exact category-finalization generation whose create response may be repaired. NULL means an update with no topic snapshot; a non-null value with zero topic children is an explicit empty create snapshot.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 4,
           "type": "bigint"
-        },
-        "admission_response_topic_ids": {
-          "collation": null,
-          "comment": "Create-time explicit and data-point topic IDs for admission-response repair; NULL means update, while an empty array is a valid create snapshot.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6,
-          "type": "uuid[]"
         },
         "created_at": {
           "collation": null,
@@ -66950,7 +67200,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "generation": {
@@ -66961,7 +67211,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 3,
           "type": "bigint"
         },
         "post_id": {
@@ -66983,7 +67233,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 2,
           "type": "uuid"
         },
         "updated_at": {
@@ -66994,11 +67244,11 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         }
       },
-      "comment": "One coalesced durable category-vote finalization per post; retained actor set and exact-generation acknowledgement prevent stale workers from omitting or deleting later edits.",
+      "comment": "One coalesced durable category-vote finalization per post; retained actor rows and exact-generation acknowledgement prevent stale workers from omitting or deleting later edits.",
       "foreignKeys": {
         "post_category_finalizations_post_id_fkey": {
           "columns": ["post_id"],
@@ -67097,7 +67347,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "post_category_finalizations_repair_admission_response_on_delete": "CREATE TRIGGER post_category_finalizations_repair_admission_response_on_delete BEFORE DELETE ON public.post_category_finalizations FOR EACH ROW EXECUTE FUNCTION repair_post_category_finalization_admission_response_on_delete()"
+        "post_category_finalizations_repair_admission_response_on_delete": "CREATE TRIGGER post_category_finalizations_repair_admission_response_on_delete BEFORE DELETE ON public.post_category_finalizations FOR EACH ROW EXECUTE FUNCTION repair_post_category_finalization_admission_response_on_delete()",
+        "trigger_post_category_finalizations_children": "CREATE CONSTRAINT TRIGGER trigger_post_category_finalizations_children AFTER INSERT OR DELETE OR UPDATE ON public.post_category_finalizations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_post_category_finalization_children()"
       },
       "uniqueConstraints": {}
     },
@@ -96272,12 +96523,144 @@
       },
       "uniqueConstraints": {}
     },
+    "review_succession_topics": {
+      "checkConstraints": {},
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "review_succession_id": {
+          "collation": null,
+          "comment": "Automatic review-succession epoch that owns this immutable topic snapshot.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "topic_id": {
+          "collation": null,
+          "comment": "Retained topic identity in the exact archive-time set.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Immutable nonempty topic snapshot for one automatic review-succession epoch. topic_id is a retained identity and does not authorize a deleted topic.",
+      "foreignKeys": {
+        "review_succession_topics_review_succession_id_fkey": {
+          "columns": ["review_succession_id"],
+          "definition": "FOREIGN KEY (review_succession_id) REFERENCES review_successions(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "review_successions",
+          "validated": true
+        },
+        "review_succession_topics_topic_id_fkey": {
+          "columns": ["topic_id"],
+          "definition": "FOREIGN KEY (topic_id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_topic_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_review_succession_topics__topic_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_review_succession_topics__topic_id ON public.review_succession_topics USING btree (topic_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "review_succession_topics_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX review_succession_topics_pkey ON public.review_succession_topics USING btree (review_succession_id, topic_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "review_succession_id",
+              "descending": false,
+              "expression": "review_succession_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["review_succession_id", "topic_id"],
+        "definition": "PRIMARY KEY (review_succession_id, topic_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_review_succession_topics_immutable": "CREATE TRIGGER trigger_review_succession_topics_immutable BEFORE DELETE OR UPDATE ON public.review_succession_topics FOR EACH ROW EXECUTE FUNCTION fn_guard_review_succession_topic_mutation()",
+        "trigger_review_succession_topics_nonempty": "CREATE CONSTRAINT TRIGGER trigger_review_succession_topics_nonempty AFTER INSERT OR DELETE ON public.review_succession_topics DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_review_succession_topics()",
+        "trigger_review_succession_topics_updated_at": "CREATE TRIGGER trigger_review_succession_topics_updated_at BEFORE UPDATE ON public.review_succession_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "review_successions": {
       "checkConstraints": {
         "review_successions_predecessor_before_successor": "CHECK ((predecessor_post_id < successor_post_id))",
         "review_successions_terminal_after_archive": "CHECK ((((automatically_restored_at IS NULL) OR (automatically_restored_at >= predecessor_archived_at)) AND ((manual_override_at IS NULL) OR (manual_override_at >= predecessor_archived_at))))",
-        "review_successions_terminal_lifecycle": "CHECK ((num_nonnulls(automatically_restored_at, manual_override_at) <= 1))",
-        "review_successions_topic_ids_check": "CHECK (fn_review_succession_topic_ids_are_sorted_distinct(topic_ids))"
+        "review_successions_terminal_lifecycle": "CHECK ((num_nonnulls(automatically_restored_at, manual_override_at) <= 1))"
       },
       "columns": {
         "author_user_id": {
@@ -96299,7 +96682,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -96310,7 +96693,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -96332,7 +96715,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "predecessor_archived_at": {
@@ -96343,7 +96726,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "predecessor_post_id": {
@@ -96368,17 +96751,6 @@
           "ordinalPosition": 3,
           "type": "uuid"
         },
-        "topic_ids": {
-          "collation": null,
-          "comment": "Ascending, distinct exact topic-set snapshot at automatic archive time.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "uuid[]"
-        },
         "updated_at": {
           "collation": null,
           "comment": null,
@@ -96387,7 +96759,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         }
       },
@@ -96443,10 +96815,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_review_successions__author_user_id__topic_ids": {
+        "idx_review_successions__author_user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_review_successions__author_user_id__topic_ids ON public.review_successions USING btree (author_user_id, topic_ids)",
+          "definition": "CREATE INDEX idx_review_successions__author_user_id ON public.review_successions USING btree (author_user_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -96455,13 +96827,6 @@
               "expression": "author_user_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
-            },
-            {
-              "column": "topic_ids",
-              "descending": false,
-              "expression": "topic_ids",
-              "nullsFirst": false,
-              "opclass": "array_ops"
             }
           ],
           "predicate": null,
@@ -96567,6 +96932,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_review_successions_guard": "CREATE TRIGGER trigger_review_successions_guard BEFORE UPDATE ON public.review_successions FOR EACH ROW EXECUTE FUNCTION fn_guard_review_succession_mutation()",
+        "trigger_review_successions_topics": "CREATE CONSTRAINT TRIGGER trigger_review_successions_topics AFTER INSERT OR DELETE ON public.review_successions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_review_succession_topics()",
         "trigger_review_successions_updated_at": "CREATE TRIGGER trigger_review_successions_updated_at BEFORE UPDATE ON public.review_successions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
