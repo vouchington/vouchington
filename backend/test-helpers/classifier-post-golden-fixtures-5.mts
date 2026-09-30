@@ -9,12 +9,12 @@ export const classifierPostGoldenFixtures5: readonly ClassifierGoldenFixture[] =
     state:
       'Need someone to organize a complex award itinerary? I take paid clients and can start planning next week.',
     rationale:
-      'The author offers paid travel-planning clients and promotes their own service, matching for-hire and self-promotion.',
+      'The author offers paid travel-planning services and promotes that service, matching selling, for-hire, and self-promotion.',
     expected: expectations(
       postClassifierKeys,
-      ['for-hire', 'self-promotion'],
+      ['selling', 'for-hire', 'self-promotion'],
       'The text does not meet this candidate definition.',
-      'The author offers paid travel-planning services and promotes their own service.',
+      'The author offers to sell travel-planning services and promotes that service.',
     ),
   },
   {

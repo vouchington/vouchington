@@ -51,6 +51,29 @@ describe('classifier golden band regression', () => {
     }
   })
 
+  it('accepts an upper-threshold selling score for overlapping for-hire travel-service offers', () => {
+    const overlapping = ['synthetic-award-booking-help-offer', 'synthetic-second-for-hire-offer']
+    const fixtures = postClassifierGoldenFixtures.filter(fixture =>
+      overlapping.includes(fixture.id),
+    )
+    expect(fixtures.map(fixture => fixture.id)).toEqual(overlapping)
+    const selling = {
+      key: 'selling',
+      thresholdRevision: 'post-classifier-default-upper',
+      thresholds: { lower: 0.25, upper: 0.75 },
+    }
+    for (const fixture of fixtures) {
+      expect(fixture.expected.selling?.acceptableBands).toEqual(['at-or-above-upper', 'between'])
+      expect(unexpectedClassifierGoldenBand(fixture, selling, 0.75)).toBeNull()
+      expect(unexpectedClassifierGoldenBand(fixture, selling, 0.78)).toBeNull()
+      expect(unexpectedClassifierGoldenBand(fixture, selling, 0.85)).toBeNull()
+      expect(unexpectedClassifierGoldenBand(fixture, selling, 0.87)).toBeNull()
+      expect(unexpectedClassifierGoldenBand(fixture, selling, 0.2)).toContain(
+        'expected at-or-above-upper|between, received below-lower',
+      )
+    }
+  })
+
   it('creates valid UUIDv7 batch identities for non-persisting prepared calls', () => {
     expect(classifierGoldenBatchId()).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
