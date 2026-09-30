@@ -11583,7 +11583,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "23d3af874d086e698f1d1628372a5430afea7f463525e2dcac476731bbb01d78",
+      "hash": "10486aaeba182d064fdaf21ea89de055be5f3d936deacf12e5163510d9ea6490",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -12166,6 +12166,49 @@
                           "required": true,
                           "schema": {
                             "type": "string"
+                          }
+                        },
+                        "review": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "accepted": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "reviewed_at": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "reviewed_by_id": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "type": "null"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "screening": {
@@ -82514,7 +82557,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "ed1c3e3c1cc5c78fc3d039af79f80bf9c57a85951e0f7494cf055520aed9b754",
+        "hash": "59e5fec107be94dee46b42ba832642b0796d890066600ca8f1834b40ee17ebec",
         "key": "web.copyright.staff-queue.default"
       },
       "route": {

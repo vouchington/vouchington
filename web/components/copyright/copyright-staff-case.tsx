@@ -1,9 +1,6 @@
 'use client'
 
-import {
-  reviewCopyrightFormIntake,
-  reviewCopyrightRestriction,
-} from '@/lib/api/client/copyright-notices'
+import { reviewCopyrightRestriction } from '@/lib/api/client/copyright-notices'
 import type { CopyrightStaffQueueItem } from '@/types/copyright-notices'
 import { CopyrightStaffAppealReview } from './copyright-staff-case-appeal'
 import {
@@ -12,7 +9,7 @@ import {
   CopyrightStaffCounterNotices,
   CopyrightStaffIntentRecovery,
 } from './copyright-staff-case-detail'
-import { CopyrightStaffFormGuidance } from './copyright-staff-form-guidance'
+import { CopyrightStaffFormReview } from './copyright-staff-case-form-review'
 import { CopyrightStaffGuestCapability } from './copyright-staff-guest-capability'
 import { CopyrightRepeatInfringerActions } from './copyright-repeat-infringer-actions'
 import { CopyrightStaffLegalHoldReview } from './copyright-staff-case-legal-hold'
@@ -49,7 +46,10 @@ export function CopyrightStaffCase({
         <CopyrightStaffQueueStatus notice={notice} />
       </header>
       <CopyrightStaffComplaint notice={notice} />
-      <CopyrightStaffFormReview {...{ canSubmit, notice, pending, rationale, submit }} />
+      <CopyrightStaffFormReview
+        {...{ canSubmit, pending, rationale, submit }}
+        formReview={notice.form_review}
+      />
       <CopyrightStaffRestrictionReviews {...{ canSubmit, notice, pending, rationale, submit }} />
       {notice.appeals.map(appeal => (
         <CopyrightStaffAppealReview
@@ -94,34 +94,6 @@ type ReviewProps = {
   pending: boolean
   rationale: string
   submit: SubmitReview
-}
-
-function CopyrightStaffFormReview({ canSubmit, notice, pending, rationale, submit }: ReviewProps) {
-  if (!notice.form_review) return null
-  const { form_review: formReview } = notice
-  const guidance = formReview.screening?.guidance
-  return (
-    <>
-      <ReviewButtons
-        pending={pending}
-        canSubmit={canSubmit}
-        submit={submit}
-        approve={() => reviewCopyrightFormIntake(formReview.intake_id, true, rationale)}
-        reject={() => reviewCopyrightFormIntake(formReview.intake_id, false, rationale)}
-        heading='Pending form review'
-        description={
-          formReview.screening
-            ? formReview.screening.state === 'completed'
-              ? `Agent: ${formReview.screening.recommendation}. ${formReview.screening.rationale}`
-              : `Screening ${formReview.screening.state}. Moderator review required.`
-            : formReview.source_kind
-        }
-        approveLabel='Approve intake'
-        rejectLabel='Reject intake'
-      />
-      {guidance ? <CopyrightStaffFormGuidance guidance={guidance} /> : null}
-    </>
-  )
 }
 
 function CopyrightStaffRestrictionReviews({

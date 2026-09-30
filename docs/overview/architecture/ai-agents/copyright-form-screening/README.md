@@ -26,7 +26,7 @@ The same call returns advisory guidance for the moderator: a short `summary`, a 
 material, contact information, good-faith statement, and accuracy and authority statement), each
 `present`, `missing`, or `unclear` with a gap note, bounded `risk_notes` (possible fair use, abuse
 signals, mismatched claimant), and a non-binding `suggested_action`. The staff case shows it under
-"AI guidance — not a decision".
+"AI guidance — not a decision", before and after a moderator records the intake review.
 
 The model receives only structured, non-contact fields: source kind, jurisdiction, claimant display
 name, work description, hosted-use URLs, and booleans for whether contact details, a claimant

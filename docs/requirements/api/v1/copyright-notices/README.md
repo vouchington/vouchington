@@ -46,6 +46,12 @@ oldest open item's time), and `next_deadline` (the earliest open deadline's `esc
 `restoration_deadline_at`, or null). Urgency is evaluated against the current time on each request,
 so a case whose deadline passes between pages moves to an earlier tier.
 
+A queued item's `form_review` returns the intake's screening and advisory guidance whether or not a
+moderator has decided it. Its `review` is null until then, and afterwards `{ accepted, reviewed_at,
+reviewed_by_id }` with a null `reviewed_by_id` once the reviewer's account is erased. The
+moderator's rationale is never returned. The `form_intake_review` reason applies only while
+`review` is null.
+
 The staff email intake queue, `GET /api/v1/copyright-email-intakes/review-queue`, uses the same
 bounded `after` and `limit` contract with its own cursor scope. It orders unreviewed intakes by
 immutable `(received_at, id)`, oldest first, so every email awaiting staff review remains
