@@ -46,7 +46,8 @@ tool `callMcpTool` delegates to `build-tool-result.mts`, which:
 An oversized response becomes the existing "too large" `isError` text and is not reported. A value
 the schema rejects throws `McpToolOutputMismatchError` (tool name and failing path, never the
 value); the call path reports it through `onError` and returns the generic tool-failure result,
-never `structuredContent`. Tools without an output schema keep the text-only result.
+never `structuredContent`. Tools without an output schema keep the text-only result, held to the same
+whole-response bound (step 4), so JSON escaping counts for them too.
 
 **One source of truth.** A tool never hand-writes its output schema. The generated
 `api-fixtures/v1/request-contracts.json` carries a `responses` map with the response schema of every

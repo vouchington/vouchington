@@ -79,9 +79,9 @@ server bug, not a caller error: the caller gets the generic `Tool execution fail
 again.` result (`isError: true`, no `structuredContent`) and operators get an error report that
 names the tool and the failing path, never the value.
 
-The 1 MiB response bound covers the whole `tools/call` result, so a structured result counts both
-copies and the JSON escaping of the text block. An oversized result returns an `isError` result
-that asks the caller to narrow the query or lower the limit.
+The 1 MiB response bound covers the whole `tools/call` result of every tool, including the JSON
+escaping of the text block, and a structured result counts both copies. An oversized result returns
+an `isError` result that asks the caller to narrow the query or lower the limit.
 
 A tool without an output schema returns only the `text` block and its result is not validated. The
 set of those tools can only shrink; see

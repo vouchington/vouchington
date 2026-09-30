@@ -20,18 +20,31 @@ export class McpToolOutputMismatchError extends Error {
  * A tool without an output schema returns its JSON as one text block. A tool with one also
  * returns that same JSON as `structuredContent`, after checking it against the published schema,
  * so a client is never handed structured content that breaks the contract it was promised.
+ *
+ * Either way the assembled response, not the raw JSON, is held to the response bound, because the
+ * JSON escaping inside a text block makes it larger than the JSON it carries.
  */
 export function buildToolResult(
   toolName: string,
   result: unknown,
   outputSchema: ToolOutputSchema | undefined,
 ): CallToolResult {
-  if (!outputSchema) {
-    return { content: [{ type: 'text', text: serializeMcpToolResult(result) }] }
+  const response = outputSchema
+    ? buildStructuredResponse(toolName, result, outputSchema)
+    : { content: [{ type: 'text' as const, text: serializeMcpToolResult(result) }] }
+  if (Buffer.byteLength(JSON.stringify(response), 'utf8') > MAX_MCP_TOOL_RESULT_BYTES) {
+    throw new McpToolResultTooLargeError('Tool response exceeds the MCP response limit')
   }
+  return response
+}
 
+function buildStructuredResponse(
+  toolName: string,
+  result: unknown,
+  outputSchema: ToolOutputSchema,
+): CallToolResult {
   // The JSON goes out twice, and the escaped text copy is never smaller than the JSON itself, so
-  // a result over half the bound cannot fit. The exact check below settles everything else.
+  // a result over half the bound cannot fit. Rejecting it here skips the parse and validation.
   const text = serializeMcpToolResult(result, MAX_MCP_TOOL_RESULT_BYTES / 2)
   const structuredContent = JSON.parse(text) as Record<string, unknown>
   const violation = findSchemaViolation(outputSchema, structuredContent)
@@ -40,10 +53,5 @@ export function buildToolResult(
       `${toolName} returned a result that does not match its output schema: ${violation}`,
     )
   }
-
-  const response: CallToolResult = { content: [{ type: 'text', text }], structuredContent }
-  if (Buffer.byteLength(JSON.stringify(response), 'utf8') > MAX_MCP_TOOL_RESULT_BYTES) {
-    throw new McpToolResultTooLargeError('Tool response exceeds the MCP response limit')
-  }
-  return response
+  return { content: [{ type: 'text', text }], structuredContent }
 }

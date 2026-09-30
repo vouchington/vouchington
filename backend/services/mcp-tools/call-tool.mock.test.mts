@@ -57,6 +57,19 @@ describe('callMcpTool result errors', () => {
     expect(sentryCaptureExceptionMock).not.toHaveBeenCalled()
   })
 
+  it('counts the escaping of the text block toward the bound for a text-only tool too', async () => {
+    // Each quote is 2 bytes in the JSON and 4 once that JSON sits inside the text block, so the
+    // JSON alone fits the bound and only the assembled response does not.
+    const value = '"'.repeat(MAX_MCP_TOOL_RESULT_BYTES * 0.3)
+    stubToolFunction(() => Promise.resolve({ value }))
+
+    await expect(call()).resolves.toEqual({
+      isError: true,
+      content: [{ type: 'text', text: MCP_TOOL_RESULT_TOO_LARGE_TEXT }],
+    })
+    expect(sentryCaptureExceptionMock).not.toHaveBeenCalled()
+  })
+
   it('reports other tool failures with the generic message', async () => {
     const failure = new RangeError('limit must be between 1 and 100')
     stubToolFunction(() => Promise.reject(failure))
