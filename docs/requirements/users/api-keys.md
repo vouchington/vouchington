@@ -9,9 +9,7 @@ API keys provide programmatic access to Voucha features that require authenticat
 | `rss` | RSS feed access (read-only, URL query parameter) |
 | `mcp` | User MCP server access (Bearer token, HTTP POST) |
 
-Administrator MCP access is not an API-key type. Keys can neither be created with, nor authenticate
-to the admin MCP server with, `mcp.admin:*` scopes; administrators use OAuth (see
-[Admin MCP is OAuth-only](#admin-mcp-is-oauth-only)).
+Administrator MCP access is not an API-key type; see [Admin MCP is OAuth-only](#admin-mcp-is-oauth-only).
 
 ## Key Format
 
@@ -98,22 +96,17 @@ Owned OAuth apps and the grants users approved are documented in
 | `POST` | `/api/v1/mcp`       | User MCP Streamable HTTP  |
 | `POST` | `/api/v1/admin/mcp` | Admin MCP Streamable HTTP |
 
-`/api/v1/mcp` accepts an MCP API key or an OAuth access token. `/api/v1/admin/mcp` accepts only an
-OAuth access token; an API key sent there is rejected with `401` like any other unrecognized
-bearer credential.
-
 RSS feeds are accessible without an API key. When no key is provided, rate limiting uses the client IP address. When a key is provided, it must be passed as `apikey` in the query string, is validated, and rate limiting uses the API key identity.
 
 ## Admin MCP is OAuth-only
 
-The admin MCP server (`POST /api/v1/admin/mcp`) authenticates OAuth access tokens only. The token
-must be valid (unexpired, unrevoked, from an unrevoked grant and client), belong to a user who is
-currently an administrator, be bound to the admin protected resource, and carry the scope each
-tool declares (`mcp.admin:read` or `mcp.admin:write`). Existing OAuth validation owns replay,
-expiry, and revocation. See the
+`POST /api/v1/admin/mcp` accepts only OAuth access tokens; an API key sent there gets `401` like any
+other unrecognized bearer credential. The token must be valid (unexpired, unrevoked, from an
+unrevoked grant and client), belong to a current administrator, be bound to the admin protected
+resource, and carry the scope each tool declares (`mcp.admin:read` or `mcp.admin:write`). See the
 [OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md#protected-resources-and-discovery)
 and the [MCP tools architecture](../../overview/architecture/services/mcp-tools/README.md#admin-mcp-audit-log)
-for the per-call audit log every admin MCP call writes.
+for the per-call audit log.
 
 ## Rate Limits
 
