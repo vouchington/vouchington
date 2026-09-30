@@ -103,8 +103,6 @@ export async function getAppealCaseTrace(appealId: string): Promise<ModerationCa
   return getCaseTrace(row.case_id)
 }
 
-export type { ModerationCaseTrace }
-
 function appendModerationAppealStatusPredicate(
   query: ReturnType<typeof sql>,
   status: ModerationAppealStatus,
