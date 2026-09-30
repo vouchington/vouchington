@@ -26,7 +26,12 @@ describe('GET /api/v1/imports/:batchId/stream', () => {
     await request.get('/api/v1/imports/01900000-0000-7000-0000-000000000001/stream').expect(401)
   })
 
-  it('returns 404 for invalid UUID', async () => {
+  it('returns 401 without a validation diagnostic for a malformed anonymous call', async () => {
+    const response = await createRequest().get('/api/v1/imports/not-a-uuid/stream').expect(401)
+    expect(response.body.message).toBe('Unauthorized')
+  })
+
+  it('returns 422 for an invalid batch id', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
     await request.get('/api/v1/imports/not-a-uuid/stream').expect(422)

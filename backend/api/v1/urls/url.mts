@@ -1,5 +1,5 @@
 import app from '../../app.mts'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { currentUserCanTriggerCrawl } from '@services/urls'
 import {
   currentUserCanViewLatestCrawl,
@@ -23,6 +23,7 @@ import { apiResponse } from '../../response-contract.mts'
 
 app.route('/api/v1/urls/:id').get(async ctx => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/urls/:id')
+  validateRequestContract(ctx, 'GET:/api/v1/urls/:id', { path: ctx.params })
 
   const canSeeModeration = currentUserCanFilterHostnameModeration(currentUser)
   const url = await getUrlByAnyCached(ctx.params.id!)

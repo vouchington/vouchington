@@ -1,13 +1,26 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateUUIDParam, parseJsonBody } from '../../response-helpers.mts'
+import {
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+  parseJsonBody,
+} from '../../response-helpers.mts'
 import { upsertPlaybackPosition, getPlaybackPosition } from '@services/podcast-playback-positions'
+
+interface UpsertPlaybackPositionBody {
+  position_seconds: number
+  completed?: boolean
+}
 
 // GET /api/v1/podcast-episodes/:id/playback-position
 // Returns the current user's saved position for the episode, or null if none.
 // Called once when an episode is loaded into the global player to resume playback.
 app.route('/api/v1/podcast-episodes/:id/playback-position').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/podcast-episodes/:id/playback-position')
+  validateRequestContract(ctx, 'GET:/api/v1/podcast-episodes/:id/playback-position', {
+    path: ctx.params,
+  })
   const rssFeedItemId = validateUUIDParam(ctx, 'id')
 
   const playback_position = await getPlaybackPosition(currentUser.id, rssFeedItemId)
@@ -22,13 +35,16 @@ app.route('/api/v1/podcast-episodes/:id/playback-position').put(async (ctx: Cont
   const currentUser = await requireAuth(ctx, 'PUT:/api/v1/podcast-episodes/:id/playback-position')
   const rssFeedItemId = validateUUIDParam(ctx, 'id')
 
-  const body = await parseJsonBody<{ position_seconds: unknown; completed?: unknown }>(ctx)
+  const body = await parseJsonBody<UpsertPlaybackPositionBody>(ctx)
+  validateRequestContract(ctx, 'PUT:/api/v1/podcast-episodes/:id/playback-position', {
+    path: ctx.params,
+    body,
+  })
 
+  // The contract owns the JSON types; only the numeric range is a semantic 400 (JSON can carry
+  // 1e999, which parses to Infinity).
   ctx.assert(
-    body !== null &&
-      typeof body === 'object' &&
-      typeof body.position_seconds === 'number' &&
-      Number.isFinite(body.position_seconds) &&
+    Number.isFinite(body.position_seconds) &&
       body.position_seconds >= 0 &&
       body.position_seconds < 1_000_000,
     400,
@@ -39,7 +55,7 @@ app.route('/api/v1/podcast-episodes/:id/playback-position').put(async (ctx: Cont
 
   try {
     await upsertPlaybackPosition(currentUser.id, rssFeedItemId, {
-      positionSeconds: body.position_seconds as number,
+      positionSeconds: body.position_seconds,
       completed,
     })
   } catch (err: unknown) {

@@ -1,5 +1,5 @@
 import app from '../../app.mts'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import {
   currentUserCanViewCrawlHistory,
   currentUserCanTriggerCrawl,
@@ -22,6 +22,8 @@ app.route('/api/v1/urls/:id/crawls/:crawlId').get(async ctx => {
   if (!currentUserCanViewCrawlHistory(currentUser, membership)) {
     return ctx.throw(403, 'Premium membership required')
   }
+  validateRequestContract(ctx, 'GET:/api/v1/urls/:id/crawls/:crawlId', { path: ctx.params })
+  const crawlId = validateUUIDParam(ctx, 'crawlId')
 
   const urlId = ctx.params.id!
   const url = await getUrlByAnyCached(urlId)
@@ -32,7 +34,7 @@ app.route('/api/v1/urls/:id/crawls/:crawlId').get(async ctx => {
 
   const canViewHeaders = currentUserCanTriggerCrawl(currentUser)
   if (!canViewHeaders) {
-    const crawl = await getPublicUrlCrawlDetailById(ctx.params.crawlId!, url.id)
+    const crawl = await getPublicUrlCrawlDetailById(crawlId, url.id)
     if (!crawl) return ctx.throw(404, 'Crawl not found')
     ctx.json(
       apiResponse('GET:/api/v1/urls/:id/crawls/:crawlId#paid', {
@@ -42,7 +44,7 @@ app.route('/api/v1/urls/:id/crawls/:crawlId').get(async ctx => {
     return
   }
 
-  const crawl = await getCrawlById(ctx.params.crawlId!, url.id)
+  const crawl = await getCrawlById(crawlId, url.id)
   if (!crawl) return ctx.throw(404, 'Crawl not found')
 
   const og_image_sideload = buildFirstSideloadImageUrl([
