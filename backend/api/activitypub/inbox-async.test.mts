@@ -16,131 +16,26 @@ const INBOX_URL = `http://${INBOX_HOST}/ap/inbox`
 
 describe('POST /ap/inbox durable worker path', () => {
   it('verifies the signature before durable persistence', async () => {
-    onTestFinished(
-      overrideDynamicConfigFieldsForTest(activityPubInboxConfig, {
-        async_delivery_enabled: true,
-      }),
-    )
-    const { actorUri, keyId, privateKeyPem, remoteActor } = await createRemoteActorFixture()
-    const activityId = `${actorUri}/activities/${randomSuffix()}`
-    const body = JSON.stringify({
-      id: activityId,
-      type: 'Create',
-      actor: actorUri,
-      object: { type: 'Note', content: 'queued' },
+    const { delivery, remoteActor } = await postSignedCreateAndClaimDelivery({
+      noteContent: 'queued',
+      signatureKeyId: actorKeyId => actorKeyId,
     })
-    const headers = buildSignatureHeaders('POST', INBOX_URL, body, keyId, privateKeyPem)
-    const existingJobIds = new Set(
-      (await getInboxJobs()).map(job => job.id).filter((id): id is string => id !== undefined),
-    )
-
-    await createRequest()
-      .post('/ap/inbox')
-      .set('Host', INBOX_HOST)
-      .set('Signature', headers.signature)
-      .set('Digest', headers.digest)
-      .set('Date', headers.date)
-      .set('Content-Type', 'application/activity+json')
-      .send(body)
-      .expect(202)
-
-    const job = (await getInboxJobs()).find(
-      candidate => candidate.name === 'processDelivery' && !existingJobIds.has(candidate.id ?? ''),
-    )
-    expect(job).toBeDefined()
-    const payload = job?.data as { deliveryId: string; processingAttemptId: string } | undefined
-    expect(payload).toEqual({
-      deliveryId: expect.any(String),
-      processingAttemptId: expect.any(String),
-    })
-    if (!payload) throw new Error('Expected a durable ActivityPub inbox job payload')
-
-    const delivery = await claimTestDelivery(payload.deliveryId, payload.processingAttemptId)
     expect(delivery).toMatchObject({
-      requestMethod: 'POST',
-      requestTarget: '/ap/inbox',
-      expectedHost: INBOX_HOST,
-      signatureHeader: headers.signature,
-      digestHeader: headers.digest,
-      dateHeader: headers.date,
-      contentTypeHeader: 'application/activity+json',
-      claimedActivityId: activityId,
-      claimedActivityType: 'Create',
-      claimedActorUri: actorUri,
-      senderHostname: new URL(actorUri).hostname,
       remoteActorId: remoteActor.id,
       verifiedAt: expect.any(Date),
       senderAllowedAt: expect.any(Date),
     })
-    expect(delivery?.rawBody.equals(Buffer.from(body))).toBe(true)
-
-    onTestFinished(async () => {
-      await rejectTestDelivery(payload.deliveryId, payload.processingAttemptId)
-    })
   })
 
   it('returns 202 after persistence without waiting for an unknown actor fetch', async () => {
-    onTestFinished(
-      overrideDynamicConfigFieldsForTest(activityPubInboxConfig, {
-        async_delivery_enabled: true,
-      }),
-    )
-    const { actorUri, keyId, privateKeyPem } = await createRemoteActorFixture()
-    const unknownKeyId = `${keyId}-${randomSuffix()}`
-    const activityId = `${actorUri}/activities/${randomSuffix()}`
-    const body = JSON.stringify({
-      id: activityId,
-      type: 'Create',
-      actor: actorUri,
-      object: { type: 'Note', content: 'queued unknown actor' },
+    const { delivery } = await postSignedCreateAndClaimDelivery({
+      noteContent: 'queued unknown actor',
+      signatureKeyId: actorKeyId => `${actorKeyId}-${randomSuffix()}`,
     })
-    const headers = buildSignatureHeaders('POST', INBOX_URL, body, unknownKeyId, privateKeyPem)
-    const existingJobIds = new Set(
-      (await getInboxJobs()).map(job => job.id).filter((id): id is string => id !== undefined),
-    )
-
-    await createRequest()
-      .post('/ap/inbox')
-      .set('Host', INBOX_HOST)
-      .set('Signature', headers.signature)
-      .set('Digest', headers.digest)
-      .set('Date', headers.date)
-      .set('Content-Type', 'application/activity+json')
-      .send(body)
-      .expect(202)
-
-    const job = (await getInboxJobs()).find(
-      candidate => candidate.name === 'processDelivery' && !existingJobIds.has(candidate.id ?? ''),
-    )
-    expect(job).toBeDefined()
-    const payload = job?.data as { deliveryId: string; processingAttemptId: string } | undefined
-    expect(payload).toEqual({
-      deliveryId: expect.any(String),
-      processingAttemptId: expect.any(String),
-    })
-    if (!payload) throw new Error('Expected a durable ActivityPub inbox job payload')
-
-    const delivery = await claimTestDelivery(payload.deliveryId, payload.processingAttemptId)
     expect(delivery).toMatchObject({
-      requestMethod: 'POST',
-      requestTarget: '/ap/inbox',
-      expectedHost: INBOX_HOST,
-      signatureHeader: headers.signature,
-      digestHeader: headers.digest,
-      dateHeader: headers.date,
-      contentTypeHeader: 'application/activity+json',
-      claimedActivityId: activityId,
-      claimedActivityType: 'Create',
-      claimedActorUri: actorUri,
-      senderHostname: new URL(actorUri).hostname,
       remoteActorId: null,
       verifiedAt: null,
       senderAllowedAt: null,
-    })
-    expect(delivery?.rawBody.equals(Buffer.from(body))).toBe(true)
-
-    onTestFinished(async () => {
-      await rejectTestDelivery(payload.deliveryId, payload.processingAttemptId)
     })
   })
 
@@ -257,6 +152,72 @@ describe('POST /ap/inbox durable worker path', () => {
     expect(await activityPubInboxDeliveryExistsOnPrimaryForTest(activityId)).toBe(true)
   })
 })
+
+async function postSignedCreateAndClaimDelivery(input: {
+  noteContent: string
+  signatureKeyId: (actorKeyId: string) => string
+}) {
+  onTestFinished(
+    overrideDynamicConfigFieldsForTest(activityPubInboxConfig, {
+      async_delivery_enabled: true,
+    }),
+  )
+  const { actorUri, keyId, privateKeyPem, remoteActor } = await createRemoteActorFixture()
+  const signatureKeyId = input.signatureKeyId(keyId)
+  const activityId = `${actorUri}/activities/${randomSuffix()}`
+  const body = JSON.stringify({
+    id: activityId,
+    type: 'Create',
+    actor: actorUri,
+    object: { type: 'Note', content: input.noteContent },
+  })
+  const headers = buildSignatureHeaders('POST', INBOX_URL, body, signatureKeyId, privateKeyPem)
+  const existingJobIds = new Set(
+    (await getInboxJobs()).map(job => job.id).filter((id): id is string => id !== undefined),
+  )
+
+  await createRequest()
+    .post('/ap/inbox')
+    .set('Host', INBOX_HOST)
+    .set('Signature', headers.signature)
+    .set('Digest', headers.digest)
+    .set('Date', headers.date)
+    .set('Content-Type', 'application/activity+json')
+    .send(body)
+    .expect(202)
+
+  const job = (await getInboxJobs()).find(
+    candidate => candidate.name === 'processDelivery' && !existingJobIds.has(candidate.id ?? ''),
+  )
+  expect(job).toBeDefined()
+  const payload = job?.data as { deliveryId: string; processingAttemptId: string } | undefined
+  expect(payload).toEqual({
+    deliveryId: expect.any(String),
+    processingAttemptId: expect.any(String),
+  })
+  if (!payload) throw new Error('Expected a durable ActivityPub inbox job payload')
+
+  const delivery = await claimTestDelivery(payload.deliveryId, payload.processingAttemptId)
+  expect(delivery).toMatchObject({
+    requestMethod: 'POST',
+    requestTarget: '/ap/inbox',
+    expectedHost: INBOX_HOST,
+    signatureHeader: headers.signature,
+    digestHeader: headers.digest,
+    dateHeader: headers.date,
+    contentTypeHeader: 'application/activity+json',
+    claimedActivityId: activityId,
+    claimedActivityType: 'Create',
+    claimedActorUri: actorUri,
+    senderHostname: new URL(actorUri).hostname,
+  })
+  expect(delivery?.rawBody.equals(Buffer.from(body))).toBe(true)
+
+  onTestFinished(async () => {
+    await rejectTestDelivery(payload.deliveryId, payload.processingAttemptId)
+  })
+  return { delivery, remoteActor }
+}
 
 async function getInboxJobs() {
   return (
