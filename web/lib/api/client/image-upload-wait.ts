@@ -6,18 +6,14 @@ import {
   InternalImageBlockedError,
   InternalImageProcessingTimeoutError,
 } from './image-upload-errors'
-import {
-  INTERNAL_POLL_INTERVAL_MS,
-  INTERNAL_POLL_MAX_ERRORS,
-  INTERNAL_POLL_TIMEOUT_MS,
-} from './image-upload-polling'
+import { POLL_INTERVAL_MS, POLL_MAX_ERRORS, POLL_TIMEOUT_MS } from './image-upload-polling'
 import { getImageUploadRetryAfterMs } from './image-upload-retry-after'
 
 export async function pollImageUntilUploaded(
   imageId: string,
   options: { signal?: AbortSignal; timeoutMs?: number } = {},
 ) {
-  let timeoutAt = Date.now() + (options.timeoutMs ?? INTERNAL_POLL_TIMEOUT_MS)
+  let timeoutAt = Date.now() + (options.timeoutMs ?? POLL_TIMEOUT_MS)
   let errors = 0
 
   async function poll(): Promise<Awaited<ReturnType<typeof getImageUploadState>>> {
@@ -46,13 +42,10 @@ export async function pollImageUntilUploaded(
         return poll()
       }
       errors += 1
-      if (errors >= INTERNAL_POLL_MAX_ERRORS) throw error
+      if (errors >= POLL_MAX_ERRORS) throw error
     }
 
-    await delay(
-      Math.min(INTERNAL_POLL_INTERVAL_MS, getRemainingMs(timeoutAt, imageId)),
-      options.signal,
-    )
+    await delay(Math.min(POLL_INTERVAL_MS, getRemainingMs(timeoutAt, imageId)), options.signal)
     return poll()
   }
 

@@ -68,12 +68,6 @@ vi.mock(import('@/components/shared/list-search-error'), () => ({
   ListSearchError: ({ message }: { message: string }) => <p data-pw='search-error'>{message}</p>,
 }))
 
-vi.mock(import('@/components/podcasts/podcast-show-card'), () => ({
-  PodcastShowCard: ({ feed }: { feed: ViewRssFeed }) => (
-    <article data-pw='podcast-show-card'>{feed.title}</article>
-  ),
-}))
-
 vi.mock(import('@/components/sources/rss-feed-list-item'), () => ({
   RssFeedListItem: ({ feed }: { feed: ViewRssFeed }) => (
     <div

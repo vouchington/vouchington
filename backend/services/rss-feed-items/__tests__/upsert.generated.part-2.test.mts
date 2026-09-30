@@ -6,10 +6,11 @@ import * as psqlEnqueues from '@queues/psql/enqueues'
 import { createUnlinkedTopicAlias } from '@services/topics/aliases'
 import { setTestRssFeedDiscoverable } from '@voucha/test-helpers/entities/rss-feeds-discovery'
 
-import { getRssFeedItemByCompositeKey, getRssFeedItemById } from '../get.mts'
+import { getRssFeedItemById, getRssFeedItemKeyByGuid } from '../get.mts'
 
 import {
   createTopHashtagRssSourceForTest,
+  getRssFeedItemSourcePublicationForTest,
   getRssFeedItemTitleByGuidForTest,
   insertTestRssFeedDirect,
 } from '@voucha/test-helpers'
@@ -225,8 +226,8 @@ describe('upsert.generated', () => {
     const unchanged = await upsertRssFeedItems(secondFeed.id, [item])
 
     expect(unchanged).toHaveLength(0)
-    const secondSourceItem = await getRssFeedItemByCompositeKey(secondFeed.id, item.guid)
-    expect(secondSourceItem?.id).toBe(created.id)
+    // Throws when the second feed has no source row for the shared item.
+    await getRssFeedItemSourcePublicationForTest(secondFeed.id, created.id)
   })
 
   it('links concurrent inserts for same-host feed sources', async () => {
@@ -251,10 +252,11 @@ describe('upsert.generated', () => {
       upsertRssFeedItems(secondFeed.id, [item]),
     ])
 
-    const firstSourceItem = await getRssFeedItemByCompositeKey(firstFeed.id, item.guid)
-    const secondSourceItem = await getRssFeedItemByCompositeKey(secondFeed.id, item.guid)
-    expect(firstSourceItem?.id).toBeDefined()
-    expect(secondSourceItem?.id).toBe(firstSourceItem?.id)
+    const identity = await getRssFeedItemKeyByGuid(item.guid)
+    expect(identity?.id).toBeDefined()
+    // Throws when a feed has no source row for the shared item identity.
+    await getRssFeedItemSourcePublicationForTest(firstFeed.id, identity!.id)
+    await getRssFeedItemSourcePublicationForTest(secondFeed.id, identity!.id)
   })
 
   it('upsertRssFeedItems dedupes duplicate guids across SQL chunk boundaries', async () => {

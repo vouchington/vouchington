@@ -8,16 +8,9 @@ import {
 import { getImageUploadRetryAfterMs } from './image-upload-retry-after'
 import { ApiError } from '../error'
 
-// Kept for backwards compatibility — callers that use these constants continue to work.
-const POLL_INTERVAL_MS = 2000
-const POLL_TIMEOUT_MS = 60_000
-const POLL_MAX_ERRORS = 3
-
-export {
-  POLL_INTERVAL_MS as INTERNAL_POLL_INTERVAL_MS,
-  POLL_MAX_ERRORS as INTERNAL_POLL_MAX_ERRORS,
-  POLL_TIMEOUT_MS as INTERNAL_POLL_TIMEOUT_MS,
-}
+export const POLL_INTERVAL_MS = 2000
+export const POLL_TIMEOUT_MS = 60_000
+export const POLL_MAX_ERRORS = 3
 
 interface StreamOptions {
   timeoutMs?: number
