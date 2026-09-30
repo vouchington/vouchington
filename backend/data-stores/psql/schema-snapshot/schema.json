@@ -57907,7 +57907,7 @@
         },
         "admin_import_batch_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Target import batch created by a staff member.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -57918,7 +57918,7 @@
         },
         "agent_moderation_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Target agent moderation whose staff vote was changed; paired with its post owner.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -57929,7 +57929,7 @@
         },
         "agent_moderation_post_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Post owner required by the partitioned agent-moderation target foreign key.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -57940,7 +57940,7 @@
         },
         "backfill_key": {
           "collation": null,
-          "comment": null,
+          "comment": "Backfill catalog key selected for an immediate staff run.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -57973,7 +57973,7 @@
         },
         "crawler_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Target crawler created, edited, or deleted by staff.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58039,7 +58039,7 @@
         },
         "oauth_client_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Target OAuth client whose verification was changed.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58050,7 +58050,7 @@
         },
         "operation_request_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Requested audit row linked by an external-operation outcome; an absent outcome remains unresolved.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58072,7 +58072,7 @@
         },
         "queue_name": {
           "collation": null,
-          "comment": null,
+          "comment": "Queue selected for a staff control operation.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58094,7 +58094,7 @@
         },
         "report_abuse_penalty_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Target report-abuse penalty applied or revoked.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58116,7 +58116,7 @@
         },
         "report_integrity_flag_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Target report-integrity flag whose review was changed.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58138,7 +58138,7 @@
         },
         "rss_category_text": {
           "collation": null,
-          "comment": null,
+          "comment": "RSS category text whose editorial assignment or rejection was changed.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58149,7 +58149,7 @@
         },
         "scheduled_job_key": {
           "collation": null,
-          "comment": null,
+          "comment": "Scheduled-job catalog key selected for an immediate staff run.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58171,7 +58171,7 @@
         },
         "topic_claim_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Target topic ownership claim for verification, rejection, or revocation.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58182,7 +58182,7 @@
         },
         "topic_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Target editorial topic assigned to an RSS category.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58193,7 +58193,7 @@
         },
         "user_mod_note_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Target staff note retained after soft deletion.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58204,7 +58204,7 @@
         },
         "vote_integrity_flag_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Target vote-integrity flag whose review was changed.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58215,7 +58215,7 @@
         },
         "vote_weight_penalty_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Target vote-weight penalty applied or revoked.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
