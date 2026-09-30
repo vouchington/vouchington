@@ -58,7 +58,7 @@ export {
 // OAuth/attribution/consent side effects, no entity-listener enqueues), so test-helpers does not
 // depend on that service package (every backend service devDeps test-helpers for its tests, so a
 // test-helpers -> @services/users edge is a workspace cycle). Fixtures that assert on those genuine
-// side effects must use the real createTestUser from `@services/users/test-support` instead.
+// side effects must use the real createTestUser from `@voucha/test-helpers/services/users/test-support` instead.
 // withEmail mirrors upsertUser's always-created primary email; createTestUserDirect stays
 // email-free for tests that need an unverified-email user.
 export async function createTestUser(options: CreateTestUserOptions = {}): Promise<PrivateUser> {

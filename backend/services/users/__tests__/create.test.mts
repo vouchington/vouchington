@@ -10,7 +10,7 @@ import {
 import { it, expect, describe } from 'vitest'
 import { upsertUser } from '../create.mts'
 import { PRIVACY_POLICY_VERSION, TERMS_OF_SERVICE_VERSION } from '../create-helpers.mts'
-import { deleteUserAndDrainForTest } from '../delete-test-support.mts'
+import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { getPrivateUserByAny } from '../get.mts'
 import { upsertOAuthAccount } from '@services/oauth-accounts'
 import { grantConsent } from '@services/user-consents/create'

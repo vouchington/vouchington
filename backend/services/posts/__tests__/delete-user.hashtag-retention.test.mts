@@ -10,7 +10,7 @@ import {
   getEntityRelation,
 } from '@voucha/test-helpers'
 import { createUnlinkedTopicAlias, linkTopicAlias, searchTopHashtags } from '@services/topics'
-import { deleteUserAndDrainForTest } from '@services/users/delete-test-support'
+import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { createPost } from '../create.mts'
 import { getPostByAny } from '../get.mts'
 import { getPostIds } from '../search/get-ids.mts'

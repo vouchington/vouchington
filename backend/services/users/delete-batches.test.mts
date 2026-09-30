@@ -28,7 +28,7 @@ import {
 } from '@voucha/test-helpers'
 import { deleteUser } from './delete.mts'
 import { processUserDeletionExternalWork, processUserDeletionPhaseBatch } from './delete-phases.mts'
-import { drainUserDeletionForTest } from './delete-test-support.mts'
+import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 
 describe('user deletion batches', () => {
   it('drains 201 authored posts in three committed batches of at most 100', async () => {

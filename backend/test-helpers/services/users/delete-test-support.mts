@@ -1,7 +1,13 @@
-import type { PrivateUser } from './types.mts'
-import { deleteUser } from './delete.mts'
-import { processUserDeletionBatch, type UserDeletionAttempt } from '@services/user-deletions'
-import { processUserDeletionExternalWork, processUserDeletionPhaseBatch } from './delete-phases.mts'
+import type { PrivateUser } from '../../../services/users/types.mts'
+import { deleteUser } from '../../../services/users/delete.mts'
+import {
+  processUserDeletionBatch,
+  type UserDeletionAttempt,
+} from '../../../services/user-deletions/index.mts'
+import {
+  processUserDeletionExternalWork,
+  processUserDeletionPhaseBatch,
+} from '../../../services/users/delete-phases.mts'
 
 type DrainUserDeletionDependencies = {
   deleteExportsFromS3?: (s3Keys: string[]) => Promise<unknown>
@@ -23,7 +29,7 @@ export async function drainUserDeletionForTest(
   let attempt: UserDeletionAttempt | null = initialAttempt
   for (let delivery = 0; attempt && delivery < 10_000; delivery++) {
     const current = attempt
-    // oxlint-disable-next-line no-await-in-loop -- each successor token exists only after its batch commits.
+    // Each successor token exists only after its batch commits.
     attempt = await processUserDeletionBatch(current.requestId, current.processingAttemptId, {
       processPhaseBatch: input =>
         input.phase === 'external-work'

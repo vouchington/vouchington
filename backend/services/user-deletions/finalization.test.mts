@@ -12,7 +12,7 @@ import {
   getUserDeletionCompletionAuditForTest,
   getUserDeletionRelationImpactIdsForTest,
   getUserDeletionRequestForTest,
-} from './lifecycle.test-support.mts'
+} from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
 import { USER_DELETION_BATCH_SIZE } from './phases.mts'
 
 describe('user deletion finalization', () => {

@@ -6,7 +6,7 @@ import {
   createUnonboardedTestUserDirect,
 } from '@voucha/test-helpers'
 import { withMissingTestPrivateUserRead } from '@voucha/test-helpers/entities/users-readback-failure'
-import { createTestUser } from '../test-support.mts'
+import { createTestUser } from '@voucha/test-helpers/services/users/test-support'
 
 describe('createTestUser fixture', () => {
   it('creates a user with a generated username by default', async () => {
