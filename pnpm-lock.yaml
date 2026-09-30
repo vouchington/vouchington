@@ -22,6 +22,9 @@ importers:
       '@jongleberry/vurst-runtime':
         specifier: ^0.4.3
         version: 0.4.3
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.31.0
+        version: 1.31.0(supports-color@10.2.2)(zod@4.6.5)
       '@opentelemetry/api':
         specifier: ^1.9.1
         version: 1.9.1
@@ -171,10 +174,13 @@ importers:
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
         specifier: ^0.26.0
-        version: 0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
+        version: 0.26.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
 
   api-fixtures: {}
 
@@ -1607,7 +1613,7 @@ importers:
         version: '@typescript/typescript6@6.0.2'
       vouchington-tooling:
         specifier: ^0.26.0
-        version: 0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
+        version: 0.26.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
 
   backend/data-stores/valkey:
     dependencies:
@@ -10587,7 +10593,7 @@ importers:
         version: 14.0.2
       vouchington-tooling:
         specifier: ^0.26.0
-        version: 0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
+        version: 0.26.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -12687,7 +12693,7 @@ importers:
         version: 11.0.5
       vouchington-tooling:
         specifier: ^0.26.0
-        version: 0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
+        version: 0.26.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -12926,7 +12932,7 @@ importers:
         version: 1.9.0
       vouchington-tooling:
         specifier: ^0.26.0
-        version: 0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
+        version: 0.26.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -14862,6 +14868,16 @@ packages:
 
   '@modelcontextprotocol/sdk@1.30.1':
     resolution: {integrity: sha512-H2HxLvC3HDNybePJaLdSrU1hhUK5iQw+WvV1b01myFyI7sdVGe1u/IPTE5D9fGCiJDVtgMV/lmFkQXLmQyIFYA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@cfworker/json-schema': ^4.1.1
+      zod: ^3.25 || ^4.0
+    peerDependenciesMeta:
+      '@cfworker/json-schema':
+        optional: true
+
+  '@modelcontextprotocol/sdk@1.31.0':
+    resolution: {integrity: sha512-UvTMgnNlnIBO/22ob2RcVGDlcvOslQs8T59+FTGdA0L27a39fdGF/EDETNtDVK4DZGpwomlsYpRdA8UXcVL/pw==}
     engines: {node: '>=18'}
     peerDependencies:
       '@cfworker/json-schema': ^4.1.1
@@ -24178,6 +24194,28 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5)':
+    dependencies:
+      '@hono/node-server': 2.1.1(hono@4.13.9)
+      ajv: 8.20.0
+      ajv-formats: 3.0.1(ajv@8.20.0)
+      content-type: 1.0.5
+      cors: 2.8.6
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.1.1
+      express: 5.2.1(supports-color@10.2.2)
+      express-rate-limit: 8.7.0(express@5.2.1(supports-color@10.2.2))(supports-color@10.2.2)
+      hono: 4.13.9
+      jose: 6.2.12
+      json-schema-typed: 8.0.2
+      pkce-challenge: 5.0.1
+      raw-body: 3.0.2
+      zod: 4.6.5
+      zod-to-json-schema: 3.25.2(zod@4.6.5)
+    transitivePeerDependencies:
+      - supports-color
+
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true
 
@@ -27661,7 +27699,7 @@ snapshots:
 
   agent-blackboard@0.6.0(supports-color@10.2.2)(zod@4.6.5):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.30.1(supports-color@10.2.2)(zod@4.6.5)
+      '@modelcontextprotocol/sdk': 1.31.0(supports-color@10.2.2)(zod@4.6.5)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - supports-color
@@ -30446,7 +30484,7 @@ snapshots:
 
   pr-shepherd@0.55.2(supports-color@10.2.2):
     dependencies:
-      '@modelcontextprotocol/sdk': 1.30.1(supports-color@10.2.2)(zod@4.6.5)
+      '@modelcontextprotocol/sdk': 1.31.0(supports-color@10.2.2)(zod@4.6.5)
       picomatch: 4.0.7
       yaml: 2.9.1
       zod: 4.6.5
@@ -31674,7 +31712,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2):
+  vouchington-tooling@0.26.0(@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
@@ -31689,6 +31727,7 @@ snapshots:
       yaml: 2.9.1
     optionalDependencies:
       '@libpg-query/parser': 18.0.0
+      '@modelcontextprotocol/sdk': 1.31.0(supports-color@10.2.2)(zod@4.6.5)
       '@typescript/typescript6': 6.0.2
       typescript: '@typescript/typescript6@6.0.2'
       vitest: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))

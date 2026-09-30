@@ -118,6 +118,7 @@
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
     "@jongleberry/vurst-runtime": "^0.4.3",
+    "@modelcontextprotocol/sdk": "^1.31.0",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/auto-instrumentations-node": "^0.80.0",
     "@playwright/test": "1.63.0",
@@ -168,7 +169,8 @@
     "unified": "^11.0.5",
     "vitest": "^5.0.2",
     "vouchington-tooling": "^0.26.0",
-    "yaml": "^2.9.1"
+    "yaml": "^2.9.1",
+    "zod": "^4.6.5"
   },
   "engines": {
     "node": ">=24.16.0"
