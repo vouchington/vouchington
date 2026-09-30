@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getCachePolicy, parseStaticCachedPaths } from '../cache-policy.mts'
+import { registerCachePolicyBypassSignalTests } from '../../test-helpers/src/cache-policy-bypass-signal-tests.mts'
 import { hasReferralAttributionSignal } from '../cache-route-policy.mts'
 
 describe('hasReferralAttributionSignal', () => {
@@ -24,57 +24,21 @@ describe('hasReferralAttributionSignal', () => {
 })
 
 describe('referral attribution cache policy', () => {
-  const baseInput = {
-    staticCachedPaths: parseStaticCachedPaths('/favicon.ico,/robots.txt'),
-    sitemapCacheTtlSeconds: 86_400,
-    staticCacheTtlSeconds: 86_400,
-    botCacheTtlSeconds: 86_400,
-    anonCacheTtlSeconds: 30,
-    rssCacheTtlSeconds: 300,
-  }
-
-  it('bypasses cache when a referral attribution signal is present, before anonymous or bot caching', () => {
-    expect(
-      getCachePolicy({
-        ...baseInput,
-        pathname: '/@alice',
-        botTier: null,
-        isAuthenticated: false,
-        hasReferralAttributionSignal: true,
-        hasFeatureFlagOverrideCookie: false,
-        hasUnverifiedSessionCookies: false,
-      }),
-    ).toMatchObject({
-      mode: 'bypass',
-      audience: null,
-      ttlSeconds: 0,
-      fullyCachedRoute: false,
-    })
-
-    expect(
-      getCachePolicy({
-        ...baseInput,
-        pathname: '/blog',
-        botTier: 'known',
-        isAuthenticated: false,
-        hasReferralAttributionSignal: true,
-        hasFeatureFlagOverrideCookie: false,
-        hasUnverifiedSessionCookies: false,
-      }).mode,
-    ).toBe('bypass')
-  })
-
-  it('does not bypass cache when no referral attribution signal is present', () => {
-    expect(
-      getCachePolicy({
-        ...baseInput,
-        pathname: '/blog',
-        botTier: null,
-        isAuthenticated: false,
-        hasReferralAttributionSignal: false,
-        hasFeatureFlagOverrideCookie: false,
-        hasUnverifiedSessionCookies: false,
-      }).mode,
-    ).toBe('cache')
+  registerCachePolicyBypassSignalTests({
+    bypassTitle:
+      'bypasses cache when a referral attribution signal is present, before anonymous or bot caching',
+    negativeTitle: 'does not bypass cache when no referral attribution signal is present',
+    firstBypass: {
+      pathname: '/@alice',
+      botTier: null,
+      hasReferralAttributionSignal: true,
+      hasFeatureFlagOverrideCookie: false,
+    },
+    secondBypass: {
+      pathname: '/blog',
+      botTier: 'known',
+      hasReferralAttributionSignal: true,
+      hasFeatureFlagOverrideCookie: false,
+    },
   })
 })
