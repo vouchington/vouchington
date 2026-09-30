@@ -393,9 +393,6 @@ types backend/agents/_shared/subagent-tool.mts SubagentResult
 types backend/agents/_shared/subagent-tool.mts SubagentStepEvent
 types backend/agents/autotagger/dispatch-classifier.mts AutotaggerClassifierCandidate
 types backend/agents/chat/stream.mts ChatStreamEvent
-types backend/data-stores/valkey-rate-limiter/index.mts RateLimiterAddAndCheckWindowsOptions
-types backend/data-stores/valkey-rate-limiter/index.mts RetryRateLimiterSaturationDependencies
-types backend/data-stores/valkey/types.mts DynamicConfigField
 types backend/entrypoints/api/valkey-admin-command.mts ParsedValkeyAdminCommand
 types backend/entrypoints/api/verify-ipv6-egress-checks.mts HostResult
 types backend/services/ap-inbox-activities/durable-delivery-transition-contract.mts ActivityPubInboxDeliveryTransitionDimensions
