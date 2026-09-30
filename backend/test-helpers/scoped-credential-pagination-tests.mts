@@ -109,6 +109,29 @@ export function registerScopedCredentialPaginationTests(options: {
     await req.get(`${path}?after=not-a-real-cursor`).expect(400)
   })
 
+  test('clamps an oversized limit to the maximum instead of failing the request contract', async () => {
+    const user = await createTestUser()
+    await insert(user.id, `clamp-${Date.now()}`)
+    const req = createRequest()
+    await req.authenticateAs(user)
+
+    const res = await req.get(`${path}?limit=500`).expect(200)
+    expect(res.body.results).toHaveLength(1)
+  })
+
+  test.each(['abc', '0', '-1', '1.5'])('rejects limit=%s with the parser 400', async limit => {
+    const user = await createTestUser()
+    const req = createRequest()
+    await req.authenticateAs(user)
+
+    await req.get(`${path}?limit=${limit}`).expect(400)
+  })
+
+  test('returns a bare 401 without a schema diagnostic for an anonymous malformed query', async () => {
+    const res = await createRequest().get(`${path}?limit=abc&after=x&after=y`).expect(401)
+    expect(res.body.message).toBe('Unauthorized')
+  })
+
   test('rejects a cursor minted for another user with 400', async () => {
     const userA = await createTestUser()
     const userB = await createTestUser()

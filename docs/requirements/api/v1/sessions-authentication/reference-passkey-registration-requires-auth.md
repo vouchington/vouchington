@@ -77,11 +77,14 @@ chain.
 Returns the current user's active sessions as a standard list envelope. The current session is
 marked with `is_current: true`. The route accepts `limit` (1–100, default 25) and an opaque
 owner-scoped `after` cursor, orders by most-recent activity then UUIDv7 ID descending, and derives
-`page_info` from `limit + 1` rows.
+`page_info` from `limit + 1` rows. A rejected query (`400`) returns before the current session row
+is repaired; see
+[Request Validation](reference-request-validation.md#query-and-path-carriers-on-protected-routes).
 
 ### DELETE /api/v1/auth/sessions/:id
 
-Revokes one active session owned by the current user.
+Revokes one active session owned by the current user. `422 Invalid ID` for a non-UUID id, after the
+path contract and before any revocation.
 
 ### POST /api/v1/auth/sessions/revocations
 
