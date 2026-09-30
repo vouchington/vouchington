@@ -1406,7 +1406,7 @@ rules:
         - .spend-cap-rollover.real-glide.mock
         - .spend-cap
         - .spend-cap-moderation
-        - .spend-cap-autotagger
+        - .autotagger
         - .spend-cap-story-post
         - .spend-cap-mid-loop
         - .mid-loop-breach.mock

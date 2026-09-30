@@ -2,13 +2,23 @@ import { createHash, randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
 import sql from 'sql-template-strings'
-import { requestClassifierRuns } from '../../../../services/classifier-runs/index.mts'
+import {
+  createAutotaggerRunAdapter,
+  type AutotaggerRunConfiguration,
+} from '../../../../services/autotagger/index.mts'
+import {
+  claimClassifierRun,
+  requestClassifierRuns,
+  reserveClassifierRun,
+  type ClassifierRunLease,
+} from '../../../../services/classifier-runs/index.mts'
 import { createPostModerationContent } from '../../../../services/posts/content.mts'
 import { createRssFeedItemEmbeddingContent } from '../../../../services/rss-feed-items/content.mts'
 import { createTestRssFeed } from '../../../../services/rss-feeds/test-fixtures.mts'
 import { addUrl } from '../../../../services/urls/upsert.mts'
 import {
   addDummyEmbeddingToPost,
+  addDummyEmbeddingToRssFeedItem,
   createTestMembership,
   createTestPost,
   createTestTopic,
@@ -42,6 +52,15 @@ export async function embedAutotaggerPost(postId: string, embedding: number[]): 
   await write(sql`/* markAutotaggerPostEmbeddingCurrent */
     UPDATE posts SET bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256
     WHERE id = ${postId}
+  `)
+}
+
+/** Marks the feed item's stored embedding as built from its current content, as the embedder does. */
+export async function embedAutotaggerFeedItem(itemId: string, embedding: number[]): Promise<void> {
+  await addDummyEmbeddingToRssFeedItem(itemId, { embedding })
+  await write(sql`/* markAutotaggerFeedItemEmbeddingCurrent */
+    UPDATE rss_feed_items SET bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256
+    WHERE id = ${itemId}
   `)
 }
 
@@ -119,6 +138,26 @@ export function requestAutotaggerRun(fixture: {
     inputSha256: fixture.inputSha256,
     classifierSlugs: [TAGGING_CLASSIFIER_SLUG],
   })
+}
+
+/** A live lease on the subject's freshly reserved run, for exercising C6's input building directly. */
+export async function claimAutotaggerLease(
+  fixture: Parameters<typeof requestAutotaggerRun>[0],
+): Promise<ClassifierRunLease<AutotaggerRunConfiguration>> {
+  await requestAutotaggerRun(fixture)
+  const adapter = createAutotaggerRunAdapter()
+  const reserved = await reserveClassifierRun(adapter, fixture.subject)
+  if (reserved.kind !== 'reserved') throw new Error(`Expected a reservation, got ${reserved.kind}`)
+  const { run } = reserved
+  const claim = await claimClassifierRun(adapter, {
+    runId: run.runId,
+    subject: run.subject,
+    inputSha256: run.inputSha256,
+    configurationSha256: run.configurationSha256,
+    leaseSeconds: 60,
+  })
+  if (claim.kind !== 'claimed') throw new Error(`Expected a claim, got ${claim.kind}`)
+  return claim.lease
 }
 
 /** Topics a run voted on, from the durable vote-application receipts of its subject. */
