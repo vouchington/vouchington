@@ -120,8 +120,8 @@ stateDiagram-v2
   Received --> Accepted: deterministic or staff validation
   Received --> NeedsInformation: incomplete or invalid
   NeedsInformation --> Received: supplemental submission
-  Accepted --> PendingAction: guest/email/staff review
-  Accepted --> ProvisionallyRestricted: clear signed-in anti-spam screen
+  Accepted --> PendingAction: guest/email/staff review, or any signed-in form at launch
+  Accepted --> ProvisionallyRestricted: clear signed-in screen, once automatic withholding is on
   PendingAction --> ProvisionallyRestricted: staff approves restriction
   ProvisionallyRestricted --> HumanConfirmed: human confirms
   ProvisionallyRestricted --> HumanModified: human narrows scope
@@ -184,7 +184,8 @@ The signed-in form is already structured. Its agent is only an anti-spam and obv
 screen, not a legal merits decision. The recommendation remains a separate immutable record; it
 cannot supply a declaration, contact detail, work description, hosted target, or signature. Only a
 deterministically complete immutable US DMCA form, with a `not_obviously_invalid` screen, may be
-provisionally withheld automatically, and it enters urgent mandatory human review. An incomplete
+provisionally withheld automatically, and it enters urgent mandatory human review. That automation
+is off at launch; see [Moderator-first launch](#moderator-first-launch). An incomplete
 form can never auto-restrict. Guest forms
 always require moderator approval. A signed-in form classified as `invalid_or_spam`, or left without
 a result after agent failure, is held for a moderator decision so a false positive or exhausted
@@ -250,6 +251,31 @@ group, and the public policy page shows its staff queue links only to administra
 The web uses Turnstile for each notice, appeal, and counter-notice form. Native clients use the
 attestation route described by the CAPTCHA boundary. CAPTCHA is an intake abuse control, not a
 legal-validity or merits assessment.
+
+## Moderator-first launch
+
+Copyright launches moderator-first. The `automaticProvisionalWithholding` switch in the audited
+`copyright` dynamic-config namespace defaults to `false`. Only a developer or an administrator can
+change it, and every change records the actor and the previous and next values. While the switch is
+off:
+
+- a clear screen on a signed-in form creates no automated assessment and no restriction, so the
+  intake waits in the staff queue like a guest form;
+- a moderator's acceptance of that intake records a human assessment and withholds its targets, and
+  a rejection closes it;
+- an automated enforcement request that already exists stays pending and in the staff queue, and
+  enforces nothing, until a moderator decides the intake; and
+- restrictions that already exist are unchanged and still need their own human decision.
+
+Keep the switch off until both prerequisites ship:
+
+- claimant abuse controls ([#1209](https://github.com/vouchington/vouchington/issues/1209)); and
+- the GDPR Article 22 automated-decision disclosure
+  ([#1230](https://github.com/vouchington/vouchington/issues/1230)).
+
+Turning the switch on releases the backlog. The next sweep withholds every clear-screened signed-in
+intake that still lacks a moderator review and enforces every pending automated request. Clear the
+queue first, and follow the [runbook](../../runbooks/copyright-notices.md#automatic-provisional-withholding).
 
 ## Global launch gate
 

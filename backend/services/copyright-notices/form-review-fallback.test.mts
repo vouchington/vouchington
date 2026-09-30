@@ -15,6 +15,7 @@ import {
   appendCopyrightFormScreening,
   applyNonSpamSignedInCopyrightFormScreening,
 } from './form-screenings.mts'
+import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 
 async function expectQueuedRestore(noticeId: string) {
   const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
@@ -24,6 +25,8 @@ async function expectQueuedRestore(noticeId: string) {
 }
 
 describe('copyright form moderator fallback', () => {
+  useAutomaticProvisionalWithholding()
+
   it('rescues signed-in forms after an anti-spam false positive or agent outage', async () => {
     const [poster, claimant, moderatorRecord] = await Promise.all([
       createTestUser(),

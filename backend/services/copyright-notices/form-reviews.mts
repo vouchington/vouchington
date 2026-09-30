@@ -5,6 +5,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { appendCopyrightSubmissionAssessmentInTransaction } from './compliance.mts'
+import { isAutomaticProvisionalWithholdingEnabled } from './config.mts'
 import { processCopyrightEnforcementRequest } from './enforcement-requests.mts'
 import { reverseAutomatedCopyrightRestrictions } from './form-reviews-reversal.mts'
 
@@ -16,6 +17,7 @@ export async function reviewCopyrightFormIntake(input: {
 }): Promise<{ noticeId: string; submissionId: string; accepted: boolean }> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
+  const automaticWithholding = await isAutomaticProvisionalWithholdingEnabled()
   await using transaction = await beginTransaction()
   await transaction(sql`/* reviewCopyrightFormIntake:lock */
     SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-form-review:${input.intakeId}`}, 0))
@@ -50,7 +52,7 @@ export async function reviewCopyrightFormIntake(input: {
     assert(
       intake.source_kind === 'guest_form' ||
         (intake.source_kind === 'signed_in_form' &&
-          (!input.accepted || !intake.current_screening_authority)),
+          (!input.accepted || !automaticWithholding || !intake.current_screening_authority)),
       422,
       'Only guest forms and signed-in forms without a clear anti-spam result require moderator review',
     )

@@ -8,6 +8,7 @@ import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { rateLimitConfig } from '@services/user-rate-limits/config'
 import { voteWeightConfig } from '@services/vote-weight/config'
 import { DynamicConfigValidationError } from './namespace.mts'
+import { copyrightRegistryEntry } from './registry-copyright-entry.mts'
 import {
   RATE_LIMIT_MAX_EXEMPTION,
   VOTE_WEIGHT_MAX_EXEMPTION,
@@ -123,6 +124,7 @@ export const policyDynamicConfigRegistryEntries = [
       apiKeyBloomFilterEnabled: { description: 'Use bloom filters for API key validation checks.' },
     },
   }),
+  copyrightRegistryEntry,
 ]
 
 function userRateLimitFields() {

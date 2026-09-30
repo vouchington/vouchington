@@ -25,6 +25,7 @@ import {
   appendCopyrightFormScreening,
   applyNonSpamSignedInCopyrightFormScreening,
 } from './form-screenings.mts'
+import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 
 async function createRestrictedFixture(targetCount = 1, detachBeforeScreening = false) {
   const [poster, claimant, moderatorRecord] = await Promise.all([
@@ -91,6 +92,8 @@ async function createRestrictedFixture(targetCount = 1, detachBeforeScreening = 
 }
 
 describe('copyright submission moderator reviews', () => {
+  useAutomaticProvisionalWithholding()
+
   it('keeps the immutable placement owner authorized and notified after the image is detached', async () => {
     const fixture = await createRestrictedFixture(1, true)
     const participant = await getCopyrightParticipantNoticeDetail(fixture.noticeId, fixture.poster)

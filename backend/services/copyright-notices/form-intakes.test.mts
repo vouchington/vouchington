@@ -18,8 +18,11 @@ import {
   appendCopyrightFormScreening,
   applyNonSpamSignedInCopyrightFormScreening,
 } from './form-screenings.mts'
+import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 
 describe('copyright form intakes', () => {
+  useAutomaticProvisionalWithholding()
+
   it('atomically replays an unchanged idempotency key without another legal case', async () => {
     const user = await createTestUser()
     const postId = await insertTestPost({

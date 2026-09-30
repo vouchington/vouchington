@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { appendCopyrightSubmissionAssessmentInTransaction } from './compliance.mts'
+import { isAutomaticProvisionalWithholdingEnabled } from './config.mts'
 import {
   startCopyrightFormScreening,
   completeCopyrightFormScreening,
@@ -22,10 +23,14 @@ export async function appendCopyrightFormScreening(input: {
   if (!result) throw new Error('Copyright screening attempt was superseded')
   return result
 }
-/** Workflow-owned automation gate. Agents only return a recommendation; they cannot call this. */
+/**
+ * Workflow-owned automation gate. Agents only return a recommendation; they cannot call this. While
+ * `automaticProvisionalWithholding` is off, a clear screen changes nothing and a moderator decides.
+ */
 export async function applyNonSpamSignedInCopyrightFormScreening(
   submissionId: string,
 ): Promise<void> {
+  if (!(await isAutomaticProvisionalWithholdingEnabled())) return
   await using transaction = await beginTransaction()
   const { rows: intakeIdRows } = await transaction<{ id: string }>(
     sql`/* applyNonSpamSignedInCopyrightFormScreening:intakeId */

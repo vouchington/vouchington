@@ -21,6 +21,7 @@ const REGISTRY_ORDER = [
   'route-rate-limit-config',
   'contribution-rate-limits',
   'bloom-filter-config',
+  'copyright',
   'rss-feed-discoverability-config',
   'moderation-config',
   'bedrock-embeddings-batch-config',
