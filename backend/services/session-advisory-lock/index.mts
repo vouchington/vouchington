@@ -1,7 +1,7 @@
 import { advisoryLockPool } from '@data-stores/psql'
 import onError from '@modules/on-error'
 
-type SessionAdvisoryLockDualFailure = 'report-unlock-error' | 'attach-unlock-error-as-cause'
+export type SessionAdvisoryLockDualFailure = 'report-unlock-error' | 'attach-unlock-error-as-cause'
 
 export async function withSessionAdvisoryLock<Result>(
   operation: () => Promise<Result>,
