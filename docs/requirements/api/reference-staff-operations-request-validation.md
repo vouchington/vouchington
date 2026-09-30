@@ -2,20 +2,32 @@
 
 [Back to Request validation](reference-request-validation.md)
 
-Staff, admin, moderation-intake, membership, image, crawler, and operations routes validate their
-path and body with `validateRequestContract` after authentication, the role or ownership gate, and
-suspension checks, and before the first service call. An anonymous malformed request keeps a bare
-`401` with no schema diagnostic; a caller without the role keeps `403`; only a permitted caller sees
-the `422`. Ordering tests live beside each family:
-`admin/staff-request-validation.test.mts`, `reports/__tests__/moderation-request-validation.test.mts`,
+Staff, admin, moderation, integrity, membership, image, crawler, and operations routes validate their
+path, query, and body with `validateRequestContract` after authentication, the role or ownership
+gate, and suspension checks, and before the first service or queue call. An anonymous malformed
+request keeps a bare `401` with no schema diagnostic; a caller without the role keeps `403`; only a
+permitted caller sees the `422`. Ordering tests live beside each family:
+`admin/staff-request-validation.test.mts`, `admin/staff-query-validation.test.mts`,
+`reports/__tests__/moderation-request-validation.test.mts`,
 `memberships/__tests__/request-validation.test.mts`, and `images/__tests__/request-validation.test.mts`
-under `backend/api/v1/`. Compiler-built carrier and schema assertions live in
-`staff-request-contract-coverage.mts` next to the [API fixtures](../../../backend/test-helpers/api-fixtures/openapi/write-openapi.test.mts).
+under `backend/api/v1/`. The moderation, integrity, and operations families
+(`users/__tests__/moderation-request-validation.test.mts`, `report-integrity`, `vote-integrity`,
+`topic-recommendations`, `curated-aside-items`, `blacklist`, `mq`, `urls`, `fediverse`,
+`dynamic-config`, and the `appeals`, `disputes`, and `reports` query suites) keep the same shape: a
+malformed anonymous or non-staff call answers `401` or `403` with no diagnostic, a malformed staff
+call answers a bounded `4xx` before any service or queue action, and a valid call keeps its
+behavior. Most suites register their cases through the shared
+`backend/test-helpers/staff-request-contract-matrix.mts` registrar. Compiler-built carrier and schema
+assertions live in `staff-request-contract-coverage.mts` and
+`moderation-operations-request-contract-coverage.mts` next to the
+[API fixtures](../../../backend/test-helpers/api-fixtures/openapi/write-openapi.test.mts).
 
 ## Behavior changes
 
 Route-local shape checks that used to answer `400` are replaced by the generated contract, which
 answers `422`. Semantic checks (trim, length, range, cross-field, existence) keep their statuses.
+Typed request DTOs are closed, so a body with an unknown key or a value of the wrong type that a
+handler used to accept now answers `422` on every route below that reads a JSON body.
 
 - `POST /imports/topics`: a missing or non-string `csv` is `422`.
 - `PUT /crawlers/referral-program`, `PATCH /crawlers/:id`: a missing or malformed `hostname_id`,
@@ -44,23 +56,93 @@ answers `422`. Semantic checks (trim, length, range, cross-field, existence) kee
   assignments and rejections, appeal and dispute resolution, annotation removal, batch annotation
   lookup, membership purchase intents and verifications.
 
+### Moderation, integrity, and operations routes
+
+`400` to `422` (a shape failure the route used to answer with a local `400`):
+
+- `POST /curated-aside-items`, `PUT /curated-aside-items/order`: a body that is not an object, a
+  missing or non-string `aside_type` or `entity_id`, or a non-array `item_ids`. A blank value, an
+  unknown aside type, a malformed UUID, a duplicate id, and a non-integer `position` keep their
+  statuses.
+- `PATCH /dynamic-config/namespaces/:namespace`: a missing, null, array, or scalar `config` (was
+  `400 Missing config object`), and an unknown top-level key. The namespace lookup (`404`) and role
+  gate still run first, and field-schema failures stay `400`.
+- `POST /blacklist/source-sync`: a body that is not an object, a missing `sourceId`, or a `sourceId`
+  that is neither a string nor a number. A non-positive or non-integer `sourceId` stays `400`.
+- `PUT /users/:userId/vote-weight`: a non-number `weight`. A number outside the allowed range stays
+  `400`.
+
+`500` to a bounded `4xx` (a caller input that used to fail inside the handler):
+
+- `PUT` and `DELETE /users/:userId/vote-weight` with a non-UUID `userId` are now `422` through
+  `validateUUIDParam`.
+- `GET /appeals` and `GET /disputes` with a fractional `limit` (for example `1.5`) is now `422`.
+  The pagination parser accepted the value and the SQL layer rejected it.
+
+`200` to `422` (input the handler used to accept and ignore or misread):
+
+- Closed typed bodies: `POST /moderation/reveals`, `PATCH /report-integrity/flags/:id`,
+  `POST /report-integrity/flags/:id/penalties`, the `vote-integrity` equivalents,
+  `POST /users/:userId/mod-notes`, `PUT /users/:userId/suspension` (a non-string `reason` used to be
+  silently dropped), `POST /topic-recommendations`, `PATCH /topic-recommendations/:id`,
+  `POST /topic-recommendations/:id/approvals` and `/rejections`, `POST /blacklist/source-sync`,
+  `POST /fediverse/instances`, `POST /fediverse/instances/:id/integration-changes`, and
+  `PATCH /dynamic-config/namespaces/:namespace` reject an unknown key or a wrong-typed field.
+
+Same status, different order:
+
+- `GET /reports` runs its filter contract before the cursor decode. Every cursor error was already
+  `422`.
+- A malformed or repeated id filter (`community_id`, `actor_id` on the modlog, `cluster` on reports,
+  `verification` on OAuth clients, `mapping` on top hashtags) was already `422` and is now the
+  contract's `422`. A repeated `q` on top hashtags is still ignored.
+
+Lenient inputs stay `200` (the schema validates the settled value, so it cannot fail): an oversized
+`limit` clamps, an unknown enum for a documented fallback (`range`, `status`, `sort`, `mine`,
+`action_type`) falls back to its default, and unknown keys are ignored. Malformed or out-of-range
+`limit` and `after` on the paginated routes keep the parser's `400` (or the route's existing `422`).
+
+Fediverse search keeps its limits: authenticated callers clamp to `100` and anonymous callers to
+`25`; a fractional `limit` is truncated. The published `limit` maximum is `100` and its description
+notes the anonymous cap.
+
+## Query carriers
+
+Every query carrier on these routes goes through the generated contract, with `apiQuery` declared
+inside the handler. Integer and paginated values are not coerced by the registry, so a route that
+owns a pagination parser follows this order:
+
+1. authenticate and check the role;
+2. run the route's pagination parser (its `400`, clamping, and cursor answers are unchanged);
+3. `prepareQueryForValidation(ctx.query, parser.queryContract)`, then overwrite `limit` and `after`
+   with the parsed values;
+4. `validateRequestContract`.
+
+`backend/api/validate-paginated-query.mts` implements steps 2 to 4 for the list routes
+(`parseAndValidatePaginatedRequest`). Routes with a bespoke limit (`mod-notes`, fediverse search,
+`currencies`) validate the settled value the same way. Routes with no response contract wrap the
+existing payload in `apiResponse(...)` (an identity) so `apiQuery` applies; the response fixtures for
+`GET /memberships/refundable-charges` and `GET /rss-feed-categories` were added for that reason.
+
+The eleven routes previously skipped are validated: `GET /appeals`, `/disputes`, `/reports`,
+`/admin/ai-costs`, `/admin/modlog`, `/posts/review-queue`, `/rss-feed-categories`,
+`/growth-metrics`, `/admin/moderation-analytics`, `/memberships/refundable-charges`, and
+`/admin/oauth-clients` (which had no remaining reason to skip once query preparation existed).
+
 ## Carriers the generated schema does not check
 
-A query carrier is skipped, with an inline `Intentional carrier skip` comment, when it holds an
-integer `limit` (`ctx.query` carries raw strings and the registry does not coerce) or when the route
-has no registered response contract, which `apiQuery` requires.
-
-- `GET /appeals`, `/disputes`, `/reports`, `/admin/ai-costs`, `/admin/modlog`, `/posts/review-queue`,
-  `/rss-feed-categories`: integer `limit`; the shared pagination parsers clamp and reject cursors.
-- `GET /growth-metrics`, `/admin/moderation-analytics`: no response contract; an unknown `range`
-  falls back to `30d` as documented.
-- `GET /memberships/refundable-charges`: no response contract; `user_id` is checked locally
-  (`400` when missing, `422` when not a UUID) after the administrator gate.
+- `POST /topic-recommendations`: the `Idempotency-Key` header is declared in the generated contract
+  but not passed to `validateRequestContract`. The contribution admission layer answers a malformed
+  key with its own coded `400`, which is the documented status.
+- `GET /report-integrity/flags`, `/report-integrity/penalties`, `/vote-integrity/flags`, and
+  `/vote-integrity/penalties` (the list routes) have no request contract and are not covered here.
 
 Path parameters are generated as plain strings without a UUID format, so each UUID route keeps
 `validateUUIDParam` (or `isUUID`) before the path-only contract call. Path-only contracts cannot
 reject anything the router already accepts; they document the carrier and are covered by the
-routes' existing behavior tests.
+routes' existing behavior tests. This covers the five `mq` actions, the id-only `GET` and `DELETE`
+routes, and `POST /urls/:id/crawl`, which asserts `currentUserCanTriggerCrawl` before the path
+contract.
 
 ## Specialized ingress
 
@@ -78,23 +160,31 @@ exclusion has a parser-boundary test.
 
 ## Residual routes
 
-Ownership follows the route directory. Routes outside `admin`, `appeals`, `disputes`, `reports`,
-`memberships`, `images`, `crawlers`, `psql`, and `valkey` that still read a carrier without the
-adapter (for example users, lists, households, hostnames, mq, dynamic-config, vote and report
-integrity, curated aside items, attribution, landing-page clicks, app attestation, markdown,
-fediverse, moderation exposure, and topic recommendations) belong to the remaining public and
-inbound classification. `my/**`, `mcp/**`, API keys, and copyright routes have their own owners.
-No Stripe webhook route exists under `backend/api`; Stripe events arrive through the
-`stripe-events-sqs` worker. `POST /memberships/microsoft-store/service-tickets` reads no carrier and
-ignores the empty JSON object the native clients send.
+Ownership follows the route directory. Routes outside the families above that still read a carrier
+without the adapter (for example lists, households, hostnames, attribution, landing-page clicks, app
+attestation, and markdown) belong to the remaining public and inbound classification. `my/**`,
+`mcp/**`, API keys, and copyright routes have their own owners. No Stripe webhook route exists under
+`backend/api`; Stripe events arrive through the `stripe-events-sqs` worker.
+`POST /memberships/microsoft-store/service-tickets` reads no carrier and ignores the empty JSON
+object the native clients send.
+
+Known latent failure, not changed here: `PUT /users/:userId/suspension` accepts a username as the
+route id through `getPrivateUserByAny`, and `ensureUserSuspendedInTransaction` then compares it with
+a UUID column, which fails as a `500`. Web callers always send the UUID.
 
 ## Cross-client verification
 
 The closed schemas reject unknown keys, so every client body must be a subset of the schema. The web
 client bodies (`web/lib/api/client/**`) send only accepted fields, including `cf_turnstile_response`
-on report, appeal, and dispute creation. The Swift and .NET request bodies in
-`vouchington-clients` (`5c4acb6`) were checked route by route for report, appeal, dispute, membership
-grant, purchase-intent, verification, refund, portal, image upload, warning, identity-verification,
-psql, and valkey requests: each sends a subset of the schema keys, and both encoders omit null
-optionals. No client branches on the changed `400` statuses or on server messages; the native
-handlers test a `400`-`499` range.
+on report, appeal, and dispute creation. The moderation and operations callers were checked the same
+way and send nothing the new schemas reject: moderator notes (`{body, community_id?}`), media reveals
+(`{postId?, reportId?, surface}`), suspension, vote weight, curated aside items, integrity `PATCH`,
+topic recommendations, dynamic config, `mq` actions, URL crawl, fediverse search (`q`, `providers`,
+`type`, `limit`, `after`), the RSS feed category list, and refundable charges (`?user_id=`). No web
+caller exists for the blacklist or the fediverse instance `POST` routes. The Swift and .NET request
+bodies in `vouchington-clients` (`5c4acb6`) were checked route by route for report, appeal, dispute,
+membership grant, purchase-intent, verification, refund, portal, image upload, warning,
+identity-verification, psql, and valkey requests: each sends a subset of the schema keys, and both
+encoders omit null optionals. That check predates the moderation and operations routes above, and the
+native repository was not re-checked for them. No client branches on the changed `400` statuses or on
+server messages; the native handlers test a `400`-`499` range.

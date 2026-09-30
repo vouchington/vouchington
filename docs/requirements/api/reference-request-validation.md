@@ -24,7 +24,12 @@ than its registry. A 422 names the carrier and does not include a JSON pointer. 
 parsers. Query routes prepare a normalized wire projection before asynchronous identifier
 resolution, preserving pagination clamping and malformed limit/cursor 400 behavior while malformed
 typed values remain visible for 422. There is no shared Ajv coercion, and UUID routes retain
-`validateUUIDParam` alongside generated path validation.
+`validateUUIDParam` alongside generated path validation. A paginated list route runs its pagination
+parser first, overwrites `limit` and `after` in the prepared query with the parsed values, and then
+validates, so clamping and the parser's `400` survive and only the filters are checked;
+[`validate-paginated-query.mts`](../../../backend/api/validate-paginated-query.mts) wraps those steps.
+A lenient filter (an unknown enum that falls back to its default, or an ignored key) is validated
+from its settled value so it cannot answer `422`.
 
 A typed raw-body declaration or explicit request-contract marker must emit a meaningful body
 schema: invoking the adapter against an empty object is not coverage. Compiler-built request-bundle
