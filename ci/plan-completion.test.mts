@@ -8,6 +8,82 @@ const STRANDED =
 const RECOVERED =
   '<!-- plan-completion-advisory -->\n## Plan completion advisory\n\nPlan #726 has no current completion advisory. This is a current snapshot only; audit planned-but-unopened work before closing the Plan.'
 
+const OPEN_PLAN = { number: 726, state: 'open', title: 'Plan: test' }
+const MERGED_PULL = {
+  body: '## Related issues\nRefs #726',
+  merged_at: '2026-01-01',
+  number: 1,
+  state: 'closed',
+}
+const OPEN_PULL = {
+  body: '## Related issues\nRefs #726',
+  merged_at: null,
+  number: 2,
+  state: 'open',
+}
+
+type PlanComment = {
+  body: string
+  id: number
+  user: { login: string }
+}
+
+function crossReferencedPull(number: number): {
+  event: string
+  source: {
+    type: string
+    issue: { number: number; pull_request: { url: string } }
+  }
+} {
+  return {
+    event: 'cross-referenced',
+    source: {
+      type: 'issue',
+      issue: {
+        number,
+        pull_request: {
+          url: `https://api.github.com/repos/vouchington/vouchington/pulls/${number}`,
+        },
+      },
+    },
+  }
+}
+
+function strandedSiblingGh(options: {
+  commentId: number
+  duplicateOpenSibling: boolean
+  commentPages: readonly (readonly PlanComment[])[]
+  fallback: { body: string } | { id: number }
+}): { calls: string[][]; runGh: (args: string[]) => Promise<string> } {
+  const calls: string[][] = []
+  const timeline = [
+    crossReferencedPull(1),
+    crossReferencedPull(2),
+    ...(options.duplicateOpenSibling ? [crossReferencedPull(2)] : []),
+  ]
+  const runGh = async (args: string[]): Promise<string> => {
+    calls.push(args)
+    if (args.includes('POST') || args.includes('PATCH')) {
+      return JSON.stringify({ id: options.commentId })
+    }
+    if (args.some(arg => arg.endsWith('/issues'))) return JSON.stringify([[OPEN_PLAN]])
+    if (args.some(arg => arg.endsWith('/issues/726'))) return JSON.stringify(OPEN_PLAN)
+    if (args.some(arg => arg.endsWith('/timeline'))) return JSON.stringify([timeline])
+    if (args.some(arg => arg.endsWith('/pulls/1'))) return JSON.stringify(MERGED_PULL)
+    if (args.some(arg => arg.endsWith('/pulls/2'))) return JSON.stringify(OPEN_PULL)
+    if (args.some(arg => arg.endsWith(`/comments/${options.commentId}`))) {
+      return JSON.stringify({
+        body: STRANDED,
+        id: options.commentId,
+        user: { login: 'github-actions[bot]' },
+      })
+    }
+    if (args.some(arg => arg.includes('/comments'))) return JSON.stringify(options.commentPages)
+    return JSON.stringify(options.fallback)
+  }
+  return { calls, runGh }
+}
+
 describe('plan completion snapshot', () => {
   it('fails closed on malformed issue pages and treats a null PR body as an edited-away reference', () => {
     expect(() => openPlans(JSON.stringify([[{ number: 726, title: 'Plan: test' }]]))).toThrow(
@@ -21,74 +97,12 @@ describe('plan completion snapshot', () => {
   })
 
   it('reads complete pages before mutating its own advisory comment', async () => {
-    const calls: string[][] = []
-    const runGh = async (args: string[]): Promise<string> => {
-      calls.push(args)
-      if (args.includes('POST') || args.includes('PATCH')) return JSON.stringify({ id: 99 })
-      if (args.some(arg => arg.endsWith('/issues')))
-        return JSON.stringify([[{ number: 726, state: 'open', title: 'Plan: test' }]])
-      if (args.some(arg => arg.endsWith('/issues/726')))
-        return JSON.stringify({ number: 726, state: 'open', title: 'Plan: test' })
-      if (args.some(arg => arg.endsWith('/timeline')))
-        return JSON.stringify([
-          [
-            {
-              event: 'cross-referenced',
-              source: {
-                type: 'issue',
-                issue: {
-                  number: 1,
-                  pull_request: {
-                    url: 'https://api.github.com/repos/vouchington/vouchington/pulls/1',
-                  },
-                },
-              },
-            },
-            {
-              event: 'cross-referenced',
-              source: {
-                type: 'issue',
-                issue: {
-                  number: 2,
-                  pull_request: {
-                    url: 'https://api.github.com/repos/vouchington/vouchington/pulls/2',
-                  },
-                },
-              },
-            },
-            {
-              event: 'cross-referenced',
-              source: {
-                type: 'issue',
-                issue: {
-                  number: 2,
-                  pull_request: {
-                    url: 'https://api.github.com/repos/vouchington/vouchington/pulls/2',
-                  },
-                },
-              },
-            },
-          ],
-        ])
-      if (args.some(arg => arg.endsWith('/pulls/1')))
-        return JSON.stringify({
-          body: '## Related issues\nRefs #726',
-          merged_at: '2026-01-01',
-          number: 1,
-          state: 'closed',
-        })
-      if (args.some(arg => arg.endsWith('/pulls/2')))
-        return JSON.stringify({
-          body: '## Related issues\nRefs #726',
-          merged_at: null,
-          number: 2,
-          state: 'open',
-        })
-      if (args.some(arg => arg.endsWith('/comments/99')))
-        return JSON.stringify({ body: STRANDED, id: 99, user: { login: 'github-actions[bot]' } })
-      if (args.some(arg => arg.includes('/comments'))) return JSON.stringify([[]])
-      return JSON.stringify({ body: 'unexpected' })
-    }
+    const { calls, runGh } = strandedSiblingGh({
+      commentId: 99,
+      commentPages: [[]],
+      duplicateOpenSibling: true,
+      fallback: { body: 'unexpected' },
+    })
 
     await runPlanCompletionSnapshot({ repository: 'vouchington/vouchington', runGh })
 
@@ -103,72 +117,20 @@ describe('plan completion snapshot', () => {
   })
 
   it('updates an existing own marker comment and reads it back', async () => {
-    const calls: string[][] = []
-    const runGh = async (args: string[]): Promise<string> => {
-      calls.push(args)
-      if (args.includes('POST') || args.includes('PATCH')) return JSON.stringify({ id: 50 })
-      if (args.some(arg => arg.endsWith('/issues')))
-        return JSON.stringify([[{ number: 726, state: 'open', title: 'Plan: test' }]])
-      if (args.some(arg => arg.endsWith('/issues/726')))
-        return JSON.stringify({ number: 726, state: 'open', title: 'Plan: test' })
-      if (args.some(arg => arg.endsWith('/timeline')))
-        return JSON.stringify([
-          [
-            {
-              event: 'cross-referenced',
-              source: {
-                type: 'issue',
-                issue: {
-                  number: 1,
-                  pull_request: {
-                    url: 'https://api.github.com/repos/vouchington/vouchington/pulls/1',
-                  },
-                },
-              },
-            },
-            {
-              event: 'cross-referenced',
-              source: {
-                type: 'issue',
-                issue: {
-                  number: 2,
-                  pull_request: {
-                    url: 'https://api.github.com/repos/vouchington/vouchington/pulls/2',
-                  },
-                },
-              },
-            },
-          ],
-        ])
-      if (args.some(arg => arg.endsWith('/pulls/1')))
-        return JSON.stringify({
-          body: '## Related issues\nRefs #726',
-          merged_at: '2026-01-01',
-          number: 1,
-          state: 'closed',
-        })
-      if (args.some(arg => arg.endsWith('/pulls/2')))
-        return JSON.stringify({
-          body: '## Related issues\nRefs #726',
-          merged_at: null,
-          number: 2,
-          state: 'open',
-        })
-      if (args.some(arg => arg.endsWith('/comments/50')))
-        return JSON.stringify({ body: STRANDED, id: 50, user: { login: 'github-actions[bot]' } })
-      if (args.some(arg => arg.includes('/comments'))) {
-        return JSON.stringify([
-          [
-            {
-              body: '<!-- plan-completion-advisory -->\nold',
-              id: 50,
-              user: { login: 'github-actions[bot]' },
-            },
-          ],
-        ])
-      }
-      return JSON.stringify({ id: 50 })
-    }
+    const { calls, runGh } = strandedSiblingGh({
+      commentId: 50,
+      commentPages: [
+        [
+          {
+            body: '<!-- plan-completion-advisory -->\nold',
+            id: 50,
+            user: { login: 'github-actions[bot]' },
+          },
+        ],
+      ],
+      duplicateOpenSibling: false,
+      fallback: { id: 50 },
+    })
 
     await runPlanCompletionSnapshot({ repository: 'vouchington/vouchington', runGh })
 
