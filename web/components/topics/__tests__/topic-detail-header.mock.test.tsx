@@ -1,59 +1,18 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
-import type { ReactNode } from 'react'
+import {
+  createNextDynamicMock,
+  createNextLinkMock,
+} from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 import { TopicDetailHeader } from '../topic-detail-header'
 import type { Topic } from '@/types/topics'
 import type { User } from '@/types/user'
 
 let mockCurrentUser: User | null = null
 
-vi.mock(
-  import('next/link'),
-  () =>
-    ({
-      default: ({
-        children,
-        href,
-        ...props
-      }: {
-        children: ReactNode
-        href: string
-        [k: string]: unknown
-      }) => (
-        <a
-          href={href}
-          {...props}
-        >
-          {children}
-        </a>
-      ),
-    }) as unknown as typeof import('next/link'),
-)
+vi.mock(import('next/link'), () => createNextLinkMock())
 
-// Dynamically load the actual component so the FollowButton mock can intercept it
-const nextDynamicMock = vi.hoisted(() => {
-  const React = require('react')
-  return {
-    default: (loader: () => Promise<unknown>) =>
-      function MockDynamic(props: Record<string, unknown>) {
-        const [dynamicComponent, setDynamicComponent] = React.useState(null)
-        React.useEffect(() => {
-          let active = true
-          void loader().then((mod: unknown) => {
-            if (active)
-              setDynamicComponent(() =>
-                typeof mod === 'function' ? mod : (mod as Record<string, unknown>).default,
-              )
-          })
-          return () => {
-            active = false
-          }
-        }, [])
-        return dynamicComponent ? React.createElement(dynamicComponent, props) : null
-      },
-  }
-})
-vi.mock(import('next/dynamic'), () => nextDynamicMock as unknown as typeof import('next/dynamic'))
+vi.mock(import('next/dynamic'), () => createNextDynamicMock())
 
 // Capture props for assertions
 let mockFollowButtonPropsList: Array<Record<string, unknown>> = []
@@ -199,7 +158,7 @@ describe('TopicDetailHeader', () => {
     })
 
     // The topic FollowButton may render as a mock stub or the real signed-out link depending
-    // on nextDynamicMock timing. Either way 'Follow Topic' must appear as the inactive label.
+    // on when the next/dynamic mock finishes loading. Either way 'Follow Topic' must appear as the inactive label.
     const topicMockProps = mockFollowButtonPropsList.find(p => p.entityType === 'topic')
     const topicSignedOutLink = container.querySelector('[data-pw="signed-out-follow-link"]')
     // At least one rendering path must be present
