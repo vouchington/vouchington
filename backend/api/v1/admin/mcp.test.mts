@@ -110,6 +110,7 @@ describe('POST /api/v1/admin/mcp', () => {
           correlation_id: correlationId,
           actor_user_id: owner.id,
           oauth_client_id: clientId,
+          api_key_id: null,
           resource: getOAuthResourceUrl('admin'),
           jsonrpc_method: 'tools/list',
           tool_name: null,
