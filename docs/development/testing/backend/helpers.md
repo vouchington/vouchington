@@ -21,6 +21,9 @@ community claim and escalation routes, RSS feeds, landing-page analytics, and si
 Copyright email-intake and form-screening enqueue tests share
 [`copyright-agent-enqueue-recovery-tests.mts`](../../../../backend/test-helpers/copyright-agent-enqueue-recovery-tests.mts).
 Each file keeps its queue name, payload, and expected job options.
+Post and topic revision diffs share
+[`revision-change-detection-tests.mts`](../../../../backend/test-helpers/revision-change-detection-tests.mts).
+The post and topic field tables stay separate.
 Post, topic, domain, and URL list-item mutations share
 [`describeCommunityListItemRoutes`](../../../../backend/test-helpers/community-list-item-routes.mts).
 Topic list reads stay in the topics suite.
