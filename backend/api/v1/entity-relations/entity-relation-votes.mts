@@ -19,6 +19,7 @@ import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
 import onError from '@modules/on-error'
 import { requireAuth } from '../../response-helpers.mts'
+import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import { assertUserTagAllowed } from '@services/entity-relation-actions'
 import {
   refreshEntityRelationVoteStatsById,
@@ -55,6 +56,7 @@ async function refreshUserTagVoteStats(relationId: string): Promise<void> {
 const entityRelationVoteOptions: CreateVoteHandlerOptions = {
   rateLimitPrefix: 'entity-relation-election-vote',
   routeKey: 'PUT:/api/v1/entity-relations/:id/vote',
+  requestContractOperation: 'PUT:/api/v1/entity-relations/:id/vote',
   entityType: 'entity_relation',
   getEntity: getEntityRelationElectionForRoute,
   entityNotFoundMessage: 'Entity relation not found',
@@ -93,6 +95,7 @@ const entityRelationVoteHandler = createVoteHandler(entityRelationVoteOptions)
 const clearEntityRelationVoteHandler = createVoteClearHandler({
   ...entityRelationVoteOptions,
   routeKey: 'DELETE:/api/v1/entity-relations/:id/vote',
+  requestContractOperation: 'DELETE:/api/v1/entity-relations/:id/vote',
 })
 
 app.route('/api/v1/entity-relations/:id/vote').put(async ctx => {
@@ -117,12 +120,17 @@ const entityRelationVotesParser = createPaginationParser({
 
 app.route('/api/v1/entity-relations/:id/votes').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/entity-relations/:id/votes', entityRelationVotesParser)
-  ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid ID')
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/entity-relations/:id/votes')
+  ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid ID')
+  const { limit, after } = parseAndValidatePaginatedRequest(
+    ctx,
+    'GET:/api/v1/entity-relations/:id/votes',
+    entityRelationVotesParser,
+    { path: true },
+  )
   const relation = await getEntityRelationElectionForRoute(ctx.params.id!)
   ctx.assert(relation, 404, 'Entity relation not found')
 
-  const { limit, after } = entityRelationVotesParser.parse(ctx.query)
   const collection = isAdminUser(currentUser)
     ? await getEntityRelationElectionVotesByElectionId(ctx.params.id!, { limit, after })
     : await getEntityRelationElectionVotesByUserForEntity(currentUser.id, ctx.params.id!, {

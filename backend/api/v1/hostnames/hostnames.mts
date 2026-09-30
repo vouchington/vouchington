@@ -10,12 +10,13 @@ import {
   upsertUrlHostnames,
 } from '@services/urls-hostnames'
 import { searchUrlHostnamesCached } from '@services/entity-fetch/search-caches'
-import { parseHostnamesSearchParams } from '@services/search-params'
+import { parseHostnamesSearchParams, prepareHostnamesSearchParams } from '@services/search-params'
 import {
   EMPTY_PAGE_INFO,
   getOptionalAuthAndRateLimit,
   requireAuthAndRateLimit,
   parseJsonBody,
+  validateRequestContract,
 } from '../../response-helpers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
 import { getHostnameElectionVotesByUser } from '@services/elections-votes/hostname'
@@ -29,12 +30,18 @@ import { isAdminUser } from '@services/users'
 import { upsertAndBlockHostname } from '@services/hostname-blocking'
 import { normalizeHostname } from '@ts-shared/utils/urls'
 
+type UpsertHostnameBody = {
+  hostname: string
+  blocked?: boolean
+}
+
 // POST /api/v1/hostnames - Admin: upsert a hostname by string and optionally block it
 app.route('/api/v1/hostnames').post(async (ctx: Context) => {
   const currentUser = await requireAuthAndRateLimit(ctx, isAdminUser, 'POST:/api/v1/hostnames')
 
-  const body = await parseJsonBody<Record<string, unknown>>(ctx)
-  const rawHostname = typeof body.hostname === 'string' ? body.hostname.trim() : ''
+  const body = await parseJsonBody<UpsertHostnameBody>(ctx)
+  validateRequestContract(ctx, 'POST:/api/v1/hostnames', { body })
+  const rawHostname = body.hostname.trim()
   ctx.assert(rawHostname, 422, 'hostname is required')
 
   const hostname = normalizeHostname(rawHostname)
@@ -56,6 +63,9 @@ app.route('/api/v1/hostnames').post(async (ctx: Context) => {
 app.route('/api/v1/hostnames').get(async ctx => {
   apiQuery('GET:/api/v1/hostnames', parseHostnamesSearchParams)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/hostnames')
+  validateRequestContract(ctx, 'GET:/api/v1/hostnames', {
+    query: prepareHostnamesSearchParams(ctx.query).validationQuery,
+  })
   const { shouldReturnEmpty, ...searchOptions } = await parseHostnamesSearchParams(
     ctx.query,
     currentUser,

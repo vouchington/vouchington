@@ -136,11 +136,13 @@ const userVouchBaseOptions: Omit<CreateVoteHandlerOptions, 'routeKey'> = {
 const userVouchVoteHandler = createVoteHandler({
   ...userVouchBaseOptions,
   routeKey: 'PUT:/api/v1/users/:id/vouch-vote',
+  requestContractOperation: 'PUT:/api/v1/users/:id/vouch-vote',
 })
 
 const clearUserVouchVoteHandler = createVoteClearHandler({
   ...userVouchBaseOptions,
   routeKey: 'DELETE:/api/v1/users/:id/vouch-vote',
+  requestContractOperation: 'DELETE:/api/v1/users/:id/vouch-vote',
 })
 
 app.route('/api/v1/users/:id/vouch-vote').put(async ctx => {

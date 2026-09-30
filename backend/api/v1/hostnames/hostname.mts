@@ -23,7 +23,6 @@ import {
 import { searchUrls } from '@services/urls/search'
 import { searchRssFeeds } from '@services/rss-feeds'
 import { proxyRssFeedCoverArt } from '@services/rss-feeds/proxy-cover-art'
-import { readOptionalUnreliableStatusCodes } from '@modules/rss-unreliable-status-codes'
 import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
 import { isAdminUser } from '@services/users'
@@ -33,7 +32,10 @@ import {
   setAnonymousPublicCacheHeaders,
   requireAuthAndRateLimit,
   requireAuth,
+  validateRequestContract,
 } from '../../response-helpers.mts'
+import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
+import { readHostnameChanges, type UpdateHostnameBody } from './hostname-update.mts'
 import './hostname-vote-routes.mts'
 
 // GET /api/v1/hostnames/blocked - Admin: list all site-wide blocked hostnames
@@ -50,6 +52,7 @@ app.route('/api/v1/hostnames/blocked').get(async (ctx: Context) => {
 
 app.route('/api/v1/hostnames/:id').get(async ctx => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/hostnames/:id')
+  validateRequestContract(ctx, 'GET:/api/v1/hostnames/:id', { path: ctx.params })
   const canSeeModeration = currentUserCanFilterHostnameModeration(currentUser)
 
   const hostname = await getUrlHostnameByAnyCached(ctx.params.id!)
@@ -102,35 +105,15 @@ app.route('/api/v1/hostnames/:id').get(async ctx => {
 
 // PATCH /api/v1/hostnames/:id - Admin: update hostname fields
 app.route('/api/v1/hostnames/:id').patch(async (ctx: Context) => {
+  const currentUser = await requireAuthAndRateLimit(ctx, isAdminUser, 'PATCH:/api/v1/hostnames/:id')
   ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid ID')
 
-  const currentUser = await requireAuthAndRateLimit(ctx, isAdminUser, 'PATCH:/api/v1/hostnames/:id')
+  const body = (await ctx.request.json('10kb')) as UpdateHostnameBody
+  validateRequestContract(ctx, 'PATCH:/api/v1/hostnames/:id', { body, path: ctx.params })
+  const changes = readHostnameChanges(body)
 
   const hostname = await getUrlHostnameByAnyCached(ctx.params.id!)
   ctx.assert(hostname, 404, 'Hostname not found')
-
-  const body = (await ctx.request.json('10kb')) as Record<string, unknown>
-
-  const changes: {
-    blocked?: boolean
-    crawlable?: boolean
-    skip_web_risk?: boolean
-    link_rel_follow?: boolean
-    ignore_robots_txt?: boolean | null
-    unreliable_status_codes?: number[] | null
-  } = {}
-  if (typeof body.blocked === 'boolean') changes.blocked = body.blocked
-  if (typeof body.crawlable === 'boolean') changes.crawlable = body.crawlable
-  if (typeof body.skip_web_risk === 'boolean') changes.skip_web_risk = body.skip_web_risk
-  if (typeof body.link_rel_follow === 'boolean') changes.link_rel_follow = body.link_rel_follow
-  if (body.ignore_robots_txt === null || typeof body.ignore_robots_txt === 'boolean')
-    changes.ignore_robots_txt = body.ignore_robots_txt
-  if ('unreliable_status_codes' in body) {
-    changes.unreliable_status_codes = readOptionalUnreliableStatusCodes(
-      body.unreliable_status_codes,
-      'unreliable_status_codes',
-    )
-  }
 
   ctx.assert(Object.keys(changes).length > 0, 422, 'No valid fields to update')
 
@@ -171,14 +154,18 @@ const hostnameVotesParser = createPaginationParser({
 // GET /api/v1/hostnames/:id/votes
 app.route('/api/v1/hostnames/:id/votes').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/hostnames/:id/votes', hostnameVotesParser)
-  ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid ID')
-
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/hostnames/:id/votes')
+  ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid ID')
+  const { limit, after } = parseAndValidatePaginatedRequest(
+    ctx,
+    'GET:/api/v1/hostnames/:id/votes',
+    hostnameVotesParser,
+    { path: true },
+  )
 
   const hostname = await getUrlHostnameByAnyCached(ctx.params.id!)
   ctx.assert(hostname, 404, 'Hostname not found')
 
-  const { limit, after } = hostnameVotesParser.parse(ctx.query)
   const collection = isAdminUser(currentUser)
     ? await getHostnameElectionVotesByElectionId(ctx.params.id!, { limit, after })
     : await getHostnameElectionVotesByUserForEntity(currentUser.id, ctx.params.id!, {
