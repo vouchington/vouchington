@@ -20,6 +20,12 @@ This workflow intentionally reuses shared post elections, caches, and metrics, w
 | POST   | `/api/v1/topic-recommendations/:id/approve`  | Required (admin) | Approve a recommendation and create the topic       |
 | POST   | `/api/v1/topic-recommendations/:id/reject`   | Required (admin) | Reject a recommendation                             |
 
+Request bodies are checked against generated closed contracts after authentication and the
+ownership or role gate: a non-object body, a wrong-typed field, or an unknown key returns `422`
+before any write, and semantic checks keep their statuses. The `Idempotency-Key` header on
+`POST /api/v1/topic-recommendations` is validated by the contribution admission layer, which answers a
+malformed key with its own coded `400`. See [Staff and operations validation](../../reference-staff-operations-request-validation.md).
+
 ## GET /api/v1/topic-recommendations
 
 Query parameters:

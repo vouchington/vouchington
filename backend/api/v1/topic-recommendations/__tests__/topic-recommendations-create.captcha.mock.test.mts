@@ -109,7 +109,7 @@ describe('POST /api/v1/topic-recommendations CAPTCHA', () => {
       })
       .expect(422)
 
-    expect(response.body.message).toBe('Topic hostnames must be an array')
+    expect(response.body.message).toBe('Invalid request body')
     expect(mockFetch).not.toHaveBeenCalled()
     await expect(
       getContributionAdmissionReservationStateForTest({
