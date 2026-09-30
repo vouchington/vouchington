@@ -9,8 +9,10 @@ const ruleId = 'main-backend-image-registry-layer-blob-not-found'
 // Generated at runtime so the fixture does not embed a Git SHA. The classifier
 // accepts any 40-hex docker/bake-action ref.
 const bakeActionSha = '0'.repeat(40)
-const imageDigest = 'ec7758ee051e457b468b32bde57b0879010b325bb9862718e9615225ce4aaae1'
-const missingBlob = 'a33f55a38b0ef0b49d06c83b190116234edee22d651586ccfa0f82dbf922c9bd'
+// Synthetic digests: the classifier only requires 64 hex characters, so the fixture does not
+// embed the digest of a real image or layer.
+const imageDigest = '0'.repeat(64)
+const missingBlob = '1'.repeat(64)
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
   workflowName: 'CI',
@@ -33,14 +35,14 @@ function blobNotFoundAnnotation(target = 'worker-cpu'): string {
 }
 
 // Trimmed from Main CI (backend) run 36665766568, job publish-backend-images / build.
-// Buildx resolved node:26-trixie-slim, then mirror.gcr.io returned not found for one layer blob.
-// The bake-action ref is synthetic.
+// Buildx resolved a base image, then the registry mirror returned not found for one layer blob.
+// The bake-action ref, base image, and digests are synthetic.
 const registryLayerBlobNotFoundLog = [
   publishLine(`##[group]Run docker/bake-action@${bakeActionSha}`),
   publishLine(
     '[command]/usr/bin/docker buildx bake --allow fs=* --file ./backend/docker-bake.hcl api worker-cpu',
   ),
-  publishLine(`#8 resolve mirror.gcr.io/library/node:26-trixie-slim@sha256:${imageDigest} done`),
+  publishLine(`#8 resolve mirror.gcr.io/library/example-base:0.0.0@sha256:${imageDigest} done`),
   publishLine(
     `#9 ERROR: failed to copy: httpReadSeeker: failed open: could not fetch content descriptor sha256:${missingBlob} (application/vnd.oci.image.layer.v1.tar+gzip) from remote: not found`,
   ),
