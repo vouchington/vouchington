@@ -11,7 +11,7 @@ export type ValidatablePaginationParser<TParsed extends ParsedPagination> = {
   parse(query: Record<string, unknown>): TParsed
 }
 
-export type ValidatePaginatedRequestOptions = {
+type ValidatePaginatedRequestOptions = {
   /** Also validate the declared path parameters in the same contract call. */
   path?: boolean
   /** Query contracts declared beside the parser through `apiQuery(operation, parser, ...extra)`. */

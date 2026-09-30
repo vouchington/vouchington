@@ -35,7 +35,8 @@ import {
   validateRequestContract,
 } from '../../response-helpers.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
-import { readHostnameChanges, type UpdateHostnameBody } from './hostname-update.mts'
+import { readHostnameChanges } from './hostname-update.mts'
+import type { UpdateHostnameBody } from './hostname-update-types.mts'
 import './hostname-vote-routes.mts'
 
 // GET /api/v1/hostnames/blocked - Admin: list all site-wide blocked hostnames

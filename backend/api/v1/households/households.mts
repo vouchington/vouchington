@@ -36,7 +36,6 @@ app
     ctx.json(await getHouseholdsByUser(currentUser, { access, after, limit }))
   })
   .post(async (ctx: Context) => {
-    // ast-grep-ignore: no-three-sequential-awaits -- route handler validates auth/input before dependent mutation or response work
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/households')
     const body = (await ctx.request.json('1mb')) as CreateHouseholdBody
     validateRequestContract(ctx, 'POST:/api/v1/households', { body })
