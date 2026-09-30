@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   getFriendRecommendations,
   type FriendRecommendationResult,
@@ -9,6 +9,7 @@ import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { indexById } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const parser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -16,14 +17,14 @@ const parser = createPaginationParser({
 })
 
 // GET /api/v1/my/friend-recommendations
-//
-// The query carrier is not schema-validated: the pagination parser owns limit clamping and
-// malformed-cursor 400s, and the generated schema has no unknown-parameter or coercion rules.
 app.route('/api/v1/my/friend-recommendations').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/friend-recommendations', parser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/friend-recommendations')
 
   const options = parser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, parser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/friend-recommendations', { query })
   const result = await getFriendRecommendations(currentUser, options)
   const userIds = result.results.map((r: FriendRecommendationResult) => r.id)
 

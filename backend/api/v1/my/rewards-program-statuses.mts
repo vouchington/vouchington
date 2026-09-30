@@ -10,6 +10,7 @@ import {
   deleteIndividualRewardsProgramStatusById,
 } from '@services/individuals-households'
 import { assertNotSuspended } from '@services/users'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 type CreateRewardsProgramStatusRequest = { rewards_program_status_id: string }
 
@@ -24,18 +25,15 @@ const rewardsProgramStatusesPagination = createPaginationParser({
 })
 
 // GET /api/v1/my/rewards-program-statuses
-//
-// The query carrier is not schema-validated: the pagination parser owns limit clamping and
-// malformed-cursor 400s, and the generated schema has no unknown-parameter or coercion rules.
 app.route('/api/v1/my/rewards-program-statuses').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/rewards-program-statuses', rewardsProgramStatusesPagination)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/rewards-program-statuses')
-  const page = await getIndividualRewardsProgramStatuses(
-    currentUser,
-    currentUser,
-    rewardsProgramStatusesPagination.parse(ctx.query),
-  )
-  ctx.json(page)
+
+  const options = rewardsProgramStatusesPagination.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, rewardsProgramStatusesPagination.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/rewards-program-statuses', { query })
+  ctx.json(await getIndividualRewardsProgramStatuses(currentUser, currentUser, options))
 })
 
 // POST /api/v1/my/rewards-program-statuses

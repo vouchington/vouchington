@@ -18,6 +18,7 @@ import {
   encodeScopedTierPreciseNameCursor,
 } from '@modules/pagination'
 import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import createHttpError from 'http-errors'
 
 type AddEmailAddressRequest = { email_address: string }
@@ -58,14 +59,14 @@ async function emailAddressPage(userId: string, limit: number, after?: string) {
 }
 
 // GET /api/v1/my/email-addresses
-//
-// The query carrier is not schema-validated: the pagination parser owns limit clamping and
-// malformed-cursor 400s, and the generated schema has no unknown-parameter or coercion rules.
 app.route('/api/v1/my/email-addresses').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/email-addresses', emailAddressesParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/email-addresses')
 
   const options = emailAddressesParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, emailAddressesParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/email-addresses', { query })
   ctx.json(await emailAddressPage(currentUser.id, options.limit, options.after))
 })
 

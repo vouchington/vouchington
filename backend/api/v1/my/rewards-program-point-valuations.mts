@@ -10,6 +10,7 @@ import {
   deleteIndividualRewardsProgramPointValuationById,
 } from '@services/individuals-households'
 import { assertNotSuspended } from '@services/users'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import type { ScaledMoney } from '@ts-shared/money'
 
 type CreatePointValuationRequest = {
@@ -29,14 +30,14 @@ const pointValuationsPagination = createPaginationParser({
 })
 
 // GET /api/v1/my/rewards-program-point-valuations
-//
-// The query carrier is not schema-validated: the pagination parser owns limit clamping and
-// malformed-cursor 400s, and the generated schema has no unknown-parameter or coercion rules.
 app.route('/api/v1/my/rewards-program-point-valuations').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/rewards-program-point-valuations', pointValuationsPagination)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/rewards-program-point-valuations')
 
   const options = pointValuationsPagination.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, pointValuationsPagination.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/rewards-program-point-valuations', { query })
   const page = await getIndividualRewardsProgramPointValuations(currentUser, currentUser, options)
   ctx.json(page)
 })

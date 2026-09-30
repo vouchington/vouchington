@@ -2,7 +2,7 @@
 
 [Back to My API](README.md#request-validation)
 
-Protected `/api/v1/my/**` routes that declare a path, header, or JSON body carrier validate it
+Protected `/api/v1/my/**` routes that declare a path, header, query, or JSON body carrier validate it
 against the generated `@voucha/api-fixtures/v1/request-contracts.json` schema through
 `validateRequestContract`. See
 [`@services/runtime-request-validation`](../../../../overview/architecture/services/runtime-request-validation/README.md#security-boundary)
@@ -32,26 +32,51 @@ router already satisfies, so a path-only call cannot reject anything by itself. 
 declares a path carrier is covered by its existing `401`/`403`/`404`/`2xx` tests, not by a `422`
 test.
 
-## Query carriers the schema does not validate
+## Query carriers
 
-Paginated `GET` routes build their query with `createPaginationParser`, which clamps an
-out-of-range `limit` and answers a malformed cursor with `400`. The generated query contract types
-`limit` as an integer, but `ctx.query` always carries raw strings and the shared validator does no
-coercion, so running it would turn today's clamping into a `422`. These routes therefore validate no
-query carrier; each has an inline comment at its `apiQuery(...)` call, and each family below lists
-its own.
+Every `/my` route that reads a query declares it with `apiQuery(...)` and validates it with
+`validateRequestContract`, after identity and any ownership or role check and before the service
+read. `ctx.query` carries raw strings and the shared validator does no coercion, so no route hands it
+the raw query. Each handler parses first and validates the values it settled on:
+
+1. The pagination parser (or the handler's own lenient read) clamps `limit`, decodes the cursor, and
+   keeps its status: `400` for a `limit` that is not a positive integer, an empty or repeated
+   `after`, or a cursor it cannot decode.
+2. `prepareQueryForValidation(ctx.query, contract)` converts the well-formed wire values and drops
+   any key the contract does not declare.
+3. The parsed `limit` overwrites the prepared one, so a `limit` the parser clamps (`limit=500`
+   becomes `100`) is validated as `100` and never becomes a `422`.
+4. `validateRequestContract` runs.
+
+Unknown query parameters are ignored, as on every other validated query carrier: the generated
+query schemas never set `additionalProperties: false`, and step 2 drops undeclared keys. After the
+parser accepts a request the schema cannot fail, so it is a drift guard between the source and the
+published contract, and the parser or handler status stays the contract. No query carrier on these
+routes can fail its schema, so this adds no status change. The RSS export publishes `feed_type` as
+a string, so a value outside the feed types still reaches the service and fails the database enum
+cast with a `500`.
+
+| Route                                                                                                                  | Query                                                     | Status on failure                                                                                                                                                                                                                                                  |
+| ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /my/email-addresses`                                                                                              | `after`, `limit`                                          | `400` from the parser                                                                                                                                                                                                                                              |
+| `GET /my/rewards-program-point-valuations`, `/rewards-program-statuses`, `/spending-categories`                        | `after`, `limit`                                          | `400` from the parser, or from the cursor decoder for a malformed cursor                                                                                                                                                                                           |
+| `GET /my/notifications/push-subscriptions`, `/communities`, `/friend-recommendations`, `/warnings`, `/referral-clicks` | `after`, `limit`                                          | `400` from the parser                                                                                                                                                                                                                                              |
+| `GET /my/bans`, `GET /my/removed-posts`                                                                                | `after`, `limit`, and `include_platform` on removed posts | None from the schema. A `limit` that is not a positive integer uses `25`, a larger one is clamped to `100`, a repeated or empty `after` is ignored, and only `include_platform=true` includes platform removals. A malformed cursor is still `400`.                |
+| `GET /my/contribution-status`                                                                                          | `action`                                                  | `400` for an unknown or repeated `action`, checked before the plan lookup                                                                                                                                                                                          |
+| `GET /my/export/rss-feeds`                                                                                             | `feed_type`, `format`, `preflight`                        | None. An empty `feed_type` is no filter, any `format` other than `json` or `csv` exports OPML, and only `preflight=1` answers `204`. A `feed_type` outside `article`, `podcast`, `video`, `mixed`, or a repeated one, still reaches the service and answers `500`. |
+| `GET /my/export/topics`                                                                                                | `download`, `preflight`                                   | None. Only the literal `1` switches to the bare array or the `204` preflight.                                                                                                                                                                                      |
 
 ## Routes with no request contract
 
 Some `/my` operations have no entry in the generated request-contract bundle, so there is no schema
 to validate against and they are unchanged. They are mostly `GET` list and read routes that declare
-no carrier (for example `GET /my/profile`, `GET /my/cards`, `GET /my/messages`,
-`GET /my/notifications`, `GET /my/bans`, and the two `/my/export/*` routes), plus
-`POST /my/notifications/read-all` and `POST /my/identity-verification/checkout-sessions`, which take
-no input. A few of them read query parameters by hand, such as `limit` and `after` on
-`GET /my/bans`, `include_platform` on `GET /my/removed-posts`, `action` on
-`GET /my/contribution-status`, and the export flags. Declaring and validating those query carriers
-is a follow-up.
+no carrier (for example `GET /my/profile`), plus `POST /my/notifications/read-all` and
+`POST /my/identity-verification/checkout-sessions`, which take no input. `GET /my/topic-claims`
+reads no query. The paginated `GET /my/cards`, `GET /my/notifications`, `GET /my/messages`,
+`GET /my/messages/:conversationId/messages`, and the two `GET /my/conversations` reads still parse
+their query with `createPaginationParser` and declare no `apiQuery` contract; declaring them is a
+follow-up. `GET /my/api-keys`, `/my/oauth-apps`, and `/my/oauth-grants` declare a query contract
+but skip runtime validation for now.
 
 ## Account, profile, and preferences
 
@@ -90,8 +115,6 @@ Other behavior changes:
 - On the display-preferences route the schema check runs before the "identity verified" eligibility
   check. Both answer `422`.
 
-Query carriers not validated: `GET /my/email-addresses`.
-
 ## Cards, rewards programs, and spending
 
 Covers `POST`/`PATCH`/`DELETE` on `/my/cards`, `/my/rewards-program-point-valuations`,
@@ -115,9 +138,8 @@ Other behavior changes:
 Money, frequency, date-string, and note type errors that these handlers already answered with `422`
 keep that status; only the source of the diagnostic moved to the shared validator.
 
-Query carriers not validated: `GET /my/rewards-program-point-valuations`,
-`GET /my/rewards-program-statuses`, and `GET /my/spending-categories`. `GET /my/cards` paginates
-through `createPaginationParser` but declares no `apiQuery` contract, so it has no query schema.
+`GET /my/cards` paginates through `createPaginationParser` but declares no `apiQuery` contract, so it
+has no query schema.
 
 ## Messaging, imports, notifications, and landing pages
 
@@ -180,9 +202,6 @@ Ordering notes:
   `GET`/`DELETE /my/landing-pages/:pageId` validate only their path carrier, ahead of the service's
   ownership lookup. The path schema is a plain string that cannot fail, so the order does not change
   what a caller sees.
-
-Query carriers not validated: `GET /my/communities`, `GET /my/friend-recommendations`, and
-`GET /my/notifications/push-subscriptions` build their query with `createPaginationParser`.
 
 ## Cross-client verification
 

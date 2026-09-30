@@ -50606,6 +50606,29 @@
     "/api/v1/my/bans": {
       "get": {
         "operationId": "get_api_v1_my_bans",
+        "parameters": [
+          {
+            "description": "Opaque cursor from page_info.end_cursor.",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Larger values are clamped to 100; other invalid values use 25.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -50974,6 +50997,31 @@
     "/api/v1/my/contribution-status": {
       "get": {
         "operationId": "get_api_v1_my_contribution-status",
+        "parameters": [
+          {
+            "description": "Also return this action limit; an unknown action is rejected with 400.",
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "enum": [
+                "topic",
+                "topic_recommendation",
+                "discussion",
+                "review",
+                "comment",
+                "data_point",
+                "article",
+                "blog_post",
+                "community",
+                "rss_feed",
+                "post_rating",
+                "fediverse_instance"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -51663,6 +51711,38 @@
     "/api/v1/my/export/rss-feeds": {
       "get": {
         "operationId": "get_api_v1_my_export_rss-feeds",
+        "parameters": [
+          {
+            "description": "Only export feeds of this type: article, podcast, video or mixed. An empty value means no filter.",
+            "in": "query",
+            "name": "feed_type",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Any value other than json or csv exports opml.",
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "opml",
+              "enum": ["json", "csv", "opml"],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only the literal 1 answers 204 without a body when the export fits the limit.",
+            "in": "query",
+            "name": "preflight",
+            "required": false,
+            "schema": {
+              "enum": ["1"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -51703,6 +51783,28 @@
     "/api/v1/my/export/topics": {
       "get": {
         "operationId": "get_api_v1_my_export_topics",
+        "parameters": [
+          {
+            "description": "Only the literal 1 streams the bare JSON array instead of a results object.",
+            "in": "query",
+            "name": "download",
+            "required": false,
+            "schema": {
+              "enum": ["1"],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only the literal 1 answers 204 without a body when the export fits the limit.",
+            "in": "query",
+            "name": "preflight",
+            "required": false,
+            "schema": {
+              "enum": ["1"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -55051,6 +55153,27 @@
     "/api/v1/my/referral-clicks": {
       "get": {
         "operationId": "get_api_v1_my_referral-clicks",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -55127,6 +55250,38 @@
     "/api/v1/my/removed-posts": {
       "get": {
         "operationId": "get_api_v1_my_removed-posts",
+        "parameters": [
+          {
+            "description": "Opaque cursor from page_info.end_cursor.",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only the literal value true includes them.",
+            "in": "query",
+            "name": "include_platform",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Larger values are clamped to 100; other invalid values use 25.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -55693,6 +55848,27 @@
     "/api/v1/my/warnings": {
       "get": {
         "operationId": "get_api_v1_my_warnings",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {

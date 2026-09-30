@@ -25248,6 +25248,22 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/my/bans": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/my/communities": {
       "query": {
         "properties": {
@@ -25259,6 +25275,30 @@
             "maximum": 100,
             "minimum": 1,
             "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/contribution-status": {
+      "query": {
+        "properties": {
+          "action": {
+            "enum": [
+              "topic",
+              "topic_recommendation",
+              "discussion",
+              "review",
+              "comment",
+              "data_point",
+              "article",
+              "blog_post",
+              "community",
+              "rss_feed",
+              "post_rating",
+              "fediverse_instance"
+            ],
+            "type": "string"
           }
         },
         "type": "object"
@@ -25286,6 +25326,40 @@
             "maximum": 100,
             "minimum": 1,
             "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/export/rss-feeds": {
+      "query": {
+        "properties": {
+          "feed_type": {
+            "type": "string"
+          },
+          "format": {
+            "default": "opml",
+            "enum": ["json", "csv", "opml"],
+            "type": "string"
+          },
+          "preflight": {
+            "enum": ["1"],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/export/topics": {
+      "query": {
+        "properties": {
+          "download": {
+            "enum": ["1"],
+            "type": "string"
+          },
+          "preflight": {
+            "enum": ["1"],
+            "type": "string"
           }
         },
         "type": "object"
@@ -25432,6 +25506,41 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/my/referral-clicks": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/removed-posts": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "include_platform": {
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/my/rewards-program-point-valuations": {
       "query": {
         "properties": {
@@ -25465,6 +25574,22 @@
       }
     },
     "GET:/api/v1/my/spending-categories": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/warnings": {
       "query": {
         "properties": {
           "after": {
