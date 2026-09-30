@@ -36,18 +36,6 @@ updates:
         - 'ssrf-guard'
         - 'valkyries'
         - 'vouchington-tooling'
-    # Sentry 10.72.0 and 10.73.0 crash Node/jsdom imports of @sentry/nextjs
-    # (getsentry/sentry-javascript#23789, issue #10523). 10.71.0 is the last
-    # good line. Allow 10.74+ to prove the unreleased upstream fix.
-    ignore:
-      - dependency-name: '@sentry/nextjs'
-        versions: ['10.72.x', '10.73.x']
-      - dependency-name: '@sentry/node'
-        versions: ['10.72.x', '10.73.x']
-      - dependency-name: '@sentry/cloudflare'
-        versions: ['10.72.x', '10.73.x']
-      - dependency-name: '@sentry/aws-serverless'
-        versions: ['10.72.x', '10.73.x']
     open-pull-requests-limit: 5
     groups:
       # ---- first-party ----
