@@ -19,6 +19,7 @@
   "alert-dialog.stories.tsx": ["DeleteConfirmation"],
   "alert.stories.tsx": ["Variants", "WithIcon"],
   "api-key-security.stories.tsx": ["OneTimeReveal", "CopiedState", "KeyLists"],
+  "app-error-panel.stories.tsx": ["RouteError", "GlobalDocumentError"],
   "autocomplete.stories.ts": ["FixtureBacked"],
   "availability-indicator.stories.tsx": [
     "Idle",
