@@ -13,8 +13,7 @@
  * satisfy a grant lookup.
  *
  * `username` is always a compile-time constant (an internal system slug, never user input), so
- * plain string interpolation into the SQL literal is safe here — mirrors the established pattern
- * in moderator-prompt-sync-sql.mts.
+ * plain string interpolation into the SQL literal is safe here.
  */
 export function buildSystemUserUpsertSQL(username: string): string {
   return `

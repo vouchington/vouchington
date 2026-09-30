@@ -2,6 +2,7 @@
 -- edited-in-place: pre-launch, never deployed to production
 -- edited-in-place: added language detection columns (declared_language, lingua_rs_detected_language, detection sha/results)
 -- edited-in-place: added is_baseline column to agents__moderators
+-- edited-in-place: agents__moderators.on_flag_action now defaults to none (seeded classifiers are record-only)
 -- edited-in-place: added link post type with url_id column
 -- edited-in-place: folded idx_agent_moderations__flagged_prompt from 0430-00-00-automod-simulation-indexes
 -- edited-in-place: migrated agent_models enum from gpt-5-nano/gpt-4o to gpt-5.4-nano (deprecation, see docs/development/docs-moved-to-vouchington-docs.md)
@@ -631,7 +632,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS agents__moderators (
   agent_id UUID PRIMARY KEY REFERENCES agents ON DELETE CASCADE,
   slug TEXT NOT NULL UNIQUE CHECK (slug = LOWER(slug) AND TRIM(slug) = slug),
-  on_flag_action moderator_on_flag_action NOT NULL DEFAULT 'review_queue',
+  on_flag_action moderator_on_flag_action NOT NULL DEFAULT 'none',
   is_baseline BOOLEAN NOT NULL DEFAULT FALSE,
 
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -648,7 +649,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 COMMENT ON TABLE agents__moderators IS 'Moderator-specific configuration extending the agents table.';
 COMMENT ON COLUMN agents__moderators.agent_id IS 'The agent this moderator config extends (PK, 1:1 with agents).';
 COMMENT ON COLUMN agents__moderators.slug IS 'Unique lowercase identifier for this moderator (e.g. spam-filter).';
-COMMENT ON COLUMN agents__moderators.on_flag_action IS 'Action taken when a moderator flags content: none (log only) or review_queue (move to review queue).';
+COMMENT ON COLUMN agents__moderators.on_flag_action IS 'Action taken when a moderator flags content: none (record only, the default; every seeded moderator) or review_queue (move to review queue).';
 COMMENT ON COLUMN agents__moderators.is_baseline IS 'When true, this moderator runs on every approved post regardless of community opt-in (baseline safety net).';
 
 -- =============================================================================
