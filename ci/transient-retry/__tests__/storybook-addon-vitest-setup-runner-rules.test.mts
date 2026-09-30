@@ -7,7 +7,7 @@ describe('storybook-browser-startup-transient', () => {
   const storybookJobName = 'storybook / storybook'
   const ciStorybookJobName = 'storybook / storybook'
   const runnerMissingAttempt = `FAIL web-storybook-browser (chromium) storybook/design-system/button.stories.tsx
-Error: Failed to import test file /work/filaments/node_modules/.pnpm/@storybook+addon-vitest@10.4.6/node_modules/@storybook/addon-vitest/dist/vitest-plugin/setup-file.js
+Error: Failed to import test file /work/filaments/node_modules/.pnpm/@storybook+addon-vitest@0.0.0/node_modules/@storybook/addon-vitest/dist/vitest-plugin/setup-file.js
 Caused by: Error: Vitest failed to find the runner. One of the following is possible:
 - "vitest" is imported directly without running "vitest" command
 Test Files 149 failed (149)
