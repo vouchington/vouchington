@@ -56,13 +56,13 @@ describe('setup-node-pnpm composite action', () => {
       name: 'pnpm install',
       if: "inputs.install-scripts != 'false'",
       shell: 'bash',
-      run: 'pnpm install --frozen-lockfile',
+      run: 'pnpm install --frozen-lockfile --loglevel=warn',
     })
     expect(step('pnpm install without lifecycle scripts')).toEqual({
       name: 'pnpm install without lifecycle scripts',
       if: "inputs.install-scripts == 'false'",
       shell: 'bash',
-      run: 'pnpm install --frozen-lockfile --ignore-scripts',
+      run: 'pnpm install --frozen-lockfile --ignore-scripts --loglevel=warn',
     })
   })
 })
