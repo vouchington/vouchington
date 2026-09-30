@@ -174,8 +174,13 @@ async function listSesInboundObjectsWithPrefix(
   }
 }
 
+/** The SES inbound bucket name, or undefined on a stack that has none (local development). */
+export function readSesInboundBucket(): string | undefined {
+  return process.env.S3_BUCKET_SES_INBOUND?.trim() || undefined
+}
+
 function getSesInboundBucket(): string {
-  const bucket = process.env.S3_BUCKET_SES_INBOUND?.trim()
+  const bucket = readSesInboundBucket()
   if (!bucket) throw new Error('S3_BUCKET_SES_INBOUND is required')
   return bucket
 }
