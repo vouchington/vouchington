@@ -1,20 +1,20 @@
 import Link from 'next/link'
 import { AdminTableShell } from '@/components/admin/admin-table-shell'
 import type { ReferralLinkValidation } from '@/lib/api/client/referral-link-validations'
-import { getTranslations } from '@/lib/i18n/get-translations'
+import type { getTranslations } from '@/lib/i18n/get-translations'
 
 interface ValidationsListTableProps {
   validations: ReferralLinkValidation[]
   /** Base path for validation links, e.g. `/referral-program/<slug>/validations`. */
   basePath: string
+  t: Awaited<ReturnType<typeof getTranslations>>
 }
 
 /**
  * Presentational table of referral-link validation sets. Scoped under a referral
  * program via `basePath` so links resolve to the program's validation routes.
  */
-export async function ValidationsListTable({ validations, basePath }: ValidationsListTableProps) {
-  const t = await getTranslations()
+export function ValidationsListTable({ validations, basePath, t }: ValidationsListTableProps) {
   return (
     <AdminTableShell
       aria-label={t(
