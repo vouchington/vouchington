@@ -6,7 +6,7 @@ export type {
   ReviewDisputeResolutionAction,
 } from './config.mts'
 export type { ReviewDisputeResponse } from './types.mts'
-export { REVIEW_DISPUTE_STATUSES, REVIEW_DISPUTE_RESOLUTION_ACTIONS } from './config.mts'
+export { REVIEW_DISPUTE_STATUSES } from './config.mts'
 export { parseCreateReviewDisputeInput } from './parse.mts'
 export { createReviewDispute } from './create.mts'
 export {

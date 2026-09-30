@@ -1,16 +1,10 @@
 import {
-  MODERATION_APPEAL_ACTIONS,
   MODERATION_APPEAL_STATUSES,
   type ModerationAppealAction,
   type ModerationAppealStatus,
 } from '@ts-shared/utils/moderation-catalogs'
 
-export {
-  MODERATION_APPEAL_ACTIONS,
-  MODERATION_APPEAL_STATUSES,
-  type ModerationAppealAction,
-  type ModerationAppealStatus,
-}
+export { MODERATION_APPEAL_STATUSES, type ModerationAppealAction, type ModerationAppealStatus }
 
 export const MODERATION_APPEAL_CHANGE_TYPES = [
   'create',

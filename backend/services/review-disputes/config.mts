@@ -1,7 +1,6 @@
 import {
   REVIEW_DISPUTE_ACTIONS,
   REVIEW_DISPUTE_REASONS,
-  REVIEW_DISPUTE_RESOLUTION_ACTIONS,
   REVIEW_DISPUTE_STATUSES,
   type ReviewDisputeAction,
   type ReviewDisputeReason,
@@ -13,7 +12,6 @@ import {
 export {
   REVIEW_DISPUTE_ACTIONS,
   REVIEW_DISPUTE_REASONS,
-  REVIEW_DISPUTE_RESOLUTION_ACTIONS,
   REVIEW_DISPUTE_STATUSES,
   type ReviewDisputeAction,
   type ReviewDisputeReason,
