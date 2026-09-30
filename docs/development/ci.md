@@ -100,9 +100,10 @@ a standalone single-shard run builds directly in its test job. CI browser
 assets use the same-origin Cloudflare Worker route, so per-job ports do not enter the shared build.
 The deployable Docker image has its own build and is outside this test cache.
 
-Trusted main-branch web image publication keeps `SENTRY_AUTH_TOKEN` optional. A configured token
-enables Sentry release creation and source-map upload during the image build; without one, the
-validated image still publishes to GHCR without source maps. The Docker smoke and Trivy gates do
+Trusted merge-group and main-fallback web image publication keeps `SENTRY_AUTH_TOKEN` optional. A
+configured token enables Sentry release creation and source-map upload during the image build;
+without one, the validated image still publishes to GHCR without source maps. Pull-request and
+Nightly validation never receive the token or upload source maps. The Docker smoke and Trivy gates do
 not depend on this optional integration. See the [deploy and release workflow reference](ci/workflows/reference-deploy-and-release.md).
 
 GitHub-hosted runners are ephemeral and single-job-per-VM, so repository workflows do not use

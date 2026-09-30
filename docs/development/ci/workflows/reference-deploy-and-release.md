@@ -2,19 +2,18 @@
 
 [Back to Workflow Reference](WORKFLOWS.md#deploy-and-release)
 
-| Workflow                                                                                 | Type       | Runner             | Docker | Purpose                                                                                                                                     |
-| ---------------------------------------------------------------------------------------- | ---------- | ------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Build Backend](../../../../.github/workflows/build-backend.yml)                         | Reusable   | `ubuntu-24.04-arm` | Yes    | Validates backend images for pull requests without publishing them.                                                                         |
-| [Build Web](../../../../.github/workflows/build-web.yml)                                 | Reusable   | `ubuntu-24.04-arm` | Yes    | Validates web images for pull requests without publishing them.                                                                             |
-| [Publish Backend Images](../../../../.github/workflows/publish-backend-images.yml)       | Reusable   | `ubuntu-24.04-arm` | Yes    | Rebuilds and re-validates backend images on trusted main runs, then publishes each exact digest to GHCR with a SLSA provenance attestation. |
-| [Publish Web Images](../../../../.github/workflows/publish-web-images.yml)               | Reusable   | `ubuntu-24.04-arm` | Yes    | Rebuilds and re-validates the web image on trusted main runs, then publishes its exact digest to GHCR with a SLSA provenance attestation.   |
-| [Dispatch Completed Deploy](../../../../.github/workflows/dispatch-completed-deploy.yml) | Standalone | `ubuntu-slim`      | No     | Dispatches trusted successful source metadata to route-specific `vouchington-infra` receivers.                                              |
-| [Sync Articles](../../../../.github/workflows/sync-articles.yml)                         | Standalone | `ubuntu-slim`      | No     | Packages an immutable article artifact for private infrastructure dispatch.                                                                 |
-| [Docs Publish](../../../../.github/workflows/docs-publish.yml)                           | Standalone | `ubuntu-latest`    | No     | Builds an immutable OpenAPI, MCP-catalog, and PostgreSQL-schema documentation artifact for private infrastructure dispatch.                 |
+| Workflow                                                                                 | Type       | Runner          | Docker | Purpose                                                                                                                         |
+| ---------------------------------------------------------------------------------------- | ---------- | --------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| [Publish Backend Images](../../../../.github/workflows/publish-backend-images.yml)       | Reusable   | Mixed           | Yes    | Validates backend images on PRs, publishes them from merge groups, and verifies or fills authenticated missing targets on main. |
+| [Publish Web Images](../../../../.github/workflows/publish-web-images.yml)               | Reusable   | Mixed           | Yes    | Validates the web image on PRs, publishes it from merge groups, and verifies or fills an authenticated missing target on main.  |
+| [Dispatch Completed Deploy](../../../../.github/workflows/dispatch-completed-deploy.yml) | Standalone | `ubuntu-slim`   | No     | Dispatches trusted successful source metadata to route-specific `vouchington-infra` receivers.                                  |
+| [Sync Articles](../../../../.github/workflows/sync-articles.yml)                         | Standalone | `ubuntu-slim`   | No     | Packages an immutable article artifact for private infrastructure dispatch.                                                     |
+| [Docs Publish](../../../../.github/workflows/docs-publish.yml)                           | Standalone | `ubuntu-latest` | No     | Builds an immutable OpenAPI, MCP-catalog, and PostgreSQL-schema documentation artifact for private infrastructure dispatch.     |
 
-Vouchington validates source and dispatches its revision asynchronously. `vouchington-infra` owns
-artifact publication and every deployment mutation. A successful dispatch is not deployment
-evidence, so operators must verify the matching private receiver run. See the
+Vouchington validates source, publishes product-owned runtime artifacts, and dispatches its
+revision asynchronously. `vouchington-infra` owns artifact materialization and every deployment
+mutation. A successful dispatch is not deployment evidence, so operators must verify the matching
+private receiver run. See the
 [deployment CI/CD reference](../../../overview/infrastructure/reference-deployment-ci-cd-flow.md#operations-and-failure-handling).
 
 Trusted web image publication does not require `SENTRY_AUTH_TOKEN`. When that repository secret is
@@ -23,13 +22,19 @@ validated image without source maps. The image build, smoke test, and Trivy gate
 
 The backend and web publish workflows read each `docker push` digest and attest that exact
 `ghcr.io/vouchington/<image>@<digest>` subject with `actions/attest@v4` after the smoke and Trivy
-gates. The attestation signer workflow is the reusable publish workflow itself, so the receiver
-checks the corresponding `.github/workflows/publish-*-images.yml` identity and the `main` source
-revision. The reusable workflows and their trusted `Main CI` callers grant `attestations: write` and
-`packages: write` for this step and disable linked artifact storage records. The private
-`vouchington-infra` receiver must verify the attestation before copying the digest to ECR; a tag or
-an unattested digest is not a deployable artifact. The backend attests `api` and `worker-cpu` on every
-run and `worker-io` when the checked-in automation flag enables that image.
+gates. The attestation signer workflow is the reusable publish workflow itself: the corresponding
+`.github/workflows/publish-*-images.yml` identity at a `gh-readonly-queue/main/*` merge-group ref, or
+at `main` for a missing-target fallback, with the `main` source revision. Main runs verify that
+identity with `gh attestation verify` before reusing an image. Their build jobs inherit explicit
+read-only PR or write-enabled merge-group/main caller permissions; the resolver job declares only
+read scopes.
+Publication disables linked artifact storage records. The backend attests `api` and `worker-cpu` on
+every run and `worker-io` when the checked-in automation flag enables that image.
+
+The private `vouchington-infra` receiver copies the digest that `sha-<revision>` resolves to into
+ECR only for a revision whose matching `main-<area>.yml` push run succeeded on `main`. It does not
+yet verify the attestation before copying; that check is tracked in
+[#722](https://github.com/vouchington/vouchington/issues/722).
 
 Vouchington has no production application-deployment workflow. The global CI apply workflow and its
 trust remain disabled; operator-controlled global applies use `vouchington-infra`'s separately

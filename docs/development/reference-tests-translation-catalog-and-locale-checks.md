@@ -58,7 +58,7 @@ checks guard that request-selection contract instead of catalog content:
 - `web/scripts/tests/smoke-test-web.sh` — compiles only the real homepage and chrome selectors
   for its standalone backend, then verifies the production web server through that backend. The
   all-route SQLite sweep above owns catalog-wide bounds coverage.
-- `.github/workflows/build-web.yml` — the Docker image smoke starts the same real localization
+- `.github/workflows/publish-web-images.yml` — the Docker image smoke starts the same real localization
   resolver against a compiled homepage catalog and supplies its URL to the running web image.
 - `pnpm exec vouchington-localization format --check --source localization/catalog` — reads every
   formatter-owned row table, rejects noncanonical serialization and catalog semantic failures, and

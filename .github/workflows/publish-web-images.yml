@@ -13,21 +13,60 @@ on:
         required: true
       SENTRY_AUTH_TOKEN:
         required: false
-permissions:
-  actions: read
-  attestations: write
-  contents: read
-  id-token: write
-  packages: write
 
-# Deliberately no concurrency block: unlike build-web.yml, this file has exactly one caller
-# (main-web.yml#publish-web-images), and main-web.yml's own workflow-level group already
-# serializes every run on main with cancel-in-progress: false, so two publishes can never race
-# each other here.
+# Pull requests only validate the image. A merge group publishes and attests it. A main push reuses
+# the merge group's image and builds only if it is missing. The build job has no permissions
+# declaration, so it inherits whatever the caller granted: read-only for a PR, write for a merge
+# group or main. The resolver asks for read access only.
+#
+# There is no concurrency block because each run publishes only its own immutable sha-<commit> tag.
 
 jobs:
+  resolve-main-images:
+    if: >-
+      inputs.trusted_secret_context &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      missing_targets: ${{ steps.resolve.outputs.missing_targets }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Authenticate GHCR
+        timeout-minutes: 1
+        env:
+          REGISTRY_PASSWORD: ${{ github.token }}
+          REGISTRY_USERNAME: ${{ github.actor }}
+        run: printf '%s' "$REGISTRY_PASSWORD" | docker login ghcr.io --username "$REGISTRY_USERNAME" --password-stdin
+
+      - name: Resolve merge-queue web image
+        id: resolve
+        timeout-minutes: 5
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./ci/resolve-published-images.sh web
+
+      - name: Log out of GHCR
+        if: ${{ always() }}
+        run: docker logout ghcr.io >/dev/null 2>&1 || true
+
   build:
-    if: ${{ inputs.trusted_secret_context }}
+    needs: resolve-main-images
+    if: >-
+      !cancelled() &&
+      inputs.trusted_secret_context &&
+      (
+        (github.event_name == 'pull_request' && startsWith(github.ref, 'refs/pull/')) ||
+        (github.event_name == 'merge_group' && startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/')) ||
+        (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.resolve-main-images.result == 'success' && needs.resolve-main-images.outputs.missing_targets != '[]')
+      )
     runs-on: ubuntu-24.04-arm
     # The publish path runs everything a validation run does and then pushes the web image to
     # GHCR, so it gets its own ceiling rather than shaving the validation path's margin to fit.
@@ -39,18 +78,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: ./.github/actions/setup-aws
         timeout-minutes: 2
         with:
           role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
 
+      # Only a publishing run uploads source maps and names a Sentry release.
       - uses: ./.github/actions/build-web-images
         with:
           next-public-asset-prefix: ${{ vars.NEXT_PUBLIC_ASSET_PREFIX }}
-          sentry-auth-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          sentry-source-map-upload: ${{ secrets.SENTRY_AUTH_TOKEN != '' && 'true' || 'false' }}
-          sentry-release: ${{ github.sha }}
+          sentry-auth-token: ${{ (github.event_name == 'merge_group' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && secrets.SENTRY_AUTH_TOKEN || '' }}
+          sentry-source-map-upload: ${{ (github.event_name == 'merge_group' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && secrets.SENTRY_AUTH_TOKEN != '' && 'true' || 'false' }}
+          sentry-release: ${{ (github.event_name == 'merge_group' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && github.sha || '' }}
 
       # Deliberately the last build step in the job. Everything published here has already passed the
       # Docker smoke test and the Trivy CRITICAL/HIGH gate, so the image that reaches the registry
@@ -63,7 +104,7 @@ jobs:
         id: publish
         # success() is explicit rather than implicit: this is a publication gate, and a reader
         # should not have to know that GitHub ANDs it in for conditions without a status function.
-        if: ${{ success() }}
+        if: ${{ success() && (github.event_name == 'merge_group' || github.event_name == 'push') }}
         timeout-minutes: 8
         env:
           GHCR_NAMESPACE: ghcr.io/${{ github.repository_owner }}

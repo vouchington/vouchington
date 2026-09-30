@@ -20,7 +20,7 @@ export function checkWorkflowEnvReferences(
       const source = readFileSync(fullPath, 'utf8')
       if (isWorkflowEnvReferenced(row.name, source)) continue
       if (hasNonWorkflowReference(row)) continue
-      if (isWorkflowEnvAllowlisted(file, row.name)) continue
+      if (isWorkflowEnvAllowlisted(row.name)) continue
 
       errors.push(
         `workflow env ${row.name} in ${file} is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason`,

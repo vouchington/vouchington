@@ -16,12 +16,14 @@ flowchart TD
 
     subgraph deployables["Deployable workflows"]
         subgraph main-backend["main-backend"]
+            mb-detect["detect-image-publication"]
             mb-static["static-checks"]
             mb-static --> mb-tests["modules, unit, smoke,<br/>credentialed, schema tests"]
-            mb-static --> mb-publish["publish-backend-images"]
+            mb-detect --> mb-intent["backend-deploy-intent"]
+            mb-detect & mb-static --> mb-publish["publish-backend-images"]
         end
         subgraph main-web["main-web"]
-            mw-detect["detect-web-deploy"]
+            mw-detect["detect-image-publication"]
             mw-static["static-checks"]
             mw-detect --> mw-intent["web-deploy-intent"]
             mw-detect & mw-static --> mw-publish["publish-web-images"]

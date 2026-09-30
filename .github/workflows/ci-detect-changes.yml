@@ -103,15 +103,24 @@ jobs:
         with:
           fetch-depth: 0
       - uses: ./.github/actions/fetch-base-ref
+      - name: Resolve merge queue diff range
+        id: merge-queue-range
+        if: github.event_name == 'merge_group'
+        run: |
+          HEAD_SHA="$(git rev-parse HEAD)"
+          BASE_SHA="$(git merge-base origin/main "$HEAD_SHA")"
+          {
+            echo "base=$BASE_SHA"
+            echo "head=$HEAD_SHA"
+          } >> "$GITHUB_OUTPUT"
       # Full runs have no change set, so they are never docs-only.
       - name: Check for docs-only changes
         id: docs-check
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         run: |
-          # Pair 2: origin/<base_ref>...HEAD after the merge checkout. Do not mix
-          # the recorded PR base SHA with the merge commit (#11711).
+          # A merge queue range includes every queued entry. PRs retain their API-backed range.
           if [ "$EVENT_NAME" = "merge_group" ]; then
-            CHANGED=$(git diff --name-only "$MERGE_GROUP_BASE_SHA" "$MERGE_GROUP_HEAD_SHA")
+            CHANGED=$(git diff --name-only "$MERGE_QUEUE_BASE_SHA" "$MERGE_QUEUE_HEAD_SHA")
           else
             CHANGED=$(git diff --name-only "origin/${PR_BASE_REF}...HEAD")
           fi
@@ -126,8 +135,8 @@ jobs:
           fi
         env:
           EVENT_NAME: ${{ github.event_name }}
-          MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
-          MERGE_GROUP_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+          MERGE_QUEUE_BASE_SHA: ${{ steps.merge-queue-range.outputs.base }}
+          MERGE_QUEUE_HEAD_SHA: ${{ steps.merge-queue-range.outputs.head }}
           PR_BASE_REF: ${{ github.base_ref }}
       - name: Check for trusted secret context
         id: trusted-context
@@ -164,11 +173,15 @@ jobs:
         id: filter
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         with:
+          base: ${{ steps.merge-queue-range.outputs.base }}
+          ref: ${{ steps.merge-queue-range.outputs.head }}
           filters: .github/ci-path-filters.yml
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: refine-runtime-web
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         with:
+          base: ${{ steps.merge-queue-range.outputs.base }}
+          ref: ${{ steps.merge-queue-range.outputs.head }}
           predicate-quantifier: every
           filters: .github/ci-path-filters.yml
       # One boolean per area workflow: the union of its suites' filters. A touched area runs its

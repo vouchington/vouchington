@@ -17,9 +17,8 @@ type Step = {
 
 type CompositeAction = { runs?: { steps?: Step[] } }
 
-// The image build, smoke test, and Trivy gate all live in the composite action that build-web.yml
-// (and publish-web-images.yml) delegate to -- only the job-level declarations (env) stay in the
-// calling workflow file.
+// The image build, smoke test, and Trivy gate all live in the composite action used by the unified
+// validation/publication workflow.
 function readBuildWebImagesSteps(): Step[] {
   const action = load(
     readFileSync('.github/actions/build-web-images/action.yml', 'utf8'),
@@ -27,7 +26,7 @@ function readBuildWebImagesSteps(): Step[] {
   return action.runs?.steps ?? []
 }
 
-describe('build-web workflow', () => {
+describe('web image workflow', () => {
   it('uses the canonical runner-aware allocator for its Docker smoke port', () => {
     const steps = readBuildWebImagesSteps()
     const smoke = steps.find(step => step.name === 'Run Docker smoke test')
@@ -48,7 +47,6 @@ describe('build-web workflow', () => {
   })
 
   it('keeps Sentry credentials out of validation builds and makes trusted publication uploads optional', () => {
-    const buildWebSource = readFileSync('.github/workflows/build-web.yml', 'utf8')
     const compositeActionSource = readFileSync(
       '.github/actions/build-web-images/action.yml',
       'utf8',
@@ -57,10 +55,11 @@ describe('build-web workflow', () => {
     const publishSource = readFileSync('.github/workflows/publish-web-images.yml', 'utf8')
     const mainWebSource = readFileSync('.github/workflows/main-web.yml', 'utf8')
 
-    for (const source of [buildWebSource, ciSource]) {
-      expect(source).not.toContain('SENTRY_AUTH_TOKEN')
-      expect(source).not.toContain('SENTRY_RELEASE_REQUIRED')
-    }
+    const validationJob = ciSource
+      .split('\n  validate-web-images:')[1]
+      ?.split('\n  publish-web-images:')[0]
+    expect(validationJob).not.toContain('SENTRY_AUTH_TOKEN')
+    expect(ciSource).not.toContain('SENTRY_RELEASE_REQUIRED')
     expect(compositeActionSource).toContain('sentry-source-map-upload:')
     expect(compositeActionSource).toContain(
       "SENTRY_AUTH_TOKEN=${{ inputs.sentry-source-map-upload == 'true' && inputs.sentry-auth-token || '' }}",
@@ -72,10 +71,10 @@ describe('build-web workflow', () => {
     expect(compositeActionSource).not.toContain('ENV SENTRY_AUTH_TOKEN')
     expect(publishSource).toContain('SENTRY_AUTH_TOKEN:\n        required: false')
     expect(publishSource).not.toContain('Verify Sentry source-map upload credentials')
-    expect(publishSource).toContain(
-      "sentry-source-map-upload: ${{ secrets.SENTRY_AUTH_TOKEN != '' && 'true' || 'false' }}",
-    )
-    expect(publishSource).toContain('sentry-auth-token: ${{ secrets.SENTRY_AUTH_TOKEN }}')
+    expect(publishSource).toContain('sentry-source-map-upload: ${{')
+    expect(publishSource).toContain('sentry-auth-token: ${{')
+    expect(publishSource).toContain("github.event_name == 'merge_group'")
+    expect(publishSource).toContain("github.ref == 'refs/heads/main'")
     expect(publishSource).toContain('trusted_secret_context')
     expect(mainWebSource).toContain('trusted_secret_context: true')
     expect(mainWebSource).toContain('secrets: inherit')

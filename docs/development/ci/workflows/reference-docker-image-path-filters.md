@@ -11,9 +11,11 @@
   without touching an in-subgraph manifest. Both images therefore receive pre-merge build, smoke,
   and scan validation at the root dependency boundary.
 - On pull requests, workflow and local-action callers are selected by revision-aware topology,
-  rather than broad Docker filters. On non-PR events, `build-backend` and `build-web` retain their
-  broader refined runtime filters and `workflow-action-changes` fail-open fallback so source or
-  workflow changes still rebuild deployable images.
+  rather than broad Docker filters. The refined `build-backend` and `build-web` filters are the
+  shared publication-intent owner for merge groups and main: they include root dependency inputs
+  and the main image resolver script while excluding test, fixture, Markdown, and Storybook
+  changes. The merge-group workflow retains its `workflow-action-changes` fail-open validation;
+  only the shared filter can request a main fallback and deployment intent.
 - Apart from the intentional root dependency fail-open, do not trigger PR Docker image builds for
   unrelated actions or workspace manifests. Within the backend and web area workflows, keep PR Docker filters and the refined
   broad filters from matching Markdown-only, test-only, test-helper-only, or Storybook-only changes.

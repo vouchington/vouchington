@@ -5,9 +5,11 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/main-backend.yml'
-      - '.github/workflows/build-backend.yml'
       - '.github/workflows/publish-backend-images.yml'
+      - '.github/ci-path-filters.yml'
       - '.github/actions/build-backend-images/**'
+      - '.dockerignore'
+      - '.hadolint.yaml'
       - '.github/workflows/tests-backend-unit.yml'
       - '.github/workflows/checks-backend-smoke.yml'
       - '.github/workflows/tests-backend-modules.yml'
@@ -21,9 +23,14 @@ on:
       - 'api-fixtures/**'
       - 'backend/**'
       - 'email-templates/**'
+      - 'localization/**'
+      - 'dev/localization/**'
+      - 'static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts'
+      - 'static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts'
       - 'ts-shared/**'
       - 'test-helpers/**'
       - 'ci/prepare-trivy-db.sh'
+      - 'ci/resolve-published-images.sh'
       - 'ci/allocate-browser-safe-ports.py'
       - 'ci/package.json'
       - 'vitest.config.mts'
@@ -39,6 +46,35 @@ permissions:
   contents: read
 
 jobs:
+  detect-image-publication:
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      publish: ${{ steps.image-paths.outputs.runtime-build-backend }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: image-paths
+        with:
+          base: ${{ github.event.before }}
+          ref: ${{ github.sha }}
+          predicate-quantifier: every
+          filters: .github/ci-path-filters.yml
+
+  backend-deploy-intent:
+    needs: detect-image-publication
+    if: needs.detect-image-publication.outputs.publish == 'true'
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+      - run: ':'
+
   test-backend-modules:
     needs: [static-checks]
     if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
@@ -85,9 +121,9 @@ jobs:
       contents: read
     secrets: inherit
 
-  # Builds the deployable backend images and publishes them to GHCR via publish-backend-images.yml,
-  # which reuses build-backend-images/action.yml -- the same composite action backend.yml's
-  # build-backend job uses to build and validate the same images without publishing them.
+  # Reuses the backend images the merge group published for this commit once their provenance
+  # verifies. Only images that are missing get built, through the same smoke/Trivy composite that
+  # PR validation uses, and published.
   #
   # Gated on static-checks only, like every other job here, so it runs alongside the test jobs
   # rather than after them. A revision whose tests later fail still leaves images in GHCR, but
@@ -95,8 +131,11 @@ jobs:
   # concludes successfully, and vouchington-infra resolves digests solely for the revision its
   # preflight verified. Those unreferenced images are reaped by ghcr-cleanup.yml.
   publish-backend-images:
-    needs: [static-checks]
-    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
+    needs: [detect-image-publication, static-checks]
+    if: >-
+      !cancelled() &&
+      needs.detect-image-publication.outputs.publish == 'true' &&
+      needs.static-checks.result == 'success'
     uses: ./.github/workflows/publish-backend-images.yml
     permissions:
       actions: read

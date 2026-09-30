@@ -11,21 +11,60 @@ on:
     secrets:
       AWS_TEST_ROLE_ARN:
         required: true
-permissions:
-  actions: read
-  attestations: write
-  contents: read
-  id-token: write
-  packages: write
 
-# Deliberately no concurrency block: unlike build-backend.yml, this file has exactly one caller
-# (main-backend.yml#publish-backend-images), and main-backend.yml's own workflow-level group
-# already serializes every run on main with cancel-in-progress: false, so two publishes can never
-# race each other here.
+# Pull requests only validate the images. Merge groups publish and attest them. A main push reuses
+# the merge group's images and builds only the ones that are missing. The build job has no
+# permissions declaration, so it inherits whatever the caller granted: read-only for a PR, write for
+# a merge group or main. The resolver asks for read access only.
+#
+# There is no concurrency block because each run publishes only its own immutable sha-<commit> tags.
 
 jobs:
+  resolve-main-images:
+    if: >-
+      inputs.trusted_secret_context &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      missing_targets: ${{ steps.resolve.outputs.missing_targets }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Authenticate GHCR
+        timeout-minutes: 1
+        env:
+          REGISTRY_PASSWORD: ${{ github.token }}
+          REGISTRY_USERNAME: ${{ github.actor }}
+        run: printf '%s' "$REGISTRY_PASSWORD" | docker login ghcr.io --username "$REGISTRY_USERNAME" --password-stdin
+
+      - name: Resolve merge-queue backend images
+        id: resolve
+        timeout-minutes: 5
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./ci/resolve-published-images.sh backend
+
+      - name: Log out of GHCR
+        if: ${{ always() }}
+        run: docker logout ghcr.io >/dev/null 2>&1 || true
+
   build:
-    if: ${{ inputs.trusted_secret_context }}
+    needs: resolve-main-images
+    if: >-
+      !cancelled() &&
+      inputs.trusted_secret_context &&
+      (
+        (github.event_name == 'pull_request' && startsWith(github.ref, 'refs/pull/')) ||
+        (github.event_name == 'merge_group' && startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/')) ||
+        (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.resolve-main-images.result == 'success' && needs.resolve-main-images.outputs.missing_targets != '[]')
+      )
     runs-on: ubuntu-24.04-arm
     # The publish path runs everything a validation run does and then pushes ~1.3 GiB to GHCR, so
     # it gets its own ceiling rather than shaving the validation path's margin to fit. #31 moved
@@ -49,6 +88,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: ./.github/actions/setup-aws
         timeout-minutes: 2
@@ -69,16 +109,24 @@ jobs:
         id: publish
         # success() is explicit rather than implicit: this is a publication gate, and a reader
         # should not have to know that GitHub ANDs it in for conditions without a status function.
-        if: ${{ success() }}
+        if: ${{ success() && (github.event_name == 'merge_group' || github.event_name == 'push') }}
         timeout-minutes: 8
         env:
           ACTIVE_WORKER_IMAGES: ${{ steps.build.outputs.active_worker_images }}
           GHCR_NAMESPACE: ghcr.io/${{ github.repository_owner }}
           IMAGE_TAG: ${{ env.SHA_TAG }}
+          MISSING_TARGETS: ${{ needs.resolve-main-images.outputs.missing_targets }}
           REGISTRY_PASSWORD: ${{ github.token }}
           REGISTRY_USERNAME: ${{ github.actor }}
         run: |
           set -euo pipefail
+
+          # A main push publishes only what the merge group did not; a merge group publishes all.
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            targets=$(jq -r '.[]' <<<"$MISSING_TARGETS")
+          else
+            targets="api $ACTIVE_WORKER_IMAGES"
+          fi
 
           printf '%s' "$REGISTRY_PASSWORD" |
             docker login ghcr.io --username "$REGISTRY_USERNAME" --password-stdin
@@ -88,7 +136,7 @@ jobs:
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
 
-          for target in api $ACTIVE_WORKER_IMAGES; do
+          for target in $targets; do
             local_image="$IMAGE_REPOSITORY/$target:$IMAGE_TAG"
             remote_image="$GHCR_NAMESPACE/$target:$IMAGE_TAG"
             docker tag "$local_image" "$remote_image"

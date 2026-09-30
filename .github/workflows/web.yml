@@ -16,6 +16,8 @@ on:
         required: false
       S3_BUCKET_IMAGE_UPLOADS:
         required: false
+      SENTRY_AUTH_TOKEN:
+        required: false
   workflow_dispatch:
 
 # A literal prefix: under workflow_call, github.workflow names the caller, which would collide the
@@ -113,17 +115,16 @@ jobs:
       contents: read
       id-token: write
 
-  # Docker image validation. On pull requests it runs only when the image build inputs change; a
-  # merge group builds whenever any source baked into the image changed.
-  build-web:
+  # Pull requests validate the image without registry writes or Sentry uploads. Merge groups
+  # publish the exact validated image so main can reuse its trusted immutable digest.
+  validate-web-images:
     needs: [changes, static-web]
     if: >-
       needs.changes.outputs.trusted-secret-context == 'true' &&
-      (
-        (github.event_name == 'pull_request' && (needs.changes.outputs.workflow-action-changes == 'true' || needs.changes.outputs.build-web-infra == 'true')) ||
-        (github.event_name == 'merge_group' && (needs.changes.outputs.workflow-action-changes == 'true' || needs.changes.outputs.build-web == 'true'))
-      )
-    uses: ./.github/workflows/build-web.yml
+      github.event_name == 'pull_request' &&
+      startsWith(github.ref, 'refs/pull/') &&
+      (needs.changes.outputs.workflow-action-changes == 'true' || needs.changes.outputs.build-web-infra == 'true')
+    uses: ./.github/workflows/publish-web-images.yml
     with:
       trusted_secret_context: ${{ needs.changes.outputs.trusted-secret-context == 'true' }}
     secrets:
@@ -132,6 +133,27 @@ jobs:
       actions: read
       contents: read
       id-token: write
+      packages: read
+
+  publish-web-images:
+    needs: [changes, static-web]
+    if: >-
+      needs.changes.outputs.trusted-secret-context == 'true' &&
+      github.event_name == 'merge_group' &&
+      startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/') &&
+      (needs.changes.outputs.workflow-action-changes == 'true' || needs.changes.outputs.build-web == 'true')
+    uses: ./.github/workflows/publish-web-images.yml
+    with:
+      trusted_secret_context: ${{ needs.changes.outputs.trusted-secret-context == 'true' }}
+    secrets:
+      AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+    permissions:
+      actions: read
+      attestations: write
+      contents: read
+      id-token: write
+      packages: write
 
   coverage:
     needs: [static-web, test-web, test-web-api, test-web-integration, storybook]
@@ -178,7 +200,8 @@ jobs:
         storybook,
         test-playwright,
         test-playwright-credentialed,
-        build-web,
+        validate-web-images,
+        publish-web-images,
         coverage,
       ]
     runs-on: ubuntu-latest
@@ -192,4 +215,4 @@ jobs:
         timeout-minutes: 1
         with:
           results: >-
-            {"changes":{"result":"${{ needs.changes.result }}"},"static-web":{"result":"${{ needs.static-web.result }}"},"test-web":{"result":"${{ needs.test-web.result }}"},"test-web-api":{"result":"${{ needs.test-web-api.result }}"},"test-web-integration":{"result":"${{ needs.test-web-integration.result }}"},"storybook":{"result":"${{ needs.storybook.result }}"},"test-playwright":{"result":"${{ needs.test-playwright.result }}"},"test-playwright-credentialed":{"result":"${{ needs.test-playwright-credentialed.result }}"},"build-web":{"result":"${{ needs.build-web.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}
+            {"changes":{"result":"${{ needs.changes.result }}"},"static-web":{"result":"${{ needs.static-web.result }}"},"test-web":{"result":"${{ needs.test-web.result }}"},"test-web-api":{"result":"${{ needs.test-web-api.result }}"},"test-web-integration":{"result":"${{ needs.test-web-integration.result }}"},"storybook":{"result":"${{ needs.storybook.result }}"},"test-playwright":{"result":"${{ needs.test-playwright.result }}"},"test-playwright-credentialed":{"result":"${{ needs.test-playwright-credentialed.result }}"},"validate-web-images":{"result":"${{ needs.validate-web-images.result }}"},"publish-web-images":{"result":"${{ needs.publish-web-images.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}
