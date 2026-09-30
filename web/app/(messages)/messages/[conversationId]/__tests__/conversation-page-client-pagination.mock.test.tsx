@@ -1,15 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render } from '@testing-library/react'
+import { describe, vi } from 'vitest'
 import type { DirectMessage } from '@/types/messages'
-
-interface MessagePage {
-  results: DirectMessage[]
-  page_info: {
-    has_next_page: boolean
-    start_cursor: string | null
-    end_cursor: string | null
-  }
-}
+import { registerPaginationClientTests } from '@/test-helpers/app/pagination-client-tests'
 
 const { mockGetDirectMessageThreadClient, mockOnError } = vi.hoisted(() => ({
   mockGetDirectMessageThreadClient: vi.fn<VitestLooseMock>(),
@@ -68,29 +60,6 @@ function makeMessage(id: string, conversationId = 'conversation-one'): DirectMes
   }
 }
 
-function makePage(
-  results: DirectMessage[],
-  hasNextPage: boolean,
-  endCursor: string | null,
-): MessagePage {
-  return {
-    results,
-    page_info: {
-      has_next_page: hasNextPage,
-      start_cursor: results.length > 0 ? `start-${results[0]!.id}` : null,
-      end_cursor: endCursor,
-    },
-  }
-}
-
-function deferred<T>() {
-  let resolve!: (value: T) => void
-  const promise = new Promise<T>(res => {
-    resolve = res
-  })
-  return { promise, resolve }
-}
-
 function renderConversation(
   overrides: Partial<React.ComponentProps<typeof DirectMessagePageClient>> = {},
 ) {
@@ -110,77 +79,33 @@ function renderConversation(
 }
 
 describe('DirectMessagePageClient pagination', () => {
-  beforeEach(() => {
-    vi.resetAllMocks()
-  })
-
-  it('allows only one continuation request for rapid clicks', async () => {
-    const pending = deferred<MessagePage>()
-    mockGetDirectMessageThreadClient.mockReturnValueOnce(pending.promise)
-    const { container } = renderConversation()
-    const button = container.querySelector('[data-pw="dm-load-more-button"]')!
-
-    fireEvent.click(button)
-    fireEvent.click(button)
-
-    expect(mockGetDirectMessageThreadClient).toHaveBeenCalledTimes(1)
-    pending.resolve(makePage([], false, null))
-    await waitFor(() =>
-      expect(container.querySelector('[data-pw="dm-load-more-button"]')).toBeNull(),
-    )
-  })
-
-  it('deduplicates stable IDs across and within an older page', async () => {
-    mockGetDirectMessageThreadClient.mockResolvedValueOnce(
-      makePage([makeMessage('older'), makeMessage('older'), makeMessage('newest')], false, null),
-    )
-    const { container } = renderConversation()
-
-    fireEvent.click(container.querySelector('[data-pw="dm-load-more-button"]')!)
-
-    await waitFor(() => expect(screen.getAllByText('Message older')).toHaveLength(1))
-    expect(screen.getAllByText('Message newest')).toHaveLength(1)
-  })
-
-  it('rejects a continuation response from a stale conversation context', async () => {
-    const pending = deferred<MessagePage>()
-    mockGetDirectMessageThreadClient.mockReturnValueOnce(pending.promise)
-    const { container, rerender } = renderConversation()
-    fireEvent.click(container.querySelector('[data-pw="dm-load-more-button"]')!)
-
-    rerender(
-      <DirectMessagePageClient
-        key='conversation-two'
-        conversationId='conversation-two'
-        currentUserId='user-1'
-        initialMessages={[makeMessage('fresh', 'conversation-two')]}
-        initialHasMore={false}
-        initialEndCursor={null}
-        initialParticipants={[]}
-        isOwner={false}
-        initialParticipantAddPolicy='owner_only'
-      />,
-    )
-    pending.resolve(makePage([makeMessage('stale')], false, null))
-
-    await waitFor(() => expect(screen.getByText('Message fresh')).toBeDefined())
-    expect(screen.queryByText('Message stale')).toBeNull()
-  })
-
-  it('preserves messages and shows a working retry after continuation failure', async () => {
-    const error = new Error('network failure')
-    mockGetDirectMessageThreadClient
-      .mockRejectedValueOnce(error)
-      .mockResolvedValueOnce(makePage([makeMessage('older')], false, null))
-    const { container } = renderConversation()
-
-    fireEvent.click(container.querySelector('[data-pw="dm-load-more-button"]')!)
-    const retry = await screen.findByRole('button', { name: 'Retry' })
-    expect(screen.getByText('Message newest')).toBeDefined()
-    expect(mockOnError).toHaveBeenCalledWith(error, expect.any(Object))
-
-    fireEvent.click(retry)
-    await waitFor(() => expect(screen.getByText('Message older')).toBeDefined())
-    expect(mockGetDirectMessageThreadClient).toHaveBeenCalledTimes(2)
+  registerPaginationClientTests({
+    loadMoreButton: container => container.querySelector('[data-pw="dm-load-more-button"]'),
+    fetchPage: mockGetDirectMessageThreadClient,
+    onError: mockOnError,
+    renderInitial: renderConversation,
+    rerenderOtherContext(rerender) {
+      rerender(
+        <DirectMessagePageClient
+          key='conversation-two'
+          conversationId='conversation-two'
+          currentUserId='user-1'
+          initialMessages={[makeMessage('fresh', 'conversation-two')]}
+          initialHasMore={false}
+          initialEndCursor={null}
+          initialParticipants={[]}
+          isOwner={false}
+          initialParticipantAddPolicy='owner_only'
+        />,
+      )
+    },
+    duplicatedOlderMessages: () => [
+      makeMessage('older'),
+      makeMessage('older'),
+      makeMessage('newest'),
+    ],
+    olderMessage: () => makeMessage('older'),
+    staleMessage: () => makeMessage('stale'),
+    staleContextName: 'conversation',
   })
 })

@@ -1,10 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type {
-  ModmailMessage,
-  ModmailMessagesResponseBody,
-  ModmailThread,
-} from '@/lib/api/client/modmail'
+import { render } from '@testing-library/react'
+import { describe, vi } from 'vitest'
+import type { ModmailMessage, ModmailThread } from '@/lib/api/client/modmail'
+import { registerPaginationClientTests } from '@/test-helpers/app/pagination-client-tests'
 
 const { mockGetModmailMessagesClient, mockOnError } = vi.hoisted(() => ({
   mockGetModmailMessagesClient: vi.fn<VitestLooseMock>(),
@@ -81,29 +78,6 @@ function makeMessage(id: string, conversationId = 'thread-one'): ModmailMessage 
   }
 }
 
-function makePage(
-  results: ModmailMessage[],
-  hasNextPage: boolean,
-  endCursor: string | null,
-): ModmailMessagesResponseBody {
-  return {
-    results,
-    page_info: {
-      has_next_page: hasNextPage,
-      start_cursor: results.length > 0 ? `start-${results[0]!.id}` : null,
-      end_cursor: endCursor,
-    },
-  }
-}
-
-function deferred<T>() {
-  let resolve!: (value: T) => void
-  const promise = new Promise<T>(res => {
-    resolve = res
-  })
-  return { promise, resolve }
-}
-
 function renderThread(overrides: Partial<React.ComponentProps<typeof ModmailThreadClient>> = {}) {
   return render(
     <ModmailThreadClient
@@ -119,75 +93,31 @@ function renderThread(overrides: Partial<React.ComponentProps<typeof ModmailThre
 }
 
 describe('ModmailThreadClient pagination', () => {
-  beforeEach(() => {
-    vi.resetAllMocks()
-  })
-
-  it('allows only one continuation request for rapid clicks', async () => {
-    const pending = deferred<ModmailMessagesResponseBody>()
-    mockGetModmailMessagesClient.mockReturnValueOnce(pending.promise)
-    const { container } = renderThread()
-    const button = container.querySelector('[data-pw="modmail-thread-load-more"]')!
-
-    fireEvent.click(button)
-    fireEvent.click(button)
-
-    expect(mockGetModmailMessagesClient).toHaveBeenCalledTimes(1)
-    pending.resolve(makePage([], false, null))
-    await waitFor(() =>
-      expect(container.querySelector('[data-pw="modmail-thread-load-more"]')).toBeNull(),
-    )
-  })
-
-  it('deduplicates stable IDs across and within an older page', async () => {
-    mockGetModmailMessagesClient.mockResolvedValueOnce(
-      makePage([makeMessage('older'), makeMessage('older'), makeMessage('newest')], false, null),
-    )
-    const { container } = renderThread()
-
-    fireEvent.click(container.querySelector('[data-pw="modmail-thread-load-more"]')!)
-
-    await waitFor(() => expect(screen.getAllByText('Message older')).toHaveLength(1))
-    expect(screen.getAllByText('Message newest')).toHaveLength(1)
-  })
-
-  it('rejects a continuation response from a stale thread context', async () => {
-    const pending = deferred<ModmailMessagesResponseBody>()
-    mockGetModmailMessagesClient.mockReturnValueOnce(pending.promise)
-    const { container, rerender } = renderThread()
-    fireEvent.click(container.querySelector('[data-pw="modmail-thread-load-more"]')!)
-
-    rerender(
-      <ModmailThreadClient
-        key='community-two:thread-two'
-        communitySlug='community-two'
-        thread={makeThread('thread-two')}
-        initialMessages={[makeMessage('fresh', 'thread-two')]}
-        initialHasMore={false}
-        initialEndCursor={null}
-        isMod
-      />,
-    )
-    pending.resolve(makePage([makeMessage('stale')], false, null))
-
-    await waitFor(() => expect(screen.getByText('Message fresh')).toBeDefined())
-    expect(screen.queryByText('Message stale')).toBeNull()
-  })
-
-  it('preserves messages and shows a working retry after continuation failure', async () => {
-    const error = new Error('network failure')
-    mockGetModmailMessagesClient
-      .mockRejectedValueOnce(error)
-      .mockResolvedValueOnce(makePage([makeMessage('older')], false, null))
-    const { container } = renderThread()
-
-    fireEvent.click(container.querySelector('[data-pw="modmail-thread-load-more"]')!)
-    const retry = await screen.findByRole('button', { name: 'Retry' })
-    expect(screen.getByText('Message newest')).toBeDefined()
-    expect(mockOnError).toHaveBeenCalledWith(error, expect.any(Object))
-
-    fireEvent.click(retry)
-    await waitFor(() => expect(screen.getByText('Message older')).toBeDefined())
-    expect(mockGetModmailMessagesClient).toHaveBeenCalledTimes(2)
+  registerPaginationClientTests({
+    loadMoreButton: container => container.querySelector('[data-pw="modmail-thread-load-more"]'),
+    fetchPage: mockGetModmailMessagesClient,
+    onError: mockOnError,
+    renderInitial: renderThread,
+    rerenderOtherContext(rerender) {
+      rerender(
+        <ModmailThreadClient
+          key='community-two:thread-two'
+          communitySlug='community-two'
+          thread={makeThread('thread-two')}
+          initialMessages={[makeMessage('fresh', 'thread-two')]}
+          initialHasMore={false}
+          initialEndCursor={null}
+          isMod
+        />,
+      )
+    },
+    duplicatedOlderMessages: () => [
+      makeMessage('older'),
+      makeMessage('older'),
+      makeMessage('newest'),
+    ],
+    olderMessage: () => makeMessage('older'),
+    staleMessage: () => makeMessage('stale'),
+    staleContextName: 'thread',
   })
 })
