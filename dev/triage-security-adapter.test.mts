@@ -7,7 +7,7 @@ describe('security-triage plugin adapter', () => {
   it('documents plugin installation, generic boundaries, and all v1 fields', () => {
     const compact = adapter.replace(/\s+/gu, ' ')
     expect(compact).toContain('`security-triage`')
-    expect(compact).toContain('0.1.0')
+    expect(compact).toMatch(/\d+\.\d+\.\d+ or later/u)
     expect(compact).toContain('vouchington-tooling#install')
     expect(compact).toContain('`canonicalRepository`')
     expect(compact).toContain('`defaultBranch`')

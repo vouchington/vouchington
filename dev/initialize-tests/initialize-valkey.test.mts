@@ -59,7 +59,7 @@ describe('initialize Valkey container helpers', () => {
       touch .legacy-valkey-removed
       return 0
       ;;
-    "run -d --name voucha-valkey-d0123456789ab -p 51088:6379 --restart unless-stopped valkey/valkey-bundle:9.1.0")
+    "run -d --name voucha-valkey-d0123456789ab -p 51088:6379 --restart unless-stopped valkey/valkey-bundle:"*)
       return 0
       ;;
     "exec voucha-valkey-d0123456789ab valkey-cli ping")
@@ -139,7 +139,7 @@ describe('initialize Valkey container helpers', () => {
     "rm -f voucha-valkey")
       printf 'rm:%s\\n' "$3" >> "$record"
       ;;
-    "run -d --name voucha-valkey -p 50559:6379 --restart unless-stopped valkey/valkey-bundle:9.1.0")
+    "run -d --name voucha-valkey -p 50559:6379 --restart unless-stopped valkey/valkey-bundle:"*)
       printf 'run:%s\\n' "$4" >> "$record"
       ;;
     "exec voucha-valkey valkey-cli ping")

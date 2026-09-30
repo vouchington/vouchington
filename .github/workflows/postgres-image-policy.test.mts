@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { maxCiVitestWorkers } from '../../test-helpers/vitest-config/environment.mts'
 
 const pgvectorImagePattern = /pgvector\/pgvector:[^\s'"\\)]+/g
+const pgvectorDigestPinnedPattern = /^pgvector\/pgvector:[\w.-]+@sha256:[0-9a-f]{64}$/u
 const workflowDirectory = '.github/workflows'
 const ciPostgresMaxConnections = 300
 // Tests trigger ERRORs on purpose, and every ERROR already reaches the client that caused it, so
@@ -76,11 +77,8 @@ describe('PostgreSQL workflow image policy', () => {
     )
 
     expect(references.length).toBeGreaterThan(0)
-    expect(new Set(references)).toEqual(
-      new Set([
-        'pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62',
-      ]),
-    )
+    expect(references.filter(reference => !pgvectorDigestPinnedPattern.test(reference))).toEqual([])
+    expect(new Set(references).size).toBe(1)
   })
 
   it('sizes CI postgres above the default Vitest fork connection budget', () => {

@@ -64,9 +64,11 @@ esac
     expect(result.ok).toBe(true)
     if (!result.ok) throw new Error('expected success')
     expect(result.value.stdout).toContain('retrying from official GHCR')
+    const dbTag = /trivy-db:(\S+)$/.exec(calls[0] ?? '')?.[1] ?? ''
+    expect(dbTag).toMatch(/^\d+$/)
     expect(calls).toEqual([
-      'image --download-db-only --no-progress --timeout 75s --db-repository mirror.gcr.io/aquasec/trivy-db:2',
-      'image --download-db-only --no-progress --timeout 75s --db-repository ghcr.io/aquasecurity/trivy-db:2',
+      `image --download-db-only --no-progress --timeout 75s --db-repository mirror.gcr.io/aquasec/trivy-db:${dbTag}`,
+      `image --download-db-only --no-progress --timeout 75s --db-repository ghcr.io/aquasecurity/trivy-db:${dbTag}`,
     ])
   })
 })

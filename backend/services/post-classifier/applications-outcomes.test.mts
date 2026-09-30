@@ -25,7 +25,7 @@ import { readPostClassifierOutcomes } from './application-read.mts'
 import { applyPostClassifierVotes } from './application-votes.mts'
 import { resolvePostClassifierConfiguration } from './configuration.mts'
 
-const detectorPackageVersion = 'test-package-0.4.3'
+const detectorPackageVersion = 'test-package-version'
 function makeLocalOutcome(confidenceThreshold: number) {
   return {
     flagged: true,

@@ -18,7 +18,7 @@ function emptySnapshot(extensions: SchemaSnapshot['extensions']): SchemaSnapshot
 describe('normalizeExtensionVersionsForLiveComparison', () => {
   it('replaces every extension version with a constant placeholder', () => {
     const snapshot = emptySnapshot({
-      vector: { version: '0.8.1' },
+      vector: { version: '1.2.3' },
       pgcrypto: { version: '1.3' },
     })
 
@@ -29,8 +29,8 @@ describe('normalizeExtensionVersionsForLiveComparison', () => {
   })
 
   it('preserves extension presence -- keys are unchanged even when versions differ', () => {
-    const snapshot = emptySnapshot({ vector: { version: '0.8.1' } })
-    const otherSnapshot = emptySnapshot({ vector: { version: '0.8.6' } })
+    const snapshot = emptySnapshot({ vector: { version: '1.2.3' } })
+    const otherSnapshot = emptySnapshot({ vector: { version: '4.5.6' } })
 
     expect(Object.keys(normalizeExtensionVersionsForLiveComparison(snapshot).extensions)).toEqual(
       Object.keys(normalizeExtensionVersionsForLiveComparison(otherSnapshot).extensions),
@@ -39,7 +39,7 @@ describe('normalizeExtensionVersionsForLiveComparison', () => {
 
   it('leaves every other snapshot section untouched', () => {
     const snapshot: SchemaSnapshot = {
-      ...emptySnapshot({ vector: { version: '0.8.1' } }),
+      ...emptySnapshot({ vector: { version: '1.2.3' } }),
       views: { widgets_view: { definition: 'SELECT 1', comment: null, materialized: false } },
     }
 

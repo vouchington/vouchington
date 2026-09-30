@@ -124,7 +124,7 @@ describe('Gitleaks transient retry rules', () => {
               [
                 'gitleaks\tInstall gitleaks\t##[group]Run bash "$GITHUB_WORKSPACE/ci/install-github-release.sh" --repo gitleaks/gitleaks',
                 'gitleaks\tInstall gitleaks\tcurl: (22) The requested URL returned error: 504',
-                'gitleaks\tInstall gitleaks\tgitleaks version 8.30.1',
+                'gitleaks\tInstall gitleaks\tgitleaks version 0.0.0-test',
                 'gitleaks\tScan git history\t##[group]Run gitleaks git --config .gitleaks.toml',
                 'gitleaks\tScan git history\t##[error]Process completed with exit code 1.',
               ].join('\n'),

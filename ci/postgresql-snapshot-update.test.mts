@@ -1,4 +1,5 @@
 import { execFile as execFileCallback } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { chmod, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -13,7 +14,13 @@ const execFile = promisify(execFileCallback)
 const repository = 'vouchington/vouchington'
 const baseSha = 'b'.repeat(40)
 const headSha = 'a'.repeat(40)
-const image = `pgvector/pgvector:pg18@sha256:${'c'.repeat(64)}`
+const schemaWorkflow = readFileSync(
+  new URL('../.github/workflows/tests-postgres-schema.yml', import.meta.url),
+  'utf8',
+)
+const imageTag = /image: pgvector\/pgvector:([\w.-]+)@sha256:/u.exec(schemaWorkflow)?.[1]
+if (!imageTag) throw new Error('Expected a pgvector image tag in the schema workflow')
+const image = `pgvector/pgvector:${imageTag}@sha256:${'c'.repeat(64)}`
 const roots: string[] = []
 
 async function fixture(): Promise<{ root: string; env: NodeJS.ProcessEnv; output: string }> {

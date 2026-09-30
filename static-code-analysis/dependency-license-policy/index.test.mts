@@ -31,8 +31,8 @@ describe('checkDependencyLicensePolicy', () => {
   it('passes on a clean report with only permissive and allowlisted licenses', async () => {
     const report: PnpmLicenseReport = {
       MIT: [{ name: 'left-pad', versions: ['1.0.0'] }],
-      'MPL-2.0': [{ name: '@ghostery/adblocker', versions: ['2.18.2'] }],
-      'LGPL-3.0-or-later': [{ name: '@img/sharp-libvips-darwin-arm64', versions: ['1.3.3'] }],
+      'MPL-2.0': [{ name: '@ghostery/adblocker', versions: ['1.2.3'] }],
+      'LGPL-3.0-or-later': [{ name: '@img/sharp-libvips-darwin-arm64', versions: ['1.2.3'] }],
     }
     const result = await checkDependencyLicensePolicy(insideGitRepoCtx, {
       collectPnpmLicenseReport: () => report,

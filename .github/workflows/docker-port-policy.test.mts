@@ -105,7 +105,7 @@ describe('docker run port policy', () => {
       docker run -d \\
         --name my-container \\
         -p 127.0.0.1:5432:5432 \\
-        pgvector/pgvector:pg18
+        registry.test/example/database
     `
     const blocks = dockerRunBlocks(fixture)
     expect(blocks.length).toBeGreaterThan(0)
@@ -120,7 +120,7 @@ describe('docker run port policy', () => {
       docker run -d \\
         --name my-container \\
         -p "127.0.0.1::5432" \\
-        pgvector/pgvector:pg18
+        registry.test/example/database
     `
     const blocks = dockerRunBlocks(fixture)
     const mappings = blocks.flatMap(portMappings)
@@ -133,7 +133,7 @@ describe('docker run port policy', () => {
       docker run -d \\
         --name my-container \\
         -p "127.0.0.1:\${PGPORT}:5432" \\
-        pgvector/pgvector:pg18
+        registry.test/example/database
     `
     const blocks = dockerRunBlocks(fixture)
     const mappings = blocks.flatMap(portMappings)
@@ -146,7 +146,7 @@ describe('docker run port policy', () => {
       docker run -d \\
         --name otel \\
         -p "127.0.0.1:\${OTEL_HTTP_PORT}:4318" \\
-        otel/opentelemetry-collector-contrib:0.153.0
+        registry.test/example/collector
     `
     const mappings = dockerRunBlocks(fixture).flatMap(portMappings)
     const unsafe = mappings.filter(m => !isHostPortSafe(hostPortSlot(m)))

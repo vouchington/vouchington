@@ -37,7 +37,7 @@ describe('post classifier completion and approval admission (real PG)', () => {
     await setPostClassifierPostHashForTest(post.id, inputSha256)
     await setTestPostClearanceStatus(post.id, 'pending')
     const resolved = await resolvePostClassifierConfiguration(null, {
-      detectorPackageVersion: 'test-package-completion-0.1.0',
+      detectorPackageVersion: 'test-package-completion-version',
     })
     if (!resolved) throw new Error('Expected local post classifier configuration')
 
@@ -46,7 +46,7 @@ describe('post classifier completion and approval admission (real PG)', () => {
         postId: post.id,
         inputSha256,
         resolved,
-        detectorPackageVersion: 'test-package-completion-0.1.0',
+        detectorPackageVersion: 'test-package-completion-version',
         leaseSeconds: 60,
       }),
     ).resolves.toEqual({ kind: 'stale' })

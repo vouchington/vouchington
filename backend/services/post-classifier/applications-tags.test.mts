@@ -31,7 +31,7 @@ import { persistPostClassifierOutcomes } from './application-outcomes.mts'
 import { applyPostClassifierVotes } from './application-votes.mts'
 import { resolvePostClassifierConfiguration } from './configuration.mts'
 
-const detectorPackageVersion = 'test-package-tags-0.1.0'
+const detectorPackageVersion = 'test-package-tags-version'
 
 async function fixture(options: { remote: boolean; local: boolean }) {
   const author = await createTestUser()

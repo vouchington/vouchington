@@ -40,7 +40,7 @@ describe('initialize local PostgreSQL service', () => {
     `,
     })
 
-    expect(output).toContain('brew:services start postgresql@18')
+    expect(output).toMatch(/brew:services start postgresql@\d+/u)
   })
 
   it('starts Homebrew PostgreSQL when a disposable clone inherits a foreign DATABASE_URL', async () => {
@@ -57,7 +57,7 @@ describe('initialize local PostgreSQL service', () => {
     `,
     })
 
-    expect(output).toContain('brew:services start postgresql@18')
+    expect(output).toMatch(/brew:services start postgresql@\d+/u)
   })
 
   it('does not start Homebrew PostgreSQL for an explicit database URL', async () => {
@@ -260,7 +260,7 @@ ENV
     ).rejects.toMatchObject({
       code: 1,
       stderr: expect.stringMatching(
-        /Failed to start Homebrew PostgreSQL 18[\s\S]*brew services info postgresql@18/,
+        /Failed to start Homebrew PostgreSQL \d+[\s\S]*brew services info postgresql@\d+/u,
       ),
     })
   })

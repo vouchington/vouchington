@@ -138,9 +138,11 @@ describe('workflow runner policy (real workflows)', () => {
     }
   })
 
-  it('restricts ubuntu-24.04-arm to the native ARM64 image builds', () => {
+  it('restricts the ARM runner to the native ARM64 image builds', () => {
+    const armLabels: readonly string[] = ALLOWED_LABELS.filter(label => label.endsWith('-arm'))
+    expect(armLabels).toHaveLength(1)
     const armJobs = allJobEntries()
-      .filter(({ job }) => job['runs-on'] === 'ubuntu-24.04-arm')
+      .filter(({ job }) => typeof job['runs-on'] === 'string' && armLabels.includes(job['runs-on']))
       .map(({ file, jobName }) => `${file}#${jobName}`)
       .sort()
 

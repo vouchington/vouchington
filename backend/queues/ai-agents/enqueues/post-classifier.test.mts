@@ -39,7 +39,7 @@ describe('post classifier enqueue', () => {
       postId: randomUUID(),
       inputSha256: Buffer.alloc(32, 1).toString('hex'),
       configurationSha256: Buffer.alloc(32, 2).toString('hex'),
-      detectorPackageVersion: '0.4.3',
+      detectorPackageVersion: '0.0.0-test',
     })
 
     const job = (await readAllQueueJobs(ai_agents)).find(
@@ -62,14 +62,14 @@ describe('post classifier enqueue', () => {
         postId: randomUUID(),
         inputSha256: Buffer.alloc(32, 3).toString('hex'),
         configurationSha256: Buffer.alloc(32, 4).toString('hex'),
-        detectorPackageVersion: '0.4.3',
+        detectorPackageVersion: '0.0.0-test',
       },
       {
         applicationId: randomUUID(),
         postId: randomUUID(),
         inputSha256: Buffer.alloc(32, 5).toString('hex'),
         configurationSha256: Buffer.alloc(32, 6).toString('hex'),
-        detectorPackageVersion: '0.4.3',
+        detectorPackageVersion: '0.0.0-test',
       },
     ]
 

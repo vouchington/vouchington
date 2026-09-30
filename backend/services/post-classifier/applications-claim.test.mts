@@ -23,7 +23,7 @@ import {
 import { persistPostClassifierOutcomes } from './application-outcomes.mts'
 import { resolvePostClassifierConfiguration } from './configuration.mts'
 
-const detectorPackageVersion = 'test-package-0.4.3'
+const detectorPackageVersion = 'test-package-version'
 
 async function fixture(remote = false) {
   const actor = await createTestUser()

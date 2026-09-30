@@ -43,13 +43,11 @@
     },
     {
       "customType": "regex",
-      "description": "Valkey bundle image shared by CI, local initialization, and mirrored tests",
+      "description": "Valkey bundle image shared by CI and local initialization",
       "managerFilePatterns": [
         ".github/workflows/*.yml",
         ".github/workflows/*.yaml",
-        ".github/workflows/*.test.mts",
-        "dev/initialize",
-        "dev/initialize-tests/*.test.mts"
+        "dev/initialize"
       ],
       "matchStrings": [
         "valkey/valkey-bundle:(?<currentValue>\\d+\\.\\d+\\.\\d+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?"
