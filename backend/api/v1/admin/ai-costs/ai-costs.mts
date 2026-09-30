@@ -4,6 +4,7 @@ import { currentUserCanViewAiCosts, getCommunityAiCostTotals } from '@services/a
 import { requireAuthAndRateLimit } from '../../../response-helpers.mts'
 import { createPaginationParser } from '@modules/pagination'
 import { apiQuery } from '../../../response-contract.mts'
+import { parseAndValidatePaginatedRequest } from '../../../validate-paginated-query.mts'
 
 const parser = createPaginationParser({
   cursor: { type: 'simple', paramName: 'after' },
@@ -13,9 +14,7 @@ const parser = createPaginationParser({
 app.route('/api/v1/admin/ai-costs').get(async (ctx: Context) => {
   await requireAuthAndRateLimit(ctx, currentUserCanViewAiCosts, 'GET:/api/v1/admin/ai-costs')
 
-  // Intentional carrier skip: `limit` is an integer on the wire and ctx.query holds raw strings,
-  // so the generated query schema would reject every explicit limit. The shared pagination
-  // parser owns the range and cursor checks.
   apiQuery('GET:/api/v1/admin/ai-costs', parser)
-  ctx.json(await getCommunityAiCostTotals(parser.parse(ctx.query)))
+  const options = parseAndValidatePaginatedRequest(ctx, 'GET:/api/v1/admin/ai-costs', parser)
+  ctx.json(await getCommunityAiCostTotals(options))
 })

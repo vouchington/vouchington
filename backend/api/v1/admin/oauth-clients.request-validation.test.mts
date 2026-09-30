@@ -41,6 +41,24 @@ describe('admin OAuth client verification request contract validation', () => {
     await request.get('/api/v1/admin/oauth-clients?verification=pending').expect(422)
   })
 
+  it('keeps the list pagination answers next to the query contract', async () => {
+    const outsider = createRequest()
+    await outsider.authenticateAs(await createTestUser())
+    const denied = await outsider.get('/api/v1/admin/oauth-clients?verification=x&limit=abc')
+    expect(denied.status).toBe(403)
+    expect(denied.text).not.toMatch(/invalid|verification must/i)
+
+    const request = createRequest()
+    await request.authenticateAs(admin)
+    await request.get('/api/v1/admin/oauth-clients?limit=500').expect(200)
+    await request.get('/api/v1/admin/oauth-clients?unknown=1').expect(200)
+    await request.get('/api/v1/admin/oauth-clients?limit=abc').expect(400)
+    await request.get('/api/v1/admin/oauth-clients?after=not-a-cursor').expect(400)
+    await request
+      .get('/api/v1/admin/oauth-clients?verification=verified&verification=verified')
+      .expect(422)
+  })
+
   it.each([
     ['a non-object body', 'null'],
     ['a missing name', '{"redirect_uris":["https://app.example.com/callback"]}'],
