@@ -33,7 +33,6 @@ import {
   getStoryPreviews,
   getVisiblePostStoryIdsByStoryIds,
 } from '@services/stories'
-import { sendHashtagTopicSearchErrorResponse } from '../hashtag-search-error-response.mts'
 import { apiQuery } from '../../response-contract.mts'
 
 app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
@@ -43,10 +42,7 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
   validateRequestContract(ctx, 'GET:/api/v1/rss-feed-items', {
     query: preparedSearchParams.validationQuery,
   })
-  const parsedSearchParams = await resolveRssFeedItemsSearchParams(preparedSearchParams).catch(
-    error => sendHashtagTopicSearchErrorResponse(ctx, error),
-  )
-  if (!parsedSearchParams) return
+  const parsedSearchParams = await resolveRssFeedItemsSearchParams(preparedSearchParams)
   const { shouldReturnEmpty, searchOptions } = parsedSearchParams
   if (!currentUser) searchOptions.limit = clampAnonLimit(searchOptions.limit)
 

@@ -24,7 +24,7 @@ Query parameters:
 
 - `after` — opaque timestamp cursor from `page_info.end_cursor`
 - `limit` — 1–100, default 10
-- `q` / `text_search_query` — full-text search query using `websearch_to_tsquery` against item titles and content. `#topic-slug` tokens inside `q` are parsed as topic filters and removed from the text query; unresolved hashtag topics return `400 { "error": "Topic not found: #topic-slug" }`. Ignored when `semantic_search_query` is present.
+- `q` / `text_search_query` — full-text search query using `websearch_to_tsquery` against item titles and content. `#topic-slug` tokens inside `q` are parsed as topic filters and removed from the text query; unknown hashtags return an empty result and malformed hashtags return a `422` validation error (see [Combined Text And Topic Search](../../../navigation/FEED-LIST-FILTERS.md#combined-text-and-topic-search)). Ignored when `semantic_search_query` is present.
 - `semantic_search_query` — embedding-based similarity search using Bedrock Nova Multimodal embeddings (1024-dim HNSW cosine). When set, results are ordered by cosine similarity instead of recency and use an opaque scoped relevance cursor through `after`; cursors are valid only for the same normalized query and effective filters. Wins over `q`-derived `text_search_query` when both are supplied.
 - `rss_feed` / `rss_feeds` — RSS feed UUID(s). Non-UUID values return 422 (RSS feeds have no slug support).
 - `topic` / `topics` — topic UUID(s), slug(s), or alias(es). Unresolved identifiers return an empty result (not 422). Malformed identifiers (not UUID/slug format) return 422.

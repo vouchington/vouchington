@@ -6,7 +6,7 @@ Query parameters:
 
 - `after` — opaque cursor returned in `page_info.end_cursor`; browse pagination is incompatible with text search and returns 400 when combined with `text_search_query` or text derived from `q`
 - `limit` — 1–25, default 25
-- `q` / `text_search_query` — text search. `#topic-slug` tokens in `q` become topic filters; unresolved hashtags return 400.
+- `q` / `text_search_query` — text search. `#topic-slug` tokens in `q` become topic filters; unknown hashtags return an empty result and malformed hashtags return a `422` validation error (see [Combined Text And Topic Search](../../../navigation/FEED-LIST-FILTERS.md#combined-text-and-topic-search)).
 - `topic` — topic UUID, slug, or alias. Unresolved identifiers return an empty result (not 422). Malformed identifiers (not UUID/slug format) return 422.
 - `topics` — comma-separated topic UUIDs, slugs, or aliases. Results include feeds matching any listed topic by default.
 - `topic_match` — `any` (default) or `all`; two or more hashtags in `q` force `all`

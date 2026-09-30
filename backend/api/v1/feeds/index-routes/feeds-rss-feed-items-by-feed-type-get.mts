@@ -25,7 +25,6 @@ import { isAdminUser } from '@services/users'
 import { parseNumberParams } from '@ts-shared/utils/query'
 import app from '../../../app.mts'
 import { requireAuth } from '../../../response-helpers.mts'
-import { sendHashtagTopicSearchErrorResponse } from '../../hashtag-search-error-response.mts'
 
 import {
   loadOptionalFeedCommunityScope,
@@ -45,10 +44,7 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
 
   // Parse pagination and common filters
   const paginationOptions = rssFeedItemFeedParser.parse(ctx.query)
-  const hashtagSearchOptions = await parseHashtagFeedSearchOptions(ctx.query).catch(error =>
-    sendHashtagTopicSearchErrorResponse(ctx, error),
-  )
-  if (!hashtagSearchOptions) return
+  const hashtagSearchOptions = await parseHashtagFeedSearchOptions(ctx.query)
 
   // Parse feed-specific parameters
   const communityParam = ctx.query.community as string | undefined

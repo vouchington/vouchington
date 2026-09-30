@@ -29,7 +29,6 @@ import { clampAnonLimit } from '@modules/search-utils'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import { getUserActivePlan } from '@services/memberships'
 import { parseTopicsSearchParams } from '@services/search-params'
-import { sendHashtagTopicSearchErrorResponse } from '../hashtag-search-error-response.mts'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { getTopicElectionVotesByUser } from '@services/elections-votes/topic'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
@@ -98,10 +97,7 @@ app
       ...(query.after !== undefined && { after: query.after }),
       ...(query.limit !== undefined && { limit: query.limit }),
     }
-    const parsedSearchParams = await parseTopicsSearchParams(canonicalSearchQuery).catch(error =>
-      sendHashtagTopicSearchErrorResponse(ctx, error),
-    )
-    if (!parsedSearchParams) return
+    const parsedSearchParams = await parseTopicsSearchParams(canonicalSearchQuery)
     const { searchOptions } = parsedSearchParams
     searchOptions.omitLimit = false
     if (!currentUser) {

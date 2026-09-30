@@ -11,7 +11,7 @@ Query parameters:
 - `after` — opaque cursor from `page_info.end_cursor`
 - `limit` — 1–100, default 25; anonymous requests are capped at 25
 - `sort` — `new`, `best`, or `relevance`
-- `q` / `text_search_query` — text search. `#topic-slug` tokens inside `q` are resolved as topic filters; unresolved hashtags return 400.
+- `q` / `text_search_query` — text search. `#topic-slug` tokens inside `q` are resolved as topic filters; unknown hashtags return an empty result and malformed hashtags return a `422` validation error (see [Combined Text And Topic Search](../../../navigation/FEED-LIST-FILTERS.md#combined-text-and-topic-search)).
 - `semantic_search_query` — embedding-based similarity search
 - `topic_types` — comma-separated topic types: `topic`, `rewards_program`, `rewards_program_status`, `referral_program`, or `card`
 - `similar_post` — source post UUID or slug

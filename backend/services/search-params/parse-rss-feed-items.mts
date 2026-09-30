@@ -96,7 +96,7 @@ export async function resolveRssFeedItemsSearchParams(
   } = prepared
 
   // When semantic_search_query is present, skip q hashtag resolution entirely:
-  // - unresolved hashtags in q must not 400 (semantic wins)
+  // - unresolved hashtags in q must not force an empty result (semantic wins)
   // - resolved hashtags must not add spurious topic filters to the semantic path
   const hasSemanticSearch = Boolean(paginationOptions.semantic_search_query?.trim())
   const hashtagSearch = hasSemanticSearch

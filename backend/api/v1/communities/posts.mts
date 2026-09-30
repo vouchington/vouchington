@@ -24,7 +24,6 @@ import {
   shouldExcludeCommunityPinnedPosts,
   shouldIncludeCommunityPinnedPosts,
 } from './posts-pinned-helpers.mts'
-import { sendHashtagTopicSearchErrorResponse } from '../hashtag-search-error-response.mts'
 type CachedPost = Awaited<ReturnType<typeof getPostByAnyCachedBatch>>[number]
 async function buildLinkEmbedsSidecar(
   posts: CachedPost[],
@@ -57,10 +56,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
   const after = ctx.query.after as string | undefined
   const requestedSort = ctx.query.sort as string | undefined
   const sort = requestedSort === 'hot' ? 'hot' : 'new'
-  const hashtagSearchOptions = await resolveHashtagTopicSearch(ctx.query.q).catch(error =>
-    sendHashtagTopicSearchErrorResponse(ctx, error),
-  )
-  if (!hashtagSearchOptions) return
+  const hashtagSearchOptions = await resolveHashtagTopicSearch(ctx.query.q)
   const hasHashtagFilter =
     hashtagSearchOptions.hasUnknown || hashtagSearchOptions.filters.length > 0
 

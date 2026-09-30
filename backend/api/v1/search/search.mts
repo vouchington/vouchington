@@ -4,7 +4,6 @@ import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
 import { searchOmnisearch } from '@services/search'
 import { resolveHashtagTopicSearch } from '@services/search-params'
 import { clampAnonLimit } from '@modules/search-utils'
-import { sendHashtagTopicSearchErrorResponse } from '../hashtag-search-error-response.mts'
 
 // GET /api/v1/search — combined omnisearch across all five verticals.
 // Returns a lightweight payload with only the fields the command-search dialog renders.
@@ -18,22 +17,13 @@ app.route('/api/v1/search').get(async ctx => {
     limit = clampAnonLimit(limit)
   }
 
-  let textSearchQuery: string | undefined
-  let hashtagTopicIds: string[] = []
-  let hashtagAliasIds: string[] = []
-  let hasUnknownHashtag = false
-  try {
-    const result = await resolveHashtagTopicSearch(rawQ)
-    textSearchQuery = result.textSearchQuery
-    hashtagTopicIds = result.topicIds
-    hashtagAliasIds = result.filters.flatMap(filter =>
-      filter.kind === 'exact_alias' ? [filter.aliasId] : [],
-    )
-    hasUnknownHashtag = result.hasUnknown
-  } catch (err) {
-    sendHashtagTopicSearchErrorResponse(ctx, err)
-    return
-  }
+  const hashtagResult = await resolveHashtagTopicSearch(rawQ)
+  const textSearchQuery = hashtagResult.textSearchQuery
+  const hashtagTopicIds = hashtagResult.topicIds
+  const hashtagAliasIds = hashtagResult.filters.flatMap(filter =>
+    filter.kind === 'exact_alias' ? [filter.aliasId] : [],
+  )
+  const hasUnknownHashtag = hashtagResult.hasUnknown
 
   if (
     hasUnknownHashtag ||

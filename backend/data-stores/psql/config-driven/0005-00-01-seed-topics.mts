@@ -49,7 +49,7 @@ export default function generateSeedTopicsSQL(): string {
     const safeName = escapeSqlString(topic.name)
     const safeSlug = escapeSqlString(topic.slug)
 
-    // Upsert topic using the same CTE pattern as upsertTopicOnce in services/topics/upsert.mts
+    // Upsert topic by slug or case-insensitive name
     parts.push(`
 WITH existing_topic AS (
   SELECT id

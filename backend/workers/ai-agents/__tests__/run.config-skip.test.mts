@@ -25,9 +25,10 @@ import { getPostElectionVote } from '@services/elections-votes/post'
 
 import { searchPostModerationsByAgent } from '@services/moderation/search-post-moderations'
 
-import { getTopicByAny, upsertTopic } from '@services/topics'
+import { getTopicByAny } from '@services/topics'
 
 import {
+  createTestTopic,
   createTestUser,
   createSystemUser,
   mockAiGeneratedModerationResults,
@@ -87,7 +88,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
   async function ensureTopicExists(topicSlug: string) {
     const existingTopic = await getTopicByAny(topicSlug)
     if (existingTopic) return
-    await upsertTopic(topicSlug, topicSlug)
+    await createTestTopic({ name: topicSlug, slug: topicSlug })
   }
 
   it('getModeratorConfig returns null for unknown moderator slug', async () => {

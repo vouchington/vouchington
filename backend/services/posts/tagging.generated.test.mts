@@ -1,35 +1,36 @@
 import { it, expect, describe, beforeAll } from 'vitest'
 import { tagPostWithTopics } from './tagging.mts'
-import { upsertTopic } from '@services/topics'
 import {
   countPostRelatedTopics,
+  createTestTopic,
   createTestUser,
   hasPostRelatedTopic,
   insertTestPost,
   mergeTopicForTest,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import type { Topic } from '@services/topics/types'
 
 describe('tagging.generated', () => {
   let testUser: PrivateUser
-  let testTopic: Topic
+  let testTopic: Awaited<ReturnType<typeof createTestTopic>>
 
   beforeAll(async () => {
     const random = Math.random().toString(36).slice(2, 15)
     testUser = await createTestUser({ administrator: true })
-    testTopic = await upsertTopic(
-      `Test Post Tagging Topic ${random}`,
-      `test-post-tagging-${random}`,
-    )
+    testTopic = await createTestTopic({
+      name: `Test Post Tagging Topic ${random}`,
+      slug: `test-post-tagging-${random}`,
+      user: testUser,
+    })
   })
   describe('tagPostWithTopics', () => {
     it('tags post with multiple topics', async () => {
       const random = Math.random().toString(36).slice(2, 15)
-      const topic2 = await upsertTopic(
-        `Test Post Tagging Topic 2 ${random}`,
-        `test-post-tagging-2-${random}`,
-      )
+      const topic2 = await createTestTopic({
+        name: `Test Post Tagging Topic 2 ${random}`,
+        slug: `test-post-tagging-2-${random}`,
+        user: testUser,
+      })
       const postId = await insertTestPost({
         title: `Test Post Tags ${random}`,
         slug: `test-post-tags-${random}`,
@@ -69,8 +70,16 @@ describe('tagging.generated', () => {
 
     it('redirects a merged-away source slug to its destination topic', async () => {
       const random = Math.random().toString(36).slice(2, 15)
-      const source = await upsertTopic(`Merge Source ${random}`, `merge-source-${random}`)
-      const destination = await upsertTopic(`Merge Dest ${random}`, `merge-dest-${random}`)
+      const source = await createTestTopic({
+        name: `Merge Source ${random}`,
+        slug: `merge-source-${random}`,
+        user: testUser,
+      })
+      const destination = await createTestTopic({
+        name: `Merge Dest ${random}`,
+        slug: `merge-dest-${random}`,
+        user: testUser,
+      })
       await mergeTopicForTest(source.id, destination.id, testUser.id)
 
       const postId = await insertTestPost({
@@ -90,14 +99,16 @@ describe('tagging.generated', () => {
 
     it('dedupes when both a merged source slug and its destination slug are requested together', async () => {
       const random = Math.random().toString(36).slice(2, 15)
-      const source = await upsertTopic(
-        `Merge Dedup Source ${random}`,
-        `merge-dedup-source-${random}`,
-      )
-      const destination = await upsertTopic(
-        `Merge Dedup Dest ${random}`,
-        `merge-dedup-dest-${random}`,
-      )
+      const source = await createTestTopic({
+        name: `Merge Dedup Source ${random}`,
+        slug: `merge-dedup-source-${random}`,
+        user: testUser,
+      })
+      const destination = await createTestTopic({
+        name: `Merge Dedup Dest ${random}`,
+        slug: `merge-dedup-dest-${random}`,
+        user: testUser,
+      })
       await mergeTopicForTest(source.id, destination.id, testUser.id)
 
       const postId = await insertTestPost({
