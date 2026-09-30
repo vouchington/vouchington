@@ -1,0 +1,1048 @@
+{
+  "backend/agents/_shared/create-response.mts": {
+    "exports": ["getBackgroundResponseHooks", "getOpenAIResponseAttemptHooks"]
+  },
+  "backend/agents/_shared/subagent-tool.mts": {
+    "types": ["SubagentResult", "SubagentStepEvent"]
+  },
+  "backend/agents/autotagger/content.mts": {
+    "exports": ["createPostAutotagContent", "createRssFeedItemAutotagContent"]
+  },
+  "backend/agents/autotagger/dispatch-classifier.mts": {
+    "types": ["AutotaggerClassifierCandidate"]
+  },
+  "backend/agents/autotagger/openai-autotagger.mts": {
+    "exports": ["callOpenAIAutotagger"]
+  },
+  "backend/agents/chat/generate-title.mts": {
+    "exports": ["generateChatTitle"]
+  },
+  "backend/agents/classifiers/execute.mts": {
+    "exports": ["executeClassifierDecision"]
+  },
+  "backend/agents/classifiers/safe-content.mts": {
+    "exports": ["classifierChoiceKey", "classifierPrompt", "sanitizeClassifierExternalContent"]
+  },
+  "backend/data-stores/analytics/backend-firehose.mts": {
+    "exports": [
+      "setFirehoseRecordBatchSenderForTest",
+      "setFirehoseRetryDelayForTest",
+      "setFirehoseRetryWaitForTest"
+    ]
+  },
+  "backend/data-stores/analytics/backend-local.mts": {
+    "exports": ["setLocalAppendFileForTest"]
+  },
+  "backend/data-stores/graceful-shutdown/index.mts": {
+    "exports": ["isGracefulShutdownValkeyRegistered"]
+  },
+  "backend/data-stores/psql/migration-runner/index-sql.mts": {
+    "exports": ["extractIndexShapes"]
+  },
+  "backend/data-stores/psql/migration-runner/view-sql.mts": {
+    "exports": ["extractViewNames"]
+  },
+  "backend/data-stores/psql/migration-runner/views.mts": {
+    "exports": [
+      "buildDropViewStatement",
+      "buildDropViewsStatement",
+      "extractViewDeclarations",
+      "extractViewNames"
+    ]
+  },
+  "backend/data-stores/psql/pool-metrics.mts": {
+    "exports": ["getExistingPsqlPoolMetrics"]
+  },
+  "backend/data-stores/psql/pool-stats-sampler.mts": {
+    "exports": ["stopPoolStatsSampler"]
+  },
+  "backend/data-stores/psql/schema-growth-registry.mts": {
+    "exports": [
+      "NON_DEFAULT_ID_EXCEPTIONS",
+      "STATIC_IDENTITY_EXCEPTIONS",
+      "buildSchemaGrowthRegistry"
+    ]
+  },
+  "backend/data-stores/psql/schema-growth-retained-identities.mts": {
+    "exports": ["RETAINED_MISSING_UPDATED_AT"]
+  },
+  "backend/data-stores/valkey-core/app-integration.mts": {
+    "exports": ["getValkeyAnalyticsPromiseForTest", "resetValkeyAnalyticsLoaderForTest"]
+  },
+  "backend/data-stores/valkey-glide-mq/index.mts": {
+    "exports": ["buildWorkerQueueSettings"]
+  },
+  "backend/data-stores/valkey-pubsub/chat-token-pubsub.mts": {
+    "exports": ["closeChatTokenSubscriber"]
+  },
+  "backend/data-stores/valkey-rate-limiter/index.mts": {
+    "types": ["RateLimiterAddAndCheckWindowsOptions", "RetryRateLimiterSaturationDependencies"]
+  },
+  "backend/data-stores/valkey/clients.mts": {
+    "exports": ["closeDynamicConfigValkeySubscriptionClient"]
+  },
+  "backend/data-stores/valkey/dynamic-config.mts": {
+    "exports": ["dynamicConfigs"]
+  },
+  "backend/data-stores/valkey/events.mts": {
+    "exports": ["valkeyEvents"]
+  },
+  "backend/data-stores/valkey/jwt-stale.mts": {
+    "exports": ["clearJwtStale", "isJwtStale"]
+  },
+  "backend/data-stores/valkey/types.mts": {
+    "types": ["DynamicConfigField"]
+  },
+  "backend/entrypoints/api/dashboard-auth.mts": {
+    "exports": ["createIsAdminDashboardRequest"]
+  },
+  "backend/entrypoints/api/shutdown.mts": {
+    "exports": ["registerApiShutdownCallbacks"]
+  },
+  "backend/entrypoints/api/valkey-admin-command.mts": {
+    "exports": ["parseValkeyAdminCommand"],
+    "types": ["ParsedValkeyAdminCommand"]
+  },
+  "backend/entrypoints/api/verify-ipv6-egress-checks.mts": {
+    "exports": [
+      "checkTlsReachable",
+      "getIpv6VerificationHosts",
+      "reportRouteEvidence",
+      "resolveRecords"
+    ],
+    "types": ["HostResult"]
+  },
+  "backend/entrypoints/worker-cpu/grafana-heartbeat.mts": {
+    "exports": [
+      "GRAFANA_HEARTBEAT_INTERVAL_MS",
+      "GRAFANA_HEARTBEAT_TIMEOUT_MS",
+      "sendGrafanaHeartbeat"
+    ]
+  },
+  "backend/entrypoints/worker-cpu/index.mts": {
+    "exports": ["reportWorkerLoadFailure", "startWorkerRuntime"]
+  },
+  "backend/entrypoints/worker-cpu/schedule-definitions.mts": {
+    "exports": ["CPU_ONLY_SCHEDULE_DEFINITIONS"]
+  },
+  "backend/entrypoints/worker-cpu/worker-definitions.mts": {
+    "exports": ["CPU_ONLY_WORKER_DEFINITIONS"]
+  },
+  "backend/entrypoints/worker-io/index.mts": {
+    "exports": ["reportWorkerLoadFailure"]
+  },
+  "backend/modules/activitypub-uris/actor-uris.mts": {
+    "exports": ["getActorInboxUri"]
+  },
+  "backend/modules/api-egress-proxy/transport.mts": {
+    "exports": ["resetApiEgressProxyTransportForTest"]
+  },
+  "backend/modules/aws/credentials-test-helpers.mts": {
+    "exports": ["setupCredentialEnv"]
+  },
+  "backend/modules/aws/media-delivery-registry.mts": {
+    "exports": ["invalidateMediaDeliveryPath", "putMediaDeliveryRegistryRecord"]
+  },
+  "backend/modules/aws/ses.mts": {
+    "exports": ["buildRawEmailMessage"]
+  },
+  "backend/modules/bluesky-oauth/index.mts": {
+    "types": ["Keyset"]
+  },
+  "backend/modules/csv/parse-csv.mts": {
+    "exports": ["stripBom"]
+  },
+  "backend/modules/csv/stringify-csv.mts": {
+    "exports": ["streamCsvRows"]
+  },
+  "backend/modules/http-signatures/digest.mts": {
+    "exports": ["computeDigest", "extractDigestHash"]
+  },
+  "backend/modules/http-signatures/keys.mts": {
+    "exports": ["assertPrivateKeyPem"]
+  },
+  "backend/modules/http-signatures/verify-test-helpers.mts": {
+    "exports": ["BODY", "FULL_HEADERS", "buildManualSignature"]
+  },
+  "backend/modules/membership-helpers/tier-helpers.mts": {
+    "exports": ["hasProTier"]
+  },
+  "backend/modules/on-error/error-codes.mts": {
+    "exports": [
+      "AGENT_RESPONSE_DISABLED",
+      "AGENT_RESPONSE_MAX_CONCURRENT",
+      "AGENT_RESPONSE_QUOTA_EXCEEDED",
+      "AUTH_REQUIRED",
+      "BAD_GATEWAY",
+      "FORBIDDEN",
+      "INTERNAL_ERROR",
+      "INVALID_CONTENT_TYPE",
+      "MEMBERSHIP_REQUIRED",
+      "MFA_REQUIRED",
+      "RATE_LIMIT"
+    ]
+  },
+  "backend/modules/openai-utils/rate-limit.mts": {
+    "exports": ["isOpenAIServerError"]
+  },
+  "backend/modules/openai-utils/response-errors.mts": {
+    "exports": ["describeOpenAIUpstreamFailure"]
+  },
+  "backend/modules/pagination/query-contract.mts": {
+    "exports": ["composeQueryContracts"]
+  },
+  "backend/modules/request-client-info/index.mts": {
+    "exports": ["getRequestClientInfo"]
+  },
+  "backend/modules/scheduled-job-manifest/index.mts": {
+    "exports": ["validateScheduledJobManifests"],
+    "types": ["ScheduledJobQueue"]
+  },
+  "backend/modules/stripe/operations.mts": {
+    "exports": ["cancelSubscriptionImmediatelyOperation", "createRefundOperation"]
+  },
+  "backend/modules/structured-decisions/transport.mts": {
+    "exports": ["createTransportRequest", "fetchStructuredDecisionProvider"]
+  },
+  "backend/modules/utils/compression.mts": {
+    "exports": ["gzipBytes"]
+  },
+  "backend/modules/utils/gtin.mts": {
+    "exports": ["assertValidGTIN"]
+  },
+  "backend/modules/utils/http-dispatchers.mts": {
+    "exports": ["resetHttpDispatchersForTest"]
+  },
+  "backend/modules/utils/http-egress-guardrail.mts": {
+    "exports": ["resetEgressGuardrailDedupeForTest"]
+  },
+  "backend/modules/utils/http.mts": {
+    "types": ["ReadResponseBodyOptions"]
+  },
+  "backend/modules/utils/image-origin.mts": {
+    "exports": ["getSideloadImageUrlPrefix"]
+  },
+  "backend/modules/utils/search.mts": {
+    "exports": ["createGetSearchParameters", "getTypesFromQuery"]
+  },
+  "backend/modules/utils/strings.mts": {
+    "exports": ["stripControlCharacters"]
+  },
+  "backend/modules/worker-queue-inventory/index.mts": {
+    "exports": ["policyManagedGlideQueueNames"]
+  },
+  "backend/queues/ban-evasion/enqueues.mts": {
+    "exports": ["enqueueDetectBanEvasionAfterPostEmbedding"]
+  },
+  "backend/queues/bluesky-follow-propagation/enqueues.mts": {
+    "exports": ["enqueueReconcileBlueskyFollow"]
+  },
+  "backend/queues/emails/payload/job-payload.mts": {
+    "exports": ["emailJobContractCoversCanonicalTypes"]
+  },
+  "backend/queues/entity-listeners/enqueues/reconciliation.mts": {
+    "exports": ["enqueueBulkReconcileEntities"]
+  },
+  "backend/queues/entity-listeners/enqueues/topics.mts": {
+    "exports": ["enqueueOnTopicDeleted"]
+  },
+  "backend/queues/entity-listeners/payload/job-payload.mts": {
+    "exports": ["entityJobContractCoversCanonicalTypes"]
+  },
+  "backend/services/account-data-requests/derive-status.mts": {
+    "exports": ["deriveDataRequestStatus"]
+  },
+  "backend/services/account-data-requests/export.mts": {
+    "exports": ["mergeCsvFiles", "writeLineWithBackpressure"]
+  },
+  "backend/services/agents/get.mts": {
+    "exports": ["getActiveAgentsByType", "getAgentBySystemUserId", "getAgentModeratorConfig"]
+  },
+  "backend/services/agents/moderator-configs.mts": {
+    "exports": ["MODERATOR_CONFIGS"]
+  },
+  "backend/services/ai-usage/daily-total.mts": {
+    "exports": ["clearDailyAiCostTotalCacheForTesting"]
+  },
+  "backend/services/analytics/cache.mts": {
+    "exports": ["trackCacheCall"]
+  },
+  "backend/services/ap-inbox-activities/durable-delivery-transition-contract.mts": {
+    "types": ["ActivityPubInboxDeliveryTransitionDimensions"]
+  },
+  "backend/services/ap-inbox-activities/durable-delivery-transitions.test-support.mts": {
+    "exports": [
+      "acceptTestDelivery",
+      "claimTestDelivery",
+      "deferTestDelivery",
+      "exhaustTestDelivery",
+      "rejectTestDelivery",
+      "releaseTestDelivery",
+      "verifyTestDelivery"
+    ]
+  },
+  "backend/services/ap-inbox-activities/test-fixtures.mts": {
+    "exports": [
+      "acceptJobsFor",
+      "createFederatedUser",
+      "createRemoteActorFixture",
+      "waitForDeliverActivityJobs"
+    ]
+  },
+  "backend/services/ap-post-likes/get-tally.mts": {
+    "exports": ["getApPostLikesTally"]
+  },
+  "backend/services/ap-post-likes/test-fixtures.mts": {
+    "exports": ["createRemoteActorFixture"]
+  },
+  "backend/services/api-keys/bloom-filter.mts": {
+    "exports": ["deleteApiKeyBloomFilter"]
+  },
+  "backend/services/api-keys/validate.mts": {
+    "exports": ["validateApiKeyForMcpAudience"]
+  },
+  "backend/services/app-attestation/request-canonical.mts": {
+    "exports": ["EMPTY_BODY_SHA256"]
+  },
+  "backend/services/articles/storage.mts": {
+    "exports": ["clearArticleMarkdownCacheForTests"]
+  },
+  "backend/services/aside-preferences/get-dismissed.mts": {
+    "exports": ["getDismissedAsides"]
+  },
+  "backend/services/bedrock-embeddings-batch/derive-status.mts": {
+    "exports": ["deriveBedrockBatchStatus"]
+  },
+  "backend/services/bedrock-embeddings-batch/rate-limits.mts": {
+    "exports": ["getRateLimitConfig"]
+  },
+  "backend/services/bluesky-accounts/disconnect.mts": {
+    "exports": ["disconnectBlueskyAccountFromUser"]
+  },
+  "backend/services/bluesky-accounts/link-authorization.mts": {
+    "exports": ["getBlueskyLinkAuthorization"]
+  },
+  "backend/services/bluesky-accounts/native-completion.mts": {
+    "exports": ["createNativeBlueskyLinkCompletion"]
+  },
+  "backend/services/bluesky-follows/disconnect-request.mts": {
+    "exports": ["hasPendingBlueskyDisconnect"]
+  },
+  "backend/services/bluesky-follows/receipts.mts": {
+    "exports": ["deleteBlueskyFollowReceiptsForUser"]
+  },
+  "backend/services/boilerplate-removals/delete.mts": {
+    "exports": ["deleteBoilerplateRemovalsByHostnameId"]
+  },
+  "backend/services/bookmarks/bloom-filter-candidates.mts": {
+    "exports": ["checkBookmarkBloomCandidates"]
+  },
+  "backend/services/bookmarks/bloom-filter.mts": {
+    "exports": ["checkBookmarkBloomCandidates"]
+  },
+  "backend/services/bookmarks/counts.mts": {
+    "exports": ["getPostBookmarkCounts", "getRssFeedBookmarkCounts", "getTopicBookmarkCounts"]
+  },
+  "backend/services/browser-crawl/adblocker-cache.mts": {
+    "exports": ["resetBlockerForTesting"]
+  },
+  "backend/services/browser-crawl/crawl-test-helpers.mts": {
+    "exports": [
+      "getCrawlTestDependencies",
+      "makeMockBrowser",
+      "makeMockRoute",
+      "makeMockWebSocketRoute",
+      "resetCrawlMocks"
+    ]
+  },
+  "backend/services/captcha/config.mts": {
+    "exports": ["resetTurnstileAlwaysApproveSkipLogForTests"]
+  },
+  "backend/services/communities/authorization.mts": {
+    "exports": ["currentUserCanCreateCommunity"]
+  },
+  "backend/services/communities/invites/get.mts": {
+    "exports": ["getMyInvites"]
+  },
+  "backend/services/communities/publications/access.mts": {
+    "exports": ["getPublicationReviewChanges"]
+  },
+  "backend/services/communities/search.test-suites.mts": {
+    "exports": ["communitySearchSplitSuiteNames"]
+  },
+  "backend/services/community-member-vacations/manage.mts": {
+    "exports": ["getMyCommunityVacation"]
+  },
+  "backend/services/contribution-gating/admission.mts": {
+    "exports": ["canonicalizeAdmissionIntent"],
+    "types": ["ContributionAdmissionAudit"]
+  },
+  "backend/services/contribution-gating/limits.mts": {
+    "exports": ["getContributionLimitActionForPostType"]
+  },
+  "backend/services/conversations-messages/agentic-runs.mts": {
+    "exports": [
+      "getConversationMessageAgenticRunById",
+      "getConversationMessageAgenticRunEventsByRunId",
+      "getConversationMessageAgenticRunsByConversationMessageId",
+      "getLatestConversationMessageAgenticRunByConversationMessageId",
+      "hasRunningAgenticRunByConversationId"
+    ]
+  },
+  "backend/services/conversations-messages/conversations.mts": {
+    "exports": ["getConversationByCreatedByAndTitle", "updateConversationLastResponseId"]
+  },
+  "backend/services/conversations-messages/create.mts": {
+    "exports": ["createConversationMessage"]
+  },
+  "backend/services/copyright-notices/appeal-recommendations.mts": {
+    "exports": ["copyrightAppealRecommendations"]
+  },
+  "backend/services/copyright-notices/case-closure.mts": {
+    "exports": ["closeCopyrightNoticeCase"]
+  },
+  "backend/services/copyright-notices/correspondence.mts": {
+    "exports": ["approveCopyrightCorrespondence"]
+  },
+  "backend/services/copyright-notices/email-intake-parses.mts": {
+    "exports": ["getCopyrightEmailIntakeForAgent"]
+  },
+  "backend/services/copyright-notices/email-intake-test-fixtures.mts": {
+    "exports": ["createParsedCopyrightEmailIntake"]
+  },
+  "backend/services/copyright-notices/eu-notice-receipt.mts": {
+    "exports": ["receiveEuCopyrightNoticeInTransaction"]
+  },
+  "backend/services/copyright-notices/evidence.mts": {
+    "exports": ["appendCopyrightEvidenceArtifact"]
+  },
+  "backend/services/copyright-notices/form-screening-executions.mts": {
+    "exports": ["claimCopyrightFormScreening", "failCopyrightFormScreening"]
+  },
+  "backend/services/copyright-notices/guest-capabilities.mts": {
+    "exports": ["authorizeCopyrightGuestCapability"]
+  },
+  "backend/services/copyright-notices/index.mts": {
+    "exports": [
+      "acknowledgeCopyrightStaffAlert",
+      "appendCopyrightEvidenceArtifact",
+      "approveCopyrightCorrespondence",
+      "authorizeCopyrightGuestCapability",
+      "claimCopyrightDeliveryIntent",
+      "closeCopyrightNoticeCase",
+      "copyrightAppealRecommendations",
+      "copyrightGuestCapabilityMaxLifetimeMs",
+      "getCopyrightRepeatInfringerAccount",
+      "listCopyrightStaffAlertAcknowledgements",
+      "markCopyrightDeliveryIntentSent",
+      "previewCopyrightEvidenceRetention",
+      "recordCopyrightEvidenceRetentionDisposition",
+      "recordCopyrightRepeatInfringerDisposition",
+      "syncCopyrightStaffAlerts"
+    ],
+    "types": ["CopyrightAgentDispatchPage"]
+  },
+  "backend/services/copyright-notices/repeat-infringer-incidents.mts": {
+    "exports": ["getCopyrightRepeatInfringerAccount"]
+  },
+  "backend/services/copyright-notices/restoration-hold-scene.mts": {
+    "exports": ["recordOrdinaryCopyrightHold"]
+  },
+  "backend/services/copyright-notices/retention-disposition.mts": {
+    "exports": ["recordCopyrightEvidenceRetentionDisposition"]
+  },
+  "backend/services/copyright-notices/retention-preview.mts": {
+    "exports": ["previewCopyrightEvidenceRetention"]
+  },
+  "backend/services/copyright-notices/route-replay-fixtures.mts": {
+    "exports": ["verifyCopyrightActionReplayRoute", "verifyMediaDeliveryReplayRoute"]
+  },
+  "backend/services/copyright-notices/route-test-fixtures.mts": {
+    "exports": ["counterNoticeBody", "createNotice"]
+  },
+  "backend/services/copyright-notices/staff-alerts-fixtures.mts": {
+    "exports": [
+      "copyrightStaffAlertModerator",
+      "syncTrailingCopyrightStaffAlertPage",
+      "withApprovedCopyrightStaffAlertPolicy"
+    ]
+  },
+  "backend/services/copyright-notices/staff-alerts-read.mts": {
+    "exports": ["acknowledgeCopyrightStaffAlert", "listCopyrightStaffAlertAcknowledgements"]
+  },
+  "backend/services/copyright-notices/uk-notice-receipt.mts": {
+    "exports": ["receiveUkCopyrightNoticeInTransaction"]
+  },
+  "backend/services/crawl-chunks/cleanup.mts": {
+    "exports": ["finalizeChunksIfComplete"]
+  },
+  "backend/services/crawler-rss/clean.mts": {
+    "exports": ["parseRssFeedItemsFromXml"]
+  },
+  "backend/services/crawlers/delete.mts": {
+    "exports": ["deleteCrawler"]
+  },
+  "backend/services/crawlers/get.mts": {
+    "exports": ["getCrawlerForUrl"]
+  },
+  "backend/services/crawls/domain-rate-limit.mts": {
+    "exports": ["setDomainRateLimitedBackground"]
+  },
+  "backend/services/crawls/public-url-response.mts": {
+    "exports": ["toPaidSafeUrlCrawlHistory"]
+  },
+  "backend/services/crawls/s3.mts": {
+    "exports": ["uploadCrawlHtmlToS3"]
+  },
+  "backend/services/dynamic-config-admin/index.mts": {
+    "exports": ["dynamicConfigRegistry"],
+    "types": ["DynamicConfigRegistryEntry"]
+  },
+  "backend/services/elections-votes/topic/get-election.mts": {
+    "exports": ["getTopicElectionById"]
+  },
+  "backend/services/email-address-validator/domain-validation.mts": {
+    "exports": ["setResolveMxRecordsForDomainValidationTest"]
+  },
+  "backend/services/entity-fetch/posts.mts": {
+    "exports": ["fetchPostsWithMetadata"]
+  },
+  "backend/services/entity-fetch/rss-feed-items.mts": {
+    "exports": ["fetchRssFeedItemsWithMetadata"]
+  },
+  "backend/services/entity-fetch/search-caches.mts": {
+    "exports": ["invalidateAnonymousSearchCaches"]
+  },
+  "backend/services/entity-fetch/topics.mts": {
+    "exports": ["fetchTopicsWithMetadata"]
+  },
+  "backend/services/entity-relations/relation-deletion-state.mts": {
+    "exports": ["getEntityRelationDeletionState"]
+  },
+  "backend/services/entity-relations/test-support.mts": {
+    "exports": ["recordTestPostTopicRelationPublicationChanges", "stubUrlGuardsForSuite"]
+  },
+  "backend/services/feature-flags/index.mts": {
+    "exports": ["encodeFeatureFlagCookie"]
+  },
+  "backend/services/fediverse-instances/integration-status.mts": {
+    "exports": ["getLatestIntegrationStatusChange"]
+  },
+  "backend/services/fediverse-search/adapters/bluesky.mts": {
+    "exports": ["mapBlueskyActor", "mapBlueskyPost"]
+  },
+  "backend/services/fediverse-search/adapters/instance-classification.mts": {
+    "exports": ["findNodeInfoSchema2Link", "mapNodeInfoDocument"]
+  },
+  "backend/services/fediverse-search/adapters/lemmy.mts": {
+    "exports": ["mapLemmyCommunity", "mapLemmyPerson", "mapLemmyPost"]
+  },
+  "backend/services/fediverse-search/adapters/mastodon.mts": {
+    "exports": ["mapMastodonAccount"]
+  },
+  "backend/services/fediverse-search/adapters/peertube.mts": {
+    "exports": ["mapPeerTubeChannel", "mapPeerTubeVideo"]
+  },
+  "backend/services/fediverse-search/search.mts": {
+    "exports": ["buildUnavailableFediverseSearchResponse"]
+  },
+  "backend/services/feeds/share-actions.mts": {
+    "exports": ["sharePostWithFollowers", "shareRssFeedItemWithFollowers"]
+  },
+  "backend/services/growth-metrics/get-growth-metrics.mts": {
+    "exports": ["clearGrowthMetricsCacheForTesting"]
+  },
+  "backend/services/identity-verification/authorization.mts": {
+    "exports": ["currentUserCanUpdateIdentityVerification"]
+  },
+  "backend/services/identity-verification/name-display.mts": {
+    "exports": ["computeVerifiedDisplayName"]
+  },
+  "backend/services/images/s3.mts": {
+    "exports": ["uploadImageToS3"]
+  },
+  "backend/services/individuals-households/individuals-households.mts": {
+    "exports": ["getHouseholdByUser"]
+  },
+  "backend/services/jwt-session/index.mts": {
+    "exports": ["touchAuthenticatedSession", "upsertAuthenticatedSession"]
+  },
+  "backend/services/jwt-session/invalidation.mts": {
+    "exports": ["clearJwtStale", "isJwtStale"]
+  },
+  "backend/services/jwt-session/revocation.mts": {
+    "exports": ["revokeSessions"]
+  },
+  "backend/services/jwt-session/user-sessions.mts": {
+    "exports": ["touchAuthenticatedSession"]
+  },
+  "backend/services/landing-page-analytics/get-analytics.mts": {
+    "exports": ["getLandingPageAnalytics"]
+  },
+  "backend/services/lists/lists.mts": {
+    "exports": ["getList"]
+  },
+  "backend/services/localization/database.mts": {
+    "exports": ["setLocalizationDatabaseForTests"]
+  },
+  "backend/services/localization/index.mts": {
+    "exports": [
+      "getLocalizationDatabase",
+      "localizationBatchPayload",
+      "localizationSqlitePath",
+      "queryValues",
+      "resolveEmailLocalizationBatch",
+      "setLocalizationDatabaseForTests"
+    ]
+  },
+  "backend/services/localization/resolve.mts": {
+    "exports": ["resolveEmailLocalizationBatch"]
+  },
+  "backend/services/media-delivery-safety/index.mts": {
+    "exports": ["prepublishImageSurfaceDenial"]
+  },
+  "backend/services/memberships/apple/configured-verifier.mts": {
+    "exports": ["createConfiguredAppleSignedTransactionEvidenceVerifier"]
+  },
+  "backend/services/memberships/apple/process-verification.mts": {
+    "exports": ["processMembershipVerification"]
+  },
+  "backend/services/memberships/authorization.mts": {
+    "exports": ["currentUserCanCancelMembership", "currentUserCanViewMembership"]
+  },
+  "backend/services/memberships/get-catalog.mts": {
+    "exports": ["getActivePlans", "getActivePlansCached", "getSkuByStripePriceIdCached"]
+  },
+  "backend/services/memberships/get.mts": {
+    "exports": [
+      "getActivePlans",
+      "getActivePlansCached",
+      "getSkuByStripePriceId",
+      "getSkuByStripePriceIdCached"
+    ]
+  },
+  "backend/services/memberships/grants/expire-elapsed.mts": {
+    "exports": ["expireElapsedMembershipsForUser"]
+  },
+  "backend/services/memberships/grants/resume-after-direct-termination.mts": {
+    "exports": ["resumeGrantAfterDirectTermination"]
+  },
+  "backend/services/memberships/index.mts": {
+    "exports": ["getMembershipRefunds"]
+  },
+  "backend/services/memberships/ineligible-stripe-purchase-reversal/claim-ledger.mts": {
+    "exports": ["claimIneligiblePurchaseReversals"]
+  },
+  "backend/services/memberships/ineligible-stripe-purchase-reversal/family-proration.mts": {
+    "exports": ["getFamilyCollisionReversalTargets"]
+  },
+  "backend/services/memberships/ineligible-stripe-purchase-reversal/refund-history.mts": {
+    "exports": ["getObservedStripeRefunds"]
+  },
+  "backend/services/memberships/invalidate-provider-evidence.mts": {
+    "exports": ["rejectMembershipProviderEvidence"]
+  },
+  "backend/services/memberships/purchase-controls.mts": {
+    "exports": ["isMembershipAutomaticCollisionResolutionEnabled"]
+  },
+  "backend/services/memberships/refunds/index.mts": {
+    "exports": ["getMembershipRefunds"]
+  },
+  "backend/services/memberships/refunds/read.mts": {
+    "exports": ["getMembershipRefunds"]
+  },
+  "backend/services/memberships/reverse-ineligible-stripe-purchase.mts": {
+    "exports": ["reverseIneligibleStripePurchase"],
+    "types": ["IneligibleStripePurchaseOperations"]
+  },
+  "backend/services/memberships/stripe-catalog.mts": {
+    "exports": ["isStripeMembershipCatalogReady"]
+  },
+  "backend/services/memberships/update-cancellation.mts": {
+    "exports": ["cancelMembership"]
+  },
+  "backend/services/memberships/update.mts": {
+    "exports": ["cancelMembership"]
+  },
+  "backend/services/moderation-appeals/get.mts": {
+    "exports": ["getAppealCaseTrace"],
+    "types": ["ModerationCaseTrace"]
+  },
+  "backend/services/moderation-cases/get.mts": {
+    "exports": ["getCaseById"]
+  },
+  "backend/services/moderation-cases/index.mts": {
+    "exports": ["getCaseById", "resolveCase"]
+  },
+  "backend/services/moderation-cases/resolve.mts": {
+    "exports": ["resolveCase"]
+  },
+  "backend/services/moderation-exposure/index.mts": {
+    "types": ["ExposureState"]
+  },
+  "backend/services/moderation-reports/get.mts": {
+    "exports": ["listPendingModerationReports"]
+  },
+  "backend/services/moderation/moderation-prompts.mts": {
+    "exports": [
+      "createOpenAIPostLLMModerationPrompt",
+      "getOpenAIPostLLMModerationPromptById",
+      "getOpenAIPostLLMModerationPrompts",
+      "updateOpenAIPostLLMModerationPrompt"
+    ]
+  },
+  "backend/services/moderation/moderators.mts": {
+    "exports": ["createPostLLMModerator", "getPostLLMModeratorBySlug", "updatePostLLMModerator"]
+  },
+  "backend/services/moderation/post-moderation-agents.mts": {
+    "exports": ["hasPostModerationAgent"]
+  },
+  "backend/services/moderation/search-post-moderations.mts": {
+    "exports": ["searchPostModerationsByAgent"]
+  },
+  "backend/services/moderators/tagging.mts": {
+    "exports": ["tagPostWithTopicForModerators"]
+  },
+  "backend/services/notifications-push/push-intents.mts": {
+    "exports": ["createNotificationPushIntents"]
+  },
+  "backend/services/notifications-push/test-fixtures.mts": {
+    "exports": [
+      "createDelivery",
+      "getLeaseExpiry",
+      "successfulSendResult",
+      "waitForDeliveredEndpoint"
+    ]
+  },
+  "backend/services/notifications/community-activity-digest.mts": {
+    "exports": ["getPreviousClosedMondayWindow"]
+  },
+  "backend/services/oauth-apple/index.mts": {
+    "exports": ["getAppleAccountByAppleUserId"]
+  },
+  "backend/services/oauth-authorization-server/access-tokens.mts": {
+    "exports": ["isOAuthAccessToken", "validateOAuthAccessToken"]
+  },
+  "backend/services/oauth-authorization-server/resources.mts": {
+    "exports": ["getOAuthResourceMetadataUrl"]
+  },
+  "backend/services/oauth-authorization-server/test-support.mts": {
+    "exports": ["TEST_OAUTH_RESOURCE", "issueTestOAuthTokens"]
+  },
+  "backend/services/oauth-authorization-server/tokens.mts": {
+    "exports": ["validateOAuthAccessToken"]
+  },
+  "backend/services/oauth-google/index.mts": {
+    "exports": ["getGoogleAccountByGoogleUserId"]
+  },
+  "backend/services/oauth/authorization-broker.mts": {
+    "exports": ["buildProviderAuthorizationUrl"]
+  },
+  "backend/services/openai-agents/execute-tool-calls.mts": {
+    "exports": ["streamingExecuteToolCalls"]
+  },
+  "backend/services/openai-moderation/stored-results.mts": {
+    "exports": ["getStoredPostOpenAIModeration"]
+  },
+  "backend/services/post-clearance/approve-pending.mts": {
+    "exports": ["approvePendingPostClearance"]
+  },
+  "backend/services/post-clearance/update-status.mts": {
+    "exports": ["approvePendingPostClearance"]
+  },
+  "backend/services/post-publication/capture-keys.mts": {
+    "exports": ["POST_PUBLICATION_DIRTY_WORK_KEY_KINDS", "retainPostPublicationKeys"],
+    "types": ["PostPublicationRetainedKey"]
+  },
+  "backend/services/post-publication/retain-stored-identities.mts": {
+    "exports": ["retainStoredPublicationIdentities"]
+  },
+  "backend/services/post-publication/shadow-audit.mts": {
+    "types": ["ShadowAuditCandidate"]
+  },
+  "backend/services/post-publication/test-fixtures.mts": {
+    "exports": [
+      "createTestPublicationSnapshotWork",
+      "getTestPublicationProjectionIdentity",
+      "reconcileTestPublicationUntilSnapshotsComplete",
+      "recordTestStoryTopicPublicationChange"
+    ]
+  },
+  "backend/services/posts/create-link-post.mts": {
+    "exports": ["createLinkPost"]
+  },
+  "backend/services/posts/privacy-filter.mts": {
+    "exports": ["buildPrivacyFilter"]
+  },
+  "backend/services/posts/review-successions/audit.mts": {
+    "exports": ["REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE"]
+  },
+  "backend/services/posts/review-successions/index.mts": {
+    "exports": ["listReviewSuccessionsForPostIds", "terminalizeActiveReviewSuccessionForManualPost"]
+  },
+  "backend/services/posts/review-successions/list.mts": {
+    "exports": ["listReviewSuccessionsForPostIds"]
+  },
+  "backend/services/posts/search/test-support.mts": {
+    "exports": ["waitForPostMatchingRelatedTopicIds"]
+  },
+  "backend/services/posts/test-support.mts": {
+    "exports": ["createCommunityPostFixture", "createTestPost"]
+  },
+  "backend/services/queue-monitoring/get-queue-stats-cached.mts": {
+    "exports": ["clearQueueStatsCacheForTesting"]
+  },
+  "backend/services/read-states/catalog.mts": {
+    "exports": ["getReadStateStorageConfig", "readStateStorageCatalog"]
+  },
+  "backend/services/recaptcha/authorization.mts": {
+    "exports": ["currentUserCanUpdateRecaptchaConfig", "currentUserCanViewRecaptchaConfig"]
+  },
+  "backend/services/recently-viewed/get.mts": {
+    "exports": ["getRecentlyViewedIds"]
+  },
+  "backend/services/remote-actors/test-fixtures.mts": {
+    "exports": [
+      "ROTATED_REMOTE_ACTOR_PUBLIC_KEY_PEM",
+      "VALID_REMOTE_ACTOR_PUBLIC_KEY_PEM",
+      "fetchWithTimeoutResult",
+      "makeJsonResponse"
+    ]
+  },
+  "backend/services/report-integrity/config.mts": {
+    "exports": ["REPORT_INTEGRITY_FLAG_TYPES", "REPORT_INTEGRITY_RESOLUTIONS"]
+  },
+  "backend/services/review-disputes/config.mts": {
+    "exports": ["REVIEW_DISPUTE_ACTIONS"]
+  },
+  "backend/services/review-disputes/index.mts": {
+    "types": ["ReviewDispute"]
+  },
+  "backend/services/route-rate-limits/activitypub-inbox.mts": {
+    "exports": ["isActivityPubInboxAttemptRateLimited"]
+  },
+  "backend/services/route-rate-limits/config.mts": {
+    "exports": ["ROUTE_REGISTRY"]
+  },
+  "backend/services/route-rate-limits/test-support.mts": {
+    "exports": ["createRouteRateLimitKeyCleanup"]
+  },
+  "backend/services/rss-feed-items/categories.mts": {
+    "exports": ["buildRssFeedItemCategorySqlBatches", "getRssFeedItemCategories"]
+  },
+  "backend/services/rss-feed-items/category-topic-votes.mts": {
+    "exports": ["clearCategorizerVotesForUnreferencedCategoryTopicRelations"]
+  },
+  "backend/services/rss-feed-items/chapters.mts": {
+    "exports": ["normalizePodcastChapters"]
+  },
+  "backend/services/rss-feed-items/get.mts": {
+    "exports": ["getRssFeedItemByCompositeKey", "getRssFeedItemKeyByGuid"]
+  },
+  "backend/services/rss-feeds/crawls.mts": {
+    "exports": ["getLatestRssFeedCrawlForFeed"]
+  },
+  "backend/services/rss-feeds/discoverability-sql.mts": {
+    "exports": ["feedIsEnabledAndDiscoverableSql"]
+  },
+  "backend/services/rss-feeds/discoverability.mts": {
+    "exports": ["getLatestDiscoverabilityChange", "getLatestEnablementChange"]
+  },
+  "backend/services/rss-feeds/podcast-show.mts": {
+    "exports": ["getPodcastShow"]
+  },
+  "backend/services/rss-feeds/test-fixtures.mts": {
+    "exports": ["createTestRssFeed"]
+  },
+  "backend/services/rss-feeds/update-current-user.mts": {
+    "exports": ["updateRssFeedByIdAsCurrentUser"]
+  },
+  "backend/services/sitemaps/generated-paths.mts": {
+    "exports": ["buildRootSitemapRoutePath"]
+  },
+  "backend/services/sitemaps/generation.mts": {
+    "exports": ["indexGenerationDependencies"]
+  },
+  "backend/services/sitemaps/gzip.mts": {
+    "exports": ["gunzipUtf8"]
+  },
+  "backend/services/sitemaps/update-target.mts": {
+    "exports": ["getPostSitemapUpdateTarget"]
+  },
+  "backend/services/sitemaps/xml-builder.mts": {
+    "exports": ["buildSitemapIndex", "buildUrlset"]
+  },
+  "backend/services/stories/get.mts": {
+    "exports": ["getStoryWithItemCount"]
+  },
+  "backend/services/stories/story-post-related-url-projection.mts": {
+    "exports": ["STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE"]
+  },
+  "backend/services/stories/story-posts.mts": {
+    "exports": ["createStoryPost"]
+  },
+  "backend/services/stripe/event-utils.mts": {
+    "exports": ["getStripeObjectBoolean"]
+  },
+  "backend/services/stripe/events.mts": {
+    "exports": [
+      "getStripeEventByStripeEventId",
+      "insertStripeEvent",
+      "restartFailedStripeEventAttempt"
+    ]
+  },
+  "backend/services/topic-claims/index.mts": {
+    "exports": [
+      "TOPIC_CLAIM_VERIFICATION_METHODS",
+      "currentUserCanDisputeReviewsOfTopic",
+      "getVerifiedTopicClaim"
+    ],
+    "types": ["TopicClaim", "TopicClaimState", "TopicClaimVerificationMethod"]
+  },
+  "backend/services/topic-recommendations/database.mts": {
+    "exports": ["getPosts"]
+  },
+  "backend/services/topics/get-topic-aliases.mts": {
+    "exports": ["getTopicAliases"]
+  },
+  "backend/services/topics/publisher-type-topics.mts": {
+    "exports": ["getPublisherTypeTopicId"]
+  },
+  "backend/services/urls-domains-blacklist/bloom-filter.mts": {
+    "exports": ["addDomainsToBloomFilter", "deleteBloomFilter"]
+  },
+  "backend/services/urls-domains-blacklist/email-bloom-filter.mts": {
+    "exports": ["addDomainsToEmailBloomFilter", "deleteEmailBloomFilter"]
+  },
+  "backend/services/urls-domains-blacklist/rebuild-enqueue.mts": {
+    "exports": ["waitForBestEffortRebuildEnqueuesForTest"]
+  },
+  "backend/services/urls-domains-blacklist/sources.mts": {
+    "exports": ["BLACKLISTS", "upsertBlacklistSources"]
+  },
+  "backend/services/urls/update.mts": {
+    "exports": ["updateUrl"]
+  },
+  "backend/services/user-consents/get.mts": {
+    "exports": ["hasActiveConsent"]
+  },
+  "backend/services/user-deletions/lifecycle.test-support.mts": {
+    "exports": [
+      "addUserDeletionRelationImpactForTest",
+      "completeUserDeletionForTest",
+      "completeUserDeletionRelationImpactForTest",
+      "getUserDeletionCompletionAuditForTest",
+      "getUserDeletionDispatchedAtForTest",
+      "getUserDeletionRelationImpactIdsForTest",
+      "getUserDeletionRequestForTest",
+      "makeUserDeletionRecoverableForTest"
+    ]
+  },
+  "backend/services/user-import-export/opml.mts": {
+    "exports": ["generateOpml", "parseOpml"]
+  },
+  "backend/services/user-referral-program-links/children.mts": {
+    "exports": ["getActiveChildUrlIdsForParent"]
+  },
+  "backend/services/users/authentication.mts": {
+    "exports": ["createPhoneNumberLoginToken"]
+  },
+  "backend/services/users/delete-test-support.mts": {
+    "exports": ["deleteUserAndDrainForTest"]
+  },
+  "backend/services/users/system-users.mts": {
+    "exports": ["getUserByPrimaryEmail", "upsertAdminEmailAddresses"]
+  },
+  "backend/services/users/test-support.mts": {
+    "exports": ["createTestUser"]
+  },
+  "backend/services/users/update-contact-info.mts": {
+    "exports": ["updateUserEmailAddress", "updateUserPhoneNumber"]
+  },
+  "backend/services/valkey-admin/diagnostics.mts": {
+    "exports": ["parseValkeyMemoryInfo"]
+  },
+  "backend/services/vote-integrity/config.mts": {
+    "exports": ["VOTE_INTEGRITY_FLAG_TYPES"]
+  },
+  "backend/services/web-risk/state.mts": {
+    "exports": ["configureWebRiskStateForTest", "resetWebRiskStateForTest"]
+  },
+  "backend/workers/account-data-requests/processors.mts": {
+    "exports": ["publishTerminalStatus"]
+  },
+  "backend/workers/activitypub-inbox/test-support.mts": {
+    "exports": [
+      "approveInstance",
+      "createApprovedRemoteActor",
+      "createSignedDelivery",
+      "makeUnavailableActor"
+    ]
+  },
+  "backend/workers/ai-agents/processors/spend-cap-recheck.mts": {
+    "exports": ["getOpenAiSpendCapRecheckAt"]
+  },
+  "backend/workers/article-sync/processors.mts": {
+    "exports": ["publishTerminalStatus"]
+  },
+  "backend/workers/bedrock-embeddings-batch/processors/reconciliation.mts": {
+    "exports": ["processReconciliationPage"]
+  },
+  "backend/workers/crawl-boilerplate-removal/processors.mts": {
+    "exports": ["filterValidUtf8HtmlFiles", "selectHtmlFilesWithinByteBudget"]
+  },
+  "backend/workers/crawl-browser/processors.mts": {
+    "exports": ["handleBrowserCrawlError", "handleBrowserCrawlResult"]
+  },
+  "backend/workers/crawl-hostnames/processors.mts": {
+    "exports": [
+      "processCrawlCleanup",
+      "processRefreshHostnameCrawler",
+      "processRefreshHostnameCrawlerDispatcher",
+      "processRefreshHostnameCrawlerDispatcherJob"
+    ]
+  },
+  "backend/workers/crawl-referral-links/processors.mts": {
+    "exports": ["handleCrawlReferralLinkError", "handleCrawlReferralLinkResult"]
+  },
+  "backend/workers/crawler/processors.mts": {
+    "exports": ["buildCrawlerJobResult", "handleCrawlerProcessorError"]
+  },
+  "backend/workers/entity-listeners/test-support.mts": {
+    "exports": ["onceEntityListenerActive", "onceEntityListenerCompleted"]
+  },
+  "backend/workers/images/workers/images.mts": {
+    "exports": ["handleImagesJob"]
+  },
+  "backend/workers/memberships/processors/stripe-event-test-fixtures.mts": {
+    "exports": [
+      "createStripeEvent",
+      "createTestStripeSubscription",
+      "createUniqueStripeId",
+      "createUniqueStripePriceId",
+      "toJobData"
+    ]
+  },
+  "backend/workers/openai-moderation/workers/openai_moderation_omni_single.mts": {
+    "exports": ["processOpenAIModerationOmniSingleJob"]
+  },
+  "backend/workers/rss-feeds/processors.mts": {
+    "exports": ["processFetchRssFeed", "processRssFeedsDispatcher"]
+  },
+  "backend/workers/ses-inbound/processors/streamed-mail-parts.mts": {
+    "exports": ["MAX_MIME_TEXT_BYTES"]
+  },
+  "backend/workers/sitemaps/processors.mts": {
+    "exports": [
+      "backfillDispatcherDependencies",
+      "updatePostDaySitemapDependencies",
+      "updateSitemapIndexDependencies"
+    ]
+  },
+  "backend/workers/story-post-related-url-projections/processors.mts": {
+    "exports": ["processReconcileStoryPostRelatedUrlProjections"]
+  },
+  "backend/workers/user-deletions/processors/process-job.mts": {
+    "exports": ["isFinalUserDeletionAttempt"]
+  }
+}
