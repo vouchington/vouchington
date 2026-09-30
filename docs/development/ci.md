@@ -48,6 +48,18 @@ full `buildx.build.provenance` object, about 670 lines per image, around a diges
 that no workflow reads. The setting changes only the metadata file and log, not the build output.
 `cache-policy.test.mts` requires it on every such step in a workflow or composite action.
 
+Both `setup-node-pnpm` installs pass `--loglevel=warn`. At the default level each job printed about
+85 to 135 install lines (93 in the install region of run `36216699892`): `Progress: resolved …`
+lines, a `devDependencies:` summary of the root manifest, and every dependency's lifecycle-script
+output, none of which any check reads. At `warn`, pnpm prints warnings and errors only. A successful
+lifecycle script is discarded, a failed required script keeps its command, package and complete
+stdout and stderr, ignored-build warnings stay visible, and a failed supply-chain verification prints
+at error level. A successful or cached verdict is info-level, so a green install no longer prints it.
+That contract is [pnpm/pnpm#16076](https://github.com/pnpm/pnpm/pull/16076), released in pnpm 12.8;
+`version: latest-12` in `pnpm/action-setup` selects a release that has it, and an older 12.x would
+hide a failed script's output at this level. `pnpm-install-policy.test.mts` pins the flag on both
+installs. The direct installer in `postgresql-snapshot-update.yml` is separate and unchanged.
+
 CI is expensive — this includes GitHub Actions artifact and cache storage. The repository artifact
 and log retention setting and every workflow artifact are **1 day**. `artifact-retention-policy.test.mts`
 rejects uploads that omit the literal `retention-days: 1` or substitute another value. Full-LCOV

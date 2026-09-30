@@ -150,4 +150,21 @@ describe('pnpm install workflow policy', () => {
       runsPnpmInstall('pnpm --filter web exec playwright install'),
     ]).toEqual([true, true, true, true, true, false, false, false])
   })
+
+  it('runs both shared installs at the warn log level', () => {
+    // --loglevel=warn drops the resolved/progress lines and the devDependencies summary. pnpm 12.8.0
+    // (pnpm/pnpm#16076) keeps a failed lifecycle script's full output and a failed supply-chain
+    // verdict at that level, so warnings and errors stay visible. Only setup-node-pnpm is pinned:
+    // the snapshot generator is a separate direct installer that owns its own output.
+    const setup = stepLists.find(
+      ({ owner }) => owner === '.github/actions/setup-node-pnpm/action.yml',
+    )
+    const installs = (setup?.steps ?? []).flatMap(step =>
+      runsPnpmInstall(step.run) ? [step.run ?? ''] : [],
+    )
+    expect(installs).toHaveLength(2)
+    expect(installs.filter(command => !command.split(/\s+/).includes('--loglevel=warn'))).toEqual(
+      [],
+    )
+  })
 })

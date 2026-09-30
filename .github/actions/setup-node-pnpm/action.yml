@@ -37,11 +37,14 @@ runs:
         key: pnpm-store-${{ runner.os }}-${{ runner.arch }}-${{ steps.pnpm-store.outputs.lockfile-hash }}
         restore-keys: |
           pnpm-store-${{ runner.os }}-${{ runner.arch }}-
+    # --loglevel=warn drops the progress bar and package summary but still prints warnings and
+    # errors. From pnpm 12.8.0 (pnpm/pnpm#16076) it also keeps a failed lifecycle script's full
+    # output and a failed supply-chain verdict, so the quiet log stays diagnosable.
     - name: pnpm install
       if: inputs.install-scripts != 'false'
       shell: bash
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile --loglevel=warn
     - name: pnpm install without lifecycle scripts
       if: inputs.install-scripts == 'false'
       shell: bash
-      run: pnpm install --frozen-lockfile --ignore-scripts
+      run: pnpm install --frozen-lockfile --ignore-scripts --loglevel=warn
