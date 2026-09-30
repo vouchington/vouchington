@@ -30,6 +30,11 @@ schema is never checked before authentication.
   constrains `range` to its enum; omitting `range` still defaults to `30d` (the schema's `default`
   is not runtime-enforced by the shared AJV instance — the route's own default logic still handles
   the omitted case).
+- `GET /api/v1/communities/:idOrSlug/agent-prompts/history`: optional `promptId` and `before` are
+  UUIDs. A malformed value returns `422` after authentication and the community-prompt role check.
+  Omitting either parameter, or sending a well-formed UUID, is unchanged. An unauthenticated caller
+  still receives `401`, and an authenticated non-moderator still receives `403`, including when the
+  query is malformed.
 
 ## Carriers the generated schema does not reject by itself
 
@@ -61,17 +66,6 @@ schema is never checked before authentication.
   unrecognized value rather than rejecting it — running the shared validator against the raw query
   here would turn today's clamping/defaulting behavior into a `422`. See the inline comment in
   `reports.mts` at the `apiQuery(...)` call for this operation.
-
-## Endpoints without a query schema at all
-
-- `GET /api/v1/communities/:idOrSlug/agent-prompts/history` has no generated `query` entry in the
-  operations map — its route never calls `apiQuery(...)` for this operation, so there is no
-  contract to validate against. The route's local `promptId`/`before` UUID-format checks are the
-  only validation for these query parameters today. This is a pre-existing documentation gap (no
-  `apiQuery` call was ever added for this operation's query params), not a carrier this task skips
-  intentionally — closing it requires adding an `apiQuery(...)` call and regenerating the contract,
-  which is out of scope here since it does not follow from making the _existing_ generated contract
-  authoritative.
 
 ## Path-only operations
 

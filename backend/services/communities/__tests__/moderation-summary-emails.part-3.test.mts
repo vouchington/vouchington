@@ -6,6 +6,7 @@ import {
 } from '@voucha/test-helpers'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
+import { insertBackdatedModerationSummaryCommunity } from '@voucha/test-helpers/moderation-summary-activity-community'
 import { getCommunityModerationSummaryCommunities } from '../moderation-summary-emails.mts'
 import { deleteUser } from '../../users/delete.mts'
 
@@ -14,54 +15,34 @@ const ONE_WEEK_MS = 7 * ONE_DAY_MS
 
 describe('getCommunityModerationSummaryCommunities activity digest engagement', () => {
   it('excludes comments from the post-type breakdown but counts commenters as active members', async () => {
-    const owner = await createTestUser()
     const commenter = await createTestUser()
-    const before = new Date(Date.now() - 30 * ONE_DAY_MS)
-
-    const community = await insertTestCommunity({ createdById: owner!.id })
+    const { owner, community, outsideWindow, pendingPostId } =
+      await insertBackdatedModerationSummaryCommunity({
+        title: 'Parent discussion',
+        slugPrefix: 'comment-only-parent',
+        markdown: 'Parent.',
+      })
     await insertTestCommunityMember({
       communityId: community.id,
-      userId: owner!.id,
-      role: 'owner',
-      approvedById: owner!.id,
-      createdAt: before,
-    })
-    await insertTestCommunityMember({
-      communityId: community.id,
-      userId: commenter!.id,
+      userId: commenter.id,
       role: 'member',
-      approvedById: owner!.id,
-      createdAt: before,
-    })
-
-    const parentPostId = await insertTestPost({
-      title: 'Parent discussion',
-      slug: `comment-only-parent-${owner!.id}`,
-      createdById: owner!.id,
-      markdown: 'Parent.',
-      communityId: community.id,
-      postType: 'discussion',
-      createdAt: before,
-    })
-    await insertTestPendingCommunityPostReview({
-      communityId: community.id,
-      postId: parentPostId,
-      submittedById: owner!.id,
+      approvedById: owner.id,
+      createdAt: outsideWindow,
     })
     await insertTestPost({
       title: 'Just a comment',
-      slug: `comment-only-reply-${owner!.id}`,
-      createdById: commenter!.id,
+      slug: `comment-only-reply-${owner.id}`,
+      createdById: commenter.id,
       markdown: 'Just a comment.',
       communityId: community.id,
       postType: 'comment',
-      parentId: parentPostId,
+      parentId: pendingPostId,
     })
 
     const windowStart = new Date(Date.now() - ONE_WEEK_MS)
     const windowEnd = new Date(Date.now() + ONE_DAY_MS)
     const communities = await getCommunityModerationSummaryCommunities(
-      owner!.id,
+      owner.id,
       windowStart,
       windowEnd,
     )

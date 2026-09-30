@@ -11,6 +11,7 @@ const expectedParameters = {
   'GET:/api/v1/auth/passkeys': ['after', 'limit'],
   'GET:/api/v1/auth/sessions': ['after', 'limit'],
   'GET:/api/v1/auth/totp': ['after', 'limit'],
+  'GET:/api/v1/communities/:idOrSlug/agent-prompts/history': ['before', 'promptId'],
   'GET:/api/v1/communities/:idOrSlug/moderation-transparency': ['after', 'range'],
   'GET:/api/v1/communities/:idOrSlug/reports/pending': ['after', 'limit', 'sort'],
   'GET:/api/v1/copyright-email-intakes/review-queue': ['after', 'limit'],

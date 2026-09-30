@@ -8,6 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
+import { insertBackdatedModerationSummaryCommunity } from '@voucha/test-helpers/moderation-summary-activity-community'
 import { emails } from '@queues/emails/queues'
 import { updateUserFields } from '@services/users/update-fields'
 import { deleteUser } from '@services/users/delete'
@@ -203,37 +204,16 @@ describe('getCommunityModerationSummaryCommunities activity digest', () => {
   })
 
   it('excludes posts and members created before the activity window', async () => {
-    const owner = await createTestUser()
     const outsideMember = await createTestUser()
-    const outsideWindow = new Date(Date.now() - 30 * ONE_DAY_MS)
-
-    const community = await insertTestCommunity({ createdById: owner!.id })
-    await insertTestCommunityMember({
-      communityId: community.id,
-      userId: owner!.id,
-      role: 'owner',
-      approvedById: owner!.id,
-      createdAt: outsideWindow,
-    })
-
-    const pendingPostId = await insertTestPost({
+    const { owner, community, outsideWindow } = await insertBackdatedModerationSummaryCommunity({
       title: 'Needs review outside window',
-      slug: `outside-window-pending-${owner!.id}`,
-      createdById: owner!.id,
+      slugPrefix: 'outside-window-pending',
       markdown: 'Needs review.',
-      communityId: community.id,
-      postType: 'discussion',
-      createdAt: outsideWindow,
-    })
-    await insertTestPendingCommunityPostReview({
-      communityId: community.id,
-      postId: pendingPostId,
-      submittedById: owner!.id,
     })
     await insertTestPost({
       title: 'Old discussion',
-      slug: `outside-window-discussion-${owner!.id}`,
-      createdById: owner!.id,
+      slug: `outside-window-discussion-${owner.id}`,
+      createdById: owner.id,
       markdown: 'Old.',
       communityId: community.id,
       postType: 'discussion',
@@ -241,15 +221,15 @@ describe('getCommunityModerationSummaryCommunities activity digest', () => {
     })
     await insertTestCommunityMember({
       communityId: community.id,
-      userId: outsideMember!.id,
+      userId: outsideMember.id,
       role: 'member',
-      approvedById: owner!.id,
+      approvedById: owner.id,
       createdAt: outsideWindow,
     })
 
     const windowStart = new Date(Date.now() - ONE_DAY_MS)
     const communities = await getCommunityModerationSummaryCommunities(
-      owner!.id,
+      owner.id,
       windowStart,
       new Date(),
     )
