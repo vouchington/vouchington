@@ -25351,6 +25351,7 @@
       "query": {
         "properties": {
           "feed_type": {
+            "enum": ["article", "podcast", "video", "mixed"],
             "type": "string"
           },
           "format": {

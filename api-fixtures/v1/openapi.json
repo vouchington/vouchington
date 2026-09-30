@@ -51739,6 +51739,7 @@
             "name": "feed_type",
             "required": false,
             "schema": {
+              "enum": ["article", "podcast", "video", "mixed"],
               "type": "string"
             }
           },

@@ -16,7 +16,8 @@ import {
   userTopicExportExceedsLimit,
 } from '@services/user-import-export/export-topics'
 import { SYNC_EXPORT_TOO_LARGE } from '@modules/on-error/error-codes'
-import { defineQueryContract, queryEnum, queryString } from '@modules/pagination'
+import { defineQueryContract, queryEnum } from '@modules/pagination'
+import { VALID_FEED_TYPES } from '@services/search-params/parse-rss-feeds'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
 
@@ -27,13 +28,13 @@ const PREFLIGHT = queryEnum(['1'], {
   description: 'Only the literal 1 answers 204 without a body when the export fits the limit.',
 })
 
-// The export reads its query leniently: any format other than json or csv exports OPML, and any
-// preflight other than the literal 1 exports. The handler validates the values it settled on, so
-// this contract publishes the accepted shape without rejecting input. `feed_type` is published as a
-// string: the service casts it to the feed type enum, so a value outside article, podcast, video and
-// mixed still fails there, unchanged.
+// `format` and `preflight` are read leniently: any format other than json or csv exports OPML, and
+// any preflight other than the literal 1 exports. The handler validates the values it settled on,
+// so those two params publish the accepted shape without rejecting input. `feed_type` is the one
+// strict param, because it filters an enum column: an empty value has always meant "no filter", and
+// any other value outside the enum answers 422 instead of a 500 from the database enum cast.
 const rssFeedsExportQuery = defineQueryContract({
-  feed_type: queryString({
+  feed_type: queryEnum(VALID_FEED_TYPES, {
     description:
       'Only export feeds of this type: article, podcast, video or mixed. An empty value means no filter.',
   }),
@@ -57,14 +58,15 @@ app.route('/api/v1/my/export/rss-feeds').get(async (ctx: Context) => {
 
   const format =
     ctx.query.format === 'json' || ctx.query.format === 'csv' ? ctx.query.format : 'opml'
-  const feedType = ctx.query.feed_type as string | undefined
+  const rawFeedType = ctx.query.feed_type === '' ? undefined : ctx.query.feed_type
   validateRequestContract(ctx, 'GET:/api/v1/my/export/rss-feeds', {
     query: {
       format,
-      ...(typeof feedType === 'string' && feedType !== '' ? { feed_type: feedType } : {}),
+      ...(rawFeedType === undefined ? {} : { feed_type: rawFeedType }),
       ...(ctx.query.preflight === '1' ? { preflight: '1' } : {}),
     },
   })
+  const feedType = rawFeedType as string | undefined
   const { sync_export_max_items } = getUserImportExportConfig()
   const exceedsMaxItems = await userRssFeedExportExceedsLimit(
     currentUser.id,
