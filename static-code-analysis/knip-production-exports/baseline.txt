@@ -410,6 +410,7 @@ exports backend/workers/activitypub-inbox/test-support.mts createApprovedRemoteA
 exports backend/workers/activitypub-inbox/test-support.mts createSignedDelivery
 exports backend/workers/activitypub-inbox/test-support.mts makeUnavailableActor
 exports backend/workers/ai-agents/processors/process-appeal-resolution.test-helpers.mts rerunAppealResolutionThroughQueueForTest
+exports backend/workers/ai-agents/processors/process-reconcile-post-classifier-applications.mts POST_CLASSIFIER_RECEIPT_AGE_ALARM_MS
 exports backend/workers/ai-agents/processors/spend-cap-recheck.mts getOpenAiSpendCapRecheckAt
 exports backend/workers/article-sync/processors.mts publishTerminalStatus
 exports backend/workers/bedrock-embeddings-batch/processors/reconciliation.mts processReconciliationPage
