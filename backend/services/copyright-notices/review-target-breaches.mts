@@ -4,7 +4,7 @@ import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared
 import { copyrightStaffQueueKeysSql } from './read-models-staff-queue-sql.mts'
 
 /** Notice ids reported per bucket; the counts stay exact. */
-export const COPYRIGHT_REVIEW_TARGET_NOTICE_ID_LIMIT = 20
+const COPYRIGHT_REVIEW_TARGET_NOTICE_ID_LIMIT = 20
 
 export type CopyrightReviewTargetBreaches = {
   waitingPastTarget: { count: number; noticeIds: string[] }

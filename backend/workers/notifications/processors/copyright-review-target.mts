@@ -1,4 +1,4 @@
-import { recordCopyrightReviewTargetBreach } from '@modules/on-error/copyright-review-target-breach'
+import { recordCopyrightReviewTargetBreach } from '@modules/on-error'
 import {
   getCopyrightReviewTargetMinutes,
   readCopyrightReviewTargetBreaches,
