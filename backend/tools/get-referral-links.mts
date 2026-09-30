@@ -3,6 +3,25 @@ import type { Tool } from './types.mts'
 import { getTopicByAny } from '@services/topics/get'
 import { getPrioritizedReferralLinks } from '@services/prioritized-referral-links/get-prioritized'
 import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'
+import { nullable, objectSchema, outcomeSchema } from './output-schema-shapes.mts'
+import { componentPropertySchema } from './route-response-schema.mts'
+
+// The REST twin documents its body inline and carries more per link, so the tool owns this schema.
+// `priority_group` comes from the documented link; `username` and `display_name` flatten its users.
+const OUTPUT_SCHEMA = outcomeSchema('success', {
+  referral_program_id: { type: 'string' },
+  links: {
+    type: 'array',
+    items: objectSchema({
+      id: { type: 'string' },
+      url: { type: 'string' },
+      label: nullable({ type: 'string' }),
+      priority_group: componentPropertySchema('PrioritizedReferralLink', 'priority_group'),
+      username: { type: 'string' },
+      display_name: nullable({ type: 'string' }),
+    }),
+  },
+})
 
 type ToolArgs = {
   topic_id: string
@@ -53,6 +72,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     requiredScopes: { mcp: ['referral-links:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/topics/:id/prioritized-referral-links' }],
+    outputSchema: OUTPUT_SCHEMA,
   },
   function:
     (currentUser: BasicUser) =>

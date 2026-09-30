@@ -63,6 +63,58 @@
                 }
               ]
             },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "relation_id": {
+                      "type": "string"
+                    },
+                    "subject_type": {
+                      "type": "string"
+                    },
+                    "subject_id": {
+                      "type": "string"
+                    },
+                    "predicate": {
+                      "type": "string"
+                    },
+                    "object_type": {
+                      "type": "string"
+                    },
+                    "object_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "subject_type",
+                    "subject_id",
+                    "predicate",
+                    "object_type",
+                    "object_id"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "post_id": {
+                      "type": "string"
+                    },
+                    "tag": {
+                      "type": "string"
+                    },
+                    "topic_alias_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["post_id", "tag", "topic_alias_id"],
+                  "additionalProperties": false
+                }
+              ]
+            },
             "annotations": {
               "readOnlyHint": false,
               "destructiveHint": false,
@@ -109,6 +161,188 @@
               },
               "required": ["topic_id_a", "topic_id_b"]
             },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "topic_a": {
+                      "type": "object",
+                      "properties": {
+                        "topic_id": {
+                          "type": "string"
+                        },
+                        "topic_name": {
+                          "type": "string"
+                        },
+                        "total_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "approved_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "denied_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "pending_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "approval_rate": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 1
+                            }
+                          ]
+                        },
+                        "median_credit_limits": {
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "amount": {
+                                "maximum": 9007199254740991,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "currency": {
+                                "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                                "type": "string"
+                              }
+                            },
+                            "required": ["amount", "currency"],
+                            "type": "object"
+                          }
+                        },
+                        "credit_score_distribution": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      },
+                      "required": [
+                        "topic_id",
+                        "topic_name",
+                        "total_count",
+                        "approved_count",
+                        "denied_count",
+                        "pending_count",
+                        "approval_rate",
+                        "median_credit_limits",
+                        "credit_score_distribution"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "topic_b": {
+                      "type": "object",
+                      "properties": {
+                        "topic_id": {
+                          "type": "string"
+                        },
+                        "topic_name": {
+                          "type": "string"
+                        },
+                        "total_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "approved_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "denied_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "pending_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "approval_rate": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 1
+                            }
+                          ]
+                        },
+                        "median_credit_limits": {
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "amount": {
+                                "maximum": 9007199254740991,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "currency": {
+                                "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                                "type": "string"
+                              }
+                            },
+                            "required": ["amount", "currency"],
+                            "type": "object"
+                          }
+                        },
+                        "credit_score_distribution": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      },
+                      "required": [
+                        "topic_id",
+                        "topic_name",
+                        "total_count",
+                        "approved_count",
+                        "denied_count",
+                        "pending_count",
+                        "approval_rate",
+                        "median_credit_limits",
+                        "credit_score_distribution"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "topic_a", "topic_b"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
             "annotations": {
               "readOnlyHint": true,
               "idempotentHint": true
@@ -146,6 +380,146 @@
               "minProperties": 1,
               "maxProperties": 1,
               "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "hostname": {
+                      "type": "string"
+                    },
+                    "hostname_id": {
+                      "type": "string"
+                    },
+                    "domain_trust": {
+                      "type": "object",
+                      "properties": {
+                        "votes_score_net": {
+                          "type": "integer"
+                        },
+                        "votes_count_up": {
+                          "type": "integer"
+                        },
+                        "votes_count_down": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["votes_score_net", "votes_count_up", "votes_count_down"],
+                      "additionalProperties": false
+                    },
+                    "source_topic": {
+                      "type": "object",
+                      "properties": {
+                        "topic_id": {
+                          "type": "string"
+                        },
+                        "topic_slug": {
+                          "type": "string"
+                        },
+                        "topic_title": {
+                          "type": "string"
+                        },
+                        "ratings": {
+                          "type": "object",
+                          "properties": {
+                            "count_1": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "count_2": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "count_3": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "count_4": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "count_5": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": ["count_1", "count_2", "count_3", "count_4", "count_5"],
+                          "additionalProperties": false
+                        },
+                        "content_counts": {
+                          "type": "object",
+                          "properties": {
+                            "discussions": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "reviews": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "data_points": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "news": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": ["discussions", "reviews", "data_points", "news"],
+                          "additionalProperties": false
+                        },
+                        "followers": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "topic_id",
+                        "topic_slug",
+                        "topic_title",
+                        "ratings",
+                        "content_counts",
+                        "followers"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "rss_feed": {
+                      "type": "object",
+                      "properties": {
+                        "rss_feed_id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["rss_feed_id", "title"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "hostname", "hostname_id", "domain_trust"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
             },
             "annotations": {
               "readOnlyHint": true,
@@ -1513,6 +1887,35 @@
               },
               "required": []
             },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "score": {
+                        "type": "number"
+                      },
+                      "reason": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "score", "reason"],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": ["success", "results"],
+              "additionalProperties": false
+            },
             "annotations": {
               "readOnlyHint": true,
               "idempotentHint": true
@@ -1545,6 +1948,86 @@
               },
               "required": ["topic_id"]
             },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "referral_program_id": {
+                      "type": "string"
+                    },
+                    "links": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "url": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "priority_group": {
+                            "type": "number"
+                          },
+                          "username": {
+                            "type": "string"
+                          },
+                          "display_name": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "url",
+                          "label",
+                          "priority_group",
+                          "username",
+                          "display_name"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["success", "referral_program_id", "links"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
             "annotations": {
               "readOnlyHint": true,
               "idempotentHint": true
@@ -1576,6 +2059,126 @@
                 }
               },
               "required": ["topic_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "topic_type": {
+                      "enum": [
+                        "bank_account",
+                        "card",
+                        "fediverse_instance",
+                        "referral_program",
+                        "rewards_program_status",
+                        "rewards_program",
+                        "rss_feed",
+                        "topic"
+                      ],
+                      "type": "string"
+                    },
+                    "markdown": {
+                      "type": "string"
+                    },
+                    "aliases": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "annual_fee": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "amount": {
+                              "maximum": 9007199254740991,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "currency": {
+                              "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                              "type": "string"
+                            }
+                          },
+                          "required": ["amount", "currency"],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "bank_name": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "brand_name": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "rewards_program_company": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "id",
+                    "name",
+                    "slug",
+                    "topic_type",
+                    "markdown",
+                    "aliases"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
             },
             "annotations": {
               "readOnlyHint": true,
@@ -1651,6 +2254,101 @@
               },
               "required": ["topic_id"]
             },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "topic_id": {
+                      "type": "string"
+                    },
+                    "total_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "approved_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "denied_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "pending_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "approval_rate": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      ]
+                    },
+                    "median_credit_limits": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amount": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "currency": {
+                            "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                            "type": "string"
+                          }
+                        },
+                        "required": ["amount", "currency"],
+                        "type": "object"
+                      }
+                    },
+                    "credit_score_distribution": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "topic_id",
+                    "total_count",
+                    "approved_count",
+                    "denied_count",
+                    "pending_count",
+                    "approval_rate",
+                    "median_credit_limits",
+                    "credit_score_distribution"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
             "annotations": {
               "readOnlyHint": true,
               "idempotentHint": true
@@ -1677,6 +2375,93 @@
                 }
               },
               "required": ["topic_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "topic_id": {
+                      "type": "string"
+                    },
+                    "discussions": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "reviews": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "data_points": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "news": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "followers": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "ratings": {
+                      "type": "object",
+                      "properties": {
+                        "count_1": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "count_2": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "count_3": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "count_4": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "count_5": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": ["count_1", "count_2", "count_3", "count_4", "count_5"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "topic_id",
+                    "discussions",
+                    "reviews",
+                    "data_points",
+                    "news",
+                    "followers",
+                    "ratings"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
             },
             "annotations": {
               "readOnlyHint": true,
@@ -1787,6 +2572,81 @@
                 }
               },
               "required": ["title"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "found": {
+                      "const": true
+                    },
+                    "pageid": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "extract": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "thumbnail_url": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "found",
+                    "pageid",
+                    "title",
+                    "url",
+                    "description",
+                    "extract",
+                    "thumbnail_url"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "found": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["found", "error"],
+                  "additionalProperties": false
+                }
+              ]
             },
             "annotations": {
               "readOnlyHint": true,
@@ -1908,6 +2768,200 @@
               },
               "required": ["action"]
             },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "result": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "authorized_user_of_card": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "card": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "slug": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["id", "name", "slug"],
+                                  "type": "object"
+                                },
+                                "closed_on": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "opened_on": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": ["card", "closed_on", "id", "opened_on"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "authorized_user_of_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "card": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "slug": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["id", "name", "slug"],
+                          "type": "object"
+                        },
+                        "card_id": {
+                          "type": "string"
+                        },
+                        "closed_on": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "credit_limit": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "amount": {
+                                  "maximum": 9007199254740991,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currency": {
+                                  "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["amount", "currency"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "is_authorized_user": {
+                          "type": "boolean"
+                        },
+                        "note": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "opened_on": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "received_sign_up_bonus_on": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "authorized_user_of_card",
+                        "authorized_user_of_id",
+                        "card",
+                        "card_id",
+                        "closed_on",
+                        "credit_limit",
+                        "id",
+                        "is_authorized_user",
+                        "note",
+                        "opened_on",
+                        "received_sign_up_bonus_on"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "required": ["success", "result"],
+              "additionalProperties": false
+            },
             "annotations": {
               "readOnlyHint": false,
               "destructiveHint": true,
@@ -1983,6 +3037,94 @@
               },
               "required": ["action"]
             },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "result": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "rewards_program": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "slug": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["id", "name", "slug"],
+                          "type": "object"
+                        },
+                        "rewards_program_id": {
+                          "type": "string"
+                        },
+                        "value_per_point": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "amount": {
+                              "maximum": 9999999999,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "currency": {
+                              "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                              "type": "string"
+                            },
+                            "scale": {
+                              "const": 6
+                            }
+                          },
+                          "required": ["amount", "currency", "scale"],
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "note",
+                        "rewards_program",
+                        "rewards_program_id",
+                        "value_per_point"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "required": ["success", "result"],
+              "additionalProperties": false
+            },
             "annotations": {
               "readOnlyHint": false,
               "destructiveHint": true,
@@ -2040,6 +3182,85 @@
                 }
               },
               "required": ["action"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "result": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "rewards_program_status": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "slug": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["id", "name", "slug"],
+                          "type": "object"
+                        },
+                        "rewards_program_status_id": {
+                          "type": "string"
+                        },
+                        "since": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "until": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "rewards_program_status",
+                        "rewards_program_status_id",
+                        "since",
+                        "until"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "required": ["success", "result"],
+              "additionalProperties": false
             },
             "annotations": {
               "readOnlyHint": false,
@@ -2117,6 +3338,105 @@
               },
               "required": ["action"]
             },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "result": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "amount": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "amount": {
+                              "maximum": 9007199254740991,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "currency": {
+                              "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                              "type": "string"
+                            }
+                          },
+                          "required": ["amount", "currency"],
+                          "type": "object"
+                        },
+                        "can_manage": {
+                          "type": "boolean"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "owner_type": {
+                          "enum": ["household", "individual"],
+                          "type": "string"
+                        },
+                        "spending_category": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "slug": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["id", "name", "slug"],
+                          "type": "object"
+                        },
+                        "spending_category_id": {
+                          "type": "string"
+                        },
+                        "spending_frequency": {
+                          "enum": ["annually", "monthly"],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "can_manage",
+                        "id",
+                        "note",
+                        "owner_type",
+                        "spending_category",
+                        "spending_category_id",
+                        "spending_frequency"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "required": ["success", "result"],
+              "additionalProperties": false
+            },
             "annotations": {
               "readOnlyHint": false,
               "destructiveHint": true,
@@ -2184,6 +3504,64 @@
                 }
               },
               "required": []
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "data_point_vertical": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string",
+                                "enum": ["credit_card", "bank_account"]
+                              }
+                            ]
+                          },
+                          "structured_data": {
+                            "type": "object"
+                          }
+                        },
+                        "required": ["id", "title", "data_point_vertical", "structured_data"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["success", "results"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
             },
             "annotations": {
               "readOnlyHint": true,
@@ -2471,6 +3849,54 @@
               },
               "required": ["query"]
             },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "title": {
+                            "type": "string"
+                          },
+                          "pageid": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": ["title", "pageid"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": ["success", "results", "count"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
             "annotations": {
               "readOnlyHint": true,
               "openWorldHint": true,
@@ -2602,6 +4028,141 @@
                 }
               },
               "required": []
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "profile": {
+                  "type": "object",
+                  "properties": {
+                    "credit_score_range": {
+                      "anyOf": [
+                        {
+                          "const": "300-579"
+                        },
+                        {
+                          "const": "580-669"
+                        },
+                        {
+                          "const": "670-739"
+                        },
+                        {
+                          "const": "740-799"
+                        },
+                        {
+                          "const": "800-850"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "stated_income_range": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "maximum": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "amount": {
+                                      "maximum": 9007199254740991,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    "currency": {
+                                      "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["amount", "currency"],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "minimum": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "amount": {
+                                  "maximum": 9007199254740991,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currency": {
+                                  "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["amount", "currency"],
+                              "type": "object"
+                            }
+                          },
+                          "required": ["maximum", "minimum"],
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "total_credit_limit": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "amount": {
+                              "maximum": 9007199254740991,
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "currency": {
+                              "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                              "type": "string"
+                            }
+                          },
+                          "required": ["amount", "currency"],
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "currency": {
+                      "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                      "type": "string"
+                    },
+                    "years_of_credit_history": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "credit_score_range",
+                    "stated_income_range",
+                    "total_credit_limit",
+                    "currency",
+                    "years_of_credit_history"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["success", "profile"],
+              "additionalProperties": false
             },
             "annotations": {
               "readOnlyHint": false,

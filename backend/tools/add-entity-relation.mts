@@ -4,6 +4,26 @@ import { createEntityRelationAction } from '@services/entity-relation-actions'
 import { addPostHashtag } from '@services/posts'
 import { requirePrivateToolUser } from './private-user.mts'
 import type { Tool, ToolInvocationContext } from './types.mts'
+import { objectSchema, oneOfSchema } from './output-schema-shapes.mts'
+
+const text = { type: 'string' }
+
+// The two actions return different shapes, and neither is a REST body, so the tool owns this
+// schema. `relation_id` is absent when the relation row carries no id.
+const OUTPUT_SCHEMA = oneOfSchema(
+  objectSchema(
+    {
+      relation_id: text,
+      subject_type: text,
+      subject_id: text,
+      predicate: text,
+      object_type: text,
+      object_id: text,
+    },
+    ['relation_id'],
+  ),
+  objectSchema({ post_id: text, tag: text, topic_alias_id: text }),
+)
 
 type AddEntityRelationArgs =
   | {
@@ -75,6 +95,7 @@ const tool: Tool<AddEntityRelationArgs, AddEntityRelationResult> = {
       },
       { method: 'PATCH', path: '/api/v1/posts/:idOrSlug' },
     ],
+    outputSchema: OUTPUT_SCHEMA,
   },
   function:
     (currentUser: BasicUser) =>

@@ -13,12 +13,15 @@ const NON_TOOL_FILES = new Set([
   'create-get-my-entity-list-tool.mts',
   'create-manage-entity-tool.mts',
   'get-domain-ratings-helpers.mts',
+  'get-domain-ratings-output-schema.mts',
   'index.mts',
+  'output-schema-shapes.mts',
   'private-user.mts',
   'resolve-topic.mts',
   'route-response-schema.mts',
   'search-crawl-tool.mts',
   'search-system.mts',
+  'topic-output-schema-parts.mts',
   'types.mts',
 ])
 

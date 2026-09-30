@@ -3,6 +3,7 @@ import type { Tool } from './types.mts'
 import { getRecommendedTopics } from '@services/recommended-topics/get-recommendations'
 import { clampToolLimit } from './search-system.mts'
 import { requirePrivateToolUser } from './private-user.mts'
+import { objectSchema, successSchema } from './output-schema-shapes.mts'
 
 const MAX_LIMIT = 25
 const DEFAULT_LIMIT = 10
@@ -46,6 +47,17 @@ const tool: Tool<ToolArgs, ToolResult> = {
     requiredScopes: { mcp: ['recommendations:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/recommended-topics' }],
+    // The REST twin streams an untyped body and returns more per entry, so the tool owns this.
+    outputSchema: successSchema({
+      results: {
+        type: 'array',
+        items: objectSchema({
+          id: { type: 'string' },
+          score: { type: 'number' },
+          reason: { type: 'string' },
+        }),
+      },
+    }),
   },
   function:
     (currentUser: BasicUser) =>

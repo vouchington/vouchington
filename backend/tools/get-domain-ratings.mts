@@ -6,6 +6,7 @@ import {
   getRatingsForUrl,
   type ToolResult,
 } from './get-domain-ratings-helpers.mts'
+import { GET_DOMAIN_RATINGS_OUTPUT_SCHEMA } from './get-domain-ratings-output-schema.mts'
 
 type ToolArgs = {
   url?: string
@@ -42,6 +43,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     requiredScopes: { mcp: ['domain-ratings:read'] },
     annotations: { readOnlyHint: true },
     api: null,
+    outputSchema: GET_DOMAIN_RATINGS_OUTPUT_SCHEMA,
   },
   function:
     (_currentUser: BasicUser) =>

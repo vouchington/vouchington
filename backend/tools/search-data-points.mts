@@ -8,6 +8,7 @@ import {
   CREDIT_CARD_RESULTS,
 } from '@ts-shared/data-points'
 import { resolveTopic } from './resolve-topic.mts'
+import { nullable, objectSchema, outcomeSchema } from './output-schema-shapes.mts'
 
 const VERTICALS = DATA_POINT_VERTICALS.map(o => o.value)
 const SCORE_RANGES = CREDIT_SCORE_RANGES.map(o => o.value)
@@ -80,6 +81,18 @@ const tool: Tool<ToolArgs, ToolResult> = {
     requiredScopes: { mcp: ['data-points:read'] },
     annotations: { readOnlyHint: true },
     api: null,
+    // `structured_data` is stored JSON whose fields vary by vertical, so it stays an open object.
+    outputSchema: outcomeSchema('success', {
+      results: {
+        type: 'array',
+        items: objectSchema({
+          id: { type: 'string' },
+          title: { type: 'string' },
+          data_point_vertical: nullable({ type: 'string', enum: VERTICALS }),
+          structured_data: { type: 'object' },
+        }),
+      },
+    }),
   },
   function:
     (_currentUser: BasicUser) =>

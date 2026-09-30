@@ -30,11 +30,27 @@ describe('MCP output schema ratchet', () => {
   })
 
   it.each([
+    'add_entity_relation',
+    'compare_topics',
+    'get_domain_ratings',
     'get_my_cards',
     'get_my_point_valuations',
+    'get_my_profile',
     'get_my_rewards_statuses',
     'get_my_spending',
-    'get_my_profile',
+    'get_recommended_topics',
+    'get_referral_links',
+    'get_topic_details',
+    'get_topic_insights',
+    'get_topic_metrics',
+    'get_wikipedia_summary',
+    'manage_my_cards',
+    'manage_my_point_valuations',
+    'manage_my_rewards_statuses',
+    'manage_my_spending',
+    'search_data_points',
+    'search_wikipedia',
+    'update_my_financial_profile',
   ])('lists %s with an output schema', name => {
     const entry = listed.find(({ tool }) => tool.name === name)
 

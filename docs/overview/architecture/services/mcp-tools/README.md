@@ -49,16 +49,31 @@ value); the call path reports it through `onError` and returns the generic tool-
 never `structuredContent`. Tools without an output schema keep the text-only result, held to the same
 whole-response bound (step 4), so JSON escaping counts for them too.
 
-**One source of truth.** A tool never hand-writes its output schema. The generated
-`api-fixtures/v1/request-contracts.json` carries a `responses` map with the response schema of every
-route whose 200 body is a named response type, keyed like `operations`. `route-response-schema.mts`
-in `backend/tools` resolves an entry into a self-contained schema (recursive components stay a
-`$ref` into a root `$defs`). `createGetMyEntityListTool` derives its `{ success, result }` schema
-from its single `meta.api` endpoint this way. A tool that reshapes the REST body, such as
-`get_my_profile`, composes its schema from its REST twins' sections and owns it explicitly, with a
-test that pins each section to what `openapi.json` documents. A route that documents its response
-inline has no contract; give it a named response type, run `pnpm run openapi:generate`, and then
-derive the tool's schema.
+**One source of truth.** The generated `api-fixtures/v1/request-contracts.json` carries a
+`responses` map with the response schema of every route whose 200 body is a named response type,
+keyed like `operations`, and a `components` map of every named type. `route-response-schema.mts` in
+`backend/tools` resolves an entry into a self-contained schema (recursive components stay a `$ref`
+into a root `$defs`). `createGetMyEntityListTool` derives its `{ success, result }` schema from its
+single `meta.api` endpoint this way. A tool that reshapes the REST body, or has no REST twin, owns
+its schema explicitly. It builds that schema from the named components, through `componentSchema`
+and `componentPropertySchema`, so a field the REST API documents is never retyped by hand, and
+`output-schema-shapes.mts` supplies the closed-object, `oneOf` and nullable shapes. Where
+`openapi.json` documents the same data, a test pins the tool's schema to it (`get_my_profile` pins
+each section, `output-schema-pins.test.mts` pins the `manage_my_*` rows, the financial profile
+fields and the referral link fields). A route that documents its response inline has no contract;
+give it a named response type, run `pnpm run openapi:generate`, and then derive the tool's schema.
+
+**Normal failure results.** A lookup tool that reports a miss as a result (`{ success: false, error }`
+or `{ found: false, error }`) instead of throwing has two result shapes, and its schema must admit
+both or every miss would fail output validation and surface as a tool failure. `outcomeSchema`
+builds that schema. The `manage_*` tools return `{ success: true, result }`, where `result` is the
+stored row for `add` and `update`, and only `{ id }` for `remove`, because the deleted row is not
+part of the REST contract either (`DELETE` returns `204`).
+
+**Contract tests.** `output-schema-contract*.test.mts` call each converted tool through `callMcpTool`
+against the real database with populated fixtures, so a service row that drifts from its schema
+fails a test instead of a caller. The Wikipedia tools have no REST twin and call an external API, so
+their test replaces only the upstream HTTP call.
 
 **Ratchet.** `catalog/output-schema-ratchet.mts` names the listed tools that still lack a schema.
 Its test compares the list with the generated catalog in both directions and caps its length, so a

@@ -4,6 +4,8 @@ import { getTopicDataPointInsights } from '@services/data-points/insights'
 import { DATA_POINT_VERTICALS } from '@ts-shared/data-points'
 import type { Money } from '@ts-shared/money'
 import { resolveTopic } from './resolve-topic.mts'
+import { outcomeSchema } from './output-schema-shapes.mts'
+import { INSIGHTS_PROPERTIES } from './topic-output-schema-parts.mts'
 
 const VERTICALS = DATA_POINT_VERTICALS.map(o => o.value)
 
@@ -58,6 +60,10 @@ const tool: Tool<ToolArgs, ToolResult> = {
     requiredScopes: { mcp: ['data-points:read'] },
     annotations: { readOnlyHint: true },
     api: null,
+    outputSchema: outcomeSchema('success', {
+      topic_id: { type: 'string' },
+      ...INSIGHTS_PROPERTIES,
+    }),
   },
   function:
     (_currentUser: BasicUser) =>
