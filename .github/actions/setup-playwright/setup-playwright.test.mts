@@ -19,6 +19,10 @@ describe('setup-playwright action', () => {
     expect(action.indexOf('ci/wait-for-apt-locks.sh')).toBeLessThan(action.indexOf(repair))
     expect(action).toMatch(/install-deps chromium\n\s+fi\n\s+pnpm exec playwright install chromium/)
     expect(action.match(new RegExp(browserInstall, 'g'))).toHaveLength(1)
+    expect(action).toContain('python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 120 ')
+    expect(action).toContain('max_attempts=2')
+    expect(action).toContain('Playwright browser install attempt ${attempt} failed')
+    expect(action.indexOf('max_attempts=2')).toBeLessThan(action.indexOf(browserInstall))
     expect(action).not.toContain('--with-deps')
     // Residual guards: the shared host lock and the Ubicloud ARM64 curl/unzip branch were removed
     // once GitHub-hosted runners stopped sharing a host across concurrent jobs (each job now gets
