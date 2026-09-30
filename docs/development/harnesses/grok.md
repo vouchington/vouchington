@@ -9,8 +9,8 @@ copied hooks, skills, or permission allowlists.
 - Skills load from [`.agents/skills/`](../../../.agents/skills).
 - Hooks, permissions, and `github-issue-agent` load through Claude-compat from
   [`.claude/`](../../../.claude).
-- MCP uses the native [`config.toml`](../../../.grok/config.toml) Agent Blackboard registration, including the
-  exact eight-tool `MCPTool(...)` allowlist. Claude compatibility may also read [`.mcp.json`](../../../.mcp.json),
+- MCP uses the native [`config.toml`](../../../.grok/config.toml) `vouchington-tooling` registration, including the
+  server-wide `MCPTool(vouchington-tooling__*)` approval. Claude compatibility may also read [`.mcp.json`](../../../.mcp.json),
   but the native registration is authoritative.
 - OS sandbox: launch with `grok --sandbox workspace-write` (or
   `GROK_SANDBOX=workspace-write`). The profile is

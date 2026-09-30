@@ -1,36 +1,40 @@
 # Agent Blackboard — Hosted Session Store
 
 Durable storage for
-[`agent-blackboard`](https://github.com/jonathanong/agent-blackboard), the published client, CLI,
-and MCP server that backs agent session journaling in Vouchington. The root `package.json` installs
-`agent-blackboard` as a development dependency. Vouchington connects to a **hosted deployment**;
-there is no local server or database to run.
+[`agent-blackboard`](https://github.com/jonathanong/agent-blackboard), the published client and CLI
+that back agent session journaling in Vouchington. Agents reach it through the `vouchington-tooling`
+MCP server (`vouchington mcp`), which the `vouchington-tooling` package ships on top of the JS
+client. The root `package.json` installs `vouchington-tooling` and `agent-blackboard` as development
+dependencies. Vouchington connects to a **hosted deployment**; there is no local server or database
+to run.
 
-The package supplies the file-backed `snapshot_export`, `snapshot partition`, and `snapshot cleanup`
-commands used by the snapshot-distillation workflow below. The export implementation landed in
+The `agent-blackboard` package supplies the file-backed `snapshot partition` and `snapshot cleanup`
+commands used by the snapshot-distillation workflow below, and the export behind the MCP
+`snapshot_export` tool. The export implementation landed in
 [agent-blackboard PR #21](https://github.com/jonathanong/agent-blackboard/pull/21); bounded partitioning
 and cleanup are owned upstream by
 [agent-blackboard PR #25](https://github.com/jonathanong/agent-blackboard/pull/25), with
 capability-bound cleanup and publication hardening in
 [agent-blackboard PR #28](https://github.com/jonathanong/agent-blackboard/pull/28).
 
-This document covers installing the package, connecting it to the hosted deployment, and the
-Vouchington integrations around its JS client, CLI, and MCP server. What gets written into sessions
+This document covers installing the packages, connecting them to the hosted deployment, and the
+Vouchington integrations around the MCP server, JS client, and CLI. What gets written into sessions
 belongs to the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md). That adapter composes
-the portable Vouchington journaling workflow with the provider-owned skill shipped inside the
-installed `agent-blackboard` package. Vouchington does not enable the provider plugin because the
-project registration below already supplies the hosted MCP connection.
+the portable `vouchington-workflow:blackboard` procedure with repository policy. Vouchington does
+not enable the `agent-blackboard` provider plugin: its raw tools skip the validated feedback
+envelope, and the project registration below already supplies the MCP connection.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
   parent[Parent agent] -->|assignment + parent session id| child[Child agent]
-  child -->|session_ensure with own id + parent id| journalMcp
-  scripts[Vouchington journal, retro, and probe scripts] --> js[agent-blackboard JS client]
-  journalMcp[Blackboard skill MCP option] --> mcp[dev/blackboard-mcp]
+  child -->|session_ensure with own id + parent id| mcp
+  hook[SessionStart hook prints sessionId] --> parent
+  parent -->|journal_append and the other tools| mcp[vouchington mcp]
+  scripts[Vouchington retro and probe scripts] --> js[agent-blackboard JS client]
   manual[pnpm exec manual commands] --> cli[root-installed agent-blackboard CLI]
-  mcp --> cli
+  mcp --> js
   js -->|AGENT_BLACKBOARD_URL and AGENT_BLACKBOARD_TOKEN| lambda[Hosted deployment]
   cli -->|same hosted connection| lambda
   lambda --> table[(Shared DynamoDB table)]
@@ -51,10 +55,12 @@ From the Vouchington worktree root:
 pnpm install
 ```
 
-This installs the published JS client and the `agent-blackboard` binary under the root
-`node_modules/.bin/`. No separate repository clone, source build, or `tsx` entrypoint is required.
-Vouchington's TypeScript integration imports the client directly; manual commands and the MCP server
-use the installed binary.
+This installs the published JS client, the `agent-blackboard` binary, and the `vouchington` binary
+that starts the MCP server under the root `node_modules/.bin/`. No separate repository clone,
+source build, or `tsx` entrypoint is required. Vouchington's TypeScript integration imports the
+client directly; manual commands use the `agent-blackboard` binary and every harness launches the
+`vouchington` binary. The server loads `@modelcontextprotocol/sdk`, an optional peer of
+`vouchington-tooling`, when it starts.
 
 ### 2. Export the hosted connection
 
@@ -94,23 +100,38 @@ pnpm exec agent-blackboard sessions get my-session-id
 
 Pass the explicit `{"type": ..., ...}` payload to `append`. The CLI's `--file foo.md` convenience
 wraps Markdown as `{markdown: ...}` without the `type` field required by later pipeline stages.
+These commands are for manual inspection; agents record journal entries with the MCP
+`journal_append` tool described below.
 
-## JS client, CLI, and MCP integration
+## MCP server, JS client, and CLI integration
 
-The [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) uses `dev/blackboard-journal.mts` for feedback capture. Raw MCP `entry_append`
-remains a provider operation and does not satisfy the validated feedback delivery contract. The script
-calls `appendJournal` from `vouchington-tooling/agent-blackboard`, so the caller supplies mode, source-event id, work outcome,
-and feedback coverage. Flags are listed in
-[the command catalog](local-development/reference-command-catalog.md#blackboard-journal). The SessionStart probe
-(`dev/check-blackboard.mts`) is advisory availability context. The journal script records repository attribution: each entry's `data.repositories` lists
-the repositories it concerns (`vouchington/vouchington` unless `--repository` flags say otherwise),
-and the session's `data.repositories` keeps their cumulative union, patched before the append. These
-script paths avoid a CLI-to-JS subprocess round trip. Manual CLI use remains
-available through `pnpm exec agent-blackboard`; direct JS imports make the dependency visible to
-Knip.
+The [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) records feedback through the
+`vouchington-tooling` MCP server, which exposes seven tools: `journal_append`, `journal_entries`,
+`outbox_status`, `outbox_flush`, `session_ensure`, `snapshot_export`, and `session_archive`. One
+`journal_append` call carries the note as `markdown` plus mode, source-event id, work outcome,
+feedback coverage, repositories, and a caller-fixed `timestamp`; the server builds the validated
+feedback envelope, so a retry is the same call with the same source-event id, content, and
+timestamp. The provider plugin's raw `entry_append` never satisfies that delivery contract, and
+the skill forbids calling it. Each entry's `data.repositories` lists the repositories it concerns
+(`vouchington/vouchington` unless the caller lists others), and the session's `data.repositories`
+keeps their cumulative union. Interactive mode retains a failed delivery in the worktree's
+`.local/blackboard-outbox`, the same directory `dev/retrospective-save.mts` uses by default;
+`outbox_status` and `outbox_flush` inspect and deliver it for the whole worktree. Autonomous mode
+has no outbox. There is no CLI fallback: when the server is not connected, the agent stops and
+reports it. Manual CLI use remains available through `pnpm exec agent-blackboard`; the retrospective
+and probe scripts import the JS client directly, which keeps the dependency visible to Knip.
+
+Every call takes an explicit `sessionId`, whose meaning depends on the tool: `journal_append` and
+`session_ensure` name the session written or ensured, `journal_entries` and `session_archive` the
+session read or archived, and `snapshot_export`, `outbox_status`, and `outbox_flush` only the
+caller. Agents copy it from the `Blackboard sessionId:` line that the SessionStart hook prints; see
+[SessionStart availability check](#sessionstart-availability-check).
 
 The [`retrospective-distill` skill](../../.agents/skills/retrospective-distill/SKILL.md) uses the
-CLI's MCP server for a typed `snapshot_export` bulk read and later `session_archive` calls.
+server's `snapshot_export` for the bulk read and `session_archive` per session. `snapshot_export`
+returns only the snapshot path, counts, checksum, and manifest; full records come from the exported
+file, never from `journal_entries`, which reads one session at a time (every entry of every type,
+oldest first, each with its full envelope) with no checksum or manifest.
 Eligibility for distillation and archival is age-based, not retro-presence-based: a session becomes
 eligible once its retrospective entry is older than `--retro-days` (default 1) or, regardless of
 whether it has a retrospective, once the session itself is older than `--session-days` (default 7).
@@ -120,13 +141,19 @@ evidence; the distill skill flags such a session as entry-type-unresolved and sk
 archival — for the run. See
 [retrospective-distill's SKILL.md](../../.agents/skills/retrospective-distill/SKILL.md) and
 [distilling.md](../../.agents/skills/retrospective-distill/distilling.md) for the full eligibility,
-redaction, and archival-carve-out rules. The export always stays unfiltered — `snapshot_export`'s
-`selection.inactiveForHours` never matches
-a zero-entry session, so passing it would hide exactly the aborted sessions this age rule exists to
-sweep up — and effective activity is classified client-side from normalized entry `createdAt`
-values, falling back to session `createdAt` when empty. The exported `lastEntryAt` remains the
-archival race guard. The root agent first checks the returned terminal manifest, compact counts,
-and generated-export cleanup token,
+redaction, and archival-carve-out rules. Before the export, and again before any `session_archive`,
+the root calls `outbox_flush` then `outbox_status` for every worktree that `git worktree list`
+prints (each path as `worktree`) and stops if any reports pending records: an archived session
+refuses later delivery, which would strand the retained record. A removed worktree or another
+machine cannot be drained. The canonical skill covers that with `inactiveForHours` selection, but
+the export never passes it here: the filter never matches a zero-entry session, so passing it would
+hide exactly the aborted sessions this age rule exists to sweep up. The `--retro-days` and
+`--session-days` cutoffs supply the delivery window instead, and effective activity is classified client-side from normalized entry
+`createdAt` values, falling back to session `createdAt` when empty. The exported `lastEntryAt`
+remains the archival race guard, compared with the newest `journal_entries` time immediately before
+each `session_archive`, which has no guard of its own. The root agent first verifies the snapshot
+against the returned checksum, compact counts, and terminal manifest and stops on any mismatch, then
+checks the generated-export cleanup token,
 then partitions the returned local JSONL snapshot with `pnpm exec agent-blackboard snapshot partition
 --path <path> --cleanup-token <cleanupToken> --checksum <sha256> --sessions <count> --entries <count>
 --records <count> --bytes <count>` before it delegates read-only
@@ -141,26 +168,35 @@ splits a session or silently exceeds the inspection bound. If partitioning fails
 directory exists, cleanup receives the validated snapshot path and cleanup token without a directory.
 
 Claude enables the shared `.mcp.json` registration, while Codex, Cursor, Grok, and OpenCode each
-have a native project registration. Every registration launches `dev/blackboard-mcp`; the wrapper
-inherits or forwards `AGENT_BLACKBOARD_URL` and `AGENT_BLACKBOARD_TOKEN`. The configuration contract
-locks every harness to the same eight tools: `entry_append`, `entry_get`, `session_archive`,
-`session_create`, `session_ensure`, `session_patch`, `session_search`, and `snapshot_export`. It also
-checks the native preauthorization syntax: Codex `approval_mode = "approve"`, Claude's MCP allowlist,
-Cursor's CLI and auto-review allowlists, Grok's `MCPTool(...)` list, and OpenCode V1 `permission`
-entries. Each registration discovers the worktree root before launching the wrapper, so clients may
-start from any directory inside the worktree. The wrapper then resolves
-`node_modules/.bin/agent-blackboard` relative to its own location and execs the `mcp` subcommand,
-still using the root-pinned package.
+have a native project registration. Every registration is named `vouchington-tooling`, discovers
+the worktree root with `git rev-parse --show-toplevel`, and execs
+`node_modules/.bin/vouchington mcp`, so clients may start from any directory inside the worktree and
+use the root-pinned package. The server inherits or forwards `AGENT_BLACKBOARD_URL` and
+`AGENT_BLACKBOARD_TOKEN`. No other MCP server registration is allowed, and the configuration
+contract approves the server as a whole rather than tool by tool, using each harness's native syntax:
+
+- **Claude**: `mcp__vouchington-tooling__*` in `permissions.allow`, with the server in
+  `enabledMcpjsonServers`.
+- **Codex**: `default_tools_approval_mode = "approve"` on `[mcp_servers.vouchington-tooling]`.
+- **Cursor**: `Mcp(vouchington-tooling:*)` in `cli.json`; `vouchington-tooling:*` in
+  `permissions.json` `mcpAllowlist`.
+- **Grok**: `MCPTool(vouchington-tooling__*)` in `permissions.allow`.
+- **OpenCode**: no documented wildcard, so `permission` lists all seven
+  `vouchington-tooling_<tool>` names as `allow`.
+
+The policy tests pin that no `PreToolUse` matcher can match an `mcp__` tool name, because the Bash
+gates never see MCP calls, and that approval stays server-wide rather than per tool.
 
 Restart Codex after changing or first receiving the project registration so its native
-`session_ensure`, `entry_append`, and `entry_get` tools are loaded. The Codex server is deliberately
-not marked as required: a fresh worktree must be able to start Codex before `pnpm install` creates
-the root binary. The SessionStart availability probe is advisory.
+`vouchington-tooling` tools are loaded. The Codex server is deliberately not marked as required: a
+fresh worktree must be able to start Codex before `pnpm install` creates the root binary. The
+SessionStart check below reports that state.
 
 Retrospective persistence deliberately remains script-only:
 `dev/retrospective-save.mts` validates UTF-8, required sections, failure grammar, and front matter;
 checks for an existing retrospective; appends typed provenance; and verifies the write by reading
-it back. A raw MCP `entry_append` would bypass those repository-owned invariants.
+it back. `journal_append` writes journal entries only and would bypass those repository-owned
+invariants for a retrospective.
 
 ## Child-agent identity
 
@@ -177,7 +213,9 @@ calls `session_ensure` with its own resolved id, the parent id it was given, its
 its version before performing substantive or blackboard-aware work.
 
 The [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md#child-identity-for-spawned-agents)
-owns the exact parent/child responsibilities. The child must never infer or synthesize an identity
+owns the exact parent/child responsibilities. The child passes as `sessionId` the
+`Blackboard sessionId:` line its own SessionStart hook printed or, without one, its runtime
+environment id (for Codex, `CODEX_THREAD_ID`). It must never infer or synthesize an identity
 when its runtime environment supplies none — it stops and reports the blocker instead. A Claude
 Code Agent-tool subagent is the one exception: it shares its parent's `CLAUDE_CODE_SESSION_ID`
 rather than resolving a distinct id, so this protocol does not apply to it — see the skill for the
@@ -185,32 +223,31 @@ fallback.
 
 ### Root Codex sessions
 
-An interactive root Codex process always explicitly identifies itself to the journal, retrospective,
-or session-friction scripts with `--root-codex`; it does not use the MCP procedure, whose calls
-require an already-known explicit id. Once at the beginning of a new root session with no
-`CODEX_THREAD_ID`, it also passes `--new-root-codex-session`, which ignores any old fallback and
-persists a fresh URL-safe `codex-<UUID>` at the ignored `.local/codex-session-id`. Later root
-invocations reuse that value with only `--root-codex`. A real `CODEX_THREAD_ID` always wins; on a
-root-aware invocation it replaces the generated value. An explicit `--session-id` and
-`--root-codex` are mutually exclusive.
-Root-aware commands locate the enclosing worktree root, and read commands (`entries`, retrospective
-`check`, and session-friction `report`) refresh and read back its persistence file before contacting
+An interactive root Codex process explicitly identifies itself to the retrospective and
+session-friction scripts with `--root-codex`. Its MCP calls carry an explicit `sessionId` instead:
+the id the SessionStart check printed. For a Codex hook without `CODEX_THREAD_ID` in its
+environment, that check treats the payload's thread id as the root id and persists it at the
+ignored `.local/codex-session-id` through the same root resolver, so the printed id, the
+persisted file, and every later `--root-codex` call agree and `--new-root-codex-session` is
+unnecessary. A real `CODEX_THREAD_ID` always wins; on a root-aware invocation it replaces the
+persisted value. An explicit `--session-id` and `--root-codex` are mutually exclusive.
+Root-aware commands locate the enclosing worktree root, and read commands (retrospective
+`check` and session-friction `report`) refresh and read back its persistence file before contacting
 the server.
-The flags are deliberately explicit: runtime hints, transcript paths, hooks,
+The flags are deliberately explicit: runtime hints, transcript paths, other hooks,
 detached processes, and children never generate a Codex id, and Codex never reads Cursor or Grok
 persistence files. Root authority is self-attested rather than detectable; a child that violates
-the workflow and passes either root flag inherits the root identity. Automatic hooks keep using
-their explicit payload id and never write the root
-file because hook metadata cannot distinguish a root from a spawned Codex child.
-Consequently, an ID-less root session cannot join automatic hook checkpoint or friction evidence
-recorded under a distinct hook payload id; that evidence is out of scope until the runtime supplies
-a trustworthy root `CODEX_THREAD_ID`.
+the workflow and passes either root flag inherits the root identity. Hook metadata cannot
+distinguish a root from a spawned Codex child, so if Codex runs SessionStart for a child thread in
+the same worktree without `CODEX_THREAD_ID` in the hook environment, that child's id replaces the
+persisted root id for later `--root-codex` script calls. Whether Codex does so is an open Phase 0
+verification item; the root's own MCP calls keep the id printed in its context.
 Children continue to stop when they lack their own identity. `./dev/reset-worktree` preserves the
-file so a reset within the same root session does not rotate identity; the next absent-thread root
-session explicitly rotates it once with `--new-root-codex-session`.
-Without a runtime thread ID, this exactly-once boundary is necessarily caller-declared: omitting the
-flag at a new session reuses stale identity, while passing it again mid-session fragments the
-session. The root workflow must therefore perform one rotation before any other root-aware call.
+file so a reset within the same root session does not rotate identity.
+Only when the check prints `NOT RESOLVED` does an absent-thread root pass
+`--new-root-codex-session` to the first script call to create a `codex-<UUID>` id; omitting the flag
+then reuses stale identity, while passing it again mid-session fragments the session, so the root
+workflow performs that one rotation before any other root-aware call.
 
 ## Automatic checkpoint journaling
 
@@ -247,7 +284,7 @@ session already created with the wrong agent stays mismatched until a new sessio
 These checkpoints are deliberately **fail-open**: `dev/journal-checkpoint/append.mts` swallows every
 failure (missing credential, network error, sandboxed run, stale session) and never surfaces as hook
 noise, a blocked tool call, or a nonzero exit. An agent-initiated
-`dev/blackboard-journal.mts append` instead preserves interactive outage feedback in its bounded
+`journal_append` call instead preserves interactive outage feedback in its bounded
 outbox and exposes pending delivery. A
 silently-skipped checkpoint is not a bug to chase; it means a credential, network, or session
 precondition wasn't met for that one hook invocation. See
@@ -256,15 +293,30 @@ and [reference-command-catalog.md](local-development/reference-command-catalog.m
 Automatic checkpoints are a safety net, not a substitute for an agent writing its own thoughtful
 journal notes — see the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md).
 
-## Advisory availability probe
+## SessionStart availability check
 
-`dev/check-blackboard.mts` without runner arguments is an advisory SessionStart availability probe.
-It uses bounded `sessions.list({ limit: 1 })`; emitting context cannot mechanically stop an agent.
-A sandboxed probe reports unavailable assessment instead of a false deployment outage, because its
-credential and egress are deliberately withheld by Claude's
-[sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list).
-`CHECK_BLACKBOARD_SKIP=1` skips only this advisory probe.
-That diagnostic does not discard interactive pending feedback.
+`dev/check-blackboard.mts` runs at every SessionStart (`claude` or `codex` argv token, including
+after compaction) and emits three kinds of advisory context; emitting context cannot mechanically
+stop an agent.
+
+- **Session id.** A `Blackboard sessionId: <id>` line names the id to pass as `sessionId` to the
+  `vouchington-tooling` tools. It is computed by the shared resolver
+  (`dev/agent-session-id/resolve.mts`) from the hook payload, so it equals the id the repository
+  scripts resolve for the same session, including a root Codex session. When no id resolves it
+  prints `NOT RESOLVED` and tells the agent to stop journaling rather than guess. A child agent
+  never reuses this id; it gets its own through `session_ensure`.
+- **Launch health.** A static check confirms `node_modules/.bin/vouchington` exists and that
+  `@modelcontextprotocol/sdk` resolves from the `vouchington-tooling` package, the way the launcher
+  loads it. It never spawns the server, so it cannot prove the harness connected. A failure prints
+  a `STOP WORK` line naming `./dev/initialize monorepo` and then `/mcp` reconnect in Claude Code or
+  a Codex restart. The line is a workspace-setup diagnosis, not a deployment outage.
+- **Deployment probe.** Unless the launch check failed, the run is a compaction restart, or
+  `CHECK_BLACKBOARD_SKIP=1`, the hook makes a bounded `sessions.list({ limit: 1 })` request. A
+  sandboxed probe reports unavailable assessment instead of a false deployment outage, because its
+  credential and egress are deliberately withheld by Claude's
+  [sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list).
+
+The check does not discard interactive pending feedback.
 
 ## Interactive pending delivery
 
@@ -281,12 +333,13 @@ constructs its own friction collector from the same session's local log and host
 JSON cannot supply a collector, credential environment, executable callback, or direct transcript
 path; discovery is bound to the composition session ID.
 
-The supported journal and retrospective writers take explicit `--mode interactive|autonomous`.
-Interactive delivery failures preserve the shared writer's sanitized feedback record in a bounded,
-private worktree-local outbox and return visible `pending` state so work can continue. Unsent records
-are never silently evicted. Saturation, persistence failure, malformed input, and identity mismatch
-remain explicit failures. Use the supported writer's `outbox-status` and `outbox-flush` commands to
-inspect and retry pending delivery; retries preserve source IDs and verify read-back.
+`journal_append` and the retrospective writer take an explicit `mode` (`interactive` or
+`autonomous`). Interactive delivery failures preserve the shared writer's sanitized feedback record
+in a bounded, private worktree-local outbox and return visible `pending` state so work can
+continue. Unsent records are never silently evicted. Saturation, persistence failure, malformed
+input, and identity mismatch remain explicit failures. Use the `outbox_status` and `outbox_flush`
+tools to inspect and retry pending delivery for the whole worktree; retries preserve source IDs and
+verify read-back.
 
 The versioned envelope records `schemaVersion`, `type`, `sourceEventId`, `timestamp`,
 `repositories`, `markdown`, `workOutcome`, and `feedbackCoverage`. Retrospectives retain typed
@@ -297,8 +350,8 @@ attribution, transport, and acknowledgment; repository adapters do not duplicate
 
 An availability or delivery diagnostic can mean the hosted connection failed: `AGENT_BLACKBOARD_URL`/
 `AGENT_BLACKBOARD_TOKEN` is missing or stale, or the deployment is unreachable even with valid
-credentials. An append/save hard-fail (see [Interactive pending delivery](#interactive-pending-delivery)
-above) can point to the same cause, but not always — these commands also hard-fail for invalid UTF-8, retrospective
+credentials. A `journal_append` or save failure (see [Interactive pending delivery](#interactive-pending-delivery)
+above) can point to the same cause, but not always — these writers also fail for invalid UTF-8, retrospective
 validation errors, missing session metadata, network failures, HTTP 500 responses, and failed
 read-back verification, none of which involve the credential. Read the printed error before
 acting: only when it actually identifies a missing/stale token, an authentication failure, or an
@@ -328,7 +381,7 @@ Interactive writer delivery failures remain visible in the outbox. `--mode auton
 a verified read-back and does not fall back to that outbox.
 
 The [`blackboard` skill § Credential failures](../../.agents/skills/blackboard/SKILL.md#credential-failures)
-carries the matching agent-facing rule for both its MCP and script paths; keep the two in sync.
+carries the matching agent-facing rule; keep the two in sync.
 
 ## CI (Harness dispatch)
 
@@ -337,8 +390,17 @@ does not provision `AGENT_BLACKBOARD_URL` or `AGENT_BLACKBOARD_TOKEN`. Harness s
 report contemporaneous failures through their available parent-agent channel when runtime session
 IDs are unavailable; they do not infer IDs or write unauthenticated blackboard records.
 
-agent-blackboard is orthogonal to auto-harness. Dispatch does not check a Blackboard protocol, and
-this repository does not give the runner a Blackboard credential.
+The runner holds no Blackboard credential and never reaches the hosted deployment. It cannot see
+whether the host connected the project `vouchington-tooling` server either, so
+`ci/harness-session-dispatch.mts` prepends an agent-side MCP preflight to every dispatched prompt
+(new sessions and Shepherd resumes). The agent's first action is one `outbox_status` call; if the
+tool is missing or errors, or the SessionStart output says `STOP WORK` or `NOT RESOLVED`, it makes
+no change and ends with `PREFLIGHT FAILED: vouchington-tooling MCP server is not connected`. The
+session then ends with no PR or comment instead of silently losing journal entries. Contract and
+resume rationale:
+[Auto Harness client contract](ci/workflows/reference-harness-automation.md#client-contract).
+Whether Auto Harness hosts load the project MCP server is unverified (Phase 0 of
+[#1154](https://github.com/vouchington/vouchington/issues/1154)).
 
 ## AWS deploy path
 
@@ -356,14 +418,12 @@ scaling, or repairing that infrastructure is the deployment owner's responsibili
 
 | File                         | Purpose                                                                                                                        |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `package.json`               | Pins the published package as a root development dependency                                                                    |
-| `.mcp.json`                  | Shared Agent Blackboard MCP launcher for Claude compatibility                                                                  |
-| `.codex/config.toml`         | Non-required, worktree-root-resolving Codex launcher plus exact per-tool approvals                                             |
-| `.cursor/mcp.json`           | Native Cursor launcher; `cli.json` and `permissions.json` own its exact tool allowlists                                        |
-| `.grok/config.toml`          | Native Grok launcher and exact `MCPTool(...)` allowlist                                                                        |
-| `opencode.json`              | Native OpenCode V1 launcher and exact `agent-blackboard_<tool>` permission entries                                             |
+| `package.json`               | Pins `vouchington-tooling` (the MCP server) and `agent-blackboard` (the CLI) as root development dependencies                  |
+| `.mcp.json`                  | Shared `vouchington-tooling` MCP launcher for Claude compatibility                                                             |
+| `.codex/config.toml`         | Non-required, worktree-root-resolving Codex launcher plus server-wide `default_tools_approval_mode`                            |
+| `.cursor/mcp.json`           | Native Cursor launcher; `cli.json` and `permissions.json` own its server-wide allowlists                                       |
+| `.grok/config.toml`          | Native Grok launcher and server-wide `MCPTool(vouchington-tooling__*)` allowlist                                               |
+| `opencode.json`              | Native OpenCode V1 launcher and explicit `vouchington-tooling_<tool>` permission entries                                       |
 | `dev/blackboard/client.mts`  | Resolves the hosted URL/token and constructs the published JS clients                                                          |
-| `dev/check-blackboard.mts`   | Advisory SessionStart probe of the hosted connection                                                                           |
-| `dev/blackboard-journal.mts` | Supported file/replay-oriented journal path for the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md)             |
+| `dev/check-blackboard.mts`   | SessionStart `sessionId`, launch-health, and deployment check                                                                  |
 | `dev/journal-checkpoint.mts` | SessionStart(compact)/PostToolUse dispatcher for the [automatic checkpoint journaling](#automatic-checkpoint-journaling) below |
-| `dev/blackboard-mcp`         | Cwd-independent wrapper that starts the installed CLI's `mcp` subcommand for both registrations                                |

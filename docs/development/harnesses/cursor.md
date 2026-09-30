@@ -11,8 +11,8 @@ in this repository. It does **not** get copied skills or `AGENTS.md` files.
 - Hooks load through Cursor's Claude-compat from [`.claude/settings.json`](../../../.claude/settings.json);
   policy stays in [`dev/codex-hooks/`](../../../dev/codex-hooks). Do not add a `hooks.json` here: a
   second hook source double-fires.
-- MCP uses [`mcp.json`](../../../.cursor/mcp.json)'s root-resolving Agent Blackboard wrapper. Its exact eight-tool
-  allowlist is kept in both [`cli.json`](../../../.cursor/cli.json) and [`permissions.json`](../../../.cursor/permissions.json).
+- MCP uses [`mcp.json`](../../../.cursor/mcp.json)'s root-resolving `vouchington-tooling` registration.
+  Its server-wide approval is kept in both [`cli.json`](../../../.cursor/cli.json) and [`permissions.json`](../../../.cursor/permissions.json).
 - CLI allow/deny tokens: [`cli.json`](../../../.cursor/cli.json). Auto-review guidance:
   [`permissions.json`](../../../.cursor/permissions.json).
 - OS sandbox: [`sandbox.json`](../../../.cursor/sandbox.json). Matches Codex `workspace-write`
