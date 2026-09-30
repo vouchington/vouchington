@@ -146,6 +146,24 @@ COMMENT ON COLUMN moderator_actions.review_dispute_id IS 'Target review dispute 
 
 COMMENT ON COLUMN moderator_actions.community_application_id IS 'Target community application for approve/reject actions.';
 
+COMMENT ON COLUMN moderator_actions.topic_claim_id IS 'Target topic ownership claim for verification, rejection, or revocation.';
+COMMENT ON COLUMN moderator_actions.report_integrity_flag_id IS 'Target report-integrity flag whose review was changed.';
+COMMENT ON COLUMN moderator_actions.report_abuse_penalty_id IS 'Target report-abuse penalty applied or revoked.';
+COMMENT ON COLUMN moderator_actions.vote_integrity_flag_id IS 'Target vote-integrity flag whose review was changed.';
+COMMENT ON COLUMN moderator_actions.vote_weight_penalty_id IS 'Target vote-weight penalty applied or revoked.';
+COMMENT ON COLUMN moderator_actions.agent_moderation_id IS 'Target agent moderation whose staff vote was changed; paired with its post owner.';
+COMMENT ON COLUMN moderator_actions.agent_moderation_post_id IS 'Post owner required by the partitioned agent-moderation target foreign key.';
+COMMENT ON COLUMN moderator_actions.oauth_client_id IS 'Target OAuth client whose verification was changed.';
+COMMENT ON COLUMN moderator_actions.user_mod_note_id IS 'Target staff note retained after soft deletion.';
+COMMENT ON COLUMN moderator_actions.crawler_id IS 'Target crawler created, edited, or deleted by staff.';
+COMMENT ON COLUMN moderator_actions.topic_id IS 'Target editorial topic assigned to an RSS category.';
+COMMENT ON COLUMN moderator_actions.operation_request_id IS 'Requested audit row linked by an external-operation outcome; an absent outcome remains unresolved.';
+COMMENT ON COLUMN moderator_actions.queue_name IS 'Queue selected for a staff control operation.';
+COMMENT ON COLUMN moderator_actions.scheduled_job_key IS 'Scheduled-job catalog key selected for an immediate staff run.';
+COMMENT ON COLUMN moderator_actions.backfill_key IS 'Backfill catalog key selected for an immediate staff run.';
+COMMENT ON COLUMN moderator_actions.rss_category_text IS 'RSS category text whose editorial assignment or rejection was changed.';
+COMMENT ON COLUMN moderator_actions.admin_import_batch_id IS 'Target import batch created by a staff member.';
+
 COMMENT ON COLUMN moderator_actions.reason IS 'Optional free-text reason for the action.';
 
 COMMENT ON COLUMN moderator_actions.metadata IS 'Structured context snapshot (e.g. role change target role, topic slugs for tags).';
