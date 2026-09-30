@@ -5,7 +5,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { parsedDependabot as parsed } from '../test-helpers/fix-dependabot.test-helpers.mts'
+import { parsedDependabot as parsed } from '../test-helpers/fix-dependabot.fixtures.mts'
 
 const escalate = parsed.jobs?.['escalate']
 const commentScript =
