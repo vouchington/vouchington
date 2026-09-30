@@ -1,22 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { createRequest } from '@voucha/test-helpers/api/server'
 import {
-  acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightSubmissionAssessment,
-  completeCopyrightMandatoryHumanReview,
-  createCopyrightNoticeAggregate,
-  getCopyrightNoticePrivateAggregate,
   getCopyrightRepeatInfringerAccount,
   listCopyrightRepeatInfringerAccountsForNotice,
 } from '@services/copyright-notices'
-import {
-  createTestUser,
-  getTestPostImagePlacement,
-  insertTestImage,
-  insertTestPost,
-  insertTestPostImage,
-} from '@voucha/test-helpers'
-import type { PrivateUser } from '@services/users/types'
+import { createTestUser } from '@voucha/test-helpers'
+import { createRequest } from '@voucha/test-helpers/api/server'
+import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 
 describe('copyright repeat-infringer routes', () => {
   it('records staff dispositions and review outcomes over HTTP', async () => {
@@ -25,8 +14,12 @@ describe('copyright repeat-infringer routes', () => {
       createTestUser({ extraRoles: ['moderator'] }),
       createTestUser({ administrator: true }),
     ])
-    const firstNoticeId = await confirmNotice(poster.id, moderator)
-    await confirmNotice(poster.id, moderator)
+    const firstNoticeId = await confirmTestRepeatInfringerNotice(
+      poster.id,
+      moderator,
+      'repeat route',
+    )
+    await confirmTestRepeatInfringerNotice(poster.id, moderator, 'repeat route')
     const accounts = await listCopyrightRepeatInfringerAccountsForNotice(moderator, firstNoticeId)
     const incidentId = accounts[0]?.incident_id
     const reviewId = accounts[0]?.open_review_id
@@ -97,62 +90,3 @@ describe('copyright repeat-infringer routes', () => {
     expect(after.open_review_id).toBeNull()
   })
 })
-
-async function confirmNotice(posterId: string, moderator: PrivateUser) {
-  const postId = await insertTestPost({
-    title: `repeat route ${crypto.randomUUID()}`,
-    slug: `repeat-route-${crypto.randomUUID()}`,
-    createdById: posterId,
-    markdown: 'image',
-  })
-  const imageId = await insertTestImage(posterId)
-  await insertTestPostImage({ postId, imageId })
-  const placement = await getTestPostImagePlacement(postId, imageId)
-  if (!placement) throw new Error('fixture image placement disappeared')
-  const notice = await createCopyrightNoticeAggregate({
-    jurisdiction: 'us_dmca',
-    receivedAt: new Date('2026-06-30T16:00:00.000Z'),
-    claimantUserId: null,
-    claimantDisplayName: 'Claimant',
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
-    workDescription: `work-${crypto.randomUUID()}`,
-    policyVersion: 'test-v1',
-    initialSubmission: {
-      kind: 'notice',
-      sourceKind: 'signed_in_form',
-      bodyCiphertext: `notice-${crypto.randomUUID()}`,
-    },
-    targets: [
-      {
-        placementId: placement.placement_id,
-        placementRevision: placement.placement_revision,
-        imageId,
-        hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
-      },
-    ],
-  })
-  const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
-  if (!aggregate) throw new Error('fixture notice disappeared')
-  const assessment = await appendCopyrightSubmissionAssessment({
-    submissionId: aggregate.submissions[0].id,
-    assessedAt: new Date('2026-07-01T11:00:00.000Z'),
-    currentUser: moderator,
-    substantiallyCompliant: true,
-  })
-  const restriction = await acceptCopyrightNoticeAndImposeRestriction({
-    noticeId: notice.id,
-    targetId: aggregate.targets[0].id,
-    assessmentId: assessment.id,
-    imposedAt: new Date('2026-07-01T12:00:00.000Z'),
-    imposedById: null,
-  })
-  await completeCopyrightMandatoryHumanReview({
-    noticeId: notice.id,
-    restrictionId: restriction.id,
-    currentUser: moderator,
-    action: 'confirm',
-    rationale: 'The restriction remains appropriate after review.',
-    reviewedAt: new Date('2026-07-02T12:00:00.000Z'),
-  })
-  return notice.id
-}
