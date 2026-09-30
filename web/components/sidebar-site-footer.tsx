@@ -1,6 +1,7 @@
 /* oxlint-disable no-mistakes/playwright-literals -- Footer IDs come from static link data; ast-grep still bans inline calls in data-pw. */
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { footerContentLinks, footerSiteLinks } from './footer-links'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -37,8 +38,15 @@ function FooterLinks({
   )
 }
 
+function readCopyrightYear(): number {
+  return new Date().getFullYear()
+}
+
 export function SidebarSiteFooter() {
   const t = useTranslations()
+  // Captured once per mount; the year has no later update, so the setter stays unused.
+  // oxlint-disable-next-line react/hook-use-state -- omitting the unused setter
+  const [year] = useState(readCopyrightYear)
   return (
     <footer
       data-pw='sidebar-site-footer'
@@ -52,7 +60,7 @@ export function SidebarSiteFooter() {
       </div>
       <div suppressHydrationWarning>
         {t('extracted.components.sidebarSiteFooter.yearVouchaAllRightsReserved_6dbfae4a', {
-          year: new Date().getFullYear(),
+          year,
         })}
       </div>
     </footer>
