@@ -8,63 +8,16 @@ import {
   createRandomString,
   archiveTestCommunity,
 } from '@voucha/test-helpers'
+import { registerCommunityListGetAuthTests } from '../../../test-helpers/community-list-get-auth-tests.mts'
 
 describe('Community Applications Routes', () => {
   describe('GET /api/v1/communities/:slug/applications', () => {
-    it('returns 401 without auth', async () => {
-      const user = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: user.id,
-        slug: `apps-get-401-${random}`,
-      })
-
-      const request = createRequest()
-      await request.get(`/api/v1/communities/${community.slug}/applications`).expect(401)
-    })
-
-    it('returns 403 as non-mod', async () => {
-      const [owner, regular] = await Promise.all([createTestUser(), createTestUser()])
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: owner!.id,
-        slug: `apps-get-403-${random}`,
-      })
-      await insertTestCommunityMember({
-        communityId: community.id,
-        userId: regular!.id,
-        role: 'member',
-      })
-
-      const request = createRequest()
-      await request.authenticateAs(regular!)
-
-      await request.get(`/api/v1/communities/${community.slug}/applications`).expect(403)
-    })
-
-    it('returns 200 with results as mod', async () => {
-      const user = await createTestUser()
-      const random = createRandomString(8)
-      const community = await insertTestCommunity({
-        createdById: user.id,
-        slug: `apps-get-ok-${random}`,
-        visibility: 'private',
-      })
-      await insertTestCommunityMember({
-        communityId: community.id,
-        userId: user.id,
-        role: 'owner',
-      })
-
-      const request = createRequest()
-      await request.authenticateAs(user)
-
-      const response = await request
-        .get(`/api/v1/communities/${community.slug}/applications`)
-        .expect(200)
-
-      expect(Array.isArray(response.body.results)).toBe(true)
-      expect(response.body).toHaveProperty('page_info')
+    registerCommunityListGetAuthTests({
+      resource: 'applications',
+      unauthenticatedSlugPrefix: 'apps-get-401-',
+      forbiddenSlugPrefix: 'apps-get-403-',
+      okSlugPrefix: 'apps-get-ok-',
+      okVisibility: 'private',
     })
   })
 
