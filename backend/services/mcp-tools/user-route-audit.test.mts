@@ -115,6 +115,8 @@ describe('user MCP call audit', () => {
             surface: 'mcp',
             correlation_id: response.headers['x-correlation-id'],
             ...identity,
+            actor_user_id: user.id,
+            occurred_at: expect.any(Date),
             jsonrpc_method: 'tools/call',
             tool_name: READ_TOOL,
             outcome: 'accepted',
