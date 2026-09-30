@@ -55,8 +55,13 @@ returned a 500. Follow-up: tooling support for SSE query carriers.
 ## Status decisions
 
 - Parser and semantic 400s run first and are kept: malformed `limit`, repeated or malformed `after`
-  from the pagination parsers, invalid `feed_type` or `media_type`, an unknown list type, the
-  landing-page path id, the story id, and a playback position out of range.
+  from the pagination parsers, invalid `feed_type`, an invalid `media_type` on the user collection
+  routes, an unknown list type, the landing-page path id, the story id, and a playback position out
+  of range.
+- `GET /api/v1/feeds/rss_feed_items/:feed_type` declares `media_type` as a comma-separated array of
+  `article|audio|video` (as `GET /rss-feed-items` does), because the parser accepts
+  `?media_type=audio,video` and repeated values. An unknown member is 422; the parser used to drop
+  it silently.
 - Out-of-range limits are still clamped, not rejected. Entity-relation `GET` keeps its clamping.
 - Schema-shape failures are 422: wrong types, unknown JSON fields, missing required keys,
   repeated query keys, non-boolean flags, malformed body UUIDs, a malformed `Idempotency-Key`.
