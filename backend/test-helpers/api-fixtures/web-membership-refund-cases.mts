@@ -2,6 +2,33 @@ import type { ApiFixtureCase } from './types.mts'
 
 export const webMembershipRefundApiFixtureCases: ApiFixtureCase[] = [
   {
+    id: 'web.memberships.refundable-charges.default',
+    method: 'GET',
+    path: '/api/v1/memberships/refundable-charges',
+    route: { routeTemplate: '/api/v1/memberships/refundable-charges' },
+    query: { user_id: '019fafb8-a44c-73e2-890a-497ff3dd27a6' },
+    auth: 'fixture-admin',
+    status: 200,
+    body: {
+      charges: [
+        {
+          amount: { amount: 1200, currency: 'usd' },
+          amount_refunded: { amount: 0, currency: 'usd' },
+          charge_id: 'ch_fixture_refund',
+          created_at: '2026-07-01T12:00:00.000Z',
+          description: 'Membership renewal',
+          invoice_id: 'in_fixture_refund',
+          payment_intent_id: 'pi_fixture_refund',
+        },
+      ],
+    },
+    consumers: ['web'],
+    migratedFrom: [
+      'backend/api/v1/memberships/refundable-charges.mts',
+      'web/lib/api/client/memberships.ts',
+    ],
+  },
+  {
     id: 'web.memberships.refund.completed',
     method: 'POST',
     path: '/api/v1/memberships/refunds',
