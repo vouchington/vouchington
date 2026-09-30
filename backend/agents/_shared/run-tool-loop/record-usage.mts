@@ -13,9 +13,9 @@ type RecordToolLoopUsageParams = Pick<RunToolLoopConfig, 'agentSlug' | 'communit
   // Pick, not the full OpenAIResponse: also accepts an OpenAIResponseNotCompletedError so a
   // failed/incomplete iteration's usage can be recorded from the thrown error.
   response: Pick<OpenAIResponse, 'usage' | 'model' | 'service_tier'> & { id?: string }
-  // The streaming request's start time; see RecordAgentResponseUsageParams.createdAt for why this
-  // exists. Unset callers (the plain, non-streaming tool loop) always have a background lease with
-  // its own authoritative createdAt, so this stays optional.
+  // The request's start time; see RecordAgentResponseUsageParams.createdAt for why this exists.
+  // Unset callers (the tool loop) always have a background lease with its own authoritative
+  // createdAt, so this stays optional.
   createdAt?: Date
 }
 
@@ -50,10 +50,7 @@ type RecordToolLoopParams = Pick<
 
 /**
  * Records the ledger row for a thrown OpenAIResponseNotCompletedError — the request still billed
- * tokens even though it didn't complete. No-op for any other error. Shared by the plain tool loop
- * (via callRecordingToolLoopUsage below) and the two streaming variants, which can't use that
- * wrapper directly because they consume the response through a yield-driven generator rather than
- * a single awaited call.
+ * tokens even though it didn't complete. No-op for any other error.
  */
 export async function recordToolLoopFailedUsage(
   error: unknown,

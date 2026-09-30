@@ -131,7 +131,7 @@ examples:
       import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
       const response = await fetch(url, { dispatcher: getExternalRequestDispatcher() })
     isValid: false
-    file: 'backend/agents/chat/anthropic-stream.mts'
+    file: 'backend/modules/utils/http.mts'
   - code: |-
       import { fetch } from 'undici'
       import { Agent } from 'undici'
@@ -152,17 +152,17 @@ examples:
       import { fetch as undiciFetch } from 'undici'
       const response = await undiciFetch(url, { method: 'GET' })
     isValid: false
-    file: 'backend/agents/chat/anthropic-stream.mts'
+    file: 'backend/modules/utils/http.mts'
   - code: |-
       import { fetch as httpFetch } from 'undici'
       const response = await httpFetch(url, { method: 'GET' })
     isValid: false
-    file: 'backend/agents/chat/anthropic-stream.mts'
+    file: 'backend/modules/utils/http.mts'
   - code: |-
       import { fetch as httpFetch, Response } from 'undici'
       const response = await httpFetch(url, { method: 'GET' })
     isValid: false
-    file: 'backend/agents/chat/anthropic-stream.mts'
+    file: 'backend/modules/utils/http.mts'
   - code: |-
       import { fetch } from 'undici'
       const response = await fetch(url, { method: 'GET' }, { dispatcher: getExternalRequestDispatcher() })
@@ -182,7 +182,7 @@ examples:
       import { fetch as httpFetch } from 'undici'
       const response = await httpFetch(url, { dispatcher: new Agent() })
     isValid: false
-    file: 'backend/agents/chat/anthropic-stream.mts'
+    file: 'backend/modules/utils/http.mts'
   - code: |-
       import { fetch } from 'undici'
       import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
@@ -211,30 +211,30 @@ examples:
   - code: |-
       import { fetch as undiciFetch } from 'undici'
       import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
-      export async function streamAnthropicChat(params: { fetch?: typeof undiciFetch }) {
+      export async function fetchProviderJson(params: { fetch?: typeof undiciFetch }) {
         const requestFetch = params.fetch ?? undiciFetch
         return await requestFetch(url, { dispatcher: getExternalRequestDispatcher() })
       }
     isValid: true
-    file: 'backend/agents/chat/anthropic-stream.mts'
+    file: 'backend/modules/utils/http.mts'
   - code: |-
       import { fetch as undiciFetch } from 'undici'
       import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
       const response = await undiciFetch(url, { dispatcher: getExternalRequestDispatcher() })
     isValid: true
-    file: 'backend/agents/chat/anthropic-stream.mts'
+    file: 'backend/modules/utils/http.mts'
   - code: |-
       import { fetch as httpFetch } from 'undici'
       import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
       const response = await httpFetch(url, { headers, dispatcher: getExternalRequestDispatcher() })
     isValid: true
-    file: 'backend/agents/chat/anthropic-stream.mts'
+    file: 'backend/modules/utils/http.mts'
   - code: |-
       import { Response, fetch as httpFetch } from 'undici'
       import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
       const response = await httpFetch(url, { headers, dispatcher: getExternalRequestDispatcher() })
     isValid: true
-    file: 'backend/agents/chat/anthropic-stream.mts'
+    file: 'backend/modules/utils/http.mts'
   - code: |-
       import { fetch as undiciFetch } from 'undici'
       import { getLongRunningExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
@@ -244,7 +244,7 @@ examples:
         headers,
       })
     isValid: true
-    file: 'backend/agents/chat/anthropic-stream.mts'
+    file: 'backend/modules/utils/http.mts'
   - code: |-
       import { fetch as undiciFetch } from 'undici'
       function createExternalFetch(getDispatcher: () => Dispatcher): ExternalFetch {

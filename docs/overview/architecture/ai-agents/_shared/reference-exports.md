@@ -23,8 +23,8 @@ potentially billed failures latch the request day and stop. Once that budget is 
 capacity is reported as a streamed failure, a flex request is resent once on the default tier. The
 default budget (2) applies to any call that does not set it explicitly. Pick the value from
 `backend/agents/_shared/retry-policy.mts` matching the caller's workload —
-`CHAT_SUBAGENT_RETRY_POLICY` (5), `SYNCHRONOUS_REQUEST_RETRY_POLICY` (1), or
-`QUEUED_BACKGROUND_RETRY_POLICY` (2) — rather than leaving the free-capacity budget implicit. The
+`SYNCHRONOUS_REQUEST_RETRY_POLICY` (1) or `QUEUED_BACKGROUND_RETRY_POLICY` (2) — rather than
+leaving the free-capacity budget implicit. The
 full retry-budget table and its accounting contract live in the private
 `vouchington/vouchington-docs` repository.
 
@@ -78,37 +78,6 @@ Use this in single-call agents (story-post, story-clustering) that expect struct
 ### `runToolLoop(config): Promise<RunToolLoopResult>`
 
 Runs an OpenAI tool-calling loop until the model stops requesting tool calls or `maxIterations` is reached. On max iterations, makes one final call with `tool_choice: 'none'` to extract a text response.
-
-For real-time event delivery, use `runToolLoopStreaming` instead (see below).
-
-### `runToolLoopStreaming(config): AsyncGenerator<RunToolLoopStreamEvent, RunToolLoopResult>`
-
-Streaming variant of `runToolLoop`. Yields a `RunToolLoopStreamEvent` discriminated union for each significant step and returns the same `RunToolLoopResult` as the return value.
-
-**Event types:**
-
-| Type             | Description                                                                                                                                |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `model_response` | Fired after each OpenAI response (includes `response_id`, `iteration`, `tool_calls_count`)                                                 |
-| `tool_call`      | Fired before each non-skipped tool call (suppressed when `onBeforeCall` returns `{ skip: true }`; includes `call_id`, `name`, `arguments`) |
-| `subagent_step`  | Passed through from inner subagent generators (includes `agent_name`, `tool_name`)                                                         |
-| `tool_result`    | Fired after each non-skipped tool call completes (suppressed for skipped calls; includes `call_id`, `output`)                              |
-| `text`           | Fired when extractable text is available at any exit point                                                                                 |
-
-Per-iteration event order: `model_response → (for each call:) tool_call → subagent_step* → tool_result → … → text`
-
-**Important:** callers must use the manual `gen.next()` protocol (not `for await`) to capture the `RunToolLoopResult` return value:
-
-```typescript
-const gen = runToolLoopStreaming(config)
-let step = await gen.next()
-while (!step.done) {
-  const ev = step.value // RunToolLoopStreamEvent
-  // handle ev.type
-  step = await gen.next()
-}
-const result = step.value // RunToolLoopResult
-```
 
 ```typescript
 import { runToolLoop } from '@agents/_shared'

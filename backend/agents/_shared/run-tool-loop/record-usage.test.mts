@@ -16,8 +16,8 @@ import { recordToolLoopUsage, recordToolLoopFailedUsage } from './record-usage.m
 
 // These two exports are the tool loop's only path to recordAgentResponseUsage (record-usage.mts's
 // own docstring calls it "the same seam direct (non-loop) callers use"), and the tool loop is the
-// dominant token consumer on this queue -- up to 5 iterations plus subagents, versus one call for
-// a direct (non-loop) agent. If recordToolLoopUsage/recordToolLoopFailedUsage were ever changed to
+// dominant token consumer on this queue -- up to 5 iterations, versus one call for a direct
+// (non-loop) agent. If recordToolLoopUsage/recordToolLoopFailedUsage were ever changed to
 // call recordAiUsage directly instead of delegating, glide-mq's tokenLimiter (#8836) would silently
 // stop seeing the majority of real consumption. This file fails exactly then -- the delegation is
 // proven by an actual accumulator total, not by trusting the docstring.
@@ -123,9 +123,9 @@ describe('run-tool-loop/record-usage.mts token-accumulator delegation', () => {
   })
 })
 
-// #8773 round-14 finding 1: a foreground stream (run-tool-loop-streaming*.mts) never registers a
-// background lease, so recordToolLoopUsage/recordToolLoopFailedUsage are the only seam that can
-// carry the streaming request's start time down to the ledger row. These prove createdAt actually
+// #8773 round-14 finding 1: a foreground request never registers a background lease, so
+// recordToolLoopUsage/recordToolLoopFailedUsage are the only seam that can
+// carry the request's start time down to the ledger row. These prove createdAt actually
 // reaches ai_usage_records via that seam, the same way daily-total.test.mts proves it for the
 // registered-lease path.
 describe('run-tool-loop/record-usage.mts createdAt propagation', () => {

@@ -1,11 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
   claimChatConversationMessageAgenticRun,
   createConversation,
   createConversationMessage,
 } from '../create.mts'
-import { streamChatResponse } from '../../../agents/chat/index.mts'
 import { failChatEnqueue, finalizeChatAgenticRun } from '../update.mts'
 import { getConversationMessageAgenticRunById } from '../agentic-runs.mts'
 import { randomUUID } from 'node:crypto'
@@ -35,7 +34,7 @@ describe('claimChatConversationMessageAgenticRun', () => {
     expect(results.filter(Boolean)).toHaveLength(1)
   })
 
-  it('does not claim or call the provider for an errored assistant placeholder', async () => {
+  it('does not claim an errored assistant placeholder', async () => {
     const user = await createTestUser()
     const conversation = await createConversation(user.id, 'Errored placeholder')
     const message = await createConversationMessage(conversation.id, user.id, {
@@ -43,69 +42,16 @@ describe('claimChatConversationMessageAgenticRun', () => {
       content: null,
       error: 'The response could not start. Please try again.',
     })
-    const runToolLoopStreaming = vi.fn<VitestLooseMock>()
-    const events = []
 
-    for await (const event of streamChatResponse({
-      conversation,
-      conversationMessageId: message.id,
-      userMessage: 'hello',
-      currentUser: user,
-      deps: {
-        checkMessageSafety: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
-        buildChatInput: vi
-          .fn<VitestLooseMock>()
-          .mockResolvedValue([{ role: 'user', content: 'hello' }]),
-        runToolLoopStreaming,
-      },
-    })) {
-      events.push(event)
-    }
-
-    expect(events).toEqual([])
-    expect(runToolLoopStreaming).not.toHaveBeenCalled()
-  })
-
-  it('runs the provider and emits done only once for concurrent duplicate streams', async () => {
-    const user = await createTestUser()
-    const conversation = await createConversation(user.id, 'Duplicate stream')
-    const message = await createConversationMessage(conversation.id, user.id, {
-      role: 'assistant',
-      content: null,
-    })
-    const runToolLoopStreaming = vi.fn<VitestLooseMock>().mockImplementation(async function* () {
-      yield { type: 'text', content: 'answer' }
-      return {
-        text: 'answer',
-        iterations: 1,
-        terminationReason: 'no_tool_calls',
-        lastResponseId: 'response-1',
-      }
-    })
-    const collect = async () => {
-      const events = []
-      for await (const event of streamChatResponse({
-        conversation,
+    await expect(
+      claimChatConversationMessageAgenticRun({
+        conversationId: conversation.id,
         conversationMessageId: message.id,
-        userMessage: 'hello',
-        currentUser: user,
-        deps: {
-          checkMessageSafety: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
-          buildChatInput: vi
-            .fn<VitestLooseMock>()
-            .mockResolvedValue([{ role: 'user', content: 'hello' }]),
-          runToolLoopStreaming,
-        },
-      })) {
-        events.push(event)
-      }
-      return events
-    }
-
-    const events = (await Promise.all([collect(), collect()])).flat()
-
-    expect(runToolLoopStreaming).toHaveBeenCalledTimes(1)
-    expect(events.filter(event => event.type === 'done')).toHaveLength(1)
+        modelName: 'gpt-5.4-nano',
+        modelProvider: 'openai',
+        input: { message: 'hello' },
+      }),
+    ).resolves.toBeUndefined()
   })
 
   it('rolls back the run transition when its assistant message cannot be finalized', async () => {

@@ -4,10 +4,7 @@ import {
   OpenAiSpendCapBreachError,
 } from '@services/ai-usage'
 import { getUtcDayFromDate } from '@ts-shared/utils/dates'
-import {
-  runWithOpenAIResponseAttemptHooks,
-  type OpenAIResponseAttemptHooks,
-} from './create-response.mts'
+import type { OpenAIResponseAttemptHooks } from './create-response.mts'
 
 export type { OpenAIResponseAttemptHooks } from './create-response.mts'
 
@@ -40,12 +37,4 @@ export function createOpenAIResponseAttemptHooks(
       })
     },
   }
-}
-
-export async function nextOpenAIResponseStreamStep<Yielded, Returned>(
-  generator: AsyncGenerator<Yielded, Returned>,
-  hooks: OpenAIResponseAttemptHooks | undefined,
-): Promise<IteratorResult<Yielded, Returned>> {
-  if (!hooks) return generator.next()
-  return runWithOpenAIResponseAttemptHooks(hooks, () => generator.next())
 }

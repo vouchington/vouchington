@@ -134,18 +134,3 @@ export async function updateConversationLastResponseId(
     WHERE id = ${conversationId}
   `)
 }
-
-export async function clearConversationLastResponseIdIfMatches(
-  conversationId: string,
-  expectedLastResponseId: string,
-): Promise<boolean> {
-  const { rowCount } = await write(sql`/* clearConversationLastResponseIdIfMatches */
-    UPDATE conversations
-    SET last_response_id = NULL
-    WHERE id = ${conversationId}
-      AND last_response_id = ${expectedLastResponseId}
-      AND deleted_at IS NULL
-    RETURNING id
-  `)
-  return rowCount === 1
-}

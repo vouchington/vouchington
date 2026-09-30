@@ -4,57 +4,14 @@
 
 ## LLM Agent Conversations
 
-`@services/conversations-messages` persists chat for native local models as client-generated run records. The hosted chat transport (the SSE `POST /api/v1/conversations/:conversationId/chat` route, the `chat` and `reconcile-chat-runtime-generations` queue jobs, and the Valkey token channel) is removed, and that route returns 404. The orchestrator and subagent code below remains in `@agents/chat` only until the chat agent is deleted. Each conversation tracks:
+`@services/conversations-messages` persists chat for native local models as client-generated run records. The hosted chat transport (the SSE `POST /api/v1/conversations/:conversationId/chat` route, the `chat` and `reconcile-chat-runtime-generations` queue jobs, and the Valkey token channel) is removed, and that route returns 404. The chat orchestrator and its research, discovery and profile subagents are removed with it, so no server-side agent answers chat messages. Each conversation tracks:
 
 - `conversations` — top-level thread per user
 - `messages` — individual turns (user + assistant)
-- `agentic-runs` — tracks tool calls and agent state within a turn (parent/child for orchestrator + subagents)
+- `agentic-runs` — execution records for a turn. The table, services and partitions remain until the agentic-run storage removal ([A6, #185](https://github.com/vouchington/vouchington/issues/185)); nothing in the running server creates new parent/child runs for chat.
 
-The chat system uses an **orchestrator + subagent** architecture:
-
-```mermaid
-flowchart TD
-  user[User message] --> orchestrator[chat orchestrator]
-  orchestrator --> direct[Direct quick tools]
-  orchestrator --> research[run_research_agent]
-  orchestrator --> discovery[run_discovery_agent]
-  orchestrator --> profile[run_profile_agent]
-  direct --> response[Stream response]
-  research --> researchTools[Posts, crawls, data points, topic insights]
-  discovery --> discoveryTools[Trending topics, posts, recommendations]
-  profile --> profileTools[Wallet, spending, valuations, rewards]
-  researchTools --> response
-  discoveryTools --> response
-  profileTools --> response
-```
-
-The orchestrator handles quick lookups directly (`get_my_profile`, `search_topics`) and delegates broad research, discovery, or profile mutations to specialized subagents.
-`streamChatResponse()` runs prompt-injection and moderation checks at its entry point, and the
-`client-generated-chat` route checks both the user message and the assistant content. When a response chain is not yet available, chat
-history is rebuilt as application-owned user/assistant messages with sanitized, wrapped content
-boundaries. Each provider adapter maps that history to its native message array; it is never
-flattened or serialized into prompt text. Stored messages are runtime-validated and malformed rows
-fail before a provider call. Null assistant placeholders are omitted, and persisted history cannot
-create system or developer messages because trusted OpenAI instructions and the Anthropic system
-prompt remain separate provider parameters.
-
-The first OpenAI request in a chain sends the full typed history without `previous_response_id`.
-Continuations send only the current typed user message with the saved response ID. Anthropic always
-receives the full typed history because OpenAI response IDs are not portable across providers.
-If the bounded history begins with an assistant turn, the Anthropic boundary drops leading
-assistant turns up to the first user message. It otherwise preserves message order, including
-consecutive same-role turns supported by the Messages API.
-
-OpenAI retains Responses API application state for 30 days by default, so a durable Voucha
-conversation can outlive its saved continuation response. If OpenAI reports the exact structured
-`previous_response_not_found` error for `previous_response_id` before any user-visible event,
-`streamChatResponse()` conditionally clears the matching saved ID and retries once without it,
-rebuilding the same sanitized, typed 20-message history used for a new chain. A concurrent newer ID,
-an unrelated error, or any already-emitted text/tool/subagent event prevents recovery. This follows
-OpenAI's documented recovery semantics while avoiding duplicate output or tool execution; see the
-[conversation-state guide](https://developers.openai.com/api/docs/guides/conversation-state), the
-[data-retention policy](https://developers.openai.com/api/docs/guides/your-data#default-usage-policies-by-endpoint),
-and the [chat agent implementation guide](ai-agents/chat/README.md#openai-continuation-recovery).
+The `client-generated-chat` route checks both the user message and the assistant content with
+`checkApiMessageSafety()` before it persists the turn.
 
 Native clients can default to local device models when supported. Those responses are generated on
 device, then persisted through `POST /api/v1/conversations/:conversationId/client-generated-chat`
@@ -64,17 +21,5 @@ version can select its canonical Windows identity during client-first rollout an
 There is no hosted fallback: `client-generated-chat` rejects hosted providers with 400 and the SSE
 `/chat` endpoint no longer exists.
 
-### Subagent Pattern
-
-All subagents are created via `createSubagentTool()` from `@agents/_shared`. The factory enforces:
-
-- Child `conversation_message_agentic_runs` row with `parent_agentic_run_id` pointing to the orchestrator's run
-- Progress events (`subagent_step`) emitted to the client as each subagent tool call executes
-- `AbortSignal` propagation so client cancellations stop the inner `runToolLoop`
-- Consistent error handling and lifecycle timestamp updates for derived run status
-
-All tools with `run_*` schema names must use this factory. Automated replacement coverage for this
-policy is tracked in the static-analysis migration milestone.
-Subagent `task`, `query`, and `context` inputs are sanitized and wrapped before the inner model call.
-
-`chat-stream.mts` streams responses back to clients using async generators. External API calls are isolated in dedicated functions marked with `/* no-mistakes: integration=<provider> */`.
+Agents that remain (autotagger, moderation, story clustering and story post) are single-call or
+non-streaming `runToolLoop` agents; see [Agent Patterns](ai-agents/reference-agent-patterns.md).

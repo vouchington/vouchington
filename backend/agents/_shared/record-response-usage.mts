@@ -29,11 +29,10 @@ interface RecordAgentResponseUsageParams {
   communityId?: string | null
   postId?: string | null
   // Set only inside callRecordingAgentResponseUsage's background-response-hooks scope. Unset for
-  // the streaming tool loop (run-tool-loop-streaming*.mts), which stays foreground (#8836) and
-  // never registers a response -- there is no sweeper race to guard there, so recording falls
-  // straight through to recordAiUsage.
+  // a foreground request that never registers a response -- there is no sweeper race to guard
+  // there, so recording falls straight through to recordAiUsage.
   registration?: BackgroundResponseRegistration
-  // The streaming request's start time, for a foreground stream recorded after its request day
+  // The request's start time, for a foreground request recorded after its request day
   // (see RecordAiUsageOptions.createdAt in @services/ai-usage/record.mts). Ignored when
   // `registration.lease` is set -- the lease's own createdAt is the more authoritative request
   // time there.
@@ -48,8 +47,7 @@ interface RecordAgentResponseUsageDeps {
 /**
  * Settles cost-ledger recording for a single completed OpenAI call. Shared by
  * callRecordingAgentResponseUsage (below) and run-tool-loop/record-usage.mts's
- * recordToolLoopUsage, so direct calls, the tool loop, and the streaming tool loop all share one
- * recording policy.
+ * recordToolLoopUsage, so direct calls and the tool loop share one recording policy.
  *
  * Records from `response.model`/`response.service_tier` — what OpenAI actually served — not the
  * requested model/tier, falling back to a distinguishable sentinel when either is missing so a

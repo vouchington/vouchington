@@ -38,6 +38,5 @@ call with no tools, called synchronously by
 
 ## Related
 
-- Chat agent: [../chat/README.md](../chat/README.md)
 - Shared agent utilities: [../_shared/reference-used-by.md](../_shared/reference-used-by.md)
 - Agents overview: [../AGENTS.md](../../../../../backend/agents/AGENTS.md)
