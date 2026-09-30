@@ -13,7 +13,7 @@ import {
   createNativeBlueskyLinkCompletion,
   finalizeNativeBlueskyAccountLink,
 } from '@services/bluesky-accounts'
-import { onceEntityListenerCompleted } from '@workers/entity-listeners/test-support'
+import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
 import { v7 as uuidv7 } from 'uuid'
 
 describe('POST /api/v1/auth/bluesky/link-completions', () => {

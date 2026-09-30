@@ -38,6 +38,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         'backend/test-helpers/election-vote-stats.test.mts',
         'backend/test-helpers/services/posts/test-support.test.mts',
         'backend/test-helpers/services/users/test-support.test.mts',
+        'backend/test-helpers/workers/entity-listeners/test-support.test.mts',
         'backend/test-helpers/entities/bluesky-link-authorizations.test.mts',
       ],
       exclude: [

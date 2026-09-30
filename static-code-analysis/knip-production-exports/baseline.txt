@@ -361,7 +361,6 @@ exports backend/services/vote-integrity/config.mts VOTE_INTEGRITY_FLAG_TYPES
 exports backend/services/web-risk/state.mts configureWebRiskStateForTest
 exports backend/services/web-risk/state.mts resetWebRiskStateForTest
 exports backend/workers/account-data-requests/processors.mts publishTerminalStatus
-exports backend/workers/ai-agents/processors/process-appeal-resolution.fixtures.mts rerunAppealResolutionThroughQueueForTest
 exports backend/workers/ai-agents/processors/process-reconcile-post-classifier-applications.mts POST_CLASSIFIER_RECEIPT_AGE_ALARM_MS
 exports backend/workers/ai-agents/processors/spend-cap-recheck.mts getOpenAiSpendCapRecheckAt
 exports backend/workers/article-sync/processors.mts publishTerminalStatus
@@ -378,8 +377,6 @@ exports backend/workers/crawl-referral-links/processors.mts handleCrawlReferralL
 exports backend/workers/crawl-referral-links/processors.mts handleCrawlReferralLinkResult
 exports backend/workers/crawler/processors.mts buildCrawlerJobResult
 exports backend/workers/crawler/processors.mts handleCrawlerProcessorError
-exports backend/workers/entity-listeners/test-support.mts onceEntityListenerActive
-exports backend/workers/entity-listeners/test-support.mts onceEntityListenerCompleted
 exports backend/workers/images/workers/images.mts handleImagesJob
 exports backend/workers/memberships/processors/stripe-event-test-fixtures.mts createStripeEvent
 exports backend/workers/memberships/processors/stripe-event-test-fixtures.mts createTestStripeSubscription
@@ -387,10 +384,6 @@ exports backend/workers/memberships/processors/stripe-event-test-fixtures.mts cr
 exports backend/workers/memberships/processors/stripe-event-test-fixtures.mts createUniqueStripePriceId
 exports backend/workers/memberships/processors/stripe-event-test-fixtures.mts toJobData
 exports backend/workers/openai-moderation/workers/openai_moderation_omni_single.mts processOpenAIModerationOmniSingleJob
-exports backend/workers/post-publication/processors/fixtures.mts makeDependencies
-exports backend/workers/post-publication/processors/fixtures.mts makeResult
-exports backend/workers/post-publication/processors/fixtures.mts post
-exports backend/workers/post-publication/processors/fixtures.mts work
 exports backend/workers/rss-feeds/processors.mts processFetchRssFeed
 exports backend/workers/rss-feeds/processors.mts processRssFeedsDispatcher
 exports backend/workers/ses-inbound/processors/streamed-mail-parts.mts MAX_MIME_TEXT_BYTES

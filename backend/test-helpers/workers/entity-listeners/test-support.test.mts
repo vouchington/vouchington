@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { QUEUE_NAME } from '@queues/entity-listeners/config'
-import { getOrCreateQueue } from '../../../test-helpers/glide-mq-vitest-internals.mts'
-import { onceEntityListenerCompleted } from './test-support.mts'
+import { getOrCreateQueue } from '../../../../test-helpers/glide-mq-vitest-internals.mts'
+import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
 
 describe('onceEntityListenerCompleted', () => {
   it('resolves when the matching job already completed before the listener registered', async () => {

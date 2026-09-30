@@ -5,7 +5,7 @@ import onError from '../modules/on-error/index.mts'
 
 // Attach an error handler so unhandled 'error' events don't crash the process: this test-support
 // context never goes through the worker bootstrap that normally does this (mirrors
-// backend/workers/entity-listeners/test-support.mts:10). Guarded so importing this module from many
+// backend/test-helpers/workers/entity-listeners/test-support.mts:10). Guarded so importing this module from many
 // test files doesn't accumulate one listener per import.
 if (electionsWorker.listenerCount('error') === 0) electionsWorker.on('error', onError)
 
@@ -87,7 +87,7 @@ type WorkerLike = {
  * Recomputes are scheduled outside request latency; tests reading the aggregate after a vote
  * must wait here. See `docs/overview/architecture/services/elections-votes/README.md`.
  *
- * Unlike `onceEntityListenerCompleted` (`backend/workers/entity-listeners/test-support.mts`), this
+ * Unlike `onceEntityListenerCompleted` (`backend/test-helpers/workers/entity-listeners/test-support.mts`), this
  * helper does not short-circuit on `worker.isDrained`: elections enqueues are fire-and-forget, so the
  * worker can already be drained *before* the job this call is waiting for has even been added — an
  * `isDrained` early return would resolve immediately and leave the race this helper exists to close.

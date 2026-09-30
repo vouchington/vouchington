@@ -1,4 +1,4 @@
-import { onceEntityListenerCompleted } from '@workers/entity-listeners/test-support'
+import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, assertValidIsoDateString } from '@voucha/test-helpers'
