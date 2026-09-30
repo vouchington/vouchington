@@ -17,6 +17,10 @@ Routes for the moderation appeals workflow.
 | `POST`  | `/api/v1/appeals/:id/resolution`        | Staff only         | Resolve a delivered appeal (`action`: `accept`, `reduce`, or `deny`) |
 | `POST`  | `/api/v1/appeals/:id/resolution-drafts` | Staff only         | Re-run AI drafting for an unapproved, unsent pending appeal          |
 
+`GET /api/v1/appeals` clamps an oversized `limit`, ignores unknown keys and unknown `status` or
+`mine` values, and keeps the cursor `400`. A fractional `limit` returns `422` (it used to fail with
+`500`). See [Staff and operations validation](../../reference-staff-operations-request-validation.md).
+
 Staff mutation responses re-read the canonical full appeal from the primary database after the
 lifecycle change is persisted. Immediate delivery and resolution-draft guards also use the primary
 so an approve-then-send or lifecycle transition cannot observe a lagging replica.
