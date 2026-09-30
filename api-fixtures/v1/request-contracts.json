@@ -23240,6 +23240,19 @@
         },
         "required": ["idOrSlug"],
         "type": "object"
+      },
+      "query": {
+        "properties": {
+          "before": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "promptId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
       }
     },
     "GET:/api/v1/communities/:idOrSlug/ai-agents": {

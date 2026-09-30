@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+
 import { describe, it, expect } from 'vitest'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -21,6 +23,20 @@ describe('GET /api/v1/communities/:idOrSlug/agent-prompts/history', () => {
     await request.get(`/api/v1/communities/${community.slug}/agent-prompts/history`).expect(401)
   })
 
+  it('returns 401 for unauthenticated request with a malformed query', async () => {
+    const owner = await createTestUser()
+    const random = createRandomString(8)
+    const community = await insertTestCommunity({
+      createdById: owner.id,
+      slug: `hist-401-${random}`,
+    })
+
+    const request = createRequest()
+    await request
+      .get(`/api/v1/communities/${community.slug}/agent-prompts/history?promptId=not-a-uuid`)
+      .expect(401)
+  })
+
   it('returns 403 for non-moderator member', async () => {
     const owner = await createTestUser()
     const member = await createTestUser()
@@ -38,6 +54,27 @@ describe('GET /api/v1/communities/:idOrSlug/agent-prompts/history', () => {
     const request = createRequest()
     await request.authenticateAs(member)
     await request.get(`/api/v1/communities/${community.slug}/agent-prompts/history`).expect(403)
+  })
+
+  it('returns 403 for non-moderator member with a malformed query', async () => {
+    const owner = await createTestUser()
+    const member = await createTestUser()
+    const random = createRandomString(8)
+    const community = await insertTestCommunity({
+      createdById: owner.id,
+      slug: `hist-403-${random}`,
+    })
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: member.id,
+      role: 'member',
+    })
+
+    const request = createRequest()
+    await request.authenticateAs(member)
+    await request
+      .get(`/api/v1/communities/${community.slug}/agent-prompts/history?promptId=not-a-uuid`)
+      .expect(403)
   })
 
   it('returns 200 with empty history for moderator', async () => {
@@ -92,7 +129,7 @@ describe('GET /api/v1/communities/:idOrSlug/agent-prompts/history', () => {
     expect(res.body.next_cursor).toBeNull()
   })
 
-  it('returns 400 for invalid UUID in promptId query param', async () => {
+  it('returns 422 for invalid UUID in promptId query param', async () => {
     const owner = await createTestUser()
     const random = createRandomString(8)
     const community = await insertTestCommunity({
@@ -109,10 +146,10 @@ describe('GET /api/v1/communities/:idOrSlug/agent-prompts/history', () => {
     await request.authenticateAs(owner)
     await request
       .get(`/api/v1/communities/${community.slug}/agent-prompts/history?promptId=not-a-uuid`)
-      .expect(400)
+      .expect(422)
   })
 
-  it('returns 400 for invalid UUID in before query param', async () => {
+  it('returns 422 for invalid UUID in before query param', async () => {
     const owner = await createTestUser()
     const random = createRandomString(8)
     const community = await insertTestCommunity({
@@ -129,6 +166,32 @@ describe('GET /api/v1/communities/:idOrSlug/agent-prompts/history', () => {
     await request.authenticateAs(owner)
     await request
       .get(`/api/v1/communities/${community.slug}/agent-prompts/history?before=not-a-uuid`)
-      .expect(400)
+      .expect(422)
+  })
+
+  it('returns 200 for well-formed promptId and before UUIDs', async () => {
+    const owner = await createTestUser()
+    const random = createRandomString(8)
+    const community = await insertTestCommunity({
+      createdById: owner.id,
+      slug: `hist-400-pid-${random}`,
+    })
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: owner.id,
+      role: 'owner',
+    })
+
+    const promptId = randomUUID()
+    const before = randomUUID()
+    const request = createRequest()
+    await request.authenticateAs(owner)
+    const res = await request
+      .get(
+        `/api/v1/communities/${community.slug}/agent-prompts/history?promptId=${promptId}&before=${before}`,
+      )
+      .expect(200)
+
+    expect(Array.isArray(res.body.entries)).toBe(true)
   })
 })
