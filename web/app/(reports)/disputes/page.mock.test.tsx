@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, vi } from 'vitest'
+import { registerAppealsDisputesPageCases } from '@/test-helpers/app/reports/appeals-disputes-page-cases'
 
 const { mockGetReviewDisputes, mockGetCurrentUser, mockHeaders } = vi.hoisted(() => ({
   mockGetReviewDisputes: vi.fn<VitestLooseMock>(),
@@ -35,59 +35,20 @@ const baseResponse = {
 }
 
 describe('ReviewDisputesPage', () => {
-  it('renders staff description for an administrator user', async () => {
-    mockGetCurrentUser.mockResolvedValue({ roles: ['administrator'] })
-    mockGetReviewDisputes.mockResolvedValueOnce(baseResponse)
-
-    render(await ReviewDisputesPage({ searchParams: Promise.resolve({}) }))
-
-    expect(screen.getByText('Review Disputes')).toBeVisible()
-    expect(
-      screen.getByText('Review disputes filed by verified topic representatives.'),
-    ).toBeVisible()
-  })
-
-  it('renders member description for a non-staff user', async () => {
-    mockGetCurrentUser.mockResolvedValue({ roles: [] })
-    mockGetReviewDisputes.mockResolvedValueOnce(baseResponse)
-
-    render(await ReviewDisputesPage({ searchParams: Promise.resolve({}) }))
-
-    expect(screen.getByText('Disputes filed against reviews on this platform.')).toBeVisible()
-  })
-
-  it('renders staff description for a moderator user', async () => {
-    mockGetCurrentUser.mockResolvedValue({ roles: ['moderator'] })
-    mockGetReviewDisputes.mockResolvedValueOnce(baseResponse)
-
-    render(await ReviewDisputesPage({ searchParams: Promise.resolve({}) }))
-
-    expect(
-      screen.getByText('Review disputes filed by verified topic representatives.'),
-    ).toBeVisible()
-  })
-
-  it('fetches disputes with cursor when provided', async () => {
-    mockGetCurrentUser.mockResolvedValue({ roles: [] })
-    mockGetReviewDisputes.mockResolvedValueOnce(baseResponse)
-
-    render(
-      await ReviewDisputesPage({
-        searchParams: Promise.resolve({ cursor: 'abc123', status: 'pending' }),
-      }),
-    )
-
-    expect(mockGetReviewDisputes).toHaveBeenCalledWith({
+  registerAppealsDisputesPageCases({
+    Page: ReviewDisputesPage,
+    title: 'Review Disputes',
+    staffCopy: 'Review disputes filed by verified topic representatives.',
+    memberCopy: 'Disputes filed against reviews on this platform.',
+    getCurrentUser: mockGetCurrentUser,
+    fetchList: mockGetReviewDisputes,
+    baseResponse,
+    fetchSearchParams: { cursor: 'abc123', status: 'pending' },
+    expectedFetchArgs: {
       searchParams: { limit: 50, cursor: 'abc123', status: 'pending' },
-    })
-  })
-
-  it('renders the disputes client component', async () => {
-    mockGetCurrentUser.mockResolvedValue({ roles: [] })
-    mockGetReviewDisputes.mockResolvedValueOnce(baseResponse)
-
-    const { container } = render(await ReviewDisputesPage({ searchParams: Promise.resolve({}) }))
-
-    expect(container.querySelector('[data-pw="disputes-client"]')).not.toBeNull()
+    },
+    clientSelector: '[data-pw="disputes-client"]',
+    fetchCaseName: 'fetches disputes with cursor when provided',
+    clientCaseName: 'renders the disputes client component',
   })
 })
