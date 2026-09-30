@@ -17,7 +17,7 @@ relative path, following other PSQL tests without adding a `@data-stores/psql` â
 
 Route suites that jscpd reports together call one registrar from a literal `describe` in each
 test file. The registrars live next to this README: vote lists, scoped credential pagination,
-community claim and escalation routes, RSS feeds, landing-page analytics, and similarity search.
+community claim and escalation routes, mod-internal-thread routes, RSS feeds, landing-page analytics, and similarity search.
 Community application and invite list GETs share
 [`registerCommunityListGetAuthTests`](../../../../backend/test-helpers/community-list-get-auth-tests.mts).
 The applications suite keeps private visibility on the moderator success case and the `apps-get-*`
