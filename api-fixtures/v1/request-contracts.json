@@ -25060,8 +25060,11 @@
             "type": "integer"
           },
           "media_type": {
-            "enum": ["article", "audio", "video"],
-            "type": "string"
+            "items": {
+              "enum": ["article", "audio", "video"],
+              "type": "string"
+            },
+            "type": "array"
           },
           "media_types": {
             "items": {

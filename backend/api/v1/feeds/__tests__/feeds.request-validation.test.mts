@@ -76,4 +76,33 @@ describe('feed routes - request contract validation', () => {
         .expect(200)
     })
   })
+
+  describe('rss_feed_items media_type filter', () => {
+    const rssPath = '/api/v1/feeds/rss_feed_items/follow_rss_feeds'
+
+    it.each(['audio', 'audio,video', 'article,audio,video'])(
+      'keeps serving the comma-separated media_type %s',
+      async mediaType => {
+        const request = createRequest()
+        await request.authenticateAs(user)
+        await request.get(rssPath).query({ media_type: mediaType }).expect(200)
+      },
+    )
+
+    it('keeps serving repeated media_type values', async () => {
+      const request = createRequest()
+      await request.authenticateAs(user)
+      await request.get(`${rssPath}?media_type=audio&media_type=video`).expect(200)
+    })
+
+    it('returns 422 for an unknown media_type member', async () => {
+      const request = createRequest()
+      await request.authenticateAs(user)
+      const response = await request
+        .get(rssPath)
+        .query({ media_type: 'audio,hologram' })
+        .expect(422)
+      expect(response.body.message).toBe('Invalid request query')
+    })
+  })
 })

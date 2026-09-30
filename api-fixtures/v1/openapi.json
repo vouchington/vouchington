@@ -45774,13 +45774,18 @@
             }
           },
           {
+            "explode": false,
             "in": "query",
             "name": "media_type",
             "required": false,
             "schema": {
-              "enum": ["article", "audio", "video"],
-              "type": "string"
-            }
+              "items": {
+                "enum": ["article", "audio", "video"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "explode": false,

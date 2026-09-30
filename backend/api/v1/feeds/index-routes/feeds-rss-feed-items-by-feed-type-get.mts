@@ -31,16 +31,12 @@ import { parseAndValidatePaginatedRequest } from '../../../validate-paginated-qu
 import {
   loadOptionalFeedCommunityScope,
   parseHashtagFeedSearchOptions,
-  rssFeedItemFeedExtraQuery,
   rssFeedItemFeedParser,
+  rssFeedItemFeedQuery,
 } from './shared.mts'
 
 app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) => {
-  apiQuery(
-    'GET:/api/v1/feeds/rss_feed_items/:feed_type',
-    rssFeedItemFeedParser,
-    rssFeedItemFeedExtraQuery,
-  )
+  apiQuery('GET:/api/v1/feeds/rss_feed_items/:feed_type', rssFeedItemFeedQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/feeds/rss_feed_items/:feed_type')
 
   const feedType = ctx.params.feed_type as RssFeedItemFeedType
@@ -55,7 +51,7 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
     ctx,
     'GET:/api/v1/feeds/rss_feed_items/:feed_type',
     rssFeedItemFeedParser,
-    { path: true, extraQueryContracts: [rssFeedItemFeedExtraQuery.queryContract] },
+    { path: true, extraQueryContracts: [rssFeedItemFeedQuery.queryContract] },
   )
   const hashtagSearchOptions = await parseHashtagFeedSearchOptions(ctx.query)
 
