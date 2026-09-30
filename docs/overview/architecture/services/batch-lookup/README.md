@@ -6,8 +6,12 @@ Shared helpers for backend services that accept ordered caller identifiers, quer
 typed partitions, and return rows scattered back into caller order.
 
 Use these helpers when a batch service needs to preserve duplicate inputs and return `null` for
-missing rows. Domain SQL and row shaping stay in the owning service so table/view ownership remains
-local.
+missing rows. Domain SQL stays in the owning service so table and view ownership remains local.
+
+`queryOrderedIdentifierBatch` runs the shared sequence: normalize identifiers, partition them into
+ordered input CTEs, execute the caller-supplied statement and row reader, then scatter rows in
+caller order with `input_order` removed. Keep each partition `type` and normalizer return on the
+caller's identifier union, such as `'id' | 'slug'`.
 
 Related conventions:
 

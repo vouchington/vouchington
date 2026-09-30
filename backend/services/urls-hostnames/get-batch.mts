@@ -3,44 +3,51 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
 import { isHostname } from '@ts-shared/utils/urls'
 import {
-  buildOrderedInputCtes,
-  normalizeBatchIdentifiers,
-  partitionBatchIdentifiers,
-  scatterOrderedRows,
+  queryOrderedIdentifierBatch,
+  type NormalizedBatchIdentifier,
+  type OrderedBatchPartition,
 } from '@services/batch-lookup'
 import type { ViewHostname } from './types.mts'
 import createError from 'http-errors'
 
+const urlHostnameBatchPartitions: readonly OrderedBatchPartition<'id' | 'hostname'>[] = [
+  { cteName: 'id_input', sqlType: 'uuid', type: 'id' },
+  { cteName: 'hostname_input', sqlType: 'text', type: 'hostname' },
+]
+
 export const getUrlHostnamesByAnyBatch = async (
   idsOrHostnames: string[],
   options: QueryOptions = {},
-): Promise<Array<ViewHostname | null | undefined>> => {
-  if (idsOrHostnames.length === 0) {
-    return []
+): Promise<Array<ViewHostname | null | undefined>> =>
+  queryOrderedIdentifierBatch<ViewHostname, 'id' | 'hostname', QueryOptions>(
+    idsOrHostnames,
+    options,
+    {
+      normalize: normalizeUrlHostnameBatchIdentifier,
+      partitions: urlHostnameBatchPartitions,
+      statement: urlHostnameBatchStatement,
+      readRows: readUrlHostnameBatchRows,
+    },
+  )
+
+function normalizeUrlHostnameBatchIdentifier(
+  input: string,
+): Omit<NormalizedBatchIdentifier<'id' | 'hostname'>, 'index'> {
+  const trimmed = input.trim()
+  const normalized = trimmed.toLowerCase()
+
+  if (isUUID(trimmed)) {
+    return { value: trimmed, type: 'id' }
   }
+  if (isHostname(normalized)) {
+    return { value: normalized, type: 'hostname' }
+  }
+  throw createError(422, `Invalid URL hostname identifier: ${input}`)
+}
 
-  const normalizedInputs = normalizeBatchIdentifiers(idsOrHostnames, input => {
-    const trimmed = input.trim()
-    const normalized = trimmed.toLowerCase()
-
-    if (isUUID(trimmed)) {
-      return { value: trimmed, type: 'id' }
-    }
-    if (isHostname(normalized)) {
-      return { value: normalized, type: 'hostname' }
-    }
-    throw createError(422, `Invalid URL hostname identifier: ${input}`)
-  })
-
-  const partitions = partitionBatchIdentifiers(normalizedInputs)
-  const inputCtes = buildOrderedInputCtes([
-    { cteName: 'id_input', sqlType: 'uuid', inputs: partitions.get('id') ?? [] },
-    { cteName: 'hostname_input', sqlType: 'text', inputs: partitions.get('hostname') ?? [] },
-  ])
-
-  const { rows } = await read<ViewHostname & { input_order: number }>(
-    `/* getUrlHostnamesByAnyBatch */
-    WITH ${inputCtes.ctes},
+function urlHostnameBatchStatement(inputCtes: string): string {
+  return `/* getUrlHostnamesByAnyBatch */
+    WITH ${inputCtes},
     id_lookups AS (
       SELECT uh.id, id_input.input_order
       FROM url_hostnames uh
@@ -60,13 +67,14 @@ export const getUrlHostnamesByAnyBatch = async (
     FROM view_url_hostnames vuh
     JOIN combined_ids ci ON ci.id = vuh.id
     ORDER BY ci.input_order
-  `,
-    inputCtes.values,
-    options,
-  )
+  `
+}
 
-  return scatterOrderedRows(idsOrHostnames.length, rows, row => {
-    const { input_order: _input_order, ...hostnameData } = row
-    return hostnameData as ViewHostname
-  })
+async function readUrlHostnameBatchRows(
+  sql: string,
+  values: unknown[],
+  options: QueryOptions,
+): Promise<ReadonlyArray<ViewHostname & { input_order: number }>> {
+  const { rows } = await read<ViewHostname & { input_order: number }>(sql, values, options)
+  return rows
 }

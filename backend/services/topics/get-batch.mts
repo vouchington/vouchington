@@ -2,105 +2,29 @@ import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID, isSlug } from '@modules/utils'
 import {
-  buildOrderedInputCtes,
-  normalizeBatchIdentifiers,
-  partitionBatchIdentifiers,
+  queryOrderedIdentifierBatch,
   scatterOrderedRows,
+  type NormalizedBatchIdentifier,
+  type OrderedBatchPartition,
 } from '@services/batch-lookup'
 import type { Topic } from './types.mts'
 import createError from 'http-errors'
 
+const topicAnyBatchPartitions: readonly OrderedBatchPartition<'id' | 'slug'>[] = [
+  { cteName: 'input_data', sqlType: 'uuid', type: 'id' },
+  { cteName: 'slug_input_data', sqlType: 'text', type: 'slug' },
+]
+
 export const getTopicsByAnyBatch = async (
   idsOrSlugs: string[],
   options: QueryOptions = {},
-): Promise<Array<Topic | null | undefined>> => {
-  if (idsOrSlugs.length === 0) {
-    return []
-  }
-
-  const normalizedInputs = normalizeBatchIdentifiers(idsOrSlugs, input => {
-    const trimmed = input.trim()
-    const normalized = trimmed.toLowerCase()
-
-    if (isUUID(trimmed)) {
-      return { value: trimmed, type: 'id' }
-    }
-    if (isSlug(normalized)) {
-      return { value: normalized, type: 'slug' }
-    }
-    throw createError(422, `Invalid topic identifier: ${input}`)
+): Promise<Array<Topic | null | undefined>> =>
+  queryOrderedIdentifierBatch<Topic, 'id' | 'slug', QueryOptions>(idsOrSlugs, options, {
+    normalize: normalizeTopicBatchIdentifier,
+    partitions: topicAnyBatchPartitions,
+    statement: topicAnyBatchStatement,
+    readRows: readTopicAnyBatchRows,
   })
-
-  const partitions = partitionBatchIdentifiers(normalizedInputs)
-  const inputCtes = buildOrderedInputCtes([
-    { cteName: 'input_data', sqlType: 'uuid', inputs: partitions.get('id') ?? [] },
-    { cteName: 'slug_input_data', sqlType: 'text', inputs: partitions.get('slug') ?? [] },
-  ])
-
-  const { rows } = await read<Topic & { input_order: number }>(
-    `/* getTopicsByAnyBatch */
-    -- no-mistakes-disable-next-line postgres-required-predicates: dynamic \${inputCtes.ctes} interpolation breaks structural
-    -- SQL parsing; id_lookups/slug_lookups below are manually verified to filter both deleted_at
-    -- and merged_into_topic_id, following merge chains via destination_topic.
-    WITH ${inputCtes.ctes},
-    id_lookups AS (
-      SELECT COALESCE(t.merged_into_topic_id, t.id) AS id, input_data.input_order
-      FROM topics t
-      LEFT JOIN topics destination_topic ON destination_topic.id = t.merged_into_topic_id
-      JOIN input_data ON t.id = input_data.input_value
-      WHERE t.deleted_at IS NULL
-        AND (
-          t.merged_into_topic_id IS NULL
-          OR (
-            destination_topic.deleted_at IS NULL
-            AND destination_topic.merged_into_topic_id IS NULL
-          )
-        )
-    ),
-    slug_lookups AS (
-      SELECT DISTINCT ON (slug_input_data.input_order)
-        COALESCE(t.merged_into_topic_id, t.id) AS id,
-        slug_input_data.input_order
-      FROM topics t
-      LEFT JOIN topic_aliases ta ON ta.topic_id = t.id
-      LEFT JOIN topics destination_topic ON destination_topic.id = t.merged_into_topic_id
-      JOIN slug_input_data ON (t.slug = slug_input_data.input_value OR ta.alias = slug_input_data.input_value)
-      WHERE t.deleted_at IS NULL
-        AND (
-          t.merged_into_topic_id IS NULL
-          OR (
-            destination_topic.deleted_at IS NULL
-            AND destination_topic.merged_into_topic_id IS NULL
-          )
-        )
-      ORDER BY
-        slug_input_data.input_order,
-        CASE
-          WHEN t.slug = slug_input_data.input_value AND t.merged_into_topic_id IS NULL THEN 0
-          WHEN t.slug = slug_input_data.input_value THEN 1
-          ELSE 2
-        END,
-        t.id
-    ),
-    combined_ids AS (
-      SELECT id, input_order FROM id_lookups
-      UNION
-      SELECT id, input_order FROM slug_lookups
-    )
-    SELECT vt.*, ci.input_order
-    FROM view_topics vt
-    JOIN combined_ids ci ON ci.id = vt.id
-    ORDER BY ci.input_order
-  `,
-    inputCtes.values,
-    options,
-  )
-
-  return scatterOrderedRows(idsOrSlugs.length, rows, row => {
-    const { input_order: _input_order, ...topicData } = row
-    return topicData as Topic
-  })
-}
 
 export const getTopicsBySlugBatch = async (
   slugs: string[],
@@ -155,4 +79,85 @@ export const getTopicsBySlugBatch = async (
     const { input_order: _input_order, ...topicData } = row
     return topicData as Topic
   })
+}
+
+function normalizeTopicBatchIdentifier(
+  input: string,
+): Omit<NormalizedBatchIdentifier<'id' | 'slug'>, 'index'> {
+  const trimmed = input.trim()
+  const normalized = trimmed.toLowerCase()
+
+  if (isUUID(trimmed)) {
+    return { value: trimmed, type: 'id' }
+  }
+  if (isSlug(normalized)) {
+    return { value: normalized, type: 'slug' }
+  }
+  throw createError(422, `Invalid topic identifier: ${input}`)
+}
+
+function topicAnyBatchStatement(inputCtes: string): string {
+  return `/* getTopicsByAnyBatch */
+    -- no-mistakes-disable-next-line postgres-required-predicates: dynamic \${inputCtes} interpolation breaks structural
+    -- SQL parsing; id_lookups/slug_lookups below are manually verified to filter both deleted_at
+    -- and merged_into_topic_id, following merge chains via destination_topic.
+    WITH ${inputCtes},
+    id_lookups AS (
+      SELECT COALESCE(t.merged_into_topic_id, t.id) AS id, input_data.input_order
+      FROM topics t
+      LEFT JOIN topics destination_topic ON destination_topic.id = t.merged_into_topic_id
+      JOIN input_data ON t.id = input_data.input_value
+      WHERE t.deleted_at IS NULL
+        AND (
+          t.merged_into_topic_id IS NULL
+          OR (
+            destination_topic.deleted_at IS NULL
+            AND destination_topic.merged_into_topic_id IS NULL
+          )
+        )
+    ),
+    slug_lookups AS (
+      SELECT DISTINCT ON (slug_input_data.input_order)
+        COALESCE(t.merged_into_topic_id, t.id) AS id,
+        slug_input_data.input_order
+      FROM topics t
+      LEFT JOIN topic_aliases ta ON ta.topic_id = t.id
+      LEFT JOIN topics destination_topic ON destination_topic.id = t.merged_into_topic_id
+      JOIN slug_input_data ON (t.slug = slug_input_data.input_value OR ta.alias = slug_input_data.input_value)
+      WHERE t.deleted_at IS NULL
+        AND (
+          t.merged_into_topic_id IS NULL
+          OR (
+            destination_topic.deleted_at IS NULL
+            AND destination_topic.merged_into_topic_id IS NULL
+          )
+        )
+      ORDER BY
+        slug_input_data.input_order,
+        CASE
+          WHEN t.slug = slug_input_data.input_value AND t.merged_into_topic_id IS NULL THEN 0
+          WHEN t.slug = slug_input_data.input_value THEN 1
+          ELSE 2
+        END,
+        t.id
+    ),
+    combined_ids AS (
+      SELECT id, input_order FROM id_lookups
+      UNION
+      SELECT id, input_order FROM slug_lookups
+    )
+    SELECT vt.*, ci.input_order
+    FROM view_topics vt
+    JOIN combined_ids ci ON ci.id = vt.id
+    ORDER BY ci.input_order
+  `
+}
+
+async function readTopicAnyBatchRows(
+  sql: string,
+  values: unknown[],
+  options: QueryOptions,
+): Promise<ReadonlyArray<Topic & { input_order: number }>> {
+  const { rows } = await read<Topic & { input_order: number }>(sql, values, options)
+  return rows
 }
