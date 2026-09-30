@@ -75,6 +75,8 @@ URLs, API keys, and model lists remain on the device.
 
 ```json
 {
+  "user_message_id": "0198ffff-0001-7000-8000-000000000001",
+  "assistant_message_id": "0198ffff-0001-7000-8000-000000000002",
   "message": "Your message here",
   "assistant_content": "Local model response",
   "model_provider": "openai_compatible",
@@ -84,13 +86,16 @@ URLs, API keys, and model lists remain on the device.
 
 Constraints:
 
+- Message IDs are lowercase UUIDv7 values scoped to the conversation, ordered user before assistant. Save the pair locally before sending; reuse it and the exact text on retries.
 - `message` must be a non-empty string, maximum 32,768 characters
 - `assistant_content` must be a non-empty string, maximum 65,536 characters
 - `model_provider` must be `openai_compatible`, `apple_foundation`, `windows_foundry`, or `android_aicore`; hosted providers must use `/chat`
 - For `openai_compatible`, `model_name` is required, trimmed, maximum 256 characters, and persisted exactly as sent by the native client
 - For fixed native providers, `model_name` is optional and must match the provider when supplied; it is persisted as `apple-foundation-system`, `windows-system-language-model`, or `android-aicore-system`. During the Windows migration, the deployed `phi-silica` identity is accepted on input and normalized to `windows-system-language-model` before persistence.
 
-**Response:** `200 OK` with `user_message`, `assistant_message`, and the completed `agentic_run` metadata.
+**Response:** `200 OK` with transcript `user_message`, `assistant_message`, and `turn` containing their two message IDs. Messages include `completion.status` (`completed`, `incomplete`, or `failed`); generation/run identities are omitted. Duplicate submissions and retries return the same saved pair. Reusing either ID with different text or an incomplete identity pair returns 409 without inserting messages.
+
+Conversation DTOs expose only `id`, `title`, `created_at`, and `updated_at`. History remains durable and paginated, including incomplete assistant placeholders. See [the transcript identity contract](../../../../overview/architecture/conversations.md#native-client-flow).
 
 **Authorization:** The authenticated user must own the conversation. Returns 403 otherwise.
 

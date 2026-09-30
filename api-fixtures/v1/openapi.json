@@ -109,18 +109,6 @@
         ],
         "type": "object"
       },
-      "AgentModelProvider": {
-        "enum": [
-          "android_aicore",
-          "anthropic",
-          "apple_foundation",
-          "openai_compatible",
-          "openai",
-          "openrouter",
-          "windows_foundry"
-        ],
-        "type": "string"
-      },
       "AgentModerationContext": {
         "additionalProperties": false,
         "properties": {
@@ -2370,322 +2358,6 @@
         "required": ["allowed"],
         "type": "object"
       },
-      "Conversation": {
-        "additionalProperties": false,
-        "properties": {
-          "channel_type": {
-            "type": "string"
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "created_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "deleted_at": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "deleted_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "last_response_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "title": {
-            "type": "string"
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "updated_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": [
-          "channel_type",
-          "created_at",
-          "created_by_id",
-          "deleted_at",
-          "deleted_by_id",
-          "id",
-          "last_response_id",
-          "title",
-          "updated_at",
-          "updated_by_id"
-        ],
-        "type": "object"
-      },
-      "ConversationMessage": {
-        "additionalProperties": false,
-        "properties": {
-          "content": {
-            "anyOf": [
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "content": {
-                    "type": "string"
-                  },
-                  "role": {
-                    "const": "user"
-                  }
-                },
-                "required": ["content", "role"],
-                "type": "object"
-              },
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "content": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "error": {
-                    "type": "string"
-                  },
-                  "role": {
-                    "const": "assistant"
-                  }
-                },
-                "required": ["content", "role"],
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "conversation_id": {
-            "type": "string"
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "created_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "deleted_at": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "deleted_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "updated_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": [
-          "content",
-          "conversation_id",
-          "created_at",
-          "created_by_id",
-          "deleted_at",
-          "deleted_by_id",
-          "id",
-          "updated_at",
-          "updated_by_id"
-        ],
-        "type": "object"
-      },
-      "ConversationMessageAgenticRun": {
-        "additionalProperties": false,
-        "properties": {
-          "completed_at": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "conversation_id": {
-            "type": "string"
-          },
-          "conversation_message_id": {
-            "type": "string"
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "deleted_at": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "error": {},
-          "failed_at": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "input": {},
-          "model_name": {
-            "type": "string"
-          },
-          "model_provider": {
-            "$ref": "#/components/schemas/AgentModelProvider"
-          },
-          "output": {},
-          "parent_agentic_run_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "started_at": {
-            "type": "string"
-          },
-          "status": {
-            "$ref": "#/components/schemas/ConversationMessageAgenticRunStatus"
-          },
-          "termination_reason": {
-            "anyOf": [
-              {
-                "const": "error"
-              },
-              {
-                "const": "max_iterations"
-              },
-              {
-                "const": "max_topics"
-              },
-              {
-                "const": "no_tool_calls"
-              },
-              {
-                "const": "stalled"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "updated_at": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "completed_at",
-          "conversation_id",
-          "conversation_message_id",
-          "created_at",
-          "deleted_at",
-          "error",
-          "failed_at",
-          "id",
-          "input",
-          "model_name",
-          "model_provider",
-          "output",
-          "parent_agentic_run_id",
-          "started_at",
-          "status",
-          "termination_reason",
-          "updated_at"
-        ],
-        "type": "object"
-      },
-      "ConversationMessageAgenticRunStatus": {
-        "enum": ["completed", "failed", "running"],
-        "type": "string"
-      },
       "ConversationParticipant": {
         "additionalProperties": false,
         "properties": {
@@ -2752,85 +2424,6 @@
           "role",
           "user_id",
           "username"
-        ],
-        "type": "object"
-      },
-      "ConversationWithoutChannelType": {
-        "additionalProperties": false,
-        "properties": {
-          "created_at": {
-            "type": "string"
-          },
-          "created_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "deleted_at": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "deleted_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "last_response_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "title": {
-            "type": "string"
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "updated_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": [
-          "created_at",
-          "created_by_id",
-          "deleted_at",
-          "deleted_by_id",
-          "id",
-          "last_response_id",
-          "title",
-          "updated_at",
-          "updated_by_id"
         ],
         "type": "object"
       },
@@ -37186,7 +36779,23 @@
                   "additionalProperties": false,
                   "properties": {
                     "conversation": {
-                      "$ref": "#/components/schemas/Conversation"
+                      "additionalProperties": false,
+                      "properties": {
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["created_at", "id", "title", "updated_at"],
+                      "type": "object"
                     }
                   },
                   "required": ["conversation"],
@@ -37272,22 +36881,207 @@
                 "schema": {
                   "additionalProperties": false,
                   "properties": {
-                    "agentic_run": {
-                      "$ref": "#/components/schemas/ConversationMessageAgenticRun"
-                    },
                     "assistant_message": {
-                      "$ref": "#/components/schemas/ConversationMessage"
+                      "additionalProperties": false,
+                      "properties": {
+                        "completion": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "enum": ["completed", "failed", "incomplete"],
+                              "type": "string"
+                            }
+                          },
+                          "required": ["status"],
+                          "type": "object"
+                        },
+                        "content": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "content": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "role": {
+                                  "enum": ["assistant", "user"],
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["content", "role"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "conversation_id": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "completion",
+                        "content",
+                        "conversation_id",
+                        "created_at",
+                        "id",
+                        "updated_at"
+                      ],
+                      "type": "object"
+                    },
+                    "turn": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "assistant_message_id": {
+                          "type": "string"
+                        },
+                        "user_message_id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["assistant_message_id", "user_message_id"],
+                      "type": "object"
                     },
                     "user_message": {
-                      "$ref": "#/components/schemas/ConversationMessage"
+                      "additionalProperties": false,
+                      "properties": {
+                        "completion": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "enum": ["completed", "failed", "incomplete"],
+                              "type": "string"
+                            }
+                          },
+                          "required": ["status"],
+                          "type": "object"
+                        },
+                        "content": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "content": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "role": {
+                                  "enum": ["assistant", "user"],
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["content", "role"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "conversation_id": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "completion",
+                        "content",
+                        "conversation_id",
+                        "created_at",
+                        "id",
+                        "updated_at"
+                      ],
+                      "type": "object"
                     }
                   },
-                  "required": ["agentic_run", "assistant_message", "user_message"],
+                  "required": ["assistant_message", "turn", "user_message"],
                   "type": "object"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Conflict"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -51094,7 +50888,23 @@
                     },
                     "results": {
                       "items": {
-                        "$ref": "#/components/schemas/ConversationWithoutChannelType"
+                        "additionalProperties": false,
+                        "properties": {
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["created_at", "id", "title", "updated_at"],
+                        "type": "object"
                       },
                       "type": "array"
                     }
@@ -51165,7 +50975,23 @@
                     "conversation": {
                       "anyOf": [
                         {
-                          "$ref": "#/components/schemas/Conversation"
+                          "additionalProperties": false,
+                          "properties": {
+                            "created_at": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "updated_at": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["created_at", "id", "title", "updated_at"],
+                          "type": "object"
                         },
                         {
                           "type": "null"
@@ -51238,7 +51064,69 @@
                     },
                     "results": {
                       "items": {
-                        "$ref": "#/components/schemas/ConversationMessage"
+                        "additionalProperties": false,
+                        "properties": {
+                          "completion": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "status": {
+                                "enum": ["completed", "failed", "incomplete"],
+                                "type": "string"
+                              }
+                            },
+                            "required": ["status"],
+                            "type": "object"
+                          },
+                          "content": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "content": {
+                                    "anyOf": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "role": {
+                                    "enum": ["assistant", "user"],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["content", "role"],
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "conversation_id": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "completion",
+                          "content",
+                          "conversation_id",
+                          "created_at",
+                          "id",
+                          "updated_at"
+                        ],
+                        "type": "object"
                       },
                       "type": "array"
                     }
@@ -51279,7 +51167,23 @@
                       "additionalProperties": false,
                       "properties": {
                         "conversation": {
-                          "$ref": "#/components/schemas/Conversation"
+                          "additionalProperties": false,
+                          "properties": {
+                            "created_at": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "updated_at": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["created_at", "id", "title", "updated_at"],
+                          "type": "object"
                         }
                       },
                       "required": ["conversation"],
@@ -51291,7 +51195,23 @@
                         "conversation": {
                           "anyOf": [
                             {
-                              "$ref": "#/components/schemas/Conversation"
+                              "additionalProperties": false,
+                              "properties": {
+                                "created_at": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "updated_at": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["created_at", "id", "title", "updated_at"],
+                              "type": "object"
                             },
                             {
                               "type": "null"

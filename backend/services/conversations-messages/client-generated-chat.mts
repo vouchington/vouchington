@@ -1,35 +1,58 @@
-import { beginTransaction } from '@data-stores/psql'
+import { createHash } from 'node:crypto'
+import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { AgentModelProvider } from '@voucha/types/entities/agent-model'
 import { appendConversationMessageReturning } from './chat-content.mts'
 import { lockConversationAndAssertNoActiveChatTurn } from './chat-turns.mts'
-import type { ConversationMessage, ConversationMessageAgenticRun } from './types.mts'
+import type { ConversationMessage } from './types.mts'
+
+export class ClientGeneratedTurnIdentityConflictError extends Error {
+  constructor() {
+    super('Message identity is already used by a different turn')
+  }
+}
 
 type ClientGeneratedChatModelProvider = Extract<
   AgentModelProvider,
   'apple_foundation' | 'windows_foundry' | 'android_aicore' | 'openai_compatible'
 >
 
-export async function createClientGeneratedChatTurn(params: {
+type ClientGeneratedChatTurnParams = {
   conversationId: string
+  userMessageId: string
+  assistantMessageId: string
   createdById: string
   message: string
   assistantContent: string
   modelProvider: ClientGeneratedChatModelProvider
   modelName: string
-}): Promise<{
+}
+
+export async function createClientGeneratedChatTurn(
+  params: ClientGeneratedChatTurnParams,
+): Promise<{
   userMessage: ConversationMessage
   assistantMessage: ConversationMessage
-  agenticRun: ConversationMessageAgenticRun
 }> {
   const { conversationId, createdById, message, assistantContent, modelProvider, modelName } =
     params
+  const { userMessageId, assistantMessageId } = params
+  const turnKey = getTurnKey(params)
 
   await using query = await beginTransaction()
+  // Serialize identity lookup with insertion; retries precede the active-turn guard.
+  await query(sql`/* lockClientGeneratedTurn */
+    SELECT id FROM conversations WHERE id = ${conversationId} FOR UPDATE
+  `)
+  const replay = await findClientGeneratedChatTurnReplay(query, params)
+  if (replay) {
+    await query.commit()
+    return replay
+  }
   await lockConversationAndAssertNoActiveChatTurn(query, conversationId)
   const userInsert = sql`/* createClientGeneratedChatTurnUser */
-    INSERT INTO conversation_messages (conversation_id, created_by_id, content)
-    VALUES (${conversationId}, ${createdById}, ${JSON.stringify({ role: 'user', content: message })})
+    INSERT INTO conversation_messages (id, conversation_id, created_by_id, content)
+    VALUES (${userMessageId}, ${conversationId}, ${createdById}, ${JSON.stringify({ role: 'user', content: message, turn_key: turnKey })})
     RETURNING
   `
   appendConversationMessageReturning(userInsert)
@@ -37,10 +60,11 @@ export async function createClientGeneratedChatTurn(params: {
   const userMessage = userMessageResult.rows[0]!
 
   const assistantInsert = sql`/* createClientGeneratedChatTurnAssistant */
-    INSERT INTO conversation_messages (conversation_id, created_by_id, content)
-    VALUES (${conversationId}, ${createdById}, ${JSON.stringify({
+    INSERT INTO conversation_messages (id, conversation_id, created_by_id, content)
+    VALUES (${assistantMessageId}, ${conversationId}, ${createdById}, ${JSON.stringify({
       role: 'assistant',
       content: assistantContent,
+      turn_key: turnKey,
     })})
     RETURNING
   `
@@ -54,8 +78,7 @@ export async function createClientGeneratedChatTurn(params: {
     WHERE id = ${conversationId}
   `)
 
-  const agenticRunResult =
-    await query<ConversationMessageAgenticRun>(sql`/* createClientGeneratedChatTurnRun */
+  await query(sql`/* createClientGeneratedChatTurnRun */
     INSERT INTO conversation_message_agentic_runs
       (
         conversation_id,
@@ -78,36 +101,67 @@ export async function createClientGeneratedChatTurn(params: {
         'no_tool_calls',
         CURRENT_TIMESTAMP
       )
-    RETURNING
-      id,
-      conversation_id,
-      conversation_message_id,
-      parent_agentic_run_id,
-      model_name,
-      model_provider,
-      input,
-      output,
-      error,
-      CASE
-        WHEN failed_at IS NOT NULL THEN 'failed'
-        WHEN completed_at IS NOT NULL THEN 'completed'
-        ELSE 'running'
-      END AS status,
-      termination_reason,
-      started_at,
-      completed_at,
-      failed_at,
-      created_at,
-      updated_at,
-      deleted_at
   `)
 
   const result = {
     userMessage,
     assistantMessage,
-    agenticRun: agenticRunResult.rows[0]!,
   }
 
   await query.commit()
   return result
+}
+
+/** Read an acknowledged turn before invoking safety providers again on a retry. */
+export async function getClientGeneratedChatTurnReplay(params: ClientGeneratedChatTurnParams) {
+  return findClientGeneratedChatTurnReplay(write, params)
+}
+
+async function findClientGeneratedChatTurnReplay(
+  query: TransactionQuery | typeof write,
+  params: ClientGeneratedChatTurnParams,
+) {
+  const {
+    conversationId,
+    userMessageId,
+    assistantMessageId,
+    createdById,
+    message,
+    assistantContent,
+  } = params
+  const existing = await query<ConversationMessage>(sql`/* replayClientGeneratedTurn */
+    SELECT id, conversation_id, created_at, created_by_id, updated_at, updated_by_id,
+      deleted_at, deleted_by_id, content
+    FROM conversation_messages
+    WHERE conversation_id = ${conversationId}
+      AND id IN (${userMessageId}, ${assistantMessageId})
+  `)
+  if (existing.rows.length > 0) {
+    const userMessage = existing.rows.find(row => row.id === userMessageId)
+    const assistantMessage = existing.rows.find(row => row.id === assistantMessageId)
+    if (
+      !userMessage ||
+      !assistantMessage ||
+      userMessage.deleted_at ||
+      assistantMessage.deleted_at ||
+      userMessage.created_by_id !== createdById ||
+      assistantMessage.created_by_id !== createdById ||
+      userMessage.content?.turn_key !== getTurnKey(params) ||
+      assistantMessage.content?.turn_key !== getTurnKey(params) ||
+      userMessage.content?.role !== 'user' ||
+      userMessage.content.content !== message ||
+      assistantMessage.content?.role !== 'assistant' ||
+      assistantMessage.content.content !== assistantContent
+    ) {
+      throw new ClientGeneratedTurnIdentityConflictError()
+    }
+    return { userMessage, assistantMessage }
+  }
+  return undefined
+}
+
+function getTurnKey(params: ClientGeneratedChatTurnParams): string {
+  return createHash('sha256')
+    .update(`${params.userMessageId}:${params.assistantMessageId}`)
+    .digest('hex')
 }

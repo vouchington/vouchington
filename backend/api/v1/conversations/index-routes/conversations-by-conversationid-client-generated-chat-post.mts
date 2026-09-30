@@ -1,13 +1,24 @@
+import { hasActiveChatTurnByConversationId } from '@services/conversations-messages/agentic-runs'
+import { apiResponse } from '../../../response-contract.mts'
+import {
+  getErrorStatus,
+  getErrorResponseMessage,
+  getErrorResponseCode,
+} from '../../../error-response.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
   normalizeFixedClientGeneratedChatModelName,
   parseClientGeneratedChatModelProvider,
 } from '@services/agents/model-providers'
-import { hasActiveChatTurnByConversationId } from '@services/conversations-messages/agentic-runs'
 import { currentUserCanUpdateConversation } from '@services/conversations-messages/authorization'
 import { ChatTurnConflictError } from '@services/conversations-messages/chat-turns'
 import { getConversationByIdForMutation } from '@services/conversations-messages/conversations'
-import { createClientGeneratedChatTurn } from '@services/conversations-messages/client-generated-chat'
+import {
+  createClientGeneratedChatTurn,
+  getClientGeneratedChatTurnReplay,
+  ClientGeneratedTurnIdentityConflictError,
+} from '@services/conversations-messages/client-generated-chat'
+import { toMessageTranscript } from '@services/conversations-messages/transcript'
 import { assertNotSuspended } from '@services/users'
 import app from '../../../app.mts'
 import {
@@ -24,10 +35,28 @@ const MAX_MODEL_NAME_LENGTH = 256
 app
   .route('/api/v1/conversations/:conversationId/client-generated-chat')
   .post(async (ctx: Context) => {
-    const currentUser = await requireAuth(
-      ctx,
-      'POST:/api/v1/conversations/:conversationId/client-generated-chat',
-    )
+    let currentUser: Awaited<ReturnType<typeof requireAuth>>
+    try {
+      currentUser = await requireAuth(
+        ctx,
+        'POST:/api/v1/conversations/:conversationId/client-generated-chat',
+      )
+    } catch (error) {
+      if (
+        getErrorStatus(error) !== 401 ||
+        getErrorResponseMessage(error, 401) !== 'Unauthorized' ||
+        getErrorResponseCode(error, 401) !== undefined
+      )
+        throw error
+      ctx.setStatus(401)
+      ctx.json(
+        apiResponse(
+          'POST:/api/v1/conversations/:conversationId/client-generated-chat#unauthorized',
+          { message: 'Unauthorized' },
+        ),
+      )
+      return
+    }
     assertNotSuspended(currentUser)
 
     const conversationId = validateUUIDParam(ctx, 'conversationId')
@@ -39,17 +68,38 @@ app
     const conversation = await getConversationByIdForMutation(conversationId)
     if (!conversation) ctx.throw(404, 'Conversation not found')
     if (!(await currentUserCanUpdateConversation(currentUser, conversation))) {
-      ctx.throw(403, 'Access denied')
+      ctx.setStatus(403)
+      ctx.json(
+        apiResponse('POST:/api/v1/conversations/:conversationId/client-generated-chat#forbidden', {
+          message: 'Access denied',
+        }),
+      )
+      return
     }
-
-    const isRunning = await hasActiveChatTurnByConversationId(conversationId)
-    ctx.assert(!isRunning, 409, 'A message is already being processed')
 
     const body = (await ctx.request.json('1mb')) as Record<string, unknown>
     validateRequestContract(
       ctx,
       'POST:/api/v1/conversations/:conversationId/client-generated-chat',
       { body },
+    )
+    const userMessageId = body.user_message_id
+    const assistantMessageId = body.assistant_message_id
+    const messageIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+    ctx.assert(
+      typeof userMessageId === 'string' && messageIdPattern.test(userMessageId),
+      400,
+      'user_message_id must be a lowercase UUIDv7',
+    )
+    ctx.assert(
+      typeof assistantMessageId === 'string' && messageIdPattern.test(assistantMessageId),
+      400,
+      'assistant_message_id must be a lowercase UUIDv7',
+    )
+    ctx.assert(
+      userMessageId < assistantMessageId,
+      400,
+      'Message ids must follow user then assistant order',
     )
     const message = body.message
     const assistantContent = body.assistant_content
@@ -96,31 +146,54 @@ app
       }
     }
 
-    await checkApiMessageSafety(message)
-    await checkApiMessageSafety(assistantContent)
-
+    const params = {
+      conversationId,
+      userMessageId,
+      assistantMessageId,
+      createdById: currentUser.id,
+      message,
+      assistantContent,
+      modelProvider,
+      modelName,
+    }
     let result: Awaited<ReturnType<typeof createClientGeneratedChatTurn>>
     try {
-      result = await createClientGeneratedChatTurn({
-        conversationId,
-        createdById: currentUser.id,
-        message,
-        assistantContent,
-        modelProvider,
-        modelName,
-      })
+      const replay = await getClientGeneratedChatTurnReplay(params)
+      if (replay) {
+        result = replay
+      } else {
+        const isRunning = await hasActiveChatTurnByConversationId(conversationId)
+        ctx.assert(!isRunning, 409, 'A message is already being processed')
+        await checkTurnSafety(message, assistantContent)
+        result = await createClientGeneratedChatTurn(params)
+      }
     } catch (error) {
-      /* v8 ignore start -- concurrent conflict after the route guard is service DB-tested */
-      if (error instanceof ChatTurnConflictError) {
-        ctx.throw(409, error.message)
+      if (
+        error instanceof ChatTurnConflictError ||
+        error instanceof ClientGeneratedTurnIdentityConflictError
+      ) {
+        ctx.setStatus(409)
+        ctx.json(
+          apiResponse('POST:/api/v1/conversations/:conversationId/client-generated-chat#conflict', {
+            message: error.message,
+          }),
+        )
+        return
       }
       throw error
-      /* v8 ignore stop */
     }
 
     ctx.json({
-      user_message: result.userMessage,
-      assistant_message: result.assistantMessage,
-      agentic_run: result.agenticRun,
+      user_message: toMessageTranscript(result.userMessage),
+      assistant_message: toMessageTranscript(result.assistantMessage),
+      turn: {
+        user_message_id: result.userMessage.id,
+        assistant_message_id: result.assistantMessage.id,
+      },
     })
   })
+
+async function checkTurnSafety(message: string, assistantContent: string): Promise<void> {
+  await checkApiMessageSafety(message)
+  await checkApiMessageSafety(assistantContent)
+}
