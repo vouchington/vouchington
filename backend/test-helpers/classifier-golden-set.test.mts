@@ -27,6 +27,30 @@ describe('classifier golden band regression', () => {
     }
   })
 
+  it('accepts an upper-threshold self-promotion score for overlapping hiring and for-hire posts', () => {
+    const overlapping = ['synthetic-travel-writer-opening', 'synthetic-travel-content-job-seeker']
+    const fixtures = postClassifierGoldenFixtures.filter(fixture =>
+      overlapping.includes(fixture.id),
+    )
+    expect(fixtures.map(fixture => fixture.id)).toEqual(overlapping)
+    const selfPromotion = {
+      key: 'self-promotion',
+      thresholdRevision: 'post-classifier-default-upper',
+      thresholds: { lower: 0.25, upper: 0.75 },
+    }
+    for (const fixture of fixtures) {
+      expect(fixture.expected['self-promotion']?.acceptableBands).toEqual([
+        'at-or-above-upper',
+        'between',
+      ])
+      expect(unexpectedClassifierGoldenBand(fixture, selfPromotion, 0.75)).toBeNull()
+      expect(unexpectedClassifierGoldenBand(fixture, selfPromotion, 0.79)).toBeNull()
+      expect(unexpectedClassifierGoldenBand(fixture, selfPromotion, 0.2)).toContain(
+        'expected at-or-above-upper|between, received below-lower',
+      )
+    }
+  })
+
   it('creates valid UUIDv7 batch identities for non-persisting prepared calls', () => {
     expect(classifierGoldenBatchId()).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,

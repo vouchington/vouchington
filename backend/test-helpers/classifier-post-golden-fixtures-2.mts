@@ -51,12 +51,13 @@ export const classifierPostGoldenFixtures2: readonly ClassifierGoldenFixture[] =
     candidateSlate: 'production-post-classifier-catalog',
     state:
       'Our travel publication is hiring a writer to cover airline loyalty programs. Apply with two published samples and your availability.',
-    rationale: 'A direct recruitment notice should be tagged as hiring.',
+    rationale:
+      "A hiring notice for the author's own travel publication matches hiring and self-promotion.",
     expected: expectations(
       postClassifierKeys,
-      ['hiring'],
+      ['hiring', 'self-promotion'],
       'The text does not meet this candidate definition.',
-      'The publication explicitly invites applicants for a writer position.',
+      'The author recruits for their own publication and promotes that publication.',
     ),
   },
   {
@@ -65,12 +66,13 @@ export const classifierPostGoldenFixtures2: readonly ClassifierGoldenFixture[] =
     candidateSlate: 'production-post-classifier-catalog',
     state:
       'Travel writer seeking a role creating guides to airline miles and hotel points. I can share my portfolio and start this month.',
-    rationale: 'A person seeking paid employment should be tagged as for-hire.',
+    rationale:
+      'A writer seeking paid work and offering a portfolio matches for-hire and self-promotion.',
     expected: expectations(
       postClassifierKeys,
-      ['for-hire'],
+      ['for-hire', 'self-promotion'],
       'The text does not meet this candidate definition.',
-      'The author states they are seeking a role and offers a portfolio.',
+      'The author seeks paid work and promotes their own portfolio.',
     ),
   },
 ]
