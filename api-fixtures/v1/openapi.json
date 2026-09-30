@@ -13,6 +13,16 @@
       }
     },
     "schemas": {
+      "AddEmailAddressRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email_address": {
+            "type": "string"
+          }
+        },
+        "required": ["email_address"],
+        "type": "object"
+      },
       "AdminOAuthClientView": {
         "additionalProperties": false,
         "properties": {
@@ -4603,6 +4613,57 @@
         },
         "type": "object"
       },
+      "CreateProfileLinkRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "handle": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "link_type": {
+            "$ref": "#/components/schemas/ProfileLinkType"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["link_type"],
+        "type": "object"
+      },
       "CreateReferralLinkBody": {
         "additionalProperties": false,
         "properties": {
@@ -5403,6 +5464,16 @@
           "id",
           "updated_at"
         ],
+        "type": "object"
+      },
+      "DismissAsideRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "aside_key": {
+            "type": "string"
+          }
+        },
+        "required": ["aside_key"],
         "type": "object"
       },
       "DynamicConfigFieldMetadata": {
@@ -6925,6 +6996,19 @@
             "type": "object"
           }
         },
+        "type": "object"
+      },
+      "GrantConsentRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "consent_type": {
+            "$ref": "#/components/schemas/ConsentType"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": ["consent_type", "version"],
         "type": "object"
       },
       "GrowthMetrics": {
@@ -12555,6 +12639,49 @@
         },
         "type": "object"
       },
+      "Partial_EmailPreferences": {
+        "additionalProperties": false,
+        "properties": {
+          "community_digest_frequency": {
+            "enum": ["daily", "none", "weekly"],
+            "type": "string"
+          },
+          "engagement_emails_enabled": {
+            "type": "boolean"
+          },
+          "moderation_email_cadence": {
+            "enum": ["daily", "selected_days", "weekly"],
+            "type": "string"
+          },
+          "moderation_email_days_of_week": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "moderation_email_time_of_day": {
+            "type": "string"
+          },
+          "moderation_email_timezone": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "moderation_emails_enabled": {
+            "type": "boolean"
+          },
+          "news_digest_frequency": {
+            "enum": ["daily", "none", "weekly"],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "Partial_Record__remove_____warn_____approve_____reject_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal__number": {
         "additionalProperties": false,
         "properties": {
@@ -16068,6 +16195,23 @@
         },
         "type": "object"
       },
+      "ReorderProfileLinksRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": ["ids"],
+        "type": "object"
+      },
       "ReportAbusePenalty": {
         "additionalProperties": false,
         "properties": {
@@ -17600,6 +17744,16 @@
         "enum": ["noop", "updated"],
         "type": "string"
       },
+      "SetPrimaryEmailAddressRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "is_primary": {
+            "const": true
+          }
+        },
+        "required": ["is_primary"],
+        "type": "object"
+      },
       "SimilarTopic": {
         "additionalProperties": false,
         "properties": {
@@ -18903,6 +19057,52 @@
         },
         "type": "object"
       },
+      "UpdateDisplayPreferencesRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "public_verified_name_display": {
+            "enum": ["first_name_last_initial", "first_name", "full_name", "hidden"],
+            "type": "string"
+          },
+          "verified_badge_visible": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateIdentityRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "profile_image_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "use_display_name_from": {
+            "enum": [
+              "apple",
+              "facebook",
+              "github",
+              "google",
+              "linkedin",
+              "microsoft",
+              "username",
+              "x"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "UpdateOAuthAppRequest": {
         "additionalProperties": false,
         "properties": {
@@ -18931,6 +19131,63 @@
             "type": "number"
           }
         },
+        "type": "object"
+      },
+      "UpdateProfileLinkRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "handle": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "UpdateProfileRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "markdown": {
+            "type": "string"
+          }
+        },
+        "required": ["markdown"],
         "type": "object"
       },
       "UpdateReferralLinkBody": {
@@ -19784,6 +20041,76 @@
           "updated_at",
           "years_of_credit_history"
         ],
+        "type": "object"
+      },
+      "UserFinancialProfileInput": {
+        "additionalProperties": false,
+        "properties": {
+          "cards_opened_24m": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "credit_score_range": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "currency": {
+            "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+            "type": "string"
+          },
+          "hard_inquiries_12m": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "stated_income_range": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoneyRange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total_credit_limit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "years_of_credit_history": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
         "type": "object"
       },
       "UserGrowth": {
@@ -20812,6 +21139,16 @@
           }
         },
         "required": ["dnsInstructions", "rawToken", "wellKnownInstructions"],
+        "type": "object"
+      },
+      "VerifyEmailAddressRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": ["token"],
         "type": "object"
       },
       "VerifyOAuthClientRequest": {
@@ -49640,7 +49977,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/DismissAsideRequest"
               }
             }
           }
@@ -49994,7 +50331,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/GrantConsentRequest"
               }
             }
           }
@@ -50440,7 +50777,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/AddEmailAddressRequest"
               }
             }
           }
@@ -50507,7 +50844,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/SetPrimaryEmailAddressRequest"
               }
             }
           }
@@ -50599,7 +50936,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/VerifyEmailAddressRequest"
               }
             }
           }
@@ -50706,7 +51043,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/Partial_EmailPreferences"
               }
             }
           }
@@ -50853,7 +51190,9 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/UserFinancialProfileInput"
+              }
             }
           }
         },
@@ -51498,7 +51837,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateIdentityRequest"
               }
             }
           }
@@ -52131,7 +52470,9 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDisplayPreferencesRequest"
+              }
             }
           }
         },
@@ -53912,7 +54253,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateProfileRequest"
               }
             }
           }
@@ -53983,7 +54324,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateProfileLinkRequest"
               }
             }
           }
@@ -54019,7 +54360,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/ReorderProfileLinksRequest"
               }
             }
           }
@@ -54089,7 +54430,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateProfileLinkRequest"
               }
             }
           }

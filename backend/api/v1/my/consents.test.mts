@@ -62,24 +62,24 @@ describe('POST /api/v1/my/consents', () => {
     await request.post('/api/v1/my/consents').send('consent_type=privacy_policy').expect(415)
   })
 
-  it('returns 400 for invalid consent_type', async () => {
+  it('returns 422 for invalid consent_type', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
     await request
       .post('/api/v1/my/consents')
       .set('Content-Type', 'application/json')
       .send({ consent_type: 'invalid_type', version: '1.0' })
-      .expect(400)
+      .expect(422)
   })
 
-  it('returns 400 when version is missing', async () => {
+  it('returns 422 when version is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
     await request
       .post('/api/v1/my/consents')
       .set('Content-Type', 'application/json')
       .send({ consent_type: 'privacy_policy' })
-      .expect(400)
+      .expect(422)
   })
 
   it('grants consent and returns 201', async () => {

@@ -1,12 +1,14 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   getUserFinancialProfile,
   upsertUserFinancialProfile,
   assertValidFinancialProfile,
+  type UserFinancialProfileInput,
 } from '@services/user-financial-profiles'
-import type { CurrencyCode, Money, MoneyRange } from '@ts-shared/money'
+
+type UpdateFinancialProfileRequest = UserFinancialProfileInput
 
 // GET /api/v1/my/financial-profile
 app.route('/api/v1/my/financial-profile').get(async (ctx: Context) => {
@@ -20,23 +22,19 @@ app.route('/api/v1/my/financial-profile').get(async (ctx: Context) => {
 app.route('/api/v1/my/financial-profile').put(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PUT:/api/v1/my/financial-profile')
 
-  const rawBody = await ctx.request.json('10kb')
-  ctx.assert(
-    rawBody !== null && typeof rawBody === 'object' && !Array.isArray(rawBody),
-    422,
-    'Request body must be a JSON object',
-  )
-  const body = rawBody as Record<string, unknown>
+  const body = (await ctx.request.json('10kb')) as UpdateFinancialProfileRequest
+  validateRequestContract(ctx, 'PUT:/api/v1/my/financial-profile', { body })
+  // The schema fixes shapes; the service also enforces value ranges and single-currency money.
   assertValidFinancialProfile(body)
 
   const financial_profile = await upsertUserFinancialProfile(currentUser.id, {
-    currency: body.currency as CurrencyCode | undefined,
-    credit_score_range: body.credit_score_range as string | null | undefined,
-    stated_income_range: body.stated_income_range as MoneyRange | null | undefined,
-    total_credit_limit: body.total_credit_limit as Money | null | undefined,
-    years_of_credit_history: body.years_of_credit_history as number | null | undefined,
-    hard_inquiries_12m: body.hard_inquiries_12m as number | null | undefined,
-    cards_opened_24m: body.cards_opened_24m as number | null | undefined,
+    currency: body.currency,
+    credit_score_range: body.credit_score_range,
+    stated_income_range: body.stated_income_range,
+    total_credit_limit: body.total_credit_limit,
+    years_of_credit_history: body.years_of_credit_history,
+    hard_inquiries_12m: body.hard_inquiries_12m,
+    cards_opened_24m: body.cards_opened_24m,
   })
 
   ctx.json({ financial_profile })

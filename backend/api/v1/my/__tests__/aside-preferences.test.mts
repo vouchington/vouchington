@@ -46,10 +46,10 @@ describe('POST /api/v1/my/aside-preferences', () => {
       .expect(415)
   })
 
-  it('returns 400 when aside_key is missing', async () => {
+  it('returns 422 when aside_key is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
-    await request.post('/api/v1/my/aside-preferences').send({}).expect(400)
+    await request.post('/api/v1/my/aside-preferences').send({}).expect(422)
   })
 
   it('dismisses an aside and returns 204', async () => {

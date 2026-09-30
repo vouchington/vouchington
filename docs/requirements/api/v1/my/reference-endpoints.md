@@ -2,6 +2,11 @@
 
 [Back to My API](README.md#endpoints)
 
+Path, header, and JSON body carriers are validated against the generated request contracts after
+authentication and ownership checks. Malformed input is `422`; see
+[Request Validation](reference-request-validation.md) for the ordering and the routes that skip a
+carrier.
+
 ### Identity & Email
 
 | Method | Route                                      | Authentication | Description                                             |
