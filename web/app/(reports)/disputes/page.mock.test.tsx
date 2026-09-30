@@ -31,7 +31,7 @@ import ReviewDisputesPage from './page'
 
 const baseResponse = {
   disputes: [],
-  page_info: { has_next_page: false, end_cursor: null },
+  page_info: { has_next_page: false as const, end_cursor: null },
 }
 
 describe('ReviewDisputesPage', () => {
