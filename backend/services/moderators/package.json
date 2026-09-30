@@ -24,7 +24,6 @@
     "@data-stores/psql": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/posts": "workspace:^",
-    "@services/topics": "workspace:^",
     "@services/users": "workspace:^"
   },
   "devDependencies": {

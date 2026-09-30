@@ -25,9 +25,10 @@ import { getPostElectionVote, upsertPostElectionVotes } from '@services/election
 
 import { searchPostModerationsByAgent } from '@services/moderation/search-post-moderations'
 
-import { getTopicByAny, upsertTopic } from '@services/topics'
+import { getTopicByAny } from '@services/topics'
 
 import {
+  createTestTopic,
   createTestUser,
   createSystemUser,
   insertTestCommunity,
@@ -89,7 +90,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
   async function ensureTopicExists(topicSlug: string) {
     const existingTopic = await getTopicByAny(topicSlug)
     if (existingTopic) return
-    await upsertTopic(topicSlug, topicSlug)
+    await createTestTopic({ name: topicSlug, slug: topicSlug })
   }
 
   it('runModeratorOnPost stores AI-generated confidence data, queues review, and tags ai-generated', async () => {

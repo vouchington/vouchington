@@ -9,8 +9,8 @@ import {
 import { runModeratorOnPost } from '@agents/moderation'
 import { createPost } from '@services/posts'
 import { getPostElectionVote } from '@services/elections-votes/post'
-import { getTopicByAny, upsertTopic } from '@services/topics'
-import { createSystemUser, createTestUser } from '@voucha/test-helpers'
+import { getTopicByAny } from '@services/topics'
+import { createSystemUser, createTestTopic, createTestUser } from '@voucha/test-helpers'
 import type { Post } from '@services/posts/types'
 
 describe('runModeratorOnPost tag-only agents', () => {
@@ -44,7 +44,7 @@ describe('runModeratorOnPost tag-only agents', () => {
   async function ensureTopicExists(topicSlug: string) {
     const existingTopic = await getTopicByAny(topicSlug)
     if (existingTopic) return
-    await upsertTopic(topicSlug, topicSlug)
+    await createTestTopic({ name: topicSlug, slug: topicSlug })
   }
 
   async function expectTagOnlyModeration(moderatorSlug: string, reason: string) {

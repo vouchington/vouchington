@@ -7205,9 +7205,6 @@ importers:
       '@services/posts':
         specifier: workspace:^
         version: link:../posts
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../topics
       '@services/users':
         specifier: workspace:^
         version: link:../users
