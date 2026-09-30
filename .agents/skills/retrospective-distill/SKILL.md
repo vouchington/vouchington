@@ -115,10 +115,11 @@ session gets no issue-filing pass this run.
 
 Immediately before each `session_archive`, read that session with `journal_entries` (its
 `sessionId`) and archive it only if its entries match the verified snapshot's entries for the same
-session by source identity (`sourceEventId`): the same set, with nothing added and nothing missing.
-Otherwise the session changed since the snapshot (it was resumed, or a retrospective was saved after
-the export), so leave it unarchived for the next pass; a result that carries no source identity
-counts as a mismatch. `session_archive` has no such guard of its own, and archiving freezes only
+session by source identity (`sourceEventId`, or `createdAt` for a legacy entry that has none): the
+same set, with nothing added and nothing missing; two empty entry sets match, so a zero-entry session
+is archivable. Otherwise the session changed since the snapshot (it was resumed, or a retrospective
+was saved after the export), so leave it unarchived for the next pass; so is a result that is not
+`{ sessionId, entries }`. `session_archive` has no such guard of its own, and archiving freezes only
 the session's metadata, so its entries stay appendable. Invoking this skill is the local archival
 authorization for eligible sessions: archive each one with a separate `session_archive` call whose
 `sessionId` is the archived session, not the root's. Before any `session_archive`, repeat the
