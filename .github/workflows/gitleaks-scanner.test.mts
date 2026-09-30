@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { randomBytes } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -21,7 +21,8 @@ describe('gitleaks fixture scanner', () => {
     const reportPath = join(directory, 'report.json')
     const syntheticToken = `ghp_${randomBytes(18).toString('hex')}`
     const existingFakeSecret = ['existing-test-secret-', 'at-least-32-chars'].join('')
-    const alteredFakeSecret = `existing-test-secret-${randomBytes(18).toString('hex')}`
+    // Random suffixes occasionally fall under the generic rule's filters, so derive a stable one.
+    const alteredFakeSecret = `existing-test-secret-${createHash('sha256').update('scanner altered fake secret').digest('hex').slice(0, 36)}`
     const siblingFakeAssignment = ['CF_WORKER_', 'SECRET=', existingFakeSecret, '\n'].join('')
     const splitWorkerSecretLine = (secret: string) =>
       `      ['export CF_WORKER_', 'SECRET', '=${secret}\\n  '].join(''),`

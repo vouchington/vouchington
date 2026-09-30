@@ -42,6 +42,9 @@ factory stays in [`captcha/undici-mock.mts`](../../../../backend/test-helpers/ca
 request reader, and `undici` fetch mock from
 [`lemmy-no-data-fixtures.mts`](../../../../backend/test-helpers/lemmy-no-data-fixtures.mts). Those
 tests keep the `.no-data.mock.test.mts` suffix so Vitest selects `backend-no-data-mocks`.
+Agent and manual community unpublish lock-order cases share
+[`expectUnpublishHoldsPublicationLockWhileWaitingOnReview`](../../../../backend/test-helpers/entities/community-post-review-publication-lock.mts).
+Each case keeps its title, slug prefix, review-lock SQL comment, member setup, unpublish call, and result assertion.
 
 ## `onceEntityListenerCompleted`
 

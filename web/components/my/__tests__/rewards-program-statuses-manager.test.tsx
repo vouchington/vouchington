@@ -1,115 +1,22 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
-
-import { RewardsProgramStatusesManager } from '../rewards-program-statuses-manager'
-
-import type { ListResponse } from '@/types/api-responses'
-import type { RewardsProgramStatus } from '@/types/my'
-
-// Mock on-error helpers
-vi.mock(import('@/lib/on-error'), () => ({
-  default: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(import('@/lib/on-error/on-success'), () => ({
-  onSuccess: vi.fn<VitestLooseMock>(),
-}))
-
-// Mock autocomplete components
-vi.mock(import('@/components/posts/topic-autocomplete'), () => ({
-  TopicAutocomplete: ({ value, onChange, placeholder }: any) => (
-    <div data-testid='mock-topic-autocomplete'>
-      <input
-        type='text'
-        placeholder={placeholder}
-        aria-label={placeholder ?? 'Rewards program status'}
-        value={value ?? ''}
-        onChange={e => onChange(e.target.value, 'Mocked Status')}
-        data-testid='mock-topic-autocomplete-input'
-      />
-    </div>
-  ),
-}))
-
-// Mock client API calls
-vi.mock(import('@/lib/api/client'), () => ({
-  createMyRewardsProgramStatus: vi.fn<VitestLooseMock>(),
-  updateMyRewardsProgramStatus: vi.fn<VitestLooseMock>(),
-  deleteMyRewardsProgramStatus: vi.fn<VitestLooseMock>(),
-}))
-
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import {
-  createMyRewardsProgramStatus,
-  updateMyRewardsProgramStatus,
-  deleteMyRewardsProgramStatus,
-} from '@/lib/api/client'
-
+  initialPage,
+  installRewardsProgramStatusMockResponses,
+  mockCreate,
+  mockDelete,
+  mockOnError,
+  mockOnSuccess,
+  mockUpdate,
+} from '@/test-helpers/components/my/rewards-program-statuses-manager.mock-support'
+// Imported after the mock helper so its vi.mock factories run first.
+import { RewardsProgramStatusesManager } from '../rewards-program-statuses-manager'
 import { ApiError } from '@/lib/api/error'
-
-import onError from '@/lib/on-error'
-
-import { onSuccess } from '@/lib/on-error/on-success'
-
-const mockCreate = vi.mocked(createMyRewardsProgramStatus)
-
-const mockUpdate = vi.mocked(updateMyRewardsProgramStatus)
-
-const mockDelete = vi.mocked(deleteMyRewardsProgramStatus)
-
-const mockOnError = vi.mocked(onError)
-
-const mockOnSuccess = vi.mocked(onSuccess)
-
-const initialStatuses: RewardsProgramStatus[] = [
-  {
-    id: 'status-user-1',
-    rewards_program_status_id: 'stat-1',
-    since: '2023-01-01',
-    until: null,
-    rewards_program_status: {
-      id: 'stat-1',
-      name: 'Delta Medallion Gold',
-      slug: 'delta-gold',
-    },
-  },
-]
-
-const initialPage: ListResponse<RewardsProgramStatus> = {
-  results: initialStatuses,
-  page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-}
 
 describe('RewardsProgramStatusesManager Integration Flow', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockCreate.mockResolvedValue({
-      rewards_program_status: {
-        id: 'status-user-2',
-        rewards_program_status_id: 'stat-2',
-        since: null,
-        until: null,
-        rewards_program_status: {
-          id: 'stat-2',
-          name: 'Marriott Bonvoy Platinum',
-          slug: 'marriott-platinum',
-        },
-      },
-    } as any)
-    mockUpdate.mockResolvedValue({
-      rewards_program_status: {
-        id: 'status-user-1',
-        rewards_program_status_id: 'stat-1',
-        since: '2023-01-01',
-        until: '2024-01-01',
-        rewards_program_status: {
-          id: 'stat-1',
-          name: 'Delta Medallion Gold',
-          slug: 'delta-gold',
-        },
-      },
-    } as any)
-    mockDelete.mockResolvedValue(undefined as any)
+    installRewardsProgramStatusMockResponses()
   })
 
   it('renders initial statuses list correctly', () => {

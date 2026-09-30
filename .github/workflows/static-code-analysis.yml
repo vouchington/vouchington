@@ -62,7 +62,7 @@ jobs:
         run: pnpm exec tsc --noEmit --project cloudflare-worker/tsconfig.json
         timeout-minutes: 2
       - name: Install CI tools via mise
-        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
         # Repository cache policy permits only the pnpm store and Playwright browsers.
         with:
           cache: false
@@ -121,7 +121,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Install CI tools via mise
-        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
         # Repository cache policy permits only the pnpm store and Playwright browsers.
         with:
           cache: false
