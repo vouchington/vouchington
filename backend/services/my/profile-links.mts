@@ -24,7 +24,7 @@ export type { ProfileLink } from './profile-links-types.mts'
 export { reorderProfileLinks } from './profile-links-reorder.mts'
 export { listProfileLinks } from './profile-links-list.mts'
 export type { ProfileLinkType } from './profile-links-input.mts'
-const MAX_PROFILE_LINKS = 20
+export const MAX_PROFILE_LINKS = 20
 async function resolveUrlId(
   userId: string,
   url: string | null | undefined,

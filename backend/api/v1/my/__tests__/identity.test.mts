@@ -166,11 +166,11 @@ describe('POST /api/v1/my/email-addresses + verify flow', () => {
     user = await createTestUser()
   })
 
-  it('returns 400 when email_address missing', async () => {
+  it('returns 422 when email_address missing', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    await request.post('/api/v1/my/email-addresses').send({}).expect(400)
+    await request.post('/api/v1/my/email-addresses').send({}).expect(422)
   })
 
   it('queues verification email with the user UI locale', async () => {

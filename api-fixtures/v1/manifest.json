@@ -23648,7 +23648,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/my/identity.mts",
+      "source": "backend/api/v1/my/email-addresses.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/my/email-preferences": {
@@ -69436,7 +69436,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/my/identity.mts",
+      "source": "backend/api/v1/my/email-addresses.mts",
       "statusKnowledge": "default"
     },
     "POST:/api/v1/my/email-addresses/:email/verifications": {
@@ -69528,7 +69528,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/my/identity.mts",
+      "source": "backend/api/v1/my/email-addresses.mts",
       "statusKnowledge": "default"
     },
     "POST:/api/v1/my/import/rss-feeds": {

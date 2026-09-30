@@ -4,7 +4,9 @@ import { grantConsent } from '@services/user-consents/create'
 import { getActiveConsents } from '@services/user-consents/get'
 import { revokeConsent } from '@services/user-consents/revoke'
 import type { ConsentType } from '@services/user-consents/types'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+
+type GrantConsentRequest = { consent_type: ConsentType; version: string }
 
 const VALID_CONSENT_TYPES: ConsentType[] = [
   'privacy_policy',
@@ -28,25 +30,13 @@ app.route('/api/v1/my/consents').get(async (ctx: Context) => {
 app.route('/api/v1/my/consents').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/consents')
 
-  const body = (await ctx.request.json('10kb')) as Record<string, unknown>
-  ctx.assert(isConsentType(body.consent_type), 400, 'consent_type is required and must be valid')
-  ctx.assert(
-    typeof body.version === 'string' && body.version.trim().length > 0,
-    400,
-    'version is required',
-  )
+  const body = (await ctx.request.json('10kb')) as GrantConsentRequest
+  validateRequestContract(ctx, 'POST:/api/v1/my/consents', { body })
+  const version = body.version.trim()
+  ctx.assert(version.length > 0, 400, 'version is required')
+  ctx.assert(version.length <= 50, 422, 'version must be 50 characters or fewer')
 
-  ctx.assert(
-    (body.version as string).trim().length <= 50,
-    422,
-    'version must be 50 characters or fewer',
-  )
-
-  const consent = await grantConsent(
-    currentUser.id,
-    body.consent_type,
-    (body.version as string).trim(),
-  )
+  const consent = await grantConsent(currentUser.id, body.consent_type, version)
 
   ctx.setStatus(201)
   ctx.json({ consent })
@@ -55,7 +45,9 @@ app.route('/api/v1/my/consents').post(async (ctx: Context) => {
 // DELETE /api/v1/my/consents/:type
 app.route('/api/v1/my/consents/:type').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/my/consents/:type')
+  validateRequestContract(ctx, 'DELETE:/api/v1/my/consents/:type', { path: ctx.params })
 
+  // The path schema is a plain string, so the consent-type enum is checked here.
   const consentType = ctx.params.type
   ctx.assert(isConsentType(consentType), 400, 'Invalid consent type')
 
