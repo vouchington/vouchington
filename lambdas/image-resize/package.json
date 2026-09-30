@@ -34,7 +34,7 @@
     "@vouchington/image-resize": "0.2.0",
     "@vouchington/media": "0.2.0",
     "satori": "^0.33.5",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "ssrf-guard": "^1.0.0"
   },
   "devDependencies": {

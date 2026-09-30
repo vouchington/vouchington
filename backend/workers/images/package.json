@@ -30,7 +30,7 @@
     "@vouchington/media": "0.2.0",
     "glide-mq": "^0.15.5",
     "http-errors": "^2.0.1",
-    "sharp": "^0.35.4"
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@services/users": "workspace:^",

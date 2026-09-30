@@ -78,7 +78,7 @@
     "react-dom": "^19.3.0",
     "recharts": "^3.10.1",
     "server-only": "0.0.1",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "shiki": "^4.4.3",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.7.0"
