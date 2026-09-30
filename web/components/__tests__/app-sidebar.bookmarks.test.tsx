@@ -1,132 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { AppSidebar } from '../app-sidebar'
-import { SidebarProvider } from '@/components/ui/sidebar'
-import { AuthProvider } from '@/lib/auth/auth-provider'
-import { toClientAuthUser } from '@/lib/auth/client-auth-user'
+import { screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { renderSidebar, setMockPathname } from '@/test-helpers/components/app-sidebar-test-helpers'
 import type { User } from '@/types/user'
-import type { ReactNode } from 'react'
-
-let mockPathname = '/'
-
-vi.mock(
-  import('next/navigation'),
-  () =>
-    ({
-      usePathname: () => mockPathname,
-      useRouter: vi.fn<() => { push: (path: string) => void }>(() => ({
-        push: vi.fn<(path: string) => void>(),
-      })),
-    }) as unknown as typeof import('next/navigation'),
-)
-
-vi.mock(
-  import('next/link'),
-  () =>
-    ({
-      default: ({
-        children,
-        href,
-        prefetch: _prefetch,
-        ...props
-      }: {
-        children: ReactNode
-        href: string
-        prefetch?: boolean
-        [k: string]: unknown
-      }) => (
-        <a
-          href={href}
-          {...props}
-        >
-          {children}
-        </a>
-      ),
-    }) as unknown as typeof import('next/link'),
-)
-
-vi.mock(import('../messages/messages-sidebar-group'), () => ({
-  MessagesSidebarGroup: () => null,
-}))
-
-vi.mock(
-  import('../messages/messages-sidebar-group-view'),
-  () =>
-    ({
-      MessagesSidebarGroupView: () => null,
-    }) as unknown as typeof import('../messages/messages-sidebar-group-view'),
-)
-
-vi.mock(import('../communities/communities-sidebar-group'), () => ({
-  CommunitiesSidebarGroup: () => (
-    <>
-      <div data-sidebar='group'>
-        <div data-sidebar='group-label'>Communities</div>
-        <a href='/communities'>Explore Communities</a>
-      </div>
-      <div data-sidebar='group'>
-        <div data-sidebar='group-label'>Bookmarks</div>
-        <a
-          href='/my/communities/saved'
-          data-pw='sidebar-nav-my-communities-saved'
-        >
-          Saved Communities
-        </a>
-        <a
-          href='/my/communities/proxy-following'
-          data-pw='sidebar-nav-my-communities-proxy-following'
-        >
-          Proxy-Followed Communities
-        </a>
-        <a
-          href='/my/communities/proxy-muted'
-          data-pw='sidebar-nav-my-communities-proxy-muted'
-        >
-          Proxy-Muted Communities
-        </a>
-      </div>
-    </>
-  ),
-}))
-
-vi.mock(
-  import('../lists/lists-sidebar-group'),
-  () =>
-    ({
-      ListsSidebarGroup: () => null,
-    }) as unknown as typeof import('../lists/lists-sidebar-group'),
-)
-
-vi.mock(import('../navbar/intent-switcher'), () => ({
-  IntentSwitcher: () => <div data-testid='intent-switcher-stub' />,
-}))
-
-vi.mock(
-  import('../sidebar-site-footer'),
-  () =>
-    ({
-      SidebarSiteFooter: () => null,
-    }) as unknown as typeof import('../sidebar-site-footer'),
-)
-
-function renderSidebar(currentUser: User | null = null) {
-  return render(
-    <AuthProvider initialUser={currentUser ? toClientAuthUser(currentUser) : null}>
-      <SidebarProvider>
-        <AppSidebar />
-      </SidebarProvider>
-    </AuthProvider>,
-  )
-}
 
 describe('AppSidebar Bookmarks', () => {
   beforeEach(() => {
-    mockPathname = '/'
+    setMockPathname('/')
   })
 
   describe('Posts intent Bookmarks group', () => {
     beforeEach(() => {
-      mockPathname = '/posts'
+      setMockPathname('/posts')
     })
 
     it('hides Bookmarks group for unauthenticated users', () => {
@@ -149,7 +33,7 @@ describe('AppSidebar Bookmarks', () => {
 
   describe('Topics intent Bookmarks group', () => {
     beforeEach(() => {
-      mockPathname = '/topics'
+      setMockPathname('/topics')
     })
 
     it('hides Bookmarks group for unauthenticated users', () => {
@@ -172,7 +56,7 @@ describe('AppSidebar Bookmarks', () => {
 
   describe('Web Search intent Bookmarks group', () => {
     beforeEach(() => {
-      mockPathname = '/domains'
+      setMockPathname('/domains')
     })
 
     it('hides Bookmarks group for unauthenticated users', () => {
@@ -195,7 +79,7 @@ describe('AppSidebar Bookmarks', () => {
 
   describe('Communities intent Bookmarks group', () => {
     beforeEach(() => {
-      mockPathname = '/communities'
+      setMockPathname('/communities')
     })
 
     it('hides Bookmarks group for unauthenticated users', () => {
@@ -212,7 +96,7 @@ describe('AppSidebar Bookmarks', () => {
 
   describe('News intent Bookmarks group', () => {
     beforeEach(() => {
-      mockPathname = '/news'
+      setMockPathname('/news')
     })
 
     it('hides Bookmarks groups for unauthenticated users', () => {
@@ -251,7 +135,7 @@ describe('AppSidebar Bookmarks', () => {
 
   describe('Friends intent Bookmarks group', () => {
     beforeEach(() => {
-      mockPathname = '/users'
+      setMockPathname('/users')
     })
 
     it('hides Bookmarks group for unauthenticated users', () => {
