@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   issueCopyrightGuestCapability,
@@ -28,16 +28,22 @@ export function CopyrightStaffGuestCapability({ noticeId }: { noticeId: string }
   const [issued, setIssued] = useState<{ id: string; token: string } | null>(null)
   const [requestFor, setRequestFor] = useState<string | null>(null)
   const [statement, setStatement] = useState('')
-  const [pending, startTransition] = useTransition()
+  const [pending, setPending] = useState(false)
+  const pendingRef = useRef(false)
   function run(action: () => Promise<void>, fallback: string) {
-    if (pending) return
-    startTransition(async () => {
+    if (pendingRef.current) return
+    pendingRef.current = true
+    setPending(true)
+    void (async () => {
       try {
         await action()
       } catch (error) {
         onError(error, { fallback })
+      } finally {
+        pendingRef.current = false
+        setPending(false)
       }
-    })
+    })()
   }
   function issue() {
     if (!expiresAt) return

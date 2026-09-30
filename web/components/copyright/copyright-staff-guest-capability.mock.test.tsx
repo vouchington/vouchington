@@ -57,11 +57,18 @@ function page(
   }
 }
 
+async function clickEnabled(name: string) {
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name })).toBeEnabled()
+  })
+  fireEvent.click(screen.getByRole('button', { name }))
+}
+
 async function issueAccess() {
   fireEvent.change(screen.getByLabelText('Access expires'), {
     target: { value: '2026-09-05T12:00' },
   })
-  fireEvent.click(screen.getByRole('button', { name: 'Issue guest access' }))
+  await clickEnabled('Issue guest access')
   await waitFor(() => {
     expect(screen.getByLabelText('Access token')).toHaveValue('shown-once-token')
   })
@@ -141,18 +148,18 @@ describe('CopyrightStaffGuestCapability', () => {
     expect(onSuccess).toHaveBeenCalledWith(
       'Guest access issued. Copy the token now. It is shown once.',
     )
-    fireEvent.click(await screen.findByRole('button', { name: 'Request information' }))
+    await clickEnabled('Request information')
     fireEvent.change(screen.getByLabelText('Information request'), {
       target: { value: '  Send the original URL.  ' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Send information request' }))
+    await clickEnabled('Send information request')
     await waitFor(() => {
       expect(screen.queryByLabelText('Information request')).not.toBeInTheDocument()
     })
     expect(mockRequest).toHaveBeenCalledWith(noticeId, capabilityId, 'Send the original URL.')
 
     mockList.mockResolvedValue(page([capability({ revoked_at: now.toISOString() })]))
-    fireEvent.click(screen.getByRole('button', { name: 'Revoke' }))
+    await clickEnabled('Revoke')
     await waitFor(() => {
       expect(screen.queryByRole('button', { name: 'Revoke' })).not.toBeInTheDocument()
     })
@@ -186,11 +193,11 @@ describe('CopyrightStaffGuestCapability', () => {
     await issueAccess()
 
     mockRequest.mockRejectedValueOnce(new Error('request failed'))
-    fireEvent.click(screen.getByRole('button', { name: 'Request information' }))
+    await clickEnabled('Request information')
     fireEvent.change(screen.getByLabelText('Information request'), {
       target: { value: 'Need the URL.' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Send information request' }))
+    await clickEnabled('Send information request')
     await waitFor(() => {
       expect(onError).toHaveBeenCalledWith(expect.any(Error), {
         fallback: 'Could not request information',
