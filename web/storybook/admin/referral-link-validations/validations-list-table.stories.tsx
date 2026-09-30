@@ -1,7 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { createTranslator } from '@ts-shared/ui-messages'
 import { ValidationsListTable } from '@/components/admin/referral-link-validations/validations-list-table'
 import { StoryFrame } from '@/storybook/story-frame'
 import type { ReferralLinkValidation } from '@/lib/api/client/referral-link-validations'
+import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
+
+const t = createTranslator('en', await loadJsonMessages('en'))
 
 const validations: ReferralLinkValidation[] = [
   {
@@ -34,6 +38,7 @@ export const WithSets: Story = {
       <ValidationsListTable
         validations={validations}
         basePath={basePath}
+        t={t}
       />
     </StoryFrame>
   ),
@@ -45,6 +50,7 @@ export const Empty: Story = {
       <ValidationsListTable
         validations={[]}
         basePath={basePath}
+        t={t}
       />
     </StoryFrame>
   ),

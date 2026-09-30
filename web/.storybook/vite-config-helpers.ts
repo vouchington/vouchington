@@ -108,14 +108,6 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
       ),
     },
     {
-      // ValidationsListTable is an async Server Component (calls getTranslations(), which
-      // reaches next/headers). React 19 cannot render async components client-side, so stub it.
-      find: '@/components/admin/referral-link-validations/validations-list-table',
-      replacement: fileURLToPath(
-        new URL('../storybook/mocks/validations-list-table.tsx', import.meta.url),
-      ),
-    },
-    {
       // ReferralValidationsSettings is an async Server Component (calls getTranslations(),
       // which reaches next/headers). React 19 cannot render async components client-side, so
       // stub it.

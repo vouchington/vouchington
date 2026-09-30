@@ -3,8 +3,6 @@ import { resolve } from 'node:path'
 const storybookMock = (file: string): string => resolve(process.cwd(), 'web/storybook/mocks', file)
 
 const storybookMockAliases = {
-  '@/components/admin/referral-link-validations/validations-list-table':
-    'validations-list-table.tsx',
   '@/components/agents/agent-detail': 'agent-detail.tsx',
   '@/components/asides/contribute-cta-aside': 'contribute-cta-aside.tsx',
   '@/components/asides/trending-topics-aside': 'trending-topics-aside.tsx',

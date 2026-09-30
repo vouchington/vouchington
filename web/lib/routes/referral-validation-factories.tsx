@@ -23,6 +23,7 @@ import type {
 import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
 import { getTopic, getReferralProgramValidations, serverApi } from '@/lib/api/server'
 import { requireAdmin } from '@/lib/auth/require-admin'
+import { getTranslations } from '@/lib/i18n/get-translations'
 import { createTopicPathname } from '@/lib/links/entity-href'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import type { Topic } from '@/types/topics'
@@ -56,8 +57,10 @@ export function createReferralProgramValidationsListPage() {
     const { id } = await params
     const { topic, basePath } = await loadReferralProgram(id)
 
-    const data = await getReferralProgramValidations(topic.id)
-
+    const [data, t] = await Promise.all([
+      getReferralProgramValidations(topic.id),
+      getTranslations(),
+    ])
     return (
       <div className='space-y-4'>
         <AdminPageHeader
@@ -80,6 +83,7 @@ export function createReferralProgramValidationsListPage() {
         <ValidationsListTable
           validations={data.results}
           basePath={basePath}
+          t={t}
         />
       </div>
     )
