@@ -18,7 +18,7 @@ import { ALL_TOOLS } from '@voucha/tools/registry/index'
 import type { Tool } from '@voucha/tools/types'
 import type { ApiScope } from '@modules/scopes'
 import { createApiKey, revokeApiKey } from '@services/api-keys'
-import { issueTestOAuthTokensForClient } from '@services/oauth-authorization-server/test-support'
+import { issueTestOAuthTokensForClient } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 
 const READ_TOOL = 'user_audit_fixture_read'
 const PROFILE_TOOL = 'user_audit_fixture_profile'
