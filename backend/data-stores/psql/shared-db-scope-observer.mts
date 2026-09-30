@@ -2,6 +2,7 @@
 export const sharedDbScopeTables = {
   listCopyrightStaffAlertAcknowledgements: 'copyright_staff_alerts',
   listCopyrightStaffQueue: 'copyright_notices',
+  readCopyrightReviewTargetBreaches: 'copyright_notices',
   listOpenCopyrightStaffAlerts: 'copyright_staff_alerts',
   searchCopyrightStaffAlertNoticeIds: 'copyright_notices',
   syncCopyrightStaffAlerts: 'copyright_staff_alerts',

@@ -40,6 +40,7 @@ export {
 } from './processors/copyright-delivery.mts'
 export { processApplyCopyrightAction } from './processors/copyright-action.mts'
 export { processReconcileCopyrightActionIntents } from './processors/copyright-action-reconcile.mts'
+export { processCheckCopyrightReviewTarget } from './processors/copyright-review-target.mts'
 export {
   processApplyMediaDeliveryRegistryRecord,
   processReconcileMediaDeliveryRegistry,

@@ -2,11 +2,39 @@ import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { countDynamicConfigAuditRows, createTestUser } from '@voucha/test-helpers'
 import { persistDynamicConfigTestBaseline } from '@voucha/test-helpers/dynamic-config'
-import { copyrightConfig } from '@services/copyright-notices/config'
+import {
+  copyrightConfig,
+  getCopyrightReviewTargetMinutes,
+} from '@services/copyright-notices/config'
 
 const path = '/api/v1/dynamic-config/namespaces/copyright'
 
 describe('copyright dynamic-config namespace', () => {
+  it('launches with the review target unset, so only missed deadlines page', async () => {
+    const developer = await createTestUser({ extraRoles: ['developer'] })
+    const request = createRequest()
+    await request.authenticateAs(developer)
+
+    const current = await request.get(path).expect(200)
+
+    expect(current.body.namespace.fields).toContainEqual(
+      expect.objectContaining({
+        name: 'reviewTargetMinutes',
+        type: 'number',
+        value: 0,
+        default_value: 0,
+        min_value: 0,
+        max_value: 10_080,
+        integer: true,
+      }),
+    )
+    expect(await getCopyrightReviewTargetMinutes()).toBeNull()
+    await request
+      .patch(path)
+      .send({ config: { reviewTargetMinutes: -1 } })
+      .expect(400)
+  })
+
   it('launches with automatic provisional withholding off and audits a developer enabling it', async () => {
     const [developer, moderator] = await Promise.all([
       createTestUser({ extraRoles: ['developer'] }),
@@ -15,7 +43,10 @@ describe('copyright dynamic-config namespace', () => {
     const request = createRequest()
     await request.authenticateAs(developer)
     const current = await request.get(path).expect(200)
-    expect(current.body.namespace.config).toEqual({ automaticProvisionalWithholding: false })
+    expect(current.body.namespace.config).toEqual({
+      automaticProvisionalWithholding: false,
+      reviewTargetMinutes: 0,
+    })
     const moderatorRequest = createRequest()
     await moderatorRequest.authenticateAs(moderator)
     await moderatorRequest

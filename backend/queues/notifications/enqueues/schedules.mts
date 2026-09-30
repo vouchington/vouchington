@@ -6,6 +6,7 @@ import {
 import { notifications } from '../queues.mts'
 import { PRIORITY_DEFAULT, QUEUE_NAME } from '../config.mts'
 import {
+  enqueueCheckCopyrightReviewTarget,
   enqueueCommunityActivityDigestScheduleTick,
   enqueueReconcileCopyrightActionIntents,
   enqueueReconcileCopyrightDeliveryIntents,
@@ -83,6 +84,30 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
         schedule: '*/5 * * * *',
         description: 'Re-enqueue pending copyright legal delivery intents',
         trigger: enqueueReconcileCopyrightDeliveryIntents,
+      },
+    ],
+  },
+  {
+    schedulerId: 'copyright-review-target-page',
+    repeat: { pattern: '*/5 * * * *' },
+    template: {
+      name: 'processCheckCopyrightReviewTarget',
+      data: {},
+      opts: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+        removeOnComplete: 100,
+        removeOnFail: 100,
+        priority: PRIORITY_DEFAULT,
+      } satisfies JobOptions,
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: 'copyright-review-target-page',
+        schedule: '*/5 * * * *',
+        description: 'Page Sentry when copyright cases wait past the review target or deadlines',
+        trigger: enqueueCheckCopyrightReviewTarget,
       },
     ],
   },
