@@ -81,12 +81,15 @@ either jurisdiction.
 
 Designated-agent email is still ingested while the switch is off, so no inbound message waits
 unseen in `copyright-incoming/`. The SES worker and its reconcile sweep copy each message into the
-evidence bucket (`S3_BUCKET_COPYRIGHT_EVIDENCE` is still required), parse it, link a reply to its
+evidence bucket, parse it, link a reply to its
 existing case, and list it in the staff email intake queue and the
-[review-target page](#review-target-page). Only the AI recommendation job is paused, so no email
-contents reach a model. Ingest sends the sender nothing: there is no acknowledgement or automatic
-reply. The only mail a sender receives during a pause is a response staff choose to send when they
-reject an email or ask for more information.
+[review-target page](#review-target-page). Both `S3_BUCKET_SES_INBOUND` and `S3_BUCKET_COPYRIGHT_EVIDENCE` must be
+configured wherever the worker runs, because the scan and the evidence copy fail without them.
+Only the AI recommendation job is paused, so no email contents reach a model. Ingest sends the sender nothing: there is no acknowledgement or automatic
+reply. During a pause a sender receives mail only when staff act: the response staff choose when
+they reject an email or ask for more information, and the deterministic notices a case's normal
+review queues after staff record an in-case filing, such as the counter-notice status update. No
+approval receipt goes out, because approving an emailed notice is closed.
 
 When the switch is turned on, the agent-dispatch reconciler sends every ingested email that has no
 recommendation and no staff decision to the recommendation job, so emails received during the
@@ -96,7 +99,7 @@ is not sent to the model.
 ### Recording an emailed filing while intake is off
 
 Emailed counter-notices and court/CCB filing notices start their §512(g) clocks on receipt, and
-their received time is the SES receipt time kept on the intake. A reply to a message Voucha sent
+their received time is the receipt time kept on the intake. A reply to a message Voucha sent
 is matched to its case automatically. Record it from the queue instead of waiting for the switch:
 
 1. Open the message in the staff email intake queue. Read the inert original and confirm it is a
