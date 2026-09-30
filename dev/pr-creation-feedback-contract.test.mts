@@ -123,6 +123,7 @@ describe('agent-authored PR creation feedback contract', () => {
     expect(distill).toContain('entry-type-unresolved')
     expect(distill).toContain('Immediately before each `session_archive`')
     expect(distill).toContain('by source identity (`sourceEventId`)')
+    expect(distill).toContain('Cleanup runs after the last `session_archive`')
     expect(distill).toContain('[distilling.md](distilling.md)')
   })
 

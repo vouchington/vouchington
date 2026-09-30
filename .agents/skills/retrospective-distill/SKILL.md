@@ -117,9 +117,9 @@ Immediately before each `session_archive`, read that session with `journal_entri
 `sessionId`) and archive it only if its entries match the verified snapshot's entries for the same
 session by source identity (`sourceEventId`): the same set, with nothing added and nothing missing.
 Otherwise the session changed since the snapshot (it was resumed, or a retrospective was saved after
-the export), so leave it unarchived for the next pass. `session_archive` has no such guard of its
-own, and archiving freezes only the session's metadata, so its entries stay appendable. Invoking
-this skill is the local archival
+the export), so leave it unarchived for the next pass; a result that carries no source identity
+counts as a mismatch. `session_archive` has no such guard of its own, and archiving freezes only
+the session's metadata, so its entries stay appendable. Invoking this skill is the local archival
 authorization for eligible sessions: archive each one with a separate `session_archive` call whose
 `sessionId` is the archived session, not the root's. Before any `session_archive`, repeat the
 drain across every worktree, and never call `session_archive` while `outbox_status` reports pending
@@ -134,8 +134,8 @@ PR-creation-feedback theme (below) — since deferral promises re-evaluation nex
 would foreclose it. In a `finally` cleanup path owned by the root, run `pnpm exec
 agent-blackboard snapshot cleanup --directory <path> --path <path> --cleanup-token <cleanupToken>`;
 or, if partitioning failed before a directory was returned, run cleanup with the validated snapshot
-path and cleanup token alone. Cleanup happens after summary merging even when no session is eligible
-for archival.
+path and cleanup token alone. Cleanup runs after the last `session_archive` (the archival check reads
+the snapshot), and after summary merging even when no session is eligible for archival.
 
 Cluster journal and retrospective findings by root cause. A journal item that already names an open
 issue is skipped unless a retrospective supplies genuinely new evidence; a closed or superseded

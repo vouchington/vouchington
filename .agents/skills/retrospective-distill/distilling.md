@@ -40,8 +40,10 @@ Do not archive while inspectors are still running. Immediately before each `sess
 read that session with `journal_entries` (every entry of every type, oldest first) and archive it
 only if its entries match the verified snapshot's entries for the same session by source identity
 (`sourceEventId`), with nothing added and nothing missing; a session resumed or given a
-retrospective since the export is left for the next pass. Always remove both the generated partition directory
-and the exported snapshot after the root merges summaries, including on an issue-validation failure.
+retrospective since the export is left for the next pass; a result that carries no source identity
+counts as a mismatch. Always remove both the generated partition directory and the exported
+snapshot after the last `session_archive` (the check above reads the snapshot), or after the root
+merges summaries when nothing is archived, including on an issue-validation failure.
 Partition and cleanup commands require the original `cleanupToken`; the root retains that capability
 and never delegates it. Cleanup retries use the same token with the original directory and snapshot
 paths. If partitioning fails before a directory is returned, cleanup receives the validated generated
