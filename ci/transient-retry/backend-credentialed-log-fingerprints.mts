@@ -1,26 +1,8 @@
 import picomatch from 'picomatch'
-import { backendCredentialedTestProjects } from '../../test-helpers/vitest-config/backend-credentialed-projects.mts'
+import { backendCredentialedProjects } from '../../test-helpers/vitest-config/backend-credentialed-project-info.mts'
 import { backendCredentialedOpenRouterMarkerGroups } from './backend-credentialed-openrouter-markers.mts'
 
 const vitestFailureLinePattern = /\bFAIL\s+\S+\s+\S+\.(?:c|m)?tsx?\b/
-
-/**
- * The credentialed Vitest projects that probe a real external provider, each paired with the
- * `include` glob(s) it collects. Derived from the same project objects `vitest.config.mts` runs
- * (`test-helpers/vitest-config/backend-credentialed-projects.mts`), which is a literal-only module
- * so this Node-run classifier stays free of the DB/Valkey alias resolution in `vitest.config.mts`.
- */
-export const backendCredentialedProjects: ReadonlyArray<{
-  project: string
-  include: readonly string[]
-}> = backendCredentialedTestProjects.map(configuration => {
-  const test =
-    typeof configuration === 'object' && 'test' in configuration ? configuration.test : undefined
-  if (typeof test?.name !== 'string' || !test.include?.length) {
-    throw new TypeError('Credentialed Vitest projects need a string name and a non-empty include')
-  }
-  return { project: test.name, include: test.include }
-})
 
 function toEmbeddablePattern(glob: string): string {
   return picomatch.makeRe(glob, { contains: true }).source

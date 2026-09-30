@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { backendCredentialedProjectNames } from '../test-helpers/vitest-config/backend-credentialed-project-info.mts'
 import { toolingTestProjectNames } from '../test-helpers/vitest-config/tooling-project-registry.mts'
 
 const dockerFreeBackendProjects = [
@@ -26,15 +27,14 @@ const backendCoreProjects = [
 
 const SERIAL_VITEST_PROJECT = 'backend-activitypub-capacity'
 
+// Each credentialed project gets its own group named after it (`backend-aws` -> ['backend-aws']),
+// so a project added to the shared list is runnable as a group with no edit here.
+const credentialedProjectGroups: Record<string, readonly string[]> = Object.fromEntries(
+  backendCredentialedProjectNames.map(project => [project, [project]]),
+)
+
 export const VITEST_PROJECT_GROUPS = {
-  backend: [
-    ...backendCoreProjects,
-    'backend-aws',
-    'backend-bedrock',
-    'backend-openai',
-    'backend-openrouter',
-    'backend-stripe',
-  ],
+  backend: [...backendCoreProjects, ...backendCredentialedProjectNames],
   'backend-default': backendCoreProjects,
   'backend-analytics': [
     'backend/data-stores/analytics',
@@ -44,11 +44,7 @@ export const VITEST_PROJECT_GROUPS = {
   'backend-core': backendCoreProjects,
   'backend-modules': dockerFreeBackendProjects,
   'backend-docker': dockerBackedBackendProjects,
-  'backend-aws': ['backend-aws'],
-  'backend-bedrock': ['backend-bedrock'],
-  'backend-openai': ['backend-openai'],
-  'backend-openrouter': ['backend-openrouter'],
-  'backend-stripe': ['backend-stripe'],
+  ...credentialedProjectGroups,
   'backend-postgres-schema': ['backend-postgres-schema', 'backend-activitypub-capacity'],
   'email-templates': ['backend-email-templates'],
   'ts-shared': ['ts-shared'],
@@ -77,27 +73,24 @@ export const VITEST_PROJECT_GROUPS = {
   ],
 } as const satisfies Record<string, readonly string[]>
 
-export type VitestProjectGroup = keyof typeof VITEST_PROJECT_GROUPS
+const projectGroups: Readonly<Record<string, readonly string[] | undefined>> = VITEST_PROJECT_GROUPS
 
-export function projectsForVitestGroup(group: VitestProjectGroup): readonly string[] {
-  return VITEST_PROJECT_GROUPS[group]
+export function projectsForVitestGroup(group: string): readonly string[] {
+  const projects = Object.hasOwn(projectGroups, group) ? projectGroups[group] : undefined
+  if (projects === undefined) {
+    throw new Error(`Unknown Vitest project group: ${group}`)
+  }
+  return projects
 }
 
 export function normalizeForwardedVitestArgs(args: readonly string[]): string[] {
   return args[0] === '--' ? args.slice(1) : [...args]
 }
 
-function assertVitestProjectGroup(group: string): asserts group is VitestProjectGroup {
-  if (!Object.hasOwn(VITEST_PROJECT_GROUPS, group)) {
-    throw new Error(`Unknown Vitest project group: ${group}`)
-  }
-}
-
 export function vitestProjectGroupCommand(
   group: string,
   forwardedArgs: readonly string[],
 ): { command: string; args: string[] } {
-  assertVitestProjectGroup(group)
   return {
     command: './ci/with-node-test-options',
     args: [
@@ -120,7 +113,6 @@ export async function runVitestProjectGroup(
   forwardedArgs: readonly string[],
   dependencies: RunDependencies = {},
 ): Promise<{ code: number | null; signal: NodeJS.Signals | null }> {
-  assertVitestProjectGroup(group)
   const { command, args } = vitestProjectGroupCommand(group, forwardedArgs)
   const inheritedEnv = dependencies.env ?? process.env
   const env = vitestProjectGroupRequiresSerialExecution(group)
@@ -137,7 +129,7 @@ export async function runVitestProjectGroup(
   })
 }
 
-function vitestProjectGroupRequiresSerialExecution(group: VitestProjectGroup): boolean {
+function vitestProjectGroupRequiresSerialExecution(group: string): boolean {
   return projectsForVitestGroup(group).some(project => project === SERIAL_VITEST_PROJECT)
 }
 

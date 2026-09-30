@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
+import { projectsForVitestGroup } from '../../ci/run-vitest-project-group.mts'
+import { backendCredentialedProjectNames } from '../../test-helpers/vitest-config/backend-credentialed-project-info.mts'
 const workflow = readFileSync('.github/workflows/tests-backend-unit.yml', 'utf8')
 const stepsWorkflow = load(workflow) as {
   jobs?: Record<
@@ -25,7 +27,6 @@ const vitestConfig = [
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8')) as {
   scripts: Record<string, string>
 }
-const vitestProjectGroupRunner = readFileSync('ci/run-vitest-project-group.mts', 'utf8')
 function jobSection(jobName: string): string {
   const start = workflow.indexOf(`\n  ${jobName}:`)
   expect(start).toBeGreaterThanOrEqual(0)
@@ -59,19 +60,19 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(vitestConfig).toContain("include: ['backend/**/*.openai*.test.mts']")
     expect(vitestConfig).toContain("'**/*.openai*.test.mts'")
     expect(vitestConfig).not.toContain("include: ['backend/**/*.openai.test.mts']")
-    expect(packageJson.scripts['test:backend:core']).not.toContain('backend-openai')
-    expect(packageJson.scripts['test:backend:openai']).toBe(
-      'node ci/run-vitest-project-group.mts backend-openai',
-    )
-    expect(packageJson.scripts['test:backend:core']).not.toContain('backend-bedrock')
-    expect(packageJson.scripts['test:backend:bedrock']).toBe(
-      'node ci/run-vitest-project-group.mts backend-bedrock',
-    )
     expect(packageJson.scripts['test:backend']).toContain('run-vitest-project-group.mts backend')
-    expect(vitestProjectGroupRunner).toContain("'backend-openai'")
-    expect(vitestProjectGroupRunner).toContain("'backend-bedrock'")
     expect(packageJson.scripts['test:backend']).not.toContain('pnpm run')
     expect(packageJson.scripts.test).toContain('pnpm run test:backend')
+  })
+
+  it('gives every credentialed project its own script and keeps it out of the core groups', () => {
+    for (const project of backendCredentialedProjectNames) {
+      expect(projectsForVitestGroup('backend-core')).not.toContain(project)
+      expect(projectsForVitestGroup('backend-default')).not.toContain(project)
+      expect(packageJson.scripts[`test:${project.replace('backend-', 'backend:')}`]).toBe(
+        `node ci/run-vitest-project-group.mts ${project}`,
+      )
+    }
   })
 
   it('combines service-backed backend Vitest projects in one sharded command', () => {
@@ -87,9 +88,9 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(vitestConfig).not.toContain('sequence: { groupOrder')
     expect(vitestConfig).not.toContain('fileParallelism: false')
     expect(vitestConfig).toContain("name: 'backend-activitypub-capacity'")
-    expect(workflow).not.toContain('--project backend-aws --shard')
-    expect(workflow).not.toContain('--project backend-openai --shard')
-    expect(workflow).not.toContain('--project backend-bedrock --shard')
+    for (const project of backendCredentialedProjectNames) {
+      expect(workflow).not.toContain(`--project ${project}`)
+    }
     expect(workflow).not.toContain('--project backend-no-data-mocks')
     expect(workflow).not.toContain('--project backend-modules')
     expect(workflow).not.toContain('analytics-data-store-test-report.junit.xml')

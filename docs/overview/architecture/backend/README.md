@@ -17,8 +17,9 @@ When touching `backend/**` code, run (from repo root):
 - `pnpm run test:backend:aws` - Run only AWS S3/SES integration tests (requires AWS credentials; CI runs these in a dedicated trusted-context job)
 - `pnpm run test:backend:bedrock` - Run only Bedrock integration tests (requires `BEDROCK_AWS_ACCESS_KEY_ID` and `BEDROCK_AWS_SECRET_ACCESS_KEY`, or a standard AWS credential chain that can invoke Bedrock; set `REQUIRE_BEDROCK_INTEGRATION=true` to fail instead of skip)
 - `pnpm run test:backend:openai` - Run only OpenAI integration tests (requires `OPENAI_API_KEY`; CI runs these in a dedicated trusted-context job)
+- `pnpm run test:backend:openrouter` - Run only OpenRouter integration tests (requires `OPENROUTER_API_KEY`; CI runs these in a dedicated trusted-context job)
 - `pnpm run test:backend:stripe` - Run only Stripe credentialed tests (requires `STRIPE_SECRET_KEY` test-mode key; CI runs these in a dedicated trusted-context job)
-- `pnpm run test:backend` - Run default backend tests plus AWS, Bedrock, OpenAI, and Stripe credentialed projects in one Vitest command. The central group runner removes pnpm's one leading argument separator, so appended one-off file filters and Vitest flags remain positional arguments. External-credential tests skip locally when credentials are unavailable
+- `pnpm run test:backend` - Run default backend tests plus AWS, Bedrock, OpenAI, OpenRouter, and Stripe credentialed projects in one Vitest command. The central group runner removes pnpm's one leading argument separator, so appended one-off file filters and Vitest flags remain positional arguments. External-credential tests skip locally when credentials are unavailable
 - `pnpm run test:smoke:backend`
 
 When `*.lua` files change: `pnpm run selene`.

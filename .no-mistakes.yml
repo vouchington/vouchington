@@ -239,6 +239,10 @@ tests:
         integration_suites:
           openrouter:
             - openrouter
+      backend-stripe:
+        integration_suites:
+          stripe:
+            - stripe
 
 rules:
   - name: GitHub Actions uses pins

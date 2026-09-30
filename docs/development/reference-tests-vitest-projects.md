@@ -101,7 +101,7 @@ per-project values:
 
 - Root inheritance default (`pool: 'threads'`): [`vitest.config.mts`](../../vitest.config.mts)
 - Backend forks: [`test-helpers/vitest-config/backend-core-projects.mts`](../../test-helpers/vitest-config/backend-core-projects.mts), [`test-helpers/vitest-config/backend-data-projects.mts`](../../test-helpers/vitest-config/backend-data-projects.mts)
-- Backend credentialed provider probes (also the source of the transient-retry classifier's credentialed boundary): [`test-helpers/vitest-config/backend-credentialed-projects.mts`](../../test-helpers/vitest-config/backend-credentialed-projects.mts)
+- Backend credentialed provider probes (also the source of the `backend` and per-provider `backend-<provider>` groups in `ci/run-vitest-project-group.mts` and of the transient-retry classifier's credentialed boundary): [`test-helpers/vitest-config/backend-credentialed-projects.mts`](../../test-helpers/vitest-config/backend-credentialed-projects.mts)
 - Web / lambdas / Cloudflare: [`test-helpers/vitest-config/web-projects.mts`](../../test-helpers/vitest-config/web-projects.mts)
 - Tooling: [`test-helpers/vitest-config/tooling-projects.mts`](../../test-helpers/vitest-config/tooling-projects.mts)
 - Storybook browser: [`test-helpers/vitest-config/storybook-browser-project.mts`](../../test-helpers/vitest-config/storybook-browser-project.mts)
