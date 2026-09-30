@@ -305,6 +305,20 @@ through `realpath`, so a script started through a symlinked path (macOS temp dir
 does nothing, and it exits 0 (#778). Use `import.meta.main`, or default an injected `isMain`
 parameter to it. Other reads of `process.argv[1]`, such as a positional CLI argument, are fine.
 
+The `no-compatibility-tombstone-comments.yml` rule enforces the prelaunch one-current-contract
+policy in the repository [`AGENTS.md`](../../../../AGENTS.md) by banning TypeScript comments that
+justify leaving replaced code in place: a `retain*`, `kept`/`keep*`, `preserv*`, or `left` word
+within 60 characters of `compat`, or a `back-compat`, `backward-compatible`, or
+`backwards compatibility` spelling. Delete the replaced path and its comment together instead of
+documenting it. Descriptive uses such as `ActivityPub-compatible` or `Mastodon API compatibility`
+are not matched, and string literals are never scanned. A genuine external protocol or wire-format
+constraint stays and is suppressed on its own line directly above the comment with
+`// ast-grep-ignore: no-compatibility-tombstone-comments -- <the external constraint>`. Word the
+reason without those trigger words, because the reason is itself a comment the rule reads, and never
+suppress with a trailing same-line comment, which ast-grep parses as a separate comment node. The
+rule covers only the `Tsx`-parsed extensions; Rust, Lua, SQL, shell, Python, and YAML sources are
+not scanned.
+
 ## Migration Artifact Cleanup
 
 The PostgreSQL [relational-storage guard](../../../../static-code-analysis/repo-file-policy/relational-storage-guard.mts) reads the
