@@ -1,160 +1,21 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-
-import http from 'node:http'
-
-import serverApp from '../../../../backend/entrypoints/api/index.mts'
+import { describe, expect, it } from 'vitest'
 
 import { psql as psqlQueue } from '../../../../backend/queues/psql/queues.mts'
-
 import * as clientRoutes from '@/lib/api/client'
+import { installClientContentRouteHarness } from '../../../test-helpers/client-content-route-harness.mts'
 
-import {
-  createTestRssFeedWithTiming,
-  createTestRssFeedItemWithUrl,
-  createTestTopic,
-  createTestUser,
-  createTestUserWithAge,
-  insertTestStory,
-  insertTestVoteWeightPenalty,
-  setTestItemStoryId,
-  setUserVerificationFields,
-} from '../../../../backend/test-helpers/index.mts'
-
-import { createWebApiTestCookieHeader, listenOnFetchSafeLoopback } from '../../routes.mts'
-
-import type { CookieHeader } from '../../routes-extended.mts'
+function unset(target: object, key: string) {
+  delete (target as Record<string, unknown>)[key]
+}
 
 describe('client-content-routes', () => {
-  let backendServer: http.Server
-
-  let previousApiBaseUrl: string | undefined
-
-  let previousPublicApiBaseUrl: string | undefined
-
-  let previousFetch: typeof globalThis.fetch
-
-  let hadWindow: boolean
-
-  let previousWindow: unknown
-
-  let backendBaseUrl: string
-
-  let clientRuntimeActive = false
-
-  let clientCookieValue: string | undefined
-
-  let adminCookieHeader: CookieHeader
-
-  let topicId: string
-
-  let rssFeedId: string
-
-  let rssFeedItemId: string
-
-  let storyId: string
-
-  beforeAll(async () => {
-    previousApiBaseUrl = process.env.API_BASE_URL
-    previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
-
-    backendServer = http.createServer(serverApp.callback())
-    backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
-    process.env.API_BASE_URL = backendBaseUrl
-    process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
-    process.env.PLAYWRIGHT_TEST = 'true'
-
-    previousFetch = globalThis.fetch
-    hadWindow = Object.hasOwn(globalThis, 'window')
-    previousWindow = (globalThis as { window?: unknown }).window
-    globalThis.fetch = (input, init) => {
-      if (!clientRuntimeActive || typeof input !== 'string' || !input.startsWith('/')) {
-        return previousFetch(input, init)
-      }
-      const headers = new Headers(init?.headers)
-      if (process.env.CF_WORKER_SECRET) {
-        headers.set('X-CF-Worker-Secret', process.env.CF_WORKER_SECRET)
-      }
-      if (clientCookieValue) {
-        headers.set('Cookie', clientCookieValue)
-        if ((init?.method ?? 'GET').toUpperCase() !== 'GET') {
-          headers.set('Origin', backendBaseUrl)
-        }
-      }
-      return previousFetch(`${backendBaseUrl}${input}`, { ...init, headers })
-    }
-
-    const EIGHT_DAYS_MS = 8 * 24 * 60 * 60 * 1000
-    const user = await createTestUserWithAge(EIGHT_DAYS_MS)
-    const admin = await createTestUser({ administrator: true })
-    const verifiedUser = await createTestUser()
-    await setUserVerificationFields(verifiedUser.id, { verificationStatus: 'verified' })
-
-    await createWebApiTestCookieHeader(user.id)
-    adminCookieHeader = await createWebApiTestCookieHeader(admin.id)
-    await createWebApiTestCookieHeader(verifiedUser.id)
-
-    const topic = await createTestTopic({ user: admin })
-    topicId = topic.id
-
-    rssFeedId = await createTestRssFeedWithTiming(topicId)
-    const item = await createTestRssFeedItemWithUrl(rssFeedId)
-    rssFeedItemId = item.id
-
-    const story = await insertTestStory({ title: 'Test Story for API' })
-    storyId = story.id
-    await setTestItemStoryId(rssFeedItemId, storyId)
-
-    await insertTestVoteWeightPenalty(user.id, admin.id)
-  }, 30_000)
-
-  afterAll(async () => {
-    await new Promise<void>(resolve => {
-      backendServer.close(() => resolve())
-    })
-    if (previousApiBaseUrl === undefined) {
-      delete process.env.API_BASE_URL
-    } else {
-      process.env.API_BASE_URL = previousApiBaseUrl
-    }
-    if (previousPublicApiBaseUrl === undefined) {
-      delete process.env.NEXT_PUBLIC_API_BASE_URL
-    } else {
-      process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
-    }
-    delete process.env.PLAYWRIGHT_TEST
-    globalThis.fetch = previousFetch
-    if (hadWindow) {
-      ;(globalThis as { window?: unknown }).window = previousWindow
-    } else {
-      delete (globalThis as { window?: unknown }).window
-    }
-  }, 15_000)
-
-  async function withClientRuntime<T>(
-    run: () => Promise<T>,
-    cookieHeader?: Record<string, string>,
-  ): Promise<T> {
-    clientRuntimeActive = true
-    clientCookieValue = cookieHeader?.Cookie
-    ;(globalThis as { window?: unknown }).window = {}
-    try {
-      return await run()
-    } finally {
-      clientRuntimeActive = false
-      clientCookieValue = undefined
-      if (hadWindow) {
-        ;(globalThis as { window?: unknown }).window = previousWindow
-      } else {
-        delete (globalThis as { window?: unknown }).window
-      }
-    }
-  }
+  const harness = installClientContentRouteHarness({ unset })
 
   describe('psql client routes (admin only)', () => {
     it('fetchMigrations returns 200', async () => {
-      const result = await withClientRuntime(
+      const result = await harness.withClientRuntime(
         () => clientRoutes.fetchMigrations(),
-        adminCookieHeader,
+        harness.adminCookieHeader,
       )
       expect(result).toMatchObject({
         applied: expect.any(Array),
@@ -172,9 +33,9 @@ describe('client-content-routes', () => {
     })
 
     it('fetchPartitions returns 200', async () => {
-      const result = await withClientRuntime(
+      const result = await harness.withClientRuntime(
         () => clientRoutes.fetchPartitions(),
-        adminCookieHeader,
+        harness.adminCookieHeader,
       )
       expect(result).toMatchObject({ tables: expect.any(Array) })
       // {tables:[]} satisfies the shape check above even though the migrated test database
@@ -201,9 +62,9 @@ describe('client-content-routes', () => {
         (await psqlQueue.getJobs('waiting', 0, -1, { excludeData: true })).map(job => job.id),
       )
 
-      const result = await withClientRuntime(
+      const result = await harness.withClientRuntime(
         () => clientRoutes.enqueuePsqlJob('runViews'),
-        adminCookieHeader,
+        harness.adminCookieHeader,
       )
       expect(result).toMatchObject({ success: true })
 
@@ -222,9 +83,9 @@ describe('client-content-routes', () => {
       // groups — require the stable 'rss' group (with its declared prefixes) to actually be
       // present, so a regression that empties or breaks the registry is distinguishable from
       // success.
-      const result = await withClientRuntime(
+      const result = await harness.withClientRuntime(
         () => clientRoutes.fetchCacheGroups(),
-        adminCookieHeader,
+        harness.adminCookieHeader,
       )
       const rssGroup = result.groups.find(group => group.name === 'rss')
       expect(rssGroup).toBeDefined()
@@ -241,9 +102,9 @@ describe('client-content-routes', () => {
       // 'feature-flags', unconditionally viewable by an administrator — require it to actually
       // be present, so a regression that empties or breaks the registry is distinguishable
       // from success.
-      const result = await withClientRuntime(
+      const result = await harness.withClientRuntime(
         () => clientRoutes.fetchDynamicConfigNamespaces(),
-        adminCookieHeader,
+        harness.adminCookieHeader,
       )
       const featureFlagsNamespace = result.namespaces.find(
         namespace => namespace.namespace === 'feature-flags',
