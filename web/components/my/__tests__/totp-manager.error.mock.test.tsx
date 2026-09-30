@@ -1,5 +1,16 @@
 import { beforeEach, describe, it, vi } from 'vitest'
 import { render } from '@testing-library/react'
+import {
+  clickSubmit,
+  confirmRemove,
+  enterOtp,
+  expectToast,
+  expectToastAbsent,
+  mfaManagerStatus,
+  mfaReauthRequiredError,
+  renameAndSave,
+  toastMock,
+} from '@/test-helpers/components/my/mfa-manager-error-cases'
 
 vi.mock(
   import('qrcode.react'),
@@ -17,54 +28,6 @@ vi.mock(import('@/lib/api/client'), () => ({
   getTotpAuthenticatorsClient: vi.fn<VitestLooseMock>(),
 }))
 
-vi.mock(
-  import('@/components/my/mfa-reauth-dialog'),
-  () =>
-    ({
-      MfaReauthDialog: () => null,
-    }) as unknown as typeof import('@/components/my/mfa-reauth-dialog'),
-)
-
-vi.mock(import('@/lib/api/error'), () => {
-  class ApiError extends Error {
-    status: number
-    code?: string
-    constructor(message: string, status: number, code?: string) {
-      super(message)
-      this.name = 'ApiError'
-      this.status = status
-      this.code = code
-    }
-  }
-  return { ApiError }
-})
-
-const { toastMock } = vi.hoisted(() => {
-  const mock = Object.assign(vi.fn<VitestLooseMock>(), {
-    error: vi.fn<VitestLooseMock>(),
-    success: vi.fn<VitestLooseMock>(),
-  })
-  return { toastMock: mock }
-})
-
-vi.mock(
-  import('sonner'),
-  () =>
-    ({
-      toast: toastMock,
-    }) as unknown as typeof import('sonner'),
-)
-
-vi.mock(import('@/lib/on-error'), () => ({
-  default: (_err: unknown, options: { fallback: string }) => {
-    toastMock.error(options.fallback)
-    return options.fallback
-  },
-  onSuccess: (message: string) => {
-    toastMock.success(message)
-  },
-}))
-
 import { TotpManager } from '../totp-manager'
 import {
   deleteTotpAuthenticator,
@@ -74,16 +37,6 @@ import {
 } from '@/lib/api/client'
 import type { ListResponse } from '@/types/api-responses'
 import type { TotpAuthenticator } from '@/types/user'
-import {
-  clickSubmit,
-  confirmRemove,
-  enterOtp,
-  expectToast,
-  expectToastAbsent,
-  mfaManagerStatus,
-  mfaReauthRequiredError,
-  renameAndSave,
-} from '@/test-helpers/components/my/mfa-manager-error-cases'
 
 const mockSetupTotp = vi.mocked(setupTotp)
 const mockVerifyTotpSetup = vi.mocked(verifyTotpSetup)
