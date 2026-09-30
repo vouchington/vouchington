@@ -119,6 +119,26 @@ describe('dependency update configuration', () => {
     expect(sentryVersions).toEqual(sentryVersions.map(() => sentryVersions[0]))
   })
 
+  it('resolves no Sentry version that Dependabot is told to ignore', () => {
+    const dependabot = parseYaml(readRepoFile('.github/dependabot.yml')) as DependabotConfig
+    const lockfile = readRepoFile('pnpm-lock.yaml')
+    const ignoredSentryVersions = (dependabot.updates ?? []).flatMap(update =>
+      (update.ignore ?? []).flatMap(({ 'dependency-name': name, versions }) =>
+        name?.startsWith('@sentry/') ? (versions ?? []).map(version => ({ name, version })) : [],
+      ),
+    )
+
+    for (const { name, version } of ignoredSentryVersions) {
+      expect(version).toMatch(/^(?:\d+|x)(?:\.(?:\d+|x))*$/u)
+      const versionPattern = version
+        .split('.')
+        .map(part => (part === 'x' ? '\\d+' : part))
+        .join('\\.')
+
+      expect(lockfile).not.toMatch(new RegExp(`${name}@${versionPattern}(?![\\d.])`, 'u'))
+    }
+  })
+
   it('keeps the published Node engine floor at or below the toolchain and deployment major', () => {
     const applicationManifests = [
       'package.json',
