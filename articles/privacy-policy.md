@@ -61,10 +61,6 @@ To protect the integrity of the platform's trust scoring, we analyze voting patt
 
 We retain a record of content you have recently viewed for up to 30 days to support features like "recently viewed" and personalized feeds.
 
-### Business Contact Information (CRM)
-
-Voucha operates an internal business CRM used to manage relationships with prospective partners, influencers, and business contacts. This system may contain contact information (name, email, phone, social media handles) sourced from inbound inquiries, referrals, or publicly available professional profiles. This data is used solely for outreach and partnership management and is accessible only to Voucha staff. If you believe Voucha holds your contact information and you wish to access, correct, or delete it, contact us at team@voucha.ai.
-
 ---
 
 ## 2. How We Use Your Information
