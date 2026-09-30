@@ -22,6 +22,9 @@ Community application and invite list GETs share
 [`registerCommunityListGetAuthTests`](../../../../backend/test-helpers/community-list-get-auth-tests.mts).
 The applications suite keeps private visibility on the moderator success case and the `apps-get-*`
 slug prefixes. The invites suite omits visibility and keeps the `invites-get-*` prefixes.
+Passkey and TOTP rename routes share
+[`auth-credential-rename-tests.mts`](../../../../backend/test-helpers/auth-credential-rename-tests.mts).
+Each file keeps its path, insert helper, suffix, and renamed label.
 Copyright email-intake and form-screening enqueue tests share
 [`copyright-agent-enqueue-recovery-tests.mts`](../../../../backend/test-helpers/copyright-agent-enqueue-recovery-tests.mts).
 Each file keeps its queue name, payload, and expected job options.
