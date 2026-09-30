@@ -27,7 +27,10 @@ Topic list reads stay in the topics suite.
 Captcha route tests share the Turnstile fixture token from
 [`captcha/test-captcha-token.mts`](../../../../backend/test-helpers/captcha/test-captcha-token.mts). The Turnstile `fetch` mock
 factory stays in [`captcha/undici-mock.mts`](../../../../backend/test-helpers/captcha/undici-mock.mts); each consumer keeps its own
-`vi.mock` call.
+`vi.mock` call. Lemmy no-data adapter tests share the host, view payloads, combined cursor shape,
+request reader, and `undici` fetch mock from
+[`lemmy-no-data-fixtures.mts`](../../../../backend/test-helpers/lemmy-no-data-fixtures.mts). Those
+tests keep the `.no-data.mock.test.mts` suffix so Vitest selects `backend-no-data-mocks`.
 
 ## `onceEntityListenerCompleted`
 
