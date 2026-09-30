@@ -26,6 +26,7 @@ Not partitioned — growth: unbounded.
 - `uq_classifier_decision_batches__id__classifier`: `UNIQUE (id, classifier_id)`
 - `uq_classifier_decision_batches__id__post`: `UNIQUE (id, post_id)`
 - `uq_classifier_decision_batches__id__prompt`: `UNIQUE (id, prompt_version_id)`
+- `uq_classifier_decision_batches__id__rss_feed_item`: `UNIQUE (id, rss_feed_item_id)`
 - `uq_classifier_decision_batches__id__scope`: `UNIQUE (id, scope_category, scope_community_id)`
 
 **Check constraints:**
@@ -52,6 +53,7 @@ Not partitioned — growth: unbounded.
 - `uq_classifier_decision_batches__id__classifier`: `CREATE UNIQUE INDEX uq_classifier_decision_batches__id__classifier ON public.classifier_decision_batches USING btree (id, classifier_id)`
 - `uq_classifier_decision_batches__id__post`: `CREATE UNIQUE INDEX uq_classifier_decision_batches__id__post ON public.classifier_decision_batches USING btree (id, post_id)`
 - `uq_classifier_decision_batches__id__prompt`: `CREATE UNIQUE INDEX uq_classifier_decision_batches__id__prompt ON public.classifier_decision_batches USING btree (id, prompt_version_id)`
+- `uq_classifier_decision_batches__id__rss_feed_item`: `CREATE UNIQUE INDEX uq_classifier_decision_batches__id__rss_feed_item ON public.classifier_decision_batches USING btree (id, rss_feed_item_id)`
 - `uq_classifier_decision_batches__id__scope`: `CREATE UNIQUE INDEX uq_classifier_decision_batches__id__scope ON public.classifier_decision_batches USING btree (id, scope_category, scope_community_id)`
 
 **Triggers:**
