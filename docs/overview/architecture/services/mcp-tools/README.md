@@ -61,18 +61,19 @@ admin-audience scope (`403`, `insufficient_scope`, with a challenge naming `mcp.
 the scope each tool declares (`tools/list` hides tools the token cannot call; a direct call gets the
 `403` step-up challenge).
 
-## Admin MCP audit log
+## MCP audit log
 
-Every call a verified OAuth principal makes to the admin route writes an append-only
-`mcp_call_audit_events` row before it runs (`McpServerConfig.auditCalls`). The table is
+Every call a verified principal makes to the user or admin route writes an append-only
+`mcp_call_audit_events` row before it runs (`McpServerConfig.auditCalls`, on for both routes). The
+principal is an OAuth access token on either route, or an API key on the user route. The table is
 range-partitioned by UUIDv7 `id`, so `occurred_at` is a virtual column derived from the id.
 
 | Column                                   | Contents                                                                                                                                                               |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `actor_user_id`                          | Token owner, through `retained_user_identities`, so the record survives hard deletion                                                                                  |
-| `oauth_client_id`                        | Foreign key to the client the token was issued to                                                                                                                      |
-| `resource`                               | Protected resource URL the token was validated against                                                                                                                 |
-| `surface`, `jsonrpc_method`, `tool_name` | Surface, allowlisted JSON-RPC method, and the registered tool name; `NULL` when there is nothing to record                                                             |
+| `actor_user_id`                          | Credential owner, through `retained_user_identities`, so the record survives hard deletion                                                                             |
+| `oauth_client_id`, `api_key_id`          | Exactly one is set (a `CHECK`): a foreign key to the OAuth client the token was issued to, or to the API key's `retained_api_key_identities` row                       |
+| `resource`                               | Protected resource URL of the route called                                                                                                                             |
+| `surface`, `jsonrpc_method`, `tool_name` | `mcp` or `admin_mcp`, the allowlisted JSON-RPC method, and the registered tool name; `NULL` when there is nothing to record                                            |
 | `outcome`                                | `accepted`, `tool_error`, `invalid_request`, `invalid_arguments`, `not_found`, `role_denied`, `plan_denied`, `scopes_undeclared`, `insufficient_scope`, `rate_limited` |
 | `correlation_id`                         | Server-minted per request and returned as the `X-Correlation-Id` response header                                                                                       |
 
@@ -86,11 +87,17 @@ range-partitioned by UUIDv7 `id`, so `occurred_at` is a virtual column derived f
 - **Fail closed.** The write happens before the call, so if it fails the request ends `503` and the
   call never runs. The `tool_error` follow-up is best effort, because the call already ran.
 - **Unauthenticated requests write no row.** A request that fails authentication (`401`) or the
-  content-type check (`415`) has no verified actor or client to record; `401` is observable in the
-  request logs instead.
+  content-type check (`415`) has no verified actor or credential to record; `401` is observable in
+  the request logs instead.
+- **API keys are recorded by id.** The key's `api_keys.id` is also its retained identity id, so the
+  row names the key without holding the secret, its hash, or its label.
 
-Rows are append-only (a trigger rejects `UPDATE` and `DELETE`). The user MCP route sets
-`auditCalls: false`; its per-call audit reuses this service and table.
+Rows are append-only (a trigger rejects `UPDATE` and `DELETE`), so the foreign keys cannot cascade
+or null out. The OAuth client is never deleted with its owner. An API key is deleted with its
+owner, so `api_key_id` targets `retained_api_key_identities` with `ON DELETE RESTRICT`: account
+deletion removes the live key and never touches the audit row, and
+[retained-identity cleanup](../data-retention/README.md#key-exports) removes a key's root only when
+no audit row names it.
 
 ## Related
 

@@ -50,11 +50,12 @@ codex mcp add voucha-admin-mcp \
 ```
 
 Every call is recorded in the durable `mcp_call_audit_events` log with the actor, OAuth client,
-resource, tool, outcome, timestamp, and the `X-Correlation-Id` returned on the response. Other
+resource, tool, outcome, timestamp, and the `X-Correlation-Id` returned on the response. The user
+MCP route writes the same log, under the API key id when a key made the call. Other
 statuses: `403` (not an administrator, or a token missing the scope a tool needs, with an
 `insufficient_scope` challenge), `413` (more than 25 JSON-RPC messages in one batch), `429` (rate
 limited), and `503` (the audit row could not be stored, so the call did not run). See the
-[MCP tools architecture](../../../../overview/architecture/services/mcp-tools/README.md#admin-mcp-audit-log).
+[MCP tools architecture](../../../../overview/architecture/services/mcp-tools/README.md#mcp-audit-log).
 
 ## Performance
 

@@ -6,10 +6,15 @@ import {
 import { onGracefulShutdown, read } from '../index.mts'
 
 const liveRoots = [
-  ['users', 'retained_user_identities'],
-  ['topics', 'retained_topic_identities'],
-  ['posts', 'retained_post_identities'],
-  ['rss_feed_items', 'retained_rss_feed_item_identities'],
+  ['users', 'retained_user_identities', 'trigger_register_retained_user_identity'],
+  ['api_keys', 'retained_api_key_identities', 'trigger_register_retained_api_key_identity'],
+  ['topics', 'retained_topic_identities', 'trigger_register_retained_topic_identity'],
+  ['posts', 'retained_post_identities', 'trigger_register_retained_post_identity'],
+  [
+    'rss_feed_items',
+    'retained_rss_feed_item_identities',
+    'trigger_register_retained_rss_feed_item_identity',
+  ],
 ] as const
 
 describe('concrete retained entity identities', () => {
@@ -24,19 +29,18 @@ describe('concrete retained entity identities', () => {
       SELECT conrelid::regclass::text AS owner, confrelid::regclass::text AS target,
         confdeltype::text AS delete_action
       FROM pg_constraint WHERE contype = 'f' AND conrelid IN
-        ('users'::regclass, 'topics'::regclass, 'posts'::regclass, 'rss_feed_items'::regclass)`)
+        ('users'::regclass, 'api_keys'::regclass, 'topics'::regclass, 'posts'::regclass,
+         'rss_feed_items'::regclass)`)
     const { rows: triggers } = await read<{ owner: string; trigger_name: string }>(
       `/* readRetainedIdentityLiveTriggers */
       SELECT tgrelid::regclass::text AS owner, tgname AS trigger_name FROM pg_trigger
       WHERE NOT tgisinternal AND tgrelid IN
-        ('users'::regclass, 'topics'::regclass, 'posts'::regclass, 'rss_feed_items'::regclass)`,
+        ('users'::regclass, 'api_keys'::regclass, 'topics'::regclass, 'posts'::regclass,
+         'rss_feed_items'::regclass)`,
     )
-    for (const [live, root] of liveRoots) {
+    for (const [live, root, trigger] of liveRoots) {
       expect(constraints).toContainEqual({ owner: live, target: root, delete_action: 'r' })
-      expect(triggers).toContainEqual({
-        owner: live,
-        trigger_name: `trigger_register_retained_${live === 'rss_feed_items' ? 'rss_feed_item' : live === 'posts' ? 'post' : live === 'topics' ? 'topic' : 'user'}_identity`,
-      })
+      expect(triggers).toContainEqual({ owner: live, trigger_name: trigger })
     }
   })
 

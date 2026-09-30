@@ -35,6 +35,7 @@ _none_
 
 **Foreign keys:**
 
+- `api_keys_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_api_key_identities(id) ON DELETE RESTRICT`
 - `api_keys_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
@@ -47,3 +48,4 @@ _none_
 **Triggers:**
 
 - `trigger_api_keys_updated_at`: `CREATE TRIGGER trigger_api_keys_updated_at BEFORE UPDATE ON public.api_keys FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_register_retained_api_key_identity`: `CREATE TRIGGER trigger_register_retained_api_key_identity BEFORE INSERT ON public.api_keys FOR EACH ROW EXECUTE FUNCTION fn_register_retained_api_key_identity()`

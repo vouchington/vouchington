@@ -197,10 +197,10 @@ and gets the same `401` as an unknown token.
 - The admin route additionally answers `403` before reading the body when the token's owner is no
   longer an administrator, and `403 insufficient_scope` naming `mcp.admin:read` when the token holds
   no admin-audience scope.
-- Every call a verified token makes to the admin route, accepted or rejected, is written to the
+- Every call a verified token makes to the user or admin route, accepted or rejected, is written to the
   append-only `mcp_call_audit_events` table before it runs, and the response carries the row's
   `X-Correlation-Id`. If the audit row cannot be stored the request fails closed with `503`. See the
-  [MCP tools architecture](../../overview/architecture/services/mcp-tools/README.md#admin-mcp-audit-log).
+  [MCP tools architecture](../../overview/architecture/services/mcp-tools/README.md#mcp-audit-log).
 
 ## Related
 

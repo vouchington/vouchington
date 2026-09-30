@@ -51,6 +51,20 @@ claude mcp add --scope local voucha-user-mcp --transport http \
 | `tools/list` | Lists tools filtered by role, plan, and key permissions |
 | `tools/call` | Executes a tool; enforces same checks as list           |
 
+## Audit
+
+Every call made with a valid OAuth access token or API key is recorded in the durable
+`mcp_call_audit_events` log before it runs, one row per JSON-RPC message. A row holds the acting
+user, the OAuth client or the API key id, the tool or JSON-RPC method, the outcome (accepted, a
+scope, plan, or argument denial, or a tool error), the time, and the correlation id that the
+response returns as `X-Correlation-Id`. It never holds the token, key, arguments, or results. A
+request with no valid credential writes no row.
+
+- `413`: a batch of more than 25 JSON-RPC messages, recorded as one `invalid_request` row.
+- `503`: the audit row could not be stored, so the call did not run.
+
+See the [MCP tools architecture](../../../../overview/architecture/services/mcp-tools/README.md#mcp-audit-log).
+
 ## Performance
 
 | Endpoint         | Round Trips | Caching | Notes                                                                                                 |

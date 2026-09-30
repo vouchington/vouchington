@@ -4,6 +4,11 @@ CREATE TABLE IF NOT EXISTS retained_user_identities (
 );
 COMMENT ON TABLE retained_user_identities IS 'Concrete user identity owner that outlives the live row while durable references remain; never authorizes actions.';
 
+CREATE TABLE IF NOT EXISTS retained_api_key_identities (
+  id UUID PRIMARY KEY
+);
+COMMENT ON TABLE retained_api_key_identities IS 'Concrete API key identity owner that outlives the live row while durable audit references remain; never authorizes calls.';
+
 CREATE TABLE IF NOT EXISTS retained_topic_identities (
   id UUID PRIMARY KEY
 );
@@ -67,7 +72,7 @@ BEFORE UPDATE ON retained_image_placement_bindings
 FOR EACH ROW EXECUTE FUNCTION fn_guard_retained_image_placement_binding();
 
 CREATE TABLE IF NOT EXISTS retained_identity_cleanup_progress (
-  family TEXT PRIMARY KEY CHECK (family IN ('user', 'topic', 'post', 'rss_feed_item', 'image', 'image_placement_binding')),
+  family TEXT PRIMARY KEY CHECK (family IN ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'image', 'image_placement_binding')),
   cursor_identity_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -76,7 +81,7 @@ COMMENT ON COLUMN retained_identity_cleanup_progress.family IS 'Concrete retaine
 COMMENT ON COLUMN retained_identity_cleanup_progress.cursor_identity_id IS 'Last scanned identity, not a durable relationship to that identity.';
 
 INSERT INTO retained_identity_cleanup_progress (family)
-VALUES ('user'), ('topic'), ('post'), ('rss_feed_item'), ('image'), ('image_placement_binding')
+VALUES ('user'), ('api_key'), ('topic'), ('post'), ('rss_feed_item'), ('image'), ('image_placement_binding')
 ON CONFLICT (family) DO NOTHING;
 
 CREATE OR REPLACE FUNCTION fn_ensure_retained_image_identity(identity_id UUID)
@@ -106,6 +111,17 @@ BEGIN
   LOOP
     INSERT INTO retained_user_identities (id) VALUES (identity_id) ON CONFLICT (id) DO NOTHING;
     PERFORM id FROM retained_user_identities WHERE id = identity_id FOR KEY SHARE;
+    EXIT WHEN FOUND;
+  END LOOP;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION fn_ensure_retained_api_key_identity(identity_id UUID)
+RETURNS VOID LANGUAGE plpgsql AS $$
+BEGIN
+  LOOP
+    INSERT INTO retained_api_key_identities (id) VALUES (identity_id) ON CONFLICT (id) DO NOTHING;
+    PERFORM id FROM retained_api_key_identities WHERE id = identity_id FOR KEY SHARE;
     EXIT WHEN FOUND;
   END LOOP;
 END;
@@ -148,6 +164,14 @@ CREATE OR REPLACE FUNCTION fn_register_retained_user_identity()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM fn_ensure_retained_user_identity(NEW.id);
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION fn_register_retained_api_key_identity()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM fn_ensure_retained_api_key_identity(NEW.id);
   RETURN NEW;
 END;
 $$;

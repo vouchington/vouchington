@@ -36,7 +36,7 @@ existing retention needs. Model alternatives as per-entity FK columns with an ex
 constraint or as typed child rows. Do not use a UUID array, type/id pair, generic attribute/value
 table, or encoded string key as relationship storage.
 
-The canonical user, topic, post, and RSS-item creators register their concrete retained identity
+The canonical user, topic, post, RSS-item, and API-key creators register their concrete retained identity
 inside the live-row insertion transaction. Live rows FK back to that owner; deletion may remove the
 live row while a request, audit record, or publication bridge keeps the owner. Root reservation is
 not proof that the live entity exists or that an operation is authorized. The independent bounded

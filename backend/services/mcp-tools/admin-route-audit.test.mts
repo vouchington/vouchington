@@ -282,18 +282,4 @@ describe('POST /api/v1/admin/mcp tool calls', () => {
       expect.objectContaining({ jsonrpc_method: null, outcome: 'invalid_request' }),
     ])
   })
-
-  it('writes no audit row for a user MCP call, which stays the user-surface audit contract', async () => {
-    const user = await createTestUser()
-    const { tokens } = await issueTestOAuthTokensForClient(user)
-
-    await createRequest()
-      .post('/api/v1/mcp')
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Bearer ${tokens.access_token}`)
-      .send({ jsonrpc: '2.0', id: 1, method: 'tools/list' })
-      .expect(200)
-
-    await expect(readTestMcpCallAuditEvents(user.id)).resolves.toEqual([])
-  })
 })

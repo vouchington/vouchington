@@ -4,7 +4,8 @@ export type TestMcpCallAuditEvent = {
   surface: string
   correlation_id: string
   actor_user_id: string
-  oauth_client_id: string
+  oauth_client_id: string | null
+  api_key_id: string | null
   resource: string
   jsonrpc_method: string | null
   tool_name: string | null
@@ -12,18 +13,19 @@ export type TestMcpCallAuditEvent = {
   occurred_at: Date
 }
 
-// Every audit row written for the actor, oldest first, with the client's public OAuth client_id
-// string (the table stores the internal client row id).
+// Every audit row written for the actor, oldest first. An OAuth row carries the client's public
+// OAuth client_id string (the table stores the internal client row id); an API-key row carries the
+// key id instead and a null client.
 export async function readTestMcpCallAuditEvents(
   actorUserId: string,
 ): Promise<TestMcpCallAuditEvent[]> {
   const result = await read<TestMcpCallAuditEvent>(
     `/* readTestMcpCallAuditEvents */ SELECT
        event.surface, event.correlation_id, event.actor_user_id,
-       client.client_id AS oauth_client_id, event.resource, event.jsonrpc_method,
+       client.client_id AS oauth_client_id, event.api_key_id, event.resource, event.jsonrpc_method,
        event.tool_name, event.outcome, event.occurred_at
      FROM mcp_call_audit_events AS event
-     JOIN oauth_clients AS client ON client.id = event.oauth_client_id
+     LEFT JOIN oauth_clients AS client ON client.id = event.oauth_client_id
      WHERE event.actor_user_id = $1
      ORDER BY event.id`,
     [actorUserId],

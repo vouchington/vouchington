@@ -19,8 +19,9 @@ import { startMcpRequestAudit, unreadMcpCall } from './mcp-audit-helpers.mts'
 // Each route emits the returned response itself: OpenAPI discovery only attributes an emission to a
 // route when it sits in that route's own handler, not in a helper both routes share.
 //
-// The admin route audits every call of a verified OAuth principal before the call runs: each
-// rejection below and each admitted message writes its own row, all sharing one correlation id.
+// Both routes audit every call of a verified credential (an OAuth access token or, on the user
+// route, an API key) before the call runs: each rejection below and each admitted message writes its
+// own row, all sharing one correlation id.
 export async function dispatchMcpRequest(ctx: Context, config: McpServerConfig): Promise<Response> {
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const authentication = await authenticateMcpBearer(ctx.req.headers.authorization, config)
@@ -32,7 +33,7 @@ export async function dispatchMcpRequest(ctx: Context, config: McpServerConfig):
   const { owner, scopes } = authentication
   const audit = startMcpRequestAudit(ctx, config, {
     ownerId: owner.id,
-    oauthClientId: authentication.oauthClientId,
+    credential: authentication,
   })
   if (config.audience === 'admin' && !isAdminUser(owner)) {
     await audit?.record([unreadMcpCall('role_denied')])
