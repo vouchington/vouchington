@@ -21,7 +21,7 @@ describe('checkPostClearance requests a classifier run on approval', () => {
 
   beforeAll(async () => {
     release = await initializePostClassifierExecutionTests()
-    userId = (await createTestUser({ username: safeUsername('clearance-classifier-run') }))!.id
+    userId = (await createTestUser({ username: safeUsername('clearance-classifier-run') })).id
   })
   afterAll(async () => release?.())
 

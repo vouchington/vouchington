@@ -7,11 +7,15 @@ import {
 } from '../../../../services/classifier-runs/index.mts'
 import type { SyntheticFixture } from './synthetic-classifier.mts'
 
-export function requestSyntheticRun(setup: SyntheticFixture, inputSha256 = setup.post.inputSha256) {
+export function requestSyntheticRun(
+  setup: SyntheticFixture,
+  inputSha256 = setup.post.inputSha256,
+  classifierSlugs: readonly string[] = [setup.slug],
+) {
   return requestClassifierRuns(write, {
     subject: setup.subject,
     inputSha256,
-    classifierSlugs: [setup.slug],
+    classifierSlugs,
   })
 }
 

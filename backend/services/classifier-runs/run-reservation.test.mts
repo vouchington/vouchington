@@ -1,4 +1,3 @@
-import { write } from '@data-stores/psql'
 import {
   getClassifierRunFacts,
   getClassifierRunRequestFacts,
@@ -14,7 +13,6 @@ import {
 import { setTestPostClearanceStatus } from '@voucha/test-helpers/entities/post-clearance'
 import { describe, expect, it } from 'vitest'
 import { listPendingClassifierRunRequests } from './run-discovery.mts'
-import { requestClassifierRuns } from './run-requests.mts'
 import { reserveClassifierRun } from './run-reservation.mts'
 
 describe('classifier run reservation and requests (real PG)', () => {
@@ -135,11 +133,7 @@ describe('classifier run reservation and requests (real PG)', () => {
     const setup = await createSyntheticFixture()
     const before = await getClassifierRunRequestFacts(setup.post.id)
 
-    await requestClassifierRuns(write, {
-      subject: setup.subject,
-      inputSha256: setup.post.inputSha256,
-      classifierSlugs: [],
-    })
+    await requestSyntheticRun(setup, setup.post.inputSha256, [])
 
     expect(await getClassifierRunRequestFacts(setup.post.id)).toEqual(before)
   })

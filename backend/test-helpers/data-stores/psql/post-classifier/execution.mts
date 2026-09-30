@@ -1,9 +1,12 @@
+import { write } from '@data-stores/psql'
 import { runConfigDrivenStatementsInTransaction } from '@data-stores/psql/migration-runner/config-driven-statements'
 import generateSeed from '@data-stores/psql/config-driven/0635-00-03-seed-post-classifier'
 import type { StructuredDecisionResult } from '@modules/structured-decisions'
+import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 import { moderationConfig } from '../../../../services/moderation/config.mts'
 import {
   claimClassifierRun,
+  requestClassifierRuns,
   reserveClassifierRun,
 } from '../../../../services/classifier-runs/index.mts'
 import { createPostClassifierRunAdapter } from '../../../../services/post-classifier/index.mts'
@@ -29,6 +32,15 @@ export async function initializePostClassifierExecutionTests() {
     await release()
     throw error
   }
+}
+
+/** Writes the durable request that approval writes in its transaction, and nothing else. */
+export function requestPostClassifierRun(post: { id: string }, inputSha256: Buffer) {
+  return requestClassifierRuns(write, {
+    subject: { postId: post.id, rssFeedItemId: null },
+    inputSha256,
+    classifierSlugs: [POST_CLASSIFIER_SLUG],
+  })
 }
 
 /** An approved community post whose moderation content hash is current, with no run or request yet. */

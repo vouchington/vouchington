@@ -1,10 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { write } from '@data-stores/psql'
 import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 import type { ClassifierRunJobData } from '../queues/ai-agents/types.mts'
 import {
   listIncompleteClassifierRuns,
-  requestClassifierRuns,
   type IncompleteClassifierRun,
 } from '../services/classifier-runs/index.mts'
 import {
@@ -14,9 +12,12 @@ import {
 import type { ClassifierRunHandler } from '../workers/ai-agents/processors/classifier-run-handler.mts'
 import type { ReconcileClassifierRunsDependencies } from '../workers/ai-agents/processors/process-reconcile-classifier-runs.mts'
 import { getClassifierRunFacts } from './data-stores/psql/classifier-runs/run-facts.mts'
-import { createApprovedClassifierPost } from './data-stores/psql/post-classifier/execution.mts'
+import {
+  createApprovedClassifierPost,
+  requestPostClassifierRun,
+} from './data-stores/psql/post-classifier/execution.mts'
 
-export { POST_CLASSIFIER_SLUG }
+export { POST_CLASSIFIER_SLUG, requestPostClassifierRun }
 
 type DispatcherJob = Parameters<typeof processClassifierRunDispatcher>[0]
 type RunJob = Parameters<typeof processClassifierRun>[0]
@@ -31,15 +32,6 @@ export function classifierRunDispatcherJobFor(postId: string, classifier = POST_
 
 export function classifierRunJobFor(data: ClassifierRunJobData) {
   return { id: randomUUID(), name: 'classifier-run', data } as RunJob
-}
-
-/** Writes the durable request that approval writes in its transaction, and nothing else. */
-export function requestPostClassifierRun(post: { id: string }, inputSha256: Buffer) {
-  return requestClassifierRuns(write, {
-    subject: { postId: post.id, rssFeedItemId: null },
-    inputSha256,
-    classifierSlugs: [POST_CLASSIFIER_SLUG],
-  })
 }
 
 /** An approved post whose request was written, reserved by the real dispatcher and queued. */

@@ -16,12 +16,20 @@ function assertAttemptCap(maxAttempts: number): void {
   }
 }
 
-async function markTerminal(query: OwnedTransaction, runId: string, kind: TerminalKind) {
+/** Retains the local outcome and marks the run terminal in the caller's transaction. */
+async function terminateRun<C, L, E>(
+  adapter: ClassifierRunAdapter<C, L, E>,
+  query: OwnedTransaction,
+  input: { lease: ClassifierRunLease<C>; local?: L },
+  kind: TerminalKind,
+) {
+  validateRunLocal(adapter, input.lease.resolved.configuration, input.local)
+  await persistRunLocal(adapter, query, input.lease, input.local)
   await query(sql`/* markClassifierRunTerminal */
     UPDATE classifier_runs
     SET terminal_failure_kind = ${kind}, terminal_failed_at = clock_timestamp(),
       lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
-    WHERE id = ${runId}
+    WHERE id = ${input.lease.runId}
   `)
 }
 
@@ -58,9 +66,7 @@ export async function startClassifierProviderAttempt<C, L, E>(
   if (row.outcomes_persisted_at) return 'replay'
   if (row.decision_batch_id === null) return 'no_remote'
   if (row.provider_attempts_started >= input.maxAttempts) {
-    validateRunLocal(adapter, input.lease.resolved.configuration, input.local)
-    await persistRunLocal(adapter, query, input.lease, input.local)
-    await markTerminal(query, input.lease.runId, 'attempts-exhausted')
+    await terminateRun(adapter, query, input, 'attempts-exhausted')
     await query.commit()
     return 'terminal'
   }
@@ -94,9 +100,7 @@ export async function failClassifierRunAttempt<C, L, E>(
     locked.row.provider_attempts_started >= input.maxAttempts ||
     input.failureKind === 'context-rejected'
   if (terminal) {
-    validateRunLocal(adapter, input.lease.resolved.configuration, input.local)
-    await persistRunLocal(adapter, query, input.lease, input.local)
-    await markTerminal(query, input.lease.runId, input.failureKind)
+    await terminateRun(adapter, query, input, input.failureKind)
   } else {
     await query(sql`/* failClassifierRunAttempt */
       UPDATE classifier_runs SET lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
@@ -122,9 +126,7 @@ export async function failClassifierClientUnavailable<C, L, E>(
   if (locked.row.decision_batch_id === null) {
     throw new Error('Local-only classifier run has no remote client to lose')
   }
-  validateRunLocal(adapter, input.lease.resolved.configuration, input.local)
-  await persistRunLocal(adapter, query, input.lease, input.local)
-  await markTerminal(query, input.lease.runId, 'client-unavailable')
+  await terminateRun(adapter, query, input, 'client-unavailable')
   await query.commit()
   return 'terminal'
 }

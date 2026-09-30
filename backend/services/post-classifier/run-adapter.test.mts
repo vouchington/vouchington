@@ -1,4 +1,3 @@
-import { write } from '@data-stores/psql'
 import { getClassifierRunFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import {
   createApprovedClassifierPost,
@@ -6,6 +5,7 @@ import {
   createTestPostClassifierAdapter,
   initializePostClassifierExecutionTests,
   POST_CLASSIFIER_TEST_DETECTOR_VERSION,
+  requestPostClassifierRun,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import { localOutcomeFor } from '@voucha/test-helpers/data-stores/psql/post-classifier/outcomes'
 import { setPostClassifierPostHashForTest } from '@voucha/test-helpers/data-stores/psql/post-classifier/run-facts'
@@ -17,20 +17,13 @@ import {
   claimClassifierRun,
   listPendingClassifierRunRequests,
   persistClassifierRunOutcomes,
-  requestClassifierRuns,
   reserveClassifierRun,
 } from '@services/classifier-runs'
 import { createPostClassifierRunAdapter } from './index.mts'
 
 const runs = (postId: string) => getClassifierRunFacts(postId, POST_CLASSIFIER_SLUG)
 
-async function request(post: { id: string }, inputSha256: Buffer) {
-  await requestClassifierRuns(write, {
-    subject: { postId: post.id, rssFeedItemId: null },
-    inputSha256,
-    classifierSlugs: [POST_CLASSIFIER_SLUG],
-  })
-}
+const request = requestPostClassifierRun
 
 const pendingPostIds = async () =>
   (await listPendingClassifierRunRequests(createTestPostClassifierAdapter(), null, 500)).items.map(
