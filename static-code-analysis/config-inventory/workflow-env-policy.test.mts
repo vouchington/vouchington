@@ -90,38 +90,6 @@ describe('workflow env policy', () => {
     }
   })
 
-  it('allows the shell-consumed source SHA only in the retained image publishers', async () => {
-    const sourceShaWorkflow = [
-      'name: Source SHA consumer',
-      'jobs:',
-      '  verify:',
-      '    steps:',
-      '      - env:',
-      '          SOURCE_SHA: synthetic-sha',
-      '        run: bash ci/verify-main-ancestor.sh',
-    ].join('\n')
-    const ctx = await makeRepoFixture({
-      '.github/workflows/publish-backend-images.yml': sourceShaWorkflow,
-      '.github/workflows/publish-web-images.yml': sourceShaWorkflow,
-      '.github/workflows/unrelated.yml': sourceShaWorkflow,
-      'docs/overview/infrastructure/environment-variables.md': './dev/config-inventory\n',
-      'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
-      'docs/development/local-env-vars.md': './dev/config-inventory\n',
-      'dev/README.md': '[Command Catalog](reference-command-catalog.md)\n',
-      'dev/reference-command-catalog.md': './dev/config-inventory\n',
-      'static-code-analysis/README.md': './dev/config-inventory\n',
-      'pnpm-workspace.yaml': 'minimumReleaseAge: 2880\n',
-    })
-
-    const errors = (await checkConfigInventoryPolicy(ctx)).errors.filter(error =>
-      error.includes('workflow env SOURCE_SHA'),
-    )
-
-    expect(errors).toEqual([
-      'workflow env SOURCE_SHA in .github/workflows/unrelated.yml is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason',
-    ])
-  })
-
   async function makeRepoFixture(files: Record<string, string>): Promise<SharedContext> {
     const dir = await mkdtemp(join(tmpdir(), 'voucha-workflow-env-policy-'))
     testDirs.push(dir)

@@ -46,16 +46,7 @@ on:
       - 'dev/otel/**'
       - 'dev/initialize*'
       - 'ci/prepare-trivy-db.sh'
-      - 'ci/image-promotion.mts'
-      - 'ci/image-promotion-cli.mts'
-      - 'ci/image-targets.mts'
-      - 'ci/bounded-exec.mts'
-      - 'ci/image-provenance.mts'
-      - 'ci/image-provenance-verify.mts'
-      - 'ci/image-registry.mts'
-      - 'ci/image-registry-http.mts'
-      - 'ci/image-registry-manifest.mts'
-      - 'ci/verify-main-ancestor.sh'
+      - 'ci/resolve-published-images.sh'
       - 'vitest.config.mts'
       - 'test-helpers/vitest-config/web-projects.mts'
       - 'package.json'
@@ -99,9 +90,9 @@ jobs:
     steps:
       - run: ':'
 
-  # Verifies the merge-group-published web image and reuses its immutable digest. An authenticated
-  # missing manifest triggers one build through the same smoke/Trivy composite used by PR
-  # validation, followed by missing-only publication and complete-set verification.
+  # Reuses the web image the merge group published for this commit once its provenance verifies.
+  # Only a missing image gets built, through the same smoke/Trivy composite that PR validation
+  # uses, and published.
   #
   # The shared runtime-image filter distinguishes deployable inputs from the wider validation
   # trigger. Workflow/tooling-only and test-only pushes still run their owning checks without

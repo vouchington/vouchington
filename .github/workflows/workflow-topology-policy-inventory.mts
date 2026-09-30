@@ -20,10 +20,8 @@ export const jobInventory = {
   '.github/workflows/web.yml': jobs(
     'changes codecov coverage publish-web-images static-web storybook test-playwright test-playwright-credentialed test-web test-web-api test-web-integration validate-web-images web',
   ),
-  '.github/workflows/publish-backend-images.yml': jobs(
-    'build resolve-main-images verify-main-images',
-  ),
-  '.github/workflows/publish-web-images.yml': jobs('build resolve-main-images verify-main-images'),
+  '.github/workflows/publish-backend-images.yml': jobs('build resolve-main-images'),
+  '.github/workflows/publish-web-images.yml': jobs('build resolve-main-images'),
   '.github/workflows/checks-static.yml': jobs(
     'static-backend static-cloudflare static-lambdas static-web',
   ),

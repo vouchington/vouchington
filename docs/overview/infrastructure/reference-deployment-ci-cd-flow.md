@@ -17,8 +17,8 @@ flowchart TD
 The [area workflows](../../development/ci/workflows/reference-workflow-automation-pull-requests.md)
 run on pull requests and merge groups. Their backend and web image jobs validate without publishing
 on pull requests, then publish the tested immutable images with provenance from trusted merge
-groups. Main verifies and reuses that complete digest set; an authenticated missing-manifest result
-alone permits one missing-only build fallback.
+groups. Main reuses each image whose attestation verifies; only a missing manifest permits a missing-only
+build fallback.
 
 The completed source-run receiver emits exactly one route-specific event for each successful
 default-branch source workflow. Backend and web validation-only runs are exceptions:

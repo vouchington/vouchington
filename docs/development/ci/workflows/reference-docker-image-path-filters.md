@@ -13,7 +13,7 @@
 - On pull requests, workflow and local-action callers are selected by revision-aware topology,
   rather than broad Docker filters. The refined `build-backend` and `build-web` filters are the
   shared publication-intent owner for merge groups and main: they include root dependency inputs
-  and production image-promotion helpers while excluding test, fixture, Markdown, and Storybook
+  and the main image resolver script while excluding test, fixture, Markdown, and Storybook
   changes. The merge-group workflow retains its `workflow-action-changes` fail-open validation;
   only the shared filter can request a main fallback and deployment intent.
 - Apart from the intentional root dependency fail-open, do not trigger PR Docker image builds for

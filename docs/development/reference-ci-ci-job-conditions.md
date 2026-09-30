@@ -26,8 +26,8 @@ The PR-assumable test role has no ECR authentication or image-push permissions; 
 load their images locally rather than publishing runtime artifacts.
 
 The same reusable workflows publish the smoke-tested and scanned images from trusted merge-group
-runs. Main resolves and verifies those immutable digests first, builds only when an authenticated
-manifest lookup proves a target is absent, and publishes only the remaining missing targets. The
+runs. Main reuses each image whose attestation verifies, fails when a present image does not verify,
+and builds and publishes only the targets whose manifest is missing. The
 shared runtime-image path filters select both merge-group publication and main deployment intent;
 test-only and documentation-only main runs keep their validation coverage without requesting an
 image fallback or completed-deploy dispatch.

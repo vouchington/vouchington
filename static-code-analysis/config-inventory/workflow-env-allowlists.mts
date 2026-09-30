@@ -80,15 +80,6 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   'VITEST_REPORT_EXPECTATIONS',
 ])
 
-// ci/verify-main-ancestor.sh reads SOURCE_SHA directly. The TypeScript-focused inventory does not
-// trace shell-script env readers, so scope this exception to the two workflows that invoke it.
-const MAIN_IMAGE_PUBLISHER_WORKFLOWS = new Set([
-  '.github/workflows/publish-backend-images.yml',
-  '.github/workflows/publish-web-images.yml',
-])
-
-export function isWorkflowEnvAllowlisted(file: string, name: string): boolean {
-  if (EXTERNAL_WORKFLOW_ENV_ALLOWLIST.has(name)) return true
-
-  return name === 'SOURCE_SHA' && MAIN_IMAGE_PUBLISHER_WORKFLOWS.has(file)
+export function isWorkflowEnvAllowlisted(name: string): boolean {
+  return EXTERNAL_WORKFLOW_ENV_ALLOWLIST.has(name)
 }

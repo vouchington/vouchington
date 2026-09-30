@@ -8,25 +8,19 @@ on:
         required: false
         type: boolean
         default: false
-    outputs:
-      verified_images:
-        description: 'Complete ordered target and immutable digest set for a main publication'
-        value: >-
-          ${{
-            jobs.resolve-main-images.outputs.missing_targets == '[]' &&
-            jobs.resolve-main-images.outputs.verified_images ||
-            jobs.resolve-main-images.outputs.missing_targets != '[]' &&
-            jobs.verify-main-images.outputs.verified_images ||
-            ''
-          }}
     secrets:
       AWS_TEST_ROLE_ARN:
         required: true
       SENTRY_AUTH_TOKEN:
         required: false
 
-# The build job deliberately has no permissions declaration. It inherits the caller's explicit
-# PR-read or merge-group/main-write envelope. Resolver jobs remain explicitly read-only.
+# Pull requests only validate the image. A merge group publishes and attests it. A main push reuses
+# the merge group's image and builds only if it is missing. The build job has no permissions
+# declaration, so it inherits whatever the caller granted: read-only for a PR, write for a merge
+# group or main. The resolver asks for read access only.
+#
+# There is no concurrency block because each run publishes only its own immutable sha-<commit> tag.
+
 jobs:
   resolve-main-images:
     if: >-
@@ -39,56 +33,26 @@ jobs:
       contents: read
       packages: read
     outputs:
-      missing_targets: ${{ steps.promotion.outputs.missing_targets }}
-      source_sha: ${{ steps.source.outputs.source_sha }}
-      verified_images: ${{ steps.promotion.outputs.verified_images }}
+      missing_targets: ${{ steps.resolve.outputs.missing_targets }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        timeout-minutes: 2
-        with:
-          node-version-file: '.nvmrc'
-          package-manager-cache: false
-      - name: Prove source is reachable from pinned main
-        id: source
-        env:
-          SOURCE_SHA: ${{ github.sha }}
-        run: bash ci/verify-main-ancestor.sh
+
       - name: Authenticate GHCR
         timeout-minutes: 1
         env:
-          GHCR_PASSWORD: ${{ github.token }}
-          GHCR_USERNAME: ${{ github.actor }}
-        run: printf '%s' "$GHCR_PASSWORD" | docker login ghcr.io --username "$GHCR_USERNAME" --password-stdin
-      - name: Resolve trusted main image
-        id: promotion
+          REGISTRY_PASSWORD: ${{ github.token }}
+          REGISTRY_USERNAME: ${{ github.actor }}
+        run: printf '%s' "$REGISTRY_PASSWORD" | docker login ghcr.io --username "$REGISTRY_USERNAME" --password-stdin
+
+      - name: Resolve merge-queue web image
+        id: resolve
         timeout-minutes: 5
         env:
           GH_TOKEN: ${{ github.token }}
-          GHCR_PASSWORD: ${{ github.token }}
-          GHCR_USERNAME: ${{ github.actor }}
-          MAIN_REACHABLE_SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
-        run: |
-          set -euo pipefail
-          result=$(node --experimental-strip-types --disable-warning=ExperimentalWarning \
-            ci/image-promotion-cli.mts plan web)
-          missing_targets=$(jq -ce '.missingTargets | arrays' <<<"$result")
-          verified_images=$(jq -ce '.verifiedImages | arrays' <<<"$result")
-          {
-            echo "missing_targets=$missing_targets"
-            echo "verified_images=$verified_images"
-          } >> "$GITHUB_OUTPUT"
-          if [ "$missing_targets" != '[]' ]; then
-            echo "::error::The trusted web image is missing; building the fallback once."
-            {
-              echo '## Web image fallback'
-              echo
-              echo 'The web image is missing. The workflow will build once and publish only that target.'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
+        run: ./ci/resolve-published-images.sh web
+
       - name: Log out of GHCR
         if: ${{ always() }}
         run: docker logout ghcr.io >/dev/null 2>&1 || true
@@ -104,6 +68,8 @@ jobs:
         (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.resolve-main-images.result == 'success' && needs.resolve-main-images.outputs.missing_targets != '[]')
       )
     runs-on: ubuntu-24.04-arm
+    # The publish path runs everything a validation run does and then pushes the web image to
+    # GHCR, so it gets its own ceiling rather than shaving the validation path's margin to fit.
     timeout-minutes: 25
     env:
       IMAGE_REPOSITORY: voucha-validation
@@ -113,143 +79,77 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
       - uses: ./.github/actions/setup-aws
         timeout-minutes: 2
         with:
           role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
+
+      # Only a publishing run uploads source maps and names a Sentry release.
       - uses: ./.github/actions/build-web-images
         with:
           next-public-asset-prefix: ${{ vars.NEXT_PUBLIC_ASSET_PREFIX }}
           sentry-auth-token: ${{ (github.event_name == 'merge_group' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && secrets.SENTRY_AUTH_TOKEN || '' }}
           sentry-source-map-upload: ${{ (github.event_name == 'merge_group' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && secrets.SENTRY_AUTH_TOKEN != '' && 'true' || 'false' }}
           sentry-release: ${{ (github.event_name == 'merge_group' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && github.sha || '' }}
-      - name: Prepare image publication
-        id: prepare-publication
-        if: >-
-          (
-            (github.event_name == 'merge_group' && startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/')) ||
-            (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.resolve-main-images.result == 'success')
-          )
-        timeout-minutes: 5
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GHCR_PASSWORD: ${{ github.token }}
-          GHCR_USERNAME: ${{ github.actor }}
-          MAIN_REACHABLE_SOURCE_SHA: ${{ needs.resolve-main-images.outputs.source_sha }}
-          ORIGINAL_MISSING: ${{ needs.resolve-main-images.outputs.missing_targets }}
-        run: |
-          set -euo pipefail
-          printf '%s' "$GHCR_PASSWORD" |
-            docker login ghcr.io --username "$GHCR_USERNAME" --password-stdin
-          if [ "$GITHUB_EVENT_NAME" = push ]; then
-            result=$(node --experimental-strip-types --disable-warning=ExperimentalWarning \
-              ci/image-promotion-cli.mts plan web)
-            current=$(jq -ce '.missingTargets | arrays' <<<"$result")
-            unexpected=$(jq -cn --argjson original "$ORIGINAL_MISSING" --argjson current "$current" \
-              '$current - $original')
-            if [ "$unexpected" != '[]' ]; then
-              echo '::error::The trusted web image set changed unexpectedly during the build.'
-              exit 1
-            fi
-            targets=$current
-          else
-            targets='["web"]'
-          fi
-          echo "targets=$targets" >> "$GITHUB_OUTPUT"
+
+      # Deliberately the last build step in the job. Everything published here has already passed the
+      # Docker smoke test and the Trivy CRITICAL/HIGH gate, so the image that reaches the registry
+      # is the image that was tested -- which is the whole point of publishing from this
+      # repository rather than rebuilding somewhere else.
+      #
+      # The image is pushed from the local daemon rather than built with a registry output, which
+      # would upload it before any of those checks had run.
       - name: Publish validated web image to GHCR
         id: publish
-        if: >-
-          success() &&
-          steps.prepare-publication.outputs.targets != '[]' &&
-          (
-            (github.event_name == 'merge_group' && startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/')) ||
-            (github.event_name == 'push' && github.ref == 'refs/heads/main')
-          )
+        # success() is explicit rather than implicit: this is a publication gate, and a reader
+        # should not have to know that GitHub ANDs it in for conditions without a status function.
+        if: ${{ success() && (github.event_name == 'merge_group' || github.event_name == 'push') }}
         timeout-minutes: 8
         env:
           GHCR_NAMESPACE: ghcr.io/${{ github.repository_owner }}
           IMAGE_TAG: ${{ env.SHA_TAG }}
+          REGISTRY_PASSWORD: ${{ github.token }}
+          REGISTRY_USERNAME: ${{ github.actor }}
         run: |
           set -euo pipefail
+
+          printf '%s' "$REGISTRY_PASSWORD" |
+            docker login ghcr.io --username "$REGISTRY_USERNAME" --password-stdin
+
           local_image="$IMAGE_REPOSITORY/web:$IMAGE_TAG"
           remote_image="$GHCR_NAMESPACE/web:$IMAGE_TAG"
           docker tag "$local_image" "$remote_image"
+
+          # The digest is read back from the push output rather than from `docker image
+          # inspect`, whose RepoDigests can carry entries for other repositories.
           push_output=$(docker push "$remote_image")
           printf '%s\n' "$push_output"
-          digest=$(sed -n 's/.*[[:space:]]digest: \(sha256:[0-9a-f]\{64\}\).*/\1/p' \
-            <<<"$push_output" | head -1)
+          digest=$(printf '%s\n' "$push_output" |
+            sed -n 's/.*[[:space:]]digest: \(sha256:[0-9a-f]\{64\}\).*/\1/p' | head -1)
           if [ -z "$digest" ]; then
             echo "::error::$remote_image was pushed but no digest could be read back."
             exit 1
           fi
-          echo "web_digest=$digest" >> "$GITHUB_OUTPUT"
-          echo "- \`$remote_image\` — \`$digest\`" >> "$GITHUB_STEP_SUMMARY"
+
+          printf 'web_digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+
+          echo "✓ published $remote_image ($digest)"
+          {
+            echo "## Published web image"
+            echo ""
+            echo "- \`$remote_image\` — \`$digest\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Attest web image provenance
-        if: >-
-          success() && steps.publish.outputs.web_digest != '' &&
-          ((github.event_name == 'merge_group' && startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/')) || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
+        if: ${{ success() && steps.publish.outputs.web_digest != '' }}
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ghcr.io/${{ github.repository_owner }}/web
           subject-digest: ${{ steps.publish.outputs.web_digest }}
           create-storage-record: false
           push-to-registry: true
-      - name: Log out of GHCR
-        if: ${{ always() && steps.prepare-publication.outcome != 'skipped' }}
-        run: docker logout ghcr.io >/dev/null 2>&1 || true
 
-  verify-main-images:
-    needs: [resolve-main-images, build]
-    if: >-
-      !cancelled() &&
-      inputs.trusted_secret_context &&
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
-      needs.resolve-main-images.result == 'success' &&
-      needs.resolve-main-images.outputs.missing_targets != '[]' &&
-      needs.build.result == 'success'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      packages: read
-    outputs:
-      verified_images: ${{ steps.promotion.outputs.verified_images }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        timeout-minutes: 2
-        with:
-          node-version-file: '.nvmrc'
-          package-manager-cache: false
-      - name: Reprove source is reachable from pinned main
-        id: final-source
-        env:
-          SOURCE_SHA: ${{ needs.resolve-main-images.outputs.source_sha }}
-        run: bash ci/verify-main-ancestor.sh
-      - name: Authenticate GHCR
-        timeout-minutes: 1
-        env:
-          GHCR_PASSWORD: ${{ github.token }}
-          GHCR_USERNAME: ${{ github.actor }}
-        run: printf '%s' "$GHCR_PASSWORD" | docker login ghcr.io --username "$GHCR_USERNAME" --password-stdin
-      - name: Verify complete web image set
-        id: promotion
-        timeout-minutes: 5
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GHCR_PASSWORD: ${{ github.token }}
-          GHCR_USERNAME: ${{ github.actor }}
-          MAIN_REACHABLE_SOURCE_SHA: ${{ steps.final-source.outputs.source_sha }}
-        run: |
-          set -euo pipefail
-          result=$(node --experimental-strip-types --disable-warning=ExperimentalWarning \
-            ci/image-promotion-cli.mts verify web)
-          verified_images=$(jq -ce '.verifiedImages | arrays' <<<"$result")
-          echo "verified_images=$verified_images" >> "$GITHUB_OUTPUT"
       - name: Log out of GHCR
         if: ${{ always() }}
         run: docker logout ghcr.io >/dev/null 2>&1 || true

@@ -30,16 +30,7 @@ on:
       - 'ts-shared/**'
       - 'test-helpers/**'
       - 'ci/prepare-trivy-db.sh'
-      - 'ci/image-promotion.mts'
-      - 'ci/image-promotion-cli.mts'
-      - 'ci/image-targets.mts'
-      - 'ci/bounded-exec.mts'
-      - 'ci/image-provenance.mts'
-      - 'ci/image-provenance-verify.mts'
-      - 'ci/image-registry.mts'
-      - 'ci/image-registry-http.mts'
-      - 'ci/image-registry-manifest.mts'
-      - 'ci/verify-main-ancestor.sh'
+      - 'ci/resolve-published-images.sh'
       - 'ci/allocate-browser-safe-ports.py'
       - 'ci/package.json'
       - 'vitest.config.mts'
@@ -130,9 +121,9 @@ jobs:
       contents: read
     secrets: inherit
 
-  # Verifies the merge-group-published backend image set and reuses its immutable digests. An
-  # authenticated missing manifest triggers one build through the same smoke/Trivy composite used
-  # by PR validation, followed by missing-only publication and complete-set verification.
+  # Reuses the backend images the merge group published for this commit once their provenance
+  # verifies. Only images that are missing get built, through the same smoke/Trivy composite that
+  # PR validation uses, and published.
   #
   # Gated on static-checks only, like every other job here, so it runs alongside the test jobs
   # rather than after them. A revision whose tests later fail still leaves images in GHCR, but

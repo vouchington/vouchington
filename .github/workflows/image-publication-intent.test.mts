@@ -46,10 +46,8 @@ describe('image publication intent', () => {
     ['web/app/page.test.tsx', false, false],
     ['backend/README.md', false, false],
     ['web/README.md', false, false],
-    ['ci/image-promotion.mts', true, true],
-    ['ci/image-targets.mts', true, true],
-    ['ci/bounded-exec.mts', true, true],
-    ['ci/image-promotion-test-fixtures.mts', false, false],
+    ['ci/resolve-published-images.sh', true, true],
+    ['ci/resolve-published-images.test.mts', false, false],
     ['.github/workflows/publish-backend-images.yml', true, false],
     ['.github/workflows/publish-web-images.yml', false, true],
   ])('classifies %s identically for queue and main publication', (path, backend, web) => {

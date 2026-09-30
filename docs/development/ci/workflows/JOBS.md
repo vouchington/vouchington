@@ -141,10 +141,8 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `postgresql-snapshot-update.yml`    | `publish`                       | job    | `ubuntu-latest`                       | 8             |
 | `publish-backend-images.yml`        | `build`                         | job    | `ubuntu-24.04-arm`                    | 30            |
 | `publish-backend-images.yml`        | `resolve-main-images`           | job    | `ubuntu-latest`                       | 10            |
-| `publish-backend-images.yml`        | `verify-main-images`            | job    | `ubuntu-latest`                       | 10            |
 | `publish-web-images.yml`            | `build`                         | job    | `ubuntu-24.04-arm`                    | 25            |
 | `publish-web-images.yml`            | `resolve-main-images`           | job    | `ubuntu-latest`                       | 10            |
-| `publish-web-images.yml`            | `verify-main-images`            | job    | `ubuntu-latest`                       | 10            |
 | `scheduled-prompts.yml`             | `dispatch`                      | job    | → `harness-dispatch.yml`              | 360           |
 | `scheduled-prompts.yml`             | `select-prompt`                 | job    | `ubuntu-latest`                       | 5             |
 | `shepherd.yml`                      | `checkpoint-dispatch`           | job    | `ubuntu-latest`                       | 8             |

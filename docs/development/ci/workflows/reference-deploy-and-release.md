@@ -25,8 +25,9 @@ The backend and web publish workflows read each `docker push` digest and attest 
 gates. The attestation signer workflow is the reusable publish workflow itself: the corresponding
 `.github/workflows/publish-*-images.yml` identity at a `gh-readonly-queue/main/*` merge-group ref, or
 at `main` for a missing-target fallback, with the `main` source revision. Main runs verify that
-identity before reusing an image. Their build jobs inherit explicit read-only PR or write-enabled
-merge-group/main caller permissions; resolver and final verification jobs declare only read scopes.
+identity with `gh attestation verify` before reusing an image. Their build jobs inherit explicit
+read-only PR or write-enabled merge-group/main caller permissions; the resolver job declares only
+read scopes.
 Publication disables linked artifact storage records. The backend attests `api` and `worker-cpu` on
 every run and `worker-io` when the checked-in automation flag enables that image.
 
