@@ -20,8 +20,8 @@ answers `422`. Semantic checks (trim, length, range, cross-field, existence) kee
 - `POST /imports/topics`: a missing or non-string `csv` is `422`.
 - `PUT /crawlers/referral-program`, `PATCH /crawlers/:id`: a missing or malformed `hostname_id`,
   `referral_program_id`, `crawler_type`, or selector array is `422`. The `PATCH` edit gate moved
-  from the service to the route (`currentUserCanEditCrawler`), so a non-editor sees `403` before
-  the body is read.
+  route now applies the same edit gate (`currentUserCanEditCrawler`) before reading the body, so a
+  non-editor sees `403` first; the service keeps its own guard.
 - `POST /images/upload-url`: a missing or non-numeric `content_type` or `content_length` is `422`.
 - `POST /membership-grants`: a missing or invalid `user_id`, `plan`, `sku_id`, or non-numeric
   `duration_days` is `422`. The `duration_days` range stays `400`.
@@ -71,6 +71,7 @@ exclusion has a parser-boundary test.
 | `POST /admin/mcp`                                 | MCP SDK JSON-RPC envelope, not an HTTP DTO; the audit is owned by the MCP work        | `admin/mcp.request-boundary.test.mts`                      |
 | `POST /memberships/apple-app-store/notifications` | Apple JWS verifier over `signedPayload`; wrong shape is `400`                         | `memberships/__tests__/apple-notifications.test.mts`       |
 | `POST /memberships/google-play/notifications`     | OIDC bearer checked before the body, then the re-serialized raw envelope; `401`/`503` | `memberships/__tests__/google-play-notifications.test.mts` |
+| `POST /email-unsubscribe`                         | RFC 8058 one-click: form-encoded `List-Unsubscribe=One-Click`, token in query or body | `my/__tests__/email-preferences.test.mts`                  |
 | ActivityPub inbox (outside v1)                    | Digest and HTTP Signature over the raw body                                           | `backend/api/activitypub/inbox.test.mts`                   |
 | OAuth protocol endpoints (outside v1)             | Form-encoded RFC 6749 parameters with protocol error bodies                           | `backend/api/oauth/token-protocol.test.mts`                |
 
@@ -80,12 +81,19 @@ Ownership follows the route directory. Routes outside `admin`, `appeals`, `dispu
 `memberships`, `images`, `crawlers`, `psql`, and `valkey` that still read a carrier without the
 adapter (for example users, lists, households, hostnames, mq, dynamic-config, vote and report
 integrity, curated aside items, attribution, landing-page clicks, app attestation, markdown,
-fediverse, conversations, moderation exposure, and topic recommendations) belong to the remaining
-public and inbound classification. `my/**`, `mcp/**`, API keys, and copyright routes have their own
-owners.
+fediverse, moderation exposure, and topic recommendations) belong to the remaining public and
+inbound classification. `my/**`, `mcp/**`, API keys, and copyright routes have their own owners.
+No Stripe webhook route exists under `backend/api`; Stripe events arrive through the
+`stripe-events-sqs` worker. `POST /memberships/microsoft-store/service-tickets` reads no carrier and
+ignores the empty JSON object the native clients send.
 
 ## Cross-client verification
 
-The web client bodies for these routes (`web/lib/api/client/**`) send only fields the closed
-schemas accept, including `cf_turnstile_response` on report, appeal, and dispute creation. No web
-code reads the changed `400` statuses or messages.
+The closed schemas reject unknown keys, so every client body must be a subset of the schema. The web
+client bodies (`web/lib/api/client/**`) send only accepted fields, including `cf_turnstile_response`
+on report, appeal, and dispute creation. The Swift and .NET request bodies in
+`vouchington-clients` (`5c4acb6`) were checked route by route for report, appeal, dispute, membership
+grant, purchase-intent, verification, refund, portal, image upload, warning, identity-verification,
+psql, and valkey requests: each sends a subset of the schema keys, and both encoders omit null
+optionals. No client branches on the changed `400` statuses or on server messages; the native
+handlers test a `400`-`499` range.
