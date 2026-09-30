@@ -5,8 +5,8 @@ export type { Conversation }
 
 /** Stored shape of conversation_messages.content (JSON). */
 export type ConversationMessageContent =
-  | { role: 'user'; content: string }
-  | { role: 'assistant'; content: string | null; error?: string }
+  | { role: 'user'; content: string; turn_key?: string }
+  | { role: 'assistant'; content: string | null; error?: string; turn_key?: string }
 
 export type ConversationMessage = {
   id: string

@@ -37,7 +37,9 @@ response chaining, execution identities and stored error diagnostics. A submitte
 `user_message_id` and `assistant_message_id`, scoped to its conversation, as its identity. Clients persist both IDs before sending
 and reuse them with identical text on retries. The existing message primary key and a conversation
 row lock make duplicate submissions return the original pair atomically; changed content or partial
-identity reuse returns 409. Generation provider details remain internal run metadata and do not
+identity reuse returns 409. Both stored message JSON values carry an opaque SHA-256 fingerprint
+of the ordered ID pair, so recombining messages from separate turns also conflicts. The fingerprint
+is omitted from public DTOs and does not join execution records. Generation provider details remain internal run metadata and do not
 appear in transcript responses. Incomplete stored assistant placeholders remain readable in history.
 
 The shared decode examples are generated under `api-fixtures/v1/responses/native.chat.*.json` for

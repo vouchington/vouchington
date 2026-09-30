@@ -75,6 +75,24 @@ describe('member transcript contract', () => {
     await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(2)
   })
 
+  it('rejects a recombined pair from separate turns with identical text', async () => {
+    const user = await createTestUser()
+    const conversation = await createConversation(user.id, 'Transcript')
+    const request = createRequest()
+    await request.authenticateAs(user)
+    const path = `/api/v1/conversations/${conversation.id}/client-generated-chat`
+    const first = turn()
+    const second = turn()
+    await request.post(path).send(first).expect(200)
+    await request.post(path).send(second).expect(200)
+    await request
+      .post(path)
+      .send({ ...first, assistant_message_id: second.assistant_message_id })
+      .expect(409)
+    expect(moderation).toHaveBeenCalledTimes(4)
+    await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(4)
+  })
+
   it('preserves authorization before replay and rejects malformed message identities', async () => {
     const owner = await createTestUser()
     const other = await createTestUser()

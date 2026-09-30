@@ -125,10 +125,12 @@ describe('conversations-messages service (conversations)', () => {
     expect(result.userMessage.content).toEqual({
       role: 'user',
       content: 'Summarize my rewards profile',
+      turn_key: expect.any(String),
     })
     expect(result.assistantMessage.content).toEqual({
       role: 'assistant',
       content: 'Use transferable points first.',
+      turn_key: result.userMessage.content?.turn_key,
     })
     expect(
       await getLatestConversationMessageAgenticRunByConversationMessageId(

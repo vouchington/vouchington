@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { AgentModelProvider } from '@voucha/types/entities/agent-model'
@@ -36,6 +37,7 @@ export async function createClientGeneratedChatTurn(
   const { conversationId, createdById, message, assistantContent, modelProvider, modelName } =
     params
   const { userMessageId, assistantMessageId } = params
+  const turnKey = getTurnKey(params)
 
   await using query = await beginTransaction()
   // Serialize identity lookup with insertion; retries precede the active-turn guard.
@@ -50,7 +52,7 @@ export async function createClientGeneratedChatTurn(
   await lockConversationAndAssertNoActiveChatTurn(query, conversationId)
   const userInsert = sql`/* createClientGeneratedChatTurnUser */
     INSERT INTO conversation_messages (id, conversation_id, created_by_id, content)
-    VALUES (${userMessageId}, ${conversationId}, ${createdById}, ${JSON.stringify({ role: 'user', content: message })})
+    VALUES (${userMessageId}, ${conversationId}, ${createdById}, ${JSON.stringify({ role: 'user', content: message, turn_key: turnKey })})
     RETURNING
   `
   appendConversationMessageReturning(userInsert)
@@ -62,6 +64,7 @@ export async function createClientGeneratedChatTurn(
     VALUES (${assistantMessageId}, ${conversationId}, ${createdById}, ${JSON.stringify({
       role: 'assistant',
       content: assistantContent,
+      turn_key: turnKey,
     })})
     RETURNING
   `
@@ -143,6 +146,8 @@ async function findClientGeneratedChatTurnReplay(
       assistantMessage.deleted_at ||
       userMessage.created_by_id !== createdById ||
       assistantMessage.created_by_id !== createdById ||
+      userMessage.content?.turn_key !== getTurnKey(params) ||
+      assistantMessage.content?.turn_key !== getTurnKey(params) ||
       userMessage.content?.role !== 'user' ||
       userMessage.content.content !== message ||
       assistantMessage.content?.role !== 'assistant' ||
@@ -153,4 +158,10 @@ async function findClientGeneratedChatTurnReplay(
     return { userMessage, assistantMessage }
   }
   return undefined
+}
+
+function getTurnKey(params: ClientGeneratedChatTurnParams): string {
+  return createHash('sha256')
+    .update(`${params.userMessageId}:${params.assistantMessageId}`)
+    .digest('hex')
 }
