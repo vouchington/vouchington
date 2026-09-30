@@ -1,64 +1,18 @@
+/* eslint-disable no-mistakes/vitest-mock-test-file-naming -- The .no-data.mock suffix routes this file to backend-no-data-mocks. lemmy-no-data-fixtures.mts registers the undici fetch mock, so this file has no in-file vi.mock. */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+// Import the fixture before the adapter so its undici mock is installed first.
+import {
+  COMMUNITY_VIEW,
+  fetchSpy,
+  HOST,
+  POST_VIEW,
+  requestedSearchParams,
+  USER_VIEW,
+  type LemmyCombinedCursorShape,
+} from '@voucha/test-helpers/lemmy-no-data-fixtures'
 import { createLemmyAdapter } from './lemmy.mts'
 import { decodeFediverseCursor } from '../cursor.mts'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
-
-const fetchSpy = vi.hoisted(() => vi.fn<VitestLooseMock>())
-vi.mock<typeof import('undici')>(import('undici'), async () => {
-  const actual = await vi.importActual<typeof import('undici')>('undici')
-  return { ...actual, fetch: fetchSpy }
-})
-
-const HOST = 'lemmy.example'
-
-const POST_VIEW = {
-  post: {
-    name: 'Hello Lemmy',
-    body: 'Post body',
-    ap_id: 'https://lemmy.example/post/1',
-    published: '2024-01-01T00:00:00.000Z',
-    thumbnail_url: null,
-  },
-  creator: {
-    name: 'alice',
-    display_name: 'Alice',
-    actor_id: 'https://lemmy.example/u/alice',
-  },
-}
-
-const USER_VIEW = {
-  person: {
-    name: 'bob',
-    display_name: 'Bob',
-    bio: null,
-    actor_id: 'https://lemmy.example/u/bob',
-    avatar: null,
-    published: '2024-01-02T00:00:00.000Z',
-  },
-}
-
-const COMMUNITY_VIEW = {
-  community: {
-    name: 'technology',
-    title: 'Technology',
-    description: null,
-    actor_id: 'https://lemmy.example/c/technology',
-    icon: null,
-    published: '2024-01-03T00:00:00.000Z',
-  },
-}
-
-type LemmyCombinedCursorShape = {
-  p: { page: number; done: boolean }
-  u: { page: number; done: boolean }
-  c: { page: number; done: boolean }
-}
-
-function requestedSearchParams(callIndex = 0): URLSearchParams {
-  const requestUrl = fetchSpy.mock.calls[callIndex]?.[0]
-  const url = requestUrl instanceof URL ? requestUrl : new URL(String(requestUrl))
-  return url.searchParams
-}
 
 describe('createLemmyAdapter', () => {
   beforeEach(() => {
