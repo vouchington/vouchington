@@ -151,7 +151,7 @@ describe('dynamic-config', () => {
         .send({ config: { memberships: 'yes' } })
         .expect(400)
 
-      await request.patch('/api/v1/dynamic-config/namespaces/feature-flags').send({}).expect(400)
+      await request.patch('/api/v1/dynamic-config/namespaces/feature-flags').send({}).expect(422)
 
       await request
         .patch('/api/v1/dynamic-config/namespaces/recaptcha-config')
