@@ -1,8 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createTopicRevision, computeTopicChanges, getLatestTopicContentUpdate } from './index.mts'
 import { createTestUser, createTestUserDirect, insertTestTopic } from '@voucha/test-helpers'
 import { addUserRole } from '@services/users/roles-permissions'
 import type { PrivateUser } from '@services/users/types'
+import { registerTopicRevisionChangeDetection } from '../../test-helpers/revision-change-detection-tests.mts'
+import { createTopicRevision, computeTopicChanges, getLatestTopicContentUpdate } from './index.mts'
 
 describe('index', () => {
   let user: PrivateUser
@@ -12,57 +13,7 @@ describe('index', () => {
   })
 
   describe('computeTopicChanges', () => {
-    it('returns empty object when before and after are identical', () => {
-      const record = { name: 'My Topic', slug: 'my-topic', topic_type: 'topic' }
-      expect(computeTopicChanges(record, record)).toEqual({})
-    })
-
-    it('detects changed name', () => {
-      const before = { name: 'Old Name', slug: 'old-slug' }
-      const after = { name: 'New Name', slug: 'old-slug' }
-      const changes = computeTopicChanges(before, after)
-      expect(changes.name).toEqual({ before: 'Old Name', after: 'New Name' })
-      expect(changes.slug).toBeUndefined()
-    })
-
-    it('detects changed slug', () => {
-      const before = { name: 'Name', slug: 'old-slug' }
-      const after = { name: 'Name', slug: 'new-slug' }
-      const changes = computeTopicChanges(before, after)
-      expect(changes.slug).toEqual({ before: 'old-slug', after: 'new-slug' })
-      expect(changes.name).toBeUndefined()
-    })
-
-    it('treats null and missing fields as null (create from scratch)', () => {
-      const changes = computeTopicChanges(null, { name: 'First Topic', slug: 'first-topic' })
-      expect(changes.name).toEqual({ before: null, after: 'First Topic' })
-      expect(changes.slug).toEqual({ before: null, after: 'first-topic' })
-    })
-
-    it('detects multiple changed fields', () => {
-      const before = { name: 'A', slug: 'a', topic_type: 'topic', markdown: null }
-      const after = { name: 'B', slug: 'b', topic_type: 'card', markdown: 'Desc' }
-      const changes = computeTopicChanges(before, after)
-      expect(Object.keys(changes)).toHaveLength(4)
-      expect(changes.topic_type).toEqual({ before: 'topic', after: 'card' })
-      expect(changes.markdown).toEqual({ before: null, after: 'Desc' })
-    })
-
-    it('ignores fields not in tracked list', () => {
-      const before = { name: 'T', untracked_field: 'old' }
-      const after = { name: 'T', untracked_field: 'new' }
-      const changes = computeTopicChanges(before, after)
-      expect(changes.untracked_field).toBeUndefined()
-      expect(Object.keys(changes)).toHaveLength(0)
-    })
-
-    it('handles deleted_at change (delete revision)', () => {
-      const before = { name: 'Topic', deleted_at: null }
-      const after = { name: 'Topic', deleted_at: new Date('2024-01-01') }
-      const changes = computeTopicChanges(before, after)
-      expect(changes.deleted_at).toBeDefined()
-      expect(changes.name).toBeUndefined()
-    })
+    registerTopicRevisionChangeDetection(computeTopicChanges)
 
     it('tracks noindex and allow_reviews policy flag changes', () => {
       const before = { noindex: false, allow_reviews: true }
