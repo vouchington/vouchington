@@ -12,6 +12,16 @@ function requireFromConsumer(consumer) {
   return createRequire(manifest)
 }
 
+// Follow a deployed package's own installed dependencies without its exports map, because some
+// workspace packages only export an `import` condition that `require.resolve` cannot take.
+function requireFromPackage(parent, name) {
+  for (const directory of parent.resolve.paths(name) ?? []) {
+    const manifest = join(directory, name, 'package.json')
+    if (existsSync(manifest)) return createRequire(realpathSync(manifest))
+  }
+  throw new Error(`${name} is not installed beside the deployed package that requires it`)
+}
+
 async function checkLingua() {
   const requireFromWorker = requireFromConsumer('@workers/language-detection')
   const serviceEntry = requireFromWorker.resolve('@services/language-detection/detector')
@@ -21,8 +31,9 @@ async function checkLingua() {
   console.log('✓ lingua-rs imports with its native binding')
 }
 
-async function checkVurst({ consumer, requiredAssets, wrapper }) {
-  const requireFromWorker = requireFromConsumer(consumer)
+async function checkVurst({ consumer, requiredAssets, through = [], wrapper }) {
+  let requireFromWorker = requireFromConsumer(consumer)
+  for (const name of through) requireFromWorker = requireFromPackage(requireFromWorker, name)
   const wrapperManifest = requireFromWorker.resolve(`${wrapper}/package.json`)
   const wrapperEntry = requireFromWorker.resolve(wrapper)
   const requireFromWrapper = createRequire(wrapperEntry)
@@ -73,6 +84,7 @@ await checkVurst({
 })
 await checkVurst({
   consumer: '@workers/ai-agents',
+  through: ['@services/communities', '@modules/markdown-extraction'],
   wrapper: '@jongleberry/vurst-markdown',
   requiredAssets: ['vurst-markdown.linux-arm64-gnu.node'],
 })

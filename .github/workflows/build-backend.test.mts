@@ -201,6 +201,11 @@ describe('backend image workflow', () => {
     expect(deployedNativeAddonSmoke).toContain("wrapper: '@jongleberry/vurst-ai'")
     expect(deployedNativeAddonSmoke).toContain("wrapper: '@jongleberry/vurst-html'")
     expect(deployedNativeAddonSmoke).toContain("wrapper: '@jongleberry/vurst-markdown'")
+    // The worker reaches vurst-markdown through the communities service's markdown extraction
+    // module rather than as a direct dependency, so the check follows the same chain.
+    expect(deployedNativeAddonSmoke).toContain(
+      "through: ['@services/communities', '@modules/markdown-extraction']",
+    )
     expect(deployedNativeAddonSmoke).toContain('vurst-ai.linux-arm64-gnu.node')
     expect(deployedNativeAddonSmoke).toContain('onnxruntime/libonnxruntime.so')
     expect(deployedNativeAddonSmoke).toContain('vurst-html.linux-arm64-gnu.node')
