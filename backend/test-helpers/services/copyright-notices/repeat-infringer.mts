@@ -16,10 +16,11 @@ import {
 export async function confirmTestRepeatInfringerNotice(
   posterId: string,
   moderator: PrivateUser,
+  fixtureLabel: string = 'repeat outcome',
 ): Promise<string> {
   const postId = await insertTestPost({
-    title: `repeat outcome ${crypto.randomUUID()}`,
-    slug: `repeat-outcome-${crypto.randomUUID()}`,
+    title: `${fixtureLabel} ${crypto.randomUUID()}`,
+    slug: `${fixtureLabel.replaceAll(' ', '-')}-${crypto.randomUUID()}`,
     createdById: posterId,
     markdown: 'image',
   })
