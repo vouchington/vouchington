@@ -15,8 +15,16 @@ import {
   type ReviewDisputeStatus,
 } from '@services/review-disputes'
 import { isModerationStaff } from '@services/users'
-import { apiResponse } from '../../response-contract.mts'
-import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
+import { apiQuery, apiResponse } from '../../response-contract.mts'
+import {
+  decodeScopedUuidCursor,
+  defineQueryContract,
+  encodeScopedUuidCursor,
+  queryBoolean,
+  queryEnum,
+  queryInteger,
+  queryString,
+} from '@modules/pagination'
 import { filterReviewDisputePostContentForViewer } from './dispute-post-content-visibility.mts'
 import './disputes-staff.mts'
 
@@ -27,6 +35,16 @@ type CreateReviewDisputeRequest = {
   claim_text: string
   cf_turnstile_response?: string
 }
+
+const disputesQuery = defineQueryContract({
+  status: queryEnum(REVIEW_DISPUTE_STATUSES, {
+    default: 'pending',
+    description: 'Dispute status; unknown values use pending.',
+  }),
+  mine: queryBoolean({ description: 'Only disputes the caller filed.' }),
+  limit: queryInteger({ minimum: 1, maximum: 100, default: 25 }),
+  after: queryString(),
+})
 
 // POST /api/v1/disputes — file a review dispute
 app.route('/api/v1/disputes').post(async (ctx: Context) => {
@@ -46,10 +64,11 @@ app.route('/api/v1/disputes').post(async (ctx: Context) => {
 
 // GET /api/v1/disputes — list disputes (staff: full, member: redacted)
 app.route('/api/v1/disputes').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/disputes', disputesQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/disputes')
 
-  // Intentional carrier skip: `limit` is an integer on the wire and ctx.query holds raw strings,
-  // so the shared adapter would reject valid requests. Unknown values fall back to defaults here.
+  // Unreadable limits and unknown statuses fall back to defaults, so the contract below checks the
+  // settled values: it rejects only a fractional limit, which used to reach SQL and answer 500.
   const limitRaw = ctx.query.limit !== undefined ? Number(ctx.query.limit) : 25
   const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 100) : 25
 
@@ -60,13 +79,23 @@ app.route('/api/v1/disputes').get(async (ctx: Context) => {
       ? (statusParam as ReviewDisputeStatus)
       : 'pending'
 
+  const after = typeof ctx.query.after === 'string' ? ctx.query.after : undefined
+  validateRequestContract(ctx, 'GET:/api/v1/disputes', {
+    query: {
+      status,
+      limit,
+      ...(ctx.query.mine === 'true' && { mine: true }),
+      ...(after !== undefined && { after }),
+    },
+  })
+
   const disputantUserId = ctx.query.mine === 'true' ? currentUser.id : undefined
   const isStaff = isModerationStaff(currentUser)
   const audience = isStaff ? 'staff' : 'member'
   const cursorScope = `disputes:${status}:${audience}:${disputantUserId ?? 'all'}:id-desc`
   const beforeId =
-    typeof ctx.query.after === 'string'
-      ? decodeScopedUuidCursor(ctx.query.after, cursorScope, 'Invalid cursor format').id
+    after !== undefined
+      ? decodeScopedUuidCursor(after, cursorScope, 'Invalid cursor format').id
       : undefined
 
   const { disputes, hasNextPage } = await listReviewDisputes({

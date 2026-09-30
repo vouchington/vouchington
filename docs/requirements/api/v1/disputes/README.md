@@ -4,6 +4,10 @@ Source entrypoint: [backend/api/v1/disputes/README.md](../../../../../backend/ap
 
 REST API for review disputes. Endpoints handle creation (captcha-gated), tiered reads, staff lifecycle (draft→approve→send), and resolution (remove/annotate/dismiss).
 
+`GET /disputes` follows the same query rules as `GET /appeals`: an oversized `limit` clamps, unknown keys
+and unknown `status` or `mine` values are ignored, and a fractional `limit` returns `422` (it used to
+fail with `500`). See [Staff and operations validation](../../reference-staff-operations-request-validation.md).
+
 ## Performance
 
 - `GET /disputes` uses the shared opaque `after` cursor contract (max 100), scoped to status,
