@@ -1,79 +1,15 @@
-import type { ReactNode } from 'react'
+import { crawlerEditNav } from '@/test-helpers/app/crawlers/crawler-edit-form.mock-support'
+
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   expectInputEnterSubmits,
   expectTextareaCmdEnterSubmits,
 } from '@/test-helpers/form-keyboard'
-import EditCrawlerPage from '../page'
 import type { CrawlerResponse } from '@/types/api-responses'
+import EditCrawlerPage from '../page'
 
-const mockRouterPush = vi.hoisted(() => vi.fn<VitestLooseMock>())
 const mockGetCrawler = vi.hoisted(() => vi.fn<VitestLooseMock>())
-
-vi.mock(
-  import('next/navigation'),
-  () =>
-    ({
-      useParams: () => ({ id: 'crawler-1' }),
-      useRouter: () => ({ push: mockRouterPush }),
-    }) as unknown as typeof import('next/navigation'),
-)
-
-vi.mock(
-  import('next/link'),
-  () =>
-    ({
-      default: ({
-        children,
-        href,
-        prefetch: _prefetch,
-        ...props
-      }: {
-        children: ReactNode
-        href: string
-        prefetch?: boolean
-        [k: string]: unknown
-      }) => (
-        <a
-          href={href}
-          {...props}
-        >
-          {children}
-        </a>
-      ),
-    }) as unknown as typeof import('next/link'),
-)
-
-vi.mock(
-  import('@/components/ui/select'),
-  () =>
-    ({
-      Select: ({
-        children,
-        onValueChange,
-        value,
-      }: {
-        children: ReactNode
-        onValueChange?: (value: string) => void
-        value?: string
-      }) => (
-        <select
-          aria-label='Crawler Type'
-          value={value}
-          onChange={event => onValueChange?.(event.target.value)}
-        >
-          {children}
-        </select>
-      ),
-      SelectContent: ({ children }: { children: ReactNode }) => children,
-      SelectItem: ({ children, value }: { children: ReactNode; value: string }) => (
-        <option value={value}>{children}</option>
-      ),
-      SelectTrigger: ({ children }: { children: ReactNode }) => children,
-      SelectValue: () => null,
-    }) as unknown as typeof import('@/components/ui/select'),
-)
 
 vi.mock(
   import('sonner'),
@@ -120,6 +56,8 @@ function makeCrawler({
 describe('edit.keyboard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    crawlerEditNav.reset()
+    crawlerEditNav.setParams({ id: 'crawler-1' })
     mockGetCrawler.mockImplementation((id: string) =>
       Promise.resolve({ crawler: makeCrawler({ id }) }),
     )

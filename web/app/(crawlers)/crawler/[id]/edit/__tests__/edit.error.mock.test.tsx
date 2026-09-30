@@ -1,77 +1,9 @@
-import type { ReactNode } from 'react'
+import { crawlerEditNav } from '@/test-helpers/app/crawlers/crawler-edit-form.mock-support'
+
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { CrawlerEditForm } from '../crawler-edit-form'
 import { updateCrawler } from '@/lib/api/client/admin'
-
-const mockRouterPush = vi.hoisted(() => vi.fn<VitestLooseMock>())
-
-vi.mock(
-  import('next/navigation'),
-  () =>
-    ({
-      useRouter: () => ({ push: mockRouterPush }),
-    }) as unknown as typeof import('next/navigation'),
-)
-
-vi.mock(
-  import('next/link'),
-  () =>
-    ({
-      default: ({
-        children,
-        href,
-        prefetch: _prefetch,
-        ...props
-      }: {
-        children: ReactNode
-        href: string
-        prefetch?: boolean
-        [k: string]: unknown
-      }) => (
-        <a
-          href={href}
-          {...props}
-        >
-          {children}
-        </a>
-      ),
-    }) as unknown as typeof import('next/link'),
-)
-
-vi.mock(
-  import('@/components/ui/select'),
-  () =>
-    ({
-      Select: ({
-        children,
-        onValueChange,
-        value,
-      }: {
-        children: ReactNode
-        onValueChange?: (value: string) => void
-        value?: string
-      }) => (
-        <select
-          aria-label='Crawler Type'
-          value={value}
-          onChange={event => onValueChange?.(event.target.value)}
-        >
-          {children}
-        </select>
-      ),
-      SelectContent: ({ children }: { children: ReactNode }) => children,
-      SelectItem: ({ children, value }: { children: ReactNode; value: string }) => (
-        <option value={value}>{children}</option>
-      ),
-      SelectTrigger: ({ children }: { children: ReactNode }) => children,
-      SelectValue: () => null,
-    }) as unknown as typeof import('@/components/ui/select'),
-)
-
-vi.mock(import('@/lib/api/client/admin'), () => ({
-  updateCrawler: vi.fn<VitestLooseMock>(),
-}))
+import { CrawlerEditForm } from '../crawler-edit-form'
 
 const { toastMock } = vi.hoisted(() => {
   const mock = Object.assign(vi.fn<VitestLooseMock>(), {
@@ -89,6 +21,10 @@ vi.mock(
     }) as unknown as typeof import('sonner'),
 )
 
+vi.mock(import('@/lib/api/client/admin'), () => ({
+  updateCrawler: vi.fn<VitestLooseMock>(),
+}))
+
 vi.mock(import('@/lib/on-error'), () => ({
   default: (_err: unknown, options: { fallback: string }) => {
     toastMock.error(options.fallback)
@@ -104,6 +40,7 @@ const mockUpdate = vi.mocked(updateCrawler)
 describe('CrawlerEditForm error handling', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    crawlerEditNav.reset()
   })
 
   it('reports update-crawler failures via onError fallback', async () => {
@@ -152,6 +89,6 @@ describe('CrawlerEditForm error handling', () => {
     await waitFor(() => {
       expect(toastMock.success).toHaveBeenCalledWith('Crawler updated')
     })
-    expect(mockRouterPush).toHaveBeenCalledWith('/crawler/crawler-1')
+    expect(crawlerEditNav.push).toHaveBeenCalledWith('/crawler/crawler-1')
   })
 })
