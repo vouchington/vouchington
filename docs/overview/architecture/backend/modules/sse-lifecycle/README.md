@@ -23,5 +23,5 @@ The value is an external protocol between API and worker signals, so it must not
 ## Related
 
 - Parent: [../README.md](../README.md)
-- SSE conventions: [../../../../../backend/api/AGENTS.md](../../../../../backend/api/AGENTS.md)
-- SSE duration bounds: [../../../../development/runtime-timeouts.md](../../../../development/runtime-timeouts.md#principle-sse--long-lived-connection-duration-under-fargate-spot)
+- SSE conventions: [backend/api/AGENTS.md](../../../../../../backend/api/AGENTS.md)
+- SSE duration bounds: [runtime-timeouts.md](../../../../../development/runtime-timeouts.md#principle-sse--long-lived-connection-duration-under-fargate-spot)
