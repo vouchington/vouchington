@@ -33,10 +33,13 @@ exports backend/data-stores/psql/pool-stats-sampler.mts stopPoolStatsSampler
 exports backend/data-stores/psql/schema-growth-registry.mts NON_DEFAULT_ID_EXCEPTIONS
 exports backend/data-stores/psql/schema-growth-registry.mts STATIC_IDENTITY_EXCEPTIONS
 exports backend/data-stores/psql/schema-growth-registry.mts buildSchemaGrowthRegistry
+exports backend/data-stores/psql/schema-growth-retained-identities.mts RETAINED_MISSING_UPDATED_AT
 exports backend/data-stores/valkey-core/app-integration.mts getValkeyAnalyticsPromiseForTest
 exports backend/data-stores/valkey-core/app-integration.mts resetValkeyAnalyticsLoaderForTest
 exports backend/data-stores/valkey-glide-mq/index.mts buildWorkerQueueSettings
 exports backend/data-stores/valkey-pubsub/chat-token-pubsub.mts closeChatTokenSubscriber
+exports backend/data-stores/valkey/clients.mts closeDynamicConfigValkeySubscriptionClient
+exports backend/data-stores/valkey/dynamic-config.mts dynamicConfigs
 exports backend/data-stores/valkey/events.mts valkeyEvents
 exports backend/data-stores/valkey/jwt-stale.mts clearJwtStale
 exports backend/data-stores/valkey/jwt-stale.mts isJwtStale
@@ -58,7 +61,8 @@ exports backend/entrypoints/worker-io/index.mts reportWorkerLoadFailure
 exports backend/modules/activitypub-uris/actor-uris.mts getActorInboxUri
 exports backend/modules/api-egress-proxy/transport.mts resetApiEgressProxyTransportForTest
 exports backend/modules/aws/credentials-test-helpers.mts setupCredentialEnv
-exports backend/modules/aws/media-delivery-registry.mts provider.invalidateMediaDeliveryPath
+exports backend/modules/aws/media-delivery-registry.mts invalidateMediaDeliveryPath
+exports backend/modules/aws/media-delivery-registry.mts putMediaDeliveryRegistryRecord
 exports backend/modules/aws/ses.mts buildRawEmailMessage
 exports backend/modules/csv/parse-csv.mts stripBom
 exports backend/modules/csv/stringify-csv.mts streamCsvRows
@@ -81,6 +85,7 @@ exports backend/modules/on-error/error-codes.mts MEMBERSHIP_REQUIRED
 exports backend/modules/on-error/error-codes.mts MFA_REQUIRED
 exports backend/modules/on-error/error-codes.mts RATE_LIMIT
 exports backend/modules/openai-utils/rate-limit.mts isOpenAIServerError
+exports backend/modules/openai-utils/response-errors.mts describeOpenAIUpstreamFailure
 exports backend/modules/pagination/query-contract.mts composeQueryContracts
 exports backend/modules/request-client-info/index.mts getRequestClientInfo
 exports backend/modules/scheduled-job-manifest/index.mts validateScheduledJobManifests
@@ -159,9 +164,12 @@ exports backend/services/contribution-gating/admission.mts canonicalizeAdmission
 exports backend/services/contribution-gating/limits.mts getContributionLimitActionForPostType
 exports backend/services/conversations-messages/agentic-runs.mts getConversationMessageAgenticRunById
 exports backend/services/conversations-messages/agentic-runs.mts getConversationMessageAgenticRunEventsByRunId
+exports backend/services/conversations-messages/agentic-runs.mts getConversationMessageAgenticRunsByConversationMessageId
 exports backend/services/conversations-messages/agentic-runs.mts getLatestConversationMessageAgenticRunByConversationMessageId
 exports backend/services/conversations-messages/agentic-runs.mts hasRunningAgenticRunByConversationId
 exports backend/services/conversations-messages/conversations.mts getConversationByCreatedByAndTitle
+exports backend/services/conversations-messages/conversations.mts updateConversationLastResponseId
+exports backend/services/conversations-messages/create.mts createConversationMessage
 exports backend/services/copyright-notices/appeal-recommendations.mts copyrightAppealRecommendations
 exports backend/services/copyright-notices/case-closure.mts closeCopyrightNoticeCase
 exports backend/services/copyright-notices/correspondence.mts approveCopyrightCorrespondence
@@ -218,6 +226,7 @@ exports backend/services/entity-fetch/topics.mts fetchTopicsWithMetadata
 exports backend/services/entity-relations/relation-deletion-state.mts getEntityRelationDeletionState
 exports backend/services/entity-relations/test-support.mts recordTestPostTopicRelationPublicationChanges
 exports backend/services/entity-relations/test-support.mts stubUrlGuardsForSuite
+exports backend/services/feature-flags/index.mts encodeFeatureFlagCookie
 exports backend/services/fediverse-instances/integration-status.mts getLatestIntegrationStatusChange
 exports backend/services/fediverse-search/adapters/bluesky.mts mapBlueskyActor
 exports backend/services/fediverse-search/adapters/bluesky.mts mapBlueskyPost
@@ -253,6 +262,7 @@ exports backend/services/localization/index.mts resolveEmailLocalizationBatch
 exports backend/services/localization/index.mts setLocalizationDatabaseForTests
 exports backend/services/localization/resolve.mts resolveEmailLocalizationBatch
 exports backend/services/localization/test-helpers.mts installSampleLocalizationDatabase
+exports backend/services/media-delivery-safety/index.mts prepublishImageSurfaceDenial
 exports backend/services/memberships/apple/configured-verifier.mts createConfiguredAppleSignedTransactionEvidenceVerifier
 exports backend/services/memberships/apple/process-verification.mts processMembershipVerification
 exports backend/services/memberships/authorization.mts currentUserCanCancelMembership
@@ -267,6 +277,7 @@ exports backend/services/memberships/get.mts getSkuByStripePriceIdCached
 exports backend/services/memberships/grants/expire-elapsed.mts expireElapsedMembershipsForUser
 exports backend/services/memberships/grants/resume-after-direct-termination.mts resumeGrantAfterDirectTermination
 exports backend/services/memberships/index.mts getMembershipRefunds
+exports backend/services/memberships/ineligible-stripe-purchase-reversal/claim-ledger.mts claimIneligiblePurchaseReversals
 exports backend/services/memberships/ineligible-stripe-purchase-reversal/family-proration.mts getFamilyCollisionReversalTargets
 exports backend/services/memberships/ineligible-stripe-purchase-reversal/refund-history.mts getObservedStripeRefunds
 exports backend/services/memberships/invalidate-provider-evidence.mts rejectMembershipProviderEvidence
@@ -311,6 +322,7 @@ exports backend/services/oauth-authorization-server/test-support.mts issueTestOA
 exports backend/services/oauth-authorization-server/tokens.mts validateOAuthAccessToken
 exports backend/services/oauth-google/index.mts getGoogleAccountByGoogleUserId
 exports backend/services/oauth/authorization-broker.mts buildProviderAuthorizationUrl
+exports backend/services/openai-agents/execute-tool-calls.mts streamingExecuteToolCalls
 exports backend/services/openai-moderation/stored-results.mts getStoredPostOpenAIModeration
 exports backend/services/post-clearance/approve-pending.mts approvePendingPostClearance
 exports backend/services/post-clearance/update-status.mts approvePendingPostClearance
@@ -451,9 +463,12 @@ exports backend/workers/sitemaps/processors.mts updatePostDaySitemapDependencies
 exports backend/workers/sitemaps/processors.mts updateSitemapIndexDependencies
 exports backend/workers/story-post-related-url-projections/processors.mts processReconcileStoryPostRelatedUrlProjections
 exports backend/workers/user-deletions/processors/process-job.mts isFinalUserDeletionAttempt
+types backend/agents/_shared/subagent-tool.mts SubagentResult
+types backend/agents/_shared/subagent-tool.mts SubagentStepEvent
 types backend/agents/autotagger/dispatch-classifier.mts AutotaggerClassifierCandidate
 types backend/data-stores/valkey-rate-limiter/index.mts RateLimiterAddAndCheckWindowsOptions
 types backend/data-stores/valkey-rate-limiter/index.mts RetryRateLimiterSaturationDependencies
+types backend/data-stores/valkey/types.mts DynamicConfigField
 types backend/entrypoints/api/valkey-admin-command.mts ParsedValkeyAdminCommand
 types backend/entrypoints/api/verify-ipv6-egress-checks.mts HostResult
 types backend/modules/bluesky-oauth/index.mts Keyset

@@ -346,10 +346,11 @@ specifier. Add both keys to any new backend package that declares `"./*"`.
   test helpers, or mark a deliberate seam with a JSDoc `@public` tag and a reason, which Knip never
   reports. Config-driven migration default exports carry that tag because the migration runner loads
   them by path.
-- **Limits.** `test-helpers.mts` and `*.test-helpers.mts` files, and the shared
-  `backend/test-helpers` package, are still production entries. The exports of the named helper
-  files are baselined; the shared package is outside the checked workspaces. Exports that any of
-  them import are not reported.
+- **Test helpers.** `knip.jsonc` lists `backend/test-helpers!` in `ignoreWorkspaces`. The `!`
+  applies it only under `--production`, so the shared helper package can't keep production exports
+  alive there, and default Knip still checks it. Helper files inside production packages, such as
+  `test-helpers.mts` or `*test-support.mts`, remain production entries: their own unused exports are
+  reported, but exports they import are not. Move them into `backend/test-helpers`.
 - **Config hints.** Knip disables configuration hints under `--production`, so
   `pnpm exec knip --treat-config-hints-as-errors` remains the check for stale `knip.jsonc` entries.
 
