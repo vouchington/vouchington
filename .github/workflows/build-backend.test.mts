@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
+import { assertImageBuildTrivyGate } from '../test-helpers/image-build-trivy-gate.mts'
+
 type Step = {
   'continue-on-error'?: boolean
   env?: Record<string, string>
@@ -174,62 +176,19 @@ describe('build-backend workflow', () => {
   })
 
   it('gates the build on CRITICAL/HIGH fixable Trivy findings', () => {
-    // continue-on-error must be gone from every step in the enforcement chain
-    // (install guard, scan, SBOM) so a finding actually fails the `backend` gate.
-    // "Install Trivy" itself
-    // keeps continue-on-error: true — the install guard step immediately after
-    // it is the deliberate enforcement point for install failures.
     const steps = readBuildBackendImagesSteps()
-
-    const installStep = steps.find(step => step.name === 'Install Trivy')
-    expect(installStep?.['continue-on-error']).toBe(true)
-    // id lets the guard tell "ran and failed" apart from "skipped because an
-    // earlier unrelated step already failed the job" (run 31910979397).
-    expect(installStep?.id).toBe('install-trivy')
-    // The install guard below now hard-fails a required check on missing trivy,
-    // so the release download itself needs retries against transient GitHub
-    // Releases blips (matching the retry pattern used for nodejs downloads
-    // elsewhere in this repo).
-    expect(installStep?.run).toContain('--retry 3 --retry-all-errors')
-
-    const installGuardStep = steps.find(step => step.name === 'Trivy install guard')
-    expect(installGuardStep?.['continue-on-error']).toBeUndefined()
-    expect(installGuardStep?.run).toContain('exit 1')
-    // `!cancelled()` alone is also true when Install Trivy was skipped, so the
-    // guard must additionally require the install step actually ran. Assert
-    // the exact expression (not toContain) so a boolean-operator regression
-    // like `!cancelled() || steps.install-trivy.outcome != 'skipped'` — which
-    // would re-enable the cascade this test guards against — fails here too.
-    expect(installGuardStep?.if).toBe(
-      "${{ !cancelled() && steps.install-trivy.outcome != 'skipped' }}",
-    )
-
+    assertImageBuildTrivyGate({
+      gate: 'backend',
+      steps,
+      scanStepName: 'Scan OS packages in images with Trivy',
+      sbomStepName: 'Generate Trivy SBOMs',
+    })
     const scanStep = steps.find(step => step.name === 'Scan OS packages in images with Trivy')
-    expect(scanStep?.['continue-on-error']).toBeUndefined()
-    expect(scanStep?.run).toContain('--exit-code "$TRIVY_FINDINGS_EXIT_CODE"')
-    expect(scanStep?.run).toContain('--severity CRITICAL,HIGH')
-    expect(scanStep?.run).toContain('--ignore-unfixed')
-    expect(scanStep?.run).toContain('--pkg-types os')
-    // The active-image loop must scan every target before failing, not abort on
-    // the first vulnerable image, so the step summary stays complete.
+    // The active-image loop must scan every target before failing, not abort
+    // on the first vulnerable image, so the step summary stays complete.
     expect(scanStep?.run).toContain('|| target_exit=$?')
     expect(scanStep?.run).toContain('exit "$scan_error_exit"')
     expect(scanStep?.run).toContain('exit "$TRIVY_FINDINGS_EXIT_CODE"')
-
-    const sbomStep = steps.find(step => step.name === 'Generate Trivy SBOMs')
-    expect(sbomStep?.['continue-on-error']).toBeUndefined()
-    // The SBOM step only runs once the OS vulnerability gate has already passed
-    // (no `if: always()`), so filtering it by severity would only ever truncate
-    // the artifact, never gate anything. Keep it a complete, unfiltered inventory.
-    expect(sbomStep?.run).toContain('--exit-code 0')
-    expect(sbomStep?.run).not.toContain('--severity')
-    expect(sbomStep?.run).not.toContain('--ignore-unfixed')
-    expect(sbomStep?.run).not.toContain('--pkg-types')
-    expect(sbomStep?.run).not.toContain('--ignorefile')
-    expect(sbomStep?.run).not.toContain('--scanners vuln')
-
-    const uploadStep = steps.find(step => step.name === 'Upload Trivy artifacts')
-    expect(uploadStep?.['continue-on-error']).toBe(true)
   })
 
   it('verifies every deployed Vurst wrapper against its required target assets', () => {
