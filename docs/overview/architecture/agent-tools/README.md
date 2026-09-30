@@ -108,6 +108,12 @@ reference.
   names no topic returns `{ success: false, error: 'Topic not found' }`. The search tools'
   `similar_topic_id` is a similarity-search seed and takes a UUID, and write-tool fields that
   mirror a REST request body (such as `manage_my_cards.card_id`) take what that body takes.
+- **Posts and stories** — `post_id` (`get_post`, `get_post_ancestors`, `get_post_descendants`) takes
+  a UUID or slug, like `:idOrSlug`, and `story_id` (`get_story`) takes a UUID. A post or story that
+  is deleted, missing, or visible to the credential owner only through private visibility returns
+  `{ success: false, error: 'Post not found' }` (`'Story not found'` for a story), so a caller
+  cannot tell those apart. `after` is the opaque `page_info.end_cursor` of the previous page; a
+  malformed cursor returns `{ success: false, error: 'Invalid cursor' }`.
 - **Search queries** — a tool with a REST equivalent names its query after the REST parameter
   (`q`, `text_search_query`, `semantic_search_query`) and pages like it (`after`, `limit`,
   `page_info`; see [Paged results](../../../requirements/api/v1/mcp/README.md#paged-results)).
@@ -173,4 +179,5 @@ scopes; `parameters` is always `null`. The iOS Swift agent should:
 
 A tool result that includes member-authored or third-party text must mark that text with
 `wrapExternalContent()` from `@jongleberry/vurst-prompt` before returning it to a model; for
-example, `get_topic_details` marks topic markdown and `search_posts` marks post content.
+example, `get_topic_details` marks topic markdown, and `search_posts`, `get_post`,
+`get_post_ancestors`, `get_post_descendants` and `get_story` mark post and article content.

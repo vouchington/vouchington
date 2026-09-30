@@ -72,6 +72,27 @@ tool without an `outputSchema`, with no list of exceptions.
 and limits match REST, and return `PageInfo` as `page_info`. OpenAPI documents no
 trending query parameters, so contract tests pin `after` and `limit`.
 
+### Post and story read tools
+
+`get_post`, `get_post_ancestors`, `get_post_descendants` and `get_story` read a post, its thread and
+a story with the `posts:read` scope. Each owns a closed result schema (`backend/tools/mcp-post-output.mts`,
+`mcp-story-output.mts`) whose fields are picked from the REST `Post`, `Story`, `ViewRssFeedItem` and
+`PageInfo` components and pinned to `openapi.json` by `post-read-tools.output-schema.test.mts`; the
+result is `{ success: true, ... }` or `{ success: false, error }`, so a caller never parses prose.
+
+MCP is parity minus private data. `resolveReadableThread` (`backend/tools/mcp-post-access.mts`)
+answers a post as not found unless every live node of its parent chain passes the shared
+`canViewPostsBatch` policy both as the credential owner and as a signed-out reader, so a post the
+owner sees only through private visibility (a private audience, a private community, or their own
+unapproved post) is never returned, even to its author. One hidden ancestor hides the whole thread,
+so a `parent_id`, title or count never reveals it. `get_post_descendants` pages with the REST
+descendants page (`getCommentDescendantsPage`), whose cursors are scoped to the thread and never to a
+viewer; a hidden reply prunes its subtree. A deleted post is left out rather than tombstoned, because
+the `view_posts` read model does not return it. Anonymous posts hide their author from every caller.
+
+Post and story markdown is external content and is wrapped by `wrapExternalContent`, and the tools
+are not on the output-schema ratchet list.
+
 ## Authorization
 
 Each `tools/call` request re-enforces the same checks as `tools/list`:

@@ -33,6 +33,15 @@ export async function insertTestStory(
 }
 
 /**
+ * Soft-delete a story directly (for test setup only).
+ */
+export async function deleteTestStory(storyId: string): Promise<void> {
+  await write(sql`/* deleteTestStory */
+    UPDATE stories SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${storyId}
+  `)
+}
+
+/**
  * Assign an RSS feed item to a story directly (bypasses locks, for test setup only).
  */
 export async function setTestItemStoryId(itemId: string, storyId: string | null): Promise<void> {
