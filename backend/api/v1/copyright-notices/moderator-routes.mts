@@ -11,6 +11,7 @@ import { findCopyrightImageSimilarityCandidates } from '@services/bedrock-embedd
 import { replayFailedMediaDeliveryRegistryRecords } from '@services/media-delivery-safety'
 import {
   admitCopyrightEmailCorrespondence,
+  assertCopyrightIntakeEnabled,
   rejectCopyrightEmailCorrespondence,
   currentUserCanReviewCopyrightNotices,
   promoteCopyrightEmailIntake,
@@ -196,6 +197,10 @@ app.route('/api/v1/copyright-media-delivery/replays').post(async (ctx: Context) 
 })
 
 app.route('/api/v1/copyright-email-intakes/:id/approvals').post(async (ctx: Context) => {
+  // Approving an email creates a new notice, so it follows the intake kill switch like the notice
+  // forms. Rejections and in-case correspondence decisions stay available while intake is off.
+  setPrivateNoStoreCacheHeaders(ctx)
+  assertCopyrightIntakeEnabled()
   const { currentUser, intakeId, body } = await parseCopyrightReviewRequest(
     ctx,
     'POST:/api/v1/copyright-email-intakes/:id/approvals',

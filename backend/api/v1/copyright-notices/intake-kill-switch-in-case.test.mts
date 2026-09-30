@@ -4,6 +4,8 @@ import {
   receiveEuCopyrightNotice,
   receiveUkCopyrightNotice,
 } from '@services/copyright-notices'
+import { createParsedCopyrightEmailIntake } from '@services/copyright-notices/email-intake-test-fixtures'
+import { linkCopyrightEmailIntakeToNotice } from '@services/copyright-notices/email-threading'
 import { counterNoticeBody } from '@services/copyright-notices/route-test-fixtures'
 import {
   createTestUser,
@@ -13,6 +15,7 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { readCopyrightEmailIntakeReview } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
@@ -121,6 +124,59 @@ describe('copyright in-case responses with intake switched off', () => {
         .expect(201)
       expect(filed.body.copyright_submission.kind).toBe(kind)
     }
+  })
+
+  // Email is ingested and reviewed while intake is off (#1443): staff record an emailed in-case
+  // filing as correspondence, and the only email decision that stays closed is opening a new case.
+  it('records an emailed filing on an existing case as correspondence', async () => {
+    const { noticeId } = await openUsCase()
+    const reply = await createParsedCopyrightEmailIntake()
+    await linkCopyrightEmailIntakeToNotice({ intakeId: reply.id, noticeId, linkKind: 'thread' })
+    const staff = await signedIn(await createTestUser({ extraRoles: ['moderator'] }))
+    const queued = await staff.get(`/api/v1/copyright-email-intakes/${reply.id}`).expect(200)
+    expect(queued.body.copyright_email_intake).toMatchObject({
+      review_path: 'matched_thread',
+      linked_notice: { id: noticeId },
+    })
+
+    const decision = {
+      kind: 'supplement',
+      rationale: 'The email supplements the existing case.',
+      manual_fallback_reason: 'No recommendation is available while intake is off.',
+      submission_summary: 'Additional hosted-use information.',
+    }
+    const path = `/api/v1/copyright-email-intakes/${reply.id}/correspondence`
+    const admitted = await staff.post(path).send(decision).expect(201)
+    expect(admitted.body).toMatchObject({
+      copyright_notice: { id: noticeId },
+      is_duplicate: false,
+    })
+    const replay = await staff.post(path).send(decision).expect(200)
+    expect(replay.body.is_duplicate).toBe(true)
+  })
+
+  it('refuses to approve an emailed notice but still lets staff reject it', async () => {
+    const [approved, rejected] = await Promise.all([
+      createParsedCopyrightEmailIntake(),
+      createParsedCopyrightEmailIntake(),
+    ])
+    const staff = await signedIn(await createTestUser({ extraRoles: ['moderator'] }))
+    const decision = { rationale: 'Staff decision.', manual_fallback_reason: 'No agent output.' }
+
+    const refused = await staff
+      .post(`/api/v1/copyright-email-intakes/${approved.id}/approvals`)
+      .send(decision)
+      .expect(503)
+    expect(refused.body.message).toBe('Copyright intake is not available')
+    await expect(readCopyrightEmailIntakeReview(approved.id)).resolves.toEqual([])
+
+    await staff
+      .post(`/api/v1/copyright-email-intakes/${rejected.id}/rejections`)
+      .send(decision)
+      .expect(204)
+    await expect(readCopyrightEmailIntakeReview(rejected.id)).resolves.toEqual([
+      { accepted: false, promoted_copyright_notice_id: null },
+    ])
   })
 
   it('accepts EU and UK redress and staff decisions on existing territorial notices', async () => {

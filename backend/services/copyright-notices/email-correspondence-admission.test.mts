@@ -5,6 +5,7 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
+import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import { decryptSecret } from '@modules/token-secrets'
 import {
   admitCopyrightEmailCorrespondence,
@@ -78,6 +79,9 @@ describe('copyright email correspondence admission', () => {
       noticeId: notice.id,
       linkKind: 'thread',
     })
+    await expect(readTestPendingCopyrightAgentDispatches(intake.id)).resolves.toEqual([
+      { kind: 'email', intakeId: intake.id },
+    ])
     const admitted = await admitCopyrightEmailCorrespondence({
       currentUser: moderator,
       intakeId: intake.id,
@@ -97,6 +101,9 @@ describe('copyright email correspondence admission', () => {
       recommendationId: null,
       manualFallbackReason: 'Agent output is unavailable.',
     })
+    // A decided email needs no recommendation, so the reconciler must not send it to the model
+    // after intake is switched back on.
+    await expect(readTestPendingCopyrightAgentDispatches(intake.id)).resolves.toEqual([])
     await expect(
       rejectCopyrightEmailCorrespondence({
         currentUser: moderator,
@@ -225,6 +232,9 @@ describe('copyright email correspondence admission', () => {
       noticeId: notice.id,
       linkKind: 'thread',
     })
+    await expect(readTestPendingCopyrightAgentDispatches(intake.id)).resolves.toEqual([
+      { kind: 'email', intakeId: intake.id },
+    ])
     const rejected = await rejectCopyrightEmailCorrespondence({
       currentUser: moderator,
       intakeId: intake.id,
@@ -234,6 +244,7 @@ describe('copyright email correspondence admission', () => {
       manualFallbackReason: 'Agent output is unavailable.',
     })
     expect(rejected).toEqual({ noticeId: notice.id, isDuplicate: false })
+    await expect(readTestPendingCopyrightAgentDispatches(intake.id)).resolves.toEqual([])
     await expect(
       rejectCopyrightEmailCorrespondence({
         currentUser: moderator,

@@ -1,11 +1,7 @@
 import { UnrecoverableError } from '@modules/queue-errors'
 import { enqueueOrRetryBulkSesInboundProcess } from '@queues/ses-inbound/enqueues'
 import { enqueueCopyrightEmailIntakeAndWait } from '@queues/ai-agents/enqueues/copyright-email-intake'
-import {
-  createCopyrightEmailIntake,
-  isCopyrightIntakeEnabled,
-  recordCopyrightEmailParse,
-} from '@services/copyright-notices'
+import { createCopyrightEmailIntake, recordCopyrightEmailParse } from '@services/copyright-notices'
 import {
   assertSesInboundProcessJobData,
   getSesInboundKindFromObjectKey,
@@ -30,7 +26,6 @@ import {
 
 type ProcessDependencies = CopyrightEmailDependencies & {
   deleteSesInboundObject: typeof deleteSesInboundObject
-  isCopyrightIntakeEnabled: typeof isCopyrightIntakeEnabled
   loadSesInboundObject: typeof loadSesInboundObject
   moveSesInboundObjectToFailed: typeof moveSesInboundObjectToFailed
   parseSesInboundMime: typeof parseSesInboundMime
@@ -38,7 +33,6 @@ type ProcessDependencies = CopyrightEmailDependencies & {
 
 type ReconcileDependencies = {
   enqueueOrRetryBulkSesInboundProcess: typeof enqueueOrRetryBulkSesInboundProcess
-  isCopyrightIntakeEnabled: typeof isCopyrightIntakeEnabled
   listCopyrightSesInboundObjects: (continuationToken?: string) => Promise<SesInboundObjectPage>
 }
 
@@ -52,7 +46,6 @@ export async function processSesInboundEmail(
     createCopyrightEmailIntake,
     deleteSesInboundObject,
     enqueueCopyrightEmailIntakeAndWait,
-    isCopyrightIntakeEnabled,
     loadSesInboundObject,
     loadSesInboundObjectAndHash,
     loadSesInboundObjectVersion,
@@ -63,7 +56,6 @@ export async function processSesInboundEmail(
   }
 
   try {
-    if (!deps.isCopyrightIntakeEnabled()) return
     await processCopyrightInboundEmail(data, deps)
     await deps.deleteSesInboundObject(data.objectKey)
   } catch (error) {
@@ -80,11 +72,7 @@ export async function reconcileSesInboundEmails(
     dependencies?.listCopyrightSesInboundObjects ?? listCopyrightSesInboundObjects
   const enqueueOrRetry =
     dependencies?.enqueueOrRetryBulkSesInboundProcess ?? enqueueOrRetryBulkSesInboundProcess
-  const copyrightIntakeEnabled = dependencies?.isCopyrightIntakeEnabled ?? isCopyrightIntakeEnabled
-  const enqueued = copyrightIntakeEnabled()
-    ? await enqueueAllInboundPages(listCopyrightObjects, enqueueOrRetry)
-    : 0
-  return { enqueued }
+  return { enqueued: await enqueueAllInboundPages(listCopyrightObjects, enqueueOrRetry) }
 }
 
 async function enqueueAllInboundPages(

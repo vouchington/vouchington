@@ -28,7 +28,8 @@ type CopyrightAgentDispatchRow = {
  * Durable source-of-truth sweep for post-commit enqueue failures and exhausted queue retries, paged
  * by the dispatched intake or submission ID. An ID keyset skips no work because every row sharing
  * an ID is the same dispatch: a form submission is either unscreened or screened, and appeals are
- * never form submissions.
+ * never form submissions. An email that staff already decided needs no recommendation, so an
+ * email decided while intake was paused is not sent to the model after the switch turns on.
  */
 export async function getPendingCopyrightAgentDispatches(
   options: { after?: string; limit?: number } = {},
@@ -67,6 +68,15 @@ function buildPendingCopyrightAgentDispatchesQuery() {
       WHERE NOT EXISTS (
         SELECT 1 FROM copyright_notice_email_intake_recommendations recommendation
         WHERE recommendation.copyright_notice_email_intake_id = intake.id
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_email_intake_reviews initial_review
+        WHERE initial_review.copyright_notice_email_intake_id = intake.id
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_email_correspondence_reviews decision
+        WHERE decision.copyright_notice_email_intake_id = intake.id
+          AND decision.action IN ('admitted', 'rejected')
       )
       UNION ALL
       SELECT 'form-screening'::text AS kind, intake.copyright_notice_submission_id AS id

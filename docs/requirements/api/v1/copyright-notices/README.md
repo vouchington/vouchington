@@ -14,10 +14,14 @@ provisional restriction.
 `COPYRIGHT_INTAKE_ENABLED` is the intake kill switch. While it is off, or while the evidence
 bucket, copyright sender and reply-to addresses, or media-delivery enforcement is unconfigured,
 `POST /api/v1/copyright-notices`, `POST /api/v1/copyright-eu-notices`, and
-`POST /api/v1/copyright-uk-notices` return `503` before authentication. New EU and UK notices need
-this switch in addition to the territorial policy approval. In-case responses (appeals,
-counter-notices, guest filings, EU and UK redress, EU supervised complaints) and every staff route
-stay available so existing cases keep their statutory paths.
+`POST /api/v1/copyright-uk-notices` return `503` before authentication. Staff approval of an
+emailed notice, `POST /api/v1/copyright-email-intakes/:id/approvals`, returns the same `503` because
+it opens a new case. New EU and UK notices need this switch in addition to the territorial policy
+approval. In-case responses (appeals, counter-notices, guest filings, EU and UK redress, EU
+supervised complaints) and every other staff route stay available so existing cases keep their
+statutory paths. Email is still ingested and listed in the staff email intake queue while the switch
+is off, and staff can reject an email or record a matched reply through
+`POST /api/v1/copyright-email-intakes/:id/correspondence`.
 
 Browser clients must send a Cloudflare Turnstile token in `cf_turnstile_response` for every
 copyright notice, appeal, and counter-notice submission. Native iOS clients may instead use the

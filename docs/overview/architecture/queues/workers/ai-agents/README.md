@@ -34,7 +34,12 @@ Copyright appeal jobs persist bounded `confirm`, `modify`, `reverse`, or `uncert
 the immutable appeal receipt and a minimal notice/restriction summary. Their processor has no path
 that changes material availability: a moderator must review the stored recommendation and make any
 restriction decision separately. The five-minute copyright reconciler re-enqueues an appeal only
-while no recommendation exists.
+while no recommendation exists. It re-enqueues a parsed email intake only while the intake has no
+recommendation and no staff decision (an initial review or an admitted or rejected correspondence
+review), so an email staff handled while intake was off is never sent to the model afterward.
+While `COPYRIGHT_INTAKE_ENABLED` is off, the email-intake job returns without a model call and the
+whole reconciler pass is skipped; the first pass after the switch is on dispatches every email
+ingested during the pause.
 
 ## Token-limiter wiring (TPM)
 
