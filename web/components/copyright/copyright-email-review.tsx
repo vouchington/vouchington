@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
+import { TimeAgo } from '@/components/shared/time-ago'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import type {
   CopyrightEmailIntakeQueueItem,
@@ -113,6 +114,9 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
                         : 'Initial intake'}{' '}
                     {item.id}
                   </Button>
+                  <p className='text-xs text-muted-foreground'>
+                    Received <TimeAgo date={item.received_at} />
+                  </p>
                 </li>
               ))}
             </ul>

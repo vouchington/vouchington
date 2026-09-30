@@ -24,6 +24,11 @@ These are product response targets, not representations of safe-harbor eligibili
 
 ## Queue triage
 
+The staff case queue (Moderation sidebar, Copyright, Case Queue) lists missed restoration deadlines
+first, then deadlines past escalation, then other open work, each oldest wait first. Work it top
+down. Each case shows why it is queued and how long its oldest open item has waited. The email
+intake queue shows each message's wait age.
+
 1. Confirm the original submission and evidence digest exist. Never reconstruct a missing email from
    agent output.
 2. For email, compare the structured extraction with the inert original and correct it before

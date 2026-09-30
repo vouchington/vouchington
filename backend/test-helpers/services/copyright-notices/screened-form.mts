@@ -7,21 +7,22 @@ import {
 import { createCopyrightFormIntake } from '../../../services/copyright-notices/form-intakes.mts'
 import { appendCopyrightFormScreening } from '../../../services/copyright-notices/form-screenings.mts'
 import {
-  copyrightStaffQueueCursorScope,
+  type CopyrightStaffQueueCursor,
   listCopyrightStaffQueue,
 } from '../../../services/copyright-notices/read-models-staff.mts'
-import { decodeScopedPreciseTimestampCursor } from '../../../modules/pagination/index.mts'
-import { readCopyrightStaffQueueCursorBefore } from '../../data-stores/psql/copyright-notice-reads.mts'
+import { readCopyrightStaffQueueCursorRows } from '../../data-stores/psql/copyright-notice-reads.mts'
 
 export async function isTestCopyrightStaffCaseQueued(
   noticeId: string,
   currentUser: Parameters<typeof listCopyrightStaffQueue>[0],
 ): Promise<boolean> {
-  let after: { timestamp: string; id: string } = decodeScopedPreciseTimestampCursor(
-    await readCopyrightStaffQueueCursorBefore([noticeId]),
-    copyrightStaffQueueCursorScope,
-    'Invalid copyright staff queue fixture cursor',
-  )
+  const [key] = await readCopyrightStaffQueueCursorRows([noticeId])
+  if (!key) return false
+  let after: CopyrightStaffQueueCursor = {
+    tier: key.urgency,
+    timestamp: key.waiting_since_before,
+    id: key.id,
+  }
   for (;;) {
     const page = await listCopyrightStaffQueue(currentUser, { limit: 100, after })
     if (page.cases.some(item => item.id === noticeId)) return true

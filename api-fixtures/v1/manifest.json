@@ -11440,14 +11440,14 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "0dbcc8511172f40e05a0a2866bc42b213aa55c35514a29ba667b51c05de9c5f2",
+      "hash": "779fe8b48048633ab4a16f30fbdad8247af6d6bb4167798b092f2078b9775520",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
       "routeTemplate": "/api/v1/copyright-notices/review-queue",
       "schema": {
         "definitions": {
-          "CopyrightStaffCase": {
+          "CopyrightStaffQueueCase": {
             "additionalProperties": false,
             "properties": {
               "action_intents": {
@@ -12119,6 +12119,45 @@
                   "type": "array"
                 }
               },
+              "next_deadline": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "escalation_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "restoration_deadline_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "reasons": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "name": "CopyrightStaffQueueReason",
+                    "type": "ref"
+                  },
+                  "type": "array"
+                }
+              },
               "received_at": {
                 "required": true,
                 "schema": {
@@ -12221,6 +12260,12 @@
                   "type": "array"
                 }
               },
+              "waiting_since": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
               "work_description": {
                 "required": true,
                 "schema": {
@@ -12230,6 +12275,51 @@
             },
             "type": "object"
           },
+          "CopyrightStaffQueueReason": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "action_failed"
+              },
+              {
+                "type": "literal",
+                "value": "appeal_review"
+              },
+              {
+                "type": "literal",
+                "value": "counter_notice_review"
+              },
+              {
+                "type": "literal",
+                "value": "deadline_due"
+              },
+              {
+                "type": "literal",
+                "value": "deadline_missed"
+              },
+              {
+                "type": "literal",
+                "value": "delivery_failed"
+              },
+              {
+                "type": "literal",
+                "value": "enforcement_pending"
+              },
+              {
+                "type": "literal",
+                "value": "form_intake_review"
+              },
+              {
+                "type": "literal",
+                "value": "legal_hold_review"
+              },
+              {
+                "type": "literal",
+                "value": "restriction_review"
+              }
+            ]
+          },
           "CopyrightStaffQueueResponse": {
             "additionalProperties": false,
             "properties": {
@@ -12237,7 +12327,7 @@
                 "required": true,
                 "schema": {
                   "items": {
-                    "name": "CopyrightStaffCase",
+                    "name": "CopyrightStaffQueueCase",
                     "type": "ref"
                   },
                   "type": "array"
@@ -82114,7 +82204,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "417a96ad52ff3a593c26c294c1a949b8a06f07ef2ec03517b80d601c7b5ac13d",
+        "hash": "f4fba45798e69920c5979f181f8d111afecb9e5fa073050eeebe6cd87e81d4c5",
         "key": "web.copyright.staff-queue.default"
       },
       "route": {

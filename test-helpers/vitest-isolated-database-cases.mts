@@ -33,6 +33,11 @@ const isolatedDatabaseCases = {
     fullName:
       'copyright email intake queue pagination uses the UUID tie-breaker when two intakes share a received timestamp',
   },
+  'copyright-staff-queue-urgency': {
+    file: 'backend/api/v1/copyright-notices/staff-queue-urgency.test.mts',
+    fullName:
+      'copyright staff queue urgency lists missed then due restoration deadlines ahead of older intake work across pages',
+  },
   'copyright-cache-policy': {
     file: 'backend/api/v1/copyright-notices/copyright-cache.test.mts',
     fullName:

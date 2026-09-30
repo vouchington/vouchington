@@ -3,7 +3,10 @@ import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
-import { encodeScopedPreciseTimestampCursor } from '@modules/pagination'
+import {
+  encodeScopedPreciseTimestampCursor,
+  encodeScopedTierPreciseUuidCursor,
+} from '@modules/pagination'
 import {
   readCopyrightStaffQueueCursorBefore,
   readCopyrightStaffQueueCursorRows,
@@ -15,6 +18,8 @@ import {
 } from '@services/copyright-notices'
 
 const otherCursorScope = 'copyright-notices:accepted-at-desc-id-desc'
+// The pre-urgency `(received_at, id)` scope a stale client may still hold.
+const receivedAtCursorScope = 'copyright-notices:staff-queue:received-at-asc-id-asc'
 
 describe('copyright staff queue pagination', () => {
   beforeEach(() => {
@@ -106,6 +111,25 @@ describe('copyright staff queue pagination', () => {
     await request
       .get('/api/v1/copyright-notices/review-queue?after=not-a-copyright-cursor')
       .expect(400)
+    const staleReceivedAtCursor = encodeScopedPreciseTimestampCursor(
+      '2026-01-01T00:00:00.000000Z',
+      created[0]!,
+      receivedAtCursorScope,
+    )
+    await request
+      .get(
+        `/api/v1/copyright-notices/review-queue?after=${encodeURIComponent(staleReceivedAtCursor)}`,
+      )
+      .expect(400)
+    const unknownTier = encodeScopedTierPreciseUuidCursor(
+      '2026-01-01T00:00:00.000000Z',
+      3,
+      created[0]!,
+      copyrightStaffQueueCursorScope,
+    )
+    await request
+      .get(`/api/v1/copyright-notices/review-queue?after=${encodeURIComponent(unknownTier)}`)
+      .expect(400)
   })
 
   it('uses the UUID tie-breaker when two staff cases have the same received timestamp', async () => {
@@ -139,11 +163,12 @@ describe('copyright staff queue pagination', () => {
         first.intake.copyright_notice_id,
         second.intake.copyright_notice_id,
       ])
-      expect(rows[0]!.received_at).toBe(rows[1]!.received_at)
+      expect(rows[0]).toMatchObject({ urgency: 2, waiting_since: rows[1]!.waiting_since })
       const request = createRequest()
       await request.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
-      const after = encodeScopedPreciseTimestampCursor(
-        rows[0]!.received_at,
+      const after = encodeScopedTierPreciseUuidCursor(
+        rows[0]!.waiting_since,
+        rows[0]!.urgency,
         rows[0]!.id,
         copyrightStaffQueueCursorScope,
       )

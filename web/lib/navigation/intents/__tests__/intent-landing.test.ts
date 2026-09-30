@@ -113,6 +113,12 @@ describe('WS2 moderation intent landing (real intent def)', () => {
     expect(findIntentLandingHref(moderationIntent, true, ['administrator'])).toBe('/reports')
   })
 
+  it('moderator lands on the copyright queue (first item of Copyright group)', () => {
+    expect(findIntentLandingHref(moderationIntent, true, ['moderator'])).toBe(
+      '/copyright/review-queue',
+    )
+  })
+
   it('authed non-admin lands on /my/appeals (first item of My Cases group)', () => {
     expect(findIntentLandingHref(moderationIntent, true, [])).toBe('/my/appeals')
   })

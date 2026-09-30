@@ -46,6 +46,10 @@ describe('CopyrightEmailReview', () => {
 
   it('shows private evidence, parsed content, and a recommendation-mapped approval form', async () => {
     render(<CopyrightEmailReview data={makeQueuePage()} />)
+    expect(screen.getByText(/^Received/).querySelector('time')).toHaveAttribute(
+      'dateTime',
+      '2026-09-19T00:00:00.000Z',
+    )
 
     await selectEmailIntake()
 

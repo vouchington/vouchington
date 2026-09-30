@@ -3191,7 +3191,190 @@
         ],
         "type": "object"
       },
-      "CopyrightStaffCase": {
+      "CopyrightStaffDisposition": {
+        "enum": ["maintain", "revoke"],
+        "type": "string"
+      },
+      "CopyrightStaffEmailIntake": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "linked_notice": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "targets": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "placement_key": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "placement_key"],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": ["id", "targets"],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "parsed_email": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "body_text": {
+                    "type": "string"
+                  },
+                  "sender_email": {
+                    "type": "string"
+                  },
+                  "subject": {
+                    "type": "string"
+                  }
+                },
+                "required": ["body_text", "sender_email", "subject"],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "parser_error": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "raw_email": {
+            "additionalProperties": false,
+            "properties": {
+              "byte_size": {
+                "type": "number"
+              },
+              "download_url": {
+                "type": "string"
+              },
+              "mime_type": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string"
+              }
+            },
+            "required": ["byte_size", "download_url", "mime_type", "sha256"],
+            "type": "object"
+          },
+          "received_at": {
+            "type": "string"
+          },
+          "recommendation": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "structured_output": {
+                    "$ref": "#/components/schemas/Record_string_unknown"
+                  }
+                },
+                "required": ["id", "structured_output"],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "review_path": {
+            "enum": ["initial", "matched_thread", "unresolved_thread"],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "linked_notice",
+          "parsed_email",
+          "parser_error",
+          "raw_email",
+          "received_at",
+          "recommendation",
+          "review_path"
+        ],
+        "type": "object"
+      },
+      "CopyrightStaffEmailIntakeQueueItem": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "linked_notice_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "parse_status": {
+            "enum": ["failed", "succeeded"],
+            "type": "string"
+          },
+          "received_at": {
+            "type": "string"
+          },
+          "recommendation_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "review_path": {
+            "enum": ["initial", "matched_thread", "unresolved_thread"],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "linked_notice_id",
+          "parse_status",
+          "received_at",
+          "recommendation_id",
+          "review_path"
+        ],
+        "type": "object"
+      },
+      "CopyrightStaffQueueCase": {
         "additionalProperties": false,
         "properties": {
           "action_intents": {
@@ -3579,6 +3762,32 @@
             },
             "type": "array"
           },
+          "next_deadline": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "escalation_at": {
+                    "type": "string"
+                  },
+                  "restoration_deadline_at": {
+                    "type": "string"
+                  }
+                },
+                "required": ["escalation_at", "restoration_deadline_at"],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/CopyrightStaffQueueReason"
+            },
+            "type": "array"
+          },
           "received_at": {
             "type": "string"
           },
@@ -3636,6 +3845,9 @@
             },
             "type": "array"
           },
+          "waiting_since": {
+            "type": "string"
+          },
           "work_description": {
             "type": "string"
           }
@@ -3652,202 +3864,37 @@
           "id",
           "jurisdiction",
           "legal_holds",
+          "next_deadline",
+          "reasons",
           "received_at",
           "restrictions",
           "targets",
+          "waiting_since",
           "work_description"
         ],
         "type": "object"
       },
-      "CopyrightStaffDisposition": {
-        "enum": ["maintain", "revoke"],
+      "CopyrightStaffQueueReason": {
+        "enum": [
+          "action_failed",
+          "appeal_review",
+          "counter_notice_review",
+          "deadline_due",
+          "deadline_missed",
+          "delivery_failed",
+          "enforcement_pending",
+          "form_intake_review",
+          "legal_hold_review",
+          "restriction_review"
+        ],
         "type": "string"
-      },
-      "CopyrightStaffEmailIntake": {
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "linked_notice": {
-            "anyOf": [
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "type": "string"
-                  },
-                  "targets": {
-                    "items": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "placement_key": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["id", "placement_key"],
-                      "type": "object"
-                    },
-                    "type": "array"
-                  }
-                },
-                "required": ["id", "targets"],
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "parsed_email": {
-            "anyOf": [
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "body_text": {
-                    "type": "string"
-                  },
-                  "sender_email": {
-                    "type": "string"
-                  },
-                  "subject": {
-                    "type": "string"
-                  }
-                },
-                "required": ["body_text", "sender_email", "subject"],
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "parser_error": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "raw_email": {
-            "additionalProperties": false,
-            "properties": {
-              "byte_size": {
-                "type": "number"
-              },
-              "download_url": {
-                "type": "string"
-              },
-              "mime_type": {
-                "type": "string"
-              },
-              "sha256": {
-                "type": "string"
-              }
-            },
-            "required": ["byte_size", "download_url", "mime_type", "sha256"],
-            "type": "object"
-          },
-          "received_at": {
-            "type": "string"
-          },
-          "recommendation": {
-            "anyOf": [
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "type": "string"
-                  },
-                  "structured_output": {
-                    "$ref": "#/components/schemas/Record_string_unknown"
-                  }
-                },
-                "required": ["id", "structured_output"],
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "review_path": {
-            "enum": ["initial", "matched_thread", "unresolved_thread"],
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "linked_notice",
-          "parsed_email",
-          "parser_error",
-          "raw_email",
-          "received_at",
-          "recommendation",
-          "review_path"
-        ],
-        "type": "object"
-      },
-      "CopyrightStaffEmailIntakeQueueItem": {
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "linked_notice_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "parse_status": {
-            "enum": ["failed", "succeeded"],
-            "type": "string"
-          },
-          "received_at": {
-            "type": "string"
-          },
-          "recommendation_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "review_path": {
-            "enum": ["initial", "matched_thread", "unresolved_thread"],
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "linked_notice_id",
-          "parse_status",
-          "received_at",
-          "recommendation_id",
-          "review_path"
-        ],
-        "type": "object"
       },
       "CopyrightStaffQueueResponse": {
         "additionalProperties": false,
         "properties": {
           "copyright_notices": {
             "items": {
-              "$ref": "#/components/schemas/CopyrightStaffCase"
+              "$ref": "#/components/schemas/CopyrightStaffQueueCase"
             },
             "type": "array"
           },

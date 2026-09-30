@@ -48,6 +48,9 @@ describe('CopyrightStaffQueue recovery actions', () => {
         />,
       )
 
+      expect(screen.getByText('Failed action')).toBeInTheDocument()
+      expect(screen.getByText('Failed delivery')).toBeInTheDocument()
+      expect(screen.queryByText(/^Next deadline/)).toBeNull()
       const retries = screen.getAllByRole('button', { name: 'Retry' })
       expect(retries).toHaveLength(2)
       expect(retries[index]).toBeEnabled()
@@ -124,5 +127,8 @@ function makeNotice(): CopyrightStaffQueueItem {
       },
     ],
     email_correspondence: [],
+    reasons: ['action_failed', 'delivery_failed'],
+    waiting_since: '2026-01-01T00:00:00.000Z',
+    next_deadline: null,
   }
 }
