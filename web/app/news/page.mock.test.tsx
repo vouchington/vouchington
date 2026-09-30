@@ -1,4 +1,4 @@
-import type { ElementType, ReactNode } from 'react'
+import { createElement, type ElementType, type ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api/error'
@@ -27,9 +27,17 @@ vi.mock(
 )
 
 vi.mock(import('@/components/page-with-aside'), () => ({
-  PageWithAside: ({ children, aside: Aside }: { children: ReactNode; aside: ElementType }) => (
+  PageWithAside: ({
+    children,
+    aside,
+  }: {
+    children: ReactNode
+    aside?: ElementType | ReactNode
+    showFooter?: boolean
+    mobileHidden?: boolean
+  }) => (
     <div>
-      <Aside />
+      {typeof aside === 'function' ? createElement(aside) : null}
       {children}
     </div>
   ),
