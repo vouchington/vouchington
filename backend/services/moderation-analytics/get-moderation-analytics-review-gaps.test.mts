@@ -50,7 +50,13 @@ describe('getModerationAnalytics review regressions', () => {
       userId: suspect.id,
       sourceUserId: sourceUser.id,
     })
-    await insertTestSystemModerationReport('user', suspect.id, 'Suspected ban evasion')
+    await insertTestSystemModerationReport(
+      'user',
+      suspect.id,
+      'Suspected ban evasion',
+      undefined,
+      community.id,
+    )
     await dismissBanEvasionFlag(owner, community.id, suspect.id)
 
     const metrics = await getModerationAnalytics('7d', {
