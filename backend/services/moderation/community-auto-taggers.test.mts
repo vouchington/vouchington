@@ -10,8 +10,6 @@ import {
   AI_GENERATED_MODERATOR_SLUG,
   disableCommunityAutoTaggerAgent,
   enableCommunityAutoTaggerAgent,
-  getDisabledCommunityAutoTaggerModeratorSlugs,
-  getEnabledCommunityAutoTaggerModeratorSlugs,
   searchCommunityAutoTaggerAgents,
   SELF_PROMOTION_MODERATOR_SLUG,
 } from './index.mts'
@@ -76,9 +74,6 @@ describe('community auto taggers', () => {
       SELF_PROMOTION_MODERATOR_SLUG,
     )
     expect(enabledAgain.enabled).toBe(true)
-    await expect(getEnabledCommunityAutoTaggerModeratorSlugs(community.id)).resolves.toEqual([
-      SELF_PROMOTION_MODERATOR_SLUG,
-    ])
 
     const disabled = await disableCommunityAutoTaggerAgent(
       owner,
@@ -86,7 +81,6 @@ describe('community auto taggers', () => {
       SELF_PROMOTION_MODERATOR_SLUG,
     )
     expect(disabled.enabled).toBe(false)
-    await expect(getEnabledCommunityAutoTaggerModeratorSlugs(community.id)).resolves.toEqual([])
   })
 
   it('rejects non-moderators and unknown agent slugs', async () => {
@@ -140,9 +134,6 @@ describe('community auto taggers', () => {
     )
     expect(disabled.enabled).toBe(false)
     expect(disabled.always_on).toBe(true)
-    await expect(getDisabledCommunityAutoTaggerModeratorSlugs(community.id)).resolves.toContain(
-      AI_GENERATED_MODERATOR_SLUG,
-    )
 
     const reenabled = await enableCommunityAutoTaggerAgent(
       admin!,

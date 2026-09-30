@@ -2,7 +2,7 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { isBaselineModeratorSlug } from '@services/agents/moderator-configs'
 import type { CommunityAiAgentEntitlement } from './community-agent-entitlements.mts'
-import type { ModeratorOnFlagAction } from './moderation-prompts.mts'
+import type { ModeratorOnFlagAction } from './active-moderator-config.mts'
 import {
   AI_GENERATED_MODERATOR_SLUG,
   CLICK_BAIT_MODERATOR_SLUG,
@@ -60,54 +60,6 @@ export function isCommunityAutoTaggerAgentSlug(
   value: string,
 ): value is CommunityAutoTaggerAgentSlug {
   return FIXED_LABEL_MODERATOR_SLUGS.includes(value as CommunityAutoTaggerAgentSlug)
-}
-
-export async function getDisabledCommunityAutoTaggerModeratorSlugs(
-  communityId: string | null | undefined,
-): Promise<CommunityAutoTaggerAgentSlug[]> {
-  if (!communityId) return []
-
-  const slugs = getCommunityAutoTaggerAgentSlugs()
-  const { rows } = await read(sql`/* getDisabledCommunityAutoTaggerModeratorSlugs */
-    SELECT am.slug
-    FROM community_auto_tagger_agents cata
-    JOIN agents a ON a.id = cata.agent_id
-    JOIN agents__moderators am ON am.agent_id = a.id
-    WHERE cata.community_id = ${communityId}
-      AND cata.disabled_at IS NOT NULL
-      AND am.slug = ANY(${slugs}::text[])
-      AND a.agent_type = 'moderator'
-      AND a.activated_at IS NOT NULL
-      AND a.deactivated_at IS NULL
-      AND a.deleted_at IS NULL
-    ORDER BY array_position(${slugs}::text[], am.slug), am.slug
-  `)
-
-  return rows.map(row => row.slug as CommunityAutoTaggerAgentSlug)
-}
-
-export async function getEnabledCommunityAutoTaggerModeratorSlugs(
-  communityId: string | null | undefined,
-): Promise<CommunityAutoTaggerAgentSlug[]> {
-  if (!communityId) return []
-
-  const slugs = getCommunityAutoTaggerAgentSlugs()
-  const { rows } = await read(sql`/* getEnabledCommunityAutoTaggerModeratorSlugs */
-    SELECT am.slug
-    FROM community_auto_tagger_agents cata
-    JOIN agents a ON a.id = cata.agent_id
-    JOIN agents__moderators am ON am.agent_id = a.id
-    WHERE cata.community_id = ${communityId}
-      AND cata.disabled_at IS NULL
-      AND am.slug = ANY(${slugs}::text[])
-      AND a.agent_type = 'moderator'
-      AND a.activated_at IS NOT NULL
-      AND a.deactivated_at IS NULL
-      AND a.deleted_at IS NULL
-    ORDER BY array_position(${slugs}::text[], am.slug), am.slug
-  `)
-
-  return rows.map(row => row.slug as CommunityAutoTaggerAgentSlug)
 }
 
 export async function getAgentIdByModeratorSlug(

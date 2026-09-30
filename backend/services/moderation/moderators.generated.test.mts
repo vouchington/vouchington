@@ -9,7 +9,6 @@ import {
   createPostLLMModerator,
   getPostLLMModeratorBySlug,
   updatePostLLMModerator,
-  getActivePostLLMModerators,
 } from './moderators.mts'
 import type { PrivateUser } from '@services/users/types'
 
@@ -32,22 +31,6 @@ describe('moderators.generated', () => {
     expect(moderator.system_user_id).toBeDefined()
     expect(moderator.activated_at).toBeNull()
     expect(moderator.deactivated_at).toBeNull()
-  })
-
-  it('getActivePostLLMModerators returns only active moderators', async () => {
-    const random = randomSuffix()
-
-    const systemUser1 = await createSystemUser(`active-mod-${random}`)
-    const mod1 = await createPostLLMModerator(user, systemUser1, `active-mod-${random}`)
-    await updatePostLLMModerator(user, mod1.id, { active: true })
-
-    const systemUser2 = await createSystemUser(`inactive-mod-${random}`)
-    const mod2 = await createPostLLMModerator(user, systemUser2, `inactive-mod-${random}`)
-    const active = await getActivePostLLMModerators()
-    const activeIds = active.map(m => m.id)
-
-    expect(activeIds).toContain(mod1.id)
-    expect(activeIds).not.toContain(mod2.id)
   })
 
   it('updatePostLLMModerator updates on_flag_action', async () => {

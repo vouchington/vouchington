@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import { getCommunity } from '@services/communities/get'
 import { getCommunityMember } from '@services/communities/members/get'
 import type { Community, CommunityMember } from '@services/communities/types'
@@ -18,11 +18,7 @@ import {
   type CommunityAutoTaggerAgent,
 } from './community-auto-tagger-data.mts'
 
-export {
-  getDisabledCommunityAutoTaggerModeratorSlugs,
-  getEnabledCommunityAutoTaggerModeratorSlugs,
-  type CommunityAutoTaggerAgent,
-} from './community-auto-tagger-data.mts'
+export { type CommunityAutoTaggerAgent } from './community-auto-tagger-data.mts'
 
 export async function searchCommunityAutoTaggerAgents(
   currentUser: PrivateUser,
@@ -43,31 +39,6 @@ export async function searchCommunityAutoTaggerAgents(
     )
     return mapCommunityAutoTaggerAgent(row, entitlement)
   })
-}
-
-export async function assertCommunityAutoTaggerAgentEnabled(
-  communityId: string | null | undefined,
-  moderatorSlug: string,
-): Promise<boolean> {
-  if (!communityId) return false
-  if (!isCommunityAutoTaggerAgentSlug(moderatorSlug)) return false
-
-  const { rows } = await read(sql`/* assertCommunityAutoTaggerAgentEnabled */
-    SELECT 1
-    FROM community_auto_tagger_agents cata
-    JOIN agents__moderators am ON am.agent_id = cata.agent_id
-    JOIN agents a ON a.id = cata.agent_id
-    WHERE cata.community_id = ${communityId}
-      AND am.slug = ${moderatorSlug}
-      AND cata.disabled_at IS NULL
-      AND a.agent_type = 'moderator'
-      AND a.activated_at IS NOT NULL
-      AND a.deactivated_at IS NULL
-      AND a.deleted_at IS NULL
-    LIMIT 1
-  `)
-
-  return rows.length > 0
 }
 
 export async function enableCommunityAutoTaggerAgent(

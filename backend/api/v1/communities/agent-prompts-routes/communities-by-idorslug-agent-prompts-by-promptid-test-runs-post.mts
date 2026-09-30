@@ -1,10 +1,13 @@
-import { callOpenAIModeration, prepareModerationInput } from '@agents/moderation/openai-moderation'
+import {
+  callOpenAIModeration,
+  prepareModerationInput,
+} from '@agents/community-moderation/openai-moderation'
 import { SYNCHRONOUS_REQUEST_RETRY_POLICY } from '@agents/_shared'
 import type { Context } from '@jongleberry/api-server'
 import { assertOpenAiSpendCapNotBreached } from '@services/ai-usage'
 import { currentUserCanModerateCommunity, getCommunityMember } from '@services/communities'
 import { getCommunityAgentPrompt } from '@services/community-agent-prompts'
-import type { ActiveModeratorConfig } from '@services/moderation/moderation-prompts'
+import type { ActiveModeratorConfig } from '@services/moderation'
 import { recordModerationTrainingFeedback } from '@services/moderation-training'
 import { getPromptTestTrainingLabel } from '@services/moderation-training/prompt-test-label'
 import app from '../../../app.mts'

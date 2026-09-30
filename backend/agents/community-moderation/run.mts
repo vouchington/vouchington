@@ -1,7 +1,7 @@
 import { getCommunityAgentPrompt } from '@services/community-agent-prompts/get'
 import { checkExistingModeration, insertAgentModerationResult } from '@services/moderation'
 import { createPostModerationContent } from '@services/posts/content'
-import { prepareModerationInput, callOpenAIModeration } from '@agents/moderation/openai-moderation'
+import { prepareModerationInput, callOpenAIModeration } from './openai-moderation.mts'
 import { unpublishPostAsAgent } from '@services/communities/publications/moderate'
 import onError from '@modules/on-error'
 import type { Post } from '@services/posts/types'

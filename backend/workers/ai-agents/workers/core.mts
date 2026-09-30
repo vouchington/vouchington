@@ -19,7 +19,6 @@ import {
   openAiSpendCapConfig,
   OpenAiSpendCapBreachError,
 } from '@services/ai-usage'
-import { AI_GENERATED_MODERATOR_SLUG } from '@services/moderation'
 import { processAIAgent } from '../processors.mts'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { registerOpenAiSpendCapRecheck } from '../processors/spend-cap-recheck.mts'
@@ -118,17 +117,12 @@ export async function processAIAgentWorkerJob(
   }
 }
 
-// Anthropic chat and the local `ai-generated` moderator never bill OpenAI generation, so they must
-// not be parked by this cap. The shared Moderations pre-check is free and writes no ledger row.
+// Anthropic-routed chat never bills OpenAI generation, so it must not be parked by this cap.
 function jobProducesOpenAiSpend(job: Job<AIAgentJobData>): boolean {
   if (!AI_AGENT_JOB_PRODUCES_SPEND[job.name as AIAgentJobName]) return false
   if (job.name === 'chat') {
     const chatData = job.data as import('@queues/ai-agents/types').ChatJobData
     return chatData.modelProvider !== 'anthropic'
-  }
-  if (job.name === 'moderation-prompt') {
-    const promptData = job.data as import('@queues/ai-agents/types').ModerationPromptJobData
-    return promptData.moderatorSlug !== AI_GENERATED_MODERATOR_SLUG
   }
   return true
 }

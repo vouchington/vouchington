@@ -6,7 +6,7 @@ import {
 } from '@agents/_shared'
 import type { ActiveModeratorConfig } from '@services/moderation'
 import type { Post } from '@services/posts/types'
-import { MARKETPLACE_CATEGORIES } from './constants.mts'
+import { MARKETPLACE_CATEGORIES } from '@services/moderation/moderator-labels'
 
 const openAIPostLLMModerationJSONSchema = {
   type: 'object',

@@ -5,7 +5,7 @@ import {
   SYNCHRONOUS_REQUEST_RETRY_POLICY,
 } from '@agents/_shared'
 import { extractTextFromOpenAIResponse } from '@modules/openai-utils'
-import { prepareModerationInput } from '@agents/moderation/openai-moderation'
+import { prepareModerationInput } from './openai-moderation.mts'
 import type { CommunityAgentPrompt } from '@services/community-agent-prompts'
 import type { CommunityAgentPromptSimulationPost } from '@services/community-agent-prompts/simulations'
 
