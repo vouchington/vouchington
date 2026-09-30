@@ -2,24 +2,13 @@
 import { render } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
-import { AppSidebar } from '../../components/app-sidebar'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { AuthProvider } from '@/lib/auth/auth-provider'
 import { toClientAuthUser } from '@/lib/auth/client-auth-user'
+import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
 import type { User } from '@/types/user'
 
-let mockPathname = '/'
-
-vi.mock(
-  import('next/navigation'),
-  () =>
-    ({
-      usePathname: () => mockPathname,
-      useRouter: vi.fn<() => { push: (path: string) => void }>(() => ({
-        push: vi.fn<(path: string) => void>(),
-      })),
-    }) as unknown as typeof import('next/navigation'),
-)
+vi.mock(import('next/navigation'), () => navMockModule)
 
 vi.mock(
   import('next/link'),
@@ -87,8 +76,12 @@ vi.mock(
     }) as unknown as typeof import('../../components/sidebar-site-footer'),
 )
 
+import { AppSidebar } from '../../components/app-sidebar'
+
+const mockNav = createNavMock()
+
 export function setMockPathname(pathname: string) {
-  mockPathname = pathname
+  mockNav.setPathname(pathname)
 }
 
 export function renderSidebar(currentUser: User | null = null) {
