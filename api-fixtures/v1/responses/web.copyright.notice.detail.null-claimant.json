@@ -16,9 +16,14 @@
     ],
     "timeline": [
       {
-        "created_at": "2026-07-01T12:01:00.000Z",
-        "event_type": "notice_accepted",
+        "created_at": "2026-07-01T12:00:00.000Z",
+        "event_type": "notice_received",
         "id": "00000000-0000-7000-8000-000000000807"
+      },
+      {
+        "created_at": "2026-07-01T12:01:00.000Z",
+        "event_type": "provisional_restriction_imposed",
+        "id": "00000000-0000-7000-8000-0000000008f1"
       }
     ]
   }

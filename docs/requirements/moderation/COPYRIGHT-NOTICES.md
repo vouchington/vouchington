@@ -153,7 +153,8 @@ Lifecycle events hold one typed source reference per event (except the case-leve
 with a concrete foreign key and database-checked same-case ownership. Action events point to the
 action intent, which owns its restriction; legal-hold target membership remains in the assessment's
 child rows. Review outcomes, encrypted rationale, recovery origin, and replay reason are typed columns,
-not a JSON relationship envelope. Member timelines still project only event type and timestamp.
+not a JSON relationship envelope. Timelines project only event type and timestamp, filtered by
+audience (see Member and staff surfaces).
 
 ## Submission and evidence integrity
 
@@ -218,10 +219,23 @@ snapshot. A target reference is returned only when that viewer may otherwise see
 
 `/copyright/notices` and `/copyright/notices/:id` require authentication. They list only accepted
 US cases and project case identifier, dates, target URL, restriction state, a metadata-free
-lifecycle timeline, and the claimant's current public profile when one exists. They never expose
+allowlisted lifecycle timeline, and the claimant's current public profile when one exists. They never expose
 legal claimant or poster identity, email, mailing address, signature, raw email, evidence artifacts,
 encrypted fields, moderator rationale, or agent recommendation. A guest or erased claimant has no
 member-visible profile link.
+
+The timeline is an audience allowlist decided per event type in
+`backend/services/copyright-notices/timeline-visibility.mts`, and a database-backed test fails when
+a lifecycle event type has no decision. Any signed-in member sees only case-facing events: notice
+received, provisional restriction imposed, placement withheld and restored, appeal received and
+reviewed, counter-notice received and reviewed, and withdrawal received. A case's claimant or an
+affected poster, through `/copyright/notices/:id/participant`, also sees a received court or CCB
+hold, which explains why restoration did not happen. Staff receive the unfiltered timeline through
+that participant read model only. Supplements, counter-notice deadline starts, restoration and
+placement-retention internals, submission and legal-hold assessments, human-review completion,
+evidence and correspondence handling, action, delivery, and registry replays, and every
+guest-capability event are staff-only. A new event type stays invisible to members and participants
+until it is added to the allowlist.
 
 A guest who is not signed in acts only with a hashed, expiring, revocable capability for one case.
 Staff issue that token once, with an expiry no more than 30 days after issue. The capability records

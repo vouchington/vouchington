@@ -37,6 +37,13 @@ and display label. It excludes legal identity, contact details, signatures, and 
 It uses the canonical opaque `after` cursor and bounded `limit` (1–100; default 100), returning
 `page_info` so the member-visible index can continue beyond its first page.
 
+The detail's `timeline` is an audience allowlist: a member sees only case-facing events (notice
+received, provisional restriction imposed, placement withheld and restored, appeal and
+counter-notice received and reviewed, withdrawal received) and never internal review, replay,
+legal-hold, or guest-capability events. `GET /api/v1/copyright-notices/:id/participant` gives a
+claimant or affected poster the same events plus a received court or CCB hold, and gives staff the
+unfiltered timeline.
+
 The staff review queue uses the same bounded `after` and `limit` contract. Its cursor is scoped to
 the actionable queue and orders by `(urgency, waiting_since, id)`: a missed restoration deadline
 first, then a deadline past escalation, then all other open work, each oldest wait first. Every

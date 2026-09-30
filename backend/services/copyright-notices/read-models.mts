@@ -6,6 +6,10 @@ import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
+import {
+  copyrightTimelineEventTypesFor,
+  type CopyrightTimelineAudience,
+} from './timeline-visibility.mts'
 
 export type CopyrightStaffEmailIntake = {
   id: string
@@ -201,9 +205,15 @@ export async function listAcceptedCopyrightNotices(options: {
   }
 }
 
+/**
+ * The member-visible case. Its timeline is the audience allowlist in `timeline-visibility.mts`;
+ * only the participant read model widens it, for the viewer's own role.
+ */
 export async function getCopyrightPublicNoticeDetail(
   noticeId: string,
+  timelineAudience: CopyrightTimelineAudience = 'member',
 ): Promise<CopyrightPublicNoticeDetail | null> {
+  const timelineEventTypes = copyrightTimelineEventTypesFor(timelineAudience)
   await using transaction = await beginTransaction()
   const { rows: notices } =
     await transaction<CopyrightPublicNoticeRow>(sql`/* getCopyrightPublicNotice */
@@ -256,6 +266,7 @@ export async function getCopyrightPublicNoticeDetail(
       SELECT id, event_type, created_at
       FROM copyright_notice_lifecycle_events
       WHERE copyright_notice_id = ${noticeId}
+        AND (${timelineEventTypes}::text[] IS NULL OR event_type = ANY(${timelineEventTypes}::text[]))
       ORDER BY created_at, id
     `),
   ])
@@ -292,7 +303,10 @@ export async function getCopyrightParticipantNoticeDetail(
 ): Promise<CopyrightParticipantNoticeDetail | null> {
   const viewerRole = await getCopyrightNoticeViewerRole(noticeId, currentUser)
   if (!viewerRole) return null
-  const detail = await getCopyrightPublicNoticeDetail(noticeId)
+  const detail = await getCopyrightPublicNoticeDetail(
+    noticeId,
+    viewerRole === 'staff' ? 'staff' : 'participant',
+  )
   if (!detail) return null
   await using transaction = await beginTransaction()
   const [{ rows: submissions }, { rows: respondableTargets }] = await Promise.all([
