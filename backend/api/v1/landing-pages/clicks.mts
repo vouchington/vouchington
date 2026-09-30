@@ -4,6 +4,14 @@ import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import { recordLandingPageItemClick } from '@services/landing-page-analytics'
 import { hasGlobalPrivacyControlHeaders, isUUID } from '@modules/utils'
 import onError from '@modules/on-error'
+import type { ApiUuidContract } from '../../request-contract-types.mts'
+import { validateRequestContract } from '../../response-helpers.mts'
+
+/** Closed request body for `POST /api/v1/landing-pages/:landingPageId/clicks`. */
+type LandingPageClickBody = {
+  landing_page_item_id: ApiUuidContract
+  group_member_id?: ApiUuidContract
+}
 
 const clickRateLimiter = new RateLimiter({
   prefix: 'landing-page-clicks',
@@ -17,20 +25,13 @@ app.route('/api/v1/landing-pages/:landingPageId/clicks').post(async (ctx: Contex
   const { landingPageId } = ctx.params
   ctx.assert(landingPageId && isUUID(landingPageId), 400, 'Invalid landingPageId')
 
-  const body = (await ctx.request.json('10kb')) as Record<string, unknown>
-  const landingPageItemId =
-    body.landing_page_item_id && typeof body.landing_page_item_id === 'string'
-      ? body.landing_page_item_id
-      : null
-  ctx.assert(
-    landingPageItemId && isUUID(landingPageItemId),
-    400,
-    'landing_page_item_id is required and must be a valid UUID',
-  )
-  const groupMemberId =
-    body.group_member_id && typeof body.group_member_id === 'string' && isUUID(body.group_member_id)
-      ? body.group_member_id
-      : null
+  const body = (await ctx.request.json('10kb')) as LandingPageClickBody
+  validateRequestContract(ctx, 'POST:/api/v1/landing-pages/:landingPageId/clicks', {
+    body,
+    path: ctx.params,
+  })
+  const landingPageItemId = body.landing_page_item_id
+  const groupMemberId = body.group_member_id ?? null
 
   if (hasGlobalPrivacyControlHeaders(ctx.req.headers)) {
     ctx.setStatus(200)

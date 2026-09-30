@@ -1,6 +1,10 @@
 import app from '../../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateUUIDParam } from '../../../response-helpers.mts'
+import {
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../../response-helpers.mts'
 import {
   currentUserCanViewImportBatch,
   getImportBatch,
@@ -22,6 +26,7 @@ import {
 // GET /api/v1/imports/:batchId/stream
 app.route('/api/v1/imports/:batchId/stream').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/imports/:batchId/stream')
+  validateRequestContract(ctx, 'GET:/api/v1/imports/:batchId/stream', { path: ctx.params })
   const batchId = validateUUIDParam(ctx, 'batchId')
 
   const batch = await getImportBatch(batchId)

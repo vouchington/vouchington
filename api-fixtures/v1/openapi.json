@@ -23,6 +23,42 @@
         "required": ["email_address"],
         "type": "object"
       },
+      "AddHouseholdMembershipBody": {
+        "additionalProperties": false,
+        "properties": {
+          "individual_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "relationship": {
+            "type": "string"
+          }
+        },
+        "required": ["individual_id"],
+        "type": "object"
+      },
+      "AddListPostBody": {
+        "additionalProperties": false,
+        "properties": {
+          "post_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["post_id"],
+        "type": "object"
+      },
+      "AddListRssFeedItemBody": {
+        "additionalProperties": false,
+        "properties": {
+          "rss_feed_item_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["rss_feed_item_id"],
+        "type": "object"
+      },
       "AddParticipantRequest": {
         "additionalProperties": false,
         "properties": {
@@ -306,6 +342,33 @@
         ],
         "type": "object"
       },
+      "AppAttestAttestBody": {
+        "additionalProperties": false,
+        "properties": {
+          "attestation": {
+            "type": "string"
+          },
+          "challengeId": {
+            "type": "string"
+          },
+          "keyId": {
+            "type": "string"
+          }
+        },
+        "required": ["attestation", "challengeId", "keyId"],
+        "type": "object"
+      },
+      "AppAttestChallengeBody": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": ["assertion", "attestation"],
+            "type": "string"
+          }
+        },
+        "required": ["type"],
+        "type": "object"
+      },
       "AppAttestEnvironment": {
         "enum": ["development", "production"],
         "type": "string"
@@ -435,6 +498,68 @@
         "properties": {
           "category_text": {},
           "topic_id": {}
+        },
+        "type": "object"
+      },
+      "AttributionReferrerBody": {
+        "additionalProperties": false,
+        "properties": {
+          "landing_url": {
+            "type": "string"
+          },
+          "referrer": {
+            "type": "string"
+          },
+          "utm": {
+            "$ref": "#/components/schemas/AttributionReferrerUtmBody"
+          }
+        },
+        "required": ["landing_url", "referrer"],
+        "type": "object"
+      },
+      "AttributionReferrerUtmBody": {
+        "additionalProperties": false,
+        "properties": {
+          "utm_campaign": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "utm_content": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "utm_medium": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "utm_source": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
         },
         "type": "object"
       },
@@ -4088,6 +4213,11 @@
           }
         ]
       },
+      "CreateHouseholdBody": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
       "CreateInstanceResult": {
         "additionalProperties": false,
         "properties": {
@@ -4138,6 +4268,30 @@
           }
         },
         "required": ["slug", "title"],
+        "type": "object"
+      },
+      "CreateListBody": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "visibility": {
+            "enum": ["private", "public", "unlisted"],
+            "type": "string"
+          }
+        },
+        "required": ["name"],
         "type": "object"
       },
       "CreateOAuthAppRequest": {
@@ -7077,6 +7231,16 @@
         ],
         "type": "object"
       },
+      "ImportCommunityListBody": {
+        "additionalProperties": false,
+        "properties": {
+          "community_slug": {
+            "type": "string"
+          }
+        },
+        "required": ["community_slug"],
+        "type": "object"
+      },
       "ImportRow": {
         "additionalProperties": false,
         "properties": {
@@ -7757,6 +7921,21 @@
         "required": ["can_create_landing_pages", "profile_links", "referral_links", "reviews"],
         "type": "object"
       },
+      "LandingPageClickBody": {
+        "additionalProperties": false,
+        "properties": {
+          "group_member_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "landing_page_item_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["landing_page_item_id"],
+        "type": "object"
+      },
       "LandingPageItem": {
         "anyOf": [
           {
@@ -8035,6 +8214,27 @@
           }
         ]
       },
+      "LandingPageVisitBody": {
+        "additionalProperties": false,
+        "properties": {
+          "referrer": {
+            "type": "string"
+          },
+          "utm_campaign": {
+            "type": "string"
+          },
+          "utm_content": {
+            "type": "string"
+          },
+          "utm_medium": {
+            "type": "string"
+          },
+          "utm_source": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "LandingPagesPage": {
         "additionalProperties": false,
         "properties": {
@@ -8240,6 +8440,15 @@
       "ManualCrawlTarget": {
         "enum": ["html_url", "referral_link", "rss_feed"],
         "type": "string"
+      },
+      "MarkdownPreviewBody": {
+        "additionalProperties": false,
+        "properties": {
+          "markdown": {
+            "type": "string"
+          }
+        },
+        "type": "object"
       },
       "MemberUserWarningListItem": {
         "additionalProperties": false,
@@ -19150,6 +19359,55 @@
         },
         "type": "object"
       },
+      "UpdateHostnameBody": {
+        "additionalProperties": false,
+        "properties": {
+          "blocked": {
+            "type": "boolean"
+          },
+          "crawlable": {
+            "type": "boolean"
+          },
+          "ignore_robots_txt": {
+            "anyOf": [
+              {
+                "const": false
+              },
+              {
+                "const": true
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "link_rel_follow": {
+            "type": "boolean"
+          },
+          "skip_web_risk": {
+            "type": "boolean"
+          },
+          "unreliable_status_codes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "UpdateHouseholdBody": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
       "UpdateIdentityRequest": {
         "additionalProperties": false,
         "properties": {
@@ -19218,6 +19476,29 @@
             "type": "object"
           }
         ]
+      },
+      "UpdateListBody": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "visibility": {
+            "enum": ["private", "public", "unlisted"],
+            "type": "string"
+          }
+        },
+        "type": "object"
       },
       "UpdateOAuthAppRequest": {
         "additionalProperties": false,
@@ -19665,6 +19946,32 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "UpsertHostnameBody": {
+        "additionalProperties": false,
+        "properties": {
+          "blocked": {
+            "type": "boolean"
+          },
+          "hostname": {
+            "type": "string"
+          }
+        },
+        "required": ["hostname"],
+        "type": "object"
+      },
+      "UpsertPlaybackPositionBody": {
+        "additionalProperties": false,
+        "properties": {
+          "completed": {
+            "type": "boolean"
+          },
+          "position_seconds": {
+            "type": "number"
+          }
+        },
+        "required": ["position_seconds"],
         "type": "object"
       },
       "UrlCrawlHistory": {
@@ -23928,13 +24235,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "attestation": {},
-                  "challengeId": {},
-                  "keyId": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/AppAttestAttestBody"
               }
             }
           }
@@ -23970,11 +24271,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "type": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/AppAttestChallengeBody"
               }
             }
           }
@@ -26630,7 +26927,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/AttributionReferrerBody"
               }
             }
           }
@@ -45358,6 +45655,114 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "community",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_score_follow_topics",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_score_follow_users",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "post_types",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "discussion",
+                  "review",
+                  "data_point",
+                  "comment",
+                  "link",
+                  "article",
+                  "blog_post",
+                  "story"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "semantic_search_query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "enum": ["new", "hot"],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "text_search_query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "time_range",
+            "required": false,
+            "schema": {
+              "enum": ["1d", "1w", "1m", "1y", "all"],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -45387,6 +45792,25 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
             }
           }
         ],
@@ -45432,6 +45856,118 @@
             "name": "feed_type",
             "required": true,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "community",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_related_posts",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "media_type",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": ["article", "audio", "video"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "media_types",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": ["article", "audio", "video"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
+          },
+          {
+            "in": "query",
+            "name": "min_score_follow_rss_feeds",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_score_follow_topics",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "semantic_search_query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "text_search_query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "time_range",
+            "required": false,
+            "schema": {
+              "enum": ["1d", "1w", "1m", "1y", "all"],
               "type": "string"
             }
           }
@@ -45672,7 +46208,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpsertHostnameBody"
               }
             }
           }
@@ -46551,7 +47087,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateHostnameBody"
               }
             }
           }
@@ -46774,7 +47310,9 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/CreateHouseholdBody"
+              }
             }
           }
         },
@@ -46871,6 +47409,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHouseholdBody"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -47034,7 +47581,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/AddHouseholdMembershipBody"
               }
             }
           }
@@ -47380,7 +47927,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/LandingPageClickBody"
               }
             }
           }
@@ -47426,7 +47973,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/LandingPageVisitBody"
               }
             }
           }
@@ -47458,6 +48005,26 @@
     "/api/v1/lists": {
       "get": {
         "operationId": "get_api_v1_lists",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -47510,21 +48077,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "description": {
-                    "type": "string"
-                  },
-                  "name": {
-                    "type": "string"
-                  },
-                  "visibility": {
-                    "enum": ["private", "public", "unlisted"],
-                    "type": "string"
-                  }
-                },
-                "required": ["name"],
-                "type": "object"
+                "$ref": "#/components/schemas/CreateListBody"
               }
             }
           }
@@ -47656,27 +48209,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "description": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "name": {
-                    "type": "string"
-                  },
-                  "visibility": {
-                    "enum": ["private", "public", "unlisted"],
-                    "type": "string"
-                  }
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/UpdateListBody"
               }
             }
           }
@@ -47722,14 +48255,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "community_slug": {
-                    "type": "string"
-                  }
-                },
-                "required": ["community_slug"],
-                "type": "object"
+                "$ref": "#/components/schemas/ImportCommunityListBody"
               }
             }
           }
@@ -47771,6 +48297,40 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "media_type",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "read",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -47838,14 +48398,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "post_id": {
-                    "type": "string"
-                  }
-                },
-                "required": ["post_id"],
-                "type": "object"
+                "$ref": "#/components/schemas/AddListPostBody"
               }
             }
           }
@@ -47922,14 +48475,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "rss_feed_item_id": {
-                    "type": "string"
-                  }
-                },
-                "required": ["rss_feed_item_id"],
-                "type": "object"
+                "$ref": "#/components/schemas/AddListRssFeedItemBody"
               }
             }
           }
@@ -48016,11 +48562,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "markdown": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/MarkdownPreviewBody"
               }
             }
           }
@@ -56120,13 +56662,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "completed": {},
-                  "position_seconds": {}
-                },
-                "required": ["position_seconds"],
-                "type": "object"
+                "$ref": "#/components/schemas/UpsertPlaybackPositionBody"
               }
             }
           }
@@ -68890,6 +69426,25 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -73166,6 +73721,34 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "feed_type",
+            "required": false,
+            "schema": {
+              "enum": ["article", "podcast", "video", "mixed"],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 25,
+              "minimum": 1,
+              "type": "integer"
             }
           }
         ],

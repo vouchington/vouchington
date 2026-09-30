@@ -18,6 +18,7 @@ import { enqueueBulkUpdateHostnameElectionVoteStats } from '@queues/elections/en
 const hostnameVoteHandler = createVoteHandler({
   rateLimitPrefix: 'hostname-election-vote',
   routeKey: 'PUT:/api/v1/hostnames/:id/vote',
+  requestContractOperation: 'PUT:/api/v1/hostnames/:id/vote',
   entityType: 'hostname',
   getEntity: getUrlHostnameByAnyCached,
   entityNotFoundMessage: 'Hostname not found',
@@ -34,6 +35,7 @@ const hostnameVoteHandler = createVoteHandler({
 const clearHostnameVoteHandler = createVoteClearHandler({
   rateLimitPrefix: 'hostname-election-vote',
   routeKey: 'DELETE:/api/v1/hostnames/:id/vote',
+  requestContractOperation: 'DELETE:/api/v1/hostnames/:id/vote',
   entityType: 'hostname',
   getEntity: getUrlHostnameByAnyCached,
   entityNotFoundMessage: 'Hostname not found',

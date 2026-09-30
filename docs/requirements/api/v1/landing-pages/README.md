@@ -6,7 +6,7 @@ Source entrypoint: [backend/api/v1/landing-pages/README.md](../../../../../backe
 
 ### POST `/api/v1/landing-pages/:landingPageId/visits`
 
-Records a landing page visit. Returns `200 { ok: true }` on success or when rate limited. Returns `400` for invalid parameters, `415` for non-JSON content-type.
+Records a landing page visit. Returns `200 { ok: true }` on success or when rate limited. Returns `400` for a malformed `landingPageId` or an over-long field, `422` for a body that does not match the [request contract](../../reference-content-routes-request-validation.md) (wrong types or unknown fields), `415` for non-JSON content-type.
 
 When the request includes active Global Privacy Control (`Sec-GPC: 1` or the worker-normalized
 `x-voucha-gpc: 1`), the endpoint validates the request shape and returns `200 { ok: true }`
@@ -30,7 +30,7 @@ All fields are optional.
 
 ### POST `/api/v1/landing-pages/:landingPageId/clicks`
 
-Records a click on a landing page item. Returns `200 { ok: true }` on success or when rate limited. Returns `400` for invalid parameters, `415` for non-JSON content-type.
+Records a click on a landing page item. Returns `200 { ok: true }` on success or when rate limited. Returns `400` for a malformed `landingPageId`, `422` for a body that does not match the [request contract](../../reference-content-routes-request-validation.md) (a missing `landing_page_item_id`, wrong types or unknown fields), `415` for non-JSON content-type.
 
 When the request includes active Global Privacy Control, the endpoint validates the request shape
 and returns `200 { ok: true }` without recording analytics.

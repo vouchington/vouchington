@@ -12,6 +12,14 @@ Initiates a data export. Returns 409 if an export is already in progress.
 { "id": "<uuid>", "status": "pending", "created_at": "...", "expires_at": null }
 ```
 
+### GET /api/v1/users/:idOrSlug/data-request/stream
+
+Streams status events for the latest export request, or for the export named by the optional
+`request_id` query parameter. A `request_id` that is not a UUID returns `422`
+(`Invalid request ID`); an unknown one returns `404`. The stream cannot declare a query carrier, so
+the UUID check lives in the handler (see
+[server-sent-event query carriers](../../reference-content-routes-request-validation.md#server-sent-event-query-carriers)).
+
 ### GET /api/v1/users/:idOrSlug/data-request
 
 Returns the latest export request status. When the request is `ready` and still within its expiry

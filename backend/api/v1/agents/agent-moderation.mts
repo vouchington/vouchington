@@ -23,6 +23,7 @@ import {
 } from '../../response-contract.mts'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 import { requireAuthAndRateLimit } from '../../response-helpers.mts'
+import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import { recordAgentModerationVoteTrainingFeedback } from '@services/moderation-training'
 import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
 import { enqueueBulkUpdateAgentModerationElectionVoteStats } from '@queues/elections/enqueues'
@@ -50,6 +51,7 @@ const upsertAgentModerationVotesWithFeedback: CreateVoteHandlerOptions['upsertVo
 const agentModerationVoteHandler = createVoteHandler({
   rateLimitPrefix: 'agent-moderation-election-vote',
   routeKey: 'PUT:/api/v1/agent-moderations/:id/vote',
+  requestContractOperation: 'PUT:/api/v1/agent-moderations/:id/vote',
   entityType: 'agent_moderation',
   getEntity: getAgentModerationElectionForRoute,
   entityNotFoundMessage: 'Agent moderation not found',
@@ -66,6 +68,7 @@ const agentModerationVoteHandler = createVoteHandler({
 const clearAgentModerationVoteHandler = createVoteClearHandler({
   rateLimitPrefix: 'agent-moderation-election-vote',
   routeKey: 'DELETE:/api/v1/agent-moderations/:id/vote',
+  requestContractOperation: 'DELETE:/api/v1/agent-moderations/:id/vote',
   entityType: 'agent_moderation',
   getEntity: getAgentModerationElectionForRoute,
   entityNotFoundMessage: 'Agent moderation not found',
@@ -101,14 +104,19 @@ const agentModerationVotesParser = createPaginationParser({
 // GET /api/v1/agent-moderations/:id/votes (admin only)
 app.route('/api/v1/agent-moderations/:id/votes').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/agent-moderations/:id/votes', agentModerationVotesParser)
-  ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid ID')
 
   await requireAuthAndRateLimit(ctx, isAdminUser, 'GET:/api/v1/agent-moderations/:id/votes')
+  ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid ID')
+  const { limit, after } = parseAndValidatePaginatedRequest(
+    ctx,
+    'GET:/api/v1/agent-moderations/:id/votes',
+    agentModerationVotesParser,
+    { path: true },
+  )
 
   const moderation = await getAgentModerationElectionForRoute(ctx.params.id!)
   ctx.assert(moderation, 404, 'Agent moderation not found')
 
-  const { limit, after } = agentModerationVotesParser.parse(ctx.query)
   const collection = await getAgentModerationElectionVotesByElectionId(ctx.params.id!, {
     limit,
     after,

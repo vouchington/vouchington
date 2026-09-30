@@ -28,6 +28,22 @@ describe('visits', () => {
         .expect(200)
     })
 
+    it.each([
+      ['a non-string referrer', { referrer: 5 }],
+      ['a non-string utm_source', { utm_source: ['instagram'] }],
+      ['a null utm_medium', { utm_medium: null }],
+      ['an unknown field', { utm_source: 'instagram', extra: true }],
+    ])('returns 422 for %s', async (_name, body) => {
+      const request = createRequest()
+      const session = await fixture.openSession()
+      fixture.authenticate(request, session.deviceToken, session.sessionToken)
+
+      await request
+        .post(`/api/v1/landing-pages/${fixture.landingPageId()}/visits`)
+        .send(body)
+        .expect(422)
+    })
+
     it('returns 400 for invalid UUID', async () => {
       const request = createRequest()
       const session = await fixture.openSession()

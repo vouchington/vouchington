@@ -56174,7 +56174,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/users/collections.mts",
+      "source": "backend/api/v1/users/collections.rss.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/users/:idOrSlug/rss-feeds/:listType": {
@@ -57600,7 +57600,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/users/collections.mts",
+      "source": "backend/api/v1/users/collections.rss.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/users/:idOrSlug/topics/:listType": {
