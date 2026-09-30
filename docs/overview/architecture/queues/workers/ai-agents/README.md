@@ -12,7 +12,7 @@ votes and tags only; it never writes clearance, review, or publication state. Th
 `reconcile-post-classifier-applications` job streams incomplete receipt identities from Postgres
 and re-enqueues those whose stable-id job is gone. Only an enqueue that actually adds a job is
 counted; a receipt whose tenth counted job has vanished is given up (see the
-[recovery transitions](../../services/post-classifier/README.md#recovery-transitions)). The sweep
+[recovery transitions](../../../services/post-classifier/README.md#recovery-transitions)). The sweep
 alarms through `recordPostClassifierReceiptAlarm` (`@modules/on-error`, message
 `post_classifier_receipt_alarm`, grouped by `alarm_kind`) when a receipt is given up, when the
 provider client cannot be built, and when the oldest in-flight receipt is older than 26 hours (past
