@@ -317,7 +317,43 @@
         "resolve_report",
         "dismiss_report",
         "resolve_appeal",
-        "dismiss_appeal"
+        "dismiss_appeal",
+        "topic_claim_verify",
+        "topic_claim_reject",
+        "topic_claim_revoke",
+        "report_claim",
+        "report_unclaim",
+        "report_escalate",
+        "report_deescalate",
+        "report_integrity_flag_review",
+        "report_integrity_penalty_apply",
+        "report_integrity_penalty_revoke",
+        "vote_integrity_flag_review",
+        "vote_integrity_penalty_apply",
+        "vote_integrity_penalty_revoke",
+        "vote_weight_set",
+        "vote_weight_reset",
+        "agent_moderation_vote_set",
+        "agent_moderation_vote_delete",
+        "mod_note_delete",
+        "report_judgement_rerun",
+        "appeal_resolution_draft_rerun",
+        "dispute_resolution_draft_rerun",
+        "oauth_client_verify",
+        "oauth_client_unverify",
+        "crawler_create",
+        "crawler_update",
+        "crawler_delete",
+        "rss_category_assign",
+        "rss_category_reject",
+        "rss_category_unreject",
+        "queue_pause",
+        "queue_resume",
+        "queue_retry_failed",
+        "scheduled_job_run",
+        "backfill_run",
+        "article_sync_run",
+        "import_batch_create"
       ]
     },
     "moderator_on_flag_action": {
@@ -57843,6 +57879,7 @@
     },
     "moderator_actions": {
       "checkConstraints": {
+        "moderator_actions_check": "CHECK (((agent_moderation_id IS NULL) = (agent_moderation_post_id IS NULL)))",
         "moderator_actions_metadata_check": "CHECK ((jsonb_typeof(metadata) = 'object'::text))"
       },
       "columns": {
@@ -57868,6 +57905,50 @@
           "ordinalPosition": 4,
           "type": "uuid"
         },
+        "admin_import_batch_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 28,
+          "type": "uuid"
+        },
+        "agent_moderation_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 17,
+          "type": "uuid"
+        },
+        "agent_moderation_post_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 18,
+          "type": "uuid"
+        },
+        "backfill_key": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 26,
+          "type": "text"
+        },
         "community_application_id": {
           "collation": null,
           "comment": "Target community application for approve/reject actions.",
@@ -57890,6 +57971,17 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
+        "crawler_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 21,
+          "type": "uuid"
+        },
         "created_at": {
           "collation": null,
           "comment": null,
@@ -57898,7 +57990,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -57920,7 +58012,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13,
+          "ordinalPosition": 30,
           "type": "jsonb"
         },
         "moderation_appeal_id": {
@@ -57945,6 +58037,28 @@
           "ordinalPosition": 3,
           "type": "uuid"
         },
+        "oauth_client_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 19,
+          "type": "uuid"
+        },
+        "operation_request_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 23,
+          "type": "uuid"
+        },
         "post_id": {
           "collation": null,
           "comment": "Target post or comment (ON DELETE SET NULL for audit persistence).",
@@ -57956,6 +58070,17 @@
           "ordinalPosition": 6,
           "type": "uuid"
         },
+        "queue_name": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 24,
+          "type": "text"
+        },
         "reason": {
           "collation": null,
           "comment": "Optional free-text reason for the action.",
@@ -57964,8 +58089,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 29,
           "type": "text"
+        },
+        "report_abuse_penalty_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "uuid"
         },
         "report_id": {
           "collation": null,
@@ -57976,6 +58112,17 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "report_integrity_flag_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
           "type": "uuid"
         },
         "review_dispute_id": {
@@ -57989,6 +58136,28 @@
           "ordinalPosition": 9,
           "type": "uuid"
         },
+        "rss_category_text": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 27,
+          "type": "text"
+        },
+        "scheduled_job_key": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 25,
+          "type": "text"
+        },
         "target_user_id": {
           "collation": null,
           "comment": "Target user for bans, suspensions, warnings, member actions.",
@@ -57998,6 +58167,61 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "topic_claim_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "uuid"
+        },
+        "topic_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 22,
+          "type": "uuid"
+        },
+        "user_mod_note_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 20,
+          "type": "uuid"
+        },
+        "vote_integrity_flag_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "uuid"
+        },
+        "vote_weight_penalty_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16,
           "type": "uuid"
         }
       },
@@ -58012,6 +58236,33 @@
           "referencedTable": "moderation_appeals",
           "validated": true
         },
+        "fk_moderator_actions__oauth_client_id": {
+          "columns": ["oauth_client_id"],
+          "definition": "FOREIGN KEY (oauth_client_id) REFERENCES oauth_clients(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
+          "validated": true
+        },
+        "fk_moderator_actions__report_abuse_penalty_id": {
+          "columns": ["report_abuse_penalty_id"],
+          "definition": "FOREIGN KEY (report_abuse_penalty_id) REFERENCES report_abuse_penalties(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "report_abuse_penalties",
+          "validated": true
+        },
+        "fk_moderator_actions__report_integrity_flag_id": {
+          "columns": ["report_integrity_flag_id"],
+          "definition": "FOREIGN KEY (report_integrity_flag_id) REFERENCES report_integrity_flags(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "report_integrity_flags",
+          "validated": true
+        },
         "moderator_actions_actor_id_fkey": {
           "columns": ["actor_id"],
           "definition": "FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL",
@@ -58019,6 +58270,24 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "users",
+          "validated": true
+        },
+        "moderator_actions_admin_import_batch_id_fkey": {
+          "columns": ["admin_import_batch_id"],
+          "definition": "FOREIGN KEY (admin_import_batch_id) REFERENCES admin_import_batches(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "admin_import_batches",
+          "validated": true
+        },
+        "moderator_actions_agent_moderation_post_id_agent_moderatio_fkey": {
+          "columns": ["agent_moderation_post_id", "agent_moderation_id"],
+          "definition": "FOREIGN KEY (agent_moderation_post_id, agent_moderation_id) REFERENCES agent_moderations(post_id, id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["post_id", "id"],
+          "referencedTable": "agent_moderations",
           "validated": true
         },
         "moderator_actions_community_application_id_fkey": {
@@ -58037,6 +58306,24 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "communities",
+          "validated": true
+        },
+        "moderator_actions_crawler_id_fkey": {
+          "columns": ["crawler_id"],
+          "definition": "FOREIGN KEY (crawler_id) REFERENCES crawlers(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "crawlers",
+          "validated": true
+        },
+        "moderator_actions_operation_request_id_fkey": {
+          "columns": ["operation_request_id"],
+          "definition": "FOREIGN KEY (operation_request_id) REFERENCES moderator_actions(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "moderator_actions",
           "validated": true
         },
         "moderator_actions_post_id_fkey": {
@@ -58074,6 +58361,51 @@
           "referencedColumns": ["id"],
           "referencedTable": "users",
           "validated": true
+        },
+        "moderator_actions_topic_claim_id_fkey": {
+          "columns": ["topic_claim_id"],
+          "definition": "FOREIGN KEY (topic_claim_id) REFERENCES topic_claims(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "topic_claims",
+          "validated": true
+        },
+        "moderator_actions_topic_id_fkey": {
+          "columns": ["topic_id"],
+          "definition": "FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "topics",
+          "validated": true
+        },
+        "moderator_actions_user_mod_note_id_fkey": {
+          "columns": ["user_mod_note_id"],
+          "definition": "FOREIGN KEY (user_mod_note_id) REFERENCES user_mod_notes(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_mod_notes",
+          "validated": true
+        },
+        "moderator_actions_vote_integrity_flag_id_fkey": {
+          "columns": ["vote_integrity_flag_id"],
+          "definition": "FOREIGN KEY (vote_integrity_flag_id) REFERENCES vote_integrity_flags(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "vote_integrity_flags",
+          "validated": true
+        },
+        "moderator_actions_vote_weight_penalty_id_fkey": {
+          "columns": ["vote_weight_penalty_id"],
+          "definition": "FOREIGN KEY (vote_weight_penalty_id) REFERENCES vote_weight_penalties(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "vote_weight_penalties",
+          "validated": true
         }
       },
       "growth": "unbounded",
@@ -58096,6 +58428,73 @@
               "descending": true,
               "expression": "id",
               "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderator_actions__admin_import_batch_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_actions__admin_import_batch_id ON public.moderator_actions USING btree (admin_import_batch_id) WHERE (admin_import_batch_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "admin_import_batch_id",
+              "descending": false,
+              "expression": "admin_import_batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(admin_import_batch_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderator_actions__agent_moderation_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_actions__agent_moderation_id ON public.moderator_actions USING btree (agent_moderation_id) WHERE (agent_moderation_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "agent_moderation_id",
+              "descending": false,
+              "expression": "agent_moderation_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(agent_moderation_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderator_actions__agent_moderation_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_actions__agent_moderation_target ON public.moderator_actions USING btree (agent_moderation_post_id, agent_moderation_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "agent_moderation_post_id",
+              "descending": false,
+              "expression": "agent_moderation_post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "agent_moderation_id",
+              "descending": false,
+              "expression": "agent_moderation_id",
+              "nullsFirst": false,
               "opclass": "uuid_ops"
             }
           ],
@@ -58152,6 +58551,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_moderator_actions__crawler_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_actions__crawler_id ON public.moderator_actions USING btree (crawler_id) WHERE (crawler_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "crawler_id",
+              "descending": false,
+              "expression": "crawler_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(crawler_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_moderator_actions__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -58192,6 +58611,46 @@
           "unique": false,
           "valid": true
         },
+        "idx_moderator_actions__oauth_client_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_actions__oauth_client_id ON public.moderator_actions USING btree (oauth_client_id) WHERE (oauth_client_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "oauth_client_id",
+              "descending": false,
+              "expression": "oauth_client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(oauth_client_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderator_actions__operation_request_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_actions__operation_request_id ON public.moderator_actions USING btree (operation_request_id) WHERE (operation_request_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "operation_request_id",
+              "descending": false,
+              "expression": "operation_request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(operation_request_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_moderator_actions__post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -58212,6 +58671,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_moderator_actions__report_abuse_penalty_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_actions__report_abuse_penalty_id ON public.moderator_actions USING btree (report_abuse_penalty_id) WHERE (report_abuse_penalty_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "report_abuse_penalty_id",
+              "descending": false,
+              "expression": "report_abuse_penalty_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(report_abuse_penalty_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_moderator_actions__report_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -58227,6 +58706,26 @@
             }
           ],
           "predicate": "(report_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderator_actions__report_integrity_flag_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_actions__report_integrity_flag_id ON public.moderator_actions USING btree (report_integrity_flag_id) WHERE (report_integrity_flag_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "report_integrity_flag_id",
+              "descending": false,
+              "expression": "report_integrity_flag_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(report_integrity_flag_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -58267,6 +58766,106 @@
             }
           ],
           "predicate": "(target_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderator_actions__topic_claim_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_actions__topic_claim_id ON public.moderator_actions USING btree (topic_claim_id) WHERE (topic_claim_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_claim_id",
+              "descending": false,
+              "expression": "topic_claim_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(topic_claim_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderator_actions__topic_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_actions__topic_id ON public.moderator_actions USING btree (topic_id) WHERE (topic_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_id",
+              "descending": false,
+              "expression": "topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(topic_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderator_actions__user_mod_note_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_actions__user_mod_note_id ON public.moderator_actions USING btree (user_mod_note_id) WHERE (user_mod_note_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_mod_note_id",
+              "descending": false,
+              "expression": "user_mod_note_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(user_mod_note_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderator_actions__vote_integrity_flag_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_actions__vote_integrity_flag_id ON public.moderator_actions USING btree (vote_integrity_flag_id) WHERE (vote_integrity_flag_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "vote_integrity_flag_id",
+              "descending": false,
+              "expression": "vote_integrity_flag_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(vote_integrity_flag_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_moderator_actions__vote_weight_penalty_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_moderator_actions__vote_weight_penalty_id ON public.moderator_actions USING btree (vote_weight_penalty_id) WHERE (vote_weight_penalty_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "vote_weight_penalty_id",
+              "descending": false,
+              "expression": "vote_weight_penalty_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(vote_weight_penalty_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

@@ -19,6 +19,23 @@ Not partitioned — growth: unbounded.
 | `review_dispute_id`                    | `uuid`                     | yes      |                              |          |           |           | Target review dispute for dispute-resolution actions.                                   |
 | `moderation_appeal_id`                 | `uuid`                     | yes      |                              |          |           |           | Target moderation appeal for resolve_appeal/dismiss_appeal actions.                     |
 | `community_application_id`             | `uuid`                     | yes      |                              |          |           |           | Target community application for approve/reject actions.                                |
+| `topic_claim_id`                       | `uuid`                     | yes      |                              |          |           |           |                                                                                         |
+| `report_integrity_flag_id`             | `uuid`                     | yes      |                              |          |           |           |                                                                                         |
+| `report_abuse_penalty_id`              | `uuid`                     | yes      |                              |          |           |           |                                                                                         |
+| `vote_integrity_flag_id`               | `uuid`                     | yes      |                              |          |           |           |                                                                                         |
+| `vote_weight_penalty_id`               | `uuid`                     | yes      |                              |          |           |           |                                                                                         |
+| `agent_moderation_id`                  | `uuid`                     | yes      |                              |          |           |           |                                                                                         |
+| `agent_moderation_post_id`             | `uuid`                     | yes      |                              |          |           |           |                                                                                         |
+| `oauth_client_id`                      | `uuid`                     | yes      |                              |          |           |           |                                                                                         |
+| `user_mod_note_id`                     | `uuid`                     | yes      |                              |          |           |           |                                                                                         |
+| `crawler_id`                           | `uuid`                     | yes      |                              |          |           |           |                                                                                         |
+| `topic_id`                             | `uuid`                     | yes      |                              |          |           |           |                                                                                         |
+| `operation_request_id`                 | `uuid`                     | yes      |                              |          |           |           |                                                                                         |
+| `queue_name`                           | `text`                     | yes      |                              |          |           |           |                                                                                         |
+| `scheduled_job_key`                    | `text`                     | yes      |                              |          |           |           |                                                                                         |
+| `backfill_key`                         | `text`                     | yes      |                              |          |           |           |                                                                                         |
+| `rss_category_text`                    | `text`                     | yes      |                              |          |           |           |                                                                                         |
+| `admin_import_batch_id`                | `uuid`                     | yes      |                              |          |           |           |                                                                                         |
 | `reason`                               | `text`                     | yes      |                              |          |           |           | Optional free-text reason for the action.                                               |
 | `metadata`                             | `jsonb`                    | no       | `'{}'::jsonb`                |          |           |           | Structured context snapshot (e.g. role change target role, topic slugs for tags).       |
 | `created_at`                           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                         |
@@ -30,30 +47,56 @@ _none_
 
 **Check constraints:**
 
+- `moderator_actions_check`: `CHECK (((agent_moderation_id IS NULL) = (agent_moderation_post_id IS NULL)))`
 - `moderator_actions_metadata_check`: `CHECK ((jsonb_typeof(metadata) = 'object'::text))`
 
 **Foreign keys:**
 
 - `fk_moderator_actions__moderation_appeal_id`: `FOREIGN KEY (moderation_appeal_id) REFERENCES moderation_appeals(id) ON DELETE SET NULL`
+- `fk_moderator_actions__oauth_client_id`: `FOREIGN KEY (oauth_client_id) REFERENCES oauth_clients(id) ON DELETE SET NULL`
+- `fk_moderator_actions__report_abuse_penalty_id`: `FOREIGN KEY (report_abuse_penalty_id) REFERENCES report_abuse_penalties(id) ON DELETE SET NULL`
+- `fk_moderator_actions__report_integrity_flag_id`: `FOREIGN KEY (report_integrity_flag_id) REFERENCES report_integrity_flags(id) ON DELETE SET NULL`
 - `moderator_actions_actor_id_fkey`: `FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL`
+- `moderator_actions_admin_import_batch_id_fkey`: `FOREIGN KEY (admin_import_batch_id) REFERENCES admin_import_batches(id) ON DELETE SET NULL`
+- `moderator_actions_agent_moderation_post_id_agent_moderatio_fkey`: `FOREIGN KEY (agent_moderation_post_id, agent_moderation_id) REFERENCES agent_moderations(post_id, id) ON DELETE SET NULL`
 - `moderator_actions_community_application_id_fkey`: `FOREIGN KEY (community_application_id) REFERENCES community_applications(id) ON DELETE SET NULL`
 - `moderator_actions_community_id_fkey`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE SET NULL`
+- `moderator_actions_crawler_id_fkey`: `FOREIGN KEY (crawler_id) REFERENCES crawlers(id) ON DELETE SET NULL`
+- `moderator_actions_operation_request_id_fkey`: `FOREIGN KEY (operation_request_id) REFERENCES moderator_actions(id) ON DELETE SET NULL`
 - `moderator_actions_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL`
 - `moderator_actions_report_id_fkey`: `FOREIGN KEY (report_id) REFERENCES moderation_reports(id) ON DELETE SET NULL`
 - `moderator_actions_review_dispute_id_fkey`: `FOREIGN KEY (review_dispute_id) REFERENCES review_disputes(id) ON DELETE SET NULL`
 - `moderator_actions_target_user_id_fkey`: `FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE SET NULL`
+- `moderator_actions_topic_claim_id_fkey`: `FOREIGN KEY (topic_claim_id) REFERENCES topic_claims(id) ON DELETE SET NULL`
+- `moderator_actions_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE SET NULL`
+- `moderator_actions_user_mod_note_id_fkey`: `FOREIGN KEY (user_mod_note_id) REFERENCES user_mod_notes(id) ON DELETE SET NULL`
+- `moderator_actions_vote_integrity_flag_id_fkey`: `FOREIGN KEY (vote_integrity_flag_id) REFERENCES vote_integrity_flags(id) ON DELETE SET NULL`
+- `moderator_actions_vote_weight_penalty_id_fkey`: `FOREIGN KEY (vote_weight_penalty_id) REFERENCES vote_weight_penalties(id) ON DELETE SET NULL`
 
 **Indexes:**
 
 - `idx_moderator_actions__actor__id`: `CREATE INDEX idx_moderator_actions__actor__id ON public.moderator_actions USING btree (actor_id, id DESC)`
+- `idx_moderator_actions__admin_import_batch_id`: `CREATE INDEX idx_moderator_actions__admin_import_batch_id ON public.moderator_actions USING btree (admin_import_batch_id) WHERE (admin_import_batch_id IS NOT NULL)`
+- `idx_moderator_actions__agent_moderation_id`: `CREATE INDEX idx_moderator_actions__agent_moderation_id ON public.moderator_actions USING btree (agent_moderation_id) WHERE (agent_moderation_id IS NOT NULL)`
+- `idx_moderator_actions__agent_moderation_target`: `CREATE INDEX idx_moderator_actions__agent_moderation_target ON public.moderator_actions USING btree (agent_moderation_post_id, agent_moderation_id)`
 - `idx_moderator_actions__community__id`: `CREATE INDEX idx_moderator_actions__community__id ON public.moderator_actions USING btree (community_id, id DESC)`
 - `idx_moderator_actions__community_application_id`: `CREATE INDEX idx_moderator_actions__community_application_id ON public.moderator_actions USING btree (community_application_id) WHERE (community_application_id IS NOT NULL)`
+- `idx_moderator_actions__crawler_id`: `CREATE INDEX idx_moderator_actions__crawler_id ON public.moderator_actions USING btree (crawler_id) WHERE (crawler_id IS NOT NULL)`
 - `idx_moderator_actions__id`: `CREATE INDEX idx_moderator_actions__id ON public.moderator_actions USING btree (id DESC)`
 - `idx_moderator_actions__moderation_appeal_id`: `CREATE INDEX idx_moderator_actions__moderation_appeal_id ON public.moderator_actions USING btree (moderation_appeal_id) WHERE (moderation_appeal_id IS NOT NULL)`
+- `idx_moderator_actions__oauth_client_id`: `CREATE INDEX idx_moderator_actions__oauth_client_id ON public.moderator_actions USING btree (oauth_client_id) WHERE (oauth_client_id IS NOT NULL)`
+- `idx_moderator_actions__operation_request_id`: `CREATE INDEX idx_moderator_actions__operation_request_id ON public.moderator_actions USING btree (operation_request_id) WHERE (operation_request_id IS NOT NULL)`
 - `idx_moderator_actions__post_id`: `CREATE INDEX idx_moderator_actions__post_id ON public.moderator_actions USING btree (post_id) WHERE (post_id IS NOT NULL)`
+- `idx_moderator_actions__report_abuse_penalty_id`: `CREATE INDEX idx_moderator_actions__report_abuse_penalty_id ON public.moderator_actions USING btree (report_abuse_penalty_id) WHERE (report_abuse_penalty_id IS NOT NULL)`
 - `idx_moderator_actions__report_id`: `CREATE INDEX idx_moderator_actions__report_id ON public.moderator_actions USING btree (report_id) WHERE (report_id IS NOT NULL)`
+- `idx_moderator_actions__report_integrity_flag_id`: `CREATE INDEX idx_moderator_actions__report_integrity_flag_id ON public.moderator_actions USING btree (report_integrity_flag_id) WHERE (report_integrity_flag_id IS NOT NULL)`
 - `idx_moderator_actions__review_dispute_id`: `CREATE INDEX idx_moderator_actions__review_dispute_id ON public.moderator_actions USING btree (review_dispute_id) WHERE (review_dispute_id IS NOT NULL)`
 - `idx_moderator_actions__target_user_id`: `CREATE INDEX idx_moderator_actions__target_user_id ON public.moderator_actions USING btree (target_user_id) WHERE (target_user_id IS NOT NULL)`
+- `idx_moderator_actions__topic_claim_id`: `CREATE INDEX idx_moderator_actions__topic_claim_id ON public.moderator_actions USING btree (topic_claim_id) WHERE (topic_claim_id IS NOT NULL)`
+- `idx_moderator_actions__topic_id`: `CREATE INDEX idx_moderator_actions__topic_id ON public.moderator_actions USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
+- `idx_moderator_actions__user_mod_note_id`: `CREATE INDEX idx_moderator_actions__user_mod_note_id ON public.moderator_actions USING btree (user_mod_note_id) WHERE (user_mod_note_id IS NOT NULL)`
+- `idx_moderator_actions__vote_integrity_flag_id`: `CREATE INDEX idx_moderator_actions__vote_integrity_flag_id ON public.moderator_actions USING btree (vote_integrity_flag_id) WHERE (vote_integrity_flag_id IS NOT NULL)`
+- `idx_moderator_actions__vote_weight_penalty_id`: `CREATE INDEX idx_moderator_actions__vote_weight_penalty_id ON public.moderator_actions USING btree (vote_weight_penalty_id) WHERE (vote_weight_penalty_id IS NOT NULL)`
 - `moderator_actions_pkey`: `CREATE UNIQUE INDEX moderator_actions_pkey ON public.moderator_actions USING btree (id)`
 
 **Triggers:**
