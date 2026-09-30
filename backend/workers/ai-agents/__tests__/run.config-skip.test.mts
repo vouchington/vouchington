@@ -1,14 +1,11 @@
 import { describe, expect, it, beforeAll } from 'vitest'
 
 import {
-  createPostLLMModerator,
-  updatePostLLMModerator,
-  createOpenAIPostLLMModerationPrompt,
-  updateOpenAIPostLLMModerationPrompt,
-  getModeratorConfig,
-  getPostLLMModeratorBySlug,
   checkExistingModeration,
+  createOpenAIPostLLMModerationPrompt,
+  getModeratorConfig,
   insertPostModerationAgent,
+  updateOpenAIPostLLMModerationPrompt,
 } from '@services/moderation'
 
 import { runModeratorOnPost } from '@agents/moderation'
@@ -25,14 +22,14 @@ import { getPostElectionVote } from '@services/elections-votes/post'
 
 import { searchPostModerationsByAgent } from '@services/moderation/search-post-moderations'
 
-import { getTopicByAny } from '@services/topics'
+import { createTestUser, mockAiGeneratedModerationResults } from '@voucha/test-helpers'
 
 import {
-  createTestTopic,
-  createTestUser,
-  createSystemUser,
-  mockAiGeneratedModerationResults,
-} from '@voucha/test-helpers'
+  ensureTopicExists,
+  randomSuffix,
+  setupModeratorAndPrompt,
+  setupModeratorBySlugAndPrompt,
+} from '../processors/run-config-skip.test-helpers.mts'
 
 import type { Post } from '@services/posts/types'
 
@@ -45,59 +42,13 @@ describe('runModeratorOnPost config and skip behaviors', () => {
     user = await createTestUser()
   })
 
-  function randomSuffix(): string {
-    return Math.random().toString(36).slice(2, 10)
-  }
-
-  async function setupModeratorAndPrompt() {
-    const random = randomSuffix()
-    const systemUser = await createSystemUser(`run-mod-system-${random}`)
-    const moderator = await createPostLLMModerator(user, systemUser, `run-mod-${random}`)
-    await updatePostLLMModerator(user, moderator.id, { active: true })
-    const prompt = await createOpenAIPostLLMModerationPrompt(
-      user,
-      'openai',
-      'gpt-5.4-nano',
-      `Run moderation prompt ${random}`,
-      moderator.id,
-    )
-    await updateOpenAIPostLLMModerationPrompt(user, prompt.id, { active: true })
-    return { systemUser, moderator, prompt }
-  }
-
-  async function setupModeratorBySlugAndPrompt(moderatorSlug: string) {
-    const setupUser = await createTestUser()
-    const random = randomSuffix()
-    let moderator = await getPostLLMModeratorBySlug(moderatorSlug)
-    if (!moderator) {
-      const systemUser = await createSystemUser(`run-mod-system-${moderatorSlug}-${random}`)
-      moderator = await createPostLLMModerator(setupUser, systemUser, moderatorSlug)
-    }
-    await updatePostLLMModerator(setupUser, moderator.id, { active: true })
-    const prompt = await createOpenAIPostLLMModerationPrompt(
-      setupUser,
-      'openai',
-      'gpt-5.4-nano',
-      `Run moderation prompt ${moderatorSlug}-${random}`,
-      moderator.id,
-    )
-    await updateOpenAIPostLLMModerationPrompt(setupUser, prompt.id, { active: true })
-    return { user: setupUser, moderator, prompt }
-  }
-
-  async function ensureTopicExists(topicSlug: string) {
-    const existingTopic = await getTopicByAny(topicSlug)
-    if (existingTopic) return
-    await createTestTopic({ name: topicSlug, slug: topicSlug })
-  }
-
   it('getModeratorConfig returns null for unknown moderator slug', async () => {
     const result = await getModeratorConfig(`missing-mod-${randomSuffix()}`)
     expect(result).toBeNull()
   })
 
   it('getModeratorConfig returns active prompt and respects promptId filter', async () => {
-    const { moderator } = await setupModeratorAndPrompt()
+    const { moderator } = await setupModeratorAndPrompt(user)
     const prompt2 = await createOpenAIPostLLMModerationPrompt(
       user,
       'openai',
@@ -117,7 +68,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
   })
 
   it('checkExistingModeration returns existing moderation result', async () => {
-    const { prompt, moderator } = await setupModeratorAndPrompt()
+    const { prompt, moderator } = await setupModeratorAndPrompt(user)
     const post = await createPost(user, {
       title: `Moderation query ${randomSuffix()}`,
       markdown: `Moderation query content ${randomSuffix()}`,
@@ -154,7 +105,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
   })
 
   it('runModeratorOnPost skips when no content is available', async () => {
-    const { moderator } = await setupModeratorAndPrompt()
+    const { moderator } = await setupModeratorAndPrompt(user)
     const post = await createPost(user, {
       title: `No content ${randomSuffix()}`,
       markdown: `Will be cleared ${randomSuffix()}`,
@@ -167,7 +118,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
   })
 
   it('runModeratorOnPost returns existing moderation result', async () => {
-    const { moderator, prompt } = await setupModeratorAndPrompt()
+    const { moderator, prompt } = await setupModeratorAndPrompt(user)
     const post = await createPost(user, {
       title: `Existing moderation ${randomSuffix()}`,
       markdown: `Existing moderation content ${randomSuffix()}`,
@@ -193,7 +144,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
   })
 
   it('runModeratorOnPost skips when the coarse clearance state requires review', async () => {
-    const { moderator } = await setupModeratorAndPrompt()
+    const { moderator } = await setupModeratorAndPrompt(user)
     const post = await createPost(user, {
       title: `In-review post ${randomSuffix()}`,
       markdown: `In-review content ${randomSuffix()}`,
