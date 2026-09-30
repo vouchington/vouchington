@@ -4,7 +4,7 @@ import onError from '@modules/on-error'
 import type { ChatStreamEvent } from './stream-types.mts'
 import { persistAbortedChatResponse } from './persist-aborted-response.mts'
 import { releaseChatAgenticRunOnSpendCapBreach } from './persist-spend-cap-breach.mts'
-import { CHAT_SSE_CYCLE_EXPIRED } from './stream-lifecycle.mts'
+import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
 
 /**
  * streamChatResponse's single catch handler. A spend-cap breach must propagate uncaught so
@@ -31,7 +31,7 @@ export async function handleChatStreamError(
   const err = error instanceof Error ? error : new Error(String(error))
 
   if (
-    error === CHAT_SSE_CYCLE_EXPIRED ||
+    error === SSE_CYCLE_EXPIRED ||
     err.name === 'AbortError' ||
     err.name === 'APIUserAbortError'
   ) {

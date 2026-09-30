@@ -7,12 +7,11 @@ via hosted model providers.
 
 ## Files
 
-| File                      | Description                                                                              |
-| ------------------------- | ---------------------------------------------------------------------------------------- |
-| `stream.mts`              | `streamChatResponse()` — main agentic loop, yields `ChatStreamEvent` items               |
-| `build-system-prompt.mts` | `buildSystemPrompt()` — personalizes system prompt with user context                     |
-| `safety.mts`              | `checkMessageSafety()` — pattern + injected text-moderation capability before processing |
-| `index.mts`               | Barrel exports                                                                           |
+| File                      | Description                                                                |
+| ------------------------- | -------------------------------------------------------------------------- |
+| `stream.mts`              | `streamChatResponse()` — main agentic loop, yields `ChatStreamEvent` items |
+| `build-system-prompt.mts` | `buildSystemPrompt()` — personalizes system prompt with user context       |
+| `index.mts`               | Barrel exports                                                             |
 
 ## Architecture
 
@@ -105,7 +104,10 @@ per the agent conventions ("Do not inject user data into the system prompt"). Us
 
 ## Safety
 
-`checkMessageSafety()` runs two checks before the message is processed:
+`checkMessageSafety()` runs two checks before the message is processed. It is owned by
+[OpenAI moderation](../../services/openai-moderation/README.md#chat-message-safety)
+(`backend/services/openai-moderation/message-safety.mts`), not by this package, so the API can use it
+without depending on the chat agent; `streamChatResponse()` imports it from there:
 
 1. **Pattern detection** — regex patterns for common prompt injection phrases
    (e.g., "ignore previous instructions", `<system>` tags, `[INST]` tokens)

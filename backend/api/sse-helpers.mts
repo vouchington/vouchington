@@ -2,7 +2,7 @@ import type { Context } from '@jongleberry/api-server'
 import { PassThrough } from 'node:stream'
 import type { ChannelSubscription } from '@data-stores/valkey-pubsub'
 import onError from '@modules/on-error'
-import { CHAT_SSE_CYCLE_EXPIRED } from '@agents/chat/stream-lifecycle'
+import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
 
 export const DEFAULT_SSE_CYCLE_DURATION_MS = 60_000
 export const MAX_SSE_CYCLE_DURATION_MS = 120_000
@@ -108,7 +108,7 @@ export function startSSE(ctx: Context, options: { cycleDurationMs?: number } = {
     endCycle()
   } else {
     ctx.signal.addEventListener('abort', endOnDisconnect, { once: true })
-    cycleTimer = setTimeout(() => endCycle(CHAT_SSE_CYCLE_EXPIRED), cycleDurationMs)
+    cycleTimer = setTimeout(() => endCycle(SSE_CYCLE_EXPIRED), cycleDurationMs)
     cycleTimer.unref()
   }
 

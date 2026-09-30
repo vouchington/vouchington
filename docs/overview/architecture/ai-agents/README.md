@@ -23,6 +23,7 @@ Shared safety, tool, testing, and orchestration guidance plus package-level agen
 - [Chat](chat/README.md)
 - [Classifiers](classifiers/README.md)
 - [Community Moderation](community-moderation/README.md)
+- [Conversation Title](conversation-title/README.md)
 - [Copyright Appeal Recommendation](copyright-appeal-recommendation/README.md)
 - [Copyright Email Intake](copyright-email-intake/README.md)
 - [Copyright Form Screening](copyright-form-screening/README.md)

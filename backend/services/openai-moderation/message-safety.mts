@@ -1,6 +1,6 @@
-import { createOpenAIModeration } from '@services/openai-moderation/request'
 import type { OpenAI } from '@modules/openai-utils'
 import createHttpError from 'http-errors'
+import { createOpenAIModeration } from './request.mts'
 
 export type CreateTextModeration = (texts: string[]) => Promise<OpenAI.Moderations.Moderation[]>
 

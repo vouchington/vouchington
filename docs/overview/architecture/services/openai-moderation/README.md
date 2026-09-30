@@ -11,7 +11,24 @@ Source entrypoint: [backend/services/openai-moderation/README.md](../../../../..
 - API callers invoke it in-process. Its provider-scoped egress flag selects the guarded direct
   transport or HTTP CONNECT proxy without changing the moderation operation.
 - Prompt-injection detection and `PROMPT_INJECTION` / `MODERATION_VIOLATION` HTTP policy errors are
-  owned by the API safety adapter, not by the worker handler.
+  owned by `checkMessageSafety()` in this service (see [Chat Message Safety](#chat-message-safety)),
+  not by the worker handler. The API safety adapter only supplies the routed provider call.
+
+### Chat Message Safety
+
+`checkMessageSafety(message, { createTextModeration })` in `message-safety.mts` is the shared guard
+for a user chat message. It lives here, next to the provider boundary, so neither the API nor the
+chat agent has to import the other's package.
+
+1. **Pattern detection** — regexes for common prompt-injection phrases throw a 400 with code
+   `PROMPT_INJECTION` before any provider call.
+2. **Text moderation** — a flagged result throws a 400 with code `MODERATION_VIOLATION` and the
+   flagged `categories`. An empty result list is treated as not flagged.
+
+The provider call is injected as a `CreateTextModeration` capability and defaults to
+`createOpenAIModeration`. The API's `checkApiMessageSafety()` injects its own capability (with
+`apiSafetyCheck` and a per-call idempotency key); `streamChatResponse()` in the
+[chat agent](../../ai-agents/chat/README.md#safety) uses the default provider.
 
 ### Post Moderation
 

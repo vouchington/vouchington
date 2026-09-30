@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { CHAT_SSE_CYCLE_EXPIRED } from '@agents/chat/stream-lifecycle'
+import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
 import {
   processReconcileChatRuntimeGenerations,
   type ReconcileChatRuntimeGenerationDeps,
@@ -35,7 +35,7 @@ describe('processReconcileChatRuntimeGenerations', () => {
       reconcileStaleChatRuntimeGenerations,
     })
 
-    expect(order).toEqual([`signal:chat_assistant-one:${CHAT_SSE_CYCLE_EXPIRED}`, 'reconcile'])
+    expect(order).toEqual([`signal:chat_assistant-one:${SSE_CYCLE_EXPIRED}`, 'reconcile'])
   })
 
   it('still reconciles a stale run when its worker signal fails', async () => {

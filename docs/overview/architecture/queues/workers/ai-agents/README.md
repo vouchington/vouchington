@@ -64,8 +64,8 @@ point behind the `openai-spend-cap` `DynamicConfig`: it checks `getOpenAiSpendCa
 enabled, the current request-day accounting-uncertainty latch before
 `getDailyAiCostTotalMicrounits(day)`, and returns either `null` (proceed) or a breach. Every
 call site that can incur billed OpenAI spend goes through it — not just this worker. Synchronous,
-non-queue routes that call OpenAI directly (`generateChatTitle` from
-`POST /api/v1/my/conversations/:conversationId/title`, and the moderation call in
+non-queue routes that call OpenAI directly (`generateChatTitleFromInput` from
+`@agents/conversation-title` in `POST /api/v1/my/conversations/:conversationId/title`, and the moderation call in
 `POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs`) call the
 `assertOpenAiSpendCapNotBreached()` wrapper and reject with 429 on breach; otherwise the cap would
 only ever block `ai_agents` queue jobs while these routes kept generating billed spend after the
@@ -83,7 +83,8 @@ reason (it only applies an already-computed judgement via DB writes — remove, 
 resolve — and never calls OpenAI itself); and a `chat` job explicitly routed to Anthropic
 (`job.data.modelProvider === 'anthropic'`, see `backend/agents/chat/stream.mts`) is exempt because it
 never calls OpenAI for billed generation, even though `chat` is spend-producing by default. (The
-shared `checkMessageSafety` moderation pre-check runs regardless of provider, but the Moderations
+shared `checkMessageSafety` moderation pre-check
+(`@services/openai-moderation/message-safety`) runs regardless of provider, but the Moderations
 endpoint is free and writes no `ai_usage_records` row — see the token-limiter section above — so it
 can never affect the cap total.) `OPENAI_RPM`/`OPENAI_TPM`
 bound rate, not spend; this bounds the daily dollar total across all spend-producing agents

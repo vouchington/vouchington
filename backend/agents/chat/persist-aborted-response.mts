@@ -1,6 +1,7 @@
 import type { HostedChatModelProvider } from '@services/agents/model-providers'
 import { finalizeChatAgenticRun } from '@services/conversations-messages'
-import { CHAT_RESPONSE_INTERRUPTED_ERROR, CHAT_SSE_CYCLE_EXPIRED } from './stream-lifecycle.mts'
+import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
+import { CHAT_RESPONSE_INTERRUPTED_ERROR } from './stream-lifecycle.mts'
 
 export async function persistAbortedChatResponse(options: {
   agenticRunId: string
@@ -11,7 +12,7 @@ export async function persistAbortedChatResponse(options: {
   signal?: AbortSignal
 }): Promise<string | undefined> {
   const content = options.fullResponse || null
-  if (options.signal?.reason === CHAT_SSE_CYCLE_EXPIRED) {
+  if (options.signal?.reason === SSE_CYCLE_EXPIRED) {
     const finalized = await finalizeChatAgenticRun({
       id: options.agenticRunId,
       conversationId: options.conversationId,

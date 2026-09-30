@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { ChatTokenSubscription, TokenChunk } from '@data-stores/valkey-pubsub'
 import { abortAmbiguousChatEnqueue, pipeChatTokensToSSE } from '../index-routes/shared.mts'
-import { CHAT_SSE_CYCLE_EXPIRED } from '@agents/chat/stream-lifecycle'
+import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
 
 type HandlerFn = ((chunk: TokenChunk) => void) | null
 
@@ -167,10 +167,10 @@ describe('pipeChatTokensToSSE', () => {
       disconnectSignal: abortController.signal,
     })
 
-    abortController.abort(CHAT_SSE_CYCLE_EXPIRED)
+    abortController.abort(SSE_CYCLE_EXPIRED)
     await pipePromise
 
-    expect(queue.signal).toHaveBeenCalledWith('job-cycle-expired', CHAT_SSE_CYCLE_EXPIRED)
+    expect(queue.signal).toHaveBeenCalledWith('job-cycle-expired', SSE_CYCLE_EXPIRED)
   })
 
   it('messages arriving before setHandler (buffered) are processed after setHandler', async () => {
@@ -263,7 +263,7 @@ describe('abortAmbiguousChatEnqueue', () => {
       abortAmbiguousChatEnqueue(queue, 'chat_assistant-1', onSignalError),
     ).resolves.toBeUndefined()
 
-    expect(queue.signal).toHaveBeenCalledWith('chat_assistant-1', CHAT_SSE_CYCLE_EXPIRED)
+    expect(queue.signal).toHaveBeenCalledWith('chat_assistant-1', SSE_CYCLE_EXPIRED)
     expect(onSignalError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'queue unavailable' }),
     )

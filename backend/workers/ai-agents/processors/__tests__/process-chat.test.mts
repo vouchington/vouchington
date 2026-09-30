@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import type { ChatJobData } from '@queues/ai-agents/types'
-import { CHAT_SSE_CYCLE_EXPIRED } from '@agents/chat/stream-lifecycle'
+import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
 import { processChat, type ProcessChatDeps } from '../process-chat.mts'
 
 describe('processChat cycle expiry', () => {
   it.each([
     {
-      signalName: CHAT_SSE_CYCLE_EXPIRED,
-      assertReason: (reason: unknown) => expect(reason).toBe(CHAT_SSE_CYCLE_EXPIRED),
+      signalName: SSE_CYCLE_EXPIRED,
+      assertReason: (reason: unknown) => expect(reason).toBe(SSE_CYCLE_EXPIRED),
     },
     {
       signalName: 'abort',

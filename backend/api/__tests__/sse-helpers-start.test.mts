@@ -9,7 +9,7 @@ import {
 } from '../sse-helpers.mts'
 import { createVouchaApiApp } from '../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { CHAT_SSE_CYCLE_EXPIRED } from '@agents/chat/stream-lifecycle'
+import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
 
 function makeCtx(overrides?: Partial<Context>): Context {
   const socket = { setNoDelay: vi.fn<() => void>() }
@@ -39,7 +39,7 @@ describe('startSSE', () => {
     await vi.advanceTimersByTimeAsync(DEFAULT_SSE_CYCLE_DURATION_MS)
 
     expect(result.lifecycleSignal.aborted).toBe(true)
-    expect(result.lifecycleSignal.reason).toBe(CHAT_SSE_CYCLE_EXPIRED)
+    expect(result.lifecycleSignal.reason).toBe(SSE_CYCLE_EXPIRED)
     expect(result.stream.writableEnded).toBe(true)
     pipeline.resolve()
     await result.pipelinePromise
@@ -62,7 +62,7 @@ describe('startSSE', () => {
     const result = startSSE(makeCtx({ signal: client.signal }))
     client.abort()
     expect(result.lifecycleSignal.aborted).toBe(true)
-    expect(result.lifecycleSignal.reason).not.toBe(CHAT_SSE_CYCLE_EXPIRED)
+    expect(result.lifecycleSignal.reason).not.toBe(SSE_CYCLE_EXPIRED)
   })
 
   it('does not schedule a cycle timer when the client is already disconnected', async () => {

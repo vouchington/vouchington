@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { checkMessageSafety } from './safety.mts'
+import { checkMessageSafety } from './message-safety.mts'
 
 describe('checkMessageSafety', () => {
   beforeEach(() => {

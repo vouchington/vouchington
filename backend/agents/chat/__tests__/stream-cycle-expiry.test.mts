@@ -8,7 +8,8 @@ import { getConversationMessagesByConversationId } from '@services/conversations
 import { getConversationMessageAgenticRunsByConversationMessageId } from '@services/conversations-messages/agentic-runs'
 import type { PrivateUser } from '@services/users/types'
 import { streamChatResponse } from '../stream.mts'
-import { CHAT_RESPONSE_INTERRUPTED_ERROR, CHAT_SSE_CYCLE_EXPIRED } from '../stream-lifecycle.mts'
+import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
+import { CHAT_RESPONSE_INTERRUPTED_ERROR } from '../stream-lifecycle.mts'
 
 describe('streamChatResponse cycle expiry', () => {
   let testUser: PrivateUser
@@ -24,7 +25,7 @@ describe('streamChatResponse cycle expiry', () => {
       content: null,
     })
     const controller = new AbortController()
-    controller.abort(CHAT_SSE_CYCLE_EXPIRED)
+    controller.abort(SSE_CYCLE_EXPIRED)
     const streamAnthropicChat = vi.fn<VitestLooseMock>().mockImplementation(async function* ({
       signal,
     }: {

@@ -42,8 +42,8 @@
   "scripts": {},
   "dependencies": {
     "@agents/_shared": "workspace:^",
-    "@agents/chat": "workspace:^",
     "@agents/community-moderation": "workspace:^",
+    "@agents/conversation-title": "workspace:^",
     "@agents/moderation": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
@@ -66,6 +66,7 @@
     "@modules/scheduled-job-manifest": "workspace:^",
     "@modules/scopes": "workspace:^",
     "@modules/search-utils": "workspace:^",
+    "@modules/sse-lifecycle": "workspace:^",
     "@modules/stripe": "workspace:^",
     "@modules/utils": "workspace:^",
     "@modules/worker-queue-inventory": "workspace:^",
