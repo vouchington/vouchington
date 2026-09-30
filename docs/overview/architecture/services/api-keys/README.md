@@ -32,9 +32,9 @@ Revocation invalidates a key by setting `revoked_at`; all DB lookups include `re
 
 Creation validates scopes inside `createApiKey()` before persistence, including direct service callers.
 Scope arrays are stored in canonical lexical order with no duplicates. RSS keys accept only
-`rss:read`; MCP keys accept one user or admin audience, and admin scopes additionally require an
-administrator owner. Unknown, noncanonical, cross-type, mixed-audience, and write-without-read sets
-fail closed. The shared catalogue lives in [`@modules/scopes`](../../backend/modules/scopes/README.md).
+`rss:read`; MCP keys accept user-audience scopes only, because the admin-audience scopes accept the
+`oauth` surface alone and the admin MCP server is OAuth-only. Unknown, noncanonical, cross-type,
+mixed-audience, and write-without-read sets fail closed. The shared catalogue lives in [`@modules/scopes`](../../backend/modules/scopes/README.md).
 
 ## Bloom Filter
 

@@ -88,7 +88,7 @@ app.route('/api/v1/my/api-keys').post(async (ctx: Context) => {
 
   const label = (body.label as string).trim()
   const permissions = body.permissions as string[]
-  const permissionError = validateApiKeyCreationPermissions(currentUser, type, permissions)
+  const permissionError = validateApiKeyCreationPermissions(type, permissions)
   ctx.assert(permissionError == null, 400, permissionError ?? 'invalid permissions')
 
   const { apiKey, rawKey } = await createApiKey(currentUser.id, type, label, permissions)

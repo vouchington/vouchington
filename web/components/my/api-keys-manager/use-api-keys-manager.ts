@@ -4,7 +4,6 @@ import { toast } from 'sonner'
 import { createApiKey, getApiKeys, revokeApiKey } from '@/lib/api/client/api-keys'
 import { ApiError } from '@/lib/api/error'
 import type { ApiKey } from '@/types/api-keys'
-import { useOptionalAuth } from '@/lib/auth/context'
 import type { ScopeCatalogEntry } from '@/types/scopes'
 import { useApiKeyScopeSelection } from './use-api-key-scope-selection'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -21,8 +20,6 @@ export function useApiKeysManager(
   initialData?: ListResponse<ApiKey>,
 ) {
   const t = useTranslations()
-  const auth = useOptionalAuth()
-  const isAdmin = auth?.currentUser?.roles?.includes('administrator') ?? false
   const [clientFirstPage, setClientFirstPage] = useState(EMPTY_PAGE)
   const firstPage = initialData ?? clientFirstPage
   const pagination = usePaginatedList(
@@ -140,7 +137,6 @@ export function useApiKeysManager(
   }
 
   return {
-    isAdmin,
     keys,
     loading,
     loadError,

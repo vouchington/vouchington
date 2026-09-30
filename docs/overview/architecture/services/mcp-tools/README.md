@@ -8,8 +8,10 @@ Implements the MCP (Model Context Protocol) server logic: listing tools, executi
 
 | File                                 | Description                                                                                  |
 | ------------------------------------ | -------------------------------------------------------------------------------------------- |
-| `config.mts`                         | User/admin MCP server names, routes, surfaces, and OAuth audiences                           |
-| `authenticate.mts`                   | Verify a bearer OAuth access token or MCP API key for the route's audience                   |
+| `config.mts`                         | User/admin MCP server names, routes, surfaces, OAuth audiences, API-key and audit policy     |
+| `authenticate.mts`                   | Verify a bearer OAuth access token, or a user MCP API key where the route accepts keys       |
+| `audit.mts`                          | Durable per-call audit context and the one batched `mcp_call_audit_events` insert            |
+| `classify-calls.mts`                 | Map a parsed JSON-RPC body to audit events without keeping arguments, results, or raw names  |
 | `challenge.mts`                      | Build RFC 6750 and RFC 9728 `WWW-Authenticate` challenges                                    |
 | `resolve-tool-call.mts`              | The ordered role, plan, and scope policy, plus step-up scope discovery                       |
 | `list-tools.mts`                     | Filter registered tools by configured surface and `resolve-tool-call.mts` policy             |
@@ -41,8 +43,54 @@ insufficient_scope` with the scopes to re-authorize with; every other denial sta
 JSON-RPC error.
 
 Route admission verifies only that the credential is for the user or admin audience. Role, plan,
-ownership inside a tool, and scope remain independent checks. Legacy `mcp.user:*` and
-`mcp.admin:*` grants remain compatible supersets while resource-scoped credentials are preferred.
+ownership inside a tool, and scope remain independent checks. Legacy `mcp.user:*` grants remain a
+compatible superset while resource-scoped credentials are preferred.
+
+## Admin MCP is OAuth-only
+
+`McpServerConfig.acceptsApiKeys` is `true` for the user route and `false` for the admin route.
+`authenticateMcpBearer` always tries OAuth first (`validateOAuthAccessToken`, which owns expiry,
+revocation of the token, grant, and client, user deletion or suspension, and the exact protected
+resource) and reaches the API-key path only when the route accepts keys. An API key sent to
+`/api/v1/admin/mcp` therefore fails as an unrecognized credential: `401` with an `invalid_token`
+challenge. `mcp.admin:read` and `mcp.admin:write` accept only the `oauth` scope surface, so API-key
+creation rejects them too.
+
+A verified token then needs the `administrator` role (`403`, `role_denied`), at least one
+admin-audience scope (`403`, `insufficient_scope`, with a challenge naming `mcp.admin:read`), and
+the scope each tool declares (`tools/list` hides tools the token cannot call; a direct call gets the
+`403` step-up challenge).
+
+## Admin MCP audit log
+
+Every call a verified OAuth principal makes to the admin route writes an append-only
+`mcp_call_audit_events` row before it runs (`McpServerConfig.auditCalls`). The table is
+range-partitioned by UUIDv7 `id`, so `occurred_at` is a virtual column derived from the id.
+
+| Column                                   | Contents                                                                                                                                                               |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `actor_user_id`                          | Token owner, through `retained_user_identities`, so the record survives hard deletion                                                                                  |
+| `oauth_client_id`                        | Foreign key to the client the token was issued to                                                                                                                      |
+| `resource`                               | Protected resource URL the token was validated against                                                                                                                 |
+| `surface`, `jsonrpc_method`, `tool_name` | Surface, allowlisted JSON-RPC method, and the registered tool name; `NULL` when there is nothing to record                                                             |
+| `outcome`                                | `accepted`, `tool_error`, `invalid_request`, `invalid_arguments`, `not_found`, `role_denied`, `plan_denied`, `scopes_undeclared`, `insufficient_scope`, `rate_limited` |
+| `correlation_id`                         | Server-minted per request and returned as the `X-Correlation-Id` response header                                                                                       |
+
+- **One row per JSON-RPC message.** A batch writes its rows in order under one correlation id in a
+  single insert; a batch above 25 messages is refused with `413` and one `invalid_request` row.
+  Rejections before the body is read (role, scope, rate limit, unreadable body) write one row with a
+  `NULL` method. An admitted tool call that then fails also writes a `tool_error` row.
+- **Redaction by construction.** The schema has no column for tokens, API keys, headers, arguments,
+  or results, and `tool_name` holds only names registered on the surface, never caller-supplied
+  text. Nothing is scrubbed after the fact.
+- **Fail closed.** The write happens before the call, so if it fails the request ends `503` and the
+  call never runs. The `tool_error` follow-up is best effort, because the call already ran.
+- **Unauthenticated requests write no row.** A request that fails authentication (`401`) or the
+  content-type check (`415`) has no verified actor or client to record; `401` is observable in the
+  request logs instead.
+
+Rows are append-only (a trigger rejects `UPDATE` and `DELETE`). The user MCP route sets
+`auditCalls: false`; its per-call audit reuses this service and table.
 
 ## Related
 

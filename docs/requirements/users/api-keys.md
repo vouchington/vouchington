@@ -4,10 +4,14 @@ API keys provide programmatic access to Voucha features that require authenticat
 
 ## Key Types
 
-| Type  | Description                                               |
-| ----- | --------------------------------------------------------- |
-| `rss` | RSS feed access (read-only, URL query parameter)          |
-| `mcp` | User or admin MCP server access (Bearer token, HTTP POST) |
+| Type  | Description                                      |
+| ----- | ------------------------------------------------ |
+| `rss` | RSS feed access (read-only, URL query parameter) |
+| `mcp` | User MCP server access (Bearer token, HTTP POST) |
+
+Administrator MCP access is not an API-key type. Keys can neither be created with, nor authenticate
+to the admin MCP server with, `mcp.admin:*` scopes; administrators use OAuth (see
+[Admin MCP is OAuth-only](#admin-mcp-is-oauth-only)).
 
 ## Key Format
 
@@ -38,17 +42,17 @@ API keys use a permission-based access control system. Each key has a `permissio
 | `entity-relations:read/write`        | Read or add relations; write requires read            |
 | `post-relations.owned-private:write` | Add relations or tags to owned private posts only     |
 | `mcp.user:read/write`                | Compatibility grants for existing user MCP keys       |
-| `mcp.admin:read/write`               | Compatibility grants for existing admin MCP keys      |
 
 Scopes use the strict lowercase `<resource>:<action>` grammar. Dot-delimited resources compose the
 surface and audience, such as `mcp.user` and `mcp.admin`. Unknown, whitespace-padded, case-normalized,
 duplicate, or write-without-read scope sets are rejected. RSS keys accept only `rss:read`; MCP keys
-accept scopes for exactly one user or admin audience, never both, and admin scopes require an administrator owner.
-OAuth access tokens are the alternative MCP credential. Each grant binds to one protected resource,
+accept only user-audience scopes. Admin-audience scopes (`mcp.admin:read`, `mcp.admin:write`) are
+OAuth-only: `POST /api/v1/my/api-keys` rejects them with `400` for every owner, administrators
+included. OAuth access tokens are the alternative MCP credential. Each grant binds to one protected resource,
 so its scopes also belong to that resource's audience; see the
 [OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md#protected-resources-and-discovery).
-Only user- and admin-audience scopes accept the `oauth` surface. `rss:read` is API-key only, because
-no OAuth protected resource serves the RSS feeds.
+Only user- and admin-audience scopes accept the `oauth` surface, and the admin-audience scopes accept
+nothing else. `rss:read` is API-key only, because no OAuth protected resource serves the RSS feeds.
 
 ### Scope catalogue
 
@@ -61,8 +65,7 @@ catalogue rather than hard-coding scope strings; see the
 [client parity matrix](../CLIENT-PARITY-MATRIX.md#api-key-and-connected-app-contract-handoff).
 See the [Scopes API](../api/v1/scopes/README.md).
 
-MCP keys must be either user MCP or admin MCP, not both. Admin MCP scopes can only be created by administrators.
-The own-private relation capability is visible as a separate picker permission, not part of Standard
+MCP keys are user MCP only. The own-private relation capability is visible as a separate picker permission, not part of Standard
 MCP access. Selecting it also selects its relation write and read prerequisites. The picker explains
 that it lets the credential add relations and tags only to the holder's own private posts.
 
@@ -95,7 +98,22 @@ Owned OAuth apps and the grants users approved are documented in
 | `POST` | `/api/v1/mcp`       | User MCP Streamable HTTP  |
 | `POST` | `/api/v1/admin/mcp` | Admin MCP Streamable HTTP |
 
+`/api/v1/mcp` accepts an MCP API key or an OAuth access token. `/api/v1/admin/mcp` accepts only an
+OAuth access token; an API key sent there is rejected with `401` like any other unrecognized
+bearer credential.
+
 RSS feeds are accessible without an API key. When no key is provided, rate limiting uses the client IP address. When a key is provided, it must be passed as `apikey` in the query string, is validated, and rate limiting uses the API key identity.
+
+## Admin MCP is OAuth-only
+
+The admin MCP server (`POST /api/v1/admin/mcp`) authenticates OAuth access tokens only. The token
+must be valid (unexpired, unrevoked, from an unrevoked grant and client), belong to a user who is
+currently an administrator, be bound to the admin protected resource, and carry the scope each
+tool declares (`mcp.admin:read` or `mcp.admin:write`). Existing OAuth validation owns replay,
+expiry, and revocation. See the
+[OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md#protected-resources-and-discovery)
+and the [MCP tools architecture](../../overview/architecture/services/mcp-tools/README.md#admin-mcp-audit-log)
+for the per-call audit log every admin MCP call writes.
 
 ## Rate Limits
 
@@ -115,9 +133,9 @@ An RSS key always carries `rss:read`. An MCP key's scope picker renders the
 [scope catalogue](#scope-catalogue) entries that accept the `api-key` surface, one row per resource
 with read and write checkboxes and the `mcp.<audience>` umbrella row first. Checking a scope also
 checks its `requires` prerequisite, and unchecking a prerequisite drops the scopes that need it, so
-the picker never sends a set the API rejects. Administrators also choose the key's audience ("Your
-account" or "Administrator"); switching audience clears the selection because a key holds one
-audience. Create stays disabled until the label and at least one scope are set.
+the picker never sends a set the API rejects. The picker lists user-audience scopes only, for
+administrators as well, so no audience choice is shown. Create stays disabled until the label and at
+least one scope are set.
 
 ### Using with RSS Feeds
 
@@ -157,7 +175,7 @@ Append `apikey=YOUR_KEY` to the query string:
 - `last_used_at` is tracked for monitoring
 - Revoked keys retain an audit trail but are immediately invalid
 - Any authenticated user can create API keys
-- Admin MCP scopes require the key owner to have the `administrator` role at creation and when the admin MCP endpoint is used
+- API keys never carry admin-audience scopes and never authenticate to the admin MCP endpoint
 - RSS keys are read-only, but they are still bearer credentials in URLs. Keyed RSS responses use `Cache-Control: private` and `Referrer-Policy: no-referrer`; users should revoke keys that appear in logs, referrals, or shared URLs.
 
 ## Related

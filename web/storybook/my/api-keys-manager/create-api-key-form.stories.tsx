@@ -5,7 +5,6 @@ import {
   RSS_KEY_SCOPES,
   scopeResourceRows,
   toggleScope,
-  type ApiKeyAudience,
 } from '@/components/my/api-keys-manager/scope-selection'
 import type {
   ApiKeyScopeSelection,
@@ -22,33 +21,23 @@ const noop = () => {}
 function StatefulForm({
   initialLabel,
   initialKeyType,
-  initialAudience,
   initialScopes,
-  showAudience,
   submitting,
 }: {
   initialLabel: string
   initialKeyType: ApiKeyType
-  initialAudience: ApiKeyAudience
   initialScopes: string[]
-  showAudience: boolean
   submitting: boolean
 }) {
   const [label, setLabel] = useState(initialLabel)
   const [keyType, setKeyType] = useState(initialKeyType)
-  const [audience, setAudience] = useState(initialAudience)
   const [mcpScopes, setMcpScopes] = useState(initialScopes)
   const selection: ApiKeyScopeSelection = {
     keyType,
-    audience,
-    rows: scopeResourceRows(storybookScopeCatalog, 'api-key', [audience]),
+    rows: scopeResourceRows(storybookScopeCatalog, 'api-key', ['user']),
     mcpScopes,
     permissions: keyType === 'rss' ? RSS_KEY_SCOPES : mcpScopes,
     handleKeyTypeChange: setKeyType,
-    handleAudienceChange: next => {
-      setAudience(next)
-      setMcpScopes([])
-    },
     handleScopeToggle: (scope, checked) =>
       setMcpScopes(prev => toggleScope(storybookScopeCatalog, prev, scope, checked)),
   }
@@ -57,7 +46,6 @@ function StatefulForm({
       <CreateApiKeyForm
         label={label}
         selection={selection}
-        showAudience={showAudience}
         submitting={submitting}
         onCancel={noop}
         onCreate={noop}
@@ -72,9 +60,7 @@ export const RssReader: Story = {
     <StatefulForm
       initialLabel='Fintech Daily reader'
       initialKeyType='rss'
-      initialAudience='user'
       initialScopes={[]}
-      showAudience
       submitting={false}
     />
   ),
@@ -85,9 +71,7 @@ export const Submitting: Story = {
     <StatefulForm
       initialLabel='Points notebook MCP'
       initialKeyType='mcp'
-      initialAudience='user'
       initialScopes={['mcp.user:read']}
-      showAudience
       submitting
     />
   ),

@@ -139,19 +139,22 @@ describe('POST /api/v1/my/api-keys', () => {
       })
       .expect(400)
 
-    expect(response.text).toContain('api key scopes must not mix audiences')
+    expect(response.text).toContain('scope is not supported for API keys: mcp.admin:read')
   })
 
-  it('returns 400 when non-admin user creates admin mcp scopes', async () => {
+  it.each([
+    ['a non-administrator', () => user],
+    ['an administrator', () => admin],
+  ])('returns 400 when %s creates an admin mcp key', async (_name, owner) => {
     const request = createRequest()
-    await request.authenticateAs(user)
+    await request.authenticateAs(owner())
     const response = await request
       .post('/api/v1/my/api-keys')
       .set('Content-Type', 'application/json')
       .send({ label: 'Admin MCP', type: 'mcp', permissions: ['mcp.admin:read'] })
       .expect(400)
 
-    expect(response.text).toContain('admin mcp scopes require administrator role')
+    expect(response.text).toContain('scope is not supported for API keys: mcp.admin:read')
   })
 
   it('creates API key and returns 201 with api_key and raw_key', async () => {
@@ -212,25 +215,7 @@ describe('POST /api/v1/my/api-keys', () => {
     expect(response.body.raw_key).toMatch(/^voucha_mcp_/)
   })
 
-  it('allows admins to create admin read-only mcp keys', async () => {
-    const request = createRequest()
-    await request.authenticateAs(admin)
-
-    const response = await request
-      .post('/api/v1/my/api-keys')
-      .set('Content-Type', 'application/json')
-      .send({
-        label: 'Admin MCP Read',
-        type: 'mcp',
-        permissions: ['mcp.admin:read'],
-      })
-      .expect(201)
-
-    expect(response.body.api_key.permissions).toEqual(['mcp.admin:read'])
-    expect(response.body.raw_key).toMatch(/^voucha_mcp_/)
-  })
-
-  it('allows admins to create admin read-write mcp keys', async () => {
+  it('returns 400 when an administrator asks for admin read-write mcp scopes', async () => {
     const request = createRequest()
     await request.authenticateAs(admin)
 
@@ -242,9 +227,26 @@ describe('POST /api/v1/my/api-keys', () => {
         type: 'mcp',
         permissions: ['mcp.admin:write', 'mcp.admin:read'],
       })
+      .expect(400)
+
+    expect(response.text).toContain('scope is not supported for API keys: mcp.admin:')
+  })
+
+  it('still creates a user-audience read-write mcp key for an administrator', async () => {
+    const request = createRequest()
+    await request.authenticateAs(admin)
+
+    const response = await request
+      .post('/api/v1/my/api-keys')
+      .set('Content-Type', 'application/json')
+      .send({
+        label: 'Admin owned user MCP',
+        type: 'mcp',
+        permissions: ['mcp.user:write', 'mcp.user:read'],
+      })
       .expect(201)
 
-    expect(response.body.api_key.permissions).toEqual(['mcp.admin:read', 'mcp.admin:write'])
+    expect(response.body.api_key.permissions).toEqual(['mcp.user:read', 'mcp.user:write'])
     expect(response.body.raw_key).toMatch(/^voucha_mcp_/)
   })
 })

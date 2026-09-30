@@ -106,9 +106,8 @@ test.describe('My API Keys Page', () => {
     const picker = page.getByTestId('api-key-scope-picker')
     await expect(picker).toBeVisible()
 
-    await page.getByTestId('api-keys-create-audience-admin').click()
-    await expect(picker.getByTestId('scope-checkbox-mcp.admin:read')).toBeVisible()
-    await page.getByTestId('api-keys-create-audience-user').click()
+    // Administrator MCP access is OAuth-only, so API keys never offer admin scopes.
+    await expect(picker.getByTestId('scope-checkbox-mcp.user:read')).toBeVisible()
     await expect(picker.getByTestId('scope-checkbox-mcp.admin:read')).toHaveCount(0)
 
     await picker.getByTestId('scope-checkbox-cards:write').click()

@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import type { QueryExecutor } from '@data-stores/psql'
+import { registerOAuthClient } from '../../services/oauth-authorization-server/clients.mts'
 
 /** Append-only audit rows that name a user only through the retained identity root. */
 export const retainedUserAuditReferences = [
@@ -18,11 +19,22 @@ export const retainedUserAuditReferences = [
     column: 'user_id',
     constraint: 'oauth_authorization_server_events_user_id_fkey',
   },
+  {
+    table: 'mcp_call_audit_events',
+    column: 'actor_user_id',
+    constraint: 'mcp_call_audit_events_actor_user_id_fkey',
+  },
 ] as const
+
+/** Audit logs that reject deletes, so their rows cannot be removed to release a retained root. */
+export const appendOnlyRetainedUserAuditTables: readonly RetainedUserAuditTable[] = [
+  'oauth_authorization_server_events',
+  'mcp_call_audit_events',
+]
 
 export type RetainedUserAuditTable = (typeof retainedUserAuditReferences)[number]['table']
 
-/** `postId` scopes the post-owned audit rows; the OAuth event carries only snapshot ids. */
+/** `postId` scopes the post-owned audit rows; the OAuth and MCP audit rows carry no post. */
 export async function insertTestRetainedUserAuditRow(
   query: QueryExecutor,
   table: RetainedUserAuditTable,
@@ -47,6 +59,25 @@ export async function insertTestRetainedUserAuditRow(
         (version_id, source, disposition, reason_code, actor_user_id)
       SELECT id, 'staff', 'pass', 'staff_pass', $2 FROM version`,
       [postId, actorId, randomBytes(32)],
+    )
+  } else if (table === 'mcp_call_audit_events') {
+    const client = await registerOAuthClient(
+      {
+        client_name: 'Retained user audit test',
+        redirect_uris: ['http://127.0.0.1:31337/callback/retained-user-audit'],
+        scope: 'mcp.user:read',
+        token_endpoint_auth_method: 'none',
+      },
+      null,
+      query,
+    )
+    await query(
+      `/* insertTestRetainedUserAuditMcpCall */
+      INSERT INTO mcp_call_audit_events
+        (surface, correlation_id, actor_user_id, oauth_client_id, resource, jsonrpc_method, outcome)
+      SELECT 'mcp', $1::uuid, $2::uuid, id, 'https://example.test/mcp', 'tools/list', 'accepted'
+      FROM oauth_clients WHERE client_id = $3`,
+      [randomUUID(), actorId, client.client_id],
     )
   } else {
     await query(

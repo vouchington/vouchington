@@ -9,6 +9,8 @@ describe('ledger partition generation', () => {
     expect(sql).toContain('PARTITION OF ai_usage_records DEFAULT')
     expect(sql).toContain('CREATE TABLE IF NOT EXISTS community_post_review_changes__default')
     expect(sql).toContain('PARTITION OF community_post_review_changes DEFAULT')
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS mcp_call_audit_events__default')
+    expect(sql).toContain('PARTITION OF mcp_call_audit_events DEFAULT')
     expect(sql).toContain('CREATE TABLE IF NOT EXISTS post_clearance_changes__default')
     expect(sql).toContain('PARTITION OF post_clearance_changes DEFAULT')
     expect(sql).toContain('CREATE TABLE IF NOT EXISTS session_referral_attributions__default')

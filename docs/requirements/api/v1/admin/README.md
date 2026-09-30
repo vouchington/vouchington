@@ -33,23 +33,28 @@ For growth metrics details, see [growth-metrics/README.md](./growth-metrics/READ
 
 ## MCP Clients
 
-The admin MCP endpoint is streamable HTTP at `POST /api/v1/admin/mcp`. Configure it in your client with a Bearer token, and leave [`.mcp.json`](../../../../../.mcp.json) unchanged. The token is an admin MCP API key or an OAuth access token bound to the admin resource, which only administrators can authorize; OAuth clients discover it from `/.well-known/oauth-protected-resource/api/v1/admin/mcp` through the `401` challenge.
+The admin MCP endpoint is streamable HTTP at `POST /api/v1/admin/mcp`. Leave [`.mcp.json`](../../../../../.mcp.json) unchanged. It is OAuth-only: the credential is an OAuth access token bound to the admin resource, which only administrators can authorize, carrying `mcp.admin:read` and, for write tools, `mcp.admin:write`. API keys are not accepted and get `401`. OAuth clients discover the resource from `/.well-known/oauth-protected-resource/api/v1/admin/mcp` through the `401` challenge, so register the URL without a static credential and complete the client's OAuth sign-in.
 
-Claude Code:
+Claude Code (authenticate afterwards from `/mcp`):
 
 ```bash
 claude mcp add --scope local voucha-admin-mcp --transport http \
-  https://staging.voucha.ai/api/v1/admin/mcp \
-  --header "Authorization: Bearer ${VOUCHA_ADMIN_MCP_KEY}"
+  https://staging.voucha.ai/api/v1/admin/mcp
 ```
 
 Codex:
 
 ```bash
 codex mcp add voucha-admin-mcp \
-  --url https://staging.voucha.ai/api/v1/admin/mcp \
-  --bearer-token-env-var VOUCHA_ADMIN_MCP_KEY
+  --url https://staging.voucha.ai/api/v1/admin/mcp
 ```
+
+Every call is recorded in the durable `mcp_call_audit_events` log with the actor, OAuth client,
+resource, tool, outcome, timestamp, and the `X-Correlation-Id` returned on the response. Other
+statuses: `403` (not an administrator, or a token missing the scope a tool needs, with an
+`insufficient_scope` challenge), `413` (more than 25 JSON-RPC messages in one batch), `429` (rate
+limited), and `503` (the audit row could not be stored, so the call did not run). See the
+[MCP tools architecture](../../../../overview/architecture/services/mcp-tools/README.md#admin-mcp-audit-log).
 
 ## Performance
 

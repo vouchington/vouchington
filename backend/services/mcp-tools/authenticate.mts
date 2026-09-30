@@ -1,4 +1,4 @@
-import { validateApiKeyForMcpAudience } from '@services/api-keys/validate'
+import { validateApiKeyForUserMcp } from '@services/api-keys/validate'
 import {
   isOAuthAccessToken,
   validateOAuthAccessToken,
@@ -10,8 +10,8 @@ import type { McpServerConfig } from './config.mts'
 const BEARER_CREDENTIAL_PATTERN = /^Bearer +([A-Za-z0-9\-._~+/]+=*) *$/i
 
 type McpVerifiedCredential =
-  | { credential: 'api_key'; rateLimitIdentity: { apiKeyId: string } }
-  | { credential: 'oauth'; rateLimitIdentity: { userId: string } }
+  | { credential: 'api_key'; oauthClientId: null; rateLimitIdentity: { apiKeyId: string } }
+  | { credential: 'oauth'; oauthClientId: string; rateLimitIdentity: { userId: string } }
 
 export type McpBearerAuthentication =
   | { status: 'missing' }
@@ -23,7 +23,9 @@ export type McpBearerAuthentication =
     })
 
 // One authenticator for both MCP routes. The token prefix picks the verifier, so an OAuth token is
-// only checked against this route's resource and an API key only against this route's audience.
+// only checked against this route's resource. A route that does not accept API keys (the admin
+// route) never looks a non-OAuth credential up, so a leaked or stale key is indistinguishable from
+// any other unrecognized token.
 export async function authenticateMcpBearer(
   authorization: string | undefined,
   config: McpServerConfig,
@@ -45,15 +47,24 @@ async function verifyMcpBearerToken(
     const principal = await validateOAuthAccessToken(rawToken, config.audience)
     if (!principal) return null
     return {
-      credential: { credential: 'oauth', rateLimitIdentity: { userId: principal.user_id } },
+      credential: {
+        credential: 'oauth',
+        oauthClientId: principal.client_id,
+        rateLimitIdentity: { userId: principal.user_id },
+      },
       scopes: principal.scopes,
       userId: principal.user_id,
     }
   }
-  const { valid, apiKey } = await validateApiKeyForMcpAudience(rawToken, config.audience)
+  if (!config.acceptsApiKeys) return null
+  const { valid, apiKey } = await validateApiKeyForUserMcp(rawToken)
   if (!valid || !apiKey) return null
   return {
-    credential: { credential: 'api_key', rateLimitIdentity: { apiKeyId: apiKey.id } },
+    credential: {
+      credential: 'api_key',
+      oauthClientId: null,
+      rateLimitIdentity: { apiKeyId: apiKey.id },
+    },
     scopes: apiKey.permissions,
     userId: apiKey.user_id,
   }
