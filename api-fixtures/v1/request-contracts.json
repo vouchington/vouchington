@@ -27042,6 +27042,24 @@
         },
         "required": ["idOrSlug", "listType"],
         "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "feed_type": {
+            "enum": ["article", "podcast", "video", "mixed"],
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 25,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
       }
     },
     "GET:/api/v1/users/:idOrSlug/topics/:listType": {

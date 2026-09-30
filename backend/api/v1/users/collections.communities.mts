@@ -7,6 +7,7 @@ import {
 } from '@services/entity-fetch'
 import { apiQuery } from '../../response-contract.mts'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
+import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import {
   COMMUNITY_LIST_TYPES,
   COMMUNITY_SERVICE_LIST_TYPES,
@@ -35,7 +36,12 @@ app.route('/api/v1/users/:idOrSlug/communities/:listType').get(async (ctx: Conte
   })
 
   const serviceListType = COMMUNITY_SERVICE_LIST_TYPES[listType]
-  const pagination = relationCollectionPaginationParser.parse(ctx.query)
+  const pagination = parseAndValidatePaginatedRequest(
+    ctx,
+    'GET:/api/v1/users/:idOrSlug/communities/:listType',
+    relationCollectionPaginationParser,
+    { path: true },
+  )
   if (!resolved.currentUser) pagination.limit = clampAnonLimit(pagination.limit)
   const communities =
     serviceListType === 'member'

@@ -13,6 +13,7 @@ import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { validateUsername } from '@modules/utils'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import { buildPageInfo, createPaginationParser, decodeScopedAliasCursor } from '@modules/pagination'
 
 const usersSearchParser = createPaginationParser({
@@ -28,7 +29,7 @@ app.route('/api/v1/users').get(async (ctx: Context) => {
     apiQuery('GET:/api/v1/users', usersSearchParser)
     ctx.assert(currentUser, 401, 'Unauthorized')
     const qValue = Array.isArray(q) ? (q[0] ?? '') : q
-    const options = usersSearchParser.parse(ctx.query)
+    const options = parseAndValidatePaginatedRequest(ctx, 'GET:/api/v1/users', usersSearchParser)
     const admin = isAdminUser(currentUser)
     const scope = usersSearchCursorScope({ query: qValue, admin })
     const after = options.after
