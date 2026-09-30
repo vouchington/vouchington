@@ -68,11 +68,9 @@ JSON that stays includes structured application documents, change history, exact
 provider documents, external protocol payloads, and replay envelopes. The
 [relational-storage catalog](../../static-code-analysis/repo-file-policy/relational-storage-catalog.mts)
 records reviewed opaque columns, non-relationship UUID tokens, and the two reviewed id categories
-below. The
-[remediation inventory](../../static-code-analysis/repo-file-policy/relational-storage-debt.mts)
-records UUID arrays, missing foreign keys, and encoded keys. It does not record JSON documents.
-That inventory is shrink-only: new keys fail the acceptance check against `origin/main`. A catalog
-entry whose column no longer has the defect is stale and must be removed.
+below. There is no debt inventory: every UUID array, missing foreign key, or encoded key fails the
+guard unless a reviewed catalog entry covers it, and a UUID array has no catalog exception. A
+catalog entry whose column no longer has the defect is stale and must be removed.
 
 Two reviewed categories need no foreign key, and each catalog entry is an exact `table.column` with
 a one-line reason. A **token, cursor or protocol identifier** is an opaque id with no owning row to

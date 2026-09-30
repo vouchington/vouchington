@@ -21,23 +21,6 @@ describe('static-code-analysis workflow', () => {
     expect(steps.some(step => step.uses === './.github/actions/fetch-base-ref')).toBe(false)
   })
 
-  it('fetches only the main tip before the shrink-only debt inventory check', () => {
-    type Step = { name?: string; run?: string; if?: string; 'timeout-minutes'?: number }
-    const parsed = load(workflow) as { jobs: Record<string, { steps: Step[] }> }
-    const steps = parsed.jobs['static-code-analysis']?.steps ?? []
-    const fetchMain = steps.find(step => step.name === 'Fetch origin/main remediation inventory')
-    const fetchIndex = fetchMain === undefined ? -1 : steps.indexOf(fetchMain)
-    const checksIndex = steps.findIndex(step => step.name === 'Repo Node static checks')
-
-    expect(fetchMain?.if).toBeUndefined()
-    expect(fetchMain?.['timeout-minutes']).toBeLessThanOrEqual(2)
-    expect(fetchMain?.run).toBe(
-      "git fetch --no-tags --depth=1 origin '+refs/heads/main:refs/remotes/origin/main'",
-    )
-    expect(fetchIndex).toBeGreaterThanOrEqual(0)
-    expect(fetchIndex).toBeLessThan(checksIndex)
-  })
-
   it('runs the tracked Lua Selene script on every call with a step timeout', () => {
     type Step = { run?: string; if?: string; 'timeout-minutes'?: number }
     const parsed = load(workflow) as { jobs: Record<string, { steps: Step[] }> }

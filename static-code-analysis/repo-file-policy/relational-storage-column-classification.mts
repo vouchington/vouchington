@@ -7,7 +7,6 @@ import {
   ALLOWED_TOKEN_CURSOR_PROTOCOL_ID,
   PARTITION_FOREIGN_KEY_COLUMNS,
 } from './relational-storage-catalog.mts'
-import { EXISTING_RELATIONAL_STORAGE_DEBT } from './relational-storage-debt.mts'
 import {
   ENCODED_KEY_NAME,
   coveredByForeignKey,
@@ -17,7 +16,7 @@ import {
   isSolePrimaryKey,
   relationalStorageDiagnostic,
   typeBase,
-  type ObservedRelationalDebt,
+  type ObservedRelationalColumns,
   type RelationalStorageOptions,
 } from './relational-storage-type-rules.mts'
 
@@ -35,12 +34,11 @@ function checkCategory(
   key: string,
   kind: string,
   accepted: Catalog,
-  debt: Catalog,
   observed: Set<string>,
   errors: string[],
 ): void {
   observed.add(key)
-  if (accepted.has(key) || debt.has(key)) return
+  if (accepted.has(key)) return
   errors.push(
     relationalStorageDiagnostic(
       key,
@@ -55,7 +53,7 @@ export function classifyRelationalColumn(
   column: SchemaTableSnapshot['columns'][string],
   table: SchemaTableSnapshot,
   options: RelationalStorageOptions,
-  observed: ObservedRelationalDebt,
+  observed: ObservedRelationalColumns,
   errors: string[],
 ): void {
   const type = column.type.toLowerCase()
@@ -70,7 +68,6 @@ export function classifyRelationalColumn(
       key,
       'shared primary key without a target foreign key',
       ALLOWED_OWN_PRIMARY_UUID,
-      new Set(),
       observed.ownPrimary,
       errors,
     )
@@ -84,7 +81,6 @@ export function classifyRelationalColumn(
       key,
       'UUID reference without a target foreign key',
       ACCEPTED_UUID_REFERENCE,
-      EXISTING_RELATIONAL_STORAGE_DEBT.missingForeignKey,
       observed.missingForeignKey,
       errors,
     )
@@ -105,7 +101,6 @@ export function classifyRelationalColumn(
       key,
       'UUID reference without a target foreign key',
       ACCEPTED_UUID_REFERENCE,
-      EXISTING_RELATIONAL_STORAGE_DEBT.missingForeignKey,
       observed.missingForeignKey,
       errors,
     )
@@ -121,11 +116,8 @@ export function classifyRelationalColumn(
       key,
       'encoded entity reference',
       ACCEPTED_ENCODED_REFERENCE,
-      EXISTING_RELATIONAL_STORAGE_DEBT.encodedReference,
       observed.encodedReference,
       errors,
     )
   }
 }
-
-export { checkCategory }

@@ -308,22 +308,21 @@ parameter to it. Other reads of `process.argv[1]`, such as a positional CLI argu
 ## Migration Artifact Cleanup
 
 The PostgreSQL [relational-storage guard](../../../../static-code-analysis/repo-file-policy/relational-storage-guard.mts) reads the
-tracked generated schema snapshot. Its [exact catalog](../../../../static-code-analysis/repo-file-policy/relational-storage-catalog.mts)
-permits reviewed opaque/provider/protocol/replay JSON and nonrelationship UUID tokens/cursors.
-A JSON column is not a defect: structured documents, data points, and change history stay JSON.
-UUID arrays, missing FKs, and scoped encoded keys are recorded in the
-[remediation inventory](../../../../static-code-analysis/repo-file-policy/relational-storage-debt.mts). The inventory is shrink-only
-against `origin/main`. `actions/checkout` does not create that ref, so the static-analysis workflow
-and the tooling test job each fetch `refs/heads/main` at depth 1 before the check. Every declaration
-is checked for staleness, and new undeclared UUID-array, missing-FK, and encoded-key columns fail
-the aggregate `repo-file-policy` check. A catalog entry whose column no longer needs the exception
-is stale. Unresolved domain types are rejected before classification. Encoded-key debt stays only
-while the column is still textual. A sole UUID primary key needs a generator, a target FK, or an
-exact own-identity exception. The guard recognizes composite and proven partition FKs. A generated
-alias also needs its exact `num_nonnulls(...) = 1` check. The partition proof loads the target
-checkout's entity-relation generator. It cannot infer whether arbitrary content in an allowed
-document is application-owned; reviewers must inspect producers and consumers under the
-[prelaunch relational storage policy](../../postgres-schema-rules.md#prelaunch-relational-storage).
+tracked generated schema snapshot. There is no debt inventory: every UUID array, UUID reference
+without a target FK, and scoped encoded key fails the aggregate `repo-file-policy` check unless an
+exact entry in the [reviewed catalog](../../../../static-code-analysis/repo-file-policy/relational-storage-catalog.mts)
+covers it. A UUID array has no catalog exception. A missing FK can be covered by a nonrelationship
+UUID, a token/cursor/protocol id, or an audit snapshot id; an encoded key only by a
+token/cursor/protocol id; a sole UUID primary key without a generator or target FK only by an own
+primary UUID. Reviewed opaque/provider/protocol/replay JSON is recorded for freshness only: a JSON
+column is not a defect, and structured documents, data points, and change history stay JSON. A
+catalog entry whose column no longer needs the exception is stale, and unresolved domain types are
+rejected before classification. The guard recognizes composite and proven partition FKs, and a
+generated alias also needs its exact `num_nonnulls(...) = 1` check. The partition proof loads the
+target checkout's entity-relation generator. It cannot infer whether arbitrary content in an
+allowed document is application-owned; reviewers must inspect producers and consumers under the
+[prelaunch relational storage policy](../../postgres-schema-rules.md#prelaunch-relational-storage),
+which defines the reviewed id categories.
 
 Migration-only AST-grep rules, tests, redirect stubs, and scaffolding are temporary. When the legacy surface is confirmed gone, remove those artifacts unless they still protect an active compatibility contract or invariant. Keep durable checks that enforce current behavior, such as route existence, auth boundaries, API contracts, or helper usage.
 

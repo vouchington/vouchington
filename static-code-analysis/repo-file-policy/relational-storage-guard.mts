@@ -1,15 +1,11 @@
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
 
-import {
-  classifyRelationalColumn,
-  checkCategory,
-} from './relational-storage-column-classification.mts'
-import { EXISTING_RELATIONAL_STORAGE_DEBT } from './relational-storage-debt.mts'
+import { classifyRelationalColumn } from './relational-storage-column-classification.mts'
 import { appendCatalogFreshness } from './relational-storage-freshness.mts'
 import {
   isKnownColumnType,
   relationalStorageDiagnostic,
-  type ObservedRelationalDebt,
+  type ObservedRelationalColumns,
   type RelationalStorageOptions,
 } from './relational-storage-type-rules.mts'
 
@@ -19,12 +15,11 @@ export function checkRelationalStorage(
   options: RelationalStorageOptions = {},
 ): string[] {
   const errors: string[] = []
-  const observed: ObservedRelationalDebt = {
+  const observed: ObservedRelationalColumns = {
     encodedReference: new Set(),
     json: new Set(),
     missingForeignKey: new Set(),
     ownPrimary: new Set(),
-    uuidArray: new Set(),
   }
 
   for (const [tableName, table] of Object.entries(schema.tables)) {
@@ -44,13 +39,12 @@ export function checkRelationalStorage(
         observed.json.add(key)
       }
       if (/^uuid\[\]$/u.test(type)) {
-        checkCategory(
-          key,
-          'UUID array relationship',
-          new Set(),
-          EXISTING_RELATIONAL_STORAGE_DEBT.uuidArray,
-          observed.uuidArray,
-          errors,
+        // No reviewed catalog covers an array of entity ids; each one takes a relation table.
+        errors.push(
+          relationalStorageDiagnostic(
+            key,
+            'UUID array relationship needs concrete relational storage',
+          ),
         )
       }
       classifyRelationalColumn(key, columnName, column, table, options, observed, errors)

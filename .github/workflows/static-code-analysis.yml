@@ -52,11 +52,6 @@ jobs:
         timeout-minutes: 3
       - run: pnpm exec syncpack lint && pnpm exec syncpack format --check
         timeout-minutes: 2
-      # actions/checkout never creates origin/main. Depth 1 is enough for
-      # `git show origin/main:<inventory>`; jscpd does not use this ref.
-      - name: Fetch origin/main remediation inventory
-        run: git fetch --no-tags --depth=1 origin '+refs/heads/main:refs/remotes/origin/main'
-        timeout-minutes: 2
       - name: Repo Node static checks
         run: node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy
         timeout-minutes: 5

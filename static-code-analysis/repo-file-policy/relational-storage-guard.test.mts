@@ -64,24 +64,25 @@ describe('relational storage guard', () => {
     ).toEqual([])
   })
 
-  it('accepts a JSON document and rejects UUID arrays and reference-like UUIDs without FKs', () => {
+  it('accepts a JSON document and rejects a UUID array, a missing FK, and an encoded reference', () => {
     const result = checkRelationalStorage(
       snapshot('new_records', {
         facts: column('jsonb'),
         topic_ids: column('uuid[]'),
         topic_id: column('uuid'),
         target_uuid: column('uuid'),
+        work_key: column('text'),
       }),
       { enforceCatalogFreshness: false },
     )
-    expect(result.join('\n')).not.toContain('new_records.facts')
-    expect(result).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('new_records.topic_ids'),
-        expect.stringContaining('new_records.topic_id'),
-        expect.stringContaining('new_records.target_uuid'),
-      ]),
-    )
+    expect(result).toEqual([
+      expect.stringContaining('new_records.topic_ids: UUID array relationship'),
+      expect.stringContaining('new_records.topic_id: UUID reference without a target foreign key'),
+      expect.stringContaining(
+        'new_records.target_uuid: UUID reference without a target foreign key',
+      ),
+      expect.stringContaining('new_records.work_key: encoded entity reference'),
+    ])
   })
 
   it('rejects primary and unique UUID references without a target FK', () => {
