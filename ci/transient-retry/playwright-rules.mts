@@ -100,8 +100,8 @@ export const mainWebPlaywrightSetupAptLockRule: TransientRetryRule = {
   },
 }
 
-// Exported so repo-owned-literal-freshness.test.mts asserts against this exact literal rather than
-// a second, independently-drifting copy (see #10806/#10825).
+// Exported so playwright-worker-navigation-timeout-rules.test.mts asserts this exact literal is a
+// tracked file rather than a second, independently-drifting copy (see #10806/#10825).
 export const playwrightNavigateToHelperPath = 'playwright/helpers/navigate-to.mts'
 
 function hasMainWebPlaywrightWorkerNavigationTimeout(log: string): boolean {

@@ -2,6 +2,7 @@ import { defineConfig } from 'vitest/config'
 import { ciOutputFile, ciReporters } from './test-helpers/vitest-ci-reporters.mts'
 import { backendAliases, realGlideMqAlias } from './test-helpers/vitest-config/aliases.mts'
 import { backendCoreProjects } from './test-helpers/vitest-config/backend-core-projects.mts'
+import { backendCredentialedTestProjects } from './test-helpers/vitest-config/backend-credentialed-projects.mts'
 import { backendDataProjects } from './test-helpers/vitest-config/backend-data-projects.mts'
 import {
   coverageConfig,
@@ -80,87 +81,7 @@ export default defineConfig({
     projects: [
       ...backendCoreProjects,
       ...backendDataProjects,
-      {
-        extends: true,
-        test: {
-          pool: 'forks',
-          isolate: false,
-          name: 'backend-openrouter',
-          include: ['backend/**/*.openrouter.test.mts'],
-          exclude: ['**/node_modules/**', '**/.git/**'],
-          testTimeout: 60_000,
-          hookTimeout: 60_000,
-        },
-      },
-      {
-        extends: true,
-        test: {
-          pool: 'forks',
-          isolate: false,
-          name: 'backend-aws',
-          include: [
-            'backend/**/*.s3.test.mts',
-            'backend/modules/aws/s3.test.mts',
-            'backend/modules/aws/ses.generated.test.mts',
-          ],
-          runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
-          exclude: ['**/node_modules/**', '**/.git/**'],
-          globalSetup: './test-helpers/vitest.setup.data-stores.mts',
-          setupFiles: [
-            './test-helpers/vitest.setup.shared-db-scope-guard.mts',
-            './test-helpers/vitest.setup.dynamic-config-isolation.mts',
-            './test-helpers/vitest.setup.glide-mq-workers.mts',
-            './test-helpers/vitest.setup.fork-leak-detection.mts',
-          ],
-          testTimeout: 60_000,
-          hookTimeout: 60_000,
-        },
-      },
-      {
-        extends: true,
-        test: {
-          pool: 'forks',
-          isolate: false,
-          name: 'backend-openai',
-          include: ['backend/**/*.openai*.test.mts'],
-          runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
-          exclude: ['**/node_modules/**', '**/.git/**'],
-          globalSetup: './test-helpers/vitest.setup.data-stores.mts',
-          setupFiles: [
-            './test-helpers/vitest.setup.shared-db-scope-guard.mts',
-            './test-helpers/vitest.setup.dynamic-config-isolation.mts',
-            './test-helpers/vitest.setup.glide-mq-workers.mts',
-            './backend/test-helpers/vitest.setup.aws-mocks.mts',
-            './test-helpers/vitest.setup.fork-leak-detection.mts',
-          ],
-          testTimeout: 60_000,
-          hookTimeout: 60_000,
-        },
-      },
-      {
-        extends: true,
-        test: {
-          pool: 'forks',
-          isolate: false,
-          name: 'backend-bedrock',
-          include: ['backend/**/*.bedrock.test.mts'],
-          exclude: ['**/node_modules/**', '**/.git/**'],
-          testTimeout: 30_000,
-          hookTimeout: 30_000,
-        },
-      },
-      {
-        extends: true,
-        test: {
-          pool: 'forks',
-          isolate: false,
-          name: 'backend-stripe',
-          include: ['backend/**/*.stripe.test.mts'],
-          exclude: ['**/node_modules/**', '**/.git/**'],
-          testTimeout: 30_000,
-          hookTimeout: 30_000,
-        },
-      },
+      ...backendCredentialedTestProjects,
       {
         extends: true,
         resolve: {

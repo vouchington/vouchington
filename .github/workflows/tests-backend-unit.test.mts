@@ -16,6 +16,7 @@ const runBackendTestsScript = stepsWorkflow.jobs?.['backend-tests']?.steps?.find
 const vitestConfig = [
   'vitest.config.mts',
   'test-helpers/vitest-config/backend-core-projects.mts',
+  'test-helpers/vitest-config/backend-credentialed-projects.mts',
   'test-helpers/vitest-config/backend-data-projects.mts',
   'test-helpers/vitest-config/environment.mts',
 ]

@@ -6,6 +6,7 @@ const packageJson = JSON.parse(read('package.json')) as { scripts: Record<string
 const vitestConfig = [
   'vitest.config.mts',
   'test-helpers/vitest-config/backend-core-projects.mts',
+  'test-helpers/vitest-config/backend-credentialed-projects.mts',
   'test-helpers/vitest-config/backend-data-projects.mts',
   'test-helpers/vitest-config/environment.mts',
   'test-helpers/vitest-config/storybook-browser-project.mts',
