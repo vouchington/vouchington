@@ -43,8 +43,7 @@ export type ConnectAndEnsureSessionInput = {
   sessions?: BlackboardSessionsClient
 }
 
-// Shared by dev/blackboard-journal/append.mts and dev/retrospective-save/save.mts:
-// collapses connection-resolution + session-ensure into one await so each caller's
+// Collapses connection-resolution + session-ensure into one await so each caller's
 // remaining awaits stay under the no-three-sequential-awaits threshold.
 export async function connectAndEnsureSession(
   input: ConnectAndEnsureSessionInput,

@@ -218,6 +218,15 @@ describe('agent sandbox configuration', () => {
     )
   })
 
+  it('carries no allow or sandbox exclusion for the retired journal CLI', () => {
+    const script = 'dev/blackboard-journal.mts'
+    for (const entry of [`node ${script}`, `node ${script} *`]) {
+      expect(claudeSettings.sandbox.excludedCommands).not.toContain(entry)
+      expect(claudeSettings.permissions.allow).not.toContain(`Bash(${entry})`)
+    }
+    expect(codexRules).not.toContain(codexRuleFor(['node', script]))
+  })
+
   it('excludes the pr-description dev script from the Claude sandbox and allows them in Codex', () => {
     const scripts = ['dev/pr-description.mts']
     for (const script of scripts) {

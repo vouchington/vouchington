@@ -2,20 +2,23 @@
   "$schema": "https://opencode.ai/config.json",
   "autoupdate": false,
   "mcp": {
-    "agent-blackboard": {
+    "vouchington-tooling": {
       "type": "local",
-      "command": ["bash", "-c", "exec \"$(git rev-parse --show-toplevel)/dev/blackboard-mcp\""],
+      "command": [
+        "bash",
+        "-c",
+        "exec \"$(git rev-parse --show-toplevel)/node_modules/.bin/vouchington\" mcp"
+      ],
       "enabled": true
     }
   },
   "permission": {
-    "agent-blackboard_entry_append": "allow",
-    "agent-blackboard_entry_get": "allow",
-    "agent-blackboard_session_archive": "allow",
-    "agent-blackboard_session_create": "allow",
-    "agent-blackboard_session_ensure": "allow",
-    "agent-blackboard_session_patch": "allow",
-    "agent-blackboard_session_search": "allow",
-    "agent-blackboard_snapshot_export": "allow"
+    "vouchington-tooling_journal_append": "allow",
+    "vouchington-tooling_journal_entries": "allow",
+    "vouchington-tooling_outbox_status": "allow",
+    "vouchington-tooling_outbox_flush": "allow",
+    "vouchington-tooling_session_ensure": "allow",
+    "vouchington-tooling_snapshot_export": "allow",
+    "vouchington-tooling_session_archive": "allow"
   }
 }

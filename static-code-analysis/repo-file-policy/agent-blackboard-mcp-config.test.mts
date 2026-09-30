@@ -5,22 +5,22 @@ import { resolve } from 'node:path'
 import { parse } from 'smol-toml'
 import { describe, expect, it } from 'vitest'
 
+const SERVER = 'vouchington-tooling'
+// The seven tools `vouchington mcp` serves. Only the harnesses whose docs do not confirm a
+// server-wide wildcard for approvals list them one by one (OpenCode).
 const TOOL_NAMES = [
-  'entry_append',
-  'entry_get',
-  'session_archive',
-  'session_create',
+  'journal_append',
+  'journal_entries',
+  'outbox_status',
+  'outbox_flush',
   'session_ensure',
-  'session_patch',
-  'session_search',
   'snapshot_export',
+  'session_archive',
 ] as const
+const LAUNCH = 'exec "$(git rev-parse --show-toplevel)/node_modules/.bin/vouchington" mcp'
+const ROOT = resolve(import.meta.dirname, '../..')
 
-type NormalizedServer = {
-  args: string[]
-  command: string
-  envNames: string[]
-}
+type NormalizedServer = { args: string[]; command: string; envNames: string[] }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -38,31 +38,41 @@ function requireStringArray(value: unknown, message: string): string[] {
   return value
 }
 
-function expectExactTools(actual: string[], makeName: (toolName: string) => string) {
-  expect(actual.toSorted()).toEqual(TOOL_NAMES.map(makeName).toSorted())
+function json(path: string): Record<string, unknown> {
+  return requireRecord(
+    JSON.parse(readFileSync(resolve(ROOT, path), 'utf8')),
+    `invalid JSON: ${path}`,
+  )
+}
+
+function toml(path: string): Record<string, unknown> {
+  return requireRecord(parse(readFileSync(resolve(ROOT, path), 'utf8')), `invalid TOML: ${path}`)
+}
+
+// The one blackboard server: no other registration may mention the blackboard or the tooling.
+function expectOnlyToolingServer(servers: unknown, message: string): Record<string, unknown> {
+  const registered = requireRecord(servers, message)
+  const names = Object.keys(registered).filter(name => /blackboard|tooling/iu.test(name))
+  if (names.length !== 1 || names[0] !== SERVER) {
+    throw new Error(`expected only ${SERVER}, found: ${names.join(', ') || 'none'}`)
+  }
+  return requireRecord(registered[SERVER], message)
 }
 
 function normalizeCodexServer(source: string): NormalizedServer {
   const parsed: unknown = parse(source)
   const servers = isRecord(parsed) ? parsed.mcp_servers : undefined
-  const server = isRecord(servers) ? servers['agent-blackboard'] : undefined
-  if (!isRecord(server)) throw new Error('missing mcp_servers.agent-blackboard')
+  const server = expectOnlyToolingServer(servers, `missing mcp_servers.${SERVER}`)
   if (typeof server.command !== 'string') throw new Error('invalid Codex MCP command')
   const args = requireStringArray(server.args, 'invalid Codex MCP args')
   const envNames = requireStringArray(server.env_vars, 'invalid Codex MCP env_vars')
-  if (server.required !== undefined && typeof server.required !== 'boolean') {
-    throw new Error('invalid Codex MCP required value')
-  }
   if (server.required === true) {
-    throw new Error('agent-blackboard must not be required before dependencies are installed')
+    throw new Error(`${SERVER} must not be required before dependencies are installed`)
   }
-  const tools = requireRecord(server.tools, 'missing Codex MCP tool approvals')
-  expect(Object.keys(tools).toSorted()).toEqual([...TOOL_NAMES].toSorted())
-  for (const toolName of TOOL_NAMES) {
-    expect(requireRecord(tools[toolName], `missing Codex approval for ${toolName}`)).toEqual({
-      approval_mode: 'approve',
-    })
+  if (server.default_tools_approval_mode !== 'approve') {
+    throw new Error('Codex must approve the whole server with default_tools_approval_mode')
   }
+  if (server.tools !== undefined) throw new Error('Codex must not list per-tool approvals')
   return { args, command: server.command, envNames: envNames.toSorted() }
 }
 
@@ -72,8 +82,7 @@ function normalizeSharedServer(
 ): NormalizedServer {
   const parsed: unknown = JSON.parse(source)
   const servers = isRecord(parsed) ? parsed.mcpServers : undefined
-  const server = isRecord(servers) ? servers['agent-blackboard'] : undefined
-  if (!isRecord(server)) throw new Error('missing mcpServers.agent-blackboard')
+  const server = expectOnlyToolingServer(servers, `missing mcpServers.${SERVER}`)
   if (typeof server.command !== 'string') throw new Error('invalid shared MCP command')
   const args = requireStringArray(server.args, 'invalid shared MCP args')
   const env = requireRecord(server.env, 'invalid shared MCP env')
@@ -90,69 +99,54 @@ function normalizeCursorServer(source: string): NormalizedServer {
   return normalizeSharedServer(source, name => `\${env:${name}}`)
 }
 
-function json(path: string): Record<string, unknown> {
-  return requireRecord(JSON.parse(readFileSync(path, 'utf8')), `invalid JSON: ${path}`)
-}
-
-describe('agent-blackboard MCP configuration', () => {
+describe('vouchington-tooling MCP configuration', () => {
   it('rejects a missing Codex registration', () => {
     expect(() => normalizeCodexServer('[features]\nhooks = true\n')).toThrow(
-      'missing mcp_servers.agent-blackboard',
+      `missing mcp_servers.${SERVER}`,
     )
+  })
+
+  it('rejects a second blackboard server beside vouchington-tooling', () => {
+    expect(() =>
+      normalizeSharedServer(`{"mcpServers": {
+        "${SERVER}": {"command": "bash", "args": [], "env": {}},
+        "agent-blackboard": {"command": "bash", "args": [], "env": {}}
+      }}`),
+    ).toThrow(/expected only vouchington-tooling, found: .*agent-blackboard/u)
   })
 
   it('rejects a non-string shared environment value', () => {
     expect(() =>
       normalizeSharedServer(`{
         "mcpServers": {
-          "agent-blackboard": {
-            "command": "./dev/blackboard-mcp",
-            "args": [],
-            "env": { "AGENT_BLACKBOARD_URL": 42 }
-          }
+          "${SERVER}": { "command": "bash", "args": [], "env": { "AGENT_BLACKBOARD_URL": 42 } }
         }
       }`),
     ).toThrow('shared MCP env AGENT_BLACKBOARD_URL must be a string')
   })
 
-  it('rejects a required Codex registration', () => {
-    expect(() =>
-      normalizeCodexServer(`
-[mcp_servers.agent-blackboard]
-command = "./dev/blackboard-mcp"
+  it('rejects a required or per-tool-approved Codex registration', () => {
+    const base = `
+[mcp_servers.${SERVER}]
+command = "bash"
 args = []
 env_vars = ["AGENT_BLACKBOARD_URL", "AGENT_BLACKBOARD_TOKEN"]
-required = true
-
-[mcp_servers.agent-blackboard.tools.entry_append]
-approval_mode = "approve"
-
-[mcp_servers.agent-blackboard.tools.entry_get]
-approval_mode = "approve"
-
-[mcp_servers.agent-blackboard.tools.session_archive]
-approval_mode = "approve"
-
-[mcp_servers.agent-blackboard.tools.session_create]
-approval_mode = "approve"
-
-[mcp_servers.agent-blackboard.tools.session_ensure]
-approval_mode = "approve"
-
-[mcp_servers.agent-blackboard.tools.session_patch]
-approval_mode = "approve"
-
-[mcp_servers.agent-blackboard.tools.session_search]
-approval_mode = "approve"
-
-[mcp_servers.agent-blackboard.tools.snapshot_export]
-approval_mode = "approve"
-`),
-    ).toThrow('agent-blackboard must not be required before dependencies are installed')
+default_tools_approval_mode = "approve"
+`
+    expect(() => normalizeCodexServer(`${base}required = true\n`)).toThrow(
+      `${SERVER} must not be required before dependencies are installed`,
+    )
+    expect(() =>
+      normalizeCodexServer(
+        `${base}\n[mcp_servers.${SERVER}.tools.journal_append]\napproval_mode = "approve"\n`,
+      ),
+    ).toThrow('Codex must not list per-tool approvals')
+    expect(() => normalizeCodexServer(base.replace('"approve"', '"prompt"'))).toThrow(
+      'Codex must approve the whole server',
+    )
   })
 
-  it('keeps every harness registration and preauthorization exact', () => {
-    const root = resolve(import.meta.dirname, '../..')
+  it('tracks every harness config file', () => {
     const configPaths = [
       '.claude/settings.json',
       '.codex/config.toml',
@@ -163,57 +157,31 @@ approval_mode = "approve"
       '.mcp.json',
       'opencode.json',
     ]
-    expect(configPaths.every(path => existsSync(resolve(root, path)))).toBe(true)
-    const trackedConfigPaths = execFileSync('git', ['ls-files', '-z', '--', ...configPaths], {
-      cwd: root,
+    expect(configPaths.every(path => existsSync(resolve(ROOT, path)))).toBe(true)
+    const tracked = execFileSync('git', ['ls-files', '-z', '--', ...configPaths], {
+      cwd: ROOT,
       encoding: 'utf8',
     })
       .split('\0')
       .filter(Boolean)
-    expect(trackedConfigPaths.toSorted()).toEqual(configPaths.toSorted())
+    expect(tracked.toSorted()).toEqual(configPaths.toSorted())
+  })
 
-    const codex = normalizeCodexServer(readFileSync(resolve(root, '.codex/config.toml'), 'utf8'))
-    const shared = normalizeSharedServer(readFileSync(resolve(root, '.mcp.json'), 'utf8'))
-    expect(codex).toEqual(shared)
-
-    const claude = json(resolve(root, '.claude/settings.json'))
-    expect(claude.enabledMcpjsonServers).toEqual(['agent-blackboard'])
-    const claudePermissions = requireRecord(claude.permissions, 'missing Claude permissions')
-    expectExactTools(
-      requireStringArray(claudePermissions.allow, 'invalid Claude allowlist').filter(tool =>
-        tool.startsWith('mcp__agent-blackboard__'),
-      ),
-      toolName => `mcp__agent-blackboard__${toolName}`,
+  it('registers one identical launch command in every harness', () => {
+    const shared = normalizeSharedServer(readFileSync(resolve(ROOT, '.mcp.json'), 'utf8'))
+    expect(shared).toEqual({
+      args: ['-c', LAUNCH],
+      command: 'bash',
+      envNames: ['AGENT_BLACKBOARD_TOKEN', 'AGENT_BLACKBOARD_URL'],
+    })
+    expect(normalizeCodexServer(readFileSync(resolve(ROOT, '.codex/config.toml'), 'utf8'))).toEqual(
+      shared,
     )
-
-    const cursorMcp = normalizeCursorServer(readFileSync(resolve(root, '.cursor/mcp.json'), 'utf8'))
-    expect(cursorMcp).toEqual(shared)
-    const cursorCli = requireRecord(
-      json(resolve(root, '.cursor/cli.json')).permissions,
-      'missing Cursor CLI permissions',
+    expect(normalizeCursorServer(readFileSync(resolve(ROOT, '.cursor/mcp.json'), 'utf8'))).toEqual(
+      shared,
     )
-    expectExactTools(
-      requireStringArray(cursorCli.allow, 'invalid Cursor CLI allowlist').filter(tool =>
-        tool.startsWith('Mcp(agent-blackboard:'),
-      ),
-      toolName => `Mcp(agent-blackboard:${toolName})`,
-    )
-    const cursorPermissions = json(resolve(root, '.cursor/permissions.json'))
-    expectExactTools(
-      requireStringArray(cursorPermissions.mcpAllowlist, 'invalid Cursor MCP allowlist'),
-      toolName => `agent-blackboard:${toolName}`,
-    )
-
-    const grok = requireRecord(
-      parse(readFileSync(resolve(root, '.grok/config.toml'), 'utf8')),
-      'invalid Grok config',
-    )
-    const grokServers = requireRecord(grok.mcp_servers, 'missing Grok MCP registration')
-    const grokServer = requireRecord(
-      grokServers['agent-blackboard'],
-      'missing Grok agent-blackboard',
-    )
-    expect(grokServer).toMatchObject({
+    const grokServers = toml('.grok/config.toml').mcp_servers
+    expect(expectOnlyToolingServer(grokServers, 'missing Grok MCP registration')).toMatchObject({
       args: shared.args,
       command: shared.command,
       enabled: true,
@@ -222,43 +190,62 @@ approval_mode = "approve"
         AGENT_BLACKBOARD_URL: '${AGENT_BLACKBOARD_URL}',
       },
     })
-    const grokPermissions = requireRecord(grok.permission, 'missing Grok permissions')
-    expectExactTools(
-      requireStringArray(grokPermissions.allow, 'invalid Grok MCP allowlist'),
-      toolName => `MCPTool(agent-blackboard__${toolName})`,
+    const openCodeServer = expectOnlyToolingServer(
+      json('opencode.json').mcp,
+      'missing OpenCode MCP',
     )
-
-    const openCode = json(resolve(root, 'opencode.json'))
-    const openCodeMcp = requireRecord(openCode.mcp, 'missing OpenCode MCP registration')
-    expect(
-      requireRecord(openCodeMcp['agent-blackboard'], 'missing OpenCode agent-blackboard'),
-    ).toEqual({
+    expect(openCodeServer).toEqual({
       command: [shared.command, ...shared.args],
       enabled: true,
       type: 'local',
     })
-    const openCodePermissions = requireRecord(openCode.permission, 'missing OpenCode permissions')
-    expectExactTools(
-      Object.entries(openCodePermissions)
-        .filter(([, value]) => value === 'allow')
-        .map(([toolName]) => toolName)
-        .filter(toolName => toolName.startsWith('agent-blackboard_')),
-      toolName => `agent-blackboard_${toolName}`,
+  })
+
+  it('approves the whole server, never single tools, in each harness that supports it', () => {
+    const claude = json('.claude/settings.json')
+    expect(claude.enabledMcpjsonServers).toEqual([SERVER])
+    const allow = requireStringArray(
+      requireRecord(claude.permissions, 'missing Claude permissions').allow,
+      'invalid Claude allowlist',
+    )
+    expect(
+      allow.filter(tool => tool.startsWith('mcp__') && /tooling|blackboard/u.test(tool)),
+    ).toEqual([`mcp__${SERVER}__*`])
+
+    const cursorCli = requireRecord(json('.cursor/cli.json').permissions, 'missing Cursor CLI')
+    expect(
+      requireStringArray(cursorCli.allow, 'invalid Cursor CLI allowlist').filter(tool =>
+        tool.startsWith('Mcp('),
+      ),
+    ).toEqual([`Mcp(${SERVER}:*)`])
+    expect(json('.cursor/permissions.json').mcpAllowlist).toEqual([`${SERVER}:*`])
+
+    const grokPermissions = requireRecord(
+      toml('.grok/config.toml').permission,
+      'missing Grok rules',
+    )
+    expect(grokPermissions.allow).toEqual([`MCPTool(${SERVER}__*)`])
+  })
+
+  it('lists the seven tools for OpenCode, whose docs do not confirm a wildcard', () => {
+    const permissions = requireRecord(json('opencode.json').permission, 'missing OpenCode rules')
+    expect(Object.values(permissions).every(value => value === 'allow')).toBe(true)
+    expect(Object.keys(permissions).toSorted()).toEqual(
+      TOOL_NAMES.map(tool => `${SERVER}_${tool}`).toSorted(),
     )
   })
 
   it('launches the native registrations from a nested repository cwd', () => {
-    const root = resolve(import.meta.dirname, '../..')
     const configs = [
-      normalizeCodexServer(readFileSync(resolve(root, '.codex/config.toml'), 'utf8')),
-      normalizeCursorServer(readFileSync(resolve(root, '.cursor/mcp.json'), 'utf8')),
+      normalizeCodexServer(readFileSync(resolve(ROOT, '.codex/config.toml'), 'utf8')),
+      normalizeCursorServer(readFileSync(resolve(ROOT, '.cursor/mcp.json'), 'utf8')),
     ]
     for (const config of configs) {
       const stdout = execFileSync(
         'bash',
         ['-c', 'exec "$@"', '--', config.command, ...config.args],
         {
-          cwd: resolve(root, 'web'),
+          cwd: resolve(ROOT, 'web'),
           encoding: 'utf8',
           env: {
             ...process.env,

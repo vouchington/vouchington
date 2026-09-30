@@ -23,8 +23,8 @@ codex plugin list
 Plugin installation is local agent state, not a `.codex/config.toml` project setting. If a required
 plugin is unavailable, the adapter stops rather than applying its overlay alone.
 
-The project `agent-blackboard` MCP server uses the root-resolving local wrapper. Its eight current
-provider tools each require Codex's explicit `approval_mode = "approve"`; see
+The project `vouchington-tooling` MCP server starts the root-installed `vouchington mcp` launcher.
+Codex approves all of its tools with the server-level `default_tools_approval_mode = "approve"`; see
 [Agent Blackboard](../docs/development/agent-blackboard.md).
 
 See [Agent Harness Parity](../docs/development/agent-harness-parity.md) for the shared ownership

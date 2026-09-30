@@ -37,7 +37,7 @@ function structuredStderr(payload: HookPayload): string | undefined {
 // command failures) live, instead of reconstructing it at end-of-session via expensive
 // transcript mining. Core logic is this directly-testable function; only stdin-reading and
 // process.exit live behind the CLI guard below (established convention: see
-// dev/retrospective-save.mts:64, dev/blackboard-journal.mts:65).
+// dev/retrospective-save.mts:64).
 export function recordFriction(payload: HookPayload, env: NodeJS.ProcessEnv = process.env): void {
   const sessionId = resolveFrictionSessionId(payload, env)
   if (!sessionId) return
