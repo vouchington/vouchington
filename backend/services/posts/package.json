@@ -56,6 +56,7 @@
     "@services/referral-program-link-validations": "workspace:^",
     "@services/review-disputes": "workspace:^",
     "@services/rss-feeds": "workspace:^",
+    "@services/session-advisory-lock": "workspace:^",
     "@services/tag-limits": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/urls": "workspace:^",

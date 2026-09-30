@@ -9,7 +9,9 @@
 - `readPool` — read-only traffic when replica-safe
 - `advisoryLockPool` — dedicated primary connections for session advisory locks whose protected
   work may need ordinary write clients; isolating them prevents lock holders from saturating
-  `writePool` and lets unrelated lock keys progress concurrently
+  `writePool` and lets unrelated lock keys progress concurrently. Callers that hold one of those
+  locks across other pooled work share the [session advisory lock protocol](../../overview/architecture/services/session-advisory-lock/README.md)
+  and still pass their own lock SQL.
 
 The shared runtime routes each pool's idle-client `error` event to this adapter's `onError`
 handler. PostgreSQL can close an idle connection during auto-pause or failover; the pool discards

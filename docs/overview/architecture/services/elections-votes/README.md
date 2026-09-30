@@ -29,6 +29,7 @@ without changing the vote API.
 - **`vote-queries.mts`** — Raw keyset-paginated vote-row queries: `fetchElectionVoteRowsByUser` (id-keyset over the entity ID, used by the user-branch and by unbounded non-route callers when `pagination` is omitted) and `fetchElectionVoteRowsByEntityId` (id-keyset over `user_id`, always paginated; the admin vote-history read path). Both fetch `limit + 1` raw rows so route handlers can derive `has_next_page` before mapping with `mapCurrentVotes()`.
 - **`vote-route-utils.mts`** — Route utilities: semantic-choice validation and rate-limit keys
 - **`types.mts`** — Shared types: `ElectionVoteChoice`, `ViewBaseElection`, `ElectionVote`
+- **`request-lock.mts`** — `withElectionVoteRequestLock` serializes one handler idempotency decision on the one-bigint key `vote-request:${entityType}:${userId}:${entityId}` through the [session advisory lock](../session-advisory-lock/README.md) protocol
 
 ### Route Handler Factory ([`backend/api/election-vote-handler.mts`](../../../../../backend/api/election-vote-handler.mts))
 

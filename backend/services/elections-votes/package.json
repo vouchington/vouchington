@@ -71,6 +71,7 @@
     "@services/entity-cache": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/post-publication": "workspace:^",
+    "@services/session-advisory-lock": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
     "http-errors": "^2.0.1",

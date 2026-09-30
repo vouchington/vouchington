@@ -21,7 +21,7 @@ Direct and queued cleanup are serialized by a dedicated user-scoped PostgreSQL s
 lock. The direct path acquires it before persisting intent and holds it through enqueue and provider
 cleanup; the worker-facing cleanup takes the same lock before reading or restoring the session. The
 lock uses PostgreSQL's two-integer advisory-lock key space, structurally disjoint from Bluesky's
-one-bigint user/DID transaction locks, because session deletion takes those locks on another pooled connection. A process crash releases the session lock, allowing
+one-bigint user/DID transaction locks, because session deletion takes those locks on another pooled connection. The shared session protocol is [session advisory lock](../session-advisory-lock/README.md); this lock still supplies its own two-integer SQL. A process crash releases the session lock, allowing
 the already-enqueued worker or database backfill to resume the exact generation.
 For accepted durable requests, receipts where the disconnecting user is followed by another user
 are deleted after exact-generation validation and before provider revoke so replay cannot strand

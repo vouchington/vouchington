@@ -4344,6 +4344,9 @@ importers:
       '@services/bluesky-accounts':
         specifier: workspace:^
         version: link:../bluesky-accounts
+      '@services/session-advisory-lock':
+        specifier: workspace:^
+        version: link:../session-advisory-lock
       '@services/user-deletions':
         specifier: workspace:^
         version: link:../user-deletions
@@ -5575,6 +5578,9 @@ importers:
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
+      '@services/session-advisory-lock':
+        specifier: workspace:^
+        version: link:../session-advisory-lock
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -8161,6 +8167,9 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds
+      '@services/session-advisory-lock':
+        specifier: workspace:^
+        version: link:../session-advisory-lock
       '@services/tag-limits':
         specifier: workspace:^
         version: link:../tag-limits
@@ -9075,6 +9084,15 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+
+  backend/services/session-advisory-lock:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
 
   backend/services/sitemaps:
     dependencies:
