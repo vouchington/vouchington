@@ -24,8 +24,7 @@ Glide Queue system for reconciling notifications and delivering browser push mes
   responses, routing each ID to its in-app or transactional-email job with a stable key. The sweep
   only lists rows; a lease-expired row at the retry cap is failed by its own job's claim. A failed
   page read or enqueue does not stop the rest; the job then fails with an `AggregateError` of every
-  failure so the queue retries it. After that sweep it refreshes copyright staff alerts from the
-  durable case, deadline, and delivery rows. Alert refresh never changes those obligations.
+  failure so the queue retries it.
 - `processApplyCopyrightAction` claims one revision-fenced copyright media action, rechecks its
   authoritative image placement and active blockers, then applies a reversible withhold or restore.
 - `processReconcileCopyrightActionIntents` runs every five minutes. In order, it replays rejected
@@ -33,8 +32,7 @@ Glide Queue system for reconciling notifications and delivering browser push mes
   enforcement requests, materializes due statutory restore intents, then re-enqueues pending or
   expired-claim action intents. Each sweep walks every UUID-keyset page, so no backlog is starved
   by a fixed batch. A failed item or stage does not stop the rest; the job then fails with an
-  `AggregateError` of every failure so the queue retries it. The same job then refreshes copyright
-  staff alerts. A failed alert refresh is included in that error and does not roll back enforcement.
+  `AggregateError` of every failure so the queue retries it.
 - `processCheckCopyrightReviewTarget` runs every five minutes. It reads
   `copyright.reviewTargetMinutes`, counts copyright cases and received emails waiting past that
   target and open counter-notice deadlines past escalation or restoration, and sends one tagged

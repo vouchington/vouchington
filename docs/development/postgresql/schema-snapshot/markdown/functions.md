@@ -411,30 +411,6 @@ CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_lifecycle()
  LANGUAGE plpgsql
 ```
 
-## `fn_guard_copyright_staff_alert`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_staff_alert()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_staff_alert_ack`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_staff_alert_ack()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_guard_copyright_staff_alert_policy`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_staff_alert_policy()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_guard_copyright_submission_target_scope`
 
 ```sql

@@ -52,8 +52,9 @@ environment:
   assigns `copyright` only to the trusted `copyright-incoming/` S3 prefix;
 - `S3_BUCKET_COPYRIGHT_EVIDENCE` is private, encrypted, versioned, access-logged, retention-reviewed,
   and writable/readable only by the required workers and authorized evidence tooling;
-- form Turnstile secrets, route rate limits, scheduled agent reconciliation, moderator queues, and
-  urgent review alerts are live;
+- form Turnstile secrets, route rate limits, scheduled agent reconciliation, and moderator queues
+  are live, queue urgency orders the staff queue, and the [review-target page](#review-target-page)
+  warns on late work (its Sentry alert rule is not set up yet);
 - reversible placement withholding and origin/CDN denial have passed end-to-end testing;
 - receipts, poster notices, approved correspondence, retry/bounce handling, appeal and counter-notice
   workflows are live; and
@@ -249,19 +250,25 @@ or copyright intake was switched off mid-flight: check the worker's errors. Trea
 restoration deadline under [Incident response](#incident-response).
 
 The Sentry alert rule that routes this warning and its on-call destination are not in this
-repository. Until they exist, the warning appears only as a Sentry issue. The job has no throttle
-beyond its five-minute schedule, so a breach repeats every sweep until it clears.
+repository and are not set up yet ([#1230](https://github.com/vouchington/vouchington/issues/1230)).
+Until they exist, the warning appears only as a Sentry issue. The job has no throttle beyond its
+five-minute schedule, so a breach repeats every sweep until it clears.
 
 A qualifying court or CCB hold blocks the restore but does not cancel or resolve the deadline. A
-deadline held open that way keeps paging as a missed restoration deadline, as the
-`missed_deadline` staff alert does. Only a completed restore or a superseding assessment clears it.
+deadline held open that way keeps paging as a missed restoration deadline. Only a completed restore
+or a superseding assessment clears it.
 
-## Staff alerts
+## Urgent review
 
-Copyright staff alerts have no notification destination and no numeric review threshold in code.
-They stay closed until an operator records an approved `copyright_staff_alert_policies` row. Do not
-delete a delivery intent, deadline, or notice to clear an alert. Acknowledge the episode, or clear
-the underlying fact through the normal case workflow.
+Urgent work has no per-case alert rows or acknowledgements. Two mechanisms surface it:
+
+- queue urgency: the staff case queue lists missed restoration deadlines first, then deadlines past
+  escalation, then other open work (see [Queue triage](#queue-triage)); and
+- the [review-target page](#review-target-page): a five-minute sweep sends a Sentry warning while
+  work is late, and the Sentry alert rule that would route it to on-call is not set up yet.
+
+Do not delete a delivery intent, deadline, or notice to make either clear. Clear the underlying
+fact through the normal case workflow.
 
 ## Incident response
 
@@ -317,8 +324,10 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
    `copyright_notice_legal_hold_assessments` record only §512(g)(2)(C) court and CCB filings, and
    they change restoration. Never record a subpoena as a court or CCB filing, or as a submission
    of kind `court_or_ccb_hold`.
-   - Copyright case records are append-only, and nothing in the product currently destroys case
-     evidence (see [evidence retention](../requirements/moderation/COPYRIGHT-NOTICES.md#evidence-retention-preview)).
+   - Copyright case records are append-only, and nothing in the product destroys case evidence.
+     Retention deletion is not built yet, so nothing is deleted today; a switched-off deletion sweep
+     is tracked in [#1101](https://github.com/vouchington/vouchington/issues/1101) (see
+     [evidence retention](../requirements/moderation/COPYRIGHT-NOTICES.md#evidence-retention)).
    - Account records are not protected. The user or an administrator can delete the account at any
      time. [Account deletion](../requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md) scrubs direct
      personal data immediately and reattributes the account's posts to `[deleted]`, so the case no
