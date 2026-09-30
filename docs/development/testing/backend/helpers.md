@@ -214,6 +214,16 @@ upload through `createImageUploadUrl` and `markImageComplete`. The second builds
 result whose image-capable categories report an `image` input. Quarantine assertions stay in the
 quarantine test.
 
+## Assessed US DMCA Notice Fixture
+
+Copyright persistence and restoration-retry tests share
+`createAssessedUsDmcaCopyrightNoticeFixture()` from
+`@voucha/test-helpers/copyright-us-dmca-notice-fixture`. It creates a claimant, a moderator, a
+hosted image placement, a US DMCA notice, a compliant assessment, and a claimant receipt. Each
+caller passes its own post title and slug prefixes, markdown, claimant display name, notice body,
+receipt idempotency prefix, and whether the assessment is recorded before the receipt. Legal
+outcomes, jurisdictions, and assertion cases stay in the owning test.
+
 ## Copyright Intake Environment
 
 Call `useCopyrightIntakeEnvironment()` from
