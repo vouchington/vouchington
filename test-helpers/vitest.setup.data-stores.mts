@@ -61,8 +61,8 @@ export async function setup() {
 }
 
 // Mirrors the condition that wires the CI reporters (test-helpers/vitest-ci-reporters.mts) —
-// same signal that turns on the worker-exit diagnostics reporter also turns on this timing,
-// so the two stay silent or visible together. Keeps plain local `vitest run` output quiet.
+// same signal that turns on the teardown-overrun reporter also turns on this timing, so the
+// two stay silent or visible together. Keeps plain local `vitest run` output quiet.
 const emitTeardownTiming = process.env.VITEST_CI_REPORTERS === 'run'
 
 // Diagnoses the #8259 teardownTimeout race: on a force-kill, the last "start" line with no

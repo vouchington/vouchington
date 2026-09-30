@@ -2,10 +2,7 @@ import { defineConfig } from 'vitest/config'
 import { ciOutputFile, ciReporters } from './test-helpers/vitest-ci-reporters.mts'
 import { backendAliases, realGlideMqAlias } from './test-helpers/vitest-config/aliases.mts'
 import { backendCoreProjects } from './test-helpers/vitest-config/backend-core-projects.mts'
-import {
-  backendDataProjects,
-  forkCrashReportExecArgv,
-} from './test-helpers/vitest-config/backend-data-projects.mts'
+import { backendDataProjects } from './test-helpers/vitest-config/backend-data-projects.mts'
 import {
   coverageConfig,
   parseVitestMaxWorkers,
@@ -175,8 +172,6 @@ export default defineConfig({
           name: 'backend-real-glide-mq',
           include: ['backend/**/*.real-glide.mock.test.mts'],
           exclude: ['**/node_modules/**', '**/.git/**'],
-          setupFiles: ['./test-helpers/vitest.setup.fork-exit-sentinel.mts'],
-          execArgv: forkCrashReportExecArgv,
           testTimeout: 30_000,
           hookTimeout: 30_000,
         },

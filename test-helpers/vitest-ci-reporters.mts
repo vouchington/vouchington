@@ -1,11 +1,7 @@
 import path, { relative } from 'node:path'
 import type { InlineConfig } from 'vitest/node'
-import { createVitestWorkerExitDiagnosticsReporter } from './vitest-worker-exit-diagnostics-reporter.mts'
+import { createVitestTeardownOverrunReporter } from './vitest-teardown-overrun-reporter.mts'
 import { createVitestStorybookProgressReporter } from './vitest-storybook-progress-reporter.mts'
-export {
-  formatWorkerExitDiagnostics,
-  isWorkerExitError,
-} from './vitest-worker-exit-diagnostics-reporter.mts'
 
 type VitestReporters = NonNullable<InlineConfig['reporters']>
 type VitestReporter = Extract<VitestReporters, readonly unknown[]>[number]
@@ -60,7 +56,7 @@ export function ciReporters(): VitestReporters | undefined {
         githubActionsReporter(),
         'junit',
         'hanging-process',
-        createVitestWorkerExitDiagnosticsReporter(),
+        createVitestTeardownOverrunReporter(),
       ]
     default:
       throw new Error(

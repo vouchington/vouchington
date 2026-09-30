@@ -293,7 +293,6 @@ add a new pinned binary.
 - [Vitest 5 Pool and Isolate Matrix](reference-tests-vitest-5-pool-matrix.md)
 - [Vitest Mock Typing](reference-tests-vitest-mock-typing.md)
 - [Vitest Projects](reference-tests-vitest-projects.md)
-- [Vitest Worker-Exit Diagnostics](reference-vitest-worker-exit-diagnostics.md)
 - [Concurrency model](reference-worker-performance-concurrency-model.md)
 - [Native thread pools](reference-worker-performance-native-thread-pools.md)
 - [Node process knobs](reference-worker-performance-node-process-knobs.md)
