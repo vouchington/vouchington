@@ -5,7 +5,6 @@ export { recordCopyrightReviewTargetBreach } from './copyright-review-target-bre
 export { recordOffAllowlistEgress } from './egress-guardrail.mts'
 export { recordOpenAiSpendCapBreach } from './openai-spend-cap-breach.mts'
 export { recordPostClassifierReceiptAlarm } from './post-classifier-receipt-alarm.mts'
-export type { PostClassifierReceiptAlarmContext } from './post-classifier-receipt-alarm.mts'
 export { recordSqsConsumerConfigMissing } from './sqs-consumer-config-missing.mts'
 export { recordValkeySaturation } from './valkey-saturation.mts'
 export { recordWorkerQueueTopologySkew } from './worker-queue-topology-skew.mts'
