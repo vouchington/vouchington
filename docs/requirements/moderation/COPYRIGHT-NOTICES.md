@@ -46,8 +46,15 @@ Automatic authority requires a current completed clear result for the same intak
 associated current compliant assessment, complete signed-in statutory fields, and no rejected form
 review. The [canonical predicate](../../../backend/data-stores/psql/migrations/0641-00-00-copyright-delivery-transport.sql)
 is checked again under the form fence at enforcement claim and final admission. Pending/failed
-staff projections expose their state with null recommendation and rationale; stale private
-rationale never appears as current. A staff approval during either state creates human authority.
+staff projections expose their state with null recommendation, rationale, and guidance; stale
+private rationale never appears as current. A staff approval during either state creates human
+authority.
+
+A completed screening also carries advisory moderator guidance: a summary, a 512(c)(3) element
+checklist with gaps, risk notes (possible fair use, abuse signals, mismatched claimant), and a
+suggested action. The model sees no claimant contact details, email, address, or signature text.
+The staff case labels it "AI guidance — not a decision"; no workflow predicate reads it, so it
+never creates an assessment or restriction.
 
 Restriction admission and screening start serialize under the form fence. A restriction admitted
 first stays effective, including before its action delivery runs. A newer pending attempt blocks

@@ -11579,13 +11579,165 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "779fe8b48048633ab4a16f30fbdad8247af6d6bb4167798b092f2078b9775520",
+      "hash": "23d3af874d086e698f1d1628372a5430afea7f463525e2dcac476731bbb01d78",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
       "routeTemplate": "/api/v1/copyright-notices/review-queue",
       "schema": {
         "definitions": {
+          "CopyrightFormGuidance": {
+            "additionalProperties": false,
+            "properties": {
+              "elements": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "element": {
+                        "required": true,
+                        "schema": {
+                          "type": "union",
+                          "variants": [
+                            {
+                              "type": "literal",
+                              "value": "accuracy_authority_statement"
+                            },
+                            {
+                              "type": "literal",
+                              "value": "contact_information"
+                            },
+                            {
+                              "type": "literal",
+                              "value": "good_faith_statement"
+                            },
+                            {
+                              "type": "literal",
+                              "value": "material_identification"
+                            },
+                            {
+                              "type": "literal",
+                              "value": "signature"
+                            },
+                            {
+                              "type": "literal",
+                              "value": "work_identification"
+                            }
+                          ]
+                        }
+                      },
+                      "gap": {
+                        "required": true,
+                        "schema": {
+                          "type": "union",
+                          "variants": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "status": {
+                        "required": true,
+                        "schema": {
+                          "type": "union",
+                          "variants": [
+                            {
+                              "type": "literal",
+                              "value": "missing"
+                            },
+                            {
+                              "type": "literal",
+                              "value": "present"
+                            },
+                            {
+                              "type": "literal",
+                              "value": "unclear"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              },
+              "risk_notes": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "required": true,
+                        "schema": {
+                          "type": "union",
+                          "variants": [
+                            {
+                              "type": "literal",
+                              "value": "abuse_signal"
+                            },
+                            {
+                              "type": "literal",
+                              "value": "mismatched_claimant"
+                            },
+                            {
+                              "type": "literal",
+                              "value": "possible_fair_use"
+                            }
+                          ]
+                        }
+                      },
+                      "note": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              },
+              "suggested_action": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "approve_intake"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "escalate_to_counsel"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "reject_intake"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "request_information"
+                    }
+                  ]
+                }
+              },
+              "summary": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
           "CopyrightStaffQueueCase": {
             "additionalProperties": false,
             "properties": {
@@ -12020,6 +12172,21 @@
                               {
                                 "additionalProperties": false,
                                 "properties": {
+                                  "guidance": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "name": "CopyrightFormGuidance",
+                                          "type": "ref"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
                                   "rationale": {
                                     "required": true,
                                     "schema": {
@@ -82343,7 +82510,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "f4fba45798e69920c5979f181f8d111afecb9e5fa073050eeebe6cd87e81d4c5",
+        "hash": "ed1c3e3c1cc5c78fc3d039af79f80bf9c57a85951e0f7494cf055520aed9b754",
         "key": "web.copyright.staff-queue.default"
       },
       "route": {

@@ -19,6 +19,7 @@ import {
   applyNonSpamSignedInCopyrightFormScreening,
 } from './form-screenings.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
+import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 
 describe('copyright form intakes', () => {
   useAutomaticProvisionalWithholding()
@@ -69,6 +70,7 @@ describe('copyright form intakes', () => {
       inputSha256: Buffer.alloc(32, 12),
       recommendation: 'not_obviously_invalid' as const,
       rationale: 'The structured form has no obvious spam markers.',
+      guidance: testCopyrightFormGuidance,
       promptVersion: 'copyright-form-screening-v2',
       model: 'test-model',
     }

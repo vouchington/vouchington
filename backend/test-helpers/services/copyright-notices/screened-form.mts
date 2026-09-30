@@ -11,6 +11,7 @@ import {
   listCopyrightStaffQueue,
 } from '../../../services/copyright-notices/read-models-staff.mts'
 import { readCopyrightStaffQueueCursorRows } from '../../data-stores/psql/copyright-notice-reads.mts'
+import { testCopyrightFormGuidance } from './form-guidance.mts'
 
 export async function isTestCopyrightStaffCaseQueued(
   noticeId: string,
@@ -32,6 +33,21 @@ export async function isTestCopyrightStaffCaseQueued(
 }
 
 export async function createClearScreenedForm(targetCount = 1) {
+  const notice = await createSignedInCopyrightForm(targetCount)
+  const screeningId = await appendCopyrightFormScreening({
+    intakeId: notice.intake.id,
+    inputSha256: Buffer.alloc(32, targetCount),
+    recommendation: 'not_obviously_invalid',
+    rationale: 'No obvious spam markers.',
+    guidance: testCopyrightFormGuidance,
+    promptVersion: 'copyright-form-screening-v2',
+    model: 'test-model',
+  })
+  return { notice, screeningId }
+}
+
+/** A complete signed-in structured form whose screening has not run yet. */
+export async function createSignedInCopyrightForm(targetCount = 1) {
   const [claimant, poster] = await Promise.all([createTestUser(), createTestUser()])
   const postId = await insertTestPost({
     title: `copyright screen recovery ${crypto.randomUUID()}`,
@@ -43,7 +59,7 @@ export async function createClearScreenedForm(targetCount = 1) {
     Array.from({ length: targetCount }, () => insertTestImage(poster.id)),
   )
   await Promise.all(imageIds.map(imageId => insertTestPostImage({ postId, imageId })))
-  const notice = await createCopyrightFormIntake({
+  return createCopyrightFormIntake({
     requesterUserId: claimant.id,
     requesterIdentity: `user:${claimant.id}`,
     idempotencyKey: crypto.randomUUID(),
@@ -63,13 +79,4 @@ export async function createClearScreenedForm(targetCount = 1) {
       })),
     },
   })
-  const screeningId = await appendCopyrightFormScreening({
-    intakeId: notice.intake.id,
-    inputSha256: Buffer.alloc(32, targetCount),
-    recommendation: 'not_obviously_invalid',
-    rationale: 'No obvious spam markers.',
-    promptVersion: 'copyright-form-screening-v2',
-    model: 'test-model',
-  })
-  return { notice, screeningId }
 }

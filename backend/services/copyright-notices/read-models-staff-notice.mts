@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
+import { parseCopyrightFormGuidance } from './form-screening-guidance.mts'
 import type { CopyrightStaffCase } from './read-models-staff-types.mts'
 
 export async function selectStaffTargets(
@@ -45,8 +46,9 @@ export async function selectStaffFormReview(
     state: 'pending' | 'failed' | 'completed' | null
     recommendation: string | null
     rationale_ciphertext: string | null
+    guidance_ciphertext: string | null
   }>(sql`/* getPendingCopyrightStaffCase:formReview */
-    SELECT intake.id AS intake_id, submission.source_kind, execution.state, screening.recommendation, screening.rationale_ciphertext
+    SELECT intake.id AS intake_id, submission.source_kind, execution.state, screening.recommendation, screening.rationale_ciphertext, screening.guidance_ciphertext
     FROM copyright_notice_form_intakes intake JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id
     LEFT JOIN copyright_notice_form_screening_executions execution ON execution.copyright_notice_form_intake_id = intake.id
     LEFT JOIN copyright_notice_form_screenings screening ON screening.id = execution.copyright_notice_form_screening_id AND execution.state = 'completed'
@@ -56,6 +58,7 @@ export async function selectStaffFormReview(
   `)
   const row = rows[0]
   if (!row) return null
+  const purpose = `copyright-form-screening:${row.intake_id}`
   return {
     intake_id: row.intake_id,
     source_kind: row.source_kind,
@@ -64,7 +67,12 @@ export async function selectStaffFormReview(
           state: row.state,
           recommendation: row.recommendation,
           rationale: row.rationale_ciphertext
-            ? decryptSecret(row.rationale_ciphertext, `copyright-form-screening:${row.intake_id}`)
+            ? decryptSecret(row.rationale_ciphertext, purpose)
+            : null,
+          guidance: row.guidance_ciphertext
+            ? parseCopyrightFormGuidance(
+                JSON.parse(decryptSecret(row.guidance_ciphertext, purpose)),
+              )
             : null,
         }
       : null,

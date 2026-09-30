@@ -22,6 +22,7 @@ import {
 } from './index.mts'
 import { appendCopyrightFormScreening } from './form-screenings.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
+import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 
 async function createAutomatedCopyrightForm() {
   const claimant = await createTestUser()
@@ -54,6 +55,7 @@ async function createAutomatedCopyrightForm() {
     inputSha256: Buffer.alloc(32),
     recommendation: 'not_obviously_invalid',
     rationale: 'No obvious spam markers.',
+    guidance: testCopyrightFormGuidance,
     promptVersion: 'copyright-form-screening-v2',
     model: 'test-model',
   })

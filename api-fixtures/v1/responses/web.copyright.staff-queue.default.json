@@ -14,9 +14,51 @@
       "form_review": {
         "intake_id": "00000000-0000-7000-8000-000000000806",
         "screening": {
-          "rationale": null,
-          "recommendation": null,
-          "state": "pending"
+          "guidance": {
+            "elements": [
+              {
+                "element": "signature",
+                "gap": null,
+                "status": "present"
+              },
+              {
+                "element": "work_identification",
+                "gap": null,
+                "status": "present"
+              },
+              {
+                "element": "material_identification",
+                "gap": "The hosted use URL does not name the specific image.",
+                "status": "unclear"
+              },
+              {
+                "element": "contact_information",
+                "gap": null,
+                "status": "present"
+              },
+              {
+                "element": "good_faith_statement",
+                "gap": null,
+                "status": "present"
+              },
+              {
+                "element": "accuracy_authority_statement",
+                "gap": null,
+                "status": "present"
+              }
+            ],
+            "risk_notes": [
+              {
+                "kind": "possible_fair_use",
+                "note": "The post may be a critical review."
+              }
+            ],
+            "suggested_action": "request_information",
+            "summary": "A claimant reports an unlicensed copy of an original photograph."
+          },
+          "rationale": "No obvious spam markers.",
+          "recommendation": "not_obviously_invalid",
+          "state": "completed"
         },
         "source_kind": "guest_form"
       },

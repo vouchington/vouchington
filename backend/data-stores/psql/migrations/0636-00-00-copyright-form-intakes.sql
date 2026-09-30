@@ -26,6 +26,7 @@ CREATE TABLE copyright_notice_form_screenings (
   model text NOT NULL CHECK (char_length(model) BETWEEN 1 AND 255),
   recommendation text NOT NULL CHECK (recommendation IN ('not_obviously_invalid', 'invalid_or_spam')),
   rationale_ciphertext text NOT NULL CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
+  guidance_ciphertext text NOT NULL CHECK (char_length(guidance_ciphertext) BETWEEN 1 AND 1048576),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (copyright_notice_form_intake_id, id)
@@ -71,7 +72,7 @@ CREATE TRIGGER trigger_copyright_form_reviews_immutable BEFORE UPDATE OR DELETE 
 CREATE TRIGGER trigger_copyright_form_reviews_require_actor BEFORE INSERT ON copyright_notice_form_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_require_copyright_human_actor('reviewed_by_id');
 
 COMMENT ON TABLE copyright_notice_form_intakes IS 'Idempotent structured web-form copyright admissions. Anonymous identities are one-way digests, not retained IP addresses.';
-COMMENT ON TABLE copyright_notice_form_screenings IS 'Immutable advisory anti-spam recommendations. Only a workflow service, never an agent, may decide whether a clear signed-in intake gets a provisional restriction.';
+COMMENT ON TABLE copyright_notice_form_screenings IS 'Immutable advisory anti-spam recommendations with moderator guidance. Only a workflow service, never an agent or its guidance, may decide whether a clear signed-in intake gets a provisional restriction.';
 COMMENT ON TABLE copyright_notice_form_screening_executions IS 'One current anti-spam execution per structured intake. Its attempt token fences stale completions and its selected immutable result defines current automatic authority.';
 COMMENT ON COLUMN copyright_notice_form_screening_executions.copyright_notice_form_intake_id IS 'Concrete intake whose current screening execution is owned by the form-review fence.';
 COMMENT ON COLUMN copyright_notice_form_screening_executions.attempt_number IS 'Monotonic token advanced on a new screen or failed/expired claim retry.';
@@ -102,3 +103,4 @@ COMMENT ON COLUMN copyright_notice_form_screenings.prompt_version IS 'Versioned 
 COMMENT ON COLUMN copyright_notice_form_screenings.model IS 'Model identifier recorded for screening provenance.';
 COMMENT ON COLUMN copyright_notice_form_screenings.recommendation IS 'Bounded advisory anti-spam classification.';
 COMMENT ON COLUMN copyright_notice_form_screenings.rationale_ciphertext IS 'Encrypted bounded agent rationale.';
+COMMENT ON COLUMN copyright_notice_form_screenings.guidance_ciphertext IS 'Encrypted strictly validated moderator guidance: summary, section 512(c)(3) element checklist, risk notes, and advisory suggested action. Staff-visible only; no workflow predicate reads it.';

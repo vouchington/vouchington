@@ -38,6 +38,31 @@ export type CopyrightNoticeResponseEligibility = Pick<
   'viewer_role' | 'respondable_target_ids'
 >
 
+/** Advisory AI guidance for a structured form; never a decision. */
+export type CopyrightFormGuidance = {
+  summary: string
+  elements: Array<{
+    element:
+      | 'signature'
+      | 'work_identification'
+      | 'material_identification'
+      | 'contact_information'
+      | 'good_faith_statement'
+      | 'accuracy_authority_statement'
+    status: 'present' | 'missing' | 'unclear'
+    gap: string | null
+  }>
+  risk_notes: Array<{
+    kind: 'possible_fair_use' | 'abuse_signal' | 'mismatched_claimant'
+    note: string
+  }>
+  suggested_action:
+    | 'approve_intake'
+    | 'request_information'
+    | 'reject_intake'
+    | 'escalate_to_counsel'
+}
+
 export type CopyrightStaffQueueItem = {
   id: string
   received_at: string
@@ -65,6 +90,7 @@ export type CopyrightStaffQueueItem = {
       state: 'pending' | 'failed' | 'completed'
       recommendation: string | null
       rationale: string | null
+      guidance: CopyrightFormGuidance | null
     } | null
   } | null
   restrictions: Array<{

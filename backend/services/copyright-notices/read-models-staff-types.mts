@@ -1,3 +1,5 @@
+import type { CopyrightFormGuidance } from './form-screening-guidance.mts'
+
 export type CopyrightStaffCase = {
   id: string
   received_at: Date
@@ -25,6 +27,8 @@ export type CopyrightStaffCase = {
       state: 'pending' | 'failed' | 'completed'
       recommendation: string | null
       rationale: string | null
+      /** Advisory AI guidance for the moderator; never a decision. */
+      guidance: CopyrightFormGuidance | null
     } | null
   } | null
   restrictions: Array<{

@@ -1,6 +1,10 @@
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
+import {
+  type CopyrightFormGuidance,
+  parseCopyrightFormGuidance,
+} from './form-screening-guidance.mts'
 
 type Transaction = Awaited<ReturnType<typeof beginTransaction>>
 export type CopyrightFormScreeningAttempt = { intakeId: string; attemptNumber: number }
@@ -9,6 +13,7 @@ export type CopyrightFormScreeningResultInput = {
   inputSha256: Buffer
   recommendation: 'not_obviously_invalid' | 'invalid_or_spam'
   rationale: string
+  guidance: CopyrightFormGuidance
   promptVersion: string
   model: string
 }
@@ -78,6 +83,7 @@ export async function completeCopyrightFormScreening(
   input: CopyrightFormScreeningResultInput,
 ): Promise<string | null> {
   if (attempt.intakeId !== input.intakeId) throw new TypeError('Screening attempt intake mismatch')
+  const guidance = parseCopyrightFormGuidance(input.guidance)
   await using transaction = await beginTransaction()
   await lockCopyrightFormReview(attempt.intakeId, transaction)
   const { rows: executions } = await transaction<{
@@ -94,11 +100,14 @@ export async function completeCopyrightFormScreening(
     await transaction.commit()
     return execution?.state === 'completed' ? execution.copyright_notice_form_screening_id : null
   }
+  const purpose = `copyright-form-screening:${input.intakeId}`
   const { rows } = await transaction<{ id: string }>(sql`/* completeCopyrightFormScreening:result */
     INSERT INTO copyright_notice_form_screenings (
-      copyright_notice_form_intake_id, input_sha256, prompt_version, model, recommendation, rationale_ciphertext
+      copyright_notice_form_intake_id, input_sha256, prompt_version, model, recommendation,
+      rationale_ciphertext, guidance_ciphertext
     ) VALUES (${input.intakeId}, ${input.inputSha256}, ${input.promptVersion}, ${input.model},
-      ${input.recommendation}, ${encryptSecret(input.rationale, `copyright-form-screening:${input.intakeId}`)})
+      ${input.recommendation}, ${encryptSecret(input.rationale, purpose)},
+      ${encryptSecret(JSON.stringify(guidance), purpose)})
     RETURNING id
   `)
   const id = rows[0]!.id

@@ -3,28 +3,24 @@ import sql from 'sql-template-strings'
 import { appendCopyrightSubmissionAssessmentInTransaction } from './compliance.mts'
 import { isAutomaticProvisionalWithholdingEnabled } from './config.mts'
 import {
+  type CopyrightFormScreeningResultInput,
   startCopyrightFormScreening,
   completeCopyrightFormScreening,
 } from './form-screening-executions.mts'
 import { processCopyrightEnforcementRequest } from './enforcement-requests.mts'
 
-export type CopyrightFormScreeningRecommendation = 'not_obviously_invalid' | 'invalid_or_spam'
 /** @public Cross-workspace persistence boundary used by the copyright form-screening agent. */
-export async function appendCopyrightFormScreening(input: {
-  intakeId: string
-  inputSha256: Buffer
-  recommendation: CopyrightFormScreeningRecommendation
-  rationale: string
-  promptVersion: string
-  model: string
-}): Promise<string> {
+export async function appendCopyrightFormScreening(
+  input: CopyrightFormScreeningResultInput,
+): Promise<string> {
   const attempt = await startCopyrightFormScreening(input.intakeId)
   const result = await completeCopyrightFormScreening(attempt, input)
   if (!result) throw new Error('Copyright screening attempt was superseded')
   return result
 }
 /**
- * Workflow-owned automation gate. Agents only return a recommendation; they cannot call this. While
+ * Workflow-owned automation gate. Agents only return a recommendation and advisory guidance; they
+ * cannot call this, and it never reads the guidance. While
  * `automaticProvisionalWithholding` is off, a clear screen changes nothing and a moderator decides.
  */
 export async function applyNonSpamSignedInCopyrightFormScreening(

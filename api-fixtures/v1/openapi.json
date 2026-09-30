@@ -2856,6 +2856,77 @@
         "required": ["copyright_email_intakes", "page_info"],
         "type": "object"
       },
+      "CopyrightFormGuidance": {
+        "additionalProperties": false,
+        "properties": {
+          "elements": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "element": {
+                  "enum": [
+                    "accuracy_authority_statement",
+                    "contact_information",
+                    "good_faith_statement",
+                    "material_identification",
+                    "signature",
+                    "work_identification"
+                  ],
+                  "type": "string"
+                },
+                "gap": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "status": {
+                  "enum": ["missing", "present", "unclear"],
+                  "type": "string"
+                }
+              },
+              "required": ["element", "gap", "status"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "risk_notes": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": ["abuse_signal", "mismatched_claimant", "possible_fair_use"],
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                }
+              },
+              "required": ["kind", "note"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "suggested_action": {
+            "enum": [
+              "approve_intake",
+              "escalate_to_counsel",
+              "reject_intake",
+              "request_information"
+            ],
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": ["elements", "risk_notes", "suggested_action", "summary"],
+        "type": "object"
+      },
       "CopyrightHoldResolutionKind": {
         "enum": ["dismissed", "proceeding_ended", "superseded"],
         "type": "string"
@@ -3600,6 +3671,16 @@
                       {
                         "additionalProperties": false,
                         "properties": {
+                          "guidance": {
+                            "anyOf": [
+                              {
+                                "$ref": "#/components/schemas/CopyrightFormGuidance"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "rationale": {
                             "anyOf": [
                               {
@@ -3625,7 +3706,7 @@
                             "type": "string"
                           }
                         },
-                        "required": ["rationale", "recommendation", "state"],
+                        "required": ["guidance", "rationale", "recommendation", "state"],
                         "type": "object"
                       },
                       {
