@@ -9,7 +9,7 @@ import {
   rssFeedItemId,
   storedCandidateAId,
   storyAId,
-} from './test-helpers.mts'
+} from '@voucha/test-helpers/agents/classifiers/test-helpers'
 import type {
   ChoiceClassifierBinding,
   ExecuteClassifierDecisionInput,

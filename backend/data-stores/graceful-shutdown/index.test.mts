@@ -9,7 +9,7 @@ import {
   loadSubject,
   restoreSignalListeners,
   snapshotSignalListeners,
-} from './index.test-helpers.mts'
+} from '@voucha/test-helpers/data-stores/graceful-shutdown/index.test-helpers'
 
 const captureException = sentryCaptureExceptionMock
 

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser, insertTestModerationReport, insertTestPost } from '@voucha/test-helpers'
 import { getLatestJudgementForEntity } from '@services/moderation-reports/judgements'
 import { runReportJudgementAgent } from './run.mts'
-import { makeReportJudgementModelCaller } from './test-helpers.mts'
+import { makeReportJudgementModelCaller } from '@voucha/test-helpers/agents/report-judgement/test-helpers'
 
 describe('runReportJudgementAgent refresh', () => {
   it('runs again when the latest automatic judgement is stale for the current context', async () => {
