@@ -106,6 +106,16 @@ without one, the validated image still publishes to GHCR without source maps. Pu
 Nightly validation never receive the token or upload source maps. The Docker smoke and Trivy gates do
 not depend on this optional integration. See the [deploy and release workflow reference](ci/workflows/reference-deploy-and-release.md).
 
+The weekly [GHCR cleanup](../../.github/workflows/ghcr-cleanup.yml) runs
+[`ghcr-package-retention.sh`](../../ci/ghcr-package-retention.sh) from a full-history `main` checkout.
+In each runtime package it keeps the newest 30 images whose `sha-<commit>` tag main reaches, and
+deletes an image whose commit main does not reach (an ejected or failed merge group) once it was
+created and last updated more than seven days ago. An untagged or `sha256-*` version (an
+attestation, a referrer index, or a superseded manifest) is deleted only after the same seven days,
+and only when it was created more than a day before the oldest surviving image, so it cannot belong
+to one. Every other tag is kept, and any listing error other than a missing package fails the run.
+Scheduled runs delete; manual runs list unless asked to apply.
+
 GitHub-hosted runners are ephemeral and single-job-per-VM, so repository workflows do not use
 shared-host admission locks, host-pressure diagnostics, or deterministic runner port slices.
 `next build` still caps its page-data worker pool from the smaller positive physical or cgroup

@@ -1,12 +1,10 @@
 name: GHCR Cleanup
 
-# Reaps old container package versions published by main-backend.yml and main-web.yml.
-#
-# Every main revision that touches the backend or web publishes one image per component, so these
-# packages grow without bound unless something prunes them. GHCR is only a transfer medium:
-# vouchington-infra copies each image into ECR by digest, and both deployment and rollback read
-# from ECR. Deleting an old GHCR version therefore cannot affect a running service; it only
-# removes the ability to re-copy that revision, which is why a generous window is retained.
+# Reaps old runtime image versions. Merge groups publish ghcr.io/<owner>/<package>:sha-<commit>
+# for backend and web, and main publishes only the images a merge group did not. GHCR is only a
+# transfer medium: vouchington-infra copies each deployed main revision into ECR by digest, and
+# both deployment and rollback read from ECR, so deleting an old GHCR version cannot affect a
+# running service.
 #
 # See ci/ghcr-package-retention.sh for the retention policy itself.
 
@@ -43,6 +41,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 2
         with:
+          # The policy classifies each image by whether main reaches its commit, so it needs main's
+          # full history even when an operator dispatches from another branch.
+          ref: main
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Prune published container package versions
