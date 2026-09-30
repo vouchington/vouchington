@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest'
 import type { TransactionQuery } from '@data-stores/psql'
 import {
   beginTransaction,
+  getRssFeedItemSourcePublicationForTest,
   listTestRssFeedItemCategorySnapshotReconciliations,
   insertTestRssFeedDirect,
 } from '@voucha/test-helpers'
 import { getUrlById } from '@services/urls'
-import { getRssFeedItemByCompositeKey } from '../get.mts'
+import { getRssFeedItemById, getRssFeedItemKeyByGuid } from '../get.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
 import { prepareRssFeedItemsForUpsert } from '../upsert-prepare.mts'
 import { upsertRssFeedItemIdentities } from '../upsert-identities.mts'
@@ -46,11 +47,13 @@ describe('RSS feed item concurrent upsert ordering', () => {
     ).resolves.toHaveLength(2)
 
     for (const item of items) {
-      const [firstSource, secondSource] = await Promise.all([
-        getRssFeedItemByCompositeKey(firstFeed.id, item.guid),
-        getRssFeedItemByCompositeKey(secondFeed.id, item.guid),
+      const identity = await getRssFeedItemKeyByGuid(item.guid)
+      expect(identity?.id).toBeDefined()
+      // Throws when a feed has no source row for the shared item identity.
+      await Promise.all([
+        getRssFeedItemSourcePublicationForTest(firstFeed.id, identity!.id),
+        getRssFeedItemSourcePublicationForTest(secondFeed.id, identity!.id),
       ])
-      expect(secondSource?.id).toBe(firstSource?.id)
     }
   })
 
@@ -115,19 +118,19 @@ describe('RSS feed item concurrent upsert ordering', () => {
 
     const [firstResults, secondResults] = await Promise.all([first, second])
     const expectedFirstOrder = await Promise.all(
-      items.map(item => getRssFeedItemByCompositeKey(firstFeed.id, item.guid)),
+      items.map(item => getRssFeedItemKeyByGuid(item.guid)),
     )
     await reconcileOwned(expectedFirstOrder.map(item => item!.id))
-    for (const item of items) {
-      const [firstSource, secondSource] = await Promise.all([
-        getRssFeedItemByCompositeKey(firstFeed.id, item.guid),
-        getRssFeedItemByCompositeKey(secondFeed.id, item.guid),
+    for (const [index, item] of items.entries()) {
+      const itemId = expectedFirstOrder[index]!.id
+      // Throws when a feed has no source row for the shared item identity.
+      await Promise.all([
+        getRssFeedItemSourcePublicationForTest(firstFeed.id, itemId),
+        getRssFeedItemSourcePublicationForTest(secondFeed.id, itemId),
       ])
-      expect(firstSource?.id).toBeDefined()
-      expect(secondSource?.id).toBe(firstSource?.id)
-      expect(firstSource?.data.title).toBe(item.title)
-      expect(secondSource?.data.title).toBe(item.title)
-      await expect(getRssFeedItemCategories(firstSource!.id)).resolves.toEqual([
+      const stored = await getRssFeedItemById(itemId)
+      expect(stored?.data.title).toBe(item.title)
+      await expect(getRssFeedItemCategories(itemId)).resolves.toEqual([
         expect.objectContaining({ category_text: item.categories![0] }),
       ])
     }

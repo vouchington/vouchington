@@ -110,12 +110,6 @@ export function createNavMock() {
     prefetch,
 
     /**
-     * The mock module object. Equivalent to the exported `navMockModule` singleton.
-     * Included for backwards-compat and convenience.
-     */
-    module: navMockModule,
-
-    /**
      * Set the value returned by `useSearchParams()` for subsequent renders.
      *
      * Accepts the same init forms as `new URLSearchParams()`:

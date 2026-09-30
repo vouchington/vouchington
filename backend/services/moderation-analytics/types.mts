@@ -68,6 +68,7 @@ export type AppealMetrics = {
   accepted: number
   reduced: number
   denied: number
+  // ast-grep-ignore: no-compatibility-tombstone-comments -- native clients decode this v1 field; coordinated removal is #1335
   /** Backwards-compatible legacy bucket; denials are counted in `denied`. */
   dismissed: number
   success_rate: number | null

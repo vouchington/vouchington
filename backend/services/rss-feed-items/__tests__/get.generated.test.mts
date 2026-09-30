@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { getRssFeedItemByCompositeKey, getRssFeedItemKeyByGuid } from '../get.mts'
+import { getRssFeedItemById, getRssFeedItemKeyByGuid } from '../get.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
 import { insertTestRssFeedDirect } from '@voucha/test-helpers'
 import { v7 } from 'uuid'
@@ -21,12 +21,12 @@ describe('get.generated', () => {
     await expect(getRssFeedItemKeyByGuid(guid)).resolves.toEqual({ id: upserted.id })
   })
 
-  it('getRssFeedItemByCompositeKey retrieves item by composite key', async () => {
+  it('getRssFeedItemById retrieves the item with its feed source', async () => {
     const feed = await insertTestRssFeedDirect({})
     const random = Math.random().toString(36).slice(2, 15)
     const guid = `guid-${random}`
 
-    await upsertRssFeedItems(feed.id, [
+    const [upserted] = await upsertRssFeedItems(feed.id, [
       {
         link: `https://example.com/article-${random}`,
         guid,
@@ -36,7 +36,7 @@ describe('get.generated', () => {
     ])
     // RSS feed items cascade-delete with feed, no need to track separately
 
-    const item = await getRssFeedItemByCompositeKey(feed.id, guid)
+    const item = await getRssFeedItemById(upserted.id)
     expect(item).toBeDefined()
     expect(item!.rss_feed.id).toBe(feed.id)
     expect(item!.guid).toBe(guid)
@@ -45,11 +45,7 @@ describe('get.generated', () => {
     expect(item!.rss_feed).toBeDefined()
   })
 
-  it('getRssFeedItemByCompositeKey returns null for non-existent item', async () => {
-    const nonExistentFeedId = v7()
-    const nonExistentGuid = 'non-existent-guid'
-
-    const item = await getRssFeedItemByCompositeKey(nonExistentFeedId, nonExistentGuid)
-    expect(item).toBeNull()
+  it('getRssFeedItemById returns null for non-existent item', async () => {
+    await expect(getRssFeedItemById(v7())).resolves.toBeNull()
   })
 })

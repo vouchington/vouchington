@@ -58,6 +58,7 @@ describe('view-users', () => {
     // CASE branch for 'google' fires a scalar subquery and returns the account object
     expect(row?.display_account).not.toBeNull()
     const displayAccount = row?.display_account as Record<string, unknown>
+    // ast-grep-ignore: no-compatibility-tombstone-comments -- native clients decode this v1 field; coordinated removal is #1335
     // OAuth provider IDs are private; v1 keeps a blank id only for decoder compatibility.
     expect(displayAccount.id).toBe('')
     // name comes from google_user_data->>'name'; insertTestOAuthAccount inserts '{}' so name is null

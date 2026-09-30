@@ -1,0 +1,73 @@
+id: no-compatibility-tombstone-comments
+language: Tsx
+severity: error
+message: >-
+  Do not leave a compatibility tombstone comment. Voucha has not launched and follows one current
+  contract: rewrite the producers and consumers together and delete the replaced path instead of
+  keeping, retaining or preserving code "for compatibility". If the code is a genuine external
+  protocol or wire-format constraint, keep it and suppress this rule on the line above with
+  `// ast-grep-ignore: no-compatibility-tombstone-comments -- <the external constraint>`.
+files:
+  - '**/*.ts'
+  - '**/*.mts'
+  - '**/*.cts'
+  - '**/*.tsx'
+ignores:
+  - '**/node_modules/**'
+rule:
+  kind: comment
+  regex: '(?is)\b(?:retain(?:ed|s|ing)?|kept|keep(?:s|ing)?|preserv(?:e|ed|es|ing)|left)\b.{0,60}\bcompat|\bback(?:wards?)?[- ]?compat'
+examples:
+  - code: |
+      // Retained for API error-shaping compatibility; unresolved valid hashtags no longer throw it.
+      export class HashtagTopicSearchError extends Error {}
+    isValid: false
+    file: 'backend/api/example.mts'
+  - code: |
+      // Kept for backwards compatibility — callers that use these constants continue to work.
+      export const INTERNAL_POLL_INTERVAL_MS = 1000
+    isValid: false
+    file: 'web/lib/example.ts'
+  - code: |
+      /** Backward-compatible lookup during the schema migration. */
+      export async function getByCompositeKey() {}
+    isValid: false
+    file: 'backend/services/example.mts'
+  - code: |
+      export function Card() {
+        // Backward-compat re-export — use CardItem directly.
+        return <div />
+      }
+    isValid: false
+    file: 'web/components/example.tsx'
+  - code: |
+      /**
+       * Kept so older callers continue to work with the
+       * previous shape for backwards compatibility.
+       */
+      export const legacy = 1
+    isValid: false
+    file: 'backend/modules/example.mts'
+  - code: |
+      // ActivityPub-compatible actor document
+      export const actor = {}
+    isValid: true
+    file: 'backend/services/example.mts'
+  - code: |
+      // S3-compatible endpoint
+      export const endpoint = 'https://storage.example.test'
+    isValid: true
+    file: 'backend/modules/example.mts'
+  - code: |
+      // Mastodon API compatibility: clients send max_id
+      export const param = 'max_id'
+    isValid: true
+    file: 'backend/api/example.mts'
+  - code: |
+      export const message = 'kept for backward compatibility'
+    isValid: true
+    file: 'backend/modules/example.mts'
+  - code: |
+      export const message = `retained for backwards compatibility`
+    isValid: true
+    file: 'web/lib/example.ts'

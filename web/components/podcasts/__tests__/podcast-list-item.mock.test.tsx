@@ -1,7 +1,7 @@
 import { mockLucideReact } from '@/test-helpers/lucide-icons'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { PodcastShowCard } from '../podcast-show-card'
+import { PodcastListItem } from '../podcast-list-item'
 import type { ViewRssFeed } from '@/types/rss-feeds'
 
 vi.mock(
@@ -104,9 +104,9 @@ function makeFeed(overrides: Partial<ViewRssFeed> = {}): ViewRssFeed {
   }
 }
 
-describe('PodcastShowCard', () => {
+describe('PodcastListItem', () => {
   it('renders the podcast title as a link', () => {
-    render(<PodcastShowCard feed={makeFeed()} />)
+    render(<PodcastListItem feed={makeFeed()} />)
     expect(screen.getByText('Test Podcast (Podcast)')).toBeDefined()
   })
 
@@ -120,13 +120,13 @@ describe('PodcastShowCard', () => {
         itunes_type: null,
       },
     })
-    render(<PodcastShowCard feed={feed} />)
+    render(<PodcastListItem feed={feed} />)
     const img = screen.getByAltText('Test Podcast (Podcast) cover art')
     expect(img.getAttribute('src')).toBe('/sideload/test-cover.jpg')
   })
 
   it('renders a mic placeholder when no cover art is available', () => {
-    render(<PodcastShowCard feed={makeFeed()} />)
+    render(<PodcastListItem feed={makeFeed()} />)
     expect(screen.getByTestId('mic-icon')).toBeDefined()
   })
 
@@ -140,7 +140,7 @@ describe('PodcastShowCard', () => {
         itunes_type: null,
       },
     })
-    render(<PodcastShowCard feed={feed} />)
+    render(<PodcastListItem feed={feed} />)
     expect(screen.getByText('NPR')).toBeDefined()
   })
 
@@ -154,7 +154,7 @@ describe('PodcastShowCard', () => {
         itunes_type: null,
       },
     })
-    render(<PodcastShowCard feed={feed} />)
+    render(<PodcastListItem feed={feed} />)
     expect(screen.getByText('Explicit')).toBeDefined()
   })
 
@@ -162,7 +162,7 @@ describe('PodcastShowCard', () => {
     const feed = makeFeed({
       categories: [{ category_text: 'technology', topic_id: 'topic-2', topic_slug: 'technology' }],
     })
-    render(<PodcastShowCard feed={feed} />)
+    render(<PodcastListItem feed={feed} />)
     const chip = screen.getByText('technology')
     expect(chip).toBeDefined()
     const link = chip.closest('a')
@@ -173,7 +173,7 @@ describe('PodcastShowCard', () => {
     const feed = makeFeed({
       categories: [{ category_text: 'business', topic_id: null, topic_slug: null }],
     })
-    render(<PodcastShowCard feed={feed} />)
+    render(<PodcastListItem feed={feed} />)
     expect(screen.getByText('business')).toBeDefined()
     expect(screen.queryByRole('link', { name: 'business' })).toBeNull()
   })

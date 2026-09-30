@@ -1,6 +1,6 @@
 import { it, expect, describe } from 'vitest'
 import { createHash } from 'node:crypto'
-import { getRssFeedItemByCompositeKey } from '../get.mts'
+import { getRssFeedItemById } from '../get.mts'
 import { insertTestRssFeedDirect, insertTestRssFeedItem } from '@voucha/test-helpers'
 import { addUrl } from '@services/urls'
 
@@ -17,14 +17,14 @@ describe('get.published-at', () => {
     })
     const isoDate = '2020-06-15T12:00:00Z'
     const itemData = { title: 'Item', isoDate, link: urlObj!.url }
-    await insertTestRssFeedItem({
+    const itemId = await insertTestRssFeedItem({
       rssFeedId: feed.id,
       urlId: urlObj!.id,
       guid: `guid-${random}`,
       itemData,
       contentSha256: contentSha256(itemData),
     })
-    const item = await getRssFeedItemByCompositeKey(feed.id, `guid-${random}`)
+    const item = await getRssFeedItemById(itemId)
     expect(item).toBeDefined()
     expect(item!.published_at).toEqual(new Date(isoDate))
   })
@@ -37,14 +37,14 @@ describe('get.published-at', () => {
     })
     const pubDate = '2021-03-01T08:00:00Z'
     const itemData = { title: 'Item', pubDate, link: urlObj!.url }
-    await insertTestRssFeedItem({
+    const itemId = await insertTestRssFeedItem({
       rssFeedId: feed.id,
       urlId: urlObj!.id,
       guid: `guid-${random}`,
       itemData,
       contentSha256: contentSha256(itemData),
     })
-    const item = await getRssFeedItemByCompositeKey(feed.id, `guid-${random}`)
+    const item = await getRssFeedItemById(itemId)
     expect(item).toBeDefined()
     expect(item!.published_at).toEqual(new Date(pubDate))
   })
@@ -58,14 +58,14 @@ describe('get.published-at', () => {
     const isoDate = '2019-01-01T00:00:00Z'
     const pubDate = '2022-06-01T00:00:00Z'
     const itemData = { title: 'Item', isoDate, pubDate, link: urlObj!.url }
-    await insertTestRssFeedItem({
+    const itemId = await insertTestRssFeedItem({
       rssFeedId: feed.id,
       urlId: urlObj!.id,
       guid: `guid-${random}`,
       itemData,
       contentSha256: contentSha256(itemData),
     })
-    const item = await getRssFeedItemByCompositeKey(feed.id, `guid-${random}`)
+    const item = await getRssFeedItemById(itemId)
     expect(item).toBeDefined()
     expect(item!.published_at).toEqual(new Date(isoDate))
   })
@@ -79,14 +79,14 @@ describe('get.published-at', () => {
     const isoDate = '2023-01-01T00:00:00Z'
     const pubDate = '2020-06-15T00:00:00Z'
     const itemData = { title: 'Item', isoDate, pubDate, link: urlObj!.url }
-    await insertTestRssFeedItem({
+    const itemId = await insertTestRssFeedItem({
       rssFeedId: feed.id,
       urlId: urlObj!.id,
       guid: `guid-${random}`,
       itemData,
       contentSha256: contentSha256(itemData),
     })
-    const item = await getRssFeedItemByCompositeKey(feed.id, `guid-${random}`)
+    const item = await getRssFeedItemById(itemId)
     expect(item).toBeDefined()
     expect(item!.published_at).toEqual(new Date(pubDate))
   })
@@ -98,7 +98,7 @@ describe('get.published-at', () => {
       content_type: 'text/html',
     })
     const itemData = { title: 'Item', link: urlObj!.url }
-    await insertTestRssFeedItem({
+    const itemId = await insertTestRssFeedItem({
       rssFeedId: feed.id,
       urlId: urlObj!.id,
       guid: `guid-${random}`,
@@ -106,7 +106,7 @@ describe('get.published-at', () => {
       contentSha256: contentSha256(itemData),
     })
     const insertedAt = Date.now()
-    const item = await getRssFeedItemByCompositeKey(feed.id, `guid-${random}`)
+    const item = await getRssFeedItemById(itemId)
     const fetchedAt = Date.now()
     expect(item).toBeDefined()
     // created_at defaults to CURRENT_TIMESTAMP (≈ insertion time), so published_at ≈ now
@@ -121,7 +121,7 @@ describe('get.published-at', () => {
       content_type: 'text/html',
     })
     const itemData = { title: 'Item', isoDate: 'null', pubDate: 'null', link: urlObj!.url }
-    await insertTestRssFeedItem({
+    const itemId = await insertTestRssFeedItem({
       rssFeedId: feed.id,
       urlId: urlObj!.id,
       guid: `guid-${random}`,
@@ -129,7 +129,7 @@ describe('get.published-at', () => {
       contentSha256: contentSha256(itemData),
     })
     const insertedAt = Date.now()
-    const item = await getRssFeedItemByCompositeKey(feed.id, `guid-${random}`)
+    const item = await getRssFeedItemById(itemId)
     const fetchedAt = Date.now()
     expect(item).toBeDefined()
     // "null" dates are ignored, so published_at falls back to uuid_extract_timestamp(id) ≈ now
@@ -149,7 +149,7 @@ describe('get.published-at', () => {
       pubDate: '2029-06-01T00:00:00Z',
       link: urlObj!.url,
     }
-    await insertTestRssFeedItem({
+    const itemId = await insertTestRssFeedItem({
       rssFeedId: feed.id,
       urlId: urlObj!.id,
       guid: `guid-${random}`,
@@ -157,7 +157,7 @@ describe('get.published-at', () => {
       contentSha256: contentSha256(itemData),
     })
     const insertedAt = Date.now()
-    const item = await getRssFeedItemByCompositeKey(feed.id, `guid-${random}`)
+    const item = await getRssFeedItemById(itemId)
     const fetchedAt = Date.now()
     expect(item).toBeDefined()
     // created_at (≈ now, 2026) is earlier than both future feed dates, so published_at ≈ now
@@ -178,14 +178,14 @@ describe('get.published-at', () => {
       isoDate: 'Mon, 02 Jan 2006 15:04:05 GMT-0700',
       link: urlObj!.url,
     }
-    await insertTestRssFeedItem({
+    const itemId = await insertTestRssFeedItem({
       rssFeedId: feed.id,
       urlId: urlObj!.id,
       guid: `guid-${random}`,
       itemData,
       contentSha256: contentSha256(itemData),
     })
-    const item = await getRssFeedItemByCompositeKey(feed.id, `guid-${random}`)
+    const item = await getRssFeedItemById(itemId)
     expect(item).toBeDefined()
     expect(item!.published_at).toEqual(new Date('2006-01-02T22:04:05Z'))
   })
@@ -205,14 +205,14 @@ describe('get.published-at', () => {
       link: urlObj!.url,
     }
     const insertedAt = Date.now()
-    await insertTestRssFeedItem({
+    const itemId = await insertTestRssFeedItem({
       rssFeedId: feed.id,
       urlId: urlObj!.id,
       guid: `guid-${random}`,
       itemData,
       contentSha256: contentSha256(itemData),
     })
-    const item = await getRssFeedItemByCompositeKey(feed.id, `guid-${random}`)
+    const item = await getRssFeedItemById(itemId)
     const fetchedAt = Date.now()
     expect(item).toBeDefined()
     expect(item!.published_at.getTime()).toBeGreaterThanOrEqual(insertedAt - 60_000)
@@ -233,14 +233,14 @@ describe('get.published-at', () => {
       link: urlObj!.url,
     }
     const insertedAt = Date.now()
-    await insertTestRssFeedItem({
+    const itemId = await insertTestRssFeedItem({
       rssFeedId: feed.id,
       urlId: urlObj!.id,
       guid: `guid-${random}`,
       itemData,
       contentSha256: contentSha256(itemData),
     })
-    const item = await getRssFeedItemByCompositeKey(feed.id, `guid-${random}`)
+    const item = await getRssFeedItemById(itemId)
     const fetchedAt = Date.now()
     expect(item).toBeDefined()
     expect(item!.published_at.getTime()).toBeGreaterThanOrEqual(insertedAt - 60_000)

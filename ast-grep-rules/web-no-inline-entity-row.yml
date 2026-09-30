@@ -14,7 +14,6 @@ ignores:
   - 'web/components/sources/article-list-item.tsx'
   - 'web/components/sources/video-list-item.tsx'
   - 'web/components/podcasts/podcast-list-item.tsx'
-  - 'web/components/podcasts/podcast-show-card.tsx'
   - 'web/components/users/user-list.tsx'
   - 'web/components/users/user-link.tsx'
   - 'web/components/communities/community-card.tsx'

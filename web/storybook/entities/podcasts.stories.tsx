@@ -3,7 +3,7 @@ import { useRef } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
-import { PodcastShowCard } from '@/components/podcasts/podcast-show-card'
+import { PodcastListItem } from '@/components/podcasts/podcast-list-item'
 import { PodcastShowMetadataAside } from '@/components/podcasts/podcast-show-metadata-aside'
 import { PodcastPlayerProvider } from '@/lib/podcast-player/context'
 import { PodcastMiniPlayer } from '@/lib/podcast-player/mini-player'
@@ -61,7 +61,7 @@ export const ShowCard: Story = {
     <PodcastPlayerProvider>
       <EntityStoryFrame title='Podcast show card'>
         <div className='space-y-4'>
-          <PodcastShowCard feed={makePodcastFeed('feed-1')} />
+          <PodcastListItem feed={makePodcastFeed('feed-1')} />
         </div>
       </EntityStoryFrame>
     </PodcastPlayerProvider>
@@ -72,7 +72,7 @@ export const ShowCardWithCoverArt: Story = {
   render: () => (
     <PodcastPlayerProvider>
       <EntityStoryFrame title='Podcast show card — with cover art'>
-        <PodcastShowCard
+        <PodcastListItem
           feed={makePodcastFeed('feed-2', {
             title: 'Points Podcast',
             podcast_show: {
@@ -93,7 +93,7 @@ export const ShowCardExplicit: Story = {
   render: () => (
     <PodcastPlayerProvider>
       <EntityStoryFrame title='Podcast show card — explicit'>
-        <PodcastShowCard
+        <PodcastListItem
           feed={makePodcastFeed('feed-3', {
             title: 'True Crime Weekly',
             podcast_show: {
@@ -118,7 +118,7 @@ export const ShowCardNoPodcastMetadata: Story = {
   render: () => (
     <PodcastPlayerProvider>
       <EntityStoryFrame title='Podcast show card — no itunes metadata'>
-        <PodcastShowCard
+        <PodcastListItem
           feed={makePodcastFeed('feed-4', {
             title: 'Basic Podcast Feed',
             podcast_show: null,
@@ -187,7 +187,7 @@ export const ShowCardWithVotes: Story = {
   render: () => (
     <PodcastPlayerProvider>
       <EntityStoryFrame title='Podcast list item — with vote controls'>
-        <PodcastShowCard
+        <PodcastListItem
           feed={makePodcastFeed('vote-1')}
           hostnameElection={{
             __entity_type: 'hostname_election',
@@ -242,7 +242,7 @@ export const HubGrid: Story = {
         <EntityStoryFrame title='/podcasts hub grid'>
           <div className='space-y-4'>
             {feeds.map(feed => (
-              <PodcastShowCard
+              <PodcastListItem
                 key={feed.id}
                 feed={feed}
               />

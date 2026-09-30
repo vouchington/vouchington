@@ -42,6 +42,6 @@ examples:
     file: 'web/components/__tests__/referral-cta-aside.mock.test.tsx'
   - code: |
       const mockNav = createNavMock()
-      vi.mock('next/navigation', () => mockNav.module)
+      vi.mock('next/navigation', () => navMockModule)
     isValid: true
     file: 'web/components/shared/__tests__/list-filters.mock.test.tsx'

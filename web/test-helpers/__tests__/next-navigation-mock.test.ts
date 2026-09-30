@@ -119,10 +119,6 @@ describe('createNavMock', () => {
   })
 
   describe('singleton — module export matches createNavMock references', () => {
-    it('mockNav.module is navMockModule', () => {
-      expect(mockNav.module).toBe(navMockModule)
-    })
-
     it('push spy is shared between mockNav and navMockModule.useRouter()', () => {
       expect(navMockModule.useRouter().push).toBe(mockNav.push)
     })
