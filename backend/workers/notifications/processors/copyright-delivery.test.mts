@@ -25,7 +25,6 @@ function reconcileDeps(sweeps: {
 }) {
   const inApp = pages(...(sweeps.inApp ?? []))
   const email = pages(...(sweeps.email ?? []))
-  const staffAlertSyncs = { count: 0 }
   return {
     searchDeliveryIntents: vi.fn<Deps['searchDeliveryIntents']>(async options =>
       options.channel === 'in_app' ? inApp() : email(),
@@ -42,10 +41,6 @@ function reconcileDeps(sweeps: {
     enqueueSendCopyrightEmailIntakeResponse: vi
       .fn<Deps['enqueueSendCopyrightEmailIntakeResponse']>()
       .mockResolvedValue(undefined),
-    syncStaffAlerts: async () => {
-      staffAlertSyncs.count += 1
-    },
-    staffAlertSyncs,
   }
 }
 
@@ -82,7 +77,6 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
       ['response-1'],
       ['response-2'],
     ])
-    expect(deps.staffAlertSyncs.count).toBe(1)
   })
 
   it('keeps enqueueing past a failed page read and enqueue, then fails with both errors', async () => {
@@ -115,7 +109,6 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
       ['next'],
     ])
     expect(deps.enqueueSendCopyrightEmailIntakeResponse).toHaveBeenCalledWith('response')
-    expect(deps.staffAlertSyncs.count).toBe(1)
   })
 })
 

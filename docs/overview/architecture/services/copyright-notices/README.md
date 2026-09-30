@@ -146,23 +146,5 @@ flowchart LR
   proof -->|blocked| unchanged[Keep original state]
 ```
 
-Staff alerts derive from the notice, its unreviewed restriction, its unresolved restoration deadline,
-and its delivery intent. One retained row exists per case, deadline, or delivery source and
-condition. Acknowledgement is an append-only episode; a later failure opens a new episode and keeps
-the earlier acknowledgement. There is no notification destination and no invented review-age
-threshold. Without an unrevoked `copyright_staff_alert_policies` row, synchronization writes nothing
-and staff reads return no private fields. Acknowledging or failing to deliver an alert never
-resolves the deadline or the delivery intent. The existing five-minute copyright reconciliation jobs
-refresh alerts after their own sweeps.
-
-```mermaid
-stateDiagram-v2
-  [*] --> Open: case, deadline, or delivery fact
-  Open --> Acknowledged: staff acknowledges this episode
-  Acknowledged --> Open: a new episode of the same source
-  Open --> Resolved: the underlying fact clears
-  Acknowledged --> Resolved: the underlying fact clears
-```
-
 The durable workflow is documented in
 [`COPYRIGHT-NOTICES.md`](../../../../requirements/moderation/COPYRIGHT-NOTICES.md).
