@@ -166,11 +166,7 @@ Append `apikey=YOUR_KEY` to the query string:
 - A bloom filter provides a fast-path rejection for unknown keys
 - Keys can be revoked instantly via the settings page or API by setting `revoked_at`; validation ignores revoked rows
 - `last_used_at` is tracked for monitoring
-- Revoked keys retain an audit trail but are immediately invalid
-- Every user MCP call made with a key is recorded before it runs in the durable
-  `mcp_call_audit_events` log under the key id, owner, tool, and outcome, and never the arguments,
-  results, or raw key. A key call that cannot be recorded is refused with `503`. Deleting the
-  owner's account deletes the key and keeps its audit rows
+- Revoked keys retain an audit trail but are immediately invalid. Every user MCP call made with a key is recorded before it runs in `mcp_call_audit_events` under the key id, owner, tool, and outcome, never the arguments, results, or raw key; a call that cannot be recorded gets `503`, and deleting the owner keeps the audit rows
 - Any authenticated user can create API keys
 - API keys never carry admin-audience scopes and never authenticate to the admin MCP endpoint
 - RSS keys are read-only, but they are still bearer credentials in URLs. Keyed RSS responses use `Cache-Control: private` and `Referrer-Policy: no-referrer`; users should revoke keys that appear in logs, referrals, or shared URLs.
