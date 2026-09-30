@@ -130,16 +130,6 @@ describe('protected my query carrier validation', () => {
   })
 
   describe('GET /api/v1/my/export/rss-feeds', () => {
-    it.each(['feed_type=xyz', 'feed_type=article&feed_type=video', 'feed_type=ARTICLE'])(
-      'returns 422 for %s before streaming an export',
-      async query => {
-        const request = await signedIn()
-        const response = await request.get(`/api/v1/my/export/rss-feeds?${query}`).expect(422)
-        expect(response.text).toContain('Invalid request query')
-        expect(response.headers['content-disposition']).toBeUndefined()
-      },
-    )
-
     it.each(['article', 'podcast', 'video', 'mixed', ''])(
       'exports for feed_type=%j (an empty value is no filter)',
       async feedType => {

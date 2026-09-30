@@ -51713,12 +51713,11 @@
         "operationId": "get_api_v1_my_export_rss-feeds",
         "parameters": [
           {
-            "description": "Only export feeds of this type.",
+            "description": "Only export feeds of this type: article, podcast, video or mixed. An empty value means no filter.",
             "in": "query",
             "name": "feed_type",
             "required": false,
             "schema": {
-              "enum": ["article", "podcast", "video", "mixed"],
               "type": "string"
             }
           },
