@@ -1,6 +1,4 @@
-import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
-
-import { crawlUrl } from '../crawl-url.mts'
+import { describe, it, expect, vi } from 'vitest'
 
 import { addUrl } from '@services/urls/upsert'
 
@@ -10,72 +8,21 @@ import { createCrawler } from '@services/crawlers'
 
 import { updateUrlHostname } from '@services/urls-hostnames/update'
 
-import { createTestUser } from '@voucha/test-helpers'
+import { useCrawlUrlRedirectHarness } from '@voucha/test-helpers/services/crawls/crawl-url-redirect-harness'
 
 import { CrawlerTimeoutError } from '@modules/on-error/errors'
 
-import type { CrawlerHtmlResult } from '@services/crawler-html/types'
-
-import type { PrivateUser } from '@services/users/types'
-
-const fetchCrawlerHtml = vi.fn<VitestLooseMock>()
-const isUrlCrawlable = vi.fn<VitestLooseMock>().mockResolvedValue(true)
-const resolveSafeCrawlerAddresses = vi
-  .fn<VitestLooseMock>()
-  .mockResolvedValue([{ address: '93.184.216.34', family: 4 }])
-
-function crawlUrlForTest(...args: Parameters<typeof crawlUrl>) {
-  const [urlId, hopCount = 0, visitedUrls = new Set<string>(), options] = args
-  return crawlUrl(urlId, hopCount, visitedUrls, {
-    ...options,
-    dependencies: {
-      fetchCrawlerHtml,
-      isUrlCrawlable,
-      resolveSafeCrawlerAddresses,
-      ...options?.dependencies,
-    },
-  })
-}
-
-let user: PrivateUser
-
 describe('crawl-url.redirects', () => {
-  beforeAll(async () => {
-    user = await createTestUser()
-  })
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  const createMockCrawlerResult = (
-    statusCode: number,
-    canonicalUrl: string | null = null,
-    location: string | null = null,
-    meta: Record<string, string> = {},
-    responseHeaders: Record<string, string> = {},
-  ): CrawlerHtmlResult => ({
-    response_status_code: statusCode,
-    request_headers: { 'User-Agent': 'test' },
-    response_headers: { ...(location ? { location } : {}), ...responseHeaders },
-    crawl_started_at: new Date(),
-    crawl_completed_at: new Date(),
-    content: {
-      title: 'Test',
-      meta,
-      links: canonicalUrl ? { canonical: canonicalUrl } : {},
-      content: 'Test content',
-      canonicalUrl: canonicalUrl ?? undefined,
-    },
-  })
+  const { fetchCrawlerHtml, crawlUrlForTest, createMockCrawlerResult, user } =
+    useCrawlUrlRedirectHarness()
 
   describe('crawlUrl - Permanent Redirects (301/308)', () => {
     it('should follow 301 redirect and set canonical URL', async () => {
       const random = Math.random().toString(36).slice(2, 15)
       const hostname = `redirect-301-${random}.example.com`
 
-      const originalUrl = await addUrl(user!.id, `https://${hostname}/old`)
-      await createCrawler(user!, {
+      const originalUrl = await addUrl(user().id, `https://${hostname}/old`)
+      await createCrawler(user(), {
         hostname_id: originalUrl!.hostname.id,
         crawler_type: 'fetch',
       })
@@ -100,8 +47,8 @@ describe('crawl-url.redirects', () => {
       const random = Math.random().toString(36).slice(2, 15)
       const hostname = `redirect-308-${random}.example.com`
 
-      const originalUrl = await addUrl(user!.id, `https://${hostname}/old`)
-      await createCrawler(user!, {
+      const originalUrl = await addUrl(user().id, `https://${hostname}/old`)
+      await createCrawler(user(), {
         hostname_id: originalUrl!.hostname.id,
         crawler_type: 'fetch',
       })
@@ -127,8 +74,8 @@ describe('crawl-url.redirects', () => {
       const random = Math.random().toString(36).slice(2, 15)
       const hostname = `redirect-302-${random}.example.com`
 
-      const originalUrl = await addUrl(user!.id, `https://${hostname}/temp`)
-      await createCrawler(user!, {
+      const originalUrl = await addUrl(user().id, `https://${hostname}/temp`)
+      await createCrawler(user(), {
         hostname_id: originalUrl!.hostname.id,
         crawler_type: 'fetch',
       })
@@ -153,10 +100,10 @@ describe('crawl-url.redirects', () => {
       const sourceHostname = `redirect-source-${random}.example.com`
       const targetHostname = `redirect-target-${random}.example.com`
 
-      const originalUrl = await addUrl(user!.id, `https://${sourceHostname}/temp`, {
+      const originalUrl = await addUrl(user().id, `https://${sourceHostname}/temp`, {
         skipCreatedEvents: true,
       })
-      await createCrawler(user!, {
+      await createCrawler(user(), {
         hostname_id: originalUrl!.hostname.id,
         crawler_type: 'fetch',
       })
@@ -180,11 +127,11 @@ describe('crawl-url.redirects', () => {
       const random = Math.random().toString(36).slice(2, 15)
       const sourceHostname = `redirect-http-source-${random}.example.com`
 
-      const originalUrl = await addUrl(user!.id, `http://${sourceHostname}/temp`, {
+      const originalUrl = await addUrl(user().id, `http://${sourceHostname}/temp`, {
         preserveHttp: true,
         skipCreatedEvents: true,
       })
-      await createCrawler(user!, {
+      await createCrawler(user(), {
         hostname_id: originalUrl!.hostname.id,
         crawler_type: 'fetch',
       })
@@ -208,8 +155,8 @@ describe('crawl-url.redirects', () => {
       const random = Math.random().toString(36).slice(2, 15)
       const hostname = `redirect-307-${random}.example.com`
 
-      const originalUrl = await addUrl(user!.id, `https://${hostname}/temp`)
-      await createCrawler(user!, {
+      const originalUrl = await addUrl(user().id, `https://${hostname}/temp`)
+      await createCrawler(user(), {
         hostname_id: originalUrl!.hostname.id,
         crawler_type: 'fetch',
       })
@@ -235,8 +182,8 @@ describe('crawl-url.redirects', () => {
       const random = Math.random().toString(36).slice(2, 15)
       const hostname = `redirect-deadline-${random}.example.com`
 
-      const originalUrl = await addUrl(user!.id, `https://${hostname}/old`)
-      await createCrawler(user!, {
+      const originalUrl = await addUrl(user().id, `https://${hostname}/old`)
+      await createCrawler(user(), {
         hostname_id: originalUrl!.hostname.id,
         crawler_type: 'fetch',
       })
