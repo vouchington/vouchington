@@ -9,6 +9,8 @@ import type { PrivateUser } from '@services/users/types'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-config'
 import { v7 } from 'uuid'
+import { registerAuthCredentialRenameTests } from '../../../../test-helpers/auth-credential-rename-tests.mts'
+
 describe('Passkey API Routes', () => {
   let user: PrivateUser
 
@@ -113,58 +115,12 @@ describe('Passkey API Routes', () => {
   })
 
   describe('PATCH /api/v1/auth/passkeys/:id', () => {
-    it('returns 401 without auth', async () => {
-      const req = createRequest()
-      await req.patch(`/api/v1/auth/passkeys/${v7()}`).send({ name: 'New Name' }).expect(401)
-    })
-
-    it('returns 415 for non-JSON content type', async () => {
-      const req = createRequest()
-      await req.authenticateAs(user)
-
-      await req
-        .patch(`/api/v1/auth/passkeys/${v7()}`)
-        .set('Content-Type', 'text/plain')
-        .send('not json')
-        .expect(415)
-    })
-
-    it('returns 422 for invalid name', async () => {
-      const req = createRequest()
-      await req.authenticateAs(user)
-
-      const emptyName = await req
-        .patch(`/api/v1/auth/passkeys/${v7()}`)
-        .send({ name: '   ' })
-        .expect(422)
-      expect(emptyName.body.message).toContain('name must be 1–100 characters')
-
-      const tooLong = await req
-        .patch(`/api/v1/auth/passkeys/${v7()}`)
-        .send({ name: 'x'.repeat(101) })
-        .expect(422)
-      expect(tooLong.body.message).toContain('name must be 1–100 characters')
-    })
-
-    it('returns 404 for non-existent passkey', async () => {
-      const req = createRequest()
-      await req.authenticateAs(user)
-
-      await req.patch(`/api/v1/auth/passkeys/${v7()}`).send({ name: 'New Name' }).expect(404)
-    })
-
-    it('renames a passkey and returns 204', async () => {
-      const suffix = `rename-api-${Date.now()}`
-      const passkey = await insertTestPasskey(user.id, suffix)
-
-      const req = createRequest()
-      await req.authenticateAs(user)
-
-      await req.patch(`/api/v1/auth/passkeys/${passkey.id}`).send({ name: 'Renamed' }).expect(204)
-
-      const listRes = await req.get('/api/v1/auth/passkeys').expect(200)
-      const found = listRes.body.results.find((p: { id: string }) => p.id === passkey.id)
-      expect(found?.name).toBe('Renamed')
+    registerAuthCredentialRenameTests({
+      getUser: () => user,
+      pathPrefix: '/api/v1/auth/passkeys',
+      insertCredential: insertTestPasskey,
+      suffix: () => `rename-api-${Date.now()}`,
+      renamedName: 'Renamed',
     })
   })
 

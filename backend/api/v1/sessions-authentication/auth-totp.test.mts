@@ -4,6 +4,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTotpAuthenticator } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { v7 } from 'uuid'
+import { registerAuthCredentialRenameTests } from '../../../test-helpers/auth-credential-rename-tests.mts'
 
 describe('TOTP API Routes', () => {
   let user: PrivateUser
@@ -168,58 +169,12 @@ describe('TOTP API Routes', () => {
   // ─── PATCH /api/v1/auth/totp/:id ─────────────────────────────────────────
 
   describe('PATCH /api/v1/auth/totp/:id', () => {
-    it('returns 401 without auth', async () => {
-      const req = createRequest()
-      await req.patch(`/api/v1/auth/totp/${v7()}`).send({ name: 'New Name' }).expect(401)
-    })
-
-    it('returns 415 without JSON content-type', async () => {
-      const req = createRequest()
-      await req.authenticateAs(user)
-
-      await req
-        .patch(`/api/v1/auth/totp/${v7()}`)
-        .set('Content-Type', 'text/plain')
-        .send('not json')
-        .expect(415)
-    })
-
-    it('returns 422 for empty or too-long name', async () => {
-      const req = createRequest()
-      await req.authenticateAs(user)
-
-      const emptyNameRes = await req
-        .patch(`/api/v1/auth/totp/${v7()}`)
-        .send({ name: '   ' })
-        .expect(422)
-      expect(emptyNameRes.body.message).toContain('name must be 1–100 characters')
-
-      const tooLongRes = await req
-        .patch(`/api/v1/auth/totp/${v7()}`)
-        .send({ name: 'x'.repeat(101) })
-        .expect(422)
-      expect(tooLongRes.body.message).toContain('name must be 1–100 characters')
-    })
-
-    it('returns 404 for non-existent authenticator', async () => {
-      const req = createRequest()
-      await req.authenticateAs(user)
-
-      await req.patch(`/api/v1/auth/totp/${v7()}`).send({ name: 'New Name' }).expect(404)
-    })
-
-    it('renames the authenticator and returns 204', async () => {
-      const req = createRequest()
-      await req.authenticateAs(user)
-
-      const suffix = `rename-api-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      const inserted = await insertTestTotpAuthenticator(user.id, suffix)
-
-      await req.patch(`/api/v1/auth/totp/${inserted.id}`).send({ name: 'Renamed App' }).expect(204)
-
-      const listRes = await req.get('/api/v1/auth/totp').expect(200)
-      const found = listRes.body.results.find((a: { id: string }) => a.id === inserted.id)
-      expect(found?.name).toBe('Renamed App')
+    registerAuthCredentialRenameTests({
+      getUser: () => user,
+      pathPrefix: '/api/v1/auth/totp',
+      insertCredential: insertTestTotpAuthenticator,
+      suffix: () => `rename-api-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      renamedName: 'Renamed App',
     })
   })
 
