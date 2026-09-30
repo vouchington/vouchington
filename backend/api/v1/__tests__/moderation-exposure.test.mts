@@ -2,7 +2,9 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import type { ExposureState } from '@services/moderation-exposure'
+import type { getExposureState } from '@services/moderation-exposure'
+
+type ExposureState = Awaited<ReturnType<typeof getExposureState>>
 
 describe('POST /api/v1/moderation/reveals', () => {
   let adminUser: PrivateUser
