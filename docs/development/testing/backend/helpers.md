@@ -199,6 +199,15 @@ pages. It pins owned intent timestamps to one isolated cursor window, exposes a 
 snapshot and endpoint-state readers, and deletes only its owned notifications after the callback
 settles.
 
+## Image Moderation Fixtures
+
+Image moderation tests share `createCompletedModerationImage()` and
+`createImageModerationResult()` from
+`@voucha/test-helpers/services/openai-moderation/image-moderation`. The first creates a completed
+upload through `createImageUploadUrl` and `markImageComplete`. The second builds an omni-moderation
+result whose image-capable categories report an `image` input. Quarantine assertions stay in the
+quarantine test.
+
 ## Copyright Intake Environment
 
 Call `useCopyrightIntakeEnvironment()` from

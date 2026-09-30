@@ -1,10 +1,13 @@
 import { createTestUser, setImageOpenAIModerationResults } from '@voucha/test-helpers'
+import {
+  createCompletedModerationImage,
+  createImageModerationResult,
+} from '@voucha/test-helpers/services/openai-moderation/image-moderation'
 import { it, expect, afterEach, vi, beforeAll, beforeEach, describe } from 'vitest'
 import { upsertImageOpenAIModeration } from '../images.mts'
 import { createImageUploadUrl } from '@services/images/create-upload-url'
 import { getImageByAny } from '@services/images/get'
 import { markImageComplete } from '@voucha/test-helpers/entities/images'
-import type { OpenAI } from '@modules/openai-utils'
 import * as s3Module from '@services/images/s3'
 import * as s3Lifecycle from '@services/images/s3-upload-lifecycle'
 import * as imageEmbeddingEnqueues from '@queues/bedrock-embeddings-batch/enqueues'
@@ -39,82 +42,10 @@ describe('images', () => {
     vi.unstubAllEnvs()
   })
 
-  async function createCompletedImage(): Promise<{ id: string; s3_key: string }> {
-    const { image_id } = await createImageUploadUrl(user, {
-      contentType: 'image/png',
-      contentLength: 1024,
-      dependencies: imageUploadDependencies,
-    })
-    await markImageComplete(image_id)
-    const image = await getImageByAny(image_id)
-    if (!image) throw new Error('Expected completed image')
-    return { id: image.id, s3_key: image.s3_key }
-  }
-
-  function createMockModeration(
-    flagged: boolean,
-    overrides?: Partial<OpenAI.Moderation>,
-  ): OpenAI.Moderation {
-    return {
-      flagged,
-      categories: {
-        harassment: false,
-        'harassment/threatening': false,
-        hate: false,
-        'hate/threatening': false,
-        illicit: false,
-        'illicit/violent': false,
-        'self-harm': false,
-        'self-harm/instructions': false,
-        'self-harm/intent': false,
-        sexual: false,
-        'sexual/minors': false,
-        violence: false,
-        'violence/graphic': false,
-        ...overrides?.categories,
-      },
-      category_scores: {
-        harassment: 0.0,
-        'harassment/threatening': 0.0,
-        hate: 0.0,
-        'hate/threatening': 0.0,
-        illicit: 0.0,
-        'illicit/violent': 0.0,
-        'self-harm': 0.0,
-        'self-harm/instructions': 0.0,
-        'self-harm/intent': 0.0,
-        sexual: 0.0,
-        'sexual/minors': 0.0,
-        violence: 0.0,
-        'violence/graphic': 0.0,
-        ...overrides?.category_scores,
-      },
-      category_applied_input_types: {
-        // Text-only categories do not apply when only image inputs are sent
-        harassment: [],
-        'harassment/threatening': [],
-        hate: [],
-        'hate/threatening': [],
-        illicit: [],
-        'illicit/violent': [],
-        // Image-capable categories report 'image' when the input is an image URL
-        'self-harm': ['image'],
-        'self-harm/instructions': ['image'],
-        'self-harm/intent': ['image'],
-        sexual: ['image'],
-        'sexual/minors': [],
-        violence: ['image'],
-        'violence/graphic': ['image'],
-        ...overrides?.category_applied_input_types,
-      },
-      ...overrides,
-    }
-  }
-
   it('upsertImageOpenAIModeration - moderates image and stores results', async () => {
-    const image = await createCompletedImage()
+    const image = await createCompletedModerationImage(user, imageUploadDependencies)
     // Mock moderation to return not flagged
-    createOpenAIModeration.mockResolvedValueOnce([createMockModeration(false)])
+    createOpenAIModeration.mockResolvedValueOnce([createImageModerationResult(false)])
 
     const result = await upsertImageOpenAIModeration(image.id, imageModerationDependencies)
 
@@ -142,7 +73,7 @@ describe('images', () => {
     await markImageComplete(imageId)
     const image = await getImageByAny(imageId)
     if (!image) throw new Error('Expected completed image')
-    createOpenAIModeration.mockResolvedValueOnce([createMockModeration(false)])
+    createOpenAIModeration.mockResolvedValueOnce([createImageModerationResult(false)])
 
     const result = await upsertImageOpenAIModeration(imageId, imageModerationDependencies)
 
@@ -161,8 +92,8 @@ describe('images', () => {
       .mockRejectedValueOnce(new Error('test image embedding enqueue failure'))
 
     try {
-      const image = await createCompletedImage()
-      createOpenAIModeration.mockResolvedValueOnce([createMockModeration(false)])
+      const image = await createCompletedModerationImage(user, imageUploadDependencies)
+      createOpenAIModeration.mockResolvedValueOnce([createImageModerationResult(false)])
 
       const result = await upsertImageOpenAIModeration(image.id, imageModerationDependencies)
 
@@ -174,8 +105,8 @@ describe('images', () => {
   })
 
   it('upsertImageOpenAIModeration - uses a private S3 read URL without an image origin', async () => {
-    const image = await createCompletedImage()
-    createOpenAIModeration.mockResolvedValueOnce([createMockModeration(false)])
+    const image = await createCompletedModerationImage(user, imageUploadDependencies)
+    createOpenAIModeration.mockResolvedValueOnce([createImageModerationResult(false)])
 
     const result = await upsertImageOpenAIModeration(image.id, imageModerationDependencies)
 
@@ -185,9 +116,9 @@ describe('images', () => {
 
   it('upsertImageOpenAIModeration - deletes flagged image', async () => {
     vi.stubEnv('IMAGE_ORIGIN', 'https://images.example.com')
-    const image = await createCompletedImage()
+    const image = await createCompletedModerationImage(user, imageUploadDependencies)
     // Mock moderation to return flagged
-    const flaggedModeration = createMockModeration(true)
+    const flaggedModeration = createImageModerationResult(true)
     flaggedModeration.categories.sexual = true
     createOpenAIModeration.mockResolvedValueOnce([flaggedModeration])
 
@@ -201,8 +132,8 @@ describe('images', () => {
   })
 
   it('upsertImageOpenAIModeration - retries deletion for already-moderated flagged image', async () => {
-    const image = await createCompletedImage()
-    const flaggedModeration = createMockModeration(true)
+    const image = await createCompletedModerationImage(user, imageUploadDependencies)
+    const flaggedModeration = createImageModerationResult(true)
     await setImageOpenAIModerationResults(image.id, [flaggedModeration], true)
 
     createOpenAIModeration.mockClear()
@@ -222,9 +153,9 @@ describe('images', () => {
     // production. The reachable skip path is "this exact image was already
     // moderated" — calling upsertImageOpenAIModeration twice should short-circuit
     // on the second call.
-    const image = await createCompletedImage()
+    const image = await createCompletedModerationImage(user, imageUploadDependencies)
 
-    createOpenAIModeration.mockResolvedValueOnce([createMockModeration(false)])
+    createOpenAIModeration.mockResolvedValueOnce([createImageModerationResult(false)])
     await upsertImageOpenAIModeration(image.id, imageModerationDependencies)
 
     // Clear mock to verify it's not called again
