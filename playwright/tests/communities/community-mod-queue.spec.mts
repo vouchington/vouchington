@@ -260,6 +260,7 @@ async function seedCommunityBanEvasionReport(suffix: string) {
     suspect.id,
     `Suspected ban evasion ${suffix}`,
     seededReportCreatedAt,
+    community.id,
   )
 
   return { slug, communityId: community.id, sourceId: source.id, suspectId: suspect.id, reportId }

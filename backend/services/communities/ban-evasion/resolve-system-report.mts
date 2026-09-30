@@ -22,6 +22,7 @@ export async function resolveBanEvasionSystemReports(
           AND reporter_user_id = (
             SELECT id FROM users WHERE username = ${BAN_EVASION_SYSTEM_USERNAME} LIMIT 1
           )
+          AND moderation_transparency_community_id = ${communityId}
           AND reviewed_at IS NULL
         RETURNING id, case_id
       `,

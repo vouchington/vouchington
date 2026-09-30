@@ -62,6 +62,8 @@ describe('confirmBanEvasion', () => {
       'user',
       member.id,
       'Suspected ban evasion',
+      undefined,
+      community.id,
     )
 
     await confirmBanEvasion(staff, community.id, member.id)

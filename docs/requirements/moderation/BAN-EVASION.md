@@ -24,15 +24,15 @@ flowchart TD
   below -- Yes --> flag[Set suspected_ban_evader_at]
   flag --> report[Create system report as ban-evasion]
   report --> moderator{Moderator decision}
-  moderator -- Dismiss --> dismiss[Clear flag and dismiss report]
-  moderator -- Confirm --> ban[Create community ban]
+  moderator -- Dismiss --> dismiss[Clear this community's flag and report]
+  moderator -- Confirm --> ban[Ban here and resolve this community's report]
 ```
 
 1. Join/post activity enqueues detection. Post-triggered jobs retain the triggering post ID so content and embedding comparisons do not rescan the candidate's full post history.
 2. A suspected match sets `community_members.suspected_ban_evader_at`.
 3. The `ban-evasion` system user creates a system-generated user report.
 4. Community moderators confirm or dismiss.
-5. Confirming creates a community ban; dismissing clears the flag and dismisses the system report.
+5. Confirming creates a community ban and resolves only the system report stamped for that community. Dismissing clears that community's flag and dismisses only that same report. A decision in one community leaves every other community's ban-evasion report pending.
 
 The `ban-evasion` username is load-bearing: report redaction treats reports from that system user as system-generated.
 
