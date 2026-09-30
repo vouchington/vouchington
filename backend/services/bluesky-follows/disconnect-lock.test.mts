@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { SessionAdvisoryLockDualFailure } from '@services/session-advisory-lock'
 import {
   getTestPostgresAdvisoryLockHolderProcessId,
   injectTestBlueskyDisconnectUnlockFault,
@@ -78,6 +79,28 @@ describe('Bluesky disconnect session-lock cleanup', () => {
           throw operationError
         }),
       ).rejects.toBe(operationError)
+      expect(injectedFault.releasedWith()).toBe(true)
+    } finally {
+      injectedFault.restore()
+    }
+  })
+
+  it('rejects an unknown dual-failure policy and destroys the client', async () => {
+    const operationError = new Error('operation failed')
+    const unlockError = new Error('unlock failed')
+    const injectedFault = injectTestBlueskyDisconnectUnlockFault({ unlockError })
+    const unknownPolicy = 'unknown-policy' as unknown as SessionAdvisoryLockDualFailure
+    try {
+      await expect(
+        withBlueskyDisconnectLock(
+          crypto.randomUUID(),
+          async () => {
+            throw operationError
+          },
+          unknownPolicy,
+        ),
+      ).rejects.toThrow('Unknown session advisory lock failure policy: unknown-policy')
+      expect(operationError.cause).toBeUndefined()
       expect(injectedFault.releasedWith()).toBe(true)
     } finally {
       injectedFault.restore()

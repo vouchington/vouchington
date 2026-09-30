@@ -28,6 +28,7 @@
     "@queues/bluesky-follow-propagation": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@services/bluesky-accounts": "workspace:^",
+    "@services/session-advisory-lock": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@services/users": "workspace:^",
     "http-errors": "^2.0.1",

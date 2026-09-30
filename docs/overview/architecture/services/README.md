@@ -115,6 +115,13 @@ return result
 - [openai-moderation/posts.mts](../../../../backend/services/openai-moderation/posts.mts) — Reuse moderation results for identical content
 - [bedrock-embeddings/README.md](./bedrock-embeddings/README.md) — Reuse embeddings for identical text
 
+## Session advisory locks
+
+Callers that hold a PostgreSQL session advisory lock across work on other pooled connections share
+one connect, lock, unlock, and client-release protocol. Each caller still supplies its own lock
+SQL, so two-integer keys and one-bigint keys stay disjoint. See
+[session advisory lock](./session-advisory-lock/README.md).
+
 ## Batch Lookups
 
 Services that accept ordered identifier lists should use the shared helpers in
