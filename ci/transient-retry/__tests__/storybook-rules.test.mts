@@ -8,7 +8,7 @@ describe('Storybook transient retry rules', () => {
     const watchdogShutdownLog = [
       'VITEST_STORYBOOK_BROWSER: 1',
       '[storybook-browser] starting attempt 1/3 with cache /runner/_temp/storybook-attempt-1',
-      'VITE v6.0.0 ready in 150 ms',
+      'VITE v0.0.0 ready in 150 ms',
       '[storybook-browser] no test output for 120s after Vite startup — suspected Vitest/Chromium tester-connection hang',
       'The runner has received a shutdown signal',
       'The operation was canceled',
@@ -57,7 +57,7 @@ describe('Storybook transient retry rules', () => {
     const matchingLog = setupFileLog
     const addonSetupLog = setupFileLog.replace(
       'web/.storybook/vitest.setup.ts',
-      'node_modules/.pnpm/@storybook+addon-vitest@10.4.2/node_modules/@storybook/addon-vitest/dist/vitest-plugin/setup-file-with-project-annotations.js',
+      'node_modules/.pnpm/@storybook+addon-vitest@0.0.0/node_modules/@storybook/addon-vitest/dist/vitest-plugin/setup-file-with-project-annotations.js',
     )
 
     it('matches the Main CI Storybook project-annotations virtual-module fetch failure', async () => {

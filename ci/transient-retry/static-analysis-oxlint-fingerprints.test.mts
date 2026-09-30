@@ -5,16 +5,18 @@ import { RULES, type WorkflowRunContext } from './rules.mts'
 
 const staticAnalysisJobName = 'static-code-analysis / static-code-analysis'
 
-// #8754 (2026-07-29) wrapped this step in ci/with-heavy-slot.sh, and oxlint-tsgolint has gone
-// 0.23.0 -> 7.0.2001 since (package.json). 7.0.2001's Go binary is built with -trimpath, so its
-// traceback carries the stable `github.com/microsoft/typescript-go/internal/...` import path on both
-// the symbol and file line, never the 0.23.0 vendored-checkout path
+// #8754 (2026-07-29) wrapped this step in ci/with-heavy-slot.sh. The current oxlint-tsgolint Go
+// binary is built with -trimpath, so its traceback carries the stable
+// `github.com/microsoft/typescript-go/internal/...` import path on both the symbol and file line,
+// never the older vendored-checkout path
 // (`/home/runner/work/tsgolint/tsgolint/typescript-go/internal/...`) — see
-// oxlintTsgolintVendoredCheckoutShapeLog below for that old shape as a counterfixture.
+// oxlintTsgolintVendoredCheckoutShapeLog below for that old shape as a counterfixture. The
+// `+ oxlint-tsgolint` version in every fixture is synthetic: the fingerprint keys on the traceback
+// shape, never on the tool version.
 const oxlintTsgolintFaultLog = [
   '##[group]Run pnpm exec oxlint --type-aware --deny-warnings',
   'pnpm exec oxlint --type-aware --deny-warnings',
-  '+ oxlint-tsgolint 7.0.2001',
+  '+ oxlint-tsgolint 0.0.0',
   'unexpected fault address 0x6f6a2f73726573c5',
   'fatal error: fault',
   'github.com/microsoft/typescript-go/internal/binder.(*Binder).bindSourceFile(0x6f6a2f73726573c5)',
@@ -26,7 +28,7 @@ const oxlintTsgolintFaultLog = [
 const oxlintTsgolintParserFaultLog = [
   '##[group]Run pnpm exec oxlint --type-aware --deny-warnings',
   'pnpm exec oxlint --type-aware --deny-warnings',
-  '+ oxlint-tsgolint 7.0.2001',
+  '+ oxlint-tsgolint 0.0.0',
   'unexpected fault address 0x6e6f6974636134a7',
   'fatal error: fault',
   'github.com/microsoft/typescript-go/internal/parser.(*Parser).parseFunctionBlock(0x6e6f697463612f67)',
@@ -35,13 +37,13 @@ const oxlintTsgolintParserFaultLog = [
   '##[error]Process completed with exit code 1.',
 ].join('\n')
 
-// The pre-7.0.2001 shape: no Go import-path symbol line, and the file line carries the vendored
-// checkout path instead of the stable import path. Proves the corrected fingerprint is not
+// The older vendored-checkout shape: no Go import-path symbol line, and the file line carries the
+// vendored checkout path instead of the stable import path. Proves the corrected fingerprint is not
 // tautological with the old-shape input it replaced.
 const oxlintTsgolintVendoredCheckoutShapeLog = [
   '##[group]Run pnpm exec oxlint --type-aware --deny-warnings',
   'pnpm exec oxlint --type-aware --deny-warnings',
-  '+ oxlint-tsgolint 0.23.0',
+  '+ oxlint-tsgolint 0.0.0',
   'unexpected fault address 0x6f6a2f73726573c5',
   'fatal error: fault',
   '\t/home/runner/work/tsgolint/tsgolint/typescript-go/internal/binder/binder.go:1755',
@@ -117,7 +119,7 @@ describe('static-analysis-oxlint-tsgolint-runtime-fault', () => {
     expect(result.matchedRule).toBe('')
   })
 
-  it('does not match the pre-7.0.2001 vendored-checkout traceback shape', async () => {
+  it('does not match the older vendored-checkout traceback shape', async () => {
     const result = await decide(
       makeCtx({
         failedJobLogs: () =>

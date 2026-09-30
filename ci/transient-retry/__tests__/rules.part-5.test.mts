@@ -49,9 +49,9 @@ describe('RULES catalogue', () => {
       const log = [
         `${envLogMarker}\n`,
         '[storybook-browser] starting attempt 1/3 with cache /runner/_temp/storybook-cache\n',
-        'VITE v8.0.16  ready in 573 ms\n',
+        'VITE v0.0.0  ready in 573 ms\n',
         '[storybook-browser] no test output for 120000ms after Vite startup — suspected Vitest/Chromium tester-connection hang; last output:\n',
-        'VITE v8.0.16  ready in 573 ms\n',
+        'VITE v0.0.0  ready in 573 ms\n',
         '##[error]Process completed with exit code 143.',
       ].join('')
       const ctx = makeCtx({
@@ -68,9 +68,9 @@ describe('RULES catalogue', () => {
       const warmCacheLog =
         'VITEST_STORYBOOK_BROWSER: 1\n' +
         '[storybook-browser] starting attempt 1/3 with cache /runner/_temp/vite-storybook-browser-27755469939-1-storybook-attempt-1\n' +
-        'VITE v8.0.16  ready in 573 ms\n' +
+        'VITE v0.0.0  ready in 573 ms\n' +
         '[storybook-browser] no test output for 120000ms after Vite startup — suspected Vitest/Chromium tester-connection hang; last output:\n' +
-        'VITE v8.0.16  ready in 573 ms\n' +
+        'VITE v0.0.0  ready in 573 ms\n' +
         '##[error]Process completed with exit code 143.\n' +
         '##[error]The runner has received a shutdown signal.'
       const ctx = makeCtx({
@@ -182,7 +182,7 @@ describe('RULES catalogue', () => {
                 [
                   'VITEST_STORYBOOK_BROWSER: 1\n',
                   '[storybook-browser] starting attempt 2/3 with cache /runner/_temp/vite-storybook-browser-27755469939-1-storybook-attempt-2\n',
-                  'VITE v8.0.16  ready in 573 ms\n',
+                  'VITE v0.0.0  ready in 573 ms\n',
                   debugTail,
                   '[storybook-browser] no test output for 120000ms after Vite startup — suspected Vitest/Chromium tester-connection hang; last output:\n',
                   debugTail,
@@ -209,9 +209,9 @@ describe('RULES catalogue', () => {
                 'Run Storybook snapshots\n' +
                   'Test Files 20 passed (20)\n' +
                   'VITEST_STORYBOOK_BROWSER: 1\n' +
-                  'VITE v8.0.16  ready in 573 ms\n' +
+                  'VITE v0.0.0  ready in 573 ms\n' +
                   '[storybook-browser] no test output for 120000ms after Vite startup — suspected Vitest/Chromium tester-connection hang; last output:\n' +
-                  'VITE v8.0.16  ready in 573 ms\n' +
+                  'VITE v0.0.0  ready in 573 ms\n' +
                   '##[error]Process completed with exit code 143.',
               ],
             ]),
@@ -232,9 +232,9 @@ describe('RULES catalogue', () => {
               [
                 storybookJobName,
                 'VITEST_STORYBOOK_BROWSER: 1\n' +
-                  'VITE v8.0.16  ready in 573 ms\n' +
+                  'VITE v0.0.0  ready in 573 ms\n' +
                   '[storybook-browser] no test output for 120000ms after Vite startup — suspected Vitest/Chromium tester-connection hang; last output:\n' +
-                  'VITE v8.0.16  ready in 573 ms\n' +
+                  'VITE v0.0.0  ready in 573 ms\n' +
                   '[storybook-browser] retrying after retryable Vite failure on attempt 1\n' +
                   '[storybook-browser] starting attempt 2/3 with cache /runner/_temp/vite-storybook-browser-27755469939-1-storybook-attempt-2\n' +
                   'Failed to import test file\n' +
@@ -258,9 +258,9 @@ describe('RULES catalogue', () => {
               [
                 storybookJobName,
                 'VITEST_STORYBOOK_BROWSER: 1\n' +
-                  'VITE v5.0.0 ready in 45ms\n' +
+                  'VITE v0.0.0 ready in 45ms\n' +
                   '[storybook-browser] no test output for 120000ms after Vite startup — suspected Vitest/Chromium tester-connection hang; last output:\n' +
-                  'VITE v5.0.0 ready in 45ms\n' +
+                  'VITE v0.0.0 ready in 45ms\n' +
                   '##[error]Process completed with exit code 1.',
               ],
             ]),
@@ -281,10 +281,10 @@ describe('RULES catalogue', () => {
               [
                 storybookJobName,
                 'VITEST_STORYBOOK_BROWSER: 1\n' +
-                  'VITE v5.0.0 ready in 45ms\n' +
+                  'VITE v0.0.0 ready in 45ms\n' +
                   '|web-storybook-browser| story started\n' +
                   '[storybook-browser] no test output for 120000ms after Vite startup — suspected Vitest/Chromium tester-connection hang; last output:\n' +
-                  'VITE v5.0.0 ready in 45ms\n' +
+                  'VITE v0.0.0 ready in 45ms\n' +
                   '|web-storybook-browser| story started\n' +
                   '##[error]Process completed with exit code 143.',
               ],
