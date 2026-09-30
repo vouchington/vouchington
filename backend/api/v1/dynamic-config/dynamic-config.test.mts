@@ -8,9 +8,11 @@ import {
 import { DynamicConfig } from '@data-stores/valkey'
 import {
   dynamicConfigRegistry,
-  type DynamicConfigRegistryEntry,
+  type getDynamicConfigRegistryEntry,
 } from '@services/dynamic-config-admin'
 import type { PrivateUser } from '@services/users/types'
+
+type DynamicConfigRegistryEntry = NonNullable<ReturnType<typeof getDynamicConfigRegistryEntry>>
 
 describe('dynamic-config', () => {
   let admin: PrivateUser
