@@ -1,4 +1,5 @@
 import { backendCredentialedProviderSmokeTestTransientRule } from './backend-credentialed-rules.mts'
+import { mainBackendImageRegistryLayerBlobNotFoundRule } from './backend-image-rules.mts'
 import {
   cloudflareWorkerCancelledBeforeJobSignalRule,
   workflowCancelledWithoutFailureSignalRule,
@@ -38,6 +39,7 @@ export const RULES: TransientRetryRule[] = [
   detectChangesPathsFilterGithub5xxRule,
   gitleaksInstallReleasesDownloadFlakeRule,
   planCompletionSetupNodeToolCacheTimeoutRule,
+  mainBackendImageRegistryLayerBlobNotFoundRule,
   backendCredentialedProviderSmokeTestTransientRule,
   mainWebPlaywrightSetupAptLockRule,
   mainWebPlaywrightWorkerNavigationTimeoutRule,
