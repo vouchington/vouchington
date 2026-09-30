@@ -31,6 +31,10 @@ The post and topic field tables stay separate.
 Post, topic, domain, and URL list-item mutations share
 [`describeCommunityListItemRoutes`](../../../../backend/test-helpers/community-list-item-routes.mts).
 Topic list reads stay in the topics suite.
+Crawl URL redirect suites share the injected fetch mocks, `crawlUrl` wrapper, test user, and HTML
+result fixture from
+[`services/crawls/crawl-url-redirect-harness.mts`](../../../../backend/test-helpers/services/crawls/crawl-url-redirect-harness.mts).
+Each file keeps its own cases.
 Captcha route tests share the Turnstile fixture token from
 [`captcha/test-captcha-token.mts`](../../../../backend/test-helpers/captcha/test-captcha-token.mts). The Turnstile `fetch` mock
 factory stays in [`captcha/undici-mock.mts`](../../../../backend/test-helpers/captcha/undici-mock.mts); each consumer keeps its own
