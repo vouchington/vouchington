@@ -233,7 +233,11 @@ completed deploy`, so Automation Fix Main can never legally subscribe to itself,
   only while a session is queued or running, so a re-ejection of the same head after that session
   finishes starts a fresh triage. Fix Main still owns failures on `main` itself.
 - Dependabot revalidates the exact open bot-authored PR ref/SHA immediately before dispatch. The
-  agent modifies that branch only; it cannot create a second PR.
+  agent modifies that branch only; it cannot create a second PR. Its failure comment stays quiet
+  when the `dispatch` job was cancelled by concurrency coalescing (cancelled with zero steps, no
+  session id): several source workflows failing on one PR share one `harness-dispatch` group, GitHub
+  keeps only one pending run, and the surviving run owns the session. A lookup failure posts the
+  comment anyway.
 - After a successful dispatch that already names an issue or pull request, Fix Dependabot, Fix
   Issue, Plan, and Merge Queue Ejection post one idempotent eyes comment linking the Auto Harness
   session. Shepherd records that same session on its checkpoint comment instead of posting a second
