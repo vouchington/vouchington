@@ -82,5 +82,6 @@ Current conventions for future credentialed suites all use
 - AWS Bedrock uses `backend-bedrock`.
 - OpenAI uses `backend-openai`.
 - Stripe uses `backend-stripe`; include real Stripe tests as `*.stripe.test.mts`.
+- Define each credentialed project in [`test-helpers/vitest-config/backend-credentialed-projects.mts`](../../../../test-helpers/vitest-config/backend-credentialed-projects.mts) with a literal `include` array, and add its `--project` flag to the workflow's run step. The transient-retry classifier derives its boundary from that list.
 
 If a Playwright or web-integration test starts requiring external credentials, gate the credential setup with `if:` and make the suite skip when the env vars are absent.
