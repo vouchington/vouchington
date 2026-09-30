@@ -6,8 +6,8 @@ import {
   createConversation,
   createConversationMessage,
   claimChatConversationMessageAgenticRun,
-  createClientGeneratedChatTurn,
 } from '@services/conversations-messages/create'
+import { createClientGeneratedChatTurn } from '@services/conversations-messages/client-generated-chat'
 import { hasActiveChatTurnByConversationId } from '@services/conversations-messages/agentic-runs'
 import { getConversationMessagesByConversationId } from '@services/conversations-messages/messages'
 import { requestOpenAIModeration } from '@modules/openai-utils/moderate'
