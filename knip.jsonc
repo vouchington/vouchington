@@ -1,5 +1,8 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  // Production-only (`!`): helper files would otherwise be production entries whose imports hide
+  // exports that only tests use.
+  "ignoreWorkspaces": ["backend/test-helpers!"],
   "workspaces": {
     ".": {
       "entry": [

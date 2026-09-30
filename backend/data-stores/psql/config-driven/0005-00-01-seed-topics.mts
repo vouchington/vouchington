@@ -40,6 +40,7 @@ function escapeSqlString(str: string): string {
   return str.replaceAll("'", "''")
 }
 
+/** @public loaded by path by the config-driven migration runner */
 export default function generateSeedTopicsSQL(): string {
   const parts: string[] = ['-- Seed fundamental topics']
 

@@ -13,6 +13,7 @@ const UPPER = '0.7500'
 const topicSlugs = POST_CLASSIFIER_REMOTE_QUESTIONS.map(question => question.topicSlug)
 const topicValues = topicSlugs.map(slug => `('${slug}')`).join(', ')
 
+/** @public loaded by path by the config-driven migration runner */
 export default function generateSeedPostClassifierSQL(): string {
   return `${buildSystemUserUpsertSQL(POST_CLASSIFIER_SYSTEM_USERNAME)}
 

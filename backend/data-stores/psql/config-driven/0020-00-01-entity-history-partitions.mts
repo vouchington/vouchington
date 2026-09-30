@@ -7,7 +7,7 @@
 import { generateDefaultPartitions } from './utils/partition-utils.mts'
 import { REVISION_PARTITION_TABLES } from './utils/partition-config.mts'
 
-/** @internal */
+/** @public loaded by path by the config-driven migration runner */
 export default function createRevisionPartitions(): string {
   return generateDefaultPartitions(REVISION_PARTITION_TABLES)
 }

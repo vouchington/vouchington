@@ -34,6 +34,7 @@ ON CONFLICT (name) DO UPDATE SET
   return parts.join('\n')
 }
 
+/** @public loaded by path by the config-driven migration runner */
 export default function generateSeedBlacklistSourcesSQL(): string {
   return generateSQL(BLACKLISTS)
 }

@@ -31,6 +31,8 @@ const PROMPT = `Does the content above genuinely discuss "${CANDIDATE_PLACEHOLDE
  * only when its content differs from the current config (never touching activated_at, which
  * the lifecycle trigger forbids resetting), then insert-and-activate the current version when
  * no matching active row already exists.
+ *
+ * @public loaded by path by the config-driven migration runner
  */
 export default function generateSeedTaggingClassifierSQL(): string {
   return `${buildSystemUserUpsertSQL(AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME)}

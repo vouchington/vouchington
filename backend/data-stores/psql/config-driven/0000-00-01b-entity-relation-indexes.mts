@@ -16,6 +16,8 @@ const ACTIVE_SUBJECT_NEWEST_INDEX_COLUMNS = 'subject_id, created_at DESC, object
  *
  * PostgreSQL requires all partitions to exist before creating indexes on partitioned tables,
  * because it propagates the index definition to all partitions.
+ *
+ * @public loaded by path by the config-driven migration runner
  */
 export default () => {
   return entityRelationMetadatum.map(createEntityRelationIndexes).join('\n\n')

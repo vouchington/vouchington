@@ -12,6 +12,8 @@
       "import": "./*.mts",
       "default": "./*.mts"
     },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null,
     "./*/*": {
       "types": "./*/*.mts",
       "import": "./*/*.mts",
