@@ -1,6 +1,8 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+// Imported after the nav mock so its vi.mock factory can reference navMockModule.
+import { focusRssFeedItemModalButtonAfterKey } from '@/test-helpers/components/rss-feed-items/modal-keyboard-focus'
 import { RssFeedItemModalShell } from '../../rss-feed-item-modal-shell'
 
 vi.mock(
@@ -90,76 +92,40 @@ describe('RssFeedItemModalShell keyboard navigation', () => {
     })
 
     it('re-focuses the Next button via rAF when currentItemId changes after ArrowRight', () => {
-      vi.useFakeTimers({ toFake: ['requestAnimationFrame'] })
-
-      const { rerender } = render(
-        <RssFeedItemModalShell
-          {...DEFAULT_PROPS}
-          currentItemId='item-1'
-          previousUrl='/news?rss_item=prev'
-          nextUrl='/news?rss_item=item-2'
-        >
-          <div>content</div>
-        </RssFeedItemModalShell>,
-      )
-
-      // ArrowRight sets pendingFocusDirectionRef to 'next'
-      fireEvent.keyDown(window, { key: 'ArrowRight' })
-
-      // Simulate navigation completing: re-render with a new currentItemId
-      rerender(
-        <RssFeedItemModalShell
-          {...DEFAULT_PROPS}
-          currentItemId='item-2'
-          previousUrl='/news?rss_item=item-1'
-          nextUrl='/news?rss_item=item-3'
-        >
-          <div>content</div>
-        </RssFeedItemModalShell>,
-      )
-
-      const nextButton = screen.getByRole('button', { name: /next/i })
-
-      // Flush the rAF scheduled by the useEffect
-      vi.runAllTimers()
+      const nextButton = focusRssFeedItemModalButtonAfterKey({
+        buttonName: /next/i,
+        initial: {
+          currentItemId: 'item-1',
+          nextUrl: '/news?rss_item=item-2',
+          previousUrl: '/news?rss_item=prev',
+        },
+        key: 'ArrowRight',
+        next: {
+          currentItemId: 'item-2',
+          nextUrl: '/news?rss_item=item-3',
+          previousUrl: '/news?rss_item=item-1',
+        },
+      })
 
       expect(document.activeElement).toBe(nextButton)
     })
 
     it('re-focuses the Previous button via rAF when currentItemId changes after ArrowLeft', () => {
-      vi.useFakeTimers({ toFake: ['requestAnimationFrame'] })
-
-      const { rerender } = render(
-        <RssFeedItemModalShell
-          {...DEFAULT_PROPS}
-          currentItemId='item-2'
-          previousUrl='/news?rss_item=item-1'
-          nextUrl='/news?rss_item=item-3'
-        >
-          <div>content</div>
-        </RssFeedItemModalShell>,
-      )
-
-      // ArrowLeft sets pendingFocusDirectionRef to 'previous'
-      fireEvent.keyDown(window, { key: 'ArrowLeft' })
-
-      // Simulate navigation completing: re-render with a new currentItemId.
       // The previous button is aria-disabled here (no prev URL) but still focusable.
-      rerender(
-        <RssFeedItemModalShell
-          {...DEFAULT_PROPS}
-          currentItemId='item-1'
-          previousUrl={null}
-          nextUrl='/news?rss_item=item-2'
-        >
-          <div>content</div>
-        </RssFeedItemModalShell>,
-      )
-
-      const prevButton = screen.getByRole('button', { name: /previous/i })
-
-      // Flush the rAF scheduled by the useEffect
-      vi.runAllTimers()
+      const prevButton = focusRssFeedItemModalButtonAfterKey({
+        buttonName: /previous/i,
+        initial: {
+          currentItemId: 'item-2',
+          nextUrl: '/news?rss_item=item-3',
+          previousUrl: '/news?rss_item=item-1',
+        },
+        key: 'ArrowLeft',
+        next: {
+          currentItemId: 'item-1',
+          nextUrl: '/news?rss_item=item-2',
+          previousUrl: null,
+        },
+      })
 
       expect(document.activeElement).toBe(prevButton)
     })
