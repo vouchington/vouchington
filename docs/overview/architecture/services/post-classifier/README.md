@@ -31,3 +31,10 @@ the hash against those same bytes; JavaScript object-key serialization is not an
 | Revision or configuration drift | The obsolete receipt is superseded and excluded from recovery; the current approved fingerprint is reserved atomically.  | Supersession is durable and releases any old lease before replacement dispatch. |
 | Notification delivery failure   | Tag writes create post-publication dirty work in the same transaction; its existing worker retries before acknowledging. | Existing post-publication dirty-work receipt.                                   |
 | Terminal remote failure         | An uncommitted exhausted remote receipt is excluded from recovery.                                                       | Terminal timestamp is immutable.                                                |
+| Provider client unavailable     | A missing key ends the remote half as `client-unavailable`, keeps the local outcome, and alarms.                         | Terminal kind is immutable; local outcome columns write once.                   |
+| Recovery sweep bound            | Only a sweep enqueue that adds a job counts; at 10 with the job gone the receipt is given up and alarms.                 | The counter never decreases; a duplicate add of a live job is not counted.      |
+
+A given-up receipt with an unpersisted remote half becomes terminal `sweep-bound-exceeded`. A
+local-only or effect-only receipt cannot hold a terminal remote kind, so its counter only moves
+past the bound and the sweep stops selecting it. The oldest in-flight receipt older than 26 hours
+(longer than spend-cap parking) also raises a throttled `receipt-age` alarm.

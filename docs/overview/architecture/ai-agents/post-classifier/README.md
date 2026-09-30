@@ -15,6 +15,13 @@ and configuration fingerprint on primary storage, then applies durable votes and
 revision or configuration supersedes its obsolete receipt and reserves the current fingerprint;
 completed-receipt replays never make another provider request.
 
+The provider client is built inside the recorded failure path. A missing `OPENROUTER_API_KEY` or
+any other construction failure ends the receipt's remote half as terminal `client-unavailable`,
+persists the local detector outcome in the same write, and raises one
+`post_classifier_receipt_alarm` Sentry message instead of throwing into the queue retry loop; the
+recovery sweep then leaves the receipt alone. Remote-side alarms and the receipt-age alarm are
+owned going forward by C12 (#225).
+
 ```mermaid
 flowchart LR
   post[Approved post] --> state[Sanitized post state]

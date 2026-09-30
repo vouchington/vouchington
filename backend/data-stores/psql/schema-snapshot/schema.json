@@ -841,7 +841,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_moderator_action_type()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.action_type IS DISTINCT FROM NEW.action_type THEN\n    RAISE EXCEPTION 'moderator action type is immutable';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_protect_post_classifier_application": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_post_classifier_application()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.post_id IS DISTINCT FROM NEW.post_id\n    OR OLD.id IS DISTINCT FROM NEW.id\n    OR OLD.input_sha256 IS DISTINCT FROM NEW.input_sha256\n    OR OLD.configuration_json::text IS DISTINCT FROM NEW.configuration_json::text\n    OR OLD.configuration_sha256 IS DISTINCT FROM NEW.configuration_sha256\n    OR OLD.shared_actor_id IS DISTINCT FROM NEW.shared_actor_id\n    OR OLD.community_identity_id IS DISTINCT FROM NEW.community_identity_id\n    OR OLD.detector_package_version IS DISTINCT FROM NEW.detector_package_version\n    OR OLD.local_topic_id IS DISTINCT FROM NEW.local_topic_id\n    OR OLD.decision_batch_id IS DISTINCT FROM NEW.decision_batch_id THEN\n    RAISE EXCEPTION 'post classifier application identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF ((OLD.local_flagged IS NOT NULL OR OLD.outcomes_persisted_at IS NOT NULL) AND (\n      ROW(OLD.local_flagged, OLD.local_reason, OLD.local_confidence_score,\n        OLD.local_confidence_threshold, OLD.local_classification, OLD.local_detector,\n        OLD.local_detector_model_version)\n      IS DISTINCT FROM\n      ROW(NEW.local_flagged, NEW.local_reason, NEW.local_confidence_score,\n        NEW.local_confidence_threshold, NEW.local_classification, NEW.local_detector,\n        NEW.local_detector_model_version)\n    ))\n    OR OLD.provider_attempts_started > NEW.provider_attempts_started\n    OR (OLD.terminal_remote_failed_at IS NOT NULL AND (\n      OLD.terminal_remote_failed_at IS DISTINCT FROM NEW.terminal_remote_failed_at\n      OR OLD.terminal_remote_failure_kind IS DISTINCT FROM NEW.terminal_remote_failure_kind\n    ))\n    OR (OLD.superseded_at IS NOT NULL AND NEW.superseded_at IS NOT NULL\n      AND OLD.superseded_at IS DISTINCT FROM NEW.superseded_at) THEN\n    RAISE EXCEPTION 'post classifier application outcome is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF (OLD.outcomes_persisted_at IS NOT NULL\n      AND OLD.outcomes_persisted_at IS DISTINCT FROM NEW.outcomes_persisted_at)\n    OR (OLD.votes_applied_at IS NOT NULL\n      AND OLD.votes_applied_at IS DISTINCT FROM NEW.votes_applied_at)\n    OR (OLD.tags_applied_at IS NOT NULL\n      AND OLD.tags_applied_at IS DISTINCT FROM NEW.tags_applied_at)\n    OR (OLD.completed_at IS NOT NULL\n      AND OLD.completed_at IS DISTINCT FROM NEW.completed_at)\n    OR (OLD.superseded_at IS NOT NULL AND (\n      OLD.outcomes_persisted_at IS DISTINCT FROM NEW.outcomes_persisted_at\n      OR OLD.votes_applied_at IS DISTINCT FROM NEW.votes_applied_at\n      OR OLD.tags_applied_at IS DISTINCT FROM NEW.tags_applied_at\n      OR OLD.completed_at IS DISTINCT FROM NEW.completed_at\n    )) THEN\n    RAISE EXCEPTION 'post classifier application phase is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_post_classifier_application()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.post_id IS DISTINCT FROM NEW.post_id\n    OR OLD.id IS DISTINCT FROM NEW.id\n    OR OLD.input_sha256 IS DISTINCT FROM NEW.input_sha256\n    OR OLD.configuration_json::text IS DISTINCT FROM NEW.configuration_json::text\n    OR OLD.configuration_sha256 IS DISTINCT FROM NEW.configuration_sha256\n    OR OLD.shared_actor_id IS DISTINCT FROM NEW.shared_actor_id\n    OR OLD.community_identity_id IS DISTINCT FROM NEW.community_identity_id\n    OR OLD.detector_package_version IS DISTINCT FROM NEW.detector_package_version\n    OR OLD.local_topic_id IS DISTINCT FROM NEW.local_topic_id\n    OR OLD.decision_batch_id IS DISTINCT FROM NEW.decision_batch_id THEN\n    RAISE EXCEPTION 'post classifier application identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF ((OLD.local_flagged IS NOT NULL OR OLD.outcomes_persisted_at IS NOT NULL) AND (\n      ROW(OLD.local_flagged, OLD.local_reason, OLD.local_confidence_score,\n        OLD.local_confidence_threshold, OLD.local_classification, OLD.local_detector,\n        OLD.local_detector_model_version)\n      IS DISTINCT FROM\n      ROW(NEW.local_flagged, NEW.local_reason, NEW.local_confidence_score,\n        NEW.local_confidence_threshold, NEW.local_classification, NEW.local_detector,\n        NEW.local_detector_model_version)\n    ))\n    OR OLD.provider_attempts_started > NEW.provider_attempts_started\n    OR OLD.sweep_enqueue_count > NEW.sweep_enqueue_count\n    OR (OLD.terminal_remote_failed_at IS NOT NULL AND (\n      OLD.terminal_remote_failed_at IS DISTINCT FROM NEW.terminal_remote_failed_at\n      OR OLD.terminal_remote_failure_kind IS DISTINCT FROM NEW.terminal_remote_failure_kind\n    ))\n    OR (OLD.superseded_at IS NOT NULL AND NEW.superseded_at IS NOT NULL\n      AND OLD.superseded_at IS DISTINCT FROM NEW.superseded_at) THEN\n    RAISE EXCEPTION 'post classifier application outcome is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF (OLD.outcomes_persisted_at IS NOT NULL\n      AND OLD.outcomes_persisted_at IS DISTINCT FROM NEW.outcomes_persisted_at)\n    OR (OLD.votes_applied_at IS NOT NULL\n      AND OLD.votes_applied_at IS DISTINCT FROM NEW.votes_applied_at)\n    OR (OLD.tags_applied_at IS NOT NULL\n      AND OLD.tags_applied_at IS DISTINCT FROM NEW.tags_applied_at)\n    OR (OLD.completed_at IS NOT NULL\n      AND OLD.completed_at IS DISTINCT FROM NEW.completed_at)\n    OR (OLD.superseded_at IS NOT NULL AND (\n      OLD.outcomes_persisted_at IS DISTINCT FROM NEW.outcomes_persisted_at\n      OR OLD.votes_applied_at IS DISTINCT FROM NEW.votes_applied_at\n      OR OLD.tags_applied_at IS DISTINCT FROM NEW.tags_applied_at\n      OR OLD.completed_at IS DISTINCT FROM NEW.completed_at\n    )) THEN\n    RAISE EXCEPTION 'post classifier application phase is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_protect_post_clearance_change_type": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_post_clearance_change_type()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.change_type IS DISTINCT FROM NEW.change_type THEN\n    RAISE EXCEPTION 'post clearance change type is immutable';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -65896,7 +65896,8 @@
         "post_classifier_applications_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))",
         "post_classifier_applications_local_classification_check": "CHECK ((local_classification = ANY (ARRAY['ai'::text, 'human'::text])))",
         "post_classifier_applications_provider_attempts_started_check": "CHECK ((provider_attempts_started >= 0))",
-        "post_classifier_applications_terminal_remote_failure_kind_check": "CHECK ((terminal_remote_failure_kind = ANY (ARRAY['provider-error'::text, 'invalid-result'::text, 'context-rejected'::text, 'attempts-exhausted'::text])))"
+        "post_classifier_applications_sweep_enqueue_count_check": "CHECK ((sweep_enqueue_count >= 0))",
+        "post_classifier_applications_terminal_remote_failure_kind_check": "CHECK ((terminal_remote_failure_kind = ANY (ARRAY['provider-error'::text, 'invalid-result'::text, 'context-rejected'::text, 'attempts-exhausted'::text, 'client-unavailable'::text, 'sweep-bound-exceeded'::text])))"
       },
       "columns": {
         "community_identity_id": {
@@ -65918,7 +65919,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 28,
           "type": "timestamp with time zone"
         },
         "configuration_json": {
@@ -65951,7 +65952,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 30,
           "type": "timestamp with time zone"
         },
         "decision_batch_id": {
@@ -66006,7 +66007,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "timestamp with time zone"
         },
         "lease_token": {
@@ -66017,7 +66018,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "uuid"
         },
         "leased_at": {
@@ -66028,7 +66029,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "local_classification": {
@@ -66039,7 +66040,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "text"
         },
         "local_confidence_score": {
@@ -66050,7 +66051,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "double precision"
         },
         "local_confidence_threshold": {
@@ -66061,7 +66062,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "double precision"
         },
         "local_detector": {
@@ -66072,7 +66073,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "text"
         },
         "local_detector_model_version": {
@@ -66083,7 +66084,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "text"
         },
         "local_flagged": {
@@ -66094,7 +66095,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "boolean"
         },
         "local_reason": {
@@ -66105,7 +66106,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "text"
         },
         "local_topic_id": {
@@ -66127,7 +66128,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         },
         "post_id": {
@@ -66171,8 +66172,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 29,
           "type": "timestamp with time zone"
+        },
+        "sweep_enqueue_count": {
+          "collation": null,
+          "comment": "Recovery-sweep enqueues that actually added a job for this receipt; monotone and bounded, one past the bound marks a receipt the sweep has stopped recovering.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "integer"
         },
         "tags_applied_at": {
           "collation": null,
@@ -66182,7 +66194,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 27,
           "type": "timestamp with time zone"
         },
         "terminal_remote_failed_at": {
@@ -66193,18 +66205,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "terminal_remote_failure_kind": {
           "collation": null,
-          "comment": "Durable reason remote classification stopped without a complete valid decision.",
+          "comment": "Durable reason remote classification stopped without a complete valid decision; client-unavailable means the provider client could not be built, sweep-bound-exceeded means the recovery sweep re-enqueued the receipt its bounded number of times.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "text"
         },
         "updated_at": {
@@ -66215,7 +66227,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "votes_applied_at": {
@@ -66226,7 +66238,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 26,
           "type": "timestamp with time zone"
         }
       },

@@ -627,6 +627,9 @@ importers:
       '@agents/classifiers':
         specifier: workspace:^
         version: link:../classifiers
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions

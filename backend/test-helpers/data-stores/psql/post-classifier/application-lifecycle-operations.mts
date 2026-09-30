@@ -19,6 +19,11 @@ export function buildPostClassifierApplicationLifecycleOperations(input: {
         SET provider_attempts_started = provider_attempts_started + 1
         WHERE post_id = ${postId} AND id = ${id}
       `),
+    setSweepEnqueueCount: (count: number) =>
+      write(sql`/* setPostClassifierApplicationSweepEnqueueCount */
+        UPDATE post_classifier_applications SET sweep_enqueue_count = ${count}
+        WHERE post_id = ${postId} AND id = ${id}
+      `),
     resetProviderAttempts: () =>
       write(sql`/* resetPostClassifierApplicationProviderAttempts */
         UPDATE post_classifier_applications SET provider_attempts_started = 0

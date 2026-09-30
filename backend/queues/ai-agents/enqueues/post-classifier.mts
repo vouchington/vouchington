@@ -5,11 +5,15 @@ import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS, AGENT_PRIORITY } from '../con
 import { ai_agents } from '../queues.mts'
 import type { PostClassifierDispatcherJobData, PostClassifierJobData } from '../types.mts'
 
+export function postClassifierJobId(applicationId: string): string {
+  return `post_classifier_${applicationId}`
+}
+
 function postClassifierOptions(applicationId: string): JobOptions {
   return {
     ...AI_AGENTS_DEFAULTS,
     priority: AGENT_PRIORITY['post-classifier'],
-    jobId: `post_classifier_${applicationId}`,
+    jobId: postClassifierJobId(applicationId),
     removeOnComplete: true,
     // The Postgres receipt is authoritative. Removing failed queue jobs releases this stable
     // identity so the durable reconciler can enqueue another attempt.
@@ -45,8 +49,28 @@ export async function enqueuePostClassifier(data: PostClassifierJobData): Promis
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'post-classifier')
 }
 
+/**
+ * Adds the receipts' jobs and returns the application ids whose job was actually added. A job
+ * whose stable id still exists (pending, active or delayed, for instance parked by the spend cap)
+ * is silently skipped by `addBulk`, so it is absent from the result.
+ */
 export async function enqueueBulkPostClassifiers(
   items: readonly PostClassifierJobData[],
-): Promise<void> {
-  await enqueuePostClassifierBatch([...items])
+): Promise<string[]> {
+  const applicationIdByJobId = new Map(
+    items.map(item => [postClassifierJobId(item.applicationId), item.applicationId]),
+  )
+  // glide-mq omits a skipped job; the Vitest queue shim keeps a null in its place.
+  const added: readonly ({ id?: string } | null)[] = await enqueuePostClassifierBatch([...items])
+  return added.flatMap(job => {
+    const applicationId = job?.id === undefined ? undefined : applicationIdByJobId.get(job.id)
+    return applicationId === undefined ? [] : [applicationId]
+  })
+}
+
+/** Whether the receipt's stable-id job is still retained in any queue state. */
+export async function postClassifierJobExists(applicationId: string): Promise<boolean> {
+  return (
+    (await ai_agents.getJob(postClassifierJobId(applicationId), { excludeData: true })) !== null
+  )
 }

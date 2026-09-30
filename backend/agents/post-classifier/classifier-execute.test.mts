@@ -214,45 +214,41 @@ describe('post classifier execution with real receipts', () => {
     expect(await readPostClassifierOutcomes(input.lease)).toBeNull()
   })
 
-  it.each(['decode', 'terminal', 'credentials'] as const)(
-    'uses real C1 %s failure boundaries',
-    async kind => {
-      const input = await createPostClassifierExecutionFixture(true, false)
-      const { dependencies } = makeDependencies()
-      let fetches = 0
-      dependencies.createClient = hooks =>
-        createStructuredDecisionClient({
-          transport: 'openrouter',
-          apiKey: kind === 'credentials' ? '' : 'test-key',
-          hooks,
-          fetch: async () => {
-            fetches++
-            return kind === 'terminal' ? new Response('', { status: 503 }) : Response.json({})
-          },
-        })
-      const run = executePostClassifierOutcomes(
-        { ...input, maxAttempts: kind === 'terminal' ? 1 : 3 },
-        dependencies,
-      )
-      const settled = await run.then(
-        result => ({ result }),
-        (error: unknown) => ({ error }),
-      )
-      const expectedFailure = {
-        error: expect.objectContaining({
-          code: kind === 'decode' ? 'invalid-response' : 'invalid-request',
-        }),
-      }
-      expect(settled).toEqual(kind === 'terminal' ? { result: 'terminal' } : expectedFailure)
-      expect(fetches).toBe(kind === 'credentials' ? 0 : 1)
-      const row = (await getPostClassifierApplicationFacts(input.post.id))[0]!
-      expect(row.provider_attempts_started).toBe(fetches)
-      expect(row.lease_token).toBe(kind === 'credentials' ? input.lease.leaseToken : null)
-      expect(row.terminal_remote_failed_at !== null).toBe(kind === 'terminal')
-      expect(row.outcomes_persisted_at).toBeNull()
-      await expectReservedRemoteBatch(input)
-    },
-  )
+  it.each(['decode', 'terminal'] as const)('uses real C1 %s failure boundaries', async kind => {
+    const input = await createPostClassifierExecutionFixture(true, false)
+    const { dependencies } = makeDependencies()
+    let fetches = 0
+    dependencies.createClient = hooks =>
+      createStructuredDecisionClient({
+        transport: 'openrouter',
+        apiKey: 'test-key',
+        hooks,
+        fetch: async () => {
+          fetches++
+          return kind === 'terminal' ? new Response('', { status: 503 }) : Response.json({})
+        },
+      })
+    const settled = await executePostClassifierOutcomes(
+      { ...input, maxAttempts: kind === 'terminal' ? 1 : 3 },
+      dependencies,
+    ).then(
+      result => ({ result }),
+      (error: unknown) => ({ error }),
+    )
+    expect(settled).toEqual(
+      {
+        decode: { error: expect.objectContaining({ code: 'invalid-response' }) },
+        terminal: { result: 'terminal' },
+      }[kind],
+    )
+    expect(fetches).toBe(1)
+    const row = (await getPostClassifierApplicationFacts(input.post.id))[0]!
+    expect(row.provider_attempts_started).toBe(1)
+    expect(row.lease_token).toBeNull()
+    expect(row.terminal_remote_failed_at !== null).toBe(kind === 'terminal')
+    expect(row.outcomes_persisted_at).toBeNull()
+    await expectReservedRemoteBatch(input)
+  })
 })
 
 async function expectReservedRemoteBatch(

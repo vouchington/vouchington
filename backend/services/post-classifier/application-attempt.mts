@@ -6,6 +6,11 @@ import {
   lockPostClassifierApplication,
   type PostClassifierApplicationLease,
 } from './application-identity.mts'
+import {
+  assertLocalOutcome,
+  localOutcomeAssignments,
+  type PostClassifierLocalOutcome,
+} from './application-local-outcome.mts'
 
 export type PostClassifierRemoteFailureKind =
   | 'provider-error'
@@ -84,4 +89,34 @@ export async function failPostClassifierRemoteAttempt(
   `)
   await query.commit()
   return terminal ? 'terminal' : 'released'
+}
+
+/**
+ * Stops the remote half for good when the provider client cannot be built, so no provider attempt
+ * starts and the sweep stops recovering the receipt. The local detector outcome is retained by the
+ * same write; effects stay unapplied because the receipt's outcomes never became durable.
+ */
+export async function failPostClassifierClientUnavailable(
+  input: PostClassifierApplicationLease & { localOutcome?: PostClassifierLocalOutcome },
+): Promise<'terminal' | 'stale'> {
+  await using query = await beginTransaction()
+  if (!(await lockCurrentPostClassifierApplicationInput(query, input))) return 'stale'
+  const row = await lockPostClassifierApplication(query, input)
+  if (!applicationLeaseMatches(row, input) || row.outcomes_persisted_at) return 'stale'
+  if (row.decision_batch_id === null) {
+    throw new Error('Local-only post classifier receipt has no remote client to lose')
+  }
+  assertLocalOutcome(input, input.localOutcome)
+  await query(
+    sql`/* failPostClassifierClientUnavailable */
+    UPDATE post_classifier_applications
+    SET terminal_remote_failure_kind = 'client-unavailable',
+      terminal_remote_failed_at = clock_timestamp(),
+      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL,
+      `.append(localOutcomeAssignments(input.localOutcome)).append(sql`
+    WHERE post_id = ${input.postId} AND id = ${input.applicationId}
+  `),
+  )
+  await query.commit()
+  return 'terminal'
 }
