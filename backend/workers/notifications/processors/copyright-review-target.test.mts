@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CopyrightReviewTargetBreaches } from '@services/copyright-notices'
 import {
   processCheckCopyrightReviewTarget,
@@ -24,11 +24,19 @@ function checkDeps(reviewTargetMinutes: number | null, breaches: CopyrightReview
           context.missedRestorationDeadline.count >
         0,
     ),
-    now: () => NOW,
   }
 }
 
 describe('processCheckCopyrightReviewTarget', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(NOW)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('reads with no target and reports a quiet sweep while the target is unset', async () => {
     const deps = checkDeps(null, noBreaches)
 

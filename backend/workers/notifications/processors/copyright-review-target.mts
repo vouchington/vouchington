@@ -8,14 +8,12 @@ export type CheckCopyrightReviewTargetDeps = {
   getReviewTargetMinutes: typeof getCopyrightReviewTargetMinutes
   readBreaches: typeof readCopyrightReviewTargetBreaches
   recordBreach: typeof recordCopyrightReviewTargetBreach
-  now: () => Date
 }
 
 const defaultDeps: CheckCopyrightReviewTargetDeps = {
   getReviewTargetMinutes: getCopyrightReviewTargetMinutes,
   readBreaches: readCopyrightReviewTargetBreaches,
   recordBreach: recordCopyrightReviewTargetBreach,
-  now: () => new Date(),
 }
 
 /**
@@ -29,6 +27,6 @@ export async function processCheckCopyrightReviewTarget(
 ): Promise<{ paged: boolean }> {
   const deps = { ...defaultDeps, ...dependencyOverrides }
   const reviewTargetMinutes = await deps.getReviewTargetMinutes()
-  const breaches = await deps.readBreaches({ now: deps.now(), reviewTargetMinutes })
+  const breaches = await deps.readBreaches({ now: new Date(), reviewTargetMinutes })
   return { paged: deps.recordBreach({ reviewTargetMinutes, ...breaches }) }
 }
