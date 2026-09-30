@@ -95,8 +95,8 @@ bounded assignment cleanly (see [the `blackboard` skill](../blackboard/SKILL.md)
 `retroAt` as the newest retrospective entry's `createdAt`, and `lastActive` as
 the newest normalized entry's `createdAt` (falling back to `session.createdAt` when there
 are no entries). An identical replay does not advance effective activity; a new source event does.
-Keep the exported `session.lastEntryAt` unchanged for the archival race check below. Every shape
-except entry-type-unresolved is **eligible**
+Leave the verified snapshot file in place until cleanup: it is the reference for the archival check
+below. Every shape except entry-type-unresolved is **eligible**
 when `(has a retrospective AND retroAt < retroCutoff) OR (lastActive < sessionCutoff)` — eligible on
 session age alone covers a checkpoint-only, journal-only, or zero-entry session that has simply gone
 stale, which is the case a retro-only gate used to leave stuck forever. Everything else is **not yet
@@ -113,12 +113,13 @@ stderr verbatim in an issue body, since a journal checkpoint (unlike a retrospec
 the canonical evidence-minimization boundary) can carry unredacted secrets. An entry-type-unresolved
 session gets no issue-filing pass this run.
 
-Before archiving an eligible session, call `journal_entries` with that session's `sessionId` and
-compare its newest entry time to the `lastEntryAt` captured at export time; if it is newer, the
-session was resumed since the snapshot, and it must be skipped for archival this run and reconsidered
-next round. `session_archive` has no such guard of its own. `journal_entries` returns every entry
-of every type, so this recheck also sees a retrospective saved after the export; archiving freezes
-only the session's metadata and its entries stay appendable. Invoking this skill is the local archival
+Immediately before each `session_archive`, read that session with `journal_entries` (its
+`sessionId`) and archive it only if its entries match the verified snapshot's entries for the same
+session by source identity (`sourceEventId`): the same set, with nothing added and nothing missing.
+Otherwise the session changed since the snapshot (it was resumed, or a retrospective was saved after
+the export), so leave it unarchived for the next pass. `session_archive` has no such guard of its
+own, and archiving freezes only the session's metadata, so its entries stay appendable. Invoking
+this skill is the local archival
 authorization for eligible sessions: archive each one with a separate `session_archive` call whose
 `sessionId` is the archived session, not the root's. Before any `session_archive`, repeat the
 drain across every worktree, and never call `session_archive` while `outbox_status` reports pending

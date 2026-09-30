@@ -36,7 +36,9 @@ from this worktree's `node_modules/.bin`) and approves its tools server-wide; se
 - **`mode` is `interactive` for an attended session and `autonomous` for an automation runner.**
   Interactive mode retains a failed delivery in the worktree outbox and reports it as pending.
   Autonomous mode has no outbox, so a failed delivery is an error to report.
-- **Retrospectives still go through `node dev/retrospective-save.mts`.** It validates the
+- **`journal_append` stores only journal entries.** Never save a retrospective through it: a
+  composed retrospective goes through the retrospective writer, `node dev/retrospective-save.mts`
+  (see [the `retrospective` skill](../retrospective/SKILL.md)). That writer validates the
   retrospective document and writes to the same worktree outbox that `outbox_status` and
   `outbox_flush` cover.
 

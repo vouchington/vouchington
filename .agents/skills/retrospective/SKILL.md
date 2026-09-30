@@ -60,7 +60,8 @@ See the local PR-creation-feedback disposition rule above and [PR feedback](pr-f
 
 Read [fact contracts](fact-contracts.md), [saving](saving.md), [PR feedback](pr-feedback.md), and
 [sandbox audit](sandbox-audit.md) when their sections apply. Save one validated retrospective only
-through `node dev/retrospective-save.mts`; it must retain `## Plan vs Actual`, `## CI Failures`, and
+through `node dev/retrospective-save.mts`, never through the `vouchington-tooling` server's
+`journal_append`, which stores only journal entries; it must retain `## Plan vs Actual`, `## CI Failures`, and
 consequential tool findings. Routine diagnostic counts and source records are generated evidence;
 do not hand-author a narrative for every ordinary lint result. Use [retrospective-distill](../retrospective-distill/SKILL.md) for
 actionable follow-ups.

@@ -149,9 +149,10 @@ machine cannot be drained. The canonical skill covers that with `inactiveForHour
 the export never passes it here: the filter never matches a zero-entry session, so passing it would
 hide exactly the aborted sessions this age rule exists to sweep up. The `--retro-days` and
 `--session-days` cutoffs supply the delivery window instead, and effective activity is classified client-side from normalized entry
-`createdAt` values, falling back to session `createdAt` when empty. The exported `lastEntryAt`
-remains the archival race guard, compared with the newest `journal_entries` time immediately before
-each `session_archive`, which has no guard of its own. The root agent first verifies the snapshot
+`createdAt` values, falling back to session `createdAt` when empty. Immediately before each
+`session_archive`, which has no guard of its own, the root reads that session with `journal_entries`
+and archives it only if its entries match the verified snapshot's by source identity
+(`sourceEventId`); otherwise it leaves the session for the next pass. The root agent first verifies the snapshot
 against the returned checksum, compact counts, and terminal manifest and stops on any mismatch, then
 checks the generated-export cleanup token,
 then partitions the returned local JSONL snapshot with `pnpm exec agent-blackboard snapshot partition

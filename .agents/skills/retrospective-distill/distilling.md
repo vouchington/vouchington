@@ -36,11 +36,11 @@ must attach the contributing session IDs to every theme so the mapping survives 
 root's later merge and deduplication — the root archives only the eligible sessions it fully
 processed, and needs that mapping to withhold archival from just the sessions behind a failed or
 deferred theme.
-Do not archive while inspectors are still running, and compare each session's newest
-`journal_entries` entry time (it returns every entry of every type, oldest first, so this also sees
-a retrospective saved after the export) against its exported `lastEntryAt` immediately before its
-`session_archive` call — a session resumed since the snapshot was taken
-must be skipped this round and reconsidered next. Always remove both the generated partition directory
+Do not archive while inspectors are still running. Immediately before each `session_archive`,
+read that session with `journal_entries` (every entry of every type, oldest first) and archive it
+only if its entries match the verified snapshot's entries for the same session by source identity
+(`sourceEventId`), with nothing added and nothing missing; a session resumed or given a
+retrospective since the export is left for the next pass. Always remove both the generated partition directory
 and the exported snapshot after the root merges summaries, including on an issue-validation failure.
 Partition and cleanup commands require the original `cleanupToken`; the root retains that capability
 and never delegates it. Cleanup retries use the same token with the original directory and snapshot

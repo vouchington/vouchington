@@ -87,6 +87,12 @@ describe('agent-authored PR creation feedback contract', () => {
 
     expect(retrospective).toContain('vouchington-workflow:retrospective')
     expect(retrospective).toContain('node dev/retrospective-save.mts')
+    expect(retrospective).toContain(
+      "never through the `vouchington-tooling` server's `journal_append`",
+    )
+    expect(normalized('.agents/skills/blackboard/SKILL.md')).toContain(
+      '`journal_append` stores only journal entries',
+    )
     expect(retrospective).toContain('[PR feedback](pr-feedback.md)')
   })
 
@@ -115,7 +121,8 @@ describe('agent-authored PR creation feedback contract', () => {
     expect(distill).toContain('never call `session_archive` while `outbox_status` reports pending')
     expect(distill).toContain('stops on any mismatch')
     expect(distill).toContain('entry-type-unresolved')
-    expect(distill).toContain('lastEntryAt')
+    expect(distill).toContain('Immediately before each `session_archive`')
+    expect(distill).toContain('by source identity (`sourceEventId`)')
     expect(distill).toContain('[distilling.md](distilling.md)')
   })
 
