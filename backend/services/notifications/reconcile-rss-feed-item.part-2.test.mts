@@ -46,10 +46,10 @@ describe('reconcile-rss-feed-item deletion cleanup', () => {
 
     await expect(reconcileNotificationsForRssFeedItem(itemId)).resolves.toMatchObject({
       created: 0,
-      pruned: 2,
+      pruned: 1,
     })
 
     expect((await listNotifications(unreadSubscriber.id)).results).toHaveLength(0)
-    expect((await listNotifications(readSubscriber.id)).results).toHaveLength(0)
+    expect((await listNotifications(readSubscriber.id)).results).toHaveLength(1)
   })
 })

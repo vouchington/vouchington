@@ -17,6 +17,7 @@ export function pruneMissingRssFeedItemContentNotifications(
 /**
  * Applies the canonical-content visibility transition independently of subscription membership.
  * Manual sends are snapshots, so only this transition may hide or restore them.
+ * Read subscription rows stay visible. Unread subscription rows and manual sends are removed when content is ineligible.
  */
 export async function reconcilePostContentNotificationVisibility(
   postId: string,
@@ -41,7 +42,11 @@ export async function reconcilePostContentNotificationVisibility(
         )
         AND notification.deleted_at IS NULL
         AND (
-          (notification.delivery_type = 'subscription' AND NOT $2::boolean)
+          (
+            notification.delivery_type = 'subscription'
+            AND NOT $2::boolean
+            AND notification.read_at IS NULL
+          )
           OR (notification.delivery_type = 'manual_send' AND NOT $3::boolean)
         )`,
     [postId, isContentEligible, isManualSendContentEligible],
@@ -66,7 +71,11 @@ export async function reconcileRssFeedItemContentNotificationVisibility(
           delete_reason = 'system_pruned'
       WHERE notification.publication_rss_feed_item_id = $1
         AND notification.entity_type = 'rss_feed_item'
-        AND notification.deleted_at IS NULL`,
+        AND notification.deleted_at IS NULL
+        AND (
+          notification.delivery_type = 'manual_send'
+          OR notification.read_at IS NULL
+        )`,
     [rssFeedItemId],
   )
   return rowCount ?? 0

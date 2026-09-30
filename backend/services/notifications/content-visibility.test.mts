@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { bookmarkEntity } from '@services/bookmarks/upsert'
 import { createPostRemovedNotification } from './create-post-removed-notification.mts'
 import { listNotifications } from './list.mts'
 import { deleteNotification, markNotificationRead } from './mutations.mts'
@@ -18,6 +19,7 @@ import {
   hasTestRetainedIdentityRoot,
   markTestNotificationPushed,
   restoreRssFeedItemsForTest,
+  setEntityRelationCreatedAt,
   setPostModerationFlaggedForTest,
   softDeleteRssFeedItemsForTest,
 } from '@voucha/test-helpers'
@@ -122,6 +124,32 @@ describe('content notification visibility reconciliation', () => {
     expect((await listNotifications(recipient.id)).results).toHaveLength(0)
     await cleanupRetainedIdentityRoots(1_000, { post: [post.id] })
     expect(await hasTestRetainedIdentityRoot('post', post.id)).toBe(true)
+  })
+
+  it('keeps a read subscription notification when the post is flagged', async () => {
+    const author = await createTestUser()
+    const subscriber = await createTestUser()
+    await bookmarkEntity(subscriber, 'user', { id: author.id }, 'subscribe')
+    await setEntityRelationCreatedAt(
+      'relation__user__subscribe__user',
+      subscriber.id,
+      author.id,
+      new Date(Date.now() - 1_000),
+    )
+    const post = await createTestPost({ user: author, privacy: 'public' })
+    await reconcileNotificationsForPost(post.id)
+    const notificationId = (await listNotifications(subscriber.id)).results[0]!.id
+    await markNotificationRead(subscriber.id, notificationId)
+
+    await setPostModerationFlaggedForTest({ postId: post.id, flagged: true })
+    await reconcileNotificationsForPost(post.id)
+
+    expect((await listNotifications(subscriber.id)).results).toHaveLength(1)
+    await expect(getNotificationById(notificationId)).resolves.toMatchObject({
+      deleted_at: null,
+      delete_reason: null,
+      read_at: expect.any(Date),
+    })
   })
 
   it('keeps post removal notifications visible during content reconciliation', async () => {
