@@ -1,91 +1,26 @@
+import { createAssessedUsDmcaCopyrightNoticeFixture } from '@voucha/test-helpers/copyright-us-dmca-notice-fixture'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  createTestUserDirect,
-  getTestPostImagePlacement,
-  insertTestImage,
-  insertTestPost,
-  insertTestPostImage,
-} from '@voucha/test-helpers'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
   completeCopyrightMandatoryHumanReview,
-  createCopyrightDeliveryIntent,
   createCopyrightCounterNotice,
-  createCopyrightNoticeAggregate,
   createCounterNoticeDeadline,
   createEligibleCopyrightRestoreIntent,
-  createOutboundCopyrightCorrespondence,
   getCopyrightNoticePrivateAggregate,
   processCopyrightEnforcementRequest,
 } from './index.mts'
 
 async function createFixture() {
-  const [claimant, moderatorRecord] = await Promise.all([
-    createTestUserDirect(),
-    createTestUserDirect(),
-  ])
-  const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
-  const postId = await insertTestPost({
-    title: `copyright persistence ${crypto.randomUUID()}`,
-    slug: `copyright-persistence-${crypto.randomUUID()}`,
-    createdById: claimant.id,
-    markdown: 'image',
-  })
-  const imageId = await insertTestImage(claimant.id)
-  await insertTestPostImage({ postId, imageId })
-  const placement = await getTestPostImagePlacement(postId, imageId)
-  if (!placement) throw new Error('fixture image placement disappeared')
-  const notice = await createCopyrightNoticeAggregate({
-    jurisdiction: 'us_dmca',
-    receivedAt: new Date('2026-06-30T16:00:00.000Z'),
-    claimantUserId: claimant.id,
+  return createAssessedUsDmcaCopyrightNoticeFixture({
+    postTitlePrefix: 'copyright persistence',
+    postSlugPrefix: 'copyright-persistence',
+    postMarkdown: 'image',
     claimantDisplayName: 'private snapshot',
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
-    workDescription: `work-${crypto.randomUUID()}`,
-    policyVersion: 'test-v1',
-    initialSubmission: {
-      kind: 'notice',
-      sourceKind: 'signed_in_form',
-      bodyCiphertext: `notice-${crypto.randomUUID()}`,
-    },
-    targets: [
-      {
-        placementId: placement.placement_id,
-        placementRevision: placement.placement_revision,
-        imageId,
-        hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
-      },
-    ],
+    noticeBodyCiphertext: `notice-${crypto.randomUUID()}`,
+    receiptIdempotencyKeyPrefix: 'copyright-claimant-receipt',
+    assessBeforeReceipt: false,
   })
-  const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
-  if (!aggregate) throw new Error('fixture notice disappeared')
-  const correspondence = await createOutboundCopyrightCorrespondence({
-    noticeId: notice.id,
-    submissionId: aggregate.submissions[0].id,
-    correspondenceKind: 'receipt',
-    compositionKind: 'deterministic_template',
-    bodyCiphertext: `receipt-${crypto.randomUUID()}`,
-    draftedById: null,
-  })
-  await createCopyrightDeliveryIntent({
-    noticeId: notice.id,
-    submissionId: aggregate.submissions[0].id,
-    correspondenceId: correspondence.id,
-    recipientUserId: null,
-    recipientRole: 'claimant',
-    deliveryKind: 'claimant_receipt',
-    channel: 'email',
-    idempotencyKey: `copyright-claimant-receipt-${crypto.randomUUID()}`,
-    recipientEmail: `tests+copyright-${crypto.randomUUID()}@voucha.ai`,
-  })
-  const noticeAssessment = await appendCopyrightSubmissionAssessment({
-    submissionId: aggregate.submissions[0].id,
-    assessedAt: new Date('2026-07-01T11:00:00.000Z'),
-    currentUser: moderator,
-    substantiallyCompliant: true,
-  })
-  return { aggregate, claimant, moderator, notice, noticeAssessment }
 }
 describe('copyright notice persistence', () => {
   it('recovers a durable enforcement request after a post-assessment failure', async () => {

@@ -2,20 +2,10 @@ import {
   createTestCopyrightDeliveryDependencies,
   type CopyrightTestDeliveryPublisher,
 } from '@voucha/test-helpers/copyright-delivery-dependencies'
+import { createAssessedUsDmcaCopyrightNoticeFixture } from '@voucha/test-helpers/copyright-us-dmca-notice-fixture'
 import { describe, expect, it } from 'vitest'
 import {
-  createTestUserDirect,
-  getTestPostImagePlacement,
-  insertTestImage,
-  insertTestPost,
-  insertTestPostImage,
-} from '@voucha/test-helpers'
-import {
   acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightSubmissionAssessment,
-  createCopyrightDeliveryIntent,
-  createCopyrightNoticeAggregate,
-  createOutboundCopyrightCorrespondence,
   getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
 } from './index.mts'
@@ -25,78 +15,20 @@ import {
 } from './evidence-and-holds-restoration-hold-fixtures.mts'
 
 async function createFixture() {
-  const [claimant, moderatorRecord] = await Promise.all([
-    createTestUserDirect(),
-    createTestUserDirect(),
-  ])
-  const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
-  const imageId = await insertTestImage(claimant.id)
-  const postId = await insertTestPost({
-    title: `copyright evidence ${crypto.randomUUID()}`,
-    slug: `copyright-evidence-${crypto.randomUUID()}`,
-    createdById: claimant.id,
-    markdown: 'images',
-  })
-  await insertTestPostImage({ postId, imageId })
-  const placement = await getTestPostImagePlacement(postId, imageId)
-  if (!placement) throw new Error('fixture image placement disappeared')
-  const notice = await createCopyrightNoticeAggregate({
-    jurisdiction: 'us_dmca',
-    receivedAt: new Date('2026-06-30T16:00:00.000Z'),
-    claimantUserId: claimant.id,
+  return createAssessedUsDmcaCopyrightNoticeFixture({
+    postTitlePrefix: 'copyright evidence',
+    postSlugPrefix: 'copyright-evidence',
+    postMarkdown: 'images',
     claimantDisplayName: null,
-    claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,
-    workDescription: `work-${crypto.randomUUID()}`,
-    policyVersion: 'test-v1',
-    initialSubmission: { kind: 'notice', sourceKind: 'signed_in_form', bodyCiphertext: 'notice' },
-    targets: [
-      {
-        placementId: placement.placement_id,
-        placementRevision: placement.placement_revision,
-        imageId,
-        hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
-      },
-    ],
+    noticeBodyCiphertext: 'notice',
+    receiptIdempotencyKeyPrefix: 'copyright-evidence-receipt',
+    assessBeforeReceipt: true,
   })
-  const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
-  if (!aggregate) throw new Error('fixture notice disappeared')
-  const assessment = await appendCopyrightSubmissionAssessment({
-    submissionId: aggregate.submissions[0].id,
-    assessedAt: new Date('2026-07-01T11:00:00.000Z'),
-    currentUser: moderator,
-    substantiallyCompliant: true,
-  })
-  const receipt = await createOutboundCopyrightCorrespondence({
-    noticeId: notice.id,
-    submissionId: aggregate.submissions[0].id,
-    correspondenceKind: 'receipt',
-    compositionKind: 'deterministic_template',
-    bodyCiphertext: `receipt-${crypto.randomUUID()}`,
-    draftedById: null,
-  })
-  await createCopyrightDeliveryIntent({
-    noticeId: notice.id,
-    submissionId: aggregate.submissions[0].id,
-    correspondenceId: receipt.id,
-    recipientUserId: null,
-    recipientRole: 'claimant',
-    deliveryKind: 'claimant_receipt',
-    channel: 'email',
-    idempotencyKey: `copyright-evidence-receipt-${crypto.randomUUID()}`,
-    recipientEmail: `tests+copyright-${crypto.randomUUID()}@voucha.ai`,
-  })
-  return { aggregate, assessment, claimant, moderator, notice }
 }
 
 describe('copyright notice restoration retries', () => {
   it('fails closed after restore delivery rejects, then republishes allow and completes on retry', async () => {
-    const {
-      aggregate,
-      assessment: noticeAssessment,
-      claimant,
-      moderator,
-      notice,
-    } = await createFixture()
+    const { aggregate, noticeAssessment, claimant, moderator, notice } = await createFixture()
     const target = aggregate.targets[0]!
     const restriction = await acceptCopyrightNoticeAndImposeRestriction({
       noticeId: notice.id,
