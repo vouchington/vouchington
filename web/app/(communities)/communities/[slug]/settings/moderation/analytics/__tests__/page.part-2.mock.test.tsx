@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { ApiError } from '@/lib/api/error'
 import {
@@ -15,6 +15,10 @@ import {
   transparencyPanelMock,
 } from '@/test-helpers/app/communities/community-moderation-analytics-page.mock-support'
 import { generateMetadata } from '../page'
+
+vi.mock(import('@/components/admin/moderation-analytics/moderation-analytics-dashboard'), () => ({
+  default: dashboardMock,
+}))
 
 describe('CommunityModerationAnalyticsPage site moderator fallback', () => {
   beforeEach(() => {
