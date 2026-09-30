@@ -181,5 +181,5 @@ specified by the domain matrix. External-operation requests without outcomes mus
 `PublicDisplayAccount` is the display name alone: `{ name }`. OAuth provider identifiers stay on
 the private account objects and are not copied into `display_account`. Web already renders appeal
 success from `success_rate` and `total_closed`, and display names from `display_account.name`, so
-the staff moderation ops row stays full. Swift and .NET drop both decoder fields in the paired
-`vouchington/vouchington-clients` change for this contract.
+the staff moderation ops row stays full. Swift and .NET drop both decoder fields in
+[vouchington-clients#194](https://github.com/vouchington/vouchington-clients/pull/194).
