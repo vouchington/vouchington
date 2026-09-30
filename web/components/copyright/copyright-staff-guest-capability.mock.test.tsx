@@ -72,6 +72,9 @@ async function issueAccess() {
   await waitFor(() => {
     expect(screen.getByLabelText('Access token')).toHaveValue('shown-once-token')
   })
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Issue guest access' })).toBeEnabled()
+  })
 }
 
 describe('CopyrightStaffGuestCapability', () => {
@@ -208,7 +211,7 @@ describe('CopyrightStaffGuestCapability', () => {
     })
 
     mockRevoke.mockRejectedValueOnce(new Error('revoke failed'))
-    fireEvent.click(screen.getByRole('button', { name: 'Revoke' }))
+    await clickEnabled('Revoke')
     await waitFor(() => {
       expect(onError).toHaveBeenCalledWith(expect.any(Error), {
         fallback: 'Could not revoke guest access',
