@@ -1,8 +1,9 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
-import type { CrawlBasic } from './types.mts'
 import createError from 'http-errors'
+import { crawlBasicColumns, mapCrawlBasicRow } from './columns.mts'
+import type { CrawlBasic } from './types.mts'
 
 export const getCrawlById = async (
   crawlId: string,
@@ -15,31 +16,7 @@ export const getCrawlById = async (
 
   const { rows } = await read<Omit<CrawlBasic, '__entity_type'>>(
     `/* getCrawlById */
-    SELECT
-      id,
-      url_id,
-      crawler_id,
-      created_at,
-      last_modified_at,
-      etag,
-      html_sha256,
-      html_snapshot_uploaded_at,
-      request_headers,
-      response_headers,
-      response_status_code,
-      redirect_url_id,
-      network_error,
-      completed_at,
-      embeddings_generated_at,
-      has_pending_embeddings,
-      markdown,
-      title,
-      links,
-      meta_tags,
-      embed_metadata,
-      embed_oembed_url,
-      embed_oembed_resolved_at,
-      lang
+    SELECT ${crawlBasicColumns}
     FROM crawls
     WHERE id = $1 AND url_id = $2
     LIMIT 1
@@ -50,10 +27,7 @@ export const getCrawlById = async (
 
   if (rows.length === 0) return null
 
-  return {
-    __entity_type: 'crawl',
-    ...rows[0],
-  }
+  return mapCrawlBasicRow(rows[0])
 }
 
 export const getLatestSuccessfulCrawl = async (
@@ -66,31 +40,7 @@ export const getLatestSuccessfulCrawl = async (
 
   const { rows } = await read<Omit<CrawlBasic, '__entity_type'>>(
     `/* getLatestSuccessfulCrawl */
-    SELECT
-      id,
-      url_id,
-      crawler_id,
-      created_at,
-      last_modified_at,
-      etag,
-      html_sha256,
-      html_snapshot_uploaded_at,
-      request_headers,
-      response_headers,
-      response_status_code,
-      redirect_url_id,
-      network_error,
-      completed_at,
-      embeddings_generated_at,
-      has_pending_embeddings,
-      markdown,
-      title,
-      links,
-      meta_tags,
-      embed_metadata,
-      embed_oembed_url,
-      embed_oembed_resolved_at,
-      lang
+    SELECT ${crawlBasicColumns}
     FROM crawls
     WHERE url_id = $1
       AND embeddings_generated_at IS NOT NULL
@@ -103,10 +53,7 @@ export const getLatestSuccessfulCrawl = async (
 
   if (rows.length === 0) return null
 
-  return {
-    __entity_type: 'crawl',
-    ...rows[0],
-  }
+  return mapCrawlBasicRow(rows[0])
 }
 
 export const getLatestHtmlSnapshotCrawl = async (
@@ -119,31 +66,7 @@ export const getLatestHtmlSnapshotCrawl = async (
 
   const { rows } = await read<Omit<CrawlBasic, '__entity_type'>>(
     `/* getLatestHtmlSnapshotCrawl */
-    SELECT
-      id,
-      url_id,
-      crawler_id,
-      created_at,
-      last_modified_at,
-      etag,
-      html_sha256,
-      html_snapshot_uploaded_at,
-      request_headers,
-      response_headers,
-      response_status_code,
-      redirect_url_id,
-      network_error,
-      completed_at,
-      embeddings_generated_at,
-      has_pending_embeddings,
-      markdown,
-      title,
-      links,
-      meta_tags,
-      embed_metadata,
-      embed_oembed_url,
-      embed_oembed_resolved_at,
-      lang
+    SELECT ${crawlBasicColumns}
     FROM crawls
     WHERE url_id = $1
       AND completed_at IS NOT NULL
@@ -157,8 +80,5 @@ export const getLatestHtmlSnapshotCrawl = async (
 
   if (rows.length === 0) return null
 
-  return {
-    __entity_type: 'crawl',
-    ...rows[0],
-  }
+  return mapCrawlBasicRow(rows[0])
 }
