@@ -2,7 +2,7 @@
 
 See also: [Entity × Action Matrix — rss_feed_item](../reference-rssfeeditem.md#rss_feed_item) · [Entity × Lifecycle Flow Matrix — rss_feed_item](../reference-rss-feed-items.md#rss-feed-items)
 
-**Related code:** `web/app/news/page.tsx`, `web/components/news/news-filters.tsx`, `web/components/shared/topic-chip-filter.tsx`, `web/components/posts/post-list-page.tsx`, `web/components/posts/post-filters.tsx`
+**Related code:** `web/app/news/page.tsx`, `web/components/feed/media-item-listing-page.tsx`, `web/components/news/news-filters.tsx`, `web/components/shared/topic-chip-filter.tsx`, `web/components/posts/post-list-page.tsx`, `web/components/posts/post-filters.tsx`
 **Component rules:** [docs/requirements/navigation/COMPONENTS.md](../navigation/COMPONENTS.md) — Page Header, Search Input, and Topic Chip Filter primitives apply to these pages.
 
 Links RSS feed item clusters to discussion posts via `post -> related -> url` entity relations.
