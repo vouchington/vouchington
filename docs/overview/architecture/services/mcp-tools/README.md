@@ -64,18 +64,13 @@ A route that documents its response inline has no contract; give it a named resp
 validation; `outcomeSchema` builds both. `manage_*` tools return only `{ id }` for `remove`,
 because REST `DELETE` is `204`.
 
-**Every MCP tool declares one.** `catalog/build-mcp-catalog.test.mts` fails for any tool exposed on
-`mcp` or `admin_mcp` that has no `outputSchema`, so a new tool declares its schema from the start
-and there is no list of exceptions. `pnpm run mcp:catalog` regenerates the catalog artifacts that
-test snapshots.
+**Every MCP tool declares one.** The catalog test fails for any `mcp` or `admin_mcp`
+tool without an `outputSchema`, with no list of exceptions.
 
-**Paged results.** A paged tool (`search_posts`, `search_topics`, `get_trending_posts`,
-`get_trending_topics`, and the children of `get_topic_details`) takes its REST twin's parsers, not
-a copy of them: the `@services/search-params` parsers for search, and the `parse-pagination.mts` of
-`@services/trending-posts` and `@services/trending-topics` (shared with the routes) for trending.
-`page_info` in every paged result is the generated `PageInfo` component. The GET trending routes
-document no query parameters in OpenAPI, so their `after` and `limit` are pinned by the real-DB
-contract tests instead.
+**Paged results.** Paged tools reuse their REST twin's parsers (`@services/search-params`, and
+`parse-pagination.mts` in `@services/trending-posts` and `@services/trending-topics`), so cursors
+and limits match REST, and return `PageInfo` as `page_info`. OpenAPI documents no
+trending query parameters, so contract tests pin `after` and `limit`.
 
 ## Authorization
 

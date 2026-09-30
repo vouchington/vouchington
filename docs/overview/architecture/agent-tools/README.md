@@ -81,8 +81,7 @@ Every mutating tool currently exposed on the user `mcp` surface (`manage_my_card
 
 ## Generated Artifacts
 
-[`build-mcp-catalog.test.mts`](../../../../backend/services/mcp-tools/catalog/build-mcp-catalog.test.mts)
-builds every registry-derived artifact and fails when a committed copy is stale. Run
+[`build-mcp-catalog.test.mts`](../../../../backend/services/mcp-tools/catalog/build-mcp-catalog.test.mts) builds every registry-derived artifact and fails when a committed copy is stale. Run
 `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate
 them:
 
@@ -110,19 +109,9 @@ reference.
   `similar_topic_id` is a similarity-search seed and takes a UUID, and write-tool fields that
   mirror a REST request body (such as `manage_my_cards.card_id`) take what that body takes.
 - **Search queries** — a tool with a REST equivalent names its query after the REST parameter
-  (`q`, `text_search_query`, `semantic_search_query`). `query` remains only on tools without one,
-  such as `search_wikipedia`. One tool per resource covers every search mode: `search_posts` and
-  `search_topics` take keyword, semantic, hybrid (`search`) and `similar_*` arguments, parsed by the
-  same `@services/search-params` parsers as `GET /api/v1/posts` and `GET /api/v1/topics`.
-- **Paging** — a tool whose REST twin pages (`search_posts`, `search_topics`, `get_trending_posts`,
-  `get_trending_topics`) takes the twin's `after` and `limit` and returns `page_info`; pass
-  `page_info.end_cursor` as `after` for the next page. `get_topic_details` pages only the children
-  it returns for `hierarchy` (`children_after`, `children_limit`, `children_page_info`). The REST
-  parser owns the limits, so `limit` has no schema maximum: an oversized value is clamped to 100 as
-  it is on REST, while `0` and a malformed cursor are refused.
-- **Topic hierarchy** — `get_topic_details` returns parents and/or children only when `hierarchy`
-  (`parents`, `children` or `both`) is set, so a plain call is unchanged. Parents are a short list;
-  children are a bounded page in child-id order.
+  (`q`, `text_search_query`, `semantic_search_query`) and pages like it (`after`, `limit`,
+  `page_info`; see [Paged results](../../../requirements/api/v1/mcp/README.md#paged-results)).
+  `query` remains only on tools without one, such as `search_wikipedia`.
 - **Post types** — a `post_type` enum accepts the same values as its REST equivalent:
   `VALID_FILTERABLE_POST_TYPES` for `GET /api/v1/posts` and `VALID_TRENDING_POST_TYPES` for
   `GET /api/v1/trending-posts` (both in `ts-shared/feed-capabilities`).
