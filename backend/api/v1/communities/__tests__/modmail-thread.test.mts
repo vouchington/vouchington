@@ -8,6 +8,33 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
 
+type ModmailReadResource = 'thread' | 'messages'
+
+async function openMemberModmailThread(
+  member: PrivateUser,
+  communitySlug: string,
+): Promise<string> {
+  const request = createRequest()
+  await request.authenticateAs(member)
+  const response = await request
+    .post(`/api/v1/communities/${communitySlug}/modmail`)
+    .send({})
+    .expect(201)
+  return response.body.thread.id as string
+}
+
+async function readModmail(
+  communitySlug: string,
+  threadId: string,
+  resource: ModmailReadResource,
+  user?: PrivateUser,
+) {
+  const request = createRequest()
+  if (user) await request.authenticateAs(user)
+  const suffix = resource === 'messages' ? '/messages' : ''
+  return request.get(`/api/v1/communities/${communitySlug}/modmail/${threadId}${suffix}`)
+}
+
 describe('modmail thread API', () => {
   let owner: PrivateUser
   let mod: PrivateUser
@@ -46,46 +73,29 @@ describe('modmail thread API', () => {
     let threadId: string
 
     beforeAll(async () => {
-      const setupRequest = createRequest()
-      await setupRequest.authenticateAs(member)
-      const resp = await setupRequest
-        .post(`/api/v1/communities/${community.slug}/modmail`)
-        .send({})
-        .expect(201)
-      threadId = resp.body.thread.id as string
+      threadId = await openMemberModmailThread(member, community.slug)
     })
 
     it('returns 401 for anonymous requests', async () => {
-      const request = createRequest()
-      await request
-        .get(`/api/v1/communities/${community.slug}/modmail/${threadId}/messages`)
-        .expect(401)
+      const response = await readModmail(community.slug, threadId, 'messages')
+      expect(response.status).toBe(401)
     })
 
     it('returns messages for the subject user', async () => {
-      const request = createRequest()
-      await request.authenticateAs(member)
-      const response = await request
-        .get(`/api/v1/communities/${community.slug}/modmail/${threadId}/messages`)
-        .expect(200)
+      const response = await readModmail(community.slug, threadId, 'messages', member)
+      expect(response.status).toBe(200)
       expect(Array.isArray(response.body.results)).toBe(true)
     })
 
     it('returns messages for a mod', async () => {
-      const request = createRequest()
-      await request.authenticateAs(mod)
-      const response = await request
-        .get(`/api/v1/communities/${community.slug}/modmail/${threadId}/messages`)
-        .expect(200)
+      const response = await readModmail(community.slug, threadId, 'messages', mod)
+      expect(response.status).toBe(200)
       expect(Array.isArray(response.body.results)).toBe(true)
     })
 
     it('returns 403 for a non-participant non-mod', async () => {
-      const request = createRequest()
-      await request.authenticateAs(anon)
-      await request
-        .get(`/api/v1/communities/${community.slug}/modmail/${threadId}/messages`)
-        .expect(403)
+      const response = await readModmail(community.slug, threadId, 'messages', anon)
+      expect(response.status).toBe(403)
     })
 
     it('returns 404 for a thread that belongs to a different community', async () => {
@@ -95,12 +105,8 @@ describe('modmail thread API', () => {
         userId: owner.id,
         role: 'owner',
       })
-
-      const request = createRequest()
-      await request.authenticateAs(mod)
-      await request
-        .get(`/api/v1/communities/${otherCommunity.slug}/modmail/${threadId}/messages`)
-        .expect(404)
+      const response = await readModmail(otherCommunity.slug, threadId, 'messages', mod)
+      expect(response.status).toBe(404)
     })
   })
 
@@ -108,13 +114,7 @@ describe('modmail thread API', () => {
     let threadId: string
 
     beforeAll(async () => {
-      const setupRequest = createRequest()
-      await setupRequest.authenticateAs(member)
-      const resp = await setupRequest
-        .post(`/api/v1/communities/${community.slug}/modmail`)
-        .send({})
-        .expect(201)
-      threadId = resp.body.thread.id as string
+      threadId = await openMemberModmailThread(member, community.slug)
     })
 
     it('returns 401 for anonymous requests', async () => {
@@ -192,13 +192,7 @@ describe('modmail thread API', () => {
     let threadId: string
 
     beforeAll(async () => {
-      const setupRequest = createRequest()
-      await setupRequest.authenticateAs(member)
-      const resp = await setupRequest
-        .post(`/api/v1/communities/${community.slug}/modmail`)
-        .send({})
-        .expect(201)
-      threadId = resp.body.thread.id as string
+      threadId = await openMemberModmailThread(member, community.slug)
     })
 
     it('returns 401 for anonymous requests', async () => {
