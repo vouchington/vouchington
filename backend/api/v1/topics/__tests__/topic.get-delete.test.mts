@@ -12,7 +12,7 @@ import {
 // Real, service-calling fixture (not the raw `@voucha/test-helpers` one) — this file waits on
 // `processPostCreated` via `onceEntityListenerCompleted`, which only fires for posts created
 // through the actual `createPost` write path.
-import { createTestPost } from '@services/posts/test-support'
+import { createTestPost } from '@voucha/test-helpers/services/posts/test-support'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { invalidate } from '@services/entity-cache'
 import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'

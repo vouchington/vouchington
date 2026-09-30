@@ -183,9 +183,10 @@ exports backend/services/entity-fetch/posts.mts fetchPostsWithMetadata
 exports backend/services/entity-fetch/rss-feed-items.mts fetchRssFeedItemsWithMetadata
 exports backend/services/entity-fetch/search-caches.mts invalidateAnonymousSearchCaches
 exports backend/services/entity-fetch/topics.mts fetchTopicsWithMetadata
+exports backend/services/entity-relations/blocked-hostname-guard-registry.mts unregisterBlockedHostnameGuardForTest
+exports backend/services/entity-relations/post-related-urls-guard-registry.mts unregisterPostRelatedUrlsGuardForTest
+exports backend/services/entity-relations/referral-link-guard-registry.mts unregisterReferralLinkGuardForTest
 exports backend/services/entity-relations/relation-deletion-state.mts getEntityRelationDeletionState
-exports backend/services/entity-relations/test-support.mts recordTestPostTopicRelationPublicationChanges
-exports backend/services/entity-relations/test-support.mts stubUrlGuardsForSuite
 exports backend/services/feature-flags/index.mts encodeFeatureFlagCookie
 exports backend/services/fediverse-instances/integration-status.mts getLatestIntegrationStatusChange
 exports backend/services/fediverse-search/adapters/bluesky.mts mapBlueskyActor
@@ -249,7 +250,6 @@ exports backend/services/memberships/stripe-catalog.mts isStripeMembershipCatalo
 exports backend/services/memberships/update-cancellation.mts cancelMembership
 exports backend/services/memberships/update.mts cancelMembership
 exports backend/services/moderation-appeals/get.mts getAppealCaseTrace
-exports backend/services/moderation-appeals/resolution.fixtures.mts deliverModerationAppealForTest
 exports backend/services/moderation-cases/get.mts getCaseById
 exports backend/services/moderation-cases/index.mts getCaseById
 exports backend/services/moderation-cases/index.mts resolveCase
@@ -286,15 +286,11 @@ exports backend/services/post-publication/test-fixtures.mts getTestPublicationPr
 exports backend/services/post-publication/test-fixtures.mts reconcileTestPublicationUntilSnapshotsComplete
 exports backend/services/post-publication/test-fixtures.mts recordTestStoryTopicPublicationChange
 exports backend/services/posts/create-link-post.mts createLinkPost
-exports backend/services/posts/images.fixtures.mts createPostImageRollbackFixture
 exports backend/services/posts/privacy-filter.mts buildPrivacyFilter
 exports backend/services/posts/review-successions/audit.mts REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE
 exports backend/services/posts/review-successions/index.mts listReviewSuccessionsForPostIds
 exports backend/services/posts/review-successions/index.mts terminalizeActiveReviewSuccessionForManualPost
 exports backend/services/posts/review-successions/list.mts listReviewSuccessionsForPostIds
-exports backend/services/posts/search/test-support.mts waitForPostMatchingRelatedTopicIds
-exports backend/services/posts/test-support.mts createCommunityPostFixture
-exports backend/services/posts/test-support.mts createTestPost
 exports backend/services/queue-monitoring/get-queue-stats-cached.mts clearQueueStatsCacheForTesting
 exports backend/services/queue-monitoring/remove-queue-scheduler.mts removeQueueScheduler
 exports backend/services/read-states/catalog.mts getReadStateStorageConfig
@@ -311,7 +307,6 @@ exports backend/services/report-integrity/config.mts REPORT_INTEGRITY_RESOLUTION
 exports backend/services/review-disputes/config.mts REVIEW_DISPUTE_ACTIONS
 exports backend/services/route-rate-limits/activitypub-inbox.mts isActivityPubInboxAttemptRateLimited
 exports backend/services/route-rate-limits/config.mts ROUTE_REGISTRY
-exports backend/services/route-rate-limits/test-support.mts createRouteRateLimitKeyCleanup
 exports backend/services/rss-feed-items/categories.mts buildRssFeedItemCategorySqlBatches
 exports backend/services/rss-feed-items/categories.mts getRssFeedItemCategories
 exports backend/services/rss-feed-items/category-topic-votes.mts clearCategorizerVotesForUnreferencedCategoryTopicRelations

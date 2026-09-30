@@ -19,7 +19,7 @@ import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import {
   recordTestPostTopicRelationPublicationChanges,
   stubUrlGuardsForSuite,
-} from './test-support.mts'
+} from '@voucha/test-helpers/services/entity-relations/test-support'
 import { upsertEntityRelation } from './upsert.mts'
 import { createTestRssFeed } from '../rss-feeds/test-fixtures.mts'
 import { getPublisherTypeTopicId } from '../topics/publisher-type-topics.mts'

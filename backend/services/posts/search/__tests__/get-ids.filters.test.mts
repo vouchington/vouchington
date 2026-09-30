@@ -13,7 +13,7 @@ import {
 } from '@voucha/test-helpers'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { entityRelationMetadatum } from '@services/entity-relations/metadata'
-import { waitForPostMatchingRelatedTopicIds } from '../test-support.mts'
+import { waitForPostMatchingRelatedTopicIds } from '@voucha/test-helpers/services/posts/search/test-support'
 
 describe('get-ids (filters)', () => {
   it('getPostIds sort=new returns user posts by UUIDv7 newest first', async () => {

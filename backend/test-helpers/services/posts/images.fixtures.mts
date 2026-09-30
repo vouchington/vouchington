@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { PostImageRollback } from './images-rollback.mts'
+import type { PostImageRollback } from '../../../services/posts/images-rollback.mts'
 
 export function createPostImageRollbackFixture(
   overrides: Partial<PostImageRollback> = {},

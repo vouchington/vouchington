@@ -16,7 +16,7 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers/entities/communities'
-import { createCommunityPostFixture } from '@services/posts/test-support'
+import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 

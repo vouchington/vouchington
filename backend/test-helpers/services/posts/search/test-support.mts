@@ -1,6 +1,6 @@
 import { expect } from 'vitest'
-import type { BasicUser } from '@services/users/types'
-import { getPostIds } from './get-ids.mts'
+import type { BasicUser } from '../../../../services/users/types.mts'
+import { getPostIds } from '../../../../services/posts/search/get-ids.mts'
 
 // Category relations require votes_score_net > 0. upsertEntityRelation casts the
 // election vote in-process, then fire-and-forgets vote-stats recompute. Poll the
