@@ -35,8 +35,8 @@ failed or was rejected.
 
 Every retrospective must contain a `## CI Failures` section immediately after
 `## Transcript Facts`. This is an **observed-failures log**, not a historical GitHub audit: read the
-session journal first (via `node dev/blackboard-journal.mts entries [--root-codex]` for interactive
-root Codex), then the supported
+session journal first (via the `journal_entries` tool of the `vouchington-tooling` MCP server, with
+the `sessionId` the SessionStart hook printed), then the supported
 `retrospective-transcript` and `session-friction/report.mts` outputs for failures surfaced during
 the session. Do not re-mine raw or recursive transcripts: the normalized collectors own that
 boundary. A collector reporting unavailable evidence must remain unavailable. Do not crawl workflow

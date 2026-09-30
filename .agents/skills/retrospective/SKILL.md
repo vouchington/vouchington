@@ -15,14 +15,17 @@ Claude Code and Codex load `vouchington-workflow:retrospective`; Grok, Cursor, a
 re-mine transcripts. Do not dispatch a subagent or read raw session JSONL, and do not use
 `grep`, `rg`, `jq`, or `awk` over transcripts. Permitted evidence sources are
 `pnpm exec vouchington retrospective-facts`, `pnpm exec vouchington retrospective-transcript`,
-`node dev/session-friction/report.mts`, and `node dev/blackboard-journal.mts entries [--root-codex]`.
+`node dev/session-friction/report.mts`, and the `journal_entries` tool of the `vouchington-tooling`
+MCP server (see the [blackboard skill](../blackboard/SKILL.md)).
 Unanswerable evidence is `unknown — no journal`, never a guess.
 
 Start with `node dev/retrospective-save.mts check [--session-id <id>]`. An interactive root Codex always
-adds `--root-codex` to this check, `node dev/blackboard-journal.mts entries`, the eventual
-`retrospective-save.mts save`, and `node dev/session-friction/report.mts`; a child never adds that
-flag and remains fail-closed when it lacks its own identity. At the beginning of an absent-thread
-root session, add `--new-root-codex-session` to exactly one of those script calls, then omit it.
+adds `--root-codex` to this check, the eventual `retrospective-save.mts save`, and
+`node dev/session-friction/report.mts`; a child never adds that flag and remains fail-closed when
+it lacks its own identity. The SessionStart hook has already persisted a root Codex session's id for
+those calls and printed it as the `sessionId` for `journal_entries`, so omit
+`--new-root-codex-session`; add it to exactly one of those script calls, then omit it, only when the
+hook printed `NOT RESOLVED`.
 Use `check --source-event-id <task-event-id>` when reporting another task in the same session.
 An existing retrospective covers only its source event; preserve later task deltas with a new
 explicit source event ID. For the same already-reported event, collect only the delta since its

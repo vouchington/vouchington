@@ -100,7 +100,7 @@ describe('Vouchington workflow skill adapters', () => {
   })
 
   it.each([
-    ['blackboard', ['[ -n "${VAR+x}" ]']],
+    ['blackboard', ['[ -n "${VAR+x}" ]', 'Never call `mcp__plugin_agent-blackboard_*` tools']],
     ['retrospective', ['≤10 tool calls', 'unknown — no journal']],
   ] as const)('%s retains its Vouchington-only safety invariants', (name, invariants) => {
     const skill = read(`.agents/skills/${name}/SKILL.md`)
@@ -114,7 +114,7 @@ describe('Vouchington workflow skill adapters', () => {
     expect(skill).toContain('`CODEX_THREAD_ID`')
     expect(skill).toContain('`CLAUDE_CODE_SESSION_ID`')
     expect(skill).toContain('`session_ensure`')
-    expect(skill).toContain('--parent-session-id')
+    expect(skill).toContain('`parentSessionId`')
     expect(skill).toContain('isValidSessionId')
   })
 

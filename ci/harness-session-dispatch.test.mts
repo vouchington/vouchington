@@ -4,6 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { withMcpPreflight } from './harness-mcp-preflight.mts'
 import {
   dispatchHarnessSession,
   type HarnessDispatchEnvironment,
@@ -73,7 +74,7 @@ describe('fresh dispatch', () => {
       fallbacks: [{ providerId: 'prov-grok' }, { providerId: 'prov-codex' }],
       metadata: { issueNumber: 123 },
       priority: 20,
-      prompt: 'Fix the issue',
+      prompt: withMcpPreflight('Fix the issue'),
       queueTtlSeconds: 3600,
       ref: 'refs/heads/main',
       repositoryId: 'repo-filaments',
@@ -173,7 +174,7 @@ describe('resume', () => {
     expect(api.bodyFor(`POST /api/v1/sessions/${sessionId}/resume`)).toMatchObject({
       concurrencyId: 'filaments-fix-123',
       priority: 20,
-      prompt: 'Continue the fix',
+      prompt: withMcpPreflight('Continue the fix'),
       timeout: 6300,
     })
     expect(readFileSync(summary, 'utf8')).toContain(sessionUrl)

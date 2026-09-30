@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -44,44 +44,57 @@ function runScript(
     env = {},
     path = scriptPath,
     args = [],
-  }: { input?: string; env?: NodeJS.ProcessEnv; path?: string; args?: string[] } = {},
+    inherit = true,
+  }: {
+    input?: string
+    env?: NodeJS.ProcessEnv
+    path?: string
+    args?: string[]
+    inherit?: boolean
+  } = {},
 ) {
+  // inherit: false hands the hook only PATH/HOME, so no ambient harness session id leaks in.
+  const base = inherit ? process.env : { HOME: process.env.HOME, PATH: process.env.PATH }
   return spawnSync(process.execPath, [path, ...args], {
     cwd,
     encoding: 'utf8',
-    env: { ...process.env, ...env },
+    env: { ...base, ...env },
     input,
     timeout: 10_000,
   })
 }
 
+// Copies the hook and its helper directory under <cwd>/dev so <cwd> acts as the worktree root
+// with no node_modules: everything that needs workspace dependencies must fail open.
 async function copyProbeScript(cwd: string): Promise<string> {
-  const { copyFile } = await import('node:fs/promises')
-  const copiedScriptPath = join(cwd, 'check-blackboard.mts')
-  await copyFile(scriptPath, copiedScriptPath)
-  return realpath(copiedScriptPath)
+  const devDir = join(cwd, 'dev')
+  await mkdir(devDir)
+  await cp(scriptPath, join(devDir, 'check-blackboard.mts'))
+  await cp(
+    fileURLToPath(new URL('./check-blackboard/', import.meta.url)),
+    join(devDir, 'check-blackboard'),
+    {
+      recursive: true,
+    },
+  )
+  return realpath(join(devDir, 'check-blackboard.mts'))
 }
 
-// Simulates a hoisted/stale vouchington-tooling install that predates the ./agent-blackboard
-// export — mechanically distinct from the package being absent entirely (ERR_MODULE_NOT_FOUND).
+// Simulates a hoisted/stale vouchington-tooling install that predates `vouchington mcp`: the
+// package resolves but ships no launcher, unlike the package being absent entirely.
 async function installStaleVouchingtonTooling(cwd: string): Promise<void> {
-  const { mkdir, writeFile: writeFileAsync } = await import('node:fs/promises')
   const packageDir = join(cwd, 'node_modules', 'vouchington-tooling')
-  await mkdir(packageDir, { recursive: true })
-  await writeFileAsync(
+  await mkdir(join(packageDir, 'dist'), { recursive: true })
+  await writeFile(
     join(packageDir, 'package.json'),
     JSON.stringify({
       name: 'vouchington-tooling',
       version: '0.1.7',
       type: 'module',
-      exports: {
-        '.': './dist/index.mjs',
-        './package.json': './package.json',
-      },
+      exports: { '.': './dist/index.mjs', './package.json': './package.json' },
     }),
   )
-  await mkdir(join(packageDir, 'dist'), { recursive: true })
-  await writeFileAsync(join(packageDir, 'dist', 'index.mjs'), 'export {}\n')
+  await writeFile(join(packageDir, 'dist', 'index.mjs'), 'export {}\n')
 }
 
 function additionalContext(stdout: string) {
@@ -92,137 +105,131 @@ function additionalContext(stdout: string) {
   return output.hookSpecificOutput.additionalContext
 }
 
+const CLAUDE_SESSION = { session_id: 'claude-session-1' }
+
 describe('dev/check-blackboard (hook subprocess)', () => {
   afterEach(async () => {
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
   })
 
-  it('reports advisory unavailability when the blackboard is unreachable', async () => {
-    const result = runScript(await makeRepo(), { env: UNREACHABLE_ENV })
+  it('prints the session id, the launch health, and an advisory when the deployment is unreachable', async () => {
+    const result = runScript(await makeRepo(), {
+      args: ['claude'],
+      env: UNREACHABLE_ENV,
+      inherit: false,
+      input: JSON.stringify(CLAUDE_SESSION),
+    })
 
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
     const context = additionalContext(result.stdout)
     expect(context).not.toContain('STOP WORK')
-    expect(context).toContain('availability assessment failed')
+    expect(context).toContain('Blackboard sessionId: claude-session-1 ')
+    expect(context).toContain('vouchington-tooling MCP server: launchable')
+    expect(context).toContain('assessment failed')
     expect(context).toContain('AGENT_BLACKBOARD_URL')
     expect(context).toContain('AGENT_BLACKBOARD_TOKEN')
   })
 
-  it('stays silent for a compact session restart even when unreachable', async () => {
+  it('re-prints only the session id for a compact restart, without the probe', async () => {
     const result = runScript(await makeRepo(), {
-      input: JSON.stringify({ source: 'compact' }),
+      args: ['claude'],
       env: UNREACHABLE_ENV,
+      inherit: false,
+      input: JSON.stringify({ ...CLAUDE_SESSION, source: 'compact' }),
     })
 
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
-    expect(result.stdout).toBe('')
+    const context = additionalContext(result.stdout)
+    expect(context).toContain('Blackboard sessionId: claude-session-1 ')
+    expect(context).not.toContain('launchable')
+    expect(context).not.toContain('assessment failed')
   })
 
-  it('stays silent when CHECK_BLACKBOARD_SKIP=1 even when unreachable', async () => {
+  it('prints the session id and health but skips the probe when CHECK_BLACKBOARD_SKIP=1', async () => {
     const result = runScript(await makeRepo(), {
+      args: ['claude'],
       env: { ...UNREACHABLE_ENV, CHECK_BLACKBOARD_SKIP: '1' },
+      inherit: false,
+      input: JSON.stringify(CLAUDE_SESSION),
     })
 
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
-    expect(result.stdout).toBe('')
+    const context = additionalContext(result.stdout)
+    expect(context).toContain('Blackboard sessionId: claude-session-1 ')
+    expect(context).toContain('launchable')
+    expect(context).not.toContain('assessment failed')
   })
 
-  it('honors CHECK_BLACKBOARD_SKIP before loading workspace dependencies', async () => {
-    const cwd = await makeRepo()
-    const path = await copyProbeScript(cwd)
-    const result = runScript(cwd, {
-      env: { ...UNREACHABLE_ENV, CHECK_BLACKBOARD_SKIP: '1' },
-      path,
+  it('prints the id, the health, and the sandbox skip note under SANDBOX_RUNTIME', async () => {
+    const result = runScript(await makeRepo(), {
+      args: ['claude'],
+      env: { AGENT_BLACKBOARD_URL: HOSTED_ENV.AGENT_BLACKBOARD_URL, SANDBOX_RUNTIME: '1' },
+      inherit: false,
+      input: JSON.stringify(CLAUDE_SESSION),
     })
-
-    expect(result.status).toBe(0)
-    expect(result.stderr).toBe('')
-    expect(result.stdout).toBe('')
-  })
-
-  it('honors compact restarts before loading workspace dependencies', async () => {
-    const cwd = await makeRepo()
-    const path = await copyProbeScript(cwd)
-    const result = runScript(cwd, {
-      input: JSON.stringify({ source: 'compact' }),
-      env: UNREACHABLE_ENV,
-      path,
-    })
-
-    expect(result.status).toBe(0)
-    expect(result.stderr).toBe('')
-    expect(result.stdout).toBe('')
-  })
-
-  it('honors the sandbox guard before loading workspace dependencies', async () => {
-    const cwd = await makeRepo()
-    const path = await copyProbeScript(cwd)
-    const result = runScript(cwd, { env: { SANDBOX_RUNTIME: '1' }, path })
 
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
     const context = additionalContext(result.stdout)
     expect(context).not.toContain('STOP WORK')
+    expect(context).toContain('Blackboard sessionId: claude-session-1 ')
     expect(context).toContain('sandbox')
+    expect(context).toContain('NOT an outage')
   })
 
-  it('honors the non-repository guard before loading workspace dependencies', async () => {
-    const cwd = await makeTempDir()
-    const path = await copyProbeScript(cwd)
-    const result = runScript(cwd, { env: UNREACHABLE_ENV, path })
+  it('reports an unresolved id instead of guessing when the payload carries none', async () => {
+    const result = runScript(await makeRepo(), {
+      args: ['claude'],
+      env: { CHECK_BLACKBOARD_SKIP: '1' },
+      inherit: false,
+    })
 
     expect(result.status).toBe(0)
-    expect(result.stderr).toBe('')
-    expect(result.stdout).toBe('')
+    expect(additionalContext(result.stdout)).toContain('Blackboard sessionId: NOT RESOLVED')
   })
 
-  it('reports the install command when workspace dependencies are absent', async () => {
+  it('fails open with a loud launch failure when workspace dependencies are absent', async () => {
     const cwd = await makeRepo()
     const path = await copyProbeScript(cwd)
-    const result = runScript(cwd, { env: UNREACHABLE_ENV, path })
+    const result = runScript(cwd, {
+      args: ['claude'],
+      env: UNREACHABLE_ENV,
+      inherit: false,
+      input: JSON.stringify(CLAUDE_SESSION),
+      path,
+    })
 
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
     const context = additionalContext(result.stdout)
     expect(context).toContain('STOP WORK')
-    expect(context).toContain('vouchington-tooling agent-blackboard helpers are not installed')
-    expect(context).toContain('pnpm install')
-    expect(context).toContain('workspace-setup')
-    expect(context).not.toContain('verify the hosted agent-blackboard')
+    expect(context).toContain('cannot launch')
+    expect(context).toContain('./dev/initialize monorepo')
+    expect(context).toContain('then /mcp reconnect')
+    expect(context).toContain('Blackboard sessionId: NOT RESOLVED')
+    expect(context).not.toContain('assessment failed')
   })
 
-  it('reports ./dev/initialize monorepo when a stale install predates the agent-blackboard export', async () => {
+  it('reports the same launch failure when a stale install predates vouchington mcp', async () => {
     const cwd = await makeRepo()
     const path = await copyProbeScript(cwd)
     await installStaleVouchingtonTooling(cwd)
-    const result = runScript(cwd, { env: UNREACHABLE_ENV, path })
-
-    expect(result.status).toBe(0)
-    expect(result.stderr).toBe('')
-    const context = additionalContext(result.stdout)
-    expect(context).toContain('STOP WORK')
-    expect(context).toContain('predates the ./agent-blackboard export')
-    expect(context).toContain('./dev/initialize monorepo')
-    expect(context).toContain('workspace-setup')
-    expect(context).not.toContain('verify the hosted agent-blackboard')
-  })
-
-  it('reports a sandbox skip instead of a stop-work directive under SANDBOX_RUNTIME', async () => {
-    const result = runScript(await makeRepo(), {
-      env: {
-        AGENT_BLACKBOARD_URL: HOSTED_ENV.AGENT_BLACKBOARD_URL,
-        SANDBOX_RUNTIME: '1',
-      },
+    const result = runScript(cwd, {
+      args: ['codex'],
+      env: UNREACHABLE_ENV,
+      inherit: false,
+      path,
     })
 
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
     const context = additionalContext(result.stdout)
-    expect(context).not.toContain('STOP WORK')
-    expect(context).toContain('sandbox')
+    expect(context).toContain('STOP WORK')
+    expect(context).toContain('node_modules/.bin/vouchington')
+    expect(context).toContain('then restart Codex')
   })
 
   it('stays silent outside a git repo', async () => {
