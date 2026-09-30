@@ -1,7 +1,6 @@
 import { afterAll, beforeAll } from 'vitest'
 import http from 'node:http'
 
-import type { PrivateUser } from '@voucha/types/entities/user'
 import serverApp from '../../backend/entrypoints/api/index.mts'
 import {
   createTestRssFeedItemWithUrl,
@@ -32,11 +31,13 @@ export type ClientContentRouteHarness = {
   withClientRuntime: <T>(run: () => Promise<T>, cookieHeader?: Record<string, string>) => Promise<T>
 }
 
+type FixtureUser = Awaited<ReturnType<typeof createTestUser>>
+
 export type ClientContentFixtureContext = {
   harness: ClientContentRouteHarness
-  user: PrivateUser
-  admin: PrivateUser
-  verifiedUser: PrivateUser
+  user: FixtureUser
+  admin: FixtureUser
+  verifiedUser: FixtureUser
 }
 
 type FixtureHook = (ctx: ClientContentFixtureContext) => Promise<void>
