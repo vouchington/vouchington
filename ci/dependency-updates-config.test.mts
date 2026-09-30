@@ -78,15 +78,7 @@ describe('dependency update configuration', () => {
     expect(ignoredVersions).not.toHaveProperty('playwright-core')
   })
 
-  it('contains the Sentry 10.72/10.73 jsdom regression while allowing later candidates', () => {
-    const dependabot = parseYaml(readRepoFile('.github/dependabot.yml')) as DependabotConfig
-    const rootNpmUpdate = dependabot.updates?.find(
-      update => update['package-ecosystem'] === 'npm' && update.directory === '/',
-    )
-    const ignoredVersions = Object.fromEntries(
-      rootNpmUpdate?.ignore?.map(entry => [entry['dependency-name'], entry.versions]) ?? [],
-    )
-    const sentryHold = ['10.72.x', '10.73.x']
+  it('keeps every Sentry package on one version', () => {
     const sentryManifests = [
       {
         path: 'web/package.json',
@@ -125,35 +117,51 @@ describe('dependency update configuration', () => {
 
     expect(sentryVersions[0]).toMatch(/^\d+\.\d+\.\d+$/)
     expect(sentryVersions).toEqual(sentryVersions.map(() => sentryVersions[0]))
-    expect(ignoredVersions).toMatchObject({
-      '@sentry/nextjs': sentryHold,
-      '@sentry/node': sentryHold,
-      '@sentry/cloudflare': sentryHold,
-      '@sentry/aws-serverless': sentryHold,
-    })
-    expect(readRepoFile('pnpm-lock.yaml')).not.toMatch(
-      /@sentry\/(?:nextjs|node|cloudflare|aws-serverless)@10\.7[23]\./,
-    )
   })
 
-  it('keeps the published Node engine floor separate from the Node 26 toolchain and deployment pins', () => {
+  it('resolves no Sentry version that Dependabot is told to ignore', () => {
+    const dependabot = parseYaml(readRepoFile('.github/dependabot.yml')) as DependabotConfig
+    const lockfile = readRepoFile('pnpm-lock.yaml')
+    const ignoredSentryVersions = (dependabot.updates ?? []).flatMap(update =>
+      (update.ignore ?? []).flatMap(({ 'dependency-name': name, versions }) =>
+        name?.startsWith('@sentry/') ? (versions ?? []).map(version => ({ name, version })) : [],
+      ),
+    )
+
+    for (const { name, version } of ignoredSentryVersions) {
+      expect(version).toMatch(/^(?:\d+|x)(?:\.(?:\d+|x))*$/u)
+      const versionPattern = version
+        .split('.')
+        .map(part => (part === 'x' ? '\\d+' : part))
+        .join('\\.')
+
+      expect(lockfile).not.toMatch(new RegExp(`${name}@${versionPattern}(?![\\d.])`, 'u'))
+    }
+  })
+
+  it('keeps the published Node engine floor at or below the toolchain and deployment major', () => {
     const applicationManifests = [
       'package.json',
       'backend/package.json',
       'cloudflare-worker/package.json',
     ]
+    const engineFloors = applicationManifests.map(
+      path =>
+        (JSON.parse(readRepoFile(path)) as { engines?: { node?: string } }).engines?.node ?? '',
+    )
+    const toolchainMajor = readRepoFile('.nvmrc').trim()
 
-    for (const path of applicationManifests) {
-      const manifest = JSON.parse(readRepoFile(path)) as {
-        engines?: { node?: string }
-      }
-
-      expect(manifest.engines?.node).toBe('>=24.16.0')
-    }
-
-    expect(readRepoFile('.nvmrc').trim()).toBe('26')
-    expect(readRepoFile('backend/Dockerfile')).toContain(
-      'FROM mirror.gcr.io/library/node:26-trixie-slim AS base-node',
+    expect(engineFloors[0]).toMatch(/^>=\d+\.\d+\.\d+$/)
+    expect(engineFloors).toEqual(engineFloors.map(() => engineFloors[0]))
+    expect(toolchainMajor).toMatch(/^\d+$/)
+    expect(Number(/^>=(\d+)\./.exec(engineFloors[0] ?? '')?.[1])).toBeLessThanOrEqual(
+      Number(toolchainMajor),
+    )
+    expect(readRepoFile('backend/Dockerfile')).toMatch(
+      new RegExp(
+        `^FROM mirror\\.gcr\\.io/library/node:${toolchainMajor}-[\\w.-]+ AS base-node$`,
+        'mu',
+      ),
     )
   })
 

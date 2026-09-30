@@ -40,7 +40,7 @@ export async function createPostClassifierApplicationFixture(options?: {
   const decisionBatchId = options?.decisionBatchId ?? null
   const configuration = JSON.stringify({
     fixture: randomUUID(),
-    detectorPackageVersion: 'test-fixture-package-0.4.3',
+    detectorPackageVersion: 'test-fixture-package-version',
   })
   const inputHash = Buffer.alloc(32, 1)
   await using transaction = await beginTransaction()
@@ -54,7 +54,7 @@ export async function createPostClassifierApplicationFixture(options?: {
       ) VALUES (
         ${post.id}, ${inputHash}, ${configuration}::jsonb,
         digest(${configuration}::jsonb::text, 'sha256'),
-        ${actor.id}, ${community?.id ?? null}, 'test-fixture-package-0.4.3', ${localTopic.id},
+        ${actor.id}, ${community?.id ?? null}, 'test-fixture-package-version', ${localTopic.id},
         ${decisionBatchId}
       ) RETURNING id
     `)
@@ -85,7 +85,7 @@ export async function createPostClassifierApplicationFixture(options?: {
       ) VALUES (
         ${post.id}, ${inputHash}, ${configuration}::jsonb,
         digest(${configuration}::jsonb::text, 'sha256'),
-        ${actor.id}, 'test-fixture-package-0.4.3', ${localTopic.id}
+        ${actor.id}, 'test-fixture-package-version', ${localTopic.id}
       )
       `),
     invalidConfigurationJson: () =>
@@ -95,7 +95,7 @@ export async function createPostClassifierApplicationFixture(options?: {
           detector_package_version
         ) VALUES (
           ${post.id}, ${inputHash}, 'not-json', digest('not-json', 'sha256'), ${actor.id},
-          'test-fixture-package-0.4.3'
+          'test-fixture-package-version'
         )
       `),
     invalidDetectorPackageVersion: () =>
@@ -109,7 +109,7 @@ export async function createPostClassifierApplicationFixture(options?: {
       insertInvalidPostClassifierApplication({
         postId: post.id,
         actorId: actor.id,
-        detectorPackageVersion: 'test-fixture-package-0.4.3',
+        detectorPackageVersion: 'test-fixture-package-version',
         localTopicId: null,
       }),
     wrongHash: () =>

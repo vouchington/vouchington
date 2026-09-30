@@ -14,12 +14,6 @@ const allBlocks: Array<{ path: string; block: string }> = workflowYamlPaths.flat
 const unsafeNodeVersionFilePattern = /node-version-file:\s*['"]?(?:\$\{\{|\/)/u
 
 describe('actions/setup-node policy', () => {
-  const trustedDirectCodexPaths = new Set([
-    '.github/workflows/harness-dispatch.yml',
-    '.github/workflows/fix-main.yml',
-    '.github/workflows/shepherd.yml',
-  ])
-
   it('has at least one setup-node call site to validate', () => {
     expect(allBlocks.length).toBeGreaterThan(0)
   })
@@ -35,12 +29,9 @@ describe('actions/setup-node policy', () => {
     }
   })
 
-  it('uses .nvmrc except for the trusted direct-Codex runtime', () => {
+  it('reads the Node version from .nvmrc', () => {
     for (const { path, block } of allBlocks) {
-      const validVersionSource = trustedDirectCodexPaths.has(path)
-        ? block.includes("node-version: '26'") && !block.includes('node-version-file:')
-        : block.includes("node-version-file: '.nvmrc'")
-      expect([path, validVersionSource]).toEqual([path, true])
+      expect([path, block.includes("node-version-file: '.nvmrc'")]).toEqual([path, true])
     }
   })
 
@@ -59,12 +50,9 @@ describe('actions/setup-node policy', () => {
     expect(unsafeNodeVersionFilePattern.test(source)).toBe(true)
   })
 
-  it('uses node-version only for the trusted direct-Codex runtime', () => {
+  it('never hardcodes a node-version literal', () => {
     for (const { path, block } of allBlocks) {
-      const validLiteralVersion = trustedDirectCodexPaths.has(path)
-        ? block.includes("node-version: '26'")
-        : !/^\s+node-version:/m.test(block)
-      expect([path, validLiteralVersion]).toEqual([path, true])
+      expect([path, /^\s+node-version:/m.test(block)]).toEqual([path, false])
     }
   })
 

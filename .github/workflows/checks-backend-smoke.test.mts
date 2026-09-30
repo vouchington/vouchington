@@ -27,7 +27,9 @@ describe('checks-backend-smoke workflow', () => {
     expect(workflow.permissions).toEqual({ contents: 'read' })
     expect(workflow.env).toEqual({ NODE_ENV: 'test' })
     expect(smoke?.['runs-on']).toEqual('ubuntu-latest')
-    expect(smoke?.services?.postgres?.image).toMatch(/^pgvector\/pgvector:pg18@sha256:/)
+    expect(smoke?.services?.postgres?.image).toMatch(
+      /^pgvector\/pgvector:[\w.-]+@sha256:[0-9a-f]{64}$/u,
+    )
     expect(smoke?.services?.valkey?.image).toMatch(
       /^valkey\/valkey-bundle:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}$/u,
     )

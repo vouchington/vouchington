@@ -77,7 +77,7 @@ describe('next.config', () => {
     )
   })
 
-  it('uses the TypeScript compiler API for the pinned TypeScript 6 preview', () => {
+  it('uses the TypeScript compiler API instead of the TypeScript CLI', () => {
     expect(config.experimental?.useTypeScriptCli).toBe(false)
   })
 

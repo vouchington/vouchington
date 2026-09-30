@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -14,7 +15,13 @@ import {
 const sha = 'a'.repeat(40)
 const base = 'b'.repeat(40)
 const digest = 'c'.repeat(64)
-const image = `pgvector/pgvector:pg18@sha256:${digest}`
+const schemaWorkflow = readFileSync(
+  new URL('../.github/workflows/tests-postgres-schema.yml', import.meta.url),
+  'utf8',
+)
+const imageTag = /image: pgvector\/pgvector:([\w.-]+)@sha256:/u.exec(schemaWorkflow)?.[1]
+if (!imageTag) throw new Error('Expected a pgvector image tag in the schema workflow')
+const image = `pgvector/pgvector:${imageTag}@sha256:${digest}`
 const repository = 'vouchington/vouchington'
 const identity = {
   repository,
@@ -80,27 +87,27 @@ describe('PostgreSQL snapshot update contracts', () => {
   })
 
   it('extracts the exact PostgreSQL service image from candidate workflow data', () => {
-    const workflow = `jobs:\n  postgres-schema-tests:\n    services:\n      postgres:\n        image: ${image}\n      valkey:\n        image: valkey/valkey-bundle:9\n`
+    const workflow = `jobs:\n  postgres-schema-tests:\n    services:\n      postgres:\n        image: ${image}\n      valkey:\n        image: registry.test/example/cache\n`
     expect(postgresImageFromWorkflow(workflow)).toBe(image)
-    expect(() => postgresImageFromWorkflow(workflow.replace(image, 'postgres:18'))).toThrow(
-      'Expected exactly one digest-pinned PostgreSQL 18 image',
-    )
+    expect(() =>
+      postgresImageFromWorkflow(workflow.replace(image, 'registry.test/example/unpinned')),
+    ).toThrow('Expected exactly one digest-pinned PostgreSQL')
     expect(() =>
       postgresImageFromWorkflow(
         workflow.replace('      valkey:', `        image: ${image}\n      valkey:`),
       ),
-    ).toThrow('Expected exactly one digest-pinned PostgreSQL 18 image')
+    ).toThrow('Expected exactly one digest-pinned PostgreSQL')
     expect(() =>
       postgresImageFromWorkflow(`${workflow}  unrelated:\n    image: ${image}\n`),
-    ).not.toThrow('Expected exactly one digest-pinned PostgreSQL 18 image')
-    const decoy = `jobs:\n  unrelated:\n    services:\n      postgres:\n        image: ${image}\n  postgres-schema-tests:\n    services:\n      postgres:\n        image: postgres:18\n`
+    ).not.toThrow('Expected exactly one digest-pinned PostgreSQL')
+    const decoy = `jobs:\n  unrelated:\n    services:\n      postgres:\n        image: ${image}\n  postgres-schema-tests:\n    services:\n      postgres:\n        image: registry.test/example/unpinned\n`
     expect(() => postgresImageFromWorkflow(decoy)).toThrow('Expected one postgres-schema-tests job')
     expect(() =>
       postgresImageFromWorkflow(
         `${workflow}  postgres-schema-tests:\n    services:\n      postgres:\n        image: ${image}\n`,
       ),
     ).toThrow('Expected one postgres-schema-tests job')
-    const scalarDecoy = `name: |\n  postgres-schema-tests:\n    services:\n      postgres:\n        image: ${image}\njobs:\n  "postgres-schema-tests":\n    services:\n      postgres:\n        image: postgres:18\n`
+    const scalarDecoy = `name: |\n  postgres-schema-tests:\n    services:\n      postgres:\n        image: ${image}\njobs:\n  "postgres-schema-tests":\n    services:\n      postgres:\n        image: registry.test/example/unpinned\n`
     expect(() => postgresImageFromWorkflow(scalarDecoy)).toThrow(
       'Expected one postgres-schema-tests job',
     )

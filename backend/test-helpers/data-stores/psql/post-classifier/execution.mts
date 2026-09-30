@@ -30,7 +30,7 @@ export async function createPostClassifierExecutionFixture(remote = true, local 
   const post = await createTestPost({ user, community_id: community.id })
   const inputSha256 = createPostModerationContent(post).content_sha256
   await setPostClassifierPostHashForTest(post.id, inputSha256)
-  const detectorPackageVersion = 'test-package-0.4.3'
+  const detectorPackageVersion = 'test-package-version'
   const resolved = await resolvePostClassifierConfiguration(community.id, {
     detectorPackageVersion,
   })

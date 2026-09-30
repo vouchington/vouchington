@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { nextBuildPageDataWorkerCount } from '../next-build-page-data-worker-count'
 
 // cgroup v2's "max" (unlimited) sentinel, as `process.constrainedMemory()` reports it on real
-// uncapped Linux hosts (verified on the fleet's Z890 runners, Node v26.8.1) — not 0, which is
+// uncapped Linux hosts (verified on the fleet's Z890 runners) — not 0, which is
 // documented for platforms where cgroups are unavailable entirely. This is UINT64_MAX rounded to
 // the nearest representable float64 (2**64), written as the exact digit string that value's own
 // `toString()` produces — the true UINT64_MAX literal (…551615) parses to the same float64 but

@@ -35,7 +35,7 @@ describe('pnpm activation via pnpm/action-setup', () => {
   it('passes only latest-<major>, the same one at every call site', () => {
     // `latest-<major>` self-updates to the newest release in that line that pnpm's
     // minimumReleaseAge admits. A bare major keeps the action's bundled release, which lags
-    // fixes (an older bundled 12.x fails `pnpm dlx` on ignored build scripts), `standalone` swaps
+    // fixes (an older bundled release fails `pnpm dlx` on ignored build scripts), `standalone` swaps
     // in a bundled Node, and `run_install` bypasses the setup-node-pnpm install step.
     const offenders = pnpmSetups.filter(
       ({ step }) =>
@@ -82,7 +82,7 @@ describe('pnpm activation via pnpm/action-setup', () => {
 
   it.each([
     ['corepack enable pnpm', true],
-    ['npm install --prefix "$dir" pnpm@12', true],
+    ['npm install --prefix "$dir" pnpm@latest', true],
     ['npm i -g pnpm', true],
     ['pnpm install --frozen-lockfile', false],
     ['npm install --no-save left-pad', false],

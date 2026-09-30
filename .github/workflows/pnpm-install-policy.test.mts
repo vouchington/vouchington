@@ -152,7 +152,7 @@ describe('pnpm install workflow policy', () => {
   })
 
   it('runs both shared installs at the warn log level', () => {
-    // --loglevel=warn drops the resolved/progress lines and the devDependencies summary. pnpm 12.8.0
+    // --loglevel=warn drops the resolved/progress lines and the devDependencies summary. Current pnpm
     // (pnpm/pnpm#16076) keeps a failed lifecycle script's full output and a failed supply-chain
     // verdict at that level, so warnings and errors stay visible. Only setup-node-pnpm is pinned:
     // the snapshot generator is a separate direct installer that owns its own output.

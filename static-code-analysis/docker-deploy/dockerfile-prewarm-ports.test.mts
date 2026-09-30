@@ -49,7 +49,7 @@ describe('backend Dockerfile prewarm ports', () => {
     const fixture = `
 FROM base-node AS worker-foo-prewarm
 COPY --link --from=deploy-worker-foo /prod/worker-foo ./
-ARG NODE_PREWARM_VERSION=0.3.0
+ARG NODE_PREWARM_VERSION=0.0.0-test
 RUN NODE_PREWARM=1 \\
     npx --yes node-prewarm@\${NODE_PREWARM_VERSION} "/nodejs/bin/node serve.mts" --port 4000
 `.trim()
@@ -68,7 +68,7 @@ RUN NODE_PREWARM=1 \\
     const fixture = `
 FROM base-node AS worker-foo-prewarm
 COPY --link --from=deploy-worker-foo /prod/worker-foo ./
-ARG NODE_PREWARM_VERSION=0.3.0
+ARG NODE_PREWARM_VERSION=0.0.0-test
 RUN NODE_PREWARM=1 NODE_PREWARM_PORT=4001 \\
     npx --yes node-prewarm@\${NODE_PREWARM_VERSION} "/nodejs/bin/node serve.mts" --port 4000
 `.trim()
@@ -87,7 +87,7 @@ RUN NODE_PREWARM=1 NODE_PREWARM_PORT=4001 \\
     const fixture = `
 FROM base-node AS worker-foo-prewarm
 COPY --link --from=deploy-worker-foo /prod/worker-foo ./
-ARG NODE_PREWARM_VERSION=0.3.0
+ARG NODE_PREWARM_VERSION=0.0.0-test
 RUN NODE_PREWARM=1 NODE_PREWARM_PORT=4000 \\
     npx --yes node-prewarm@\${NODE_PREWARM_VERSION} "/nodejs/bin/node serve.mts" --port 4000
 `.trim()
@@ -99,7 +99,7 @@ RUN NODE_PREWARM=1 NODE_PREWARM_PORT=4000 \\
     const fixture = `
 FROM base-node AS api-prewarm
 COPY --link --from=deploy-api /prod/api ./
-ARG NODE_PREWARM_VERSION=0.3.0
+ARG NODE_PREWARM_VERSION=0.0.0-test
 RUN NODE_PREWARM=1 \\
     npx --yes node-prewarm@\${NODE_PREWARM_VERSION} "/nodejs/bin/node serve.mts" --port 3000
 `.trim()

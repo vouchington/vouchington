@@ -22,7 +22,7 @@ import {
 } from '@services/moderation/config'
 import { resolvePostClassifierConfiguration } from './configuration.mts'
 
-const detectorPackageVersion = 'test-resolved-package-0.4.3'
+const detectorPackageVersion = 'test-resolved-package-version'
 
 describe('current post classifier configuration (real PG and Valkey)', () => {
   let releaseSeedLock: (() => Promise<void>) | undefined

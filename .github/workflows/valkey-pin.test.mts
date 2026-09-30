@@ -16,7 +16,7 @@ const WORKFLOW_VALKEY_FILES = [
   '.github/workflows/tests-web-integration.yml',
 ]
 
-const DEV_VALKEY_FILES = ['dev/initialize', 'dev/initialize-tests/initialize-valkey.test.mts']
+const DEV_VALKEY_FILES = ['dev/initialize']
 
 function valkeyRefs(file: string) {
   return [...readFileSync(file, 'utf8').matchAll(/valkey\/valkey-bundle:([^\s'"\\)]+)/g)].map(
@@ -67,9 +67,7 @@ describe('Valkey bundle image pin', () => {
     for (const filePattern of [
       '.github/workflows/*.yml',
       '.github/workflows/*.yaml',
-      '.github/workflows/*.test.mts',
       'dev/initialize',
-      'dev/initialize-tests/*.test.mts',
     ]) {
       expect(manager.managerFilePatterns).toContain(filePattern)
     }

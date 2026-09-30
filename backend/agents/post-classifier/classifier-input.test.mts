@@ -16,7 +16,7 @@ function configuration(): Parameters<typeof buildPostClassifierInput>[1] {
   return {
     revision: 1,
     actorId: randomUUID(),
-    detectorPackageVersion: '0.4.3',
+    detectorPackageVersion: '0.0.0-test',
     actionPolicyRevision: POST_CLASSIFIER_ACTION_POLICY_REVISION,
     enabledLabels: POST_CLASSIFIER_LABELS.filter(label => label.kind === 'remote').map(
       ({ slug, kind }) => ({ slug, kind }),
