@@ -9,7 +9,7 @@
 | Post creation service           | `backend/services/posts/create.mts`                                    |
 | Entity listener (post events)   | `backend/queues/entity-listeners/processors/posts.mts`                 |
 | Entity listener enqueues        | `backend/queues/entity-listeners/enqueues.mts`                         |
-| Autotagger flow (FlowProducer)  | `backend/flows/core/enqueues.mts`                                      |
+| Classifier-run lifecycle        | `backend/services/classifier-runs/`                                    |
 | Clearance gate                  | `backend/services/post-clearance/check-clearance.mts`                  |
 | Community review add            | `backend/services/communities/publications/add.mts`                    |
 | Community review moderation     | `backend/services/communities/publications/moderate.mts`               |

@@ -38,5 +38,6 @@ accepted by the lifecycle but not produced here until provider error classificat
 | Classifier | Input builder                                             |
 | ---------- | --------------------------------------------------------- |
 | C5         | [`@agents/post-classifier`](../post-classifier/README.md) |
+| C6         | [`@agents/autotagger`](../autotagger/README.md)           |
 
 C8 and C9 add an input builder of this shape and register with the worker; nothing here changes.

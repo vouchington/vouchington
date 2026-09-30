@@ -34,7 +34,6 @@ backend:
   - 'backend/scripts/tests/**'
   - 'backend/scripts/validate-seed-rss-feeds.mts'
   - 'backend/entrypoints/api/**'
-  - 'backend/flows/**'
   - 'backend/service-registrations/**'
   - 'backend/services/**'
   - 'backend/sitemaps/**'

@@ -25,7 +25,9 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | ai_agents                                    | community-moderation-prompt                    | —                                         | 3                |
 | ai_agents                                    | community-moderation-dispatcher                | —                                         | 8                |
 | ai_agents                                    | story-clustering                               | —                                         | 15               |
-| ai_agents                                    | autotagger-post                                | —                                         | 20               |
+| ai_agents                                    | classifier-run-dispatcher                      | `classifier_run_dispatcher_<class>_<id>`  | 8                |
+| ai_agents                                    | classifier-run                                 | `classifier_run_<runId>`                  | 3                |
+| ai_agents                                    | reconcile-classifier-runs                      | —                                         | 100              |
 | ai_agents                                    | autotagger-rss-feed-item                       | —                                         | 20               |
 | bloom-filters                                | processPopulateBloomFilter                     | —                                         | 5 (baseline)     |
 | bloom-filters                                | processRebuildBloomFilter                      | —                                         | 5 (baseline)     |
