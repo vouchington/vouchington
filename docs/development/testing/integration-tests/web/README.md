@@ -31,6 +31,11 @@ Global setup clears Vitest's inherited `VITEST` marker for the standalone Next.j
 Vitest may read catalog JSON, but the live test server fetches copy from the backend; the OAuth
 callback baseline checks for a successful localization request in the backend trace.
 
+Global setup reserves the backend, image Lambda, Next.js, worker, and inspector ports, then releases
+each reservation before that process starts. Those ports are outside the kernel ephemeral range. A
+port from `listen(0)` can be handed to a localhost connection as a source port during the child's
+startup, and the process then fails its bind with `EADDRINUSE`.
+
 The shared readiness helpers intentionally run probes serially: a probe settles, its result is
 checked, and only a failed result is followed by the configured delay. Poll callbacks must never
 overlap because many callers inspect stateful local services.

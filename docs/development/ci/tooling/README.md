@@ -44,7 +44,9 @@ DNS hostname exclusions in [`../../../../lychee.toml`](../../../../lychee.toml) 
 [`../../../../ci/lint-links.test.mts`](../../../../ci/lint-links.test.mts) checks ordinary forms, terminal-dot forms, and lookalike hosts with `lychee --dump`.
 
 Repository-owned Node test listeners allocate a plain or Fetch-safe ephemeral port through
-[`@ts-shared/utils/ephemeral-ports`](../../../../ts-shared/utils/ephemeral-ports.mts).
+[`@ts-shared/utils/ephemeral-ports`](../../../../ts-shared/utils/ephemeral-ports.mts). Web integration
+child-process reservations are the exception in
+[web integration tests](../../testing/integration-tests/web/README.md).
 
 Gitleaks CI intentionally installs its checksum-verified binary in an isolated per-job temporary
 directory; local `gitleaks` comes from the matching mise `aqua:` pin. The two versions are guarded

@@ -117,6 +117,10 @@ few in-job browser consumers that need an explicit reservation use
 [`ci/allocate-browser-safe-ports.py`](../../ci/allocate-browser-safe-ports.py) immediately before
 binding. This is in-job coordination, not cross-job runner scheduling.
 
+Web integration child-process ports are the exception: they are reserved outside that ephemeral
+range so a released probe cannot be reused as a connect source port before the child binds. See
+[web integration tests](testing/integration-tests/web/README.md).
+
 Repository automation dispatches fire-and-forget sessions through Auto Harness when the
 default-off master and per-surface gates are exactly `true`. Callers retain authorization,
 freshness, transient retry, deduplication, prompt rendering, and immediate failure reporting; the
