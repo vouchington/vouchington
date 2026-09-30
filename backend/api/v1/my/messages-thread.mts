@@ -10,6 +10,7 @@ import {
 import { assertNotSuspended } from '@services/users'
 import { isUUID } from '@modules/utils'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { apiQuery } from '../../response-contract.mts'
 import {
   buildPageInfo,
   decodeUuidCursor,
@@ -17,22 +18,27 @@ import {
   isSimpleCursor,
   simplePaginationParser,
 } from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 type SendMessageRequest = { text: string }
 
 // GET /api/v1/my/messages/:conversationId/messages
 app.route('/api/v1/my/messages/:conversationId/messages').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/my/messages/:conversationId/messages', simplePaginationParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/messages/:conversationId/messages')
 
   const conversationId = ctx.params.conversationId!
   ctx.assert(isUUID(conversationId), 422, 'Invalid conversation ID')
   const canView = await currentUserCanViewConversation(currentUser.id, conversationId)
   ctx.assert(canView, 403, 'Access denied')
-  validateRequestContract(ctx, 'GET:/api/v1/my/messages/:conversationId/messages', {
-    path: ctx.params,
-  })
 
   const { after: encodedAfter, limit } = simplePaginationParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, simplePaginationParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/messages/:conversationId/messages', {
+    path: ctx.params,
+    query,
+  })
   const after = encodedAfter
     ? decodeUuidCursor(encodedAfter, isSimpleCursor, 'Invalid message cursor')
     : undefined
@@ -79,17 +85,21 @@ app.route('/api/v1/my/messages/:conversationId/messages').post(async (ctx: Conte
 
 // GET /api/v1/my/messages/:conversationId/participants
 app.route('/api/v1/my/messages/:conversationId/participants').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/my/messages/:conversationId/participants', simplePaginationParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/messages/:conversationId/participants')
 
   const conversationId = ctx.params.conversationId!
   ctx.assert(isUUID(conversationId), 422, 'Invalid conversation ID')
   const canView = await currentUserCanViewConversation(currentUser.id, conversationId)
   ctx.assert(canView, 403, 'Access denied')
-  validateRequestContract(ctx, 'GET:/api/v1/my/messages/:conversationId/participants', {
-    path: ctx.params,
-  })
 
   const { after: encodedAfter, limit } = simplePaginationParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, simplePaginationParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/messages/:conversationId/participants', {
+    path: ctx.params,
+    query,
+  })
   const after = encodedAfter
     ? decodeUuidCursor(encodedAfter, isSimpleCursor, 'Invalid participant cursor')
     : undefined

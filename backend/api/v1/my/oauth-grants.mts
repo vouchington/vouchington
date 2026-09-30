@@ -5,6 +5,7 @@ import { assertNotSuspended } from '@services/users'
 import { buildPageInfo, createPaginationParser, decodeScopedUuidCursor } from '@modules/pagination'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const oauthGrantsParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -12,14 +13,14 @@ const oauthGrantsParser = createPaginationParser({
 })
 
 // GET /api/v1/my/oauth-grants — list the apps the current user has authorized
-//
-// Query-carrier validation is skipped for the same reason as GET /api/v1/my/api-keys: the shared
-// registry does not coerce raw query strings, so it would reject a valid `?limit=10`.
 app.route('/api/v1/my/oauth-grants').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/oauth-grants', oauthGrantsParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/oauth-grants')
 
   const options = oauthGrantsParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, oauthGrantsParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/oauth-grants', { query })
   const scope = `my-oauth-grants:${currentUser.id}`
   const afterId = options.after
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid cursor format').id

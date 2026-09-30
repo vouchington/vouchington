@@ -20,6 +20,7 @@ import {
   apiResponse,
   type ApiArrayContract,
 } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 type CreateOAuthAppRequest = {
   client_name: string
@@ -49,14 +50,14 @@ async function withClientMetadataErrors<T>(ctx: Context, run: () => Promise<T>):
 }
 
 // GET /api/v1/my/oauth-apps — list the OAuth apps the current user registered
-//
-// Query-carrier validation is skipped for the same reason as GET /api/v1/my/api-keys: the shared
-// registry does not coerce raw query strings, so it would reject a valid `?limit=10`.
 app.route('/api/v1/my/oauth-apps').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/oauth-apps', oauthAppsParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/oauth-apps')
 
   const options = oauthAppsParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, oauthAppsParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/oauth-apps', { query })
   const scope = `my-oauth-apps:${currentUser.id}`
   const afterId = options.after
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid cursor format').id

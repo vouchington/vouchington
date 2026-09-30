@@ -9,6 +9,7 @@ import {
 } from '@services/api-keys'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   createPaginationParser,
   decodeScopedUuidCursor,
@@ -21,19 +22,14 @@ const apiKeysParser = createPaginationParser({
 })
 
 // GET /api/v1/my/api-keys — list current user's API keys
-//
-// The generated query contract types `limit` as an integer (1-100) sourced from this route's
-// pagination parser, but `ctx.query` always carries raw HTTP strings and the shared registry
-// performs no type coercion. The existing pagination parser also clamps an out-of-range `limit`
-// to 100 and returns 200, while the generated contract's `maximum: 100` would reject it — running
-// the shared validator against the raw query here would both reject valid `?limit=1` requests and
-// change today's clamping behavior into a 422. Query-carrier validation is intentionally skipped
-// for this operation; see the PR description for the upstream (registry) gap this depends on.
 app.route('/api/v1/my/api-keys').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/api-keys', apiKeysParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/api-keys')
 
   const options = apiKeysParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, apiKeysParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/api-keys', { query })
   const scope = `my-api-keys:${currentUser.id}`
   const afterId = options.after
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid cursor format').id
