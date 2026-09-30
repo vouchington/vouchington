@@ -1,19 +1,18 @@
+import { mockOnError } from '@/test-helpers/app/messages/message-clients.mock-support'
+import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const {
-  mockCreateDirectConversation,
-  mockSendDirectMessage,
-  mockPrependConversation,
-  mockPush,
-  mockOnError,
-} = vi.hoisted(() => ({
-  mockCreateDirectConversation: vi.fn<VitestLooseMock>(),
-  mockSendDirectMessage: vi.fn<VitestLooseMock>(),
-  mockPrependConversation: vi.fn<VitestLooseMock>(),
-  mockPush: vi.fn<VitestLooseMock>(),
-  mockOnError: vi.fn<VitestLooseMock>(),
-}))
+const { mockCreateDirectConversation, mockSendDirectMessage, mockPrependConversation } = vi.hoisted(
+  () => ({
+    mockCreateDirectConversation: vi.fn<VitestLooseMock>(),
+    mockSendDirectMessage: vi.fn<VitestLooseMock>(),
+    mockPrependConversation: vi.fn<VitestLooseMock>(),
+  }),
+)
+
+const mockNav = createNavMock()
 
 vi.mock(import('@/lib/api/client/messages'), () => ({
   createDirectConversation: mockCreateDirectConversation,
@@ -28,85 +27,7 @@ vi.mock(
     }) as unknown as typeof import('@/lib/messages-sidebar-context'),
 )
 
-vi.mock(
-  import('next/navigation'),
-  () =>
-    ({
-      useRouter: () => ({ push: mockPush }),
-    }) as unknown as typeof import('next/navigation'),
-)
-
-vi.mock(import('@/lib/navigation/use-resolved-breadcrumbs'), () => ({
-  useResolvedBreadcrumbs: vi.fn<VitestLooseMock>().mockReturnValue([]),
-}))
-
-vi.mock(import('@/lib/on-error'), () => ({
-  default: mockOnError,
-}))
-
-vi.mock(import('@/components/page-with-aside'), () => ({
-  PageWithAside: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}))
-
-vi.mock(import('@/components/ui/breadcrumb'), () => ({
-  Breadcrumbs: () => <nav />,
-}))
-
-vi.mock(
-  import('@/components/ui/button'),
-  () =>
-    ({
-      Button: ({
-        children,
-        onClick,
-        disabled,
-        type: _type,
-        loading: _loading,
-        ...rest
-      }: {
-        children: React.ReactNode
-        onClick?: () => void
-        disabled?: boolean
-        type?: string
-        loading?: boolean
-        [k: string]: unknown
-      }) => (
-        <button
-          type='button'
-          onClick={onClick}
-          disabled={disabled}
-          {...rest}
-        >
-          {children}
-        </button>
-      ),
-    }) as unknown as typeof import('@/components/ui/button'),
-)
-
-vi.mock(
-  import('@/components/ui/textarea'),
-  () =>
-    ({
-      Textarea: ({
-        value,
-        onChange,
-        disabled,
-        ...rest
-      }: {
-        value?: string
-        onChange?: React.ChangeEventHandler<HTMLTextAreaElement>
-        disabled?: boolean
-        [k: string]: unknown
-      }) => (
-        <textarea
-          value={value}
-          onChange={onChange}
-          disabled={disabled}
-          {...rest}
-        />
-      ),
-    }) as unknown as typeof import('@/components/ui/textarea'),
-)
+vi.mock(import('next/navigation'), () => navMockModule)
 
 vi.mock(
   import('@/components/messages/recipient-picker'),
@@ -141,6 +62,7 @@ import { NewMessageClient } from './new-message-client'
 describe('NewMessageClient', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    mockNav.reset()
   })
 
   it('renders the new-message-form', () => {
@@ -185,7 +107,7 @@ describe('NewMessageClient', () => {
       expect(mockPrependConversation).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'conv-new' }),
       )
-      expect(mockPush).toHaveBeenCalledWith('/messages/conv-new')
+      expect(mockNav.push).toHaveBeenCalledWith('/messages/conv-new')
     })
   })
 
