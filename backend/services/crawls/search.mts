@@ -13,8 +13,8 @@ type SearchCrawlsForUrlOptions = {
 
 type UrlCrawlHistory = Omit<CrawlBasic, 'html_sha256' | 'html_snapshot_uploaded_at'>
 
-function getUrlCrawlCursorScope(urlId: string): string {
-  return `url:${urlId}:crawls`
+type UrlCrawlIdRow = {
+  id: string
 }
 
 export async function searchCrawlsForUrl(
@@ -24,19 +24,10 @@ export async function searchCrawlsForUrl(
   results: UrlCrawlHistory[]
   page_info: PageInfo
 }> {
-  const { after } = options
-  const safeLimit = clampLimit(options.limit, 50)
-  const cursorScope = getUrlCrawlCursorScope(urlId)
-
-  const filters: SQLStatement[] = [sql`url_id = ${urlId}`]
-
-  if (after) {
-    const cursor = decodeScopedUuidCursor(after, cursorScope, 'Invalid URL crawl cursor')
-
-    filters.push(sql`id < ${cursor.id}`)
-  }
-
-  const query = sql`/* searchCrawlsForUrl */
+  return searchUrlCrawlPage<Omit<UrlCrawlHistory, '__entity_type'>>(
+    urlId,
+    options,
+    sql`/* searchCrawlsForUrl */
     SELECT
       id,
       url_id,
@@ -61,34 +52,8 @@ export async function searchCrawlsForUrl(
       embed_oembed_resolved_at,
       lang
     FROM crawls
-    WHERE `
-
-  filters.forEach((filter, index) => {
-    if (index > 0) query.append(sql` AND `)
-    query.append(filter)
-  })
-
-  query.append(sql`
-    ORDER BY id DESC
-    LIMIT ${safeLimit + 1}
-  `)
-
-  const { rows } = await read<Omit<UrlCrawlHistory, '__entity_type'>>(query)
-  const crawls = rows.map(row => ({
-    __entity_type: 'crawl' as const,
-    ...row,
-  }))
-
-  const hasNextPage = crawls.length > safeLimit
-  const results = crawls.slice(0, safeLimit)
-
-  return {
-    results,
-    page_info: buildPageInfo(results, {
-      hasNextPage,
-      getCursor: result => ({ id: result.id, scope: cursorScope }),
-    }),
-  }
+    WHERE `,
+  )
 }
 
 export async function searchPublicUrlCrawlsForUrl(
@@ -98,19 +63,10 @@ export async function searchPublicUrlCrawlsForUrl(
   results: PaidSafeUrlCrawlHistory[]
   page_info: PageInfo
 }> {
-  const { after } = options
-  const safeLimit = clampLimit(options.limit, 50)
-  const cursorScope = getUrlCrawlCursorScope(urlId)
-
-  const filters: SQLStatement[] = [sql`url_id = ${urlId}`]
-
-  if (after) {
-    const cursor = decodeScopedUuidCursor(after, cursorScope, 'Invalid URL crawl cursor')
-
-    filters.push(sql`id < ${cursor.id}`)
-  }
-
-  const query = sql`/* searchPublicUrlCrawlsForUrl */
+  return searchUrlCrawlPage<Omit<PaidSafeUrlCrawlHistory, '__entity_type'>>(
+    urlId,
+    options,
+    sql`/* searchPublicUrlCrawlsForUrl */
     SELECT
       id,
       created_at,
@@ -119,7 +75,34 @@ export async function searchPublicUrlCrawlsForUrl(
       title,
       lang
     FROM crawls
-    WHERE `
+    WHERE `,
+  )
+}
+
+function getUrlCrawlCursorScope(urlId: string): string {
+  return `url:${urlId}:crawls`
+}
+
+async function searchUrlCrawlPage<Row extends UrlCrawlIdRow>(
+  urlId: string,
+  options: SearchCrawlsForUrlOptions,
+  selectFromWhere: SQLStatement,
+): Promise<{
+  results: Array<Row & { __entity_type: 'crawl' }>
+  page_info: PageInfo
+}> {
+  const { after } = options
+  const safeLimit = clampLimit(options.limit, 50)
+  const cursorScope = getUrlCrawlCursorScope(urlId)
+  const filters: SQLStatement[] = [sql`url_id = ${urlId}`]
+
+  if (after) {
+    const cursor = decodeScopedUuidCursor(after, cursorScope, 'Invalid URL crawl cursor')
+
+    filters.push(sql`id < ${cursor.id}`)
+  }
+
+  const query = selectFromWhere
 
   filters.forEach((filter, index) => {
     if (index > 0) query.append(sql` AND `)
@@ -131,12 +114,11 @@ export async function searchPublicUrlCrawlsForUrl(
     LIMIT ${safeLimit + 1}
   `)
 
-  const { rows } = await read<Omit<PaidSafeUrlCrawlHistory, '__entity_type'>>(query)
+  const { rows } = await read<Row>(query)
   const crawls = rows.map(row => ({
     __entity_type: 'crawl' as const,
     ...row,
   }))
-
   const hasNextPage = crawls.length > safeLimit
   const results = crawls.slice(0, safeLimit)
 
