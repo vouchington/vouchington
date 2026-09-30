@@ -15,6 +15,70 @@ import type { PrivateUser } from '@services/users/types'
 import { searchCommunityModerationQueue } from '../moderation-queue.mts'
 import crypto from 'node:crypto'
 
+type FlaggedPostModerationQueueContextInput = {
+  author: PrivateUser
+  reporter: PrivateUser
+  viewerTier: 'moderator' | 'member'
+  communityName: string
+  communitySlug: string
+  postSlug: string
+  postTitle: string
+  agentSlug: string
+  topicName: string
+  topicSlug: string
+}
+
+async function seedFlaggedPostModerationQueueContext(
+  input: FlaggedPostModerationQueueContextInput,
+) {
+  const community = await insertTestCommunity({
+    createdById: input.author.id,
+    name: input.communityName,
+    slug: input.communitySlug,
+  })
+  const postId = await insertTestPost({
+    createdById: input.author.id,
+    slug: input.postSlug,
+    title: input.postTitle,
+    markdown: 'body',
+    communityId: community.id,
+  })
+  await setPostOpenAIModerationResults(postId, {
+    flagged: true,
+    categories: { violence: true },
+  })
+  const agent = await createTestAgent({ agentType: 'moderator', slug: input.agentSlug })
+  const promptId = await insertTestAgentPrompt({ agentId: agent.id, activated: true })
+  await insertTestAgentModeration({
+    postId,
+    promptId,
+    agentId: agent.id,
+    flagged: true,
+    results: { flagged: true, reason: 'violence', categories: ['violence'] },
+  })
+  const topicId = await insertTestTopic({
+    name: input.topicName,
+    slug: input.topicSlug,
+    createdById: input.author.id,
+  })
+  await insertScoredPostTopicCategoryRelation(postId, topicId, agent.system_user_id)
+  await insertTestModerationReport({
+    reporterUserId: input.reporter.id,
+    entityType: 'post',
+    entityId: postId,
+    reason: 'harassment',
+  })
+
+  const result = await searchCommunityModerationQueue(community.id, {
+    limit: 50,
+    viewerTier: input.viewerTier,
+  })
+  const entry = result.entries.find(candidate => candidate.entity_id === postId)
+  expect(entry).toBeDefined()
+  expect(entry!.post_moderation_context).toBeTruthy()
+  return entry!.post_moderation_context!
+}
+
 describe('searchCommunityModerationQueue — post_moderation_context', () => {
   let author: PrivateUser
   let reporter: PrivateUser
@@ -25,114 +89,48 @@ describe('searchCommunityModerationQueue — post_moderation_context', () => {
 
   it('moderator tier: full context with categories', async () => {
     const suffix = crypto.randomUUID().slice(0, 8)
-    const community = await insertTestCommunity({
-      createdById: author.id,
-      name: `PMC Queue Mod ${suffix}`,
-      slug: `pmc-queue-mod-${suffix}`,
-    })
-    const postId = await insertTestPost({
-      createdById: author.id,
-      slug: `pmc-queue-mod-post-${suffix}`,
-      title: `PMC Queue Mod Post ${suffix}`,
-      markdown: 'body',
-      communityId: community.id,
-    })
-    await setPostOpenAIModerationResults(postId, {
-      flagged: true,
-      categories: { violence: true },
-    })
     const agentSlug = `pmc-q-mod-${suffix}`
     const topicSlug = `pmc-q-topic-${suffix}`
-    const agent = await createTestAgent({ agentType: 'moderator', slug: agentSlug })
-    const promptId = await insertTestAgentPrompt({ agentId: agent.id, activated: true })
-    await insertTestAgentModeration({
-      postId,
-      promptId,
-      agentId: agent.id,
-      flagged: true,
-      results: { flagged: true, reason: 'violence', categories: ['violence'] },
-    })
-    const topicId = await insertTestTopic({
-      name: `PMC Q Topic ${suffix}`,
-      slug: topicSlug,
-      createdById: author.id,
-    })
-    await insertScoredPostTopicCategoryRelation(postId, topicId, agent.system_user_id)
-    await insertTestModerationReport({
-      reporterUserId: reporter.id,
-      entityType: 'post',
-      entityId: postId,
-      reason: 'harassment',
-    })
-
-    const result = await searchCommunityModerationQueue(community.id, {
-      limit: 50,
+    const ctx = await seedFlaggedPostModerationQueueContext({
+      author,
+      reporter,
       viewerTier: 'moderator',
+      communityName: `PMC Queue Mod ${suffix}`,
+      communitySlug: `pmc-queue-mod-${suffix}`,
+      postSlug: `pmc-queue-mod-post-${suffix}`,
+      postTitle: `PMC Queue Mod Post ${suffix}`,
+      agentSlug,
+      topicName: `PMC Q Topic ${suffix}`,
+      topicSlug,
     })
-    const entry = result.entries.find(e => e.entity_id === postId)
-    expect(entry).toBeDefined()
-    const ctx = entry!.post_moderation_context!
     expect(ctx.platform_moderation!.flagged).toBe(true)
     expect(Array.isArray(ctx.platform_moderation!.categories)).toBe(true)
     expect(ctx.platform_moderation!.categories).toContain('violence')
-    const agentMod = ctx.agent_moderations.find(m => m.slug === agentSlug)
+    const agentMod = ctx.agent_moderations.find(moderation => moderation.slug === agentSlug)
     expect(agentMod!.categories).toContain('violence')
     expect(ctx.agent_added_tags).toContain(topicSlug)
   })
 
   it('member tier: coarse context, no categories', async () => {
     const suffix = crypto.randomUUID().slice(0, 8)
-    const community = await insertTestCommunity({
-      createdById: author.id,
-      name: `PMC Queue Member ${suffix}`,
-      slug: `pmc-queue-member-${suffix}`,
-    })
-    const postId = await insertTestPost({
-      createdById: author.id,
-      slug: `pmc-queue-member-post-${suffix}`,
-      title: `PMC Queue Member Post ${suffix}`,
-      markdown: 'body',
-      communityId: community.id,
-    })
-    await setPostOpenAIModerationResults(postId, {
-      flagged: true,
-      categories: { violence: true },
-    })
     const agentSlug = `pmc-q-member-mod-${suffix}`
     const topicSlug = `pmc-q-member-topic-${suffix}`
-    const agent = await createTestAgent({ agentType: 'moderator', slug: agentSlug })
-    const promptId = await insertTestAgentPrompt({ agentId: agent.id, activated: true })
-    await insertTestAgentModeration({
-      postId,
-      promptId,
-      agentId: agent.id,
-      flagged: true,
-      results: { flagged: true, reason: 'violence', categories: ['violence'] },
-    })
-    const topicId = await insertTestTopic({
-      name: `PMC Q Member Topic ${suffix}`,
-      slug: topicSlug,
-      createdById: author.id,
-    })
-    await insertScoredPostTopicCategoryRelation(postId, topicId, agent.system_user_id)
-    await insertTestModerationReport({
-      reporterUserId: reporter.id,
-      entityType: 'post',
-      entityId: postId,
-      reason: 'harassment',
-    })
-
-    const result = await searchCommunityModerationQueue(community.id, {
-      limit: 50,
+    const ctx = await seedFlaggedPostModerationQueueContext({
+      author,
+      reporter,
       viewerTier: 'member',
+      communityName: `PMC Queue Member ${suffix}`,
+      communitySlug: `pmc-queue-member-${suffix}`,
+      postSlug: `pmc-queue-member-post-${suffix}`,
+      postTitle: `PMC Queue Member Post ${suffix}`,
+      agentSlug,
+      topicName: `PMC Q Member Topic ${suffix}`,
+      topicSlug,
     })
-    const entry = result.entries.find(e => e.entity_id === postId)
-    expect(entry).toBeDefined()
-    const ctx = entry!.post_moderation_context!
     expect(ctx.platform_moderation!.flagged).toBe(true)
     // Public tier: no categories key
     expect('categories' in ctx.platform_moderation!).toBe(false)
-    const agentMod = ctx.agent_moderations.find(m => m.slug === agentSlug)
+    const agentMod = ctx.agent_moderations.find(moderation => moderation.slug === agentSlug)
     expect(agentMod!.flagged).toBe(true)
     expect('categories' in agentMod!).toBe(false)
     // agent_added_tags still present at public tier
