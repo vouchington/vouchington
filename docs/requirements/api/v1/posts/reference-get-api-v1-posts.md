@@ -7,7 +7,7 @@ Query parameters:
 - `after` — opaque cursor from `page_info.end_cursor`
 - `limit` — 1–100, default 25; anonymous requests are capped at 25
 - `sort` — `hot`, `new`, `best`, `relevance`, or `following_new`
-- `q` / `text_search_query` — full-text search query. `#topic-slug` tokens inside `q` are parsed as universal topic filters and removed from the text query; unresolved hashtag topics return `400 { "error": "Topic not found: #topic-slug" }`.
+- `q` / `text_search_query` — full-text search query. `#topic-slug` tokens inside `q` are parsed as universal topic filters and removed from the text query; unknown hashtags return an empty result and malformed hashtags return a `422` validation error (see [Combined Text And Topic Search](../../../navigation/FEED-LIST-FILTERS.md#combined-text-and-topic-search)).
 - `semantic_search_query` — adds an embedding-based similarity signal to search ranking
 - `post_types` — comma-separated post types: `discussion`, `review`, `data_point`, `comment`, `link`, `article`, `blog_post`, or `story`
 - `time_range` — `1d`, `1w`, `1m`, `1y`, or `all`

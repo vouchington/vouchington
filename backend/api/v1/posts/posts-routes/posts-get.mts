@@ -32,7 +32,6 @@ import {
   indexPostModerationsByPostId,
   mergeElectionVotesWithAgentModerations,
 } from '../admin-moderation-data.mts'
-import { sendHashtagTopicSearchErrorResponse } from '../../hashtag-search-error-response.mts'
 import type { PostsResponseInput } from './posts-response-types.mts'
 
 app.route('/api/v1/posts').get(async (ctx: Context) => {
@@ -41,10 +40,7 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
   const preparedSearchParams = preparePostsSearchParams(ctx.query)
   validateRequestContract(ctx, 'GET:/api/v1/posts', { query: preparedSearchParams.validationQuery })
 
-  const parsedSearchParams = await resolvePostsSearchParams(preparedSearchParams).catch(error =>
-    sendHashtagTopicSearchErrorResponse(ctx, error),
-  )
-  if (!parsedSearchParams) return
+  const parsedSearchParams = await resolvePostsSearchParams(preparedSearchParams)
   const { shouldReturnEmpty, searchOptions } = parsedSearchParams
   if (!currentUser) {
     searchOptions.limit = clampAnonLimit(searchOptions.limit)

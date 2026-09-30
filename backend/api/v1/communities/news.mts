@@ -28,7 +28,6 @@ import { getRssFeedItemEmbedsByItems, proxyThumbnailUrls } from '@services/rss-f
 import { isAdminUser } from '@services/users'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { resolveHashtagTopicSearch } from '@services/search-params'
-import { sendHashtagTopicSearchErrorResponse } from '../hashtag-search-error-response.mts'
 import {
   VALID_COMMUNITY_NEWS_FEED_TYPES,
   isCatalogValue,
@@ -55,10 +54,7 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
   })
 
   const paginationOptions = communityNewsParser.parse(ctx.query)
-  const hashtagSearchOptions = await resolveHashtagTopicSearch(ctx.query.q).catch(error =>
-    sendHashtagTopicSearchErrorResponse(ctx, error),
-  )
-  if (!hashtagSearchOptions) return
+  const hashtagSearchOptions = await resolveHashtagTopicSearch(ctx.query.q)
   const has_related_posts =
     ctx.query.has_related_posts === 'true'
       ? true
