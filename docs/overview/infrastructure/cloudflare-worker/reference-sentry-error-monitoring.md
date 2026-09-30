@@ -12,7 +12,7 @@ Sentry is initialized via [`src/sentry.mts`](../../../../cloudflare-worker/src/s
   dev, CI, and test remain silent. This is independent of `PRODUCTION`, which only gates
   HSTS/strict-mode; see [reference-production-mode.md](reference-production-mode.md).
 - **Release:** `GIT_COMMIT` is set by the private deployment receiver.
-- **Error capture:** only origin fetch failures (502s) via `captureWorkerException()` in the origin `fetch()` catch block. Expected edge responses (geo-blocks=403, rate limits=429, WebSocket errors=400) return via `edgeErrorResponse()` and never throw.
+- **Error capture:** origin fetch failures (502s) via `captureWorkerException()` in the origin `fetch()` catch block, and `/infra/cache-purge` RPC throws or `success: false` rejections. Purge reports include the validated cache-tag batch and, for a rejection, the provider error code and message. Expected edge responses (geo-blocks=403, rate limits=429, WebSocket errors=400, and cache-purge auth or validation failures) return via `edgeErrorResponse()` and are not captured.
 - **Request-metadata scrubbing:** `beforeSend` and `beforeSendSpan` remove
   URL query strings/fragments and redact credential headers and cookies before transmission.
 - **Tunnel:** the `POST /monitoring` Sentry tunnel ([`src/sentry-tunnel.mts`](../../../../cloudflare-worker/src/sentry-tunnel.mts)) trusts only normalized configured web and Worker DSNs. It returns `403` for a mismatch and `503` when neither configured DSN is valid.
