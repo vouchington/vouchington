@@ -42,10 +42,12 @@ vi.mock(
 describe('GlobalError', () => {
   let previousBootstrap: Window['__UI_MESSAGES__']
   let previousPathname: string
+  let previousLang: string | null
 
   beforeEach(() => {
     previousBootstrap = Reflect.get(window, UI_MESSAGES_KEY) as Window['__UI_MESSAGES__']
     previousPathname = window.location.pathname
+    previousLang = document.documentElement.getAttribute('lang')
   })
 
   afterEach(() => {
@@ -54,6 +56,8 @@ describe('GlobalError', () => {
     if (previousBootstrap === undefined) Reflect.deleteProperty(window, UI_MESSAGES_KEY)
     else Reflect.set(window, UI_MESSAGES_KEY, previousBootstrap)
     window.history.pushState({}, '', previousPathname)
+    if (previousLang === null) document.documentElement.removeAttribute('lang')
+    else document.documentElement.setAttribute('lang', previousLang)
   })
 
   it('loads runtime public configuration for the standalone error document', () => {
@@ -98,7 +102,7 @@ describe('GlobalError', () => {
     expect(screen.getByText('500')).toBeInTheDocument()
   })
 
-  it('renders Portuguese bootstrap copy and invalidates its current route before reset', async () => {
+  it('renders Portuguese bootstrap copy in that language and invalidates its current route before reset', async () => {
     const reset = vi.fn<VitestLooseMock>()
     const catalog = await loadJsonMessages('pt')
     seedMessages('pt', catalog)
@@ -110,6 +114,8 @@ describe('GlobalError', () => {
         reset={reset}
       />,
     )
+
+    expect(document.documentElement).toHaveAttribute('lang', 'pt')
 
     const t = createTranslator('pt', catalog)
     fireEvent.click(

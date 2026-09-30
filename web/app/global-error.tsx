@@ -105,7 +105,7 @@ export default function GlobalError({
 }) {
   const locale = useSyncExternalStore(subscribeBootstrapLocale, getBootstrapLocale, getServerLocale)
   return (
-    <html lang='en'>
+    <html lang={locale}>
       <body className='bg-background text-foreground antialiased'>
         {/* This document replaces RootLayout, so it must load the same runtime config bootstrap
             that wakes Sentry's readiness listener after the standalone error page hydrates. */}
