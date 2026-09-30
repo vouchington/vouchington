@@ -6,7 +6,7 @@
 import { generateDefaultPartitions } from './utils/partition-utils.mts'
 import { POST_PARTITION_TABLES } from './utils/partition-config.mts'
 
-/** @internal */
+/** @public loaded by path by the config-driven migration runner */
 export default function createPostPartitions(): string {
   return generateDefaultPartitions(POST_PARTITION_TABLES)
 }

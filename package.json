@@ -85,7 +85,7 @@
     "oxfmt": "oxfmt",
     "oxfmt:check": "oxfmt --check",
     "knip": "knip --treat-config-hints-as-errors",
-    "knip:production-exports": "knip --production --include-entry-exports --exports --workspace '@voucha/backend' --workspace '@voucha/api' --workspace '@entrypoints/*' --workspace '@services/*' --workspace '@modules/*' --workspace '@data-stores/*' --workspace '@queues/*' --workspace '@workers/*' --workspace '@flows/*' --workspace '@agents/*' --treat-config-hints-as-errors",
+    "knip:production-exports": "node static-code-analysis/knip-production-exports/cli.mts",
     "syncpack:lint": "syncpack lint && syncpack format --check",
     "syncpack:fix": "syncpack fix && syncpack format",
     "repo-file-policy": "node static-code-analysis/run-node-checks.mts --checks repo-file-policy",

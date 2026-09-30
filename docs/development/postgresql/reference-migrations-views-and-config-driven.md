@@ -14,7 +14,11 @@
 
 [migrations/](../../../backend/data-stores/psql/migrations/), [views/](../../../backend/data-stores/psql/views/), and [config-driven/](../../../backend/data-stores/psql/config-driven/) are the three
 package directories backing the buckets above; `config-driven/` is also updated in place as config
-grows (entity relations, partitions, seed topics, seed agents).
+grows (entity relations, partitions, seed topics, seed agents). The runner loads each `config-driven/`
+generator by path, so its default export carries a
+`/** @public loaded by path by the config-driven migration runner */` tag; otherwise the
+[production-exports guard](../quality/static-code-analysis/README.md#knip-production-exports)
+reports it as an export only tests use.
 
 Forced view rebuilding drops only the managed ordinary and materialized declarations with PostgreSQL's
 default `RESTRICT` behavior. The runner retries dependency failures after another managed drop makes
