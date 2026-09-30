@@ -1,8 +1,10 @@
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from './types.mts'
-import { getTrendingPosts } from '@services/trending-posts/get-trending-posts'
-import { clampToolLimit } from './search-system.mts'
+import { getTrendingPosts, trendingPostsPaginationParser } from '@services/trending-posts'
+import type { TrendingPostsResult } from '@services/trending-posts/types'
 import { resolveTopic } from './resolve-topic.mts'
+import { outcomeSchema, objectSchema } from './output-schema-shapes.mts'
+import { componentSchema } from './route-response-schema.mts'
 import {
   VALID_TRENDING_POST_TYPES,
   VALID_TRENDING_TIME_RANGES,
@@ -10,38 +12,35 @@ import {
   type TrendingTimeRange,
 } from '@ts-shared/feed-capabilities'
 
-const MAX_LIMIT = 10
-const DEFAULT_LIMIT = 10
-
 type ToolArgs = {
   time_range?: TrendingTimeRange
   post_type?: TrendingPostType
   topic_id?: string
+  after?: string
   limit?: number
 }
 
-type TrendingPostEntry = {
-  id: string
-  trending_score: number
-}
-
 type ToolResult =
-  | {
-      success: true
-      time_range: string
-      results: TrendingPostEntry[]
-    }
-  | {
-      success: false
-      error: string
-    }
+  | ({ success: true; time_range: string } & TrendingPostsResult)
+  | { success: false; error: string }
+
+// The REST twin documents no response body, so the tool owns this schema. `page_info` is the
+// generated PageInfo component, the same one the posts route documents.
+const OUTPUT_SCHEMA = outcomeSchema('success', {
+  time_range: { type: 'string', enum: [...VALID_TRENDING_TIME_RANGES] },
+  results: {
+    type: 'array',
+    items: objectSchema({ id: { type: 'string' }, trending_score: { type: 'number' } }),
+  },
+  page_info: componentSchema('PageInfo'),
+})
 
 const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
     name: 'get_trending_posts',
     type: 'function',
     description:
-      'Get posts that are trending based on time-decay voting. Useful for "what discussions are hot this week?" or "what are the most popular reviews for this card?". Optionally filter by post type or topic.',
+      'Get posts that are trending based on time-decay voting. Useful for "what discussions are hot this week?" or "what are the most popular reviews for this card?". Optionally filter by post type or topic. Returns page_info.end_cursor; pass it as after to get the next page.',
     parameters: {
       type: 'object',
       properties: {
@@ -59,9 +58,15 @@ const tool: Tool<ToolArgs, ToolResult> = {
           type: 'string',
           description: 'Optionally filter to posts tagged with a specific topic, by UUID or slug.',
         },
+        after: {
+          type: 'string',
+          description: 'Cursor from a previous result page_info.end_cursor, for the next page.',
+        },
         limit: {
-          type: 'number',
-          description: `Maximum number of results to return (1-${MAX_LIMIT}). Defaults to ${DEFAULT_LIMIT}.`,
+          type: 'integer',
+          minimum: 1,
+          description:
+            'Maximum number of results to return. Defaults to 20; values over 100 are clamped to 100.',
         },
       },
       required: [],
@@ -74,6 +79,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     requiredScopes: { mcp: ['posts:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/trending-posts' }],
+    outputSchema: OUTPUT_SCHEMA,
   },
   function:
     (_currentUser: BasicUser) =>
@@ -84,20 +90,19 @@ const tool: Tool<ToolArgs, ToolResult> = {
       }
 
       const timeRange = args.time_range ?? 'week'
-      const limit = clampToolLimit(args.limit, DEFAULT_LIMIT, MAX_LIMIT)
+      const pagination = trendingPostsPaginationParser.parse({
+        ...(args.after !== undefined && { after: args.after }),
+        ...(args.limit !== undefined && { limit: args.limit }),
+      })
 
-      const { results } = await getTrendingPosts({
+      const { results, page_info } = await getTrendingPosts({
+        ...pagination,
         timeRange,
         postType: args.post_type,
         topicId: topic?.id,
-        limit,
       })
 
-      return {
-        success: true,
-        time_range: timeRange,
-        results,
-      }
+      return { success: true, time_range: timeRange, results, page_info }
     },
 }
 

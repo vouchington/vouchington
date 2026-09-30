@@ -1,30 +1,23 @@
 import { streamJsonObject } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
-import { getTrendingTopics } from '@services/trending-topics'
+import { getTrendingTopics, trendingTopicsPaginationParser } from '@services/trending-topics'
 import { getTopicByAnyCachedBatch, getTopicMetricsByAnyCachedBatch } from '@services/entity-fetch'
 import { getTrendingTopicsCached } from '@services/entity-fetch/search-caches'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
-import { createPaginationParser } from '@modules/pagination'
 import { indexById } from '@modules/utils'
 import { parseNumberParam } from '@ts-shared/utils/query'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { clampAnonLimit } from '@modules/search-utils'
 
+// Trending topics use a custom time range (day/week/month), not the standard TimeRange type
 const VALID_TIME_RANGES = new Set(['day', 'week', 'month'])
-
-// Pagination parser for trending topics
-// Note: trending topics uses a custom time range (day/week/month) not the standard TimeRange type
-const trendingTopicsParser = createPaginationParser({
-  cursor: { type: 'score' },
-  limit: { min: 1, max: 100, default: 20 },
-})
 
 app.route('/api/v1/trending-topics').get(async ctx => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/trending-topics')
 
   // Parse pagination options
-  const paginationOptions = trendingTopicsParser.parse(ctx.query)
+  const paginationOptions = trendingTopicsPaginationParser.parse(ctx.query)
 
   // Parse trending topics specific parameters
   let timeRange: 'day' | 'week' | 'month' = 'day'

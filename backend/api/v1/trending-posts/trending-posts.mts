@@ -1,7 +1,11 @@
 import { streamJsonObject } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
-import { getTrendingPosts, type TrendingPostsPostType } from '@services/trending-posts'
+import {
+  getTrendingPosts,
+  trendingPostsPaginationParser,
+  type TrendingPostsPostType,
+} from '@services/trending-posts'
 import {
   getPostByAnyCachedBatch,
   getPostMetricsByAnyCachedBatch,
@@ -9,7 +13,6 @@ import {
 } from '@services/entity-fetch'
 import { getTrendingPostsCached } from '@services/entity-fetch/search-caches'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
-import { createPaginationParser } from '@modules/pagination'
 import { indexById, isUUID } from '@modules/utils'
 import { parseNumberParam } from '@ts-shared/utils/query'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
@@ -23,15 +26,10 @@ import {
   type TrendingTimeRange,
 } from '@ts-shared/feed-capabilities'
 
-const trendingPostsParser = createPaginationParser({
-  cursor: { type: 'score' },
-  limit: { min: 1, max: 100, default: 20 },
-})
-
 app.route('/api/v1/trending-posts').get(async ctx => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/trending-posts')
 
-  const paginationOptions = trendingPostsParser.parse(ctx.query)
+  const paginationOptions = trendingPostsPaginationParser.parse(ctx.query)
 
   let timeRange: TrendingTimeRange = 'day'
   if (ctx.query.time_range !== undefined) {
