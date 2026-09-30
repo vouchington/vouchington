@@ -1,7 +1,9 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, expect, it, vi, afterEach } from 'vitest'
 import { createContext, use } from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { CommunityListAutocomplete } from '../community-list-autocomplete'
+
+import { registerUrlMinLengthGuardCases } from '@/test-helpers/components/shared/url-min-length-guard-cases'
 
 // Mock Popover components to avoid portal/DOM issues in tests.
 vi.mock(import('@/components/ui/popover'), () => {
@@ -138,7 +140,21 @@ describe('CommunityListAutocomplete URL min-length guard', () => {
     vi.clearAllMocks()
   })
 
-  it('does not call fetchUrls for a 1-character query', () => {
+  registerUrlMinLengthGuardCases({
+    renderControl: () =>
+      render(
+        <CommunityListAutocomplete
+          itemType='url'
+          onSelect={vi.fn<VitestLooseMock>()}
+        />,
+      ),
+    placeholder: 'Search URLs...',
+    clearedEmptyText: 'No URLs found.',
+    mockFetch: mockFetchUrls,
+    waitTimeout: AUTOCOMPLETE_WAIT_TIMEOUT,
+  })
+
+  it('labels the URL field from the item-type catalog', () => {
     expect(communityListItemTypeCatalog.url.searchLabel).toBe('URLs')
     const { container } = render(
       <CommunityListAutocomplete
@@ -149,64 +165,5 @@ describe('CommunityListAutocomplete URL min-length guard', () => {
     expect(
       container.querySelector('[data-pw="community-list-autocomplete-input-url"]'),
     ).not.toBeNull()
-    fireEvent.change(screen.getByPlaceholderText('Search URLs...'), {
-      target: { value: 'h' },
-    })
-    expect(mockFetchUrls).not.toHaveBeenCalled()
-  })
-
-  it('does not call fetchUrls for a 2-character query', () => {
-    render(
-      <CommunityListAutocomplete
-        itemType='url'
-        onSelect={vi.fn<VitestLooseMock>()}
-      />,
-    )
-    fireEvent.change(screen.getByPlaceholderText('Search URLs...'), {
-      target: { value: 'ht' },
-    })
-    expect(mockFetchUrls).not.toHaveBeenCalled()
-  })
-
-  it('shows "Type at least 3 characters" hint for a 1-2 character query', () => {
-    render(
-      <CommunityListAutocomplete
-        itemType='url'
-        onSelect={vi.fn<VitestLooseMock>()}
-      />,
-    )
-    fireEvent.change(screen.getByPlaceholderText('Search URLs...'), {
-      target: { value: 'ht' },
-    })
-    expect(screen.getByTestId('command-empty').textContent).toContain('Type at least 3 characters')
-  })
-
-  it('calls fetchUrls once the query reaches 3 characters', async () => {
-    render(
-      <CommunityListAutocomplete
-        itemType='url'
-        onSelect={vi.fn<VitestLooseMock>()}
-      />,
-    )
-    fireEvent.change(screen.getByPlaceholderText('Search URLs...'), {
-      target: { value: 'htt' },
-    })
-    await waitFor(() => expect(mockFetchUrls).toHaveBeenCalledOnce(), {
-      timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
-    })
-  })
-
-  it('shows default empty text when query is cleared after typing', () => {
-    render(
-      <CommunityListAutocomplete
-        itemType='url'
-        onSelect={vi.fn<VitestLooseMock>()}
-      />,
-    )
-    const input = screen.getByPlaceholderText('Search URLs...')
-    fireEvent.change(input, { target: { value: 'ht' } })
-    fireEvent.change(input, { target: { value: '' } })
-    // query='', open=true: ternary false branch → "No URLs found."
-    expect(screen.getByTestId('command-empty').textContent).toContain('No URLs found.')
   })
 })

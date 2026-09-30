@@ -2,10 +2,11 @@ import {
   AUTOCOMPLETE_WAIT_TIMEOUT,
   mockFetchUrls,
 } from '@/test-helpers/components/tags/tag-autocomplete.mock-support'
+import { registerUrlMinLengthGuardCases } from '@/test-helpers/components/shared/url-min-length-guard-cases'
 
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, vi, afterEach } from 'vitest'
 
-import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render } from '@testing-library/react'
 
 import { TagAutocomplete } from '../../tag-autocomplete'
 
@@ -19,79 +20,19 @@ describe('TagAutocomplete', () => {
   })
 
   describe('URL min-length guard', () => {
-    it('does not call fetchUrls for a 1-character query', async () => {
-      render(
-        <TagAutocomplete
-          objectType='url'
-          onSelect={vi.fn<VitestLooseMock>()}
-        />,
-      )
-      await settleInitialQuery()
-      fireEvent.change(screen.getByPlaceholderText('Search urls...'), {
-        target: { value: 'h' },
-      })
-      expect(mockFetchUrls).not.toHaveBeenCalled()
-    })
-
-    it('does not call fetchUrls for a 2-character query', async () => {
-      render(
-        <TagAutocomplete
-          objectType='url'
-          onSelect={vi.fn<VitestLooseMock>()}
-        />,
-      )
-      await settleInitialQuery()
-      fireEvent.change(screen.getByPlaceholderText('Search urls...'), {
-        target: { value: 'ht' },
-      })
-      expect(mockFetchUrls).not.toHaveBeenCalled()
-    })
-
-    it('shows "Type at least 3 characters" hint for a 1-2 character query', async () => {
-      render(
-        <TagAutocomplete
-          objectType='url'
-          onSelect={vi.fn<VitestLooseMock>()}
-        />,
-      )
-      await settleInitialQuery()
-      fireEvent.change(screen.getByPlaceholderText('Search urls...'), {
-        target: { value: 'ht' },
-      })
-      expect(screen.getByTestId('command-empty').textContent).toContain(
-        'Type at least 3 characters',
-      )
-    })
-
-    it('calls fetchUrls once the query reaches 3 characters', async () => {
-      render(
-        <TagAutocomplete
-          objectType='url'
-          onSelect={vi.fn<VitestLooseMock>()}
-        />,
-      )
-      await settleInitialQuery()
-      fireEvent.change(screen.getByPlaceholderText('Search urls...'), {
-        target: { value: 'htt' },
-      })
-      await waitFor(() => expect(mockFetchUrls).toHaveBeenCalledOnce(), {
-        timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
-      })
-    })
-
-    it('shows default empty text when query is cleared after typing', async () => {
-      render(
-        <TagAutocomplete
-          objectType='url'
-          onSelect={vi.fn<VitestLooseMock>()}
-        />,
-      )
-      const input = screen.getByPlaceholderText('Search urls...')
-      await settleInitialQuery()
-      fireEvent.change(input, { target: { value: 'ht' } })
-      fireEvent.change(input, { target: { value: '' } })
-      // query='', open=true: ternary false branch → "No urls found."
-      expect(screen.getByTestId('command-empty').textContent).toContain('No urls found.')
+    registerUrlMinLengthGuardCases({
+      renderControl: () =>
+        render(
+          <TagAutocomplete
+            objectType='url'
+            onSelect={vi.fn<VitestLooseMock>()}
+          />,
+        ),
+      placeholder: 'Search urls...',
+      clearedEmptyText: 'No urls found.',
+      mockFetch: mockFetchUrls,
+      waitTimeout: AUTOCOMPLETE_WAIT_TIMEOUT,
+      prepare: settleInitialQuery,
     })
   })
 })

@@ -129,7 +129,7 @@ describe('ReportsClient clustered staff reports', () => {
         }}
       />,
     )
-    expect(screen.getByText('Reported post')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('Reported post')).toBeInTheDocument())
   })
 
   it('removes comment targets from a cluster', async () => {
