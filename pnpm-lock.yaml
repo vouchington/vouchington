@@ -3526,9 +3526,6 @@ importers:
       '@services/prioritized-referral-links':
         specifier: workspace:^
         version: link:../services/prioritized-referral-links
-      '@services/queue-monitoring':
-        specifier: workspace:^
-        version: link:../services/queue-monitoring
       '@services/recently-viewed':
         specifier: workspace:^
         version: link:../services/recently-viewed

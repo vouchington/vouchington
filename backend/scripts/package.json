@@ -54,7 +54,6 @@
     "@services/platform-stats": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/prioritized-referral-links": "workspace:^",
-    "@services/queue-monitoring": "workspace:^",
     "@services/recently-viewed": "workspace:^",
     "@services/recommended-rss-feeds": "workspace:^",
     "@services/recommended-topics": "workspace:^",
