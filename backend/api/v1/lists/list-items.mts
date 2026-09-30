@@ -1,24 +1,45 @@
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { getOptionalAuthAndRateLimit, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  getOptionalAuthAndRateLimit,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
+import { apiQuery } from '../../response-contract.mts'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
+import { defineQueryContract, queryBoolean, queryInteger, queryString } from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { clampAnonLimit } from '@modules/search-utils'
 import { getListForWrite, searchListItems, currentUserCanViewList } from '@services/lists'
 
+const listItemsQuery = defineQueryContract({
+  after: queryString(),
+  limit: queryInteger({ minimum: 1, maximum: 100 }),
+  media_type: queryString(),
+  read: queryBoolean(),
+})
+
 app.route('/api/v1/lists/:id/items').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/lists/:id/items', listItemsQuery)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/lists/:id/items')
+  const query = prepareQueryForValidation(ctx.query, listItemsQuery.queryContract)
+  validateRequestContract(ctx, 'GET:/api/v1/lists/:id/items', { path: ctx.params, query })
   const listId = validateUUIDParam(ctx, 'id')
   const list = await getListForWrite(listId)
   const currentUserId = currentUser?.id ?? null
   ctx.assert(list && currentUserCanViewList(currentUserId, list), 404, 'List not found')
 
-  const mediaType = ctx.query.media_type as string | undefined
-  const limit = currentUser
-    ? Number(ctx.query.limit) || undefined
-    : clampAnonLimit(Number(ctx.query.limit) || 20)
-  const after = ctx.query.after as string | undefined
-  const readRaw = ctx.query.read as string | undefined
-  const read = readRaw === 'true' ? true : readRaw === 'false' ? false : undefined
+  const {
+    media_type: mediaType,
+    after,
+    read,
+  } = query as {
+    media_type?: string
+    after?: string
+    read?: boolean
+  }
+  const requestedLimit = query.limit as number | undefined
+  const limit = currentUser ? requestedLimit : clampAnonLimit(requestedLimit ?? 20)
 
   const result = await searchListItems(listId, {
     mediaType,

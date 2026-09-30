@@ -122,14 +122,14 @@ describe('PATCH /api/v1/lists/:id', () => {
       .expect(422)
   })
 
-  it('accepts JSON null body as no-op', async () => {
+  it('returns 422 when body is JSON null', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
     await request
       .patch(`/api/v1/lists/${listId}`)
       .set('Content-Type', 'application/json')
       .send('null')
-      .expect(200)
+      .expect(422)
   })
 
   it('returns 422 when body is a JSON primitive', async () => {
