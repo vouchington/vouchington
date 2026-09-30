@@ -4,8 +4,8 @@ Source entrypoint: [backend/workers/ses-inbound/README.md](../../../../../../bac
 
 The IO worker reads copyright MIME from `copyright-incoming/` in the private SES inbound S3 bucket.
 It never accepts raw MIME in the queue payload. Permanent MIME and size failures move to `failed/`;
-transient S3, PostgreSQL, and queue failures retry. When copyright intake is enabled, the reconciler
-scans `copyright-incoming/` every five minutes and enqueues retained raw objects.
+transient S3, PostgreSQL, and queue failures retry. The reconciler scans `copyright-incoming/` every
+five minutes and enqueues retained raw objects.
 
 Before source cleanup, the worker copies the complete RFC 5322 object to private copyright evidence
 storage, records its SHA-256 plus parsed attachment metadata in an immutable intake, and awaits a
@@ -20,9 +20,13 @@ pins the source version and ETag and uses a content-addressed evidence key. Conf
 access, and an approved retention policy before enabling intake. Malformed MIME remains preserved
 as a failed parse for staff review.
 
-When `COPYRIGHT_INTAKE_ENABLED` is false, the worker neither scans copyright-inbound objects nor
-copies, parses, deletes, or sends their contents to an agent. Existing source objects remain for a
-future enabled reconciliation pass.
+`COPYRIGHT_INTAKE_ENABLED` does not gate ingest. While it is false, the worker and the reconciler
+still copy, parse, thread-link, and delete each source object, so every email (a new notice or a
+reply on a case) becomes an intake row in the staff email intake queue. The evidence bucket is still
+required. The worker still enqueues the advisory extraction job, but that job returns without a
+model call until the switch is true, and the agent-dispatch reconciler then sends every parsed
+email that has no recommendation and no staff decision to it. See the
+[intake runbook](../../../../../runbooks/copyright-notices.md#intake-activation).
 
 ## Related
 

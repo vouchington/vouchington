@@ -10,8 +10,10 @@ The package provides transactional aggregate creation, immutable submission and 
 deadline derivation, restriction/review transitions, hold resolution, correspondence approval, and
 revision-fenced restore intents. The intake layer adds structured form and preserved-email records,
 but remains disabled by default with `COPYRIGHT_INTAKE_ENABLED`. `assertCopyrightIntakeEnabled()`
-is the one guard every new-intake route (US form, EU and UK notices) calls first; in-case responses
-and staff routes never call it. Later enforcement and delivery
+is the one guard every new-intake route (US form, EU and UK notices) and staff approval of an
+emailed notice call first; in-case responses and every other staff route never call it. Email
+ingest, MIME parsing, and thread linking do not call it either; the email-intake recommendation job
+and the dispatch reconciler check `isCopyrightIntakeEnabled()` instead. Later enforcement and delivery
 layers must use these boundaries instead of treating a generic content report or ordinary appeal as
 a statutory notice.
 

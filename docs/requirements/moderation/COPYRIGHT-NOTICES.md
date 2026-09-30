@@ -10,9 +10,13 @@ enabled until CAPTCHA, agent recovery, notification, reversible-media, staff UI,
 evidence-storage dependencies are deployed and the activation checklist below is complete.
 The flag controls only new claimant intake and new agent disclosure. While it is off, one shared
 guard returns 503 from the three new-intake routes: the signed-in and guest form
-(`POST /api/v1/copyright-notices`) and EU and UK notice submission. Every designated-agent email,
-including a reply on an existing case, enters through email intake, so the SES worker leaves inbound
-mail unprocessed in storage until the switch is on again and staff watch that inbox directly (see the
+(`POST /api/v1/copyright-notices`) and EU and UK notice submission. It also guards staff approval of
+an emailed notice (`POST /api/v1/copyright-email-intakes/:id/approvals`), because approval opens a
+new case, and it keeps the AI email-intake recommendation job from running. Every designated-agent
+email, including a reply on an existing case, is still ingested, parsed, and queued for staff while
+the flag is off, so no message waits unseen in storage. Staff can reject an email or record a
+matched reply as correspondence, and an email ingested during the pause receives its recommendation
+after the switch is turned on unless staff already decided it (see the
 [runbook](../../runbooks/copyright-notices.md#intake-activation)). Disabling intake must never hide accepted complaints or
 interrupt an existing case's staff review, appeal, counter-notice, court or CCB filing, correction,
 withdrawal, EU or UK redress, hold, delivery, enforcement, or restoration obligations. Those in-case

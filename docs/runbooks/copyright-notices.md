@@ -60,28 +60,61 @@ environment:
   workflows are live; and
 - the repeat-infringer policy, retention schedule, templates, staffing, and legal review are approved.
 
-This switch is the intake kill switch. It stops only new claimant intake and intake-agent
-processing. Existing complaint pages and all ongoing statutory casework remain available; use the
-individual delivery/enforcement controls and incident procedures rather than the intake switch to
-manage a downstream outage.
+This switch is the intake kill switch. It stops only new claimant intake: the notice forms, staff
+approval of an emailed notice (which would open a new case), and the AI email-intake recommendation
+job. Existing complaint pages, all ongoing statutory casework, and designated-agent email ingest
+remain available; use the individual delivery/enforcement controls and incident procedures rather
+than the intake switch to manage a downstream outage.
 
-| Class             | Routes                                                                                                                                | While the switch is off |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| New intake        | `POST /api/v1/copyright-notices` (signed-in and guest form), `POST /api/v1/copyright-eu-notices`, `POST /api/v1/copyright-uk-notices` | 503                     |
-| In-case responses | Appeals, counter-notices, guest filings (supplement, withdrawal, court/CCB hold), EU and UK redress, EU supervised complaints         | Open                    |
-| Staff             | Every staff decision, review, replay, capability, repeat-infringer, territorial-policy, and report route                              | Open                    |
+| Class             | Routes                                                                                                                                                                                      | While the switch is off |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| New intake        | `POST /api/v1/copyright-notices` (signed-in and guest form), `POST /api/v1/copyright-eu-notices`, `POST /api/v1/copyright-uk-notices`, `POST /api/v1/copyright-email-intakes/:id/approvals` | 503                     |
+| In-case responses | Appeals, counter-notices, guest filings (supplement, withdrawal, court/CCB hold), EU and UK redress, EU supervised complaints                                                               | Open                    |
+| Staff             | Every other staff decision, review, replay, capability, repeat-infringer, territorial-policy, and report route, including recording or rejecting a matched email reply                      | Open                    |
 
 [`intake-kill-switch-routes.test.mts`](../../backend/api/v1/copyright-notices/intake-kill-switch-routes.test.mts)
-fails when a non-GET copyright route has no class. Staff approval of an already received email or
-form intake is a staff decision, so it can still open a case while the switch is off. New EU and UK
-notices need the switch and an unwithdrawn territorial policy approval. Turning the switch on does
-not approve either jurisdiction.
+fails when a non-GET copyright route has no class. Approving an emailed notice creates a new case,
+so it is closed with the forms. Staff approval of an already received form intake is a staff
+decision, so it can still open a case while the switch is off. New EU and UK notices need the
+switch and an unwithdrawn territorial policy approval. Turning the switch on does not approve
+either jurisdiction.
 
-The switch also pauses designated-agent email. The SES worker leaves every inbound message in
-`copyright-incoming/` and processes it once the switch is on again, including replies on existing
-cases. Emailed counter-notices and court/CCB filing notices start their §512(g) clocks on receipt,
-so while intake is off staff must read the designated-agent inbox directly so no statutory
-deadline is missed.
+Designated-agent email is still ingested while the switch is off, so no inbound message waits
+unseen in `copyright-incoming/`. The SES worker and its reconcile sweep copy each message into the
+evidence bucket (`S3_BUCKET_COPYRIGHT_EVIDENCE` is still required), parse it, link a reply to its
+existing case, and list it in the staff email intake queue and the
+[review-target page](#review-target-page). Only the AI recommendation job is paused, so no email
+contents reach a model. Ingest sends the sender nothing: there is no acknowledgement or automatic
+reply. The only mail a sender receives during a pause is a response staff choose to send when they
+reject an email or ask for more information.
+
+When the switch is turned on, the agent-dispatch reconciler sends every ingested email that has no
+recommendation and no staff decision to the recommendation job, so emails received during the
+pause get their recommendation on the next sweep. An email staff already decided during the pause
+is not sent to the model.
+
+### Recording an emailed filing while intake is off
+
+Emailed counter-notices and court/CCB filing notices start their §512(g) clocks on receipt, and
+their received time is the SES receipt time kept on the intake. A reply to a message Voucha sent
+is matched to its case automatically. Record it from the queue instead of waiting for the switch:
+
+1. Open the message in the staff email intake queue. Read the inert original and confirm it is a
+   filing for the case its reply thread matched before recording anything.
+2. Record it with `POST /api/v1/copyright-email-intakes/:id/correspondence`: the `kind`
+   (`supplement`, `appeal`, `counter_notice`, `withdrawal`, or `court_or_ccb_hold`), the exact
+   `target_ids` for an appeal or counter-notice, the structured fields verified against the
+   original, and a rationale. No recommendation exists while the job is paused, so send a
+   `manual_fallback_reason` (`recommendation_id` is the alternative once one exists).
+3. To decline an unrelated or incomplete reply, use `POST .../correspondence-rejections` with the
+   same fallback reason.
+4. Recording sends the sender nothing. The staff review of the recorded submission, such as the
+   counter-notice review, queues the deterministic notices as usual.
+
+An email that did not match a case is a new notice. Staff can read it and reject it, which sends
+the response they choose, but `POST .../approvals` returns 503 until the switch is on. If it also
+carries a statutory filing for an existing case, handle it from the designated-agent inbox, which
+remains the source of truth for §512(g) clocks until the switch is on.
 
 The web footer must link to the Copyright policy, designated-agent status, repeat-infringer policy,
 Terms, Privacy, and Community Guidelines. Before launch, counsel must update the DB-backed Terms,
