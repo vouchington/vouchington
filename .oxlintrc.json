@@ -637,7 +637,8 @@
           "expectPendingReportsPagination",
           "assertReason",
           "assertScoresAllowed",
-          "postLogoutExpectingRejection"
+          "postLogoutExpectingRejection",
+          "expectCachePolicyBypassesBeforeAnonymousOrBotCaching"
         ]
       }
     ],
@@ -728,7 +729,8 @@
           "expectPendingReportsPagination",
           "assertReason",
           "assertScoresAllowed",
-          "postLogoutExpectingRejection"
+          "postLogoutExpectingRejection",
+          "expectCachePolicyBypassesBeforeAnonymousOrBotCaching"
         ]
       }
     ],
