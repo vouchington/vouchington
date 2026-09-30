@@ -364,15 +364,15 @@ importers:
       '@agents/research-agent':
         specifier: workspace:^
         version: link:../research-agent
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../../modules/openai-utils
+      '@modules/sse-lifecycle':
+        specifier: workspace:^
+        version: link:../../modules/sse-lifecycle
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -400,19 +400,10 @@ importers:
       '@voucha/tools':
         specifier: workspace:^
         version: link:../../tools
-      http-errors:
-        specifier: ^2.0.1
-        version: 2.0.1
-      openai:
-        specifier: ^7.23.0
-        version: 7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
       undici:
         specifier: ^8.11.2
         version: 8.11.2
     devDependencies:
-      '@types/http-errors':
-        specifier: ^2.0.5
-        version: 2.0.5
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -468,6 +459,31 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+
+  backend/agents/conversation-title:
+    dependencies:
+      '@agents/_shared':
+        specifier: workspace:^
+        version: link:../_shared
+      '@modules/openai-utils':
+        specifier: workspace:^
+        version: link:../../modules/openai-utils
+      '@services/conversations-messages':
+        specifier: workspace:^
+        version: link:../../services/conversations-messages
+    devDependencies:
+      '@jongleberry/vurst-prompt':
+        specifier: ^0.4.3
+        version: 0.4.3
+      '@services/users':
+        specifier: workspace:^
+        version: link:../../services/users
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+      openai:
+        specifier: ^7.23.0
+        version: 7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
 
   backend/agents/copyright-appeal-recommendation:
     dependencies:
@@ -843,12 +859,12 @@ importers:
       '@agents/_shared':
         specifier: workspace:^
         version: link:../agents/_shared
-      '@agents/chat':
-        specifier: workspace:^
-        version: link:../agents/chat
       '@agents/community-moderation':
         specifier: workspace:^
         version: link:../agents/community-moderation
+      '@agents/conversation-title':
+        specifier: workspace:^
+        version: link:../agents/conversation-title
       '@agents/moderation':
         specifier: workspace:^
         version: link:../agents/moderation
@@ -915,6 +931,9 @@ importers:
       '@modules/search-utils':
         specifier: workspace:^
         version: link:../modules/search-utils
+      '@modules/sse-lifecycle':
+        specifier: workspace:^
+        version: link:../modules/sse-lifecycle
       '@modules/stripe':
         specifier: workspace:^
         version: link:../modules/stripe
@@ -2516,6 +2535,8 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+
+  backend/modules/sse-lifecycle: {}
 
   backend/modules/stripe:
     dependencies:
@@ -7823,10 +7844,16 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      http-errors:
+        specifier: ^2.0.1
+        version: 2.0.1
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
+      '@types/http-errors':
+        specifier: ^2.0.5
+        version: 2.0.5
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -11029,6 +11056,9 @@ importers:
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
+      '@modules/sse-lifecycle':
+        specifier: workspace:^
+        version: link:../../modules/sse-lifecycle
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents

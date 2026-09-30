@@ -1,4 +1,4 @@
-import { CHAT_SSE_CYCLE_EXPIRED } from '@agents/chat/stream-lifecycle'
+import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
 import type { ChatTokenSubscription, TokenChunk } from '@data-stores/valkey-pubsub'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -15,7 +15,7 @@ describe('shared chat streaming', () => {
         abortedReads += 1
         return abortedReads > 1
       },
-      reason: CHAT_SSE_CYCLE_EXPIRED,
+      reason: SSE_CYCLE_EXPIRED,
       addEventListener: vi.fn<VitestLooseMock>(),
       removeEventListener: vi.fn<VitestLooseMock>(),
     } as unknown as AbortSignal
@@ -30,7 +30,7 @@ describe('shared chat streaming', () => {
       disconnectSignal,
     })
 
-    expect(queue.signal).toHaveBeenCalledWith('job-post-listener-expiry', CHAT_SSE_CYCLE_EXPIRED)
+    expect(queue.signal).toHaveBeenCalledWith('job-post-listener-expiry', SSE_CYCLE_EXPIRED)
     expect(subscription.setHandler).toHaveBeenLastCalledWith(null)
   })
 
@@ -42,7 +42,7 @@ describe('shared chat streaming', () => {
         handler = nextHandler
         if (!nextHandler) return
         nextHandler({ type: 'text', content: 'buffered' })
-        controller.abort(CHAT_SSE_CYCLE_EXPIRED)
+        controller.abort(SSE_CYCLE_EXPIRED)
       },
       close: vi.fn<() => void>(() => {}),
     }
@@ -60,7 +60,7 @@ describe('shared chat streaming', () => {
     })
 
     expect(chunks.join('')).toContain('buffered')
-    expect(queue.signal).toHaveBeenCalledWith('job-replay-abort', CHAT_SSE_CYCLE_EXPIRED)
+    expect(queue.signal).toHaveBeenCalledWith('job-replay-abort', SSE_CYCLE_EXPIRED)
     expect(handler).toBeNull()
   })
 
@@ -85,7 +85,7 @@ describe('shared chat streaming', () => {
       }),
     ).resolves.toBe(true)
 
-    expect(queue.signal).toHaveBeenCalledWith('job-enqueue-failed', CHAT_SSE_CYCLE_EXPIRED)
+    expect(queue.signal).toHaveBeenCalledWith('job-enqueue-failed', SSE_CYCLE_EXPIRED)
     expect(onSignalError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'queue unavailable' }),
     )

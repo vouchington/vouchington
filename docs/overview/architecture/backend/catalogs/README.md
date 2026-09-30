@@ -43,6 +43,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../modules/scheduled-job-manifest/README.md`](../modules/scheduled-job-manifest/README.md)
 - [`../modules/scopes/README.md`](../modules/scopes/README.md)
 - [`../modules/search-utils/README.md`](../modules/search-utils/README.md)
+- [`../modules/sse-lifecycle/README.md`](../modules/sse-lifecycle/README.md)
 - [`../modules/stripe/README.md`](../modules/stripe/README.md)
 - [`../modules/structured-decisions/README.md`](../modules/structured-decisions/README.md)
 - [`../modules/utils/README.md`](../modules/utils/README.md)

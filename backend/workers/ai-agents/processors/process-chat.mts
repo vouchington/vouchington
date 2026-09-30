@@ -6,7 +6,7 @@ import { streamChatResponse } from '@agents/chat'
 import { publishChatToken, type TokenChunk } from '@data-stores/valkey-pubsub'
 import { createMarkdownStreamBuffer } from '@jongleberry/vurst-markdown/streaming-buffer'
 import { updateConversationMessageContent } from '@services/conversations-messages/update-message'
-import { CHAT_SSE_CYCLE_EXPIRED } from '@agents/chat/stream-lifecycle'
+import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
 
 export type ProcessChatDeps = {
   getConversationById: typeof getConversationByIdForMutation
@@ -69,8 +69,8 @@ export async function processChat(
 
   const abortController = new AbortController()
   const signalInterval = setInterval(() => {
-    if (job.signals?.some(s => s.name === CHAT_SSE_CYCLE_EXPIRED)) {
-      abortController.abort(CHAT_SSE_CYCLE_EXPIRED)
+    if (job.signals?.some(s => s.name === SSE_CYCLE_EXPIRED)) {
+      abortController.abort(SSE_CYCLE_EXPIRED)
     } else if (job.signals?.some(s => s.name === 'abort')) {
       abortController.abort()
     }

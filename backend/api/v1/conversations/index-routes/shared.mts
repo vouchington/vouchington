@@ -1,6 +1,6 @@
 import type { ChatTokenSubscription, TokenChunk } from '@data-stores/valkey-pubsub'
 import onError from '@modules/on-error'
-import { CHAT_SSE_CYCLE_EXPIRED } from '@agents/chat/stream-lifecycle'
+import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export const CHAT_ENQUEUE_FAILED_ERROR = 'The response could not start. Please try again.'
@@ -10,7 +10,7 @@ export async function abortAmbiguousChatEnqueue(
   jobId: string,
   onSignalError: (err: Error) => void = onError,
 ): Promise<void> {
-  await queue.signal(jobId, CHAT_SSE_CYCLE_EXPIRED).catch(error => {
+  await queue.signal(jobId, SSE_CYCLE_EXPIRED).catch(error => {
     onSignalError(toSignalError(error))
   })
 }
@@ -141,7 +141,7 @@ function signalChatJob(
   reason: unknown,
   onSignalError: (err: Error) => void,
 ): void {
-  const signalName = reason === CHAT_SSE_CYCLE_EXPIRED ? CHAT_SSE_CYCLE_EXPIRED : 'abort'
+  const signalName = reason === SSE_CYCLE_EXPIRED ? SSE_CYCLE_EXPIRED : 'abort'
   queue.signal(jobId, signalName).catch(err => {
     onSignalError(toSignalError(err))
   })

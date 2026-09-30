@@ -16,7 +16,7 @@ import { assertOpenAiSpendCapNotBreached } from '@services/ai-usage'
 import {
   getConversationTitleGenerationInput,
   generateChatTitleFromInput,
-} from '@agents/chat/generate-title'
+} from '@agents/conversation-title'
 import {
   buildPageInfo,
   decodeUuidCursor,

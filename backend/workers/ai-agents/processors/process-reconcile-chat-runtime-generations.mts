@@ -1,4 +1,4 @@
-import { CHAT_SSE_CYCLE_EXPIRED } from '@agents/chat/stream-lifecycle'
+import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
 import onError from '@modules/on-error'
 import { ai_agents } from '@queues/ai-agents/queues'
 import {
@@ -25,7 +25,7 @@ export async function processReconcileChatRuntimeGenerations(
   const batch = await deps.getStaleChatRuntimeGenerationJobs()
   await Promise.all(
     batch.candidates.map(candidate =>
-      deps.signalJob(candidate.signalJobId, CHAT_SSE_CYCLE_EXPIRED).catch(error => {
+      deps.signalJob(candidate.signalJobId, SSE_CYCLE_EXPIRED).catch(error => {
         onError(error)
       }),
     ),

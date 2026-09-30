@@ -25,9 +25,9 @@
     "@agents/discovery-agent": "workspace:^",
     "@agents/profile-agent": "workspace:^",
     "@agents/research-agent": "workspace:^",
-    "@jongleberry/vurst-prompt": "^0.4.3",
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
+    "@modules/sse-lifecycle": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/agents": "workspace:^",
     "@services/ai-usage": "workspace:^",
@@ -37,12 +37,9 @@
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/tools": "workspace:^",
-    "http-errors": "^2.0.1",
-    "openai": "^7.23.0",
     "undici": "^8.11.2"
   },
   "devDependencies": {
-    "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"
   }
 }

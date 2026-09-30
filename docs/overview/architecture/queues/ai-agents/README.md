@@ -95,8 +95,10 @@ bridge:
 4. Worker publishes text, tool, subagent, done, and error chunks with `publishChatToken`
 5. API pipes Valkey token chunks to the client as SSE events
 6. On an ordinary HTTP abort, API sends `abort`; on lifecycle expiry it sends
-   `sse-cycle-expired`. The worker preserves ordinary disconnect behavior, while expiry aborts the
-   generator and persists partial output with a retryable assistant error
+   `sse-cycle-expired` (`SSE_CYCLE_EXPIRED` from
+   [`@modules/sse-lifecycle`](../../backend/modules/sse-lifecycle/README.md)). The worker
+   preserves ordinary disconnect behavior, while expiry aborts the generator and persists partial
+   output with a retryable assistant error
 
 Copyright forms, successfully parsed email intakes, and appeals are durable before queue delivery. The
 five-minute `reconcile-copyright-agent-dispatches` job pages the whole pending backlog from

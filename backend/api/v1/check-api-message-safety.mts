@@ -1,4 +1,7 @@
-import { checkMessageSafety, type CreateTextModeration } from '@agents/chat/safety'
+import {
+  checkMessageSafety,
+  type CreateTextModeration,
+} from '@services/openai-moderation/message-safety'
 import { createOpenAIModeration } from '@services/openai-moderation/request'
 
 const createApiTextModeration: CreateTextModeration = async texts => {

@@ -10,7 +10,7 @@ import { clearConversationLastResponseIdIfMatches } from '@services/conversation
 import type { Conversation } from '@services/conversations-messages/types'
 import { buildChatInput } from './build-input.mts'
 import { ANTHROPIC_TOOL_FREE_SYSTEM_PROMPT } from './build-system-prompt.mts'
-import { checkMessageSafety } from './safety.mts'
+import { checkMessageSafety } from '@services/openai-moderation/message-safety'
 import { streamAnthropicChat } from './anthropic-stream.mts'
 import { streamOpenAIToolLoop } from './openai-tool-loop-stream.mts'
 import onError from '@modules/on-error'

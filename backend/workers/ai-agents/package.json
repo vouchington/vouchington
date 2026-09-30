@@ -34,6 +34,7 @@
     "@modules/openai-utils": "workspace:^",
     "@modules/queue-config": "workspace:^",
     "@modules/queue-errors": "workspace:^",
+    "@modules/sse-lifecycle": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@services/ai-usage": "workspace:^",
