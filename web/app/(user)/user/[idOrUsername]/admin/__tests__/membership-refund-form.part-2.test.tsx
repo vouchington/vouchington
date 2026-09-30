@@ -1,110 +1,54 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { RefundableCharge } from '@/types/api-responses'
-import { MembershipRefundForm } from '../membership-refund-form'
-
-const {
-  mockRefresh,
+import {
+  fakeCharge,
   mockCreateMembershipRefund,
+  mockRefresh,
+  mockToastError,
   mockToastSuccess,
   mockToastWarning,
-  mockToastError,
-} = vi.hoisted(() => ({
-  mockRefresh: vi.fn<VitestLooseMock>(),
-  mockCreateMembershipRefund: vi.fn<VitestLooseMock>(),
-  mockToastSuccess: vi.fn<VitestLooseMock>(),
-  mockToastWarning: vi.fn<VitestLooseMock>(),
-  mockToastError: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(
-  import('next/navigation'),
-  () =>
-    ({
-      useRouter: () => ({ refresh: mockRefresh }),
-    }) as unknown as typeof import('next/navigation'),
-)
-
-vi.mock(
-  import('sonner'),
-  () =>
-    ({
-      toast: {
-        success: mockToastSuccess,
-        warning: mockToastWarning,
-        error: mockToastError,
-      },
-    }) as unknown as typeof import('sonner'),
-)
-
-vi.mock(import('@/lib/api/client/memberships'), () => ({
-  fetchRefundableCharges: vi.fn<VitestLooseMock>(),
-  createMembershipRefund: mockCreateMembershipRefund,
-}))
-
-const fakeCharge: RefundableCharge = {
-  charge_id: 'ch_test',
-  payment_intent_id: null,
-  invoice_id: 'in_test',
-  amount: { amount: 2000, currency: 'usd' },
-  amount_refunded: { amount: 0, currency: 'usd' },
-  created_at: '2026-01-15T00:00:00.000Z',
-  description: 'Annual plan',
-}
+  onReload,
+  renderMembershipRefundForm,
+  resetMembershipRefundFormTest,
+} from '@/test-helpers/app/user/membership-refund-form.mock-support'
 
 const partiallyRefundedCharge: RefundableCharge = {
-  charge_id: 'ch_partial',
-  payment_intent_id: null,
-  invoice_id: 'in_partial',
   amount: { amount: 1000, currency: 'usd' },
   amount_refunded: { amount: 500, currency: 'usd' },
+  charge_id: 'ch_partial',
   created_at: '2026-01-10T00:00:00.000Z',
   description: null,
+  invoice_id: 'in_partial',
+  payment_intent_id: null,
 }
 
 const paymentIntentOnlyCharge: RefundableCharge = {
-  charge_id: null,
-  payment_intent_id: 'pi_test',
-  invoice_id: 'in_payment_intent',
   amount: { amount: 1500, currency: 'usd' },
   amount_refunded: { amount: 0, currency: 'usd' },
+  charge_id: null,
   created_at: '2026-01-12T00:00:00.000Z',
   description: 'Invoice payment intent',
+  invoice_id: 'in_payment_intent',
+  payment_intent_id: 'pi_test',
 }
 
 const jpyCharge: RefundableCharge = {
-  charge_id: 'ch_jpy',
-  payment_intent_id: null,
-  invoice_id: 'in_jpy',
   amount: { amount: 1000, currency: 'jpy' },
   amount_refunded: { amount: 0, currency: 'jpy' },
+  charge_id: 'ch_jpy',
   created_at: '2026-01-11T00:00:00.000Z',
   description: 'JPY charge',
+  invoice_id: 'in_jpy',
+  payment_intent_id: null,
 }
 
-const onReload = vi.fn<VitestLooseMock>()
-
 function renderRefundForm(charges: RefundableCharge[] = [fakeCharge]) {
-  return render(
-    <MembershipRefundForm
-      actorUserId='admin-1'
-      userId='user-1'
-      charges={charges}
-      onReload={onReload}
-    />,
-  )
+  return renderMembershipRefundForm(charges)
 }
 
 describe('MembershipRefundForm behavior', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    sessionStorage.clear()
-    mockCreateMembershipRefund.mockResolvedValue({
-      outcome: 'completed',
-      refund: { id: 're_test' },
-      cancellation_status: 'not_requested',
-    })
-  })
+  beforeEach(resetMembershipRefundFormTest)
 
   it('renders charge options with amount and description', () => {
     renderRefundForm()
@@ -126,12 +70,12 @@ describe('MembershipRefundForm behavior', () => {
     await waitFor(() => {
       expect(mockCreateMembershipRefund).toHaveBeenCalledWith(
         expect.objectContaining({
-          user_id: 'user-1',
+          cancel: false,
           charge_id: 'ch_test',
           invoice_id: 'in_test',
-          reason: 'goodwill',
-          cancel: false,
           note: null,
+          reason: 'goodwill',
+          user_id: 'user-1',
         }),
       )
     })
@@ -168,8 +112,8 @@ describe('MembershipRefundForm behavior', () => {
       expect(mockCreateMembershipRefund).toHaveBeenCalledWith(
         expect.objectContaining({
           charge_id: null,
-          payment_intent_id: 'pi_test',
           invoice_id: 'in_payment_intent',
+          payment_intent_id: 'pi_test',
         }),
       )
     })
@@ -177,9 +121,9 @@ describe('MembershipRefundForm behavior', () => {
 
   it('shows revoke button text and submits revoke refund when cancel is checked', async () => {
     mockCreateMembershipRefund.mockResolvedValue({
+      cancellation_status: 'completed',
       outcome: 'completed',
       refund: { id: 're_test' },
-      cancellation_status: 'completed',
     })
     const { container } = renderRefundForm()
 
@@ -197,9 +141,9 @@ describe('MembershipRefundForm behavior', () => {
 
   it('restores and locks a pending access-revocation reconciliation', async () => {
     mockCreateMembershipRefund.mockResolvedValueOnce({
+      cancellation_status: 'pending',
       outcome: 'completed',
       refund: { id: 're_pending' },
-      cancellation_status: 'pending',
     })
     const firstRender = renderRefundForm()
 
