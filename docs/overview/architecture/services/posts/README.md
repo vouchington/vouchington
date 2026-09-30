@@ -45,11 +45,6 @@ The posts service is the core content creation system. It handles multiple post 
 - `get-facets.mts` — Count aggregations for search results
 - `types.mts` — Search filter and sort option types
 
-### [`tools/`](../../../../../backend/services/posts/tools/)
-
-- Agent tool definitions for LLM post interaction
-- `tools/semantic.mts` — `toolsSearchPostsSemantic` ranks posts by embedding distance (HNSW + `applyFilteredVectorScan`). It has no candidate-ID filter; dirty-DB fixture isolation uses `queryPostSemanticFixturesScopedToIds` in test helpers.
-
 ## Review Content Validation
 
 Review posts enforce minimum content quality thresholds via `assertValidReviewContent()` in `validate-review-content.mts`:

@@ -341,7 +341,6 @@ Default `Array(1536).fill(0.1)` embeddings are identical across all test entitie
 - For behavior tests that call `getCachedSearchEmbedding()`, seed the real Valkey cache first with `seedSearchEmbeddingCache(query, makeRandomEmbedding())`; reserve live Bedrock calls for the direct [embedding smoke test](../../../../backend/services/bedrock-embeddings/single/__tests__/index.bedrock.test.mts).
 - Pass custom embeddings via the `embedding` option in `addDummyEmbeddingToPost` / `addDummyEmbeddingToRssFeedItem`.
 - HNSW is approximate even with good fixtures, so `vitest.setup.data-stores.mts` raises the test database's `hnsw.ef_search` to `TEST_HNSW_EF_SEARCH` (see `vector-search-recall.mts`), making ANN scans effectively exhaustive at test-database scale.
-- Semantic post-search tests that must isolate a known fixture set should pass `queryPosts: queryPostSemanticFixturesScopedToIds(ids)` into `toolsSearchPostsSemantic`. That helper wraps the production query in a `MATERIALIZED` CTE over `public.posts` for those IDs (max 32). Do not add a candidate-ID filter to production search.
 
 ### Hardcoded identifiers
 
