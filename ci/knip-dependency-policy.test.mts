@@ -34,13 +34,20 @@ const ALLOWED_WORKSPACE_IGNORE_DEPENDENCIES = new Map<string, readonly IgnoredDe
       'backend/api',
       [
         {
+          dependency: '@services/classifier-runs',
+          evidenceFiles: ['backend/workers/ai-agents/processors/classifier-run-handler.mts'],
+          evidencePattern: /\bfrom '@services\/classifier-runs'/,
+        },
+        {
           dependency: '@services/entity-listener-reconciliation',
           evidenceFiles: ['backend/workers/entity-listeners/processors/reconciliation.mts'],
           evidencePattern: /\bfrom '@services\/entity-listener-reconciliation'/,
         },
         {
           dependency: '@services/post-classifier',
-          evidenceFiles: ['backend/workers/ai-agents/processors/process-post-classifier.mts'],
+          evidenceFiles: [
+            'backend/workers/ai-agents/processors/classifier-run-post-classifier.mts',
+          ],
           evidencePattern: /\bfrom '@services\/post-classifier'/,
         },
       ],
@@ -64,6 +71,11 @@ const ALLOWED_WORKSPACE_IGNORE_DEPENDENCIES = new Map<string, readonly IgnoredDe
           evidencePattern: /\bfrom '@services\/bluesky-follows'/,
         },
         {
+          dependency: '@services/classifier-runs',
+          evidenceFiles: ['backend/workers/ai-agents/processors/classifier-run-handler.mts'],
+          evidencePattern: /\bfrom '@services\/classifier-runs'/,
+        },
+        {
           dependency: '@services/entity-listener-reconciliation',
           evidenceFiles: ['backend/workers/entity-listeners/processors/reconciliation.mts'],
           evidencePattern: /\bfrom '@services\/entity-listener-reconciliation'/,
@@ -75,7 +87,9 @@ const ALLOWED_WORKSPACE_IGNORE_DEPENDENCIES = new Map<string, readonly IgnoredDe
         },
         {
           dependency: '@services/post-classifier',
-          evidenceFiles: ['backend/workers/ai-agents/processors/process-post-classifier.mts'],
+          evidenceFiles: [
+            'backend/workers/ai-agents/processors/classifier-run-post-classifier.mts',
+          ],
           evidencePattern: /\bfrom '@services\/post-classifier'/,
         },
       ],

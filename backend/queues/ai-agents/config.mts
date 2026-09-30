@@ -11,9 +11,9 @@ export const AI_AGENTS_DEFAULTS = {
 export type AIAgentJobName =
   | 'autotagger-post'
   | 'autotagger-rss-feed-item'
-  | 'post-classifier-dispatcher'
-  | 'post-classifier'
-  | 'reconcile-post-classifier-applications'
+  | 'classifier-run-dispatcher'
+  | 'classifier-run'
+  | 'reconcile-classifier-runs'
   | 'community-moderation-dispatcher'
   | 'community-moderation-prompt'
   | 'report-judgement'
@@ -32,9 +32,9 @@ export type AIAgentJobName =
 
 export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'community-moderation-prompt': 3,
-  'post-classifier-dispatcher': 8,
-  'post-classifier': 3,
-  'reconcile-post-classifier-applications': 100,
+  'classifier-run-dispatcher': 8,
+  'classifier-run': 3,
+  'reconcile-classifier-runs': 100,
   'community-moderation-dispatcher': 8,
   'report-judgement': 9,
   'dispute-resolution': 9,
@@ -80,11 +80,12 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // `wouldStoryPostCallOpenAI` (`backend/workers/ai-agents/processors/process-story-post.mts`) for it.
 export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'community-moderation-prompt': true,
-  // The dispatcher only reserves durable intent. The child can finish local-only/effect replay
-  // without provider spend; its structured-decision client performs the authoritative pre-call cap check.
-  'post-classifier-dispatcher': false,
-  'post-classifier': false,
-  'reconcile-post-classifier-applications': false,
+  // The dispatcher only reserves durable intent. The run job can finish local-only/effect replay
+  // without provider spend; its structured-decision client performs the authoritative pre-call cap
+  // check. The reconciler stops itself on a breach and never calls a provider.
+  'classifier-run-dispatcher': false,
+  'classifier-run': false,
+  'reconcile-classifier-runs': false,
   'community-moderation-dispatcher': true,
   'report-judgement': true,
   'dispute-resolution': true,

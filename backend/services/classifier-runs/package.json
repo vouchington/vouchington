@@ -1,0 +1,32 @@
+{
+  "name": "@services/classifier-runs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared fixed-classifier run lifecycle: receipt, lease, attempts, completion, supersession, and sweep discovery",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/psql": "workspace:^",
+    "@services/classifiers": "workspace:^",
+    "@services/post-publication": "workspace:^",
+    "sql-template-strings": "^2.2.2"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

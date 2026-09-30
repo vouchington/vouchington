@@ -5,20 +5,28 @@ Source entrypoint: [backend/workers/ai-agents/README.md](../../../../../../backe
 Worker package for AI agent jobs such as moderation, story clustering, autotagging, and recommendations.
 It has no hosted chat processor; native chat is client-generated.
 
-`post-classifier-dispatcher` reserves one immutable receipt after the safety and spam clearance
-path has approved the current post revision, then awaits its child enqueue. `post-classifier`
-re-reads primary state, checks the receipt's content and configuration fingerprints, claims a
-60-second lease, and bounds local/provider execution to 55 seconds. Completion applies classifier
-votes and tags only; it never writes clearance, review, or publication state. The five-minute
-`reconcile-post-classifier-applications` job streams incomplete receipt identities from Postgres
-and re-enqueues those whose stable-id job is gone. Only an enqueue that actually adds a job is
-counted; a receipt whose tenth counted job has vanished is given up (see the
-[recovery transitions](../../../services/post-classifier/README.md#recovery-transitions)). The sweep
-alarms through `recordPostClassifierReceiptAlarm` (`@modules/on-error`, message
-`post_classifier_receipt_alarm`, grouped by `alarm_kind`) when a receipt is given up, when the
-provider client cannot be built, and when the oldest in-flight receipt is older than 26 hours (past
-the longest spend-cap parking window; throttled to once per hour). C12 (#225) owns receipt-health
-alarms going forward.
+The fixed classifiers (C5 today, C6 next; C8 and C9 later) share one run lifecycle in
+[`@services/classifier-runs`](../../../services/classifier-runs/README.md); the worker holds only a
+per-classifier registration (`processors/classifier-run-registry.mts`). Approval writes a durable
+classifier-run request. `classifier-run-dispatcher` reserves one immutable run for the current
+approved content and configuration fingerprint, then awaits its `classifier-run` enqueue; a subject
+that is not ready yet leaves its request pending. `classifier-run` re-reads primary state, checks
+the run's content and configuration fingerprints, claims a 60-second lease, and bounds
+local/provider execution to 55 seconds. Completion applies classifier votes and tags only; it never
+writes clearance, review, or publication state.
+
+The five-minute `reconcile-classifier-runs` job has two phases, each a cursor-paginated page that
+enqueues the next page as its own stable-id job. The first streams incomplete run identities from
+Postgres and re-enqueues those whose stable-id job is gone; only an enqueue that actually adds a
+job is counted, and a run whose tenth counted job has vanished is given up (see the
+[recovery transitions](../../../services/classifier-runs/README.md#recovery-transitions)). The
+second lists each classifier's pending requests, including subjects that never got a run, and
+dispatches them. A spend-cap breach (`evaluateOpenAiSpendCapBreach`) ends the sweep before either
+phase enqueues anything. The sweep alarms through `recordClassifierRunAlarm` (`@modules/on-error`,
+message `classifier_run_alarm`, grouped by `alarm_kind` and `classifier`) when a run is given up,
+when the provider client cannot be built, when the oldest in-flight run is older than 26 hours
+(past the longest spend-cap parking window; throttled to once per hour), and when the oldest
+pending request is that old. C12 (#225) owns run-health alarms going forward.
 
 ## Exports
 

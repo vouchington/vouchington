@@ -13,7 +13,7 @@ const NON_PRODUCTION_CLAMP_JOBS = [
   'ai_agents/reconcileAutoDispatchJudgements',
   'ai_agents/reconcileBackgroundResponses',
   'ai_agents/reconcileCopyrightAgentDispatches',
-  'ai_agents/reconcilePostClassifierApplications',
+  'ai_agents/reconcileClassifierRuns',
   'bedrock-embeddings-batch/backlog_dispatcher',
   'bedrock-embeddings-batch/creation_dispatcher',
   'bedrock-embeddings-batch/poll_dispatcher',
