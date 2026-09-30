@@ -29,6 +29,9 @@ args = ["-c", 'exec "$(git rev-parse --show-toplevel)/node_modules/.bin/vouching
 env_vars = ["AGENT_BLACKBOARD_URL", "AGENT_BLACKBOARD_TOKEN"]
 default_tools_approval_mode = "approve"
 
+[plugins."agent-blackboard@agent-blackboard"]
+enabled = false
+
 [[hooks.PreToolUse]]
 matcher = "Bash|Edit|Write|apply_patch"
 

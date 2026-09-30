@@ -393,6 +393,7 @@
     ]
   },
   "enabledPlugins": {
+    "agent-blackboard@agent-blackboard": false,
     "vouchington-workflow@vouchington": true,
     "vouchington-testing@vouchington": true,
     "vouchington-database@vouchington": true,

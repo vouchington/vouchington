@@ -49,7 +49,8 @@ relative to that directory. Every adapter stops if its harness-specific canonica
 read; it must never apply its Vouchington overlay alone.
 `blackboard` needs no provider skill: its tools are those of the project `vouchington-tooling` MCP
 server, and its adapter forbids the provider plugin's `mcp__plugin_agent-blackboard_*` tools.
-Vouchington does not enable that provider plugin, which would register a duplicate server.
+The Claude and Codex project settings disable that provider plugin, even when a user installed it,
+because it would register a duplicate server.
 The package also exposes upstream-only `dotnet-test-authoring`, `swift-test-authoring`,
 `github-actions-authoring`, `npm-publishing`, and `test-authoring` skills. Native-client owners use
 the first two in `vouchington/vouchington-clients`; Vouchington deliberately does not install local

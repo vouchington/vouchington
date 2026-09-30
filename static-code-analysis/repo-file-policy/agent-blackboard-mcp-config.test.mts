@@ -227,6 +227,15 @@ default_tools_approval_mode = "approve"
     expect(grokPermissions.allow).toEqual([`MCPTool(${SERVER}__*)`])
   })
 
+  // A user-level install of the provider plugin would register a second blackboard server whose raw
+  // tools skip the feedback envelope, so the project settings turn it off.
+  it('disables the agent-blackboard provider plugin in Claude and Codex', () => {
+    const plugin = 'agent-blackboard@agent-blackboard'
+    expect(json('.claude/settings.json').enabledPlugins).toMatchObject({ [plugin]: false })
+    const codexPlugins = requireRecord(toml('.codex/config.toml').plugins, 'missing Codex plugins')
+    expect(codexPlugins[plugin]).toEqual({ enabled: false })
+  })
+
   it('lists the seven tools for OpenCode, whose docs do not confirm a wildcard', () => {
     const permissions = requireRecord(json('opencode.json').permission, 'missing OpenCode rules')
     expect(Object.values(permissions).every(value => value === 'allow')).toBe(true)

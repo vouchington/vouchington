@@ -20,9 +20,10 @@ capability-bound cleanup and publication hardening in
 This document covers installing the packages, connecting them to the hosted deployment, and the
 Vouchington integrations around the MCP server, JS client, and CLI. What gets written into sessions
 belongs to the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md). That adapter composes
-the portable `vouchington-workflow:blackboard` procedure with repository policy. Vouchington does
-not enable the `agent-blackboard` provider plugin: its raw tools skip the validated feedback
-envelope, and the project registration below already supplies the MCP connection.
+the portable `vouchington-workflow:blackboard` procedure with repository policy. The Claude and
+Codex project settings disable the `agent-blackboard` provider plugin, overriding a user-level
+install: its raw tools skip the validated feedback envelope, and the project registration below
+already supplies the MCP connection.
 
 ## Architecture
 
