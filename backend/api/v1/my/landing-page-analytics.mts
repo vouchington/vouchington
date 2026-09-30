@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { getLandingPageAnalyticsByPageId } from '@services/landing-page-analytics'
 import { currentUserCanViewLandingPageAnalytics } from '@services/landing-page-analytics/authorization'
 import { getSignupCountByReferrerId } from '@services/attribution'
@@ -16,6 +16,10 @@ app.route('/api/v1/my/landing-pages/:pageId/analytics').get(async (ctx: Context)
     ctx.throw(403, 'Membership required')
   }
 
+  validateRequestContract(ctx, 'GET:/api/v1/my/landing-pages/:pageId/analytics', {
+    path: ctx.params,
+  })
+  // The path schema is a plain string, so the UUID format is checked here.
   const { pageId } = ctx.params
   ctx.assert(pageId && isUUID(pageId), 400, 'Invalid pageId')
 

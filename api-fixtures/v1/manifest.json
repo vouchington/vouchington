@@ -25485,7 +25485,7 @@
           "type": "ref"
         }
       },
-      "source": "backend/api/v1/my/import-export.mts",
+      "source": "backend/api/v1/my/import-rss-feeds.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/my/landing-pages": {
@@ -27317,7 +27317,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/my/messages.mts",
+      "source": "backend/api/v1/my/messages-thread.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/my/messages/:conversationId/participants": {
@@ -27494,7 +27494,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/my/messages.mts",
+      "source": "backend/api/v1/my/messages-thread.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/my/notifications": {
@@ -61717,7 +61717,7 @@
     },
     "PATCH:/api/v1/my/messages/:conversationId": {
       "bodyKind": "content",
-      "hash": "8583c029321cf9c1cedc2ed17f11af0724461ed87a3ccff42f8159a8f34ffe18",
+      "hash": "91894b7d39f7b76887d726f03c752835d4515488f642f43117118f84f4672060",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
@@ -61730,7 +61730,17 @@
             "participant_add_policy": {
               "required": true,
               "schema": {
-                "type": "string"
+                "type": "union",
+                "variants": [
+                  {
+                    "type": "literal",
+                    "value": "all_members"
+                  },
+                  {
+                    "type": "literal",
+                    "value": "owner_only"
+                  }
+                ]
               }
             }
           },
@@ -69617,7 +69627,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/my/import-export.mts",
+      "source": "backend/api/v1/my/import-rss-feeds.mts",
       "statusCodes": [201],
       "statusKnowledge": "explicit"
     },
@@ -69911,7 +69921,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/my/messages.mts",
+      "source": "backend/api/v1/my/messages-thread.mts",
       "statusCodes": [201],
       "statusKnowledge": "explicit"
     },
