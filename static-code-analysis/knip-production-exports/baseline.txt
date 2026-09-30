@@ -38,8 +38,6 @@ exports backend/entrypoints/api/verify-ipv6-egress-checks.mts checkTlsReachable
 exports backend/entrypoints/api/verify-ipv6-egress-checks.mts getIpv6VerificationHosts
 exports backend/entrypoints/api/verify-ipv6-egress-checks.mts reportRouteEvidence
 exports backend/entrypoints/api/verify-ipv6-egress-checks.mts resolveRecords
-exports backend/entrypoints/worker-cpu/grafana-heartbeat.mts GRAFANA_HEARTBEAT_INTERVAL_MS
-exports backend/entrypoints/worker-cpu/grafana-heartbeat.mts GRAFANA_HEARTBEAT_TIMEOUT_MS
 exports backend/entrypoints/worker-cpu/grafana-heartbeat.mts sendGrafanaHeartbeat
 exports backend/entrypoints/worker-cpu/index.mts reportWorkerLoadFailure
 exports backend/entrypoints/worker-cpu/index.mts startWorkerRuntime
@@ -393,8 +391,6 @@ types backend/agents/_shared/subagent-tool.mts SubagentResult
 types backend/agents/_shared/subagent-tool.mts SubagentStepEvent
 types backend/agents/autotagger/dispatch-classifier.mts AutotaggerClassifierCandidate
 types backend/agents/chat/stream.mts ChatStreamEvent
-types backend/entrypoints/api/valkey-admin-command.mts ParsedValkeyAdminCommand
-types backend/entrypoints/api/verify-ipv6-egress-checks.mts HostResult
 types backend/services/ap-inbox-activities/durable-delivery-transition-contract.mts ActivityPubInboxDeliveryTransitionDimensions
 types backend/services/contribution-gating/admission.mts ContributionAdmissionAudit
 types backend/services/copyright-notices/index.mts CopyrightAgentDispatchPage
