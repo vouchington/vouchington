@@ -187,7 +187,6 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_uk_notice_receipts`, `copyright_uk_notice_routings`,
   `copyright_uk_redress_decisions`, `copyright_uk_redress_requests`,
   `copyright_uk_reviews`,
-  `crm_contact_lifecycle_changes`,
   `dynamic_config_change_logs`, `follower_distribution_deliveries`, `follower_distributions`,
   `identity_verification_attempts`, `media_delivery_registry_records`,
   `og_dependency_manifest_placements`, `og_dependency_manifests`,
@@ -203,15 +202,11 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `moderation_transparency_daily_rollups`, `moderation_transparency_released_daily_rollups`,
   `moderator_actions`, `oauth_authorization_server_events`, `report_integrity_flags`,
   `review_dispute_lifecycle_changes`, `review_successions`, `review_succession_topics`,
-  `review_disputes`, `ses_bounce_events`, `stripe_events`, `support_agent_runs`,
-  `support_message_lifecycle_changes`, `support_messages`, `support_thread_lifecycle_changes`,
-  `user_data_request_attempts`, `user_data_requests`, `user_deletion_audit_logs`,
-  `user_deletion_external_works`,
+  `review_disputes`, `ses_bounce_events`, `stripe_events`, `user_data_request_attempts`,
+  `user_data_requests`, `user_deletion_audit_logs`, `user_deletion_external_works`,
   `user_deletion_relation_impacts`, `user_deletion_requests`, `user_engagement_email_sends`,
   `user_import_requests`, `user_moderation_email_sends`, `user_rss_feed_import_batches`,
   `user_rss_feed_import_rows`, `vote_integrity_flags`.
-- Provider delivery receipts: `support_inbound_email_receipts`. One durable receipt is retained for
-  every inbound support email; provider and support-message indexes keep replay checks selective.
 - Post moderation ledger: `post_moderation_attempts`, `post_moderation_dispositions`,
   `post_moderation_versions`, and `post_moderation_work_items`. Rows follow the retained post and
   remain selectively addressable through their version, source, attempt, and post indexes.
@@ -280,8 +275,8 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `community_auto_tagger_agents`,
   `community_bans`, `community_invites`, `community_member_vacations`,
   `community_post_reviews`, `community_restrictions`, `community_saved_replies`, `crawlers`,
-  `crm_contact_social_accounts`, `crm_contacts`, `curated_aside_items`, `domain_blacklists`,
-  `email_address_login_tokens`, `facebook_accounts`, `fediverse_instance_integration_changes`,
+  `curated_aside_items`, `domain_blacklists`, `email_address_login_tokens`,
+  `facebook_accounts`, `fediverse_instance_integration_changes`,
   `follower_distribution_selected_recipients`, `github_accounts`, `google_accounts`,
   `households`, `individual_cards`, `individual_financial_profiles`,
   `individual_rewards_program_point_valuations`, `individual_rewards_program_statuses`,
@@ -308,8 +303,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `rss_feed_categories`, `rss_feed_discoverability_changes`, `rss_feed_enablement_changes`,
   `rss_feed_item_autotagger_result_topics`, `rss_feed_item_autotagger_results`,
   `rss_feed_item_category_rejections`, `rss_feed_item_unmapped_category_counts`,
-  `sites`, `spending_entries`, `stories`, `support_contacts`,
-  `support_inbound_email_message_ids`, `support_threads`, `topic_claims`, `topic_metrics`,
+  `sites`, `spending_entries`, `stories`, `topic_claims`, `topic_metrics`,
   `topic_revisions`, `topics__cards`, `topics__fediverse_instances`,
   `topics__referral_program_link_validations`,
   `topics__referral_programs`, `topics__retailers`, `topics__rewards_program_statuses`,

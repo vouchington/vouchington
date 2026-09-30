@@ -65,10 +65,6 @@ export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
   ['retailer_countries', 'Pure retailer-country join table.'],
   ['rss_feed_followers_by_session', 'Session follow join table without entity lifecycle.'],
   ['rss_feed_followers_by_user', 'User follow join table without entity lifecycle.'],
-  [
-    'support_message_approvals',
-    'Composite-key side table; message timestamps live on support_messages.',
-  ],
   ['totp_recovery_codes', 'Recovery code lifecycle is represented by used_at.'],
   ...SOCIAL_GRAPH_TABLES_WITHOUT_CREATED_AT,
 ])
@@ -155,8 +151,6 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
   ['post_dispute_annotations', 'Append-only annotation; removal tracked by removed_at.'],
   ['moderation_appeal_lifecycle_changes', 'Append-only lifecycle audit log.'],
   ['review_dispute_lifecycle_changes', 'Append-only lifecycle audit log.'],
-  ['support_message_lifecycle_changes', 'Append-only lifecycle audit log.'],
-  ['support_thread_lifecycle_changes', 'Append-only lifecycle audit log.'],
   ['topic_history', 'Append-only topic lifecycle history.'],
   ['topic_revisions', 'Append-only topic revision history.'],
   ['user_deletion_audit_logs', 'Append-only compliance audit log.'],

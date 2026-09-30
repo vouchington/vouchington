@@ -50,7 +50,7 @@ examples:
     file: 'web/app/page.tsx'
   - code: "<Input aria-label='User ID' />"
     isValid: false
-    file: 'web/app/(crm)/crm/page.tsx'
+    file: 'web/app/page.tsx'
   - code: '<Input placeholder={"Company topic ID   "} />'
     isValid: false
     file: 'web/app/page.tsx'

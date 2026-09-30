@@ -192,17 +192,9 @@ describe('PUBLIC_STATIC_SITE_NAV_PATHS invariant', () => {
 })
 
 describe('ROBOTS_DISALLOW_PREFIXES', () => {
-  it('blocks internal communication and support surfaces from crawler traversal', () => {
+  it('blocks internal communication surfaces from crawler traversal', () => {
     expect(ROBOTS_DISALLOW_PREFIXES).toEqual(
-      expect.arrayContaining([
-        '/chat/',
-        '/messages/',
-        '/messages?',
-        '/messages$',
-        '/support/',
-        '/support?',
-        '/support$',
-      ]),
+      expect.arrayContaining(['/chat/', '/messages/', '/messages?', '/messages$']),
     )
   })
 

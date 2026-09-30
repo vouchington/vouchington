@@ -59,9 +59,6 @@ and unenforced top-N product expectations are not exemptions.
   oldest candidate is the sentinel, so a non-terminal page drops that candidate before returning
   results. `start_cursor` identifies the newest returned message and `end_cursor` the oldest;
   `after=end_cursor` loads the next older window for prepending.
-- Support-thread messages retain their same-thread UUIDv7 anchor lookup, then use a
-  `(support_thread_id, id)` keyset boundary and query order matching the composite index;
-  `created_at` remains a projected generated timestamp, not an ordering key.
 - Authorization and visibility constrain the path dataset before its keyset boundary. Replaying an
   otherwise valid cursor on another authorized path only selects a boundary inside that path and
   cannot expose rows from the source path. Clients still reset traversal when the path changes.
