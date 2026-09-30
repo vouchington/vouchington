@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { POST_CLASSIFIER_LABELS } from '@voucha/types/entities/post-classifier'
 import { postClassifierGoldenFixtures } from '@voucha/test-helpers/classifier-golden-fixtures'
 import {
   runClassifierGoldenSet,
@@ -15,12 +16,31 @@ describe('post classifier golden regression set', () => {
       { buildPostClassifierInput },
       { resolvePostClassifierConfiguration },
       { prepareSingleCallClassifierDecision },
+      { createRandomString },
+      { createTestUser },
+      { insertTestCommunity },
+      { setPostClassifierToggleForTest },
     ] = await Promise.all([
       import('./classifier-input.mts'),
       import('@services/post-classifier/configuration'),
       import('@agents/classifiers/prepare-single-call'),
+      import('@voucha/test-helpers/data'),
+      import('@voucha/test-helpers/entities/users'),
+      import('@voucha/test-helpers/entities/communities'),
+      import('@voucha/test-helpers/entities/post-classifier-toggles'),
     ])
-    const resolved = await resolvePostClassifierConfiguration(null, {
+    const owner = await createTestUser()
+    const community = await insertTestCommunity({
+      createdById: owner.id,
+      slug: `classifier-golden-${createRandomString(8)}`,
+    })
+    const enabledRemoteLabels = POST_CLASSIFIER_LABELS.filter(label => label.kind === 'remote')
+    await Promise.all(
+      enabledRemoteLabels.map(label =>
+        setPostClassifierToggleForTest(community.id, label.slug, true),
+      ),
+    )
+    const resolved = await resolvePostClassifierConfiguration(community.id, {
       detectorPackageVersion: 'classifier-golden-set',
     })
     const remote = resolved?.configuration.remote

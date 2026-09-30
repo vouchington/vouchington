@@ -138,7 +138,9 @@ export async function runClassifierGoldenSet(
   if (callCounter.count !== cases.length) {
     failures.push(`expected ${cases.length} provider calls, received ${callCounter.count}`)
   }
-  for (const key of new Set(cases.flatMap(testCase => Object.keys(testCase.candidates)))) {
+  for (const key of new Set(
+    cases.flatMap(testCase => Object.values(testCase.candidates).map(candidate => candidate.key)),
+  )) {
     const count = fixtureCounts.get(key) ?? 0
     if (count < policy.minimumFixturesPerCandidate) {
       failures.push(
