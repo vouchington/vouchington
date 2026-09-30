@@ -18,19 +18,25 @@ import type { PostClassifierJobData } from '@queues/ai-agents/types'
  */
 export const POST_CLASSIFIER_RECEIPT_AGE_ALARM_MS = 26 * 60 * 60 * 1000
 
+export interface ReconcilePostClassifierApplicationsDependencies {
+  /** Lets a test scope the sweep to its own receipts in a database shared with parallel tests. */
+  streamBatches: typeof streamIncompletePostClassifierApplicationBatches
+}
+
 /**
  * Re-enqueues every recoverable receipt whose job is gone. Each enqueue that actually adds a job
  * is counted; a receipt whose last permitted job has disappeared is given up with an alarm rather
  * than retried forever, and the oldest receipt still in flight drives the age alarm.
  */
-export async function processReconcilePostClassifierApplications(): Promise<{
-  enqueued: number
-  abandoned: number
-}> {
+export async function processReconcilePostClassifierApplications(
+  dependencies: Partial<ReconcilePostClassifierApplicationsDependencies> = {},
+): Promise<{ enqueued: number; abandoned: number }> {
+  const streamBatches =
+    dependencies.streamBatches ?? streamIncompletePostClassifierApplicationBatches
   let enqueued = 0
   let abandoned = 0
   let oldest: IncompletePostClassifierApplication | undefined
-  for await (const applications of streamIncompletePostClassifierApplicationBatches()) {
+  for await (const applications of streamBatches()) {
     const exhausted = applications.filter(
       application => application.sweepEnqueueCount >= POST_CLASSIFIER_SWEEP_ENQUEUE_BOUND,
     )
