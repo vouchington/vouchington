@@ -19,9 +19,9 @@ answers `422`. Semantic checks (trim, length, range, cross-field, existence) kee
 
 - `POST /imports/topics`: a missing or non-string `csv` is `422`.
 - `PUT /crawlers/referral-program`, `PATCH /crawlers/:id`: a missing or malformed `hostname_id`,
-  `referral_program_id`, `crawler_type`, or selector array is `422`. The `PATCH` edit gate moved
-  route now applies the same edit gate (`currentUserCanEditCrawler`) before reading the body, so a
-  non-editor sees `403` first; the service keeps its own guard.
+  `referral_program_id`, `crawler_type`, or selector array is `422`. The `PATCH` route now applies
+  the edit gate (`currentUserCanEditCrawler`) before reading the body, so a non-editor sees `403`
+  first; the service keeps its own guard.
 - `POST /images/upload-url`: a missing or non-numeric `content_type` or `content_length` is `422`.
 - `POST /membership-grants`: a missing or invalid `user_id`, `plan`, `sku_id`, or non-numeric
   `duration_days` is `422`. The `duration_days` range stays `400`.
