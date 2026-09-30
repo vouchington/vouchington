@@ -7,20 +7,17 @@ import type { AutotaggerRssFeedItemJobData } from '../types.mts'
 
 const FIVE_SECONDS_MS = 5000
 
-export function enqueueAutotaggerRssFeedItem(rss_feed_item_id: string, embeddingRetries = 0): void {
-  enqueueBulkAutotaggerRssFeedItems([{ rss_feed_item_id, embeddingRetries }])
+export function enqueueAutotaggerRssFeedItem(rss_feed_item_id: string): void {
+  enqueueBulkAutotaggerRssFeedItems([{ rss_feed_item_id }])
 }
 
 export function enqueueBulkAutotaggerRssFeedItems(
-  items: Array<{ rss_feed_item_id: string; embeddingRetries?: number }>,
+  items: Array<{ rss_feed_item_id: string }>,
 ): void {
   if (items.length === 0) return
   const jobs = items.map(item => ({
     name: 'autotagger-rss-feed-item' as const,
-    data: {
-      rss_feed_item_id: item.rss_feed_item_id,
-      embedding_retries: item.embeddingRetries,
-    } satisfies AutotaggerRssFeedItemJobData,
+    data: { rss_feed_item_id: item.rss_feed_item_id } satisfies AutotaggerRssFeedItemJobData,
     opts: {
       attempts: AI_AGENTS_DEFAULTS.attempts,
       backoff: AI_AGENTS_DEFAULTS.backoff,

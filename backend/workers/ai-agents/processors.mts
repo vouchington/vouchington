@@ -1,10 +1,7 @@
 import type { Job } from 'glide-mq'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import type { AIAgentJobName } from '@queues/ai-agents/config'
-import {
-  processAutotaggerPost,
-  processAutotaggerRssFeedItem,
-} from './processors/process-autotagger.mts'
+import { processAutotaggerRssFeedItem } from './processors/process-autotagger.mts'
 import {
   processCommunityModerationDispatcher,
   processCommunityModerationPrompt,
@@ -32,10 +29,6 @@ export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
   const name = job.name as AIAgentJobName
 
   switch (name) {
-    case 'autotagger-post':
-      return processAutotaggerPost(
-        job as Job<import('@queues/ai-agents/types').AutotaggerPostJobData>,
-      )
     case 'autotagger-rss-feed-item':
       return processAutotaggerRssFeedItem(
         job as Job<import('@queues/ai-agents/types').AutotaggerRssFeedItemJobData>,

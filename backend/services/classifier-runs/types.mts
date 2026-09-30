@@ -19,7 +19,10 @@ export type RemoteCandidate = {
 export type RemotePlan = {
   classifierId: string
   promptVersionId: string
+  /** Candidates and thresholds pinned by the configuration; empty when the run captures its own. */
   candidates: readonly RemoteCandidate[]
+  /** True when the run's topic candidates are captured at reservation instead of pinned. */
+  capturedCandidates: boolean
 }
 
 /** The replay snapshot of one classifier's configuration for a subject, produced by its adapter. */
@@ -49,6 +52,8 @@ export type ClassifierRunLease<C> = {
   resolved: ResolvedClassifierRun<C>
   leaseToken: string
   decisionBatchId: string | null
+  /** The candidate topics the run captured at reservation, in order; empty for pinned candidates. */
+  capturedTopicIds: readonly string[]
 }
 
 /**
@@ -67,9 +72,19 @@ export type ClassifierRunAdapter<C, L = never, E = void> = {
   ): Promise<CurrentClassifierRunInput | null>
   /** Null means no work is configured; a throw means the configuration is unresolvable for now. */
   resolve(
+    subject: ClassifierRunSubject,
     current: CurrentClassifierRunInput,
     query?: QueryExecutor,
   ): Promise<ResolvedClassifierRun<C> | null>
+  /**
+   * Chooses the topic candidates of a run that captures its own, once, when its receipt is first
+   * reserved; a later search result can never change them. Null or empty means no work.
+   */
+  captureCandidates?(
+    query: OwnedTransaction,
+    subject: ClassifierRunSubject,
+    current: CurrentClassifierRunInput,
+  ): Promise<readonly string[] | null>
   /** Reservation-time prerequisite (for example an embedding); false leaves the request unsettled. */
   ready?(query: OwnedTransaction, subject: ClassifierRunSubject): Promise<boolean>
   /** SQL over `request` (classifier_run_requests) selecting only requests the sweep may dispatch. */
