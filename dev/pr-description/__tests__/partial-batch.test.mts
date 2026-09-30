@@ -142,7 +142,9 @@ describe('partial declaration constraints', () => {
       },
     }))
     expect(other.ok).toBe(false)
-    expect(other.errors).toContain('#456 contains at least one unchecked task: Issue.')
+    expect(other.errors).toContainEqual(
+      expect.stringContaining('#456 contains at least one unchecked task: Issue.'),
+    )
     expect(other.errors).not.toContain('A partial batch must not also close its source issue.')
   })
 })

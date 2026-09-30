@@ -1,8 +1,8 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { findPreToolUseBlock } from '../../codex-hooks/policy.mts'
+import { makeTestTempDirSync } from '../test-temp-root.mts'
 
 const DECLARATION = `Refs #123
 Partial batch; source issue remains open for remaining work.
@@ -12,7 +12,7 @@ describe('partial batch PR body hook policy', () => {
   let directory: string
   let bodyFile: string
   beforeEach(() => {
-    directory = mkdtempSync(join(tmpdir(), 'partial-batch-hook-'))
+    directory = makeTestTempDirSync('partial-batch-hook-')
     bodyFile = join(directory, 'body.md')
   })
   afterEach(() => rmSync(directory, { force: true, recursive: true }))
