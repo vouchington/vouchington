@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events'
 
 import { describe, expect, it, vi } from 'vitest'
 
+import { backendCredentialedProjectNames } from '../test-helpers/vitest-config/backend-credentialed-project-info.mts'
 import {
   normalizeForwardedVitestArgs,
   projectsForVitestGroup,
@@ -32,6 +33,22 @@ describe('runVitestProjectGroup', () => {
     ])
     expect(modules.filter(project => docker.includes(project as never))).toEqual([])
     expect(projectsForVitestGroup('backend-default')).toEqual(['ts-shared', ...modules, ...docker])
+  })
+
+  it('runs every shared credentialed project in the backend group and alone in its own group', () => {
+    expect(projectsForVitestGroup('backend')).toEqual([
+      ...projectsForVitestGroup('backend-core'),
+      ...backendCredentialedProjectNames,
+    ])
+    for (const project of backendCredentialedProjectNames) {
+      expect(projectsForVitestGroup(project)).toEqual([project])
+      expect(vitestProjectGroupCommand(project, []).args).toEqual([
+        'vitest',
+        'run',
+        '--project',
+        project,
+      ])
+    }
   })
 
   it('removes exactly one leading pnpm separator and preserves every later argument', () => {

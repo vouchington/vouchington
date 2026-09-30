@@ -27,6 +27,7 @@
     "test:backend:aws": "node ci/run-vitest-project-group.mts backend-aws",
     "test:backend:bedrock": "node ci/run-vitest-project-group.mts backend-bedrock",
     "test:backend:openai": "node ci/run-vitest-project-group.mts backend-openai",
+    "test:backend:openrouter": "node ci/run-vitest-project-group.mts backend-openrouter",
     "test:backend:stripe": "node ci/run-vitest-project-group.mts backend-stripe",
     "test:backend:postgres-schema": "node ci/run-vitest-project-group.mts backend-postgres-schema",
     "test:email-templates": "node ci/run-vitest-project-group.mts email-templates",

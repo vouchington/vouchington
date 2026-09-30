@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { backendCredentialedProjectNames } from '../../test-helpers/vitest-config/backend-credentialed-project-info.mts'
 
+// The exact `vitest run --project ...` command is asserted against the shared project list in
+// ci/transient-retry/backend-credentialed-config-agreement.test.mts.
 const workflow = readFileSync('.github/workflows/tests-backend-credentialed.yml', 'utf8')
 
 function jobSection(jobName: string): string {
@@ -22,7 +25,7 @@ function stepSection(job: string, stepName: string): string {
 }
 
 describe('backend credentialed test workflow', () => {
-  it('combines aws, bedrock, openai, openrouter, and stripe projects in one job', () => {
+  it('combines the credentialed projects in one job', () => {
     const credentialedJob = jobSection('backend-credentialed-tests')
     expect(credentialedJob).toContain('if: ${{ inputs.trusted_secret_context }}')
     expect(credentialedJob).toContain('AWS_REGION: us-west-2')
@@ -33,9 +36,6 @@ describe('backend credentialed test workflow', () => {
     expect(credentialedJob).toContain('OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}')
     expect(credentialedJob).toContain('STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}')
     expect(credentialedJob).toContain('.github/actions/setup-aws')
-    expect(credentialedJob).toContain(
-      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-stripe',
-    )
     expect(credentialedJob).toContain(
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
     )
@@ -50,17 +50,13 @@ describe('backend credentialed test workflow', () => {
     expect(fallback).toContain('suite: backend-credentialed')
     expect(fallback).toContain('continue-on-error: true')
     expect(credentialedJob).toContain('Upload full backend-credentialed LCOV to GitHub (attempt 2)')
-    expect(workflow).not.toContain('backend-aws-tests:')
-    expect(workflow).not.toContain('backend-openai-tests:')
-    expect(workflow).not.toContain('backend-openrouter-tests:')
-    expect(workflow).not.toContain('backend-stripe-tests:')
+    for (const project of backendCredentialedProjectNames) {
+      expect(workflow).not.toContain(`${project}-tests:`)
+    }
   })
 
   it('does not shard the credentialed job', () => {
-    expect(workflow).not.toContain('--project backend-aws --shard')
-    expect(workflow).not.toContain('--project backend-openai --shard')
-    expect(workflow).not.toContain('--project backend-bedrock --shard')
-    expect(workflow).not.toContain('--project backend-stripe --shard')
+    expect(workflow).not.toContain('--shard')
   })
 
   it('gates the job on trusted_secret_context', () => {

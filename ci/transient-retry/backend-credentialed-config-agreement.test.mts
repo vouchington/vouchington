@@ -7,10 +7,8 @@ import { parse as parseYaml } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 import { buildBackendCredentialedFailureLog } from './backend-credentialed-fixtures.mts'
-import {
-  backendCredentialedProjects,
-  backendCredentialedVitestCommandMarkers,
-} from './backend-credentialed-log-fingerprints.mts'
+import { backendCredentialedProjects } from '../../test-helpers/vitest-config/backend-credentialed-project-info.mts'
+import { backendCredentialedVitestCommandMarkers } from './backend-credentialed-log-fingerprints.mts'
 import { isBackendCredentialedProviderSmokeTestTransient } from './backend-credentialed-rules.mts'
 
 // The classifier's credentialed-project boundary is derived from the project list Vitest itself
