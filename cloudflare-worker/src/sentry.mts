@@ -3,9 +3,10 @@
 // Disabled unless the shared fail-closed deployed-environment gate allowlists
 // ENVIRONMENT, so dev, CI, and test environments are always silent.
 //
-// Only captures origin fetch errors (502s) — expected edge responses
-// (geo-blocks, rate limits, WebSocket rejections) are returned via edgeErrorResponse()
-// and never throw, so they never reach captureWorkerException().
+// Unexpected failures that return a response instead of throwing must call
+// captureWorkerException() themselves. Origin fetch 502s and cache-purge RPC
+// failures do. Expected edge responses (geo-blocks, rate limits, WebSocket
+// rejections, cache-purge auth and validation failures) do not.
 
 import { captureException, type CloudflareOptions } from '@sentry/cloudflare'
 import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
@@ -55,7 +56,12 @@ export interface WorkerExceptionTags {
 
 // Capture an unexpected worker exception. Filters out expected non-5xx errors
 // (e.g. an error object with .status < 500) to match the backend onError pattern.
-export function captureWorkerException(error: unknown, tags: WorkerExceptionTags = {}): void {
+// `extra` is diagnostic context and must omit credentials, headers, cookies, and bodies.
+export function captureWorkerException(
+  error: unknown,
+  tags: WorkerExceptionTags = {},
+  extra?: Readonly<Record<string, unknown>>,
+): void {
   if (error !== null && typeof error === 'object') {
     const extendedErr = error as Record<string, unknown>
     const status =
@@ -73,5 +79,8 @@ export function captureWorkerException(error: unknown, tags: WorkerExceptionTags
   if (tags.countryCode) filteredTags.countryCode = tags.countryCode
   if (tags.requestId) filteredTags.requestId = tags.requestId
 
-  captureException(error, { tags: filteredTags })
+  captureException(
+    error,
+    extra === undefined ? { tags: filteredTags } : { tags: filteredTags, extra },
+  )
 }

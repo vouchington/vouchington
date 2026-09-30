@@ -67,4 +67,19 @@ describe('captureWorkerException', () => {
       tags: { botTier: 'known', countryCode: 'US' },
     })
   })
+
+  it('forwards structured extra context and omits it when absent', () => {
+    const err = new Error('purge failed')
+    captureWorkerException(err, { routeTarget: 'cache-purge' }, { cacheTags: ['post:abc'] })
+    expect(captureException).toHaveBeenCalledWith(err, {
+      tags: { routeTarget: 'cache-purge' },
+      extra: { cacheTags: ['post:abc'] },
+    })
+
+    vi.mocked(captureException).mockClear()
+    captureWorkerException(err, { routeTarget: 'cache-purge' })
+    expect(captureException).toHaveBeenCalledWith(err, {
+      tags: { routeTarget: 'cache-purge' },
+    })
+  })
 })

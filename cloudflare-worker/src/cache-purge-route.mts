@@ -14,6 +14,7 @@
 
 import { timingSafeCredentialMatch } from './basic-auth.mts'
 import { edgeErrorResponse } from './error-response.mts'
+import { captureWorkerException } from './sentry.mts'
 import type { EdgeExecutionContext, Env } from './types.mts'
 import { CACHE_PURGE_SECRET_HEADER, MAX_TAGS_PER_REQUEST } from '@ts-shared/cache/purge'
 import { isValidCacheTag } from '@vouchington/utils/cache-tags'
@@ -69,15 +70,28 @@ export async function handleCachePurgeRequest(
     return edgeErrorResponse(400, 'Invalid request body', 'INVALID_INPUT')
   }
 
+  // These branches return 502 instead of throwing, so they must report themselves.
+  // cacheTags is the validated batch, already capped, and holds entity identifiers.
   let result
   try {
     if (canaryFault === 'purge-reject') throw new Error('Injected cache purge rejection')
     result = await context.exports.CachedOrigin.purge(tags)
   } catch (error) {
+    captureWorkerException(error, { routeTarget: 'cache-purge' }, { cacheTags: tags })
     console.error('Cache purge threw:', error)
     return edgeErrorResponse(502, 'Cache purge failed', 'BAD_GATEWAY')
   }
   if (!result.success) {
+    captureWorkerException(
+      new Error('Cache purge rejected'),
+      { routeTarget: 'cache-purge' },
+      {
+        cacheTags: tags,
+        purgeErrors: Array.isArray(result.errors)
+          ? result.errors.map(({ code, message }) => ({ code, message }))
+          : [],
+      },
+    )
     console.error('Cache purge rejected:', result.errors)
     return edgeErrorResponse(502, 'Cache purge failed', 'BAD_GATEWAY')
   }
