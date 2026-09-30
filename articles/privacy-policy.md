@@ -88,14 +88,29 @@ Voucha uses automated tools, including OpenAI's API, to help moderate submitted 
 If Voucha activates its US copyright process, we process the information in copyright notices,
 appeals, counter-notices, email correspondence, and supporting evidence to assess and administer a
 copyright case. This can include names, contact details, signatures, hosted-use URLs, descriptions
-of copyrighted work, the original email, attachments, and correspondence metadata. We use a
-restricted agent-assisted extraction only to structure an email or identify abuse. Staff review
-email submissions and required legal decisions.
+of copyrighted work, the original email, attachments, and correspondence metadata.
 
-Accepted case records can be viewed by signed-in members. They show only a redacted case projection
-such as case status, dates, hosted-use references, and timeline events. We do not publish claimant
-or poster identity, contact details, signatures, raw email, evidence, staff rationale, or agent
-analysis. Private case data is restricted to participants where appropriate and authorized staff.
+A copyright moderator reviews each notice and makes every decision on it. An AI agent assists the
+moderator: it screens form notices for spam or obvious invalidity, structures emailed notices, gives
+the moderator a recommendation, and may draft a message that a moderator must approve before it is
+sent. The agent does not decide whether a notice is valid. It cannot restrict material, open a
+case, or send a message on its own.
+
+When a notice leads to a restriction, the affected poster receives a notice that names the case.
+That notice does not include the claimant's contact details or signature. If you submit a US
+counter-notice, US law requires us to send it to the original claimant (17 U.S.C. §512(g)(2)(B)).
+That copy includes your name, address, telephone number, signature, the material you identified,
+and your statements and consent to jurisdiction. The claimant can use it to bring a court action or
+Copyright Claims Board proceeding against you.
+
+Accepted case records can be viewed by signed-in members. They show the case identifier, dates,
+restriction status, and a timeline of event types and dates. They link to the affected post only
+when the viewer could otherwise see that post, and the post shows its author as usual. When a
+signed-in member filed the notice and still has a public profile, the record shows that member's
+current public profile name and links to their profile. A notice sent by email, or from an account
+that has since been deleted, shows no claimant profile. Case records never show legal names,
+contact details, signatures, raw email, evidence, moderator rationale, or agent analysis. Other
+private case data is restricted to case participants where appropriate and to authorized staff.
 
 ### Analytics
 
@@ -163,7 +178,7 @@ Voucha integrates with third-party services that may process your data:
 
 Each of these providers has their own privacy policy. We select providers who maintain appropriate security and data protection standards.
 
-**Regarding OpenAI:** Content submitted for moderation review and copyright-intake analysis is processed by OpenAI's API under their data processing terms. For a copyright email submission, this can include the sender's name and email address, subject line, full message body, and attachment filenames and metadata. This data is used only for moderation and copyright-case determinations and is not used to train OpenAI's models under our API agreement.
+**Regarding OpenAI:** Content submitted for moderation review and copyright-intake analysis is processed by OpenAI's API under their data processing terms. For a copyright email submission, this can include the sender's name and email address, subject line, full message body, and attachment filenames and metadata. This data is used only for moderation and to assist copyright moderators, who make every copyright-case decision, and is not used to train OpenAI's models under our API agreement.
 
 **Regarding email delivery:** Outbound emails sent by the platform (notifications, data export links, authentication codes) are delivered via AWS SES. A copy of outbound emails is retained in an internal mailbox for deliverability monitoring.
 
@@ -178,8 +193,21 @@ Each of these providers has their own privacy policy. We select providers who ma
 - **Billing records** — retained as required by financial regulations (typically 7 years); the email address associated with your Stripe customer record is redacted when you delete your account
 - **Security logs** — retained for up to 12 months
 - **Vote integrity flags** — retained for the life of the account; anonymized upon account deletion
-- **Copyright case records and evidence** — retained under the applicable legal, safety, and
-  retention requirements. We do not publish private evidence or correspondence.
+- **Copyright case records and evidence** — we have not set fixed retention periods. We keep
+  notices, appeals, counter-notices, correspondence, evidence, and case decisions at least while any
+  of these applies:
+  - the case, a staff review, or a statutory deadline, such as a counter-notice restoration window,
+    is still open;
+  - a legal hold, court action, or Copyright Claims Board proceeding is unresolved;
+  - the record shows how we handled a notice, counter-notice, or restoration under 17 U.S.C.
+    §512(g), or supports an incident that still counts under our repeat-infringer policy under 17
+    U.S.C. §512(i); or
+  - a civil copyright claim about the material could still be brought. The limit is generally three
+    years after the claim accrues (17 U.S.C. §507(b)).
+
+  Deleting your account does not delete copyright case records. We do not delete copyright evidence
+  automatically: deletion needs an approved retention policy and a separate human decision. We do
+  not publish private evidence or correspondence.
 
 ---
 
@@ -195,7 +223,7 @@ You may update your account information, username, and profile at any time from 
 
 ### Deletion
 
-You may delete your account at any time from your account settings. Account deletion is immediate and irreversible. Upon deletion:
+You may delete your account at any time from your account settings, except while a copyright matter blocks it. Deletion is refused while your account has a copyright incident that still counts under our repeat-infringer policy, or while a qualifying court or Copyright Claims Board hold on one of your posts is unresolved. Otherwise, account deletion is immediate and irreversible. Upon deletion:
 
 - Your email, phone number, and linked social accounts are permanently removed
 - Your posts remain on the platform attributed to [deleted]

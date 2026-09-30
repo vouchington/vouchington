@@ -59,7 +59,7 @@ describe('web static SEO tests', () => {
       expect(document.body.textContent).toContain('Do not send a statutory DMCA notice')
     })
 
-    it('repeat-infringer policy retains human review and disabled intake', async () => {
+    it('repeat-infringer policy states the termination rule and disabled intake', async () => {
       const result = await client.loadPage(
         '/copyright/repeat-infringer-policy',
         'route-repeat-infringer',
@@ -69,9 +69,12 @@ describe('web static SEO tests', () => {
       expect(document.querySelector('h1')?.textContent).toBe('Repeat-infringer policy')
       expect(document.body.textContent).toContain('Copyright intake stays off')
       expect(document.body.textContent).toContain(
-        'A notice count does not suspend or delete an account',
+        'Only an administrator may restrict or terminate the account, and only while it has at least two counting incidents.',
       )
-      expect(document.querySelectorAll('main li')).toHaveLength(5)
+      expect(document.body.textContent).toContain(
+        'An allegation or a count of notices alone never suspends or terminates an account.',
+      )
+      expect(document.querySelectorAll('main li')).toHaveLength(9)
     })
     it('robots.txt contains required directives', async () => {
       const response = await client.request('/robots.txt')
