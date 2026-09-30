@@ -3,7 +3,6 @@ import {
   BAN_EVASION_SYSTEM_USERNAME,
   MODERATION_SYSTEM_USERNAME,
 } from '@voucha/types/entities/user-constants'
-import { buildModeratorPromptSyncSQL } from './utils/moderator-prompt-sync-sql.mts'
 import { buildSystemUserUpsertSQL } from './utils/system-user-seed.mts'
 
 // Agent system users that need user rows (but no admin role).
@@ -19,9 +18,7 @@ const AGENT_SYSTEM_USERS = [
 ]
 
 export default function generateSeedAgentsSQL(): string {
-  const parts: string[] = [
-    '-- Ensure agent system users, agent rows, and moderator prompts during db:migrate',
-  ]
+  const parts: string[] = ['-- Ensure agent system users and agent rows during db:migrate']
 
   // 1. Upsert the system user (needed as created_by_id for agents).
   // Uses the same reclaim-then-upsert as upsertSystemUser in backend/services/users/system-users.mts.
@@ -78,28 +75,22 @@ ON CONFLICT (system_user_id) DO UPDATE SET
   deactivated_at = NULL,
   deleted_at = NULL;`)
 
-  // 5. Upsert agents__moderators rows.
+  // 5. Upsert agents__moderators rows. on_flag_action is left to the column default
+  // (`none`): the C5 classifiers are record-only. Their prompt, model and provider are seeded
+  // by 0635-00-03-seed-post-classifier, so no per-moderator agent_prompts rows exist.
   for (const config of MODERATOR_CONFIGS) {
     parts.push(`
-INSERT INTO agents__moderators (agent_id, slug, on_flag_action, is_baseline)
+INSERT INTO agents__moderators (agent_id, slug, is_baseline)
 SELECT
   a.id,
   '${config.slug}',
-  '${config.onFlagAction}',
   ${config.baseline}
 FROM agents a
 JOIN users u ON u.id = a.system_user_id
 WHERE u.username = '${config.slug}'
 ON CONFLICT (agent_id) DO UPDATE SET
   slug = EXCLUDED.slug,
-  on_flag_action = EXCLUDED.on_flag_action,
   is_baseline = EXCLUDED.is_baseline;`)
-  }
-
-  // 6. Manage prompts: for each moderator, deactivate stale prompts and insert
-  // the current one if it doesn't already exist as the active prompt.
-  for (const config of MODERATOR_CONFIGS) {
-    parts.push(buildModeratorPromptSyncSQL(config))
   }
 
   return parts.join('\n')

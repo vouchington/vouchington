@@ -13,15 +13,21 @@ Moderators with `is_baseline = true` run on every post site-wide, regardless of 
 
 **Active moderators (`backend/services/agents/moderator-configs.mts`):**
 
-| Slug              | Baseline | Detects                                     | on_flag_action |
-| ----------------- | -------- | ------------------------------------------- | -------------- |
-| `self-promotion`  | no       | Own product/service/referral link promotion | `review_queue` |
-| `marketplace`     | no       | Buy/sell/trade/hire content                 | `review_queue` |
-| `ai-generated`    | yes      | AI-generated content (local Rust detector)  | `review_queue` |
-| `politics-averse` | no       | Partisan political content                  | `review_queue` |
-| `click-bait`      | no       | Intentionally misleading post               | `none`         |
-| `vague-post`      | no       | Too vague to be useful                      | `none`         |
-| `shit-post`       | no       | Low-effort noise                            | `none`         |
+| Slug              | Baseline | Detects                                     |
+| ----------------- | -------- | ------------------------------------------- |
+| `self-promotion`  | no       | Own product/service/referral link promotion |
+| `marketplace`     | no       | Buy/sell/trade/hire content                 |
+| `ai-generated`    | yes      | AI-generated content (local Rust detector)  |
+| `politics-averse` | no       | Partisan political content                  |
+| `click-bait`      | no       | Intentionally misleading post               |
+| `vague-post`      | no       | Too vague to be useful                      |
+| `shit-post`       | no       | Low-effort noise                            |
+
+The config carries only each moderator's identity, prompt text, and baseline flag. The seed
+provisions the system user, `agents` row, and `agents__moderators` row per slug, and no
+`agent_prompts` rows: the classifier's prompt, model, and provider are seeded with the post
+classifier. Every seeded moderator is record-only (`agents__moderators.on_flag_action` defaults to
+`none`); only community prompts can act on a flag (`community_agent_prompts.on_flag_action`).
 
 **Processing (community prompts, `backend/agents/community-moderation/run.mts`):**
 
@@ -45,6 +51,6 @@ paths (ai-generated) do not record usage. Administrators can view per-community 
 `total_cost.amount` as a canonical integer string so same-community sums remain exact beyond the
 JSON-safe range.
 
-**Database:** `agents__moderators` (`is_baseline`), `agent_moderations`, `agent_prompts`, `ai_usage_records`
+**Database:** `agents__moderators` (`is_baseline`), `agent_moderations`, `agent_prompts` (community prompts only), `ai_usage_records`
 
 **Services:** `backend/agents/community-moderation/`, `backend/services/moderation/`, `backend/services/ai-usage/`

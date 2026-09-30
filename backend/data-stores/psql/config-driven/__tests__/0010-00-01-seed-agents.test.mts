@@ -38,9 +38,7 @@ describe('0010-00-01-seed-agents idempotent', () => {
   it('seeds baseline flags using the canonical agents__moderators schema', () => {
     const sql = generateSeedAgentsSQL()
     expect(sql).not.toContain('ALTER TABLE agents__moderators')
-    expect(sql).toContain(
-      'INSERT INTO agents__moderators (agent_id, slug, on_flag_action, is_baseline)',
-    )
+    expect(sql).toContain('INSERT INTO agents__moderators (agent_id, slug, is_baseline)')
   })
 
   it('generates moderator agent rows with ON CONFLICT', () => {
@@ -77,20 +75,13 @@ describe('0010-00-01-seed-agents idempotent', () => {
     expect(sql).toContain('slug = EXCLUDED.slug')
   })
 
-  it('generates prompt management SQL for each moderator', () => {
+  it('seeds no per-moderator prompt rows, provider, model or flag action', () => {
     const sql = generateSeedAgentsSQL()
-    expect(sql).toContain('INSERT INTO agent_prompts')
-    expect(sql).toContain('UPDATE agent_prompts')
-    expect(sql).toContain('deactivated_at = CURRENT_TIMESTAMP')
-    expect(sql).toContain('MD5(prompt)')
-  })
-
-  it('uses dollar-quoting for prompt text', () => {
-    const sql = generateSeedAgentsSQL()
-    // dollarQuote() picks the first candidate tag not present in the prompt text.
-    // Assert any valid dollar-quote tag is used rather than pinning to '$prompt$'.
-    const hasDollarQuoting = ['$prompt$', '$agent$', '$mod$', '$p$'].some(tag => sql.includes(tag))
-    expect(hasDollarQuoting).toBe(true)
+    expect(sql).not.toContain('agent_prompts')
+    expect(sql).not.toContain('openai')
+    expect(sql).not.toContain('gpt-5.4-nano')
+    expect(sql).not.toContain('on_flag_action')
+    expect(sql).not.toContain('review_queue')
   })
 
   it('seeds each RSS category-source user with vote_weight = 0.01', () => {
@@ -107,13 +98,6 @@ describe('0010-00-01-seed-agents idempotent', () => {
     expect(sql).toContain(
       "WHERE username = 'rss-feed-collaborative-categorizer' AND is_system = TRUE",
     )
-  })
-
-  it('includes on_flag_action from config', () => {
-    const sql = generateSeedAgentsSQL()
-    for (const config of MODERATOR_CONFIGS) {
-      expect(sql).toContain(config.onFlagAction)
-    }
   })
 
   it('seeds is_baseline true only for ai-generated', () => {

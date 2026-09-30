@@ -3227,8 +3227,8 @@
         },
         "on_flag_action": {
           "collation": null,
-          "comment": "Action taken when a moderator flags content: none (log only) or review_queue (move to review queue).",
-          "defaultExpression": "'review_queue'::moderator_on_flag_action",
+          "comment": "Action taken when a moderator flags content: none (record only, the default; every seeded moderator) or review_queue (move to review queue).",
+          "defaultExpression": "'none'::moderator_on_flag_action",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
