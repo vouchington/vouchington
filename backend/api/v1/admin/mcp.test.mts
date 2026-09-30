@@ -14,7 +14,7 @@ import { setTestOAuthAccessTokenScopes } from '@voucha/test-helpers/entities/oau
 import { removeTestUserRole } from '@voucha/test-helpers/entities/user-role-removal'
 import { createApiKey } from '@services/api-keys'
 import { getOAuthResourceUrl } from '@services/oauth-authorization-server'
-import { issueTestOAuthTokensForClient } from '@services/oauth-authorization-server/test-support'
+import { issueTestOAuthTokensForClient } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import type { PrivateUser } from '@services/users/types'
 
 const MCP_LIST_BODY = { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }
