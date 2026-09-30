@@ -637,6 +637,8 @@
           "expectPendingReportsPagination",
           "assertReason",
           "assertScoresAllowed",
+          "assertBoundedStaleFriendCleanup",
+          "assertFriendsPageCommitsBeforeDeletionFence",
           "postLogoutExpectingRejection",
           "expectCachePolicyBypassesBeforeAnonymousOrBotCaching"
         ]
@@ -729,6 +731,8 @@
           "expectPendingReportsPagination",
           "assertReason",
           "assertScoresAllowed",
+          "assertBoundedStaleFriendCleanup",
+          "assertFriendsPageCommitsBeforeDeletionFence",
           "postLogoutExpectingRejection",
           "expectCachePolicyBypassesBeforeAnonymousOrBotCaching"
         ]

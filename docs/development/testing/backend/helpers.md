@@ -35,6 +35,10 @@ Crawl URL redirect suites share the injected fetch mocks, `crawlUrl` wrapper, te
 result fixture from
 [`services/crawls/crawl-url-redirect-harness.mts`](../../../../backend/test-helpers/services/crawls/crawl-url-redirect-harness.mts).
 Each file keeps its own cases.
+Facebook and X friend-sync batching tests share account setup, the deletion-fence page commit, and
+bounded stale-row cleanup in
+[`services/oauth/friends-batch-sync.mts`](../../../../backend/test-helpers/services/oauth/friends-batch-sync.mts).
+Each file keeps its `undici` `vi.mock` and that provider's page payload.
 Captcha route tests share the Turnstile fixture token from
 [`captcha/test-captcha-token.mts`](../../../../backend/test-helpers/captcha/test-captcha-token.mts). The Turnstile `fetch` mock
 factory stays in [`captcha/undici-mock.mts`](../../../../backend/test-helpers/captcha/undici-mock.mts); each consumer keeps its own
