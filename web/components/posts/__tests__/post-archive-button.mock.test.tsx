@@ -1,16 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import { navMockModule } from '@/test-helpers/next-navigation-mock'
+import { registerPostActionButtonTests } from '@/test-helpers/components/posts/post-action-button-tests'
 import { PostArchiveButton } from '../post-form/post-archive-button'
 import type { Post } from '@/types/posts'
 
-const mockRouterRefresh = vi.fn<VitestLooseMock>()
-vi.mock(
-  import('next/navigation'),
-  () =>
-    ({
-      useRouter: () => ({ refresh: mockRouterRefresh }),
-    }) as unknown as typeof import('next/navigation'),
-)
+vi.mock(import('next/navigation'), () => navMockModule)
 
 vi.mock(import('@/lib/api/client/posts'), () => ({
   archivePost: vi.fn<VitestLooseMock>(),
@@ -33,6 +28,7 @@ import { archivePost, unarchivePost } from '@/lib/api/client/posts'
 
 const mockArchivePost = vi.mocked(archivePost)
 const mockUnarchivePost = vi.mocked(unarchivePost)
+const archivedAt = '2026-05-17T20:00:00Z'
 
 const basePost: Post = {
   id: 'post-1',
@@ -55,74 +51,51 @@ const basePost: Post = {
 }
 
 describe('PostArchiveButton', () => {
-  beforeEach(() => {
-    mockRouterRefresh.mockClear()
-    mockArchivePost.mockReset()
-    mockUnarchivePost.mockReset()
-    mockToastError.mockReset()
+  registerPostActionButtonTests({
+    postId: 'post-1',
+    inactiveLabel: 'Archive',
+    activeLabel: 'Unarchive',
+    activeAt: archivedAt,
+    renderAt: timestamp => {
+      render(
+        <PostArchiveButton
+          archivedAt={timestamp}
+          postIdOrSlug='post-1'
+        />,
+      )
+    },
+    activate: mockArchivePost,
+    deactivate: mockUnarchivePost,
+    prepareActivate: () => {
+      mockArchivePost.mockResolvedValue({
+        post: { ...basePost, archived_at: archivedAt },
+      })
+    },
+    prepareDeactivate: () => {
+      mockUnarchivePost.mockResolvedValue({ post: basePost })
+    },
+    prepareActivateFailure: () => {
+      mockArchivePost.mockRejectedValue(new Error('nope'))
+    },
+    reset: () => {
+      mockArchivePost.mockReset()
+      mockUnarchivePost.mockReset()
+      mockToastError.mockReset()
+    },
+    activateFailure: {
+      kind: 'message',
+      mock: mockToastError,
+      message: 'Failed to archive post. Please try again.',
+    },
   })
 
-  it('renders Archive for unarchived posts and refreshes after archivePost succeeds', async () => {
-    mockArchivePost.mockResolvedValue({
-      post: { ...basePost, archived_at: '2026-05-17T20:00:00Z' },
-    })
-
+  it('renders the archive button at the touch target size', () => {
     render(
       <PostArchiveButton
         archivedAt={null}
         postIdOrSlug='post-1'
       />,
     )
-
-    const button = screen.getByRole('button', { name: 'Archive' })
-    expect(button).toHaveClass('h-11')
-    fireEvent.click(button)
-
-    expect(mockArchivePost).toHaveBeenCalledWith('post-1')
-    expect(button).toHaveTextContent('Unarchive')
-    await waitFor(() => {
-      expect(button).toHaveAttribute('aria-pressed', 'true')
-      expect(mockRouterRefresh).toHaveBeenCalled()
-    })
-  })
-
-  it('renders Unarchive for archived posts and refreshes after unarchivePost succeeds', async () => {
-    mockUnarchivePost.mockResolvedValue({ post: basePost })
-
-    render(
-      <PostArchiveButton
-        archivedAt='2026-05-17T20:00:00Z'
-        postIdOrSlug='post-1'
-      />,
-    )
-
-    const button = screen.getByRole('button', { name: 'Unarchive' })
-    fireEvent.click(button)
-
-    expect(mockUnarchivePost).toHaveBeenCalledWith('post-1')
-    expect(button).toHaveTextContent('Archive')
-    await waitFor(() => {
-      expect(button).toHaveAttribute('aria-pressed', 'false')
-      expect(mockRouterRefresh).toHaveBeenCalled()
-    })
-  })
-
-  it('rolls back optimistic archive state on failure', async () => {
-    mockArchivePost.mockRejectedValue(new Error('nope'))
-
-    render(
-      <PostArchiveButton
-        archivedAt={null}
-        postIdOrSlug='post-1'
-      />,
-    )
-
-    const button = screen.getByRole('button', { name: 'Archive' })
-    fireEvent.click(button)
-
-    expect(button).toHaveTextContent('Unarchive')
-    await waitFor(() => expect(button).toHaveTextContent('Archive'))
-    expect(mockRouterRefresh).not.toHaveBeenCalled()
-    expect(mockToastError).toHaveBeenCalledWith('Failed to archive post. Please try again.')
+    expect(screen.getByRole('button', { name: 'Archive' })).toHaveClass('h-11')
   })
 })
