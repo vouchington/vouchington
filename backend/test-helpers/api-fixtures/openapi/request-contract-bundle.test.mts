@@ -46,6 +46,30 @@ describe('buildRequestContractsBundle', () => {
           },
         },
       },
+      responses: {},
     })
+  })
+
+  it('ships only named-component 200 responses, keyed like operations and outside them', () => {
+    const named = { $ref: '#/components/schemas/ItemPage' }
+    const ok = (schema: unknown) => ({
+      responses: { '200': { content: { 'application/json': { schema } } } },
+    })
+    const bundle = buildRequestContractsBundle({
+      paths: {
+        '/api/v1/items/{id}': { get: ok(named) },
+        '/api/v1/inline': { get: ok({ type: 'object', properties: {} }) },
+        '/api/v1/described': { get: ok({ ...named, description: 'extra sibling keyword' }) },
+        '/api/v1/no-content': { get: { responses: { '200': { description: 'OK' } } } },
+        '/api/v1/other-status': {
+          get: { responses: { '201': { content: { 'application/json': { schema: named } } } } },
+        },
+        '/api/v1/not-an-operation': { parameters: [] },
+      },
+      components: { schemas: { ItemPage: { type: 'object' } } },
+    } as never)
+
+    expect(bundle.responses).toEqual({ 'GET:/api/v1/items/:id': named })
+    expect(bundle.operations).toEqual({})
   })
 })

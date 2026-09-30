@@ -1,12 +1,20 @@
 import type { OpenApiDocument } from 'vouchington-tooling/openapi-document'
 
+const OPERATION_METHODS = ['delete', 'get', 'patch', 'post', 'put']
+
+const operationKey = (method: string, route: string): string =>
+  `${method.toUpperCase()}:${route.replace(/\{([^}]+)\}/g, ':$1')}`
+
 /** Runtime schema data has the same compiler extraction source as OpenAPI, but no OpenAPI data. */
 export function buildRequestContractsBundle(document: OpenApiDocument) {
   const operations: Record<string, unknown> = {}
+  const responses: Record<string, unknown> = {}
   for (const [route, pathItem] of Object.entries(document.paths)) {
     for (const [method, operation] of Object.entries(pathItem)) {
-      if (!['delete', 'get', 'patch', 'post', 'put'].includes(method)) continue
+      if (!OPERATION_METHODS.includes(method)) continue
       if (!operation || typeof operation !== 'object') continue
+      const response = namedResponseSchema(operation)
+      if (response) responses[operationKey(method, route)] = response
       const requestBody = (operation as { requestBody?: unknown }).requestBody
       const content =
         requestBody && typeof requestBody === 'object'
@@ -16,7 +24,7 @@ export function buildRequestContractsBundle(document: OpenApiDocument) {
       const parameters = (operation as { parameters?: unknown }).parameters
       const parameterSchemas = collectParameterSchemas(parameters)
       if (!json?.schema && Object.keys(parameterSchemas).length === 0) continue
-      operations[`${method.toUpperCase()}:${route.replace(/\{([^}]+)\}/g, ':$1')}`] = {
+      operations[operationKey(method, route)] = {
         ...(json?.schema ? { body: json.schema } : {}),
         ...parameterSchemas,
       }
@@ -27,7 +35,24 @@ export function buildRequestContractsBundle(document: OpenApiDocument) {
     source: 'compiler-extracted-request-contracts' as const,
     components: document.components.schemas,
     operations,
+    responses,
   }
+}
+
+/**
+ * The 200 JSON response, only when it is a reference to a named component. Runtime consumers (MCP
+ * tool output schemas) resolve the reference against `components`, so the bundle stays small
+ * instead of repeating every inline response body. `responses` is a sibling of `operations`, never
+ * a field of it: an operation entry makes the request validator treat a route as contract-covered.
+ */
+function namedResponseSchema(operation: object): { $ref: string } | null {
+  const responses = (operation as { responses?: Record<string, unknown> }).responses
+  const ok = responses?.['200'] as
+    | { content?: Record<string, { schema?: Record<string, unknown> } | undefined> }
+    | undefined
+  const schema = ok?.content?.['application/json']?.schema
+  if (!schema || Object.keys(schema).length !== 1 || typeof schema['$ref'] !== 'string') return null
+  return { $ref: schema['$ref'] }
 }
 
 function collectParameterSchemas(parameters: unknown): Record<string, unknown> {

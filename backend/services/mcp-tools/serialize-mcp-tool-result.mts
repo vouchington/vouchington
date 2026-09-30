@@ -129,8 +129,15 @@ class BoundedJsonSerializer {
   }
 }
 
-export function serializeMcpToolResult(result: unknown): string {
-  const serializer = new BoundedJsonSerializer(MAX_MCP_TOOL_RESULT_BYTES)
+/**
+ * Serializes a tool result as bounded JSON. `maxBytes` lowers the byte bound for a caller that
+ * returns the JSON more than once in one response; the visit bound never changes.
+ */
+export function serializeMcpToolResult(
+  result: unknown,
+  maxBytes: number = MAX_MCP_TOOL_RESULT_BYTES,
+): string {
+  const serializer = new BoundedJsonSerializer(maxBytes)
   if (!serializer.serializeValue(result, '', false)) {
     throw new TypeError('Tool result is not JSON serializable')
   }

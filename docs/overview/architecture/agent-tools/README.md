@@ -47,9 +47,9 @@ fails the catalog test when a read tool names a non-`GET` operation, a write too
 or `idempotentHint` differs from whether every named operation is a `PUT` or `DELETE`.
 
 Each MCP server also sends `instructions` on `initialize`
-([`instructions.mts`](../../../../backend/services/mcp-tools/instructions.mts)) so agents learn
-how the tools fit together before calling them. A tool result larger than the MCP response limit
-returns a tool error that asks the caller to narrow the query or lower the limit.
+([`instructions.mts`](../../../../backend/services/mcp-tools/instructions.mts)) so agents learn how the tools fit together before calling them. A result over the MCP response limit returns a tool error that asks the caller to narrow the query.
+
+A tool may set `meta.outputSchema` (JSON Schema, `object` root) so `tools/call` also returns validated `structuredContent`; see [Structured tool results](../services/mcp-tools/README.md#structured-tool-results). New MCP tools declare one; [`output-schema-ratchet.mts`](../../../../backend/services/mcp-tools/catalog/output-schema-ratchet.mts) lists those that do not yet.
 
 ---
 
