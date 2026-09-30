@@ -61,6 +61,10 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
     'user_deletion_external_works.work_key',
     'Provider idempotency key while work is pending; it names no Voucha entity.',
   ],
+  [
+    'mcp_call_audit_events.correlation_id',
+    'Server-minted id shared by the audit rows of one MCP request; it names no Voucha entity.',
+  ],
 ])
 
 // Ids recorded at write time and never joined for authorization. They outlive their source row.
