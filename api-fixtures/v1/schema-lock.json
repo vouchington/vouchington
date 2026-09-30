@@ -446,6 +446,14 @@
       "fixtureIds": ["native.cards.empty", "native.cards.page-1", "native.cards.page-2"],
       "hash": "271b5f8980c4290e70c65a42d9e9496ea779ffc6b8a30edc97a7faf14ac802f0"
     },
+    "GET:/api/v1/my/conversations": {
+      "fixtureIds": ["native.chat.conversations"],
+      "hash": "9b29d3decc16d46e98170e679e88571375ec4455c8072104e4f907bde9169d18"
+    },
+    "GET:/api/v1/my/conversations/:conversationId/messages": {
+      "fixtureIds": ["native.chat.incomplete", "native.chat.page-1", "native.chat.page-2"],
+      "hash": "74cc3043751ab3875fbbc5c854490c23eae72718341939d37f74c34ac75fdc5d"
+    },
     "GET:/api/v1/my/email-addresses": {
       "fixtureIds": ["native.my.email-addresses.empty"],
       "hash": "96f3cd2d68fa7d115f3275747a122290649ba7ae8b57681b17aeedd2e8515c03"
@@ -1014,6 +1022,22 @@
       "fixtureIds": ["native.moderation.ban-evasion.confirm"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
     },
+    "POST:/api/v1/conversations/:conversationId/client-generated-chat": {
+      "fixtureIds": ["native.chat.completed", "native.chat.duplicate", "native.chat.retry"],
+      "hash": "57d9f965f6a9933c3f8d61183e4858488eb7ce9540106987345c28b1da2b2af1"
+    },
+    "POST:/api/v1/conversations/:conversationId/client-generated-chat#conflict": {
+      "fixtureIds": ["native.chat.identity-conflict"],
+      "hash": "6993c8ec7b82251702f5afa7a59e011559585b4f9ec85967d770be7707aa1ac2"
+    },
+    "POST:/api/v1/conversations/:conversationId/client-generated-chat#forbidden": {
+      "fixtureIds": ["native.chat.forbidden"],
+      "hash": "6993c8ec7b82251702f5afa7a59e011559585b4f9ec85967d770be7707aa1ac2"
+    },
+    "POST:/api/v1/conversations/:conversationId/client-generated-chat#unauthorized": {
+      "fixtureIds": ["native.chat.unauthorized"],
+      "hash": "6993c8ec7b82251702f5afa7a59e011559585b4f9ec85967d770be7707aa1ac2"
+    },
     "POST:/api/v1/copyright-notices/:id/guest-capabilities": {
       "fixtureIds": ["web.copyright.guest-capability.issued"],
       "hash": "d020364fa55f17a7d92aa47b6df59fa93651e78fcd65be6691cb9593e0fb0387"
@@ -1383,6 +1407,46 @@
     "native.cards.update.full": {
       "fixtureIds": ["native.cards.update.full"],
       "hash": "807b88dc92295e86e3c343ae9ec88dd526ed465802c08908c50644c36164c248"
+    },
+    "native.chat.completed": {
+      "fixtureIds": ["native.chat.completed"],
+      "hash": "5dd0136849ed15c8e098450dfe2bbc9dc1dd0cd5fdf55af4c692f988165b5e36"
+    },
+    "native.chat.conversations": {
+      "fixtureIds": ["native.chat.conversations"],
+      "hash": "ea00a925938bb54795b72ea3813b0a2cb4b7faee0aa5c0a9f680ff9053b93129"
+    },
+    "native.chat.duplicate": {
+      "fixtureIds": ["native.chat.duplicate"],
+      "hash": "5dd0136849ed15c8e098450dfe2bbc9dc1dd0cd5fdf55af4c692f988165b5e36"
+    },
+    "native.chat.forbidden": {
+      "fixtureIds": ["native.chat.forbidden"],
+      "hash": "d803b8cd6aef950bd59c7467fe8ce4d612d0730f5b0270a521b792f7ef6e4550"
+    },
+    "native.chat.identity-conflict": {
+      "fixtureIds": ["native.chat.identity-conflict"],
+      "hash": "d803b8cd6aef950bd59c7467fe8ce4d612d0730f5b0270a521b792f7ef6e4550"
+    },
+    "native.chat.incomplete": {
+      "fixtureIds": ["native.chat.incomplete"],
+      "hash": "a7d3117e16887eabada9648bfdd8e3747182e5f39722226aeaa312d979e9a7db"
+    },
+    "native.chat.page-1": {
+      "fixtureIds": ["native.chat.page-1"],
+      "hash": "ff427ab380a5735731602437adb953db19c91c9aca30aad29b6b890a334fc4b0"
+    },
+    "native.chat.page-2": {
+      "fixtureIds": ["native.chat.page-2"],
+      "hash": "f4b6833f09eed130c12eb5129e51cbbe6c46a96334f7c5886013a17c121b9bdc"
+    },
+    "native.chat.retry": {
+      "fixtureIds": ["native.chat.retry"],
+      "hash": "5dd0136849ed15c8e098450dfe2bbc9dc1dd0cd5fdf55af4c692f988165b5e36"
+    },
+    "native.chat.unauthorized": {
+      "fixtureIds": ["native.chat.unauthorized"],
+      "hash": "d803b8cd6aef950bd59c7467fe8ce4d612d0730f5b0270a521b792f7ef6e4550"
     },
     "native.comments.ancestors.bounded.deep-continuation": {
       "fixtureIds": ["native.comments.ancestors.bounded.deep-continuation"],

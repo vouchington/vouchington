@@ -1,0 +1,32 @@
+{
+  "assistant_message": {
+    "completion": {
+      "status": "completed"
+    },
+    "content": {
+      "content": "Hi",
+      "role": "assistant"
+    },
+    "conversation_id": "0198ffff-0000-7000-8000-000000000001",
+    "created_at": "2026-09-29T00:00:00.000Z",
+    "id": "0198ffff-0001-7000-8000-000000000002",
+    "updated_at": "2026-09-29T00:00:00.000Z"
+  },
+  "turn": {
+    "assistant_message_id": "0198ffff-0001-7000-8000-000000000002",
+    "user_message_id": "0198ffff-0001-7000-8000-000000000001"
+  },
+  "user_message": {
+    "completion": {
+      "status": "completed"
+    },
+    "content": {
+      "content": "Hello",
+      "role": "user"
+    },
+    "conversation_id": "0198ffff-0000-7000-8000-000000000001",
+    "created_at": "2026-09-29T00:00:00.000Z",
+    "id": "0198ffff-0001-7000-8000-000000000001",
+    "updated_at": "2026-09-29T00:00:00.000Z"
+  }
+}

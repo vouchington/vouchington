@@ -1,3 +1,4 @@
+import { getLatestConversationMessageAgenticRunByConversationMessageId } from '../agentic-runs.mts'
 import { describe, expect, it } from 'vitest'
 import { createSystemUser } from '@voucha/test-helpers'
 import { createHostedChatTurn } from '../chat-turns.mts'
@@ -109,6 +110,8 @@ describe('conversations-messages service (conversations)', () => {
     await updateConversationLastResponseId(conversation.id, 'response_stale')
 
     const result = await createClientGeneratedChatTurn({
+      userMessageId: user.id,
+      assistantMessageId: conversation.id,
       conversationId: conversation.id,
       createdById: user.id,
       message: 'Summarize my rewards profile',
@@ -127,7 +130,11 @@ describe('conversations-messages service (conversations)', () => {
       role: 'assistant',
       content: 'Use transferable points first.',
     })
-    expect(result.agenticRun).toMatchObject({
+    expect(
+      await getLatestConversationMessageAgenticRunByConversationMessageId(
+        result.assistantMessage.id,
+      ),
+    ).toMatchObject({
       conversation_id: conversation.id,
       conversation_message_id: result.assistantMessage.id,
       model_name: 'apple-foundation-system',
@@ -136,7 +143,13 @@ describe('conversations-messages service (conversations)', () => {
       input: { message: 'Summarize my rewards profile' },
       output: { response: 'Use transferable points first.' },
     })
-    expect(result.agenticRun.termination_reason).toBe('no_tool_calls')
+    expect(
+      (
+        await getLatestConversationMessageAgenticRunByConversationMessageId(
+          result.assistantMessage.id,
+        )
+      )?.termination_reason,
+    ).toBe('no_tool_calls')
   })
 
   it('createClientGeneratedChatTurn stores phi-silica for windows_foundry', async () => {
@@ -145,6 +158,8 @@ describe('conversations-messages service (conversations)', () => {
     const conversation = await createConversation(user.id, 'Windows local model')
 
     const result = await createClientGeneratedChatTurn({
+      userMessageId: user.id,
+      assistantMessageId: conversation.id,
       conversationId: conversation.id,
       createdById: user.id,
       message: 'Summarize my rewards profile',
@@ -153,7 +168,11 @@ describe('conversations-messages service (conversations)', () => {
       modelName: 'phi-silica',
     })
 
-    expect(result.agenticRun).toMatchObject({
+    expect(
+      await getLatestConversationMessageAgenticRunByConversationMessageId(
+        result.assistantMessage.id,
+      ),
+    ).toMatchObject({
       model_name: 'phi-silica',
       model_provider: 'windows_foundry',
     })
@@ -165,6 +184,8 @@ describe('conversations-messages service (conversations)', () => {
     const conversation = await createConversation(user.id, 'OpenAI-compatible local model')
 
     const result = await createClientGeneratedChatTurn({
+      userMessageId: user.id,
+      assistantMessageId: conversation.id,
       conversationId: conversation.id,
       createdById: user.id,
       message: 'Summarize my rewards profile',
@@ -173,7 +194,11 @@ describe('conversations-messages service (conversations)', () => {
       modelName: 'gpt-oss-20b-local',
     })
 
-    expect(result.agenticRun).toMatchObject({
+    expect(
+      await getLatestConversationMessageAgenticRunByConversationMessageId(
+        result.assistantMessage.id,
+      ),
+    ).toMatchObject({
       model_name: 'gpt-oss-20b-local',
       model_provider: 'openai_compatible',
     })
@@ -220,6 +245,8 @@ describe('conversations-messages service (conversations)', () => {
 
     await expect(
       createClientGeneratedChatTurn({
+        userMessageId: user.id,
+        assistantMessageId: conversation.id,
         conversationId: conversation.id,
         createdById: user.id,
         message: 'Summarize my rewards profile',

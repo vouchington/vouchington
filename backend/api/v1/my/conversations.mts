@@ -1,3 +1,7 @@
+import {
+  toConversationTranscript,
+  toMessageTranscript,
+} from '@services/conversations-messages/transcript'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -43,7 +47,7 @@ app.route('/api/v1/my/conversations').get(async (ctx: Context) => {
   const results = conversations.slice(0, limit)
 
   ctx.json({
-    results,
+    results: results.map(toConversationTranscript),
     page_info: buildPageInfo(results, {
       hasNextPage: hasMore,
       getCursor: conversation => ({ id: conversation.id }),
@@ -77,7 +81,7 @@ app.route('/api/v1/my/conversations/:conversationId/messages').get(async (ctx: C
   const hasMore = messages.length > limit
   const results = hasMore ? messages.slice(1) : messages
   ctx.json({
-    results,
+    results: results.map(toMessageTranscript),
     page_info: {
       has_next_page: hasMore,
       start_cursor: results.at(-1) ? encodeCursor({ id: results.at(-1)!.id }) : null,
@@ -103,7 +107,7 @@ app.route('/api/v1/my/conversations/:conversationId').patch(async (ctx: Context)
   await updateConversationTitle(conversationId, body.title as string, currentUser.id)
 
   const updated = await getConversationById(conversationId)
-  ctx.json({ conversation: updated })
+  ctx.json({ conversation: updated ? toConversationTranscript(updated) : null })
 })
 
 // DELETE /api/v1/my/conversations/:conversationId
@@ -135,7 +139,7 @@ app.route('/api/v1/my/conversations/:conversationId/title').post(async (ctx: Con
   assertNotSuspended(currentUser)
 
   if (conversation.title?.trim()) {
-    ctx.json({ conversation })
+    ctx.json({ conversation: toConversationTranscript(conversation) })
     return
   }
 
@@ -154,5 +158,5 @@ app.route('/api/v1/my/conversations/:conversationId/title').post(async (ctx: Con
   const updated = await updateConversationTitle(conversationId, title, currentUser.id).then(() =>
     getConversationById(conversationId),
   )
-  ctx.json({ conversation: updated })
+  ctx.json({ conversation: updated ? toConversationTranscript(updated) : null })
 })
