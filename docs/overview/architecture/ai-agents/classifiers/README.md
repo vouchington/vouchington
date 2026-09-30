@@ -41,3 +41,16 @@ stable-batch replay check and its single PostgreSQL transaction.
 `prepareSingleCallClassifierDecision` performs the same validation and one provider call but
 returns the complete durable decision input without persisting it. Callers that must atomically
 combine a decision with another receipt use that prepared input in their own transaction.
+
+## Credentialed golden regression set
+
+The C5 post-classifier and C6 autotagger OpenRouter tests run a checked-in set of synthetic posts
+and feed items through production prompt construction, candidate bindings, and the active threshold
+snapshot. They compare decision bands rather than exact probabilities, allow one unexpected fixture
+per candidate, require at least three fixture results per candidate, and include at least two
+independent positive examples for each candidate. Every fixture must return exactly one result per
+candidate. Each fixture makes one provider call; the tests report call count and elapsed time. C5
+uses each active candidate threshold revision; C6 uses the active prompt version's default-threshold
+revision. Updating expected bands or tolerances is an ordinary reviewed baseline change. The
+import-graph test prevents classifier threshold, prompt-version, or configuration writes from
+entering the harness. This is a regression set, not calibration or threshold tuning.
