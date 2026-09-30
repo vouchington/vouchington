@@ -1,6 +1,8 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { defineQueryContract, queryEnum } from '@modules/pagination'
+import { apiQuery } from '../../response-contract.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { getUserActivePlan } from '@services/memberships'
 import { isAdminUser } from '@services/users'
 import { getContributionStatus } from '@services/contribution-gating/assert'
@@ -18,13 +20,26 @@ import {
   type ContributionLimitAction,
 } from '@services/contribution-gating/limit-types'
 
+// `parseContributionLimitAction` owns the `action` status (400), so it runs first and the schema
+// validates the value it accepted.
+const contributionStatusQuery = defineQueryContract({
+  action: queryEnum(contributionLimitActions, {
+    description: 'Also return this action limit; an unknown action is rejected with 400.',
+  }),
+})
+
 // GET /api/v1/my/contribution-status
 app.route('/api/v1/my/contribution-status').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/my/contribution-status', contributionStatusQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/contribution-status')
+
+  const action = parseContributionLimitAction(ctx, ctx.query.action)
+  validateRequestContract(ctx, 'GET:/api/v1/my/contribution-status', {
+    query: action ? { action } : {},
+  })
 
   const membershipPlan = await getUserActivePlan(currentUser.id)
   const isAdmin = isAdminUser(currentUser)
-  const action = parseContributionLimitAction(ctx, ctx.query.action)
   const source = sourceForContributionAction(action)
   const actionLimit = action
     ? getContributionActionLimitStatus(currentUser, membershipPlan, action)

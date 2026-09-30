@@ -2,20 +2,22 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { createPaginationParser } from '@modules/pagination'
 import { apiQuery } from '../../response-contract.mts'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { getMyCommunityMemberships } from '@services/communities'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const myCommunitiesParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { min: 1, max: 100, default: 25 },
 })
 
-// The query carrier is not schema-validated: the pagination parser owns limit clamping and
-// malformed-cursor 400s, and the generated schema has no unknown-parameter or coercion rules.
 async function handleListMyCommunities(ctx: Context) {
   apiQuery('GET:/api/v1/my/communities', myCommunitiesParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/communities')
   const pagination = myCommunitiesParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, myCommunitiesParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = pagination.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/communities', { query })
   const memberships = await getMyCommunityMemberships(currentUser.id, pagination)
   ctx.json(memberships)
 }

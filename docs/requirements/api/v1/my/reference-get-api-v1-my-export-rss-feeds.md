@@ -5,7 +5,9 @@
 Query parameters:
 
 - `format` — `json` or `csv`; omitted or any other value returns OPML XML
-- `feed_type` — filter by feed type (e.g. `article`, `podcast`, `video`)
+- `feed_type` — filter by feed type: `article`, `podcast`, `video`, or `mixed`. An empty value
+  means no filter; any other value, or a repeated `feed_type`, is a `422` before the export starts
+  (see [request validation](reference-request-validation.md#query-carriers))
 
 **CSV format** (`?format=csv`) returns `Content-Type: text/csv; charset=utf-8` with a header row and columns:
 

@@ -4,6 +4,7 @@ import type { Context } from '@jongleberry/api-server'
 import { createPaginationParser } from '@modules/pagination'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   hasNotification,
   getUnreadNotificationsSummary,
@@ -92,15 +93,15 @@ app
     ctx.setStatus(204)
   })
 
-// The query carrier is not schema-validated: the pagination parser owns limit clamping and
-// malformed-cursor 400s, and the generated schema has no unknown-parameter or coercion rules.
 app.route('/api/v1/my/notifications/push-subscriptions').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/notifications/push-subscriptions', pushSubscriptionsParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/notifications/push-subscriptions')
 
-  ctx.json(
-    await listWebPushSubscriptionsPage(currentUser.id, pushSubscriptionsParser.parse(ctx.query)),
-  )
+  const options = pushSubscriptionsParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, pushSubscriptionsParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/notifications/push-subscriptions', { query })
+  ctx.json(await listWebPushSubscriptionsPage(currentUser.id, options))
 })
 
 app.route('/api/v1/my/notifications/push-subscriptions').post(async (ctx: Context) => {

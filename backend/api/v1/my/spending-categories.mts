@@ -11,6 +11,7 @@ import {
   deleteHouseholdSpendingCategoryById,
 } from '@services/individuals-households'
 import { assertNotSuspended } from '@services/users'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import type { Money } from '@ts-shared/money'
 
 type SpendingFrequency = 'monthly' | 'annually'
@@ -35,18 +36,15 @@ const spendingCategoriesPagination = createPaginationParser({
 })
 
 // GET /api/v1/my/spending-categories
-//
-// The query carrier is not schema-validated: the pagination parser owns limit clamping and
-// malformed-cursor 400s, and the generated schema has no unknown-parameter or coercion rules.
 app.route('/api/v1/my/spending-categories').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/spending-categories', spendingCategoriesPagination)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/spending-categories')
-  const page = await getHouseholdSpendingCategoriesByUserId(
-    currentUser,
-    currentUser,
-    spendingCategoriesPagination.parse(ctx.query),
-  )
-  ctx.json(page)
+
+  const options = spendingCategoriesPagination.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, spendingCategoriesPagination.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/spending-categories', { query })
+  ctx.json(await getHouseholdSpendingCategoriesByUserId(currentUser, currentUser, options))
 })
 
 // POST /api/v1/my/spending-categories
