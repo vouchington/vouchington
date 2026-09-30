@@ -29,7 +29,7 @@ describe('CopyrightNoticeDetailView', () => {
             },
             {
               id: 'event-124',
-              event_type: 'court_or_ccb_hold_received',
+              event_type: 'placement_withheld',
               created_at: '2026-01-03T00:00:00.000Z',
             },
           ],
@@ -40,9 +40,7 @@ describe('CopyrightNoticeDetailView', () => {
 
     expect(screen.getByText('Case case-123')).toBeInTheDocument()
     expect(screen.getByText('Notice received', { exact: false })).toBeInTheDocument()
-    expect(
-      screen.getByText('Court or Copyright Claims Board hold received', { exact: false }),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Material withheld', { exact: false })).toBeInTheDocument()
     expect(screen.queryByText(/notice_received/)).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Current claimant' })).toHaveAttribute(
       'href',

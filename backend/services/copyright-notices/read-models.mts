@@ -207,7 +207,7 @@ export async function listAcceptedCopyrightNotices(options: {
 
 /**
  * The member-visible case. Its timeline is the audience allowlist in `timeline-visibility.mts`;
- * only the participant read model widens it, for the viewer's own role.
+ * only the participant read model widens it, for staff.
  */
 export async function getCopyrightPublicNoticeDetail(
   noticeId: string,
@@ -305,7 +305,7 @@ export async function getCopyrightParticipantNoticeDetail(
   if (!viewerRole) return null
   const detail = await getCopyrightPublicNoticeDetail(
     noticeId,
-    viewerRole === 'staff' ? 'staff' : 'participant',
+    viewerRole === 'staff' ? 'staff' : 'member',
   )
   if (!detail) return null
   await using transaction = await beginTransaction()

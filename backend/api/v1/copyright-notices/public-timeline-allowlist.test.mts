@@ -9,11 +9,12 @@ import { exhaustCopyrightActionIntent } from '@services/copyright-notices/route-
 
 type TimelineEvent = { event_type: string }
 
-const internalEventTypes = [
+const withheldEventTypes = [
   'guest_capability_issued',
   'guest_capability_revoked',
   'copyright_action_replayed',
   'supplement_received',
+  'court_or_ccb_hold_received',
 ]
 
 function eventTypes(body: { copyright_notice: { timeline: TimelineEvent[] } }): string[] {
@@ -36,7 +37,7 @@ describe('copyright case timeline audiences', () => {
     vi.unstubAllEnvs()
   })
 
-  it('gives each audience only its own events while staff keep the full timeline', async () => {
+  it('gives members and case participants only case-facing events while staff keep the full timeline', async () => {
     const fixture = await createCopyrightReplayFixture()
     const staff = createRequest()
     await staff.authenticateAs(fixture.moderator)
@@ -66,7 +67,7 @@ describe('copyright case timeline audiences', () => {
       .expect(200)
     const recorded = (await getCopyrightNoticePrivateAggregate(fixture.noticeId))?.lifecycleEvents
     expect(recorded?.map(event => event.event_type)).toEqual(
-      expect.arrayContaining([...internalEventTypes, 'court_or_ccb_hold_received']),
+      expect.arrayContaining(withheldEventTypes),
     )
 
     const member = createRequest()
@@ -77,9 +78,7 @@ describe('copyright case timeline audiences', () => {
     expect(memberTypes).toEqual(
       expect.arrayContaining(['notice_received', 'provisional_restriction_imposed']),
     )
-    for (const internal of [...internalEventTypes, 'court_or_ccb_hold_received']) {
-      expect(memberTypes).not.toContain(internal)
-    }
+    for (const internal of withheldEventTypes) expect(memberTypes).not.toContain(internal)
     const staffOnMemberRoute = eventTypes(
       (await staff.get(`/api/v1/copyright-notices/${fixture.noticeId}`).expect(200)).body,
     )
@@ -90,20 +89,14 @@ describe('copyright case timeline audiences', () => {
     const claimantResponse = await claimant
       .get(`/api/v1/copyright-notices/${fixture.noticeId}/participant`)
       .expect(200)
-    const participantTypes = eventTypes(claimantResponse.body)
     expect(claimantResponse.body.copyright_notice.viewer_role).toBe('claimant')
-    expect(participantTypes).toEqual(
-      expect.arrayContaining([...memberTypes, 'court_or_ccb_hold_received']),
-    )
-    for (const internal of internalEventTypes) expect(participantTypes).not.toContain(internal)
+    expect(eventTypes(claimantResponse.body)).toEqual(memberTypes)
 
     const staffResponse = await staff
       .get(`/api/v1/copyright-notices/${fixture.noticeId}/participant`)
       .expect(200)
     expect(staffResponse.body.copyright_notice.viewer_role).toBe('staff')
-    expect(eventTypes(staffResponse.body)).toEqual(
-      expect.arrayContaining([...internalEventTypes, 'court_or_ccb_hold_received']),
-    )
+    expect(eventTypes(staffResponse.body)).toEqual(expect.arrayContaining(withheldEventTypes))
     expect(eventTypes(staffResponse.body)).toHaveLength(recorded?.length ?? -1)
   })
 })

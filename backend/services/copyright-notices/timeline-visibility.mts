@@ -1,27 +1,19 @@
 /**
  * Audience decision record for the copyright case timeline.
  *
- * Every `copyright_notice_lifecycle_events.event_type` has exactly one entry: the narrowest
- * audience allowed to see that event. Audiences are cumulative (`member` < `participant` <
- * `staff`), so a participant also sees every member event and staff see everything.
+ * Every `copyright_notice_lifecycle_events.event_type` has exactly one entry: the audience allowed
+ * to see that event.
  *
- * - `member`: any signed-in account reading the case. Case-facing events only.
- * - `participant`: the case's claimant or an affected poster. Adds what explains the outcome of
- *   their own case.
- * - `staff`: copyright reviewers. Internal processing, delivery, replay, legal-hold, and
- *   guest-capability events stay here.
+ * - `member`: any signed-in account reading the case, including its claimant and affected
+ *   poster. Case-facing events only.
+ * - `staff`: copyright reviewers, who also see every `member` event. Internal processing,
+ *   delivery, replay, legal-hold, and guest-capability events stay here.
  *
- * Visibility is an allowlist: an event type with no entry here is invisible to members and
- * participants. A schema test compares these keys with the database `event_type` CHECK, so a new
- * event type cannot ship without an audience decision.
+ * Visibility is an allowlist: an event type with no entry here is invisible to members. A schema
+ * test compares these keys with the database `event_type` CHECK, so a new event type cannot ship
+ * without an audience decision.
  */
-export type CopyrightTimelineAudience = 'member' | 'participant' | 'staff'
-
-const audienceRank: Record<CopyrightTimelineAudience, number> = {
-  member: 0,
-  participant: 1,
-  staff: 2,
-}
+export type CopyrightTimelineAudience = 'member' | 'staff'
 
 export const copyrightTimelineEventAudience = {
   // Case-facing: what happened to the case and to the hosted material.
@@ -34,9 +26,10 @@ export const copyrightTimelineEventAudience = {
   counter_notice_received: 'member',
   counter_notice_reviewed: 'member',
   withdrawal_received: 'member',
-  // Borderline: explains to the poster and claimant why restoration did not happen.
-  court_or_ccb_hold_received: 'participant',
-  // Borderline: staff-only until an owner or counsel decides otherwise.
+  // Borderline: staff-only until an owner or counsel decides otherwise. A received court or CCB
+  // hold explains to the poster why restoration did not happen, so a participant audience is the
+  // likely follow-up.
+  court_or_ccb_hold_received: 'staff',
   supplement_received: 'staff',
   counter_notice_deadline_started: 'staff',
   restoration_unavailable: 'staff',
@@ -79,6 +72,6 @@ export function copyrightTimelineEventTypesFor(
 ): CopyrightLifecycleEventType[] | null {
   if (audience === 'staff') return null
   return decidedEventTypes.filter(
-    eventType => audienceRank[copyrightTimelineEventAudience[eventType]] <= audienceRank[audience],
+    eventType => copyrightTimelineEventAudience[eventType] === audience,
   )
 }

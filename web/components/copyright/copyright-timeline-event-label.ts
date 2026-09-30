@@ -13,7 +13,6 @@ const caseFacingEventLabels = {
   counter_notice_received: 'Counter-notice received',
   counter_notice_reviewed: 'Counter-notice reviewed',
   withdrawal_received: 'Withdrawal received',
-  court_or_ccb_hold_received: 'Court or Copyright Claims Board hold received',
 } as const satisfies Record<string, string>
 
 type CaseFacingEventType = keyof typeof caseFacingEventLabels

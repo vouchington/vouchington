@@ -41,8 +41,7 @@ The detail's `timeline` is an audience allowlist: a member sees only case-facing
 received, provisional restriction imposed, placement withheld and restored, appeal and
 counter-notice received and reviewed, withdrawal received) and never internal review, replay,
 legal-hold, or guest-capability events. `GET /api/v1/copyright-notices/:id/participant` gives a
-claimant or affected poster the same events plus a received court or CCB hold, and gives staff the
-unfiltered timeline.
+claimant or affected poster the same case-facing events and gives staff the unfiltered timeline.
 
 The staff review queue uses the same bounded `after` and `limit` contract. Its cursor is scoped to
 the actionable queue and orders by `(urgency, waiting_since, id)`: a missed restoration deadline
