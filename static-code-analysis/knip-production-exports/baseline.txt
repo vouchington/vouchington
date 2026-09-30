@@ -381,12 +381,10 @@ exports backend/workers/memberships/processors/stripe-event-test-fixtures.mts to
 exports backend/workers/openai-moderation/workers/openai_moderation_omni_single.mts processOpenAIModerationOmniSingleJob
 exports backend/workers/rss-feeds/processors.mts processFetchRssFeed
 exports backend/workers/rss-feeds/processors.mts processRssFeedsDispatcher
-exports backend/workers/ses-inbound/processors/streamed-mail-parts.mts MAX_MIME_TEXT_BYTES
 exports backend/workers/sitemaps/processors.mts backfillDispatcherDependencies
 exports backend/workers/sitemaps/processors.mts updatePostDaySitemapDependencies
 exports backend/workers/sitemaps/processors.mts updateSitemapIndexDependencies
 exports backend/workers/story-post-related-url-projections/processors.mts processReconcileStoryPostRelatedUrlProjections
-exports backend/workers/user-deletions/processors/process-job.mts isFinalUserDeletionAttempt
 types backend/agents/chat/stream.mts ChatStreamEvent
 types backend/services/ap-inbox-activities/durable-delivery-transition-contract.mts ActivityPubInboxDeliveryTransitionDimensions
 types backend/services/contribution-gating/admission.mts ContributionAdmissionAudit
