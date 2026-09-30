@@ -3,7 +3,7 @@
 import { use, useMemo, useSyncExternalStore } from 'react'
 import { getFeatureFlagSnapshot, getFeatureFlagServerSnapshot } from './cookies'
 import { FeatureFlagsContext } from './context-value'
-import type { FeatureFlags } from './shared'
+import { mergeFeatureFlagOverrides, type FeatureFlags } from './shared'
 
 function subscribeFeatureFlagOverrides(callback: () => void): () => void {
   window.addEventListener('feature-flag-overrides-updated', callback)
@@ -18,5 +18,5 @@ export function useFeatureFlags(): FeatureFlags {
     getFeatureFlagServerSnapshot,
   )
 
-  return useMemo(() => ({ ...globalFlags, ...overrides }), [globalFlags, overrides])
+  return useMemo(() => mergeFeatureFlagOverrides(globalFlags, overrides), [globalFlags, overrides])
 }

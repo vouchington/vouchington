@@ -289,7 +289,7 @@ async function expectNarrowPublicEmbedQuery(
     expect(queryText).toContain('AS display_player_url')
     expect(queryText).not.toMatch(/\bAS display_embed_metadata\b/)
     expect(queryText).not.toContain('AS display_meta_tags')
-    expect(queryText).toContain('THEN fn_crawl_embed_json(c) ELSE NULL END AS embed_metadata')
+    expect(queryText).toContain('THEN c.embed_metadata ELSE NULL END AS embed_metadata')
     expect(query!.values).toContain(false)
   } catch (error) {
     stopTestQueryCapture()

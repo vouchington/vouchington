@@ -8,6 +8,7 @@ import {
   createTestUrlWithHostname,
   insertTestStory,
   setTestItemStoryId,
+  executeTestAdmittedPost,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import { upsertSystemAdministrator } from '@services/users/system-users'
@@ -162,7 +163,7 @@ describe('discussion', () => {
           claimed.resolve()
           await release.promise
         },
-        execute: async () => ({ post: { id: randomUUID() } }),
+        execute: executeTestAdmittedPost,
       })
       await claimed.promise
 

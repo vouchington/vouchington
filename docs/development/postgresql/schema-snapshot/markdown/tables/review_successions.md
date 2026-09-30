@@ -12,7 +12,6 @@ Not partitioned — growth: unbounded.
 | `predecessor_post_id`       | `uuid`                     | no       |                              |          |           |           | Older exact-topic review archived by this automatic succession epoch.                                                           |
 | `successor_post_id`         | `uuid`                     | no       |                              |          |           |           | Newer review that was public when this archive epoch was created; immutable historical evidence, not a current routing pointer. |
 | `author_user_id`            | `uuid`                     | no       |                              |          |           |           | Shared non-null author snapshot for the predecessor and successor reviews.                                                      |
-| `topic_ids`                 | `uuid[]`                   | no       |                              |          |           |           | Ascending, distinct exact topic-set snapshot at automatic archive time.                                                         |
 | `predecessor_archived_at`   | `timestamp with time zone` | no       |                              |          |           |           | Exact posts.archived_at value written by this automatic archive epoch.                                                          |
 | `automatically_restored_at` | `timestamp with time zone` | yes      |                              |          |           |           | Terminal timestamp when reconciliation restored the predecessor.                                                                |
 | `manual_override_at`        | `timestamp with time zone` | yes      |                              |          |           |           | Terminal timestamp when a manual archive or unarchive revoked automatic restoration authority.                                  |
@@ -30,7 +29,6 @@ Not partitioned — growth: unbounded.
 - `review_successions_predecessor_before_successor`: `CHECK ((predecessor_post_id < successor_post_id))`
 - `review_successions_terminal_after_archive`: `CHECK ((((automatically_restored_at IS NULL) OR (automatically_restored_at >= predecessor_archived_at)) AND ((manual_override_at IS NULL) OR (manual_override_at >= predecessor_archived_at))))`
 - `review_successions_terminal_lifecycle`: `CHECK ((num_nonnulls(automatically_restored_at, manual_override_at) <= 1))`
-- `review_successions_topic_ids_check`: `CHECK (fn_review_succession_topic_ids_are_sorted_distinct(topic_ids))`
 
 **Foreign keys:**
 
@@ -41,7 +39,7 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `idx_review_successions__active_successor_post_id`: `CREATE INDEX idx_review_successions__active_successor_post_id ON public.review_successions USING btree (successor_post_id) WHERE ((automatically_restored_at IS NULL) AND (manual_override_at IS NULL))`
-- `idx_review_successions__author_user_id__topic_ids`: `CREATE INDEX idx_review_successions__author_user_id__topic_ids ON public.review_successions USING btree (author_user_id, topic_ids)`
+- `idx_review_successions__author_user_id`: `CREATE INDEX idx_review_successions__author_user_id ON public.review_successions USING btree (author_user_id)`
 - `idx_review_successions__successor_post_id`: `CREATE INDEX idx_review_successions__successor_post_id ON public.review_successions USING btree (successor_post_id)`
 - `review_successions_pkey`: `CREATE UNIQUE INDEX review_successions_pkey ON public.review_successions USING btree (id)`
 - `uq_review_successions__active_predecessor`: `CREATE UNIQUE INDEX uq_review_successions__active_predecessor ON public.review_successions USING btree (predecessor_post_id) WHERE ((automatically_restored_at IS NULL) AND (manual_override_at IS NULL))`
@@ -50,4 +48,5 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_review_successions_guard`: `CREATE TRIGGER trigger_review_successions_guard BEFORE UPDATE ON public.review_successions FOR EACH ROW EXECUTE FUNCTION fn_guard_review_succession_mutation()`
+- `trigger_review_successions_topics`: `CREATE CONSTRAINT TRIGGER trigger_review_successions_topics AFTER INSERT OR DELETE ON public.review_successions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_review_succession_topics()`
 - `trigger_review_successions_updated_at`: `CREATE TRIGGER trigger_review_successions_updated_at BEFORE UPDATE ON public.review_successions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

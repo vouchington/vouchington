@@ -146,9 +146,9 @@ describe('backend Vitest project config', () => {
       pool: 'forks',
       isolate: true,
       include: ['backend/**/*.real-glide.mock.test.mts'],
-      setupFiles: ['./test-helpers/vitest.setup.fork-exit-sentinel.mts'],
     })
     expect(realGlideProject()?.globalSetup).toBeUndefined()
+    expect(realGlideProject()?.setupFiles).toBeUndefined()
   })
 
   it('resolves GlideMQ to the installed package after inheriting root aliases', () => {

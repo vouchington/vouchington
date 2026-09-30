@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { beforeEach, describe, vi } from 'vitest'
+
+import { registerCreatePostPageCases } from '@/test-helpers/app/create-post-page-cases'
 
 const {
   mockGetCurrentUser,
@@ -62,14 +63,6 @@ vi.mock(import('@/lib/seo/metadata'), () => ({
 
 import CreateDataPointPage from './page'
 
-const user = { id: 'user-1', roles: [] }
-const allowedStatus = { contribution_status: { allowed: true }, admission: { allowed: true } }
-const gatedStatus = {
-  contribution_status: { allowed: false, reason: 'account_too_new' },
-  admission: { allowed: true },
-}
-const emptySearchParams = Promise.resolve({})
-
 describe('CreateDataPointPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -81,74 +74,14 @@ describe('CreateDataPointPage', () => {
     })
   })
 
-  it('redirects to /login when unauthenticated', async () => {
-    mockGetCurrentUser.mockResolvedValue(null)
-    mockGetMyContributionStatus.mockResolvedValue(allowedStatus)
-    await expect(CreateDataPointPage({ searchParams: emptySearchParams })).rejects.toThrow(
-      'redirect:/login',
-    )
-  })
-
-  it('renders post form when contribution is allowed', async () => {
-    mockGetCurrentUser.mockResolvedValue(user)
-    mockGetMyContributionStatus.mockResolvedValue(allowedStatus)
-    const result = await CreateDataPointPage({ searchParams: emptySearchParams })
-    render(result)
-    expect(screen.getByTestId('post-form')).toBeDefined()
-    expect(screen.queryByTestId('contribution-gated-cta')).toBeNull()
-  })
-
-  it('passes eligible community options and initial community slug to the post form', async () => {
-    mockGetCurrentUser.mockResolvedValue(user)
-    mockGetMyContributionStatus.mockResolvedValue(allowedStatus)
-    mockGetEligibleCommunityPostOptions.mockResolvedValue({
-      communityOptions: [{ id: 'community-1', name: 'Data Points', slug: 'data-points' }],
-      initialCommunitySlug: 'data-points',
-    })
-    const result = await CreateDataPointPage({
-      searchParams: Promise.resolve({ community: 'data-points' }),
-    })
-    render(result)
-
-    expect(mockGetEligibleCommunityPostOptions).toHaveBeenCalledWith('data_point', 'data-points')
-    expect(mockPostForm).toHaveBeenCalledWith(
-      expect.objectContaining({
-        postType: 'data_point',
-        communityOptions: [{ id: 'community-1', name: 'Data Points', slug: 'data-points' }],
-        initialCommunitySlug: 'data-points',
-      }),
-      undefined,
-    )
-  })
-
-  it('renders CTA and hides form when account_too_new', async () => {
-    mockGetCurrentUser.mockResolvedValue(user)
-    mockGetMyContributionStatus.mockResolvedValue(gatedStatus)
-    const result = await CreateDataPointPage({ searchParams: emptySearchParams })
-    render(result)
-    expect(screen.getByTestId('contribution-gated-cta')).toBeDefined()
-    expect(screen.queryByTestId('post-form')).toBeNull()
-    expect(screen.getByText('share a data point')).toBeDefined()
-  })
-
-  it('renders CTA and hides form when email_verification_required', async () => {
-    mockGetCurrentUser.mockResolvedValue(user)
-    mockGetMyContributionStatus.mockResolvedValue({
-      contribution_status: { allowed: false, reason: 'email_verification_required' },
-      admission: { allowed: true },
-    })
-    const result = await CreateDataPointPage({ searchParams: emptySearchParams })
-    render(result)
-    expect(screen.getByTestId('contribution-gated-cta')).toBeDefined()
-    expect(screen.queryByTestId('post-form')).toBeNull()
-  })
-
-  it('renders form when getMyContributionStatus fails', async () => {
-    mockGetCurrentUser.mockResolvedValue(user)
-    mockGetMyContributionStatus.mockRejectedValue(new Error('API error'))
-    const result = await CreateDataPointPage({ searchParams: emptySearchParams })
-    render(result)
-    expect(screen.getByTestId('post-form')).toBeDefined()
-    expect(screen.queryByTestId('contribution-gated-cta')).toBeNull()
+  registerCreatePostPageCases({
+    Page: CreateDataPointPage,
+    postType: 'data_point',
+    actionNoun: 'share a data point',
+    community: { id: 'community-1', name: 'Data Points', slug: 'data-points' },
+    mockGetCurrentUser,
+    mockGetMyContributionStatus,
+    mockGetEligibleCommunityPostOptions,
+    mockPostForm,
   })
 })

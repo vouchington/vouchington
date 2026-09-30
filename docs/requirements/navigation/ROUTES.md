@@ -56,10 +56,11 @@ See also: [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md) — maps each ro
   - `/article/terms-of-service` - Terms of Service article (DB-backed article content, SEO-indexed)
   - `/article/privacy-policy` - Privacy Policy article (DB-backed article content, SEO-indexed)
   - `/article/community-guidelines` - Community Guidelines article (DB-backed article content, SEO-indexed)
+  - `/article/copyright-and-dmca` and `/article/copyright-complaints` - copyright policy and notice/counter-notice guide articles, linked from `/copyright` (DB-backed article content, SEO-indexed)
   - `/copyright` - copyright policy and launch-gated designated-agent, repeat-infringer, and counter-notice information (public, SEO-indexed)
   - `/copyright/notices`, `/copyright/notices/:id`, and `/copyright/notices/new` - authenticated member case index, redacted accepted-case detail, and structured notice form; not indexed
   - `/copyright/notices/:id/appeal` and `/copyright/notices/:id/counter-notice` - authenticated poster response forms; server authorization remains authoritative
-  - `/copyright/review-queue` - authenticated copyright-review staff queue; not indexed
+  - `/copyright/review-queue` and `/copyright/email-review` - authenticated copyright-review staff case and email intake queues, reached from the Moderation intent's Copyright sidebar group; not indexed
 - Memberships:
   - `/plans` - plan comparison page; shows current plan badge for authenticated users, Manage Billing link for Stripe subscribers; public, SEO-indexed. This route intentionally omits visible breadcrumbs and breadcrumb JSON-LD because it is a public utility/marketing page outside intent-rooted navigation.
 - Domains & Sources:

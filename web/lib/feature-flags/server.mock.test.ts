@@ -58,6 +58,21 @@ describe('server feature flag helpers', () => {
     })
   })
 
+  it('applies only catalog flags from the cookie when global flags load', async () => {
+    const cookie = encodeFeatureFlagCookie({
+      fediverse: false,
+      memberships: true,
+      unknownFlag: true,
+    })
+    mockCookies.mockResolvedValue({ get: () => ({ value: cookie }) })
+    mockGetFeatureFlags.mockResolvedValueOnce({ flags: { memberships: false, fediverse: true } })
+
+    await expect(getEffectiveServerFeatureFlags()).resolves.toEqual({
+      memberships: true,
+      fediverse: false,
+    })
+  })
+
   it('strips feature-flag cookies when loading global flags', async () => {
     mockGetFeatureFlags.mockResolvedValueOnce({ flags: { fediverse: false } })
 

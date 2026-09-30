@@ -24,7 +24,7 @@ export const downloadBatchResults = async (
   const getObject = deps.getOutputObject ?? getOutputObject
   const { rows: batchRows } = await readBatch(
     `/* downloadBatchResults */
-    SELECT output_s3_uri
+    SELECT data
     FROM bedrock_embeddings_batches
     WHERE id = $1
   `,
@@ -35,12 +35,12 @@ export const downloadBatchResults = async (
     throw new Error(`Batch not found: ${batchId}`)
   }
 
-  const outputS3Uri = batchRows[0].output_s3_uri as string | undefined
-  if (!outputS3Uri) {
+  const batchData = batchRows[0].data as { outputS3Uri?: string }
+  if (!batchData.outputS3Uri) {
     throw new Error(`Batch ${batchId} has no output S3 URI`)
   }
 
-  const prefix = getS3Prefix(outputS3Uri)
+  const prefix = getS3Prefix(batchData.outputS3Uri)
   const tempFilePath = join(tmpdir(), `bedrock-batch-results-${batchId}-${Date.now()}.jsonl`)
   const writeStream = createWriteStream(tempFilePath)
   let shouldKeepResultsFile = false

@@ -1,14 +1,11 @@
 'use client'
 
-import { useLayoutEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { bookmarkEntity, unbookmarkEntity } from '@/lib/api/client/bookmarks'
-import { toast } from 'sonner'
-import { isRateLimitError, getRateLimitMessage } from '@/lib/api/rate-limit-error'
-import { EntityActionIcons } from './entity-action-icons'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { EntityActionIcons } from './entity-action-icons'
+import { useKeyedBookmarkToggle } from './use-keyed-bookmark-toggle'
 
 interface SaveButtonProps {
   entityType: string
@@ -101,68 +98,21 @@ function useSaveToggle({
   onPendingChange,
 }: SaveButtonProps) {
   const t = useTranslations()
-  const resetKey = `${entityType}:${entityId}:${initialActive}`
-  const [savedState, setSavedState] = useState({ key: resetKey, value: initialActive })
-  const [pendingState, setPendingState] = useState({ key: resetKey, value: false })
-  const isControlled = active !== undefined
-  const isSaved = active ?? (savedState.key === resetKey ? savedState.value : initialActive)
-  const isPendingControlled = pending !== undefined
-  const isPending = pending ?? (pendingState.key === resetKey && pendingState.value)
-  const renderedResetKeyRef = useRef(resetKey)
-  const activeRequestRef = useRef<{ resetKey: string; token: symbol } | null>(null)
-
-  useLayoutEffect(() => {
-    renderedResetKeyRef.current = resetKey
-  }, [resetKey])
-
-  const setSaved = (next: boolean) => {
-    if (!isControlled) setSavedState({ key: resetKey, value: next })
-    onActiveChange?.(next)
-  }
-
-  const setPending = (next: boolean) => {
-    if (!isPendingControlled) setPendingState({ key: resetKey, value: next })
-    onPendingChange?.(next)
-  }
-
-  const handleToggle = async () => {
-    if (isPending) return
-    const next = !isSaved
-    const request = Symbol('save request')
-    activeRequestRef.current = { resetKey, token: request }
-    const ownsRequest = () =>
-      activeRequestRef.current?.token === request &&
-      activeRequestRef.current.resetKey === resetKey &&
-      renderedResetKeyRef.current === resetKey
-    setSaved(next)
-    setPending(true)
-    try {
-      if (next) {
-        await bookmarkEntity(entityType, entityId, 'save')
-      } else {
-        await unbookmarkEntity(entityType, entityId, 'save')
-      }
-    } catch (error) {
-      if (ownsRequest()) {
-        setSaved(!next)
-        if (isRateLimitError(error)) {
-          /* c8 ignore next -- rate-limit branch requires injecting a rate-limit error */
-          toast.error(getRateLimitMessage(error))
-        } else {
-          toast.error(t('extracted.shared.saveButton.failedToUpdatePleaseTryAgain_358a97b9'))
-        }
-      }
-    } finally {
-      if (ownsRequest()) {
-        setPending(false)
-      }
-    }
-  }
-
-  const tooltip = isSaved
+  const { handleToggle, isActive, isPending } = useKeyedBookmarkToggle({
+    entityType,
+    entityId,
+    predicate: 'save',
+    initialActive,
+    active,
+    onActiveChange,
+    pending,
+    onPendingChange,
+    failureMessage: t('extracted.shared.saveButton.failedToUpdatePleaseTryAgain_358a97b9'),
+  })
+  const tooltip = isActive
     ? t('extracted.shared.saveButton.removeFromSavedItems_f93380a8')
     : t('extracted.shared.saveButton.saveThisItemForLater_f9e7328b')
-  const Icon = isSaved ? EntityActionIcons.saved : EntityActionIcons.save
+  const Icon = isActive ? EntityActionIcons.saved : EntityActionIcons.save
 
-  return { handleToggle, Icon, isPending, isSaved, tooltip }
+  return { handleToggle, Icon, isPending, isSaved: isActive, tooltip }
 }

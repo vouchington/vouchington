@@ -3,6 +3,7 @@ import { rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { StopModelInvocationJobCommand } from '@aws-sdk/client-bedrock'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import { S3BedrockBatchBucket, S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
@@ -11,7 +12,9 @@ import { createCrawlChunkEntityId } from '@services/bedrock-embeddings-batch/ent
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import {
   getTestBatchEntities,
+  getTestBatchSourceColumns,
   getTestBatchSummary,
+  insertTestEmbeddingsBatch,
 } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
 import {
   createTestUrlWithHostname,
@@ -105,6 +108,30 @@ describe('createBatch', () => {
     ])
   })
 
+  it('stores the source url and crawl only in their foreign-key columns', async () => {
+    const user = await createTestUserDirect()
+    const entityId = await createLockedEntityId('topics', user.id)
+    const urlId = await createTestUrlWithHostname()
+    const crawl = await insertTestCrawl({ urlId, statusCode: 200, markdown: 'Crawl markdown' })
+    const inputFile = await writeTempFile('input.jsonl', 'irrelevant for this test')
+    const entityIdsFile = await writeTempFile('entity-ids.csv', `${entityId}\n`)
+
+    const batchId = await createBatch(
+      inputFile,
+      'topics',
+      1,
+      entityIdsFile,
+      { inputSizeMB: 2 },
+      { urlId, crawlId: crawl.id },
+    )
+
+    expect(await getTestBatchSourceColumns(batchId)).toEqual({
+      url_id: urlId,
+      crawl_id: crawl.id,
+      metadata: { inputSizeMB: 2 },
+    })
+  })
+
   it('closes the upload input stream when the S3 client returns without consuming it', async () => {
     const user = await createTestUserDirect()
     const entityId = await createLockedEntityId('topics', user.id)
@@ -173,6 +200,38 @@ describe('createBatch', () => {
     ])
     expect(S3BedrockBatchClient.send).not.toHaveBeenCalled()
     expect(BedrockControlClient.send).not.toHaveBeenCalled()
+  })
+
+  it('keeps the persisted batch when stopping the submitted job also fails', async () => {
+    const user = await createTestUserDirect()
+    const entityId = await createLockedEntityId('topics', user.id)
+    const jobArn = `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${randomUUID()}`
+    await insertTestEmbeddingsBatch({
+      id: `create-stop-fail-${randomUUID()}`,
+      bedrockStatus: 'Submitted',
+      jobArn,
+    })
+    vi.mocked(BedrockControlClient.send)
+      .mockResolvedValueOnce({ jobArn } as never)
+      .mockRejectedValueOnce(new Error('stop failed'))
+    const inputFile = await writeTempFile('input.jsonl', 'irrelevant for this test')
+    const entityIdsFile = await writeTempFile('entity-ids.csv', `${entityId}\n`)
+
+    await expect(createBatch(inputFile, 'topics', 1, entityIdsFile)).rejects.toThrow(
+      'idx_bedrock_embeddings_batches__job_arn',
+    )
+
+    expect(BedrockControlClient.send).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(BedrockControlClient.send).mock.calls[1]?.[0]).toBeInstanceOf(
+      StopModelInvocationJobCommand,
+    )
+
+    const retryInputFile = await writeTempFile('input.jsonl', 'irrelevant for this test')
+    const retryEntityIdsFile = await writeTempFile('entity-ids.csv', `${entityId}\n`)
+    await expect(createBatch(retryInputFile, 'topics', 1, retryEntityIdsFile)).rejects.toThrow(
+      'duplicate key value violates unique constraint',
+    )
+    expect(BedrockControlClient.send).toHaveBeenCalledTimes(2)
   })
 })
 

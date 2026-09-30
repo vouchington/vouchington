@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { read } from '../index.mts'
+import {
+  createTestReferralLinkWithLastCrawl,
+  readTestReferralLinkLastCrawl,
+} from '../../../test-helpers/entities/referral-link-crawl-pointers.mts'
+import { generateMonthlyPartitions } from '../config-driven/utils/partition-utils.mts'
+import { read, write } from '../index.mts'
 import type { QueryExecutor } from '../types.mts'
 import {
+  cleanupPartitions,
   createMonthlyPartitions,
   dropRssFeedCrawlsDefaultPartition,
   selectExpiredMonthlyPartitions,
@@ -55,5 +61,34 @@ describe('dropRssFeedCrawlsDefaultPartition', () => {
         SELECT to_regclass('rss_feed_crawls__default') IS NOT NULL AS default_exists`,
     )
     expect(rows).toEqual([{ default_exists: false }])
+  })
+})
+
+describe('cleanupPartitions', () => {
+  it('clears referral-link crawl pointers before dropping an expired crawls partition', async () => {
+    // A 2019 month keeps this test clear of the current partitions: a partition drop fires no
+    // ON DELETE action, so the pointer must be cleared explicitly to avoid a dangling id.
+    await write(
+      generateMonthlyPartitions({
+        tables: [{ table: 'crawls', pastMonths: 0, futureMonths: 0 }],
+        baseDate: new Date('2019-01-15T00:00:00.000Z'),
+      }),
+    )
+    const { linkId, crawlId } = await createTestReferralLinkWithLastCrawl(
+      new Date('2019-01-15T00:00:00.000Z'),
+    )
+    expect(await readTestReferralLinkLastCrawl(linkId)).toEqual({
+      exists: true,
+      lastCrawlId: crawlId,
+    })
+
+    await cleanupPartitions(new Date('2019-03-15T00:00:00.000Z'))
+
+    expect(await readTestReferralLinkLastCrawl(linkId)).toEqual({ exists: true, lastCrawlId: null })
+    const { rows } = await read<{ partition_exists: boolean }>(
+      `/* verifyExpiredCrawlsPartitionDropped */
+        SELECT to_regclass('crawls__p_2019_01') IS NOT NULL AS partition_exists`,
+    )
+    expect(rows).toEqual([{ partition_exists: false }])
   })
 })

@@ -12,6 +12,13 @@ export type MassReportCampaignResult = {
   flagged: boolean
   reporter_count: number
   new_account_reporter_pct: number
+  /**
+   * The exact reporters that formed this flag, captured at detection time. They are stored
+   * as `report_integrity_flag_reporters` rows, and the penalty path penalizes precisely this
+   * set, so later/unrelated reports on the same entity are never swept in and resolved
+   * reports are never dropped.
+   */
+  reporter_user_ids: string[]
   details: {
     reporter_count: number
     new_account_reporter_count: number
@@ -19,12 +26,6 @@ export type MassReportCampaignResult = {
     threshold: number
     window_minutes: number
     new_account_age_days: number
-    /**
-     * The exact reporters that formed this flag, captured at detection time. The
-     * penalty path penalizes precisely this set, so later/unrelated reports on the
-     * same entity are never swept in and resolved reports are never dropped.
-     */
-    reporter_user_ids: string[]
   }
 }
 
@@ -43,6 +44,7 @@ export async function detectMassReportCampaign(
     flagged: false,
     reporter_count: 0,
     new_account_reporter_pct: 0,
+    reporter_user_ids: [],
     details: {
       reporter_count: 0,
       new_account_reporter_count: 0,
@@ -50,7 +52,6 @@ export async function detectMassReportCampaign(
       threshold: MASS_REPORT_THRESHOLD,
       window_minutes: MASS_REPORT_WINDOW_MINUTES,
       new_account_age_days: NEW_ACCOUNT_AGE_DAYS,
-      reporter_user_ids: [],
     },
   }
 
@@ -95,6 +96,7 @@ export async function detectMassReportCampaign(
     flagged: reporterCount >= MASS_REPORT_THRESHOLD,
     reporter_count: reporterCount,
     new_account_reporter_pct: newAccountReporterPct,
+    reporter_user_ids: reporterUserIds,
     details: {
       reporter_count: reporterCount,
       new_account_reporter_count: newAccountReporterCount,
@@ -102,7 +104,6 @@ export async function detectMassReportCampaign(
       threshold: MASS_REPORT_THRESHOLD,
       window_minutes: MASS_REPORT_WINDOW_MINUTES,
       new_account_age_days: NEW_ACCOUNT_AGE_DAYS,
-      reporter_user_ids: reporterUserIds,
     },
   }
 }

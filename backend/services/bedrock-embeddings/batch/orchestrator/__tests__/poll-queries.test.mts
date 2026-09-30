@@ -5,7 +5,12 @@ import {
   cleanupTestEmbeddingsBatchesByPrefix,
   insertTestEmbeddingsBatch,
 } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
-import { getActiveBatchStats, getBatchIdByJobArn, getPendingBatches } from '../poll-queries.mts'
+import {
+  getActiveBatchStats,
+  getBatchIdByJobArn,
+  getBatchInfo,
+  getPendingBatches,
+} from '../poll-queries.mts'
 
 const batchIdPrefix = 'poll-test-'
 const createdBatchIds: string[] = []
@@ -139,5 +144,39 @@ describe('getBatchIdByJobArn', () => {
     )
 
     expect(result).toBeNull()
+  })
+})
+
+describe('getBatchInfo', () => {
+  afterEach(async () => {
+    await cleanupTestEmbeddingsBatches(createdBatchIds.splice(0))
+  })
+
+  function batchId() {
+    const id = `${batchIdPrefix}${randomUUID()}`
+    createdBatchIds.push(id)
+    return id
+  }
+
+  it('returns the job type and jsonb document', async () => {
+    const id = batchId()
+    await insertTestEmbeddingsBatch({
+      id,
+      jobType: 'posts',
+      bedrockStatus: 'Submitted',
+      batchData: { outputS3Uri: 's3://bucket/out', metadata: { inputSizeMB: 1 } },
+    })
+
+    await expect(getBatchInfo(id)).resolves.toEqual({
+      job_type: 'posts',
+      data: expect.objectContaining({
+        status: 'Submitted',
+        outputS3Uri: 's3://bucket/out',
+      }),
+    })
+  })
+
+  it('returns null when the batch does not exist', async () => {
+    await expect(getBatchInfo(`${batchIdPrefix}${randomUUID()}`)).resolves.toBeNull()
   })
 })

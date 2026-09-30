@@ -23,7 +23,7 @@ Not partitioned — growth: unbounded.
 | `consecutive_crawl_failures`  | `smallint`                  | no       | `0`                          |          |           |           | Number of consecutive crawl failures; resets to 0 on success.                                                                                         |
 | `last_crawl_failure_at`       | `timestamp with time zone`  | yes      |                              |          |           |           | Timestamp of the most recent crawl failure.                                                                                                           |
 | `last_crawl_success_at`       | `timestamp with time zone`  | yes      |                              |          |           |           | Timestamp of the most recent successful crawl.                                                                                                        |
-| `last_crawl_id`               | `uuid`                      | yes      |                              |          |           |           | The most recent crawl for this referral link, set on successful crawl.                                                                                |
+| `last_crawl_id`               | `uuid`                      | yes      |                              |          |           |           | The most recent crawl for this referral link, set on successful crawl; cleared when that crawl is deleted or its partition expires.                   |
 | `parent_link_id`              | `uuid`                      | yes      |                              |          |           |           | The parent link this was unfurled from; NULL for a normal, manually-added link. Children are lifecycle-managed via the parent, not editable directly. |
 | `unfurl_requested_at`         | `timestamp with time zone`  | yes      |                              |          |           |           | When an unfurl was requested on this (parent) link; NULL if never requested.                                                                          |
 | `unfurl_completed_at`         | `timestamp with time zone`  | yes      |                              |          |           |           | When the most recent unfurl on this (parent) link completed successfully.                                                                             |
@@ -49,6 +49,7 @@ _none_
 - `user_referral_program_links_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `user_referral_program_links_created_via_oauth_client_id_fkey`: `FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT`
 - `user_referral_program_links_deleted_by_id_fkey`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `user_referral_program_links_last_crawl_id_fkey`: `FOREIGN KEY (last_crawl_id) REFERENCES crawls(id) ON DELETE SET NULL`
 - `user_referral_program_links_parent_link_id_fkey`: `FOREIGN KEY (parent_link_id) REFERENCES user_referral_program_links(id) ON DELETE CASCADE`
 - `user_referral_program_links_referral_program_id_fkey`: `FOREIGN KEY (referral_program_id) REFERENCES topics__referral_programs(topic_id) ON DELETE CASCADE`
 - `user_referral_program_links_url_id_fkey`: `FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE`
@@ -57,6 +58,7 @@ _none_
 **Indexes:**
 
 - `idx_user_referral_program_links__created_via_oauth_client_id`: `CREATE INDEX idx_user_referral_program_links__created_via_oauth_client_id ON public.user_referral_program_links USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
+- `idx_user_referral_program_links__last_crawl_id`: `CREATE INDEX idx_user_referral_program_links__last_crawl_id ON public.user_referral_program_links USING btree (last_crawl_id) WHERE (last_crawl_id IS NOT NULL)`
 - `idx_user_referral_program_links__parent_link_id`: `CREATE INDEX idx_user_referral_program_links__parent_link_id ON public.user_referral_program_links USING btree (parent_link_id) WHERE (parent_link_id IS NOT NULL)`
 - `idx_user_referral_program_links__parent_link_id_active`: `CREATE INDEX idx_user_referral_program_links__parent_link_id_active ON public.user_referral_program_links USING btree (parent_link_id) WHERE ((parent_link_id IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_user_referral_program_links__referral_program_id__fk`: `CREATE INDEX idx_user_referral_program_links__referral_program_id__fk ON public.user_referral_program_links USING btree (referral_program_id) WHERE (referral_program_id IS NOT NULL)`

@@ -43,14 +43,13 @@ FROM base-node AS builder
 
 WORKDIR /app
 
-# Install Corepack explicitly before enabling it so the build does not depend on
-# what the base Node image bundles.
-# renovate: datasource=npm depName=corepack
-ARG COREPACK_VERSION=0.34.5
-RUN npm install -g corepack@${COREPACK_VERSION} --force && corepack enable
+# Install pnpm with npm so the build does not depend on what the base Node image
+# bundles. pnpm-activation.test.mts keeps this major equal to CI's pnpm/action-setup
+# `latest-<major>`.
+ARG PNPM_VERSION=12
+RUN npm install -g pnpm@${PNPM_VERSION}
 
-# Copy the root dependency contract first so Corepack can resolve the pinned
-# pnpm version from packageManager. Workspace manifests follow before the one
+# Copy the root dependency contract first. Workspace manifests follow before the one
 # filtered install layer; application source changes therefore keep dependency
 # installation cached without a separate lifecycle-running prefetch pass.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -80,7 +79,11 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store,sharin
 # Copy only the source trees needed by the backend runtime build. The shared
 # root .dockerignore also admits the web workspace for web/Dockerfile, but
 # backend builds should not invalidate this layer on unrelated web source edits.
-COPY api-fixtures/ ./api-fixtures/
+# @services/runtime-request-validation is the only production importer of
+# @voucha/api-fixtures, and it loads this contract bundle alone. The rest of
+# api-fixtures is test and client fixture payload; copying that tree would ship
+# it through pnpm deploy into the API image.
+COPY api-fixtures/v1/request-contracts.json ./api-fixtures/v1/request-contracts.json
 COPY email-templates/ ./email-templates/
 COPY static-code-analysis/docker-deploy/ ./static-code-analysis/docker-deploy/
 COPY ts-shared/ ./ts-shared/

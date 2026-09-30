@@ -74,8 +74,6 @@ describe('web Dockerfile dependency install', () => {
   )
 
   it('removes build-only Node headers and local documentation from the runtime image', () => {
-    expect(dockerfile).toContain('/usr/local/lib/node_modules/corepack')
-    expect(dockerfile).toContain('/usr/local/bin/corepack')
     expect(dockerfile).toContain('/usr/local/include/node')
     expect(dockerfile).toContain('/usr/local/share/doc')
     expect(dockerfile).toContain('/usr/local/share/man')

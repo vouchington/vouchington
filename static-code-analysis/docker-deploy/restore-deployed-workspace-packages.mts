@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import { pathToFileURL } from 'node:url'
-
 import {
   restoreDeployedWorkspacePackages,
   runRestoreDeployedWorkspacePackagesCli as runPublished,
@@ -25,5 +23,5 @@ export function runRestoreDeployedWorkspacePackagesCli(
 runRestoreDeployedWorkspacePackagesCli({
   args: process.argv.slice(2),
   env: process.env,
-  isMain: Boolean(process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href),
+  isMain: import.meta.main,
 })

@@ -6,6 +6,8 @@ import {
   getContributionAdmissionClaimExpiryForTest,
   getContributionAdmissionReplayRetentionForTest,
   insertTestTopic,
+  ensureTestAdmittedPostIdentity,
+  executeTestAdmittedPost,
   setContributionAdmissionExpiryForTest,
 } from '@voucha/test-helpers'
 import { runContributionAdmission } from './admission.mts'
@@ -37,15 +39,17 @@ describe('contribution admission finalization', () => {
       actorId: user.id,
       idempotencyKey,
       intent,
-      execute: query =>
-        executePreparedContribution(query, async () => ({
+      execute: async query => {
+        await ensureTestAdmittedPostIdentity(query, postId)
+        return executePreparedContribution(query, async () => ({
           response: { post: { id: postId, post_related_topics: [] as string[] } },
           finalize: async () => {
             finalizationStarted.resolve()
             await releaseFinalization.promise
             return { post: { id: postId, post_related_topics: ['topic-id'] } }
           },
-        })),
+        }))
+      },
     })
     await finalizationStarted.promise
     await setContributionAdmissionExpiryForTest({
@@ -58,7 +62,7 @@ describe('contribution admission finalization', () => {
       actorId: user.id,
       idempotencyKey,
       intent,
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     expect(duplicate).toMatchObject({ kind: 'in_progress', retryAfterSeconds: expect.any(Number) })
     const retryAfterSeconds = duplicate.kind === 'in_progress' ? duplicate.retryAfterSeconds : 0
@@ -81,7 +85,7 @@ describe('contribution admission finalization', () => {
         actorId: user.id,
         idempotencyKey,
         intent,
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toEqual({
       kind: 'replay',
@@ -100,14 +104,16 @@ describe('contribution admission finalization', () => {
       actorId: user.id,
       idempotencyKey,
       intent,
-      execute: query =>
-        executePreparedContribution(query, async () => ({
+      execute: async query => {
+        await ensureTestAdmittedPostIdentity(query, response.post.id)
+        return executePreparedContribution(query, async () => ({
           response,
           finalize: async () => {
             finalizationStarted.resolve()
             await releaseFinalization.promise
           },
-        })),
+        }))
+      },
     })
     await finalizationStarted.promise
     await expireContributionAdmissionClaimForTest({ actorId: user.id, idempotencyKey })
@@ -227,7 +233,7 @@ describe('contribution admission finalization', () => {
         actorId: user.id,
         idempotencyKey,
         intent,
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toEqual({ kind: 'in_progress', retryAfterSeconds: 1 })
     const pendingRetention = await getContributionAdmissionReplayRetentionForTest({
@@ -242,7 +248,7 @@ describe('contribution admission finalization', () => {
       actorId: user.id,
       idempotencyKey,
       intent,
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     expect(replay).toMatchObject({
       kind: 'replay',

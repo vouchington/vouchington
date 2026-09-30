@@ -33,4 +33,15 @@ export const POST_MODERATION_TABLES_WITHOUT_UPDATED_AT = new Map<string, string>
   ],
 ])
 
+export const MODERATION_LINK_TABLES_WITHOUT_UPDATED_AT = new Map<string, string>([
+  [
+    'moderator_action_community_restrictions',
+    'Immutable link from an append-only moderator action to a restriction; rows are inserted with the action and only cascade-deleted.',
+  ],
+  [
+    'report_integrity_flag_reporters',
+    'Immutable detection-time reporter set for a flag; rows are inserted with the flag and only cascade-deleted.',
+  ],
+])
+
 /* v8 ignore stop */

@@ -1,7 +1,8 @@
 // Every exception is an exact table.column from the committed PostgreSQL schema snapshot.
-// Remove a remediation entry as its owning domain is normalized. New entries require plan review.
-// Opaque documents retain their external wire shape or exact replay bytes; application-owned facts
-// and relationships belong in typed columns and child tables.
+// Remove an entry once its column no longer needs the exception. New entries require plan review.
+// JSON documents are allowed. This list records reviewed opaque provider, protocol, and replay
+// payloads. Structured documents and change history stay JSON too. An entity id inside any of
+// them is a foreign-key column; the rest of the document stays JSON.
 export const ALLOWED_OPAQUE_JSON = new Set([
   'agent_moderations.results',
   'apple_accounts.apple_user_data',
@@ -39,6 +40,13 @@ export const ALLOWED_OPAQUE_JSON = new Set([
   'users.lingua_rs_results',
   'x_accounts.x_user_data',
 ])
+
+// Two further reviewed categories carry one reason per entry: token, cursor or protocol
+// identifiers, and audit snapshot identifiers. Both are defined in the schema rules.
+export {
+  ALLOWED_AUDIT_SNAPSHOT_ID,
+  ALLOWED_TOKEN_CURSOR_PROTOCOL_ID,
+} from './relational-storage-reviewed-ids.mts'
 
 // Tokens, traversal cursors, and a retained table's own primary identity are not foreign references.
 export const ALLOWED_NONRELATION_UUID = new Set([
@@ -80,8 +88,37 @@ export const PARTITION_FOREIGN_KEY_COLUMNS = new Set([
   'entity_relation_votes.subject_id',
 ])
 
-// The sole generated UUID alias combines three concrete target FKs. Match its whole expression;
-// merely mentioning an FK would also admit an unrelated generated UUID.
-export const GENERATED_FK_ALIASES = new Map([
-  ['curated_aside_items.entity_id', 'COALESCE(topic_id, rss_feed_id, community_id)'],
+// Sole UUID primary keys without a generator are shared identities unless listed here. Retained
+// roots, publication bridges that mint their own id, and the session JWT sid are their own identity.
+// Extension tables such as user_metrics.id must keep the target FK instead of joining this set.
+export const ALLOWED_OWN_PRIMARY_UUID = new Set([
+  'post_publication_community_identities.id',
+  'post_publication_rss_feed_identities.id',
+  'post_publication_story_identities.id',
+  'post_publication_topic_alias_identities.id',
+  'retained_image_identities.id',
+  'retained_post_identities.id',
+  'retained_rss_feed_item_identities.id',
+  'retained_topic_identities.id',
+  'retained_user_identities.id',
+  'user_sessions.id',
+])
+
+export type GeneratedFkAlias = {
+  expression: string
+  oneTargetCheck: string
+  sourceColumns: readonly string[]
+}
+
+// The sole generated UUID alias combines three concrete target FKs and the exact one-target check.
+// Match the whole COALESCE expression and num_nonnulls(...) = 1 body; a similar check is not enough.
+export const GENERATED_FK_ALIASES = new Map<string, GeneratedFkAlias>([
+  [
+    'curated_aside_items.entity_id',
+    {
+      expression: 'COALESCE(topic_id, rss_feed_id, community_id)',
+      oneTargetCheck: 'num_nonnulls(topic_id, rss_feed_id, community_id) = 1',
+      sourceColumns: ['topic_id', 'rss_feed_id', 'community_id'],
+    },
+  ],
 ])

@@ -10,15 +10,16 @@ PostgreSQL final-state schema invariants run as the `backend-postgres-schema` Vi
 `pnpm run test:backend:postgres-schema` after `./dev/initialize web`, `source .env`, and
 `export READ_DATABASE_URL="$DATABASE_URL"; pnpm --dir backend run db:clean && pnpm run db:migrate`.
 
-`backend-postgres-schema` runs in its own CI job (`tests-postgres-schema.yml`), invoked without
-`--coverage` and outside the backend area's coverage producer set. Real tests in this project pass
-and genuinely exercise their target function against a live database, but they never contribute
-LCOV to the backend patch-coverage gate ([Coverage](ci/workflows/COVERAGE.md)). Source
-whose only non-mocked call site is a `backend-postgres-schema` test (for example
+`backend-postgres-schema` runs in `backend.yml`'s `test-postgres-schema` job
+(`tests-postgres-schema.yml`), invoked without `--coverage`. The backend area's `coverage` job
+([area patch coverage](reference-ci-coverage-gates.md#area-patch-coverage)) merges LCOV only from
+the backend module, unit, and credentialed suites. Real tests in this project pass and genuinely
+exercise their target function against a live database, but they never contribute LCOV to that
+gate. Source whose only non-mocked call site is a `backend-postgres-schema` test (for example
 `backend/data-stores/psql/schema-snapshot/verify-live-schema.mts` and the `catalog-queries.mts` /
 `generate.mts` live-DB helpers it sits alongside) must be wrapped in `/* v8 ignore start -- ... */`
-/ `/* v8 ignore stop */` so the backend patch-coverage threshold does not fail on code that is
-correctly tested but structurally invisible to that gate's LCOV pipeline.
+/ `/* v8 ignore stop */` so the backend area's patch-coverage rules do not fail on code that is
+correctly tested but structurally invisible to that gate's LCOV.
 
 Schema catalog assertions own declared foreign-key actions. Runtime lifecycle effects belong in
 their service or integration suites instead of redundant direct `DELETE FROM users` probes: each

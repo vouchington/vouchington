@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { receiveEuCopyrightNotice } from '@services/copyright-notices'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 
 function noticeBody() {
   const suffix = crypto.randomUUID()
@@ -23,6 +24,8 @@ function noticeRequest(body: ReturnType<typeof noticeBody>) {
 }
 
 describe('EU copyright notice routes', () => {
+  useCopyrightIntakeEnvironment()
+
   it('records acknowledgment failure, redress reuse, and the remaining EU handlers', async () => {
     const [claimant, staff, administrator] = await Promise.all([
       createTestUser(),

@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createTestUser, insertTestCommunity } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  deleteTestCommunityRestriction,
+  insertTestCommunity,
+  insertTestCommunityRestriction,
+} from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { Community } from '@voucha/types/entities/community'
 import { recordModeratorAction } from './record.mts'
@@ -119,5 +124,79 @@ describe('searchModeratorActions', () => {
     for (const r of results) {
       expect(r.community_id).toBeNull()
     }
+  })
+
+  describe('restriction targets', () => {
+    async function createRestrictionCommunity() {
+      const restrictionCommunity = await insertTestCommunity({ createdById: actor.id })
+      const noLinks = await insertTestCommunityRestriction({
+        communityId: restrictionCommunity.id,
+        restrictionType: 'no_links',
+        activatedById: actor.id,
+      })
+      const approval = await insertTestCommunityRestriction({
+        communityId: restrictionCommunity.id,
+        restrictionType: 'require_post_approval',
+        activatedById: actor.id,
+      })
+      return { communityId: restrictionCommunity.id, noLinks, approval }
+    }
+
+    it('rebuilds restriction_ids for an activation in restriction-type order', async () => {
+      const { communityId, noLinks, approval } = await createRestrictionCommunity()
+      await recordModeratorAction(actor.id, {
+        actionType: 'activate_restriction',
+        communityId,
+        communityRestrictionIds: [noLinks.id, approval.id],
+        metadata: { restriction_types: ['require_post_approval', 'no_links'], expires_at: null },
+      })
+
+      const { results } = await searchModeratorActions({ communityId })
+
+      expect(results).toHaveLength(1)
+      expect(results[0]!.metadata).toEqual({
+        restriction_ids: [approval.id, noLinks.id],
+        restriction_types: ['require_post_approval', 'no_links'],
+        expires_at: null,
+      })
+    })
+
+    it('rebuilds restriction_id for a lift and nulls it once the restriction is deleted', async () => {
+      const { communityId, noLinks } = await createRestrictionCommunity()
+      await recordModeratorAction(actor.id, {
+        actionType: 'lift_restriction',
+        communityId,
+        communityRestrictionIds: [noLinks.id],
+        metadata: { restriction_type: 'no_links' },
+      })
+
+      const lifted = await searchModeratorActions({ communityId })
+      expect(lifted.results[0]!.metadata).toEqual({
+        restriction_id: noLinks.id,
+        restriction_type: 'no_links',
+      })
+
+      await deleteTestCommunityRestriction(noLinks.id)
+
+      const afterDelete = await searchModeratorActions({ communityId })
+      expect(afterDelete.results[0]!.metadata).toEqual({
+        restriction_id: null,
+        restriction_type: 'no_links',
+      })
+    })
+
+    it('leaves other action metadata unchanged', async () => {
+      const { communityId } = await createRestrictionCommunity()
+      await recordModeratorAction(actor.id, {
+        actionType: 'change_role',
+        communityId,
+        targetUserId: targetA.id,
+        metadata: { role: 'moderator' },
+      })
+
+      const { results } = await searchModeratorActions({ communityId })
+
+      expect(results[0]!.metadata).toEqual({ role: 'moderator' })
+    })
   })
 })

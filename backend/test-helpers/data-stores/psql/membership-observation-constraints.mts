@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import sql from 'sql-template-strings'
 import { read, write } from '@data-stores/psql'
+import { createLocalTestUser } from './users.mts'
 
 export type MembershipObservationConstraintFixture = {
   allowObservationWithoutKnownPrice(): ReturnType<typeof write>
@@ -12,7 +13,7 @@ export type MembershipObservationConstraintFixture = {
 export async function createMembershipObservationConstraintFixture(): Promise<MembershipObservationConstraintFixture> {
   const suffix = randomUUID()
   const applicationId = `schema-observation-${suffix}`
-  const userId = randomUUID()
+  const userId = (await createLocalTestUser()).id
   const { rows: productRows } = await read<{
     id: string
   }>(`/* getMembershipObservationConstraintProduct */

@@ -6,9 +6,12 @@ There is no pre-merge CI orchestrator. Pull requests and merge groups start the 
 checks independently: `static`, `backend`, `web`, `cloudflare-worker`, `lambdas`, `tooling`, and
 `gitleaks`. Each area workflow calls
 [`ci-detect-changes.yml`](../../.github/workflows/ci-detect-changes.yml) and uses its own path
-filter to decide whether its area is selected. Workflow or local-action edits select every eligible
-area; merge groups run every area. A selected area runs its full suite. An unselected area ends in a
-passing required gate, making the skipped state explicit to branch protection.
+filter to decide whether its area is selected. A merge group applies the same filters to its
+base-to-head diff, so a group that touches backend and web selects both and skip-passes the other
+areas. Workflow or local-action edits select every eligible area, and the nightly schedule and
+manual dispatch select every area without a diff. A selected area runs its full suite. An
+unselected area ends in a passing required gate, making the skipped state explicit to branch
+protection.
 
 Area static checks are the only prerequisite for their own suites. They do not serialize unrelated
 areas. After selected suites pass, the area coverage job checks the full LCOV evidence against rules

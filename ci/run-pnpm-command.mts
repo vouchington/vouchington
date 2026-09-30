@@ -1,25 +1,8 @@
-import { spawn, spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 
 export interface RunCommandOptions {
   /** Called for each stderr line as it arrives, in addition to forwarding every byte to the real stderr. */
   onStderrLine?: (line: string) => void
-}
-
-interface PackageManagerCommand {
-  command: string
-  argsPrefix: string[]
-}
-
-function hasCommand(command: string): boolean {
-  const { error, status } = spawnSync(command, ['--version'], { stdio: 'ignore' })
-  return !error && status === 0
-}
-
-function getPnpmCommand(): PackageManagerCommand {
-  if (hasCommand('pnpm')) return { command: 'pnpm', argsPrefix: [] }
-  if (hasCommand('corepack')) return { command: 'corepack', argsPrefix: ['pnpm'] }
-
-  throw new Error('pnpm is not available. Install pnpm 11 or enable Corepack before building web.')
 }
 
 export async function runPnpm(
@@ -28,8 +11,7 @@ export async function runPnpm(
   env: NodeJS.ProcessEnv = {},
   options: RunCommandOptions = {},
 ): Promise<void> {
-  const { command, argsPrefix } = getPnpmCommand()
-  await runCommand(cwd, command, [...argsPrefix, ...args], env, options)
+  await runCommand(cwd, 'pnpm', args, env, options)
 }
 
 async function runCommand(

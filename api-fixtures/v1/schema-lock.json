@@ -261,6 +261,10 @@
       ],
       "hash": "588a69c994513fea3ffd3f9d0b2942a0e6864c00794838a4bbbacd5c3ea720cc"
     },
+    "GET:/api/v1/copyright-notices/:id/guest-capabilities": {
+      "fixtureIds": ["web.copyright.guest-capabilities.listed"],
+      "hash": "248be0ea458957b4f05337cd399dd7934eb2c41a55fc98126b8b8f59b5367056"
+    },
     "GET:/api/v1/copyright-notices/:id/participant": {
       "fixtureIds": [
         "web.copyright.notice.participant.null-claimant",
@@ -274,7 +278,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "fixtureIds": ["web.copyright.staff-queue.default"],
-      "hash": "b6207b403ed5e5d8298db86cedcfb1cff3c2183c34450850f429fcfa992035fe"
+      "hash": "23d3af874d086e698f1d1628372a5430afea7f463525e2dcac476731bbb01d78"
     },
     "GET:/api/v1/currencies": {
       "fixtureIds": ["shared.currencies.list.default"],
@@ -2624,6 +2628,10 @@
       "fixtureIds": ["web.copyright.email-intake-queue.default"],
       "hash": "8a1b695335a766e2a4b3a708026f9bb34cad58eb05e3fc788bb90cfd8cb2513b"
     },
+    "web.copyright.guest-capabilities.listed": {
+      "fixtureIds": ["web.copyright.guest-capabilities.listed"],
+      "hash": "35e1f86dac2d6fc402507b51414d4608cef4c6f4c077c661f47b4dd0950c465b"
+    },
     "web.copyright.guest-capability.issued": {
       "fixtureIds": ["web.copyright.guest-capability.issued"],
       "hash": "54042215731992c250907470d52261c9dfd64d47be398f7652c4dc5ef89a8edb"
@@ -2666,7 +2674,7 @@
     },
     "web.copyright.staff-queue.default": {
       "fixtureIds": ["web.copyright.staff-queue.default"],
-      "hash": "c9ee417e5a91e7301aa7dd40b4242f7b84f33ae27cd0983db7f8758d6f40f974"
+      "hash": "ed1c3e3c1cc5c78fc3d039af79f80bf9c57a85951e0f7494cf055520aed9b754"
     },
     "web.growth-metrics.default": {
       "fixtureIds": ["web.growth-metrics.default"],

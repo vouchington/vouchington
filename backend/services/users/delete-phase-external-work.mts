@@ -83,7 +83,10 @@ async function runPrimaryEntityRelationEffects(target: {
   subjectId: string
   entityRelationId: string
 }): Promise<string[]> {
-  await invalidate.entity_relation_elections(target.entityRelationId)
+  await invalidate.entity_relation_elections({
+    entityRelationId: target.entityRelationId,
+    relationTable: target.relationTable,
+  })
   await enqueueReconcileNotificationsForPostCategoryVotes([target])
   return getTopicIdsForPostCategoryVotes([target])
 }

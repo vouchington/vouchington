@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
 import {
   electedRelationMetadata,
   getElectedRelationTargetColumn,
@@ -27,6 +28,11 @@ export async function cleanupRetainedRelationIdentities(
     if (keysByTable && !keys?.length) continue
     if (keys && keys.length > pageSize)
       throw new RangeError('Scoped retained relation cleanup must fit one page')
+    // A scoped tuple is owned by its subject and relation ids; no keys is the global default.
+    observeSharedDbScope(
+      'cleanupRetainedRelationIdentities',
+      sharedDbIdsScope(keys?.flatMap(key => [key.subjectId, key.relationId])),
+    )
     // oxlint-disable-next-line no-await-in-loop -- each concrete family owns an independent bounded transaction.
     pages.push(await cleanupRelationFamily(metadata.table_name, pageSize, keys))
   }

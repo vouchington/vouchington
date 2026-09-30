@@ -6,9 +6,6 @@ import {
 } from '@services/entity-relations/query'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { parseEntityRelationSearchInput } from '@services/entity-relations'
-import { getEntityRelationElectionVotesByUser } from '@services/elections-votes/entity-relation'
-import { electionVotesMapToRecord } from '@modules/utils/collections'
-import { getEntityRelationElectionByIdCachedBatch } from '@services/entity-fetch/get'
 import { indexById } from '@modules/utils'
 import { entityRelationViewerFor, getPublicUserByIdOrSlug } from '@services/users'
 import { requireAuth } from '../../response-helpers.mts'
@@ -30,6 +27,10 @@ import {
   parseEntityRelationCursor,
   withoutEntityRelationCursorMetadata,
 } from './cursor.mts'
+import {
+  getElectionRecordsForRelations,
+  getViewerVoteRecordsForRelations,
+} from './election-sidecar-helpers.mts'
 
 const entityRelationsQuery = defineQueryContract({
   after: queryString(),
@@ -137,23 +138,18 @@ app
             : null,
       },
       entity_relations: indexById(publicRelationsWithId),
-      entity_relation_elections:
-        entityIds.length > 0
-          ? getEntityRelationElectionByIdCachedBatch(entityIds).then(indexById)
-          : {},
+      entity_relation_elections: getElectionRecordsForRelations(parsed.metadata, entityIds),
     }
     if (!currentUser) {
       ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
     }
 
     // Include election votes for authenticated users
-    if (currentUser && entityIds.length > 0) {
-      output.election_votes = getEntityRelationElectionVotesByUser(currentUser.id, entityIds).then(
-        votes => {
-          const votesMap = new Map(votes.map(vote => [vote.entity_id, vote]))
-          const election_votes = electionVotesMapToRecord(votesMap)
-          return Object.keys(election_votes).length > 0 ? election_votes : undefined
-        },
+    if (currentUser) {
+      output.election_votes = getViewerVoteRecordsForRelations(
+        currentUser.id,
+        parsed.metadata,
+        entityIds,
       )
     }
 

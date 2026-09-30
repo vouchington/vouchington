@@ -52,6 +52,11 @@ that arrives while windows are still being created does not treat empty children
 `./dev/stop-services` closes the whole managed session, including windows added manually. If run
 from one of those windows, it waits until the calling command finishes before closing the session;
 this lets `./dev/reset`, `./dev/teardown`, and `./dev/reset-worktree` finish their remaining work.
+When `docker ps` itself fails (for example Docker is not running), `./dev/stop-services` warns that
+it cannot tell whether the Valkey container is running, still closes the tmux session, and exits 1
+instead of reporting Valkey as not running. `./dev/teardown` therefore stops before removing the
+container or dropping the database until Docker is reachable; `./dev/reset` passes `--keep-valkey`
+and never asks Docker.
 
 Before creating the API and worker windows, `./dev/tmux` builds or reuses the ignored
 worktree-local localization database at `.local/localization/catalog.sqlite` and passes that same
@@ -59,6 +64,8 @@ path to both processes. The catalog helper anchors its default source and artifa
 even when invoked from a subdirectory. Healthy reuse skips that rebuild. After editing `localization/catalog/`,
 stop the tmux session and run `./dev/tmux` again; the catalog-and-package revision check rebuilds
 the database before those processes start. Restoring a dead `backend` or `worker` window rebuilds
-the catalog for that restart only.
+the catalog for that restart only. `./dev/tmux` exits 1 with a named error, instead of launching
+windows with an empty `LOCALIZATION_SQLITE_PATH` or `QUEUES`, when the catalog helper or the
+worker-queue policy CLI prints nothing.
 
 Use `./dev/tmux-name <name>` to rename the current agent tmux window and pane title (targets `$TMUX_PANE`); pass an empty name to clear the pane title and restore automatic window naming.

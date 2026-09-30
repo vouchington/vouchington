@@ -158,20 +158,74 @@ User-generated content belongs to respective users as described in Section 5.
 Voucha may restrict access to hosted material when it receives and validates a copyright notice.
 The copyright program is not active until Voucha registers a designated agent with the US Copyright
 Office and publishes a monitored contact channel. Until then, no address or form is represented as
-an active statutory DMCA intake channel.
+an active statutory DMCA intake channel. The rest of this section describes the process once the
+program is active.
 
-When active, a claimant may submit a US copyright notice through the published process. A poster
-may submit an appeal or a statutory counter-notice when eligible. We may preserve submissions,
-evidence, and case records, notify affected participants, apply a provisional restriction, and
-restore material when required by law. An automated check may identify abuse or obvious invalidity,
-but it does not decide legal validity. Human moderators review required decisions.
+### Submitting a Notice
 
-Voucha reasonably implements a repeat-infringer policy after considering verified notices,
-counter-notices, legal holds, repeat conduct, and applicable law. An allegation alone does not
-automatically terminate an account.
+A signed-in member can submit a US copyright notice through the published form. Anyone can send a
+notice by email to the designated agent. The form uses CAPTCHA to prevent abuse. CAPTCHA does not
+decide whether a claim is valid.
 
-Accepted case records may be visible to signed-in members. Those records exclude participant names,
-contact details, signatures, raw correspondence, evidence, moderator rationale, and agent analysis.
+### How Copyright Moderators Review Notices
+
+A copyright moderator reviews every notice and decides whether it is complete and whether to
+restrict material. An AI agent assists the moderator: it screens form notices for spam or obvious
+invalidity, structures emailed notices, gives the moderator a recommendation, and may draft a
+message that a moderator must approve before it is sent. The agent does not decide whether a notice
+is valid. It cannot restrict material, open a case, or send a message on its own.
+
+A restriction withholds the identified image on the identified post. It does not delete the source
+image or affect another post that uses the same image independently. A copyright moderator records
+a decision to confirm or reverse each restriction. A restriction never becomes final only because
+no one appealed. We may preserve submissions, evidence, and case records, and notify affected
+participants.
+
+### Responding to a Notice
+
+When material is restricted, we notify the poster, who can respond from the case page. The poster
+may:
+
+- submit an appeal, which a copyright moderator reviews; or
+- submit a US counter-notice when eligible. We forward it to the original claimant, including the
+  poster's name, address, telephone number, and signature. We restore the material no sooner than
+  10 and no later than 14 business days after we receive a substantially compliant counter-notice,
+  unless the claimant tells our designated agent that they have filed a court action or Copyright
+  Claims Board proceeding about that material, or another restriction applies.
+
+The claimant may write to our designated agent to correct or withdraw the notice, or to tell us that
+they have filed a court action or Copyright Claims Board proceeding. A withdrawal leaves existing
+restrictions in place until a copyright moderator assesses it. We may ask either party for more
+information. Participants may also pursue their remedies in court or before the Copyright Claims
+Board.
+
+### Repeat Infringers
+
+Voucha may terminate, in appropriate circumstances, the account of a member who repeatedly
+infringes copyright. A copyright incident counts against an account when a copyright moderator
+confirms a restriction on that account's post, including on appeal. Confirmed restrictions from one
+notice count as one incident. An incident stops counting when a copyright moderator reverses every
+confirmed restriction behind it or records that the notice was withdrawn, a duplicate, or abusive.
+Restoring material after a counter-notice does not remove an incident. An account's second counting
+incident opens a staff review. Opening that review does not suspend the account. A copyright
+moderator may close the review with a warning or no action. Only an administrator may restrict or
+terminate the account, and only while it has at least two counting incidents. Restricting or
+terminating suspends the account. A terminated account stays suspended until an administrator
+records a reinstatement and lifts the suspension. An allegation or a count of notices alone never
+suspends or terminates an account.
+
+While your account has a counting incident, or a qualifying court or Copyright Claims Board hold on
+one of your posts is unresolved, you cannot delete your account.
+
+### Case Records
+
+Accepted case records are visible to signed-in members. A record shows the case identifier, dates,
+restriction status, and a timeline of event types and dates. It links to the affected post only
+when the viewer could otherwise see that post. When a signed-in member filed the notice and still
+has a public profile, the record shows that member's current public profile name and links to their
+profile. Records never show legal names, contact details, signatures, raw correspondence, evidence,
+moderator rationale, or agent analysis. A case records an allegation and its outcome. It does not
+call the claimant the owner of the work or the poster an infringer.
 
 ## 11. Disclaimer of Warranties
 
@@ -208,7 +262,7 @@ Voucha may suspend or terminate your account at any time, with or without notice
 - Your content may remain attributed to a [deleted] tombstone account
 - Outstanding billing obligations remain due
 
-You may delete your own account at any time from account settings. Account deletion is irreversible.
+You may delete your own account at any time from account settings, except while a copyright matter described in Section 10 blocks it. Account deletion is irreversible.
 
 ## 15. Modifications to Terms
 

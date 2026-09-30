@@ -1,5 +1,4 @@
 import { execFileSync } from 'node:child_process'
-import { pathToFileURL } from 'node:url'
 
 import {
   auditCiJobRuntime as auditPublished,
@@ -47,4 +46,4 @@ async function main(): Promise<void> {
   process.stdout.write(`${JSON.stringify(await auditCiJobRuntime(execute, repository), null, 2)}\n`)
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main()
+if (import.meta.main) await main()

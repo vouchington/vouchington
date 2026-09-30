@@ -21,8 +21,8 @@ each credentialed Vitest project (`backend-aws`, `backend-bedrock`, `backend-ope
 `backend-openrouter`, `backend-stripe`) is homogeneous by construction — every file matched by its own `include` glob is,
 by design, a real-provider probe with no setup file that mocks _the provider that project probes_, so
 a bare timeout inside that project's own probe boundary is never a broader integration-test deadlock.
-(`backend-openai` does load `./backend/test-helpers/vitest.setup.aws-mocks.mts` — `vitest.config.mts`
-— but that mocks AWS, not OpenAI, so it's irrelevant to what `backend-openai` itself probes.) The rule
+(`backend-openai` does load `./backend/test-helpers/vitest.setup.aws-mocks.mts` —
+`test-helpers/vitest-config/backend-credentialed-projects.mts` — but that mocks AWS, not OpenAI, so it's irrelevant to what `backend-openai` itself probes.) The rule
 matches on
 `FAIL <project> <path under that project's own include glob>` plus a provider-transport marker, not
 job-level timeout alone (`backend-credentialed-log-fingerprints.mts`). Two narrower trade-offs this
@@ -30,7 +30,7 @@ still accepts, both bounded by `maxAttempts: 2` and the single-failure-block req
 
 - A genuine code bug inside a credentialed probe test that happens to manifest as a timeout gets one
   rerun before dispatch, instead of dispatching immediately.
-- `backend-aws` and `backend-openai` also load a DB/Valkey `globalSetup` (`vitest.config.mts`), so a
+- `backend-aws` and `backend-openai` also load a DB/Valkey `globalSetup` (`test-helpers/vitest-config/backend-credentialed-projects.mts`), so a
   bare timeout there could in principle be DB/Valkey-origin rather than provider-origin — still
   classified `rootCauseKey: 'external-provider-transient'`, since a rerun is still the right first
   move either way.
@@ -42,6 +42,7 @@ project's `testTimeout` when the rule was authored (PR #6551). PR #8107 lowered 
 predicate could never match again, and its own test fixture fed it a synthetic `120000ms` log
 authored to satisfy the same (now-wrong) literal, so the suite stayed green forever. Fixed by
 replacing all seven per-test title/timeout-digit regexes with the project-derived matcher above, and
-by `repo-owned-literal-freshness.test.mts`'s freshness + completeness guard, which fails the moment a
-repo-owned literal like this one goes stale instead of staying silently green. See
-`ci/transient-retry/AGENTS.md`'s invariant on this.
+by deriving the credentialed project boundary from the project list Vitest itself runs
+(`test-helpers/vitest-config/backend-credentialed-projects.mts`) and checking it against the
+workflow in `backend-credentialed-config-agreement.test.mts`, so there is no second copy left to go
+stale. See `ci/transient-retry/AGENTS.md`'s invariant on this.

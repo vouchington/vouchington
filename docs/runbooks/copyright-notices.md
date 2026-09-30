@@ -25,6 +25,11 @@ These are product response targets, not representations of safe-harbor eligibili
 
 ## Queue triage
 
+The staff case queue (Moderation sidebar, Copyright, Case Queue) lists missed restoration deadlines
+first, then deadlines past escalation, then other open work, each oldest wait first. Work it top
+down. Each case shows why it is queued and how long its oldest open item has waited. The email
+intake queue shows each message's wait age.
+
 1. Confirm the original submission and evidence digest exist. Never reconstruct a missing email from
    agent output.
 2. For email, compare the structured extraction with the inert original and correct it before
@@ -43,10 +48,6 @@ These are product response targets, not representations of safe-harbor eligibili
 Keep `COPYRIGHT_INTAKE_ENABLED=false` until all of the following are verified in the target
 environment:
 
-This switch stops only new intake and intake-agent processing. Existing complaint pages and all
-ongoing statutory casework remain available; use the individual delivery/enforcement controls and
-incident procedures rather than the intake switch to manage a downstream outage.
-
 - the published address belongs to the registered US designated agent and production inbox routing
   assigns `copyright` only to the trusted `copyright-incoming/` S3 prefix;
 - `S3_BUCKET_COPYRIGHT_EVIDENCE` is private, encrypted, versioned, access-logged, retention-reviewed,
@@ -57,6 +58,29 @@ incident procedures rather than the intake switch to manage a downstream outage.
 - receipts, poster notices, approved correspondence, retry/bounce handling, appeal and counter-notice
   workflows are live; and
 - the repeat-infringer policy, retention schedule, templates, staffing, and legal review are approved.
+
+This switch is the intake kill switch. It stops only new claimant intake and intake-agent
+processing. Existing complaint pages and all ongoing statutory casework remain available; use the
+individual delivery/enforcement controls and incident procedures rather than the intake switch to
+manage a downstream outage.
+
+| Class             | Routes                                                                                                                                | While the switch is off |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| New intake        | `POST /api/v1/copyright-notices` (signed-in and guest form), `POST /api/v1/copyright-eu-notices`, `POST /api/v1/copyright-uk-notices` | 503                     |
+| In-case responses | Appeals, counter-notices, guest filings (supplement, withdrawal, court/CCB hold), EU and UK redress, EU supervised complaints         | Open                    |
+| Staff             | Every staff decision, review, replay, capability, repeat-infringer, territorial-policy, and report route                              | Open                    |
+
+[`intake-kill-switch-routes.test.mts`](../../backend/api/v1/copyright-notices/intake-kill-switch-routes.test.mts)
+fails when a non-GET copyright route has no class. Staff approval of an already received email or
+form intake is a staff decision, so it can still open a case while the switch is off. New EU and UK
+notices need the switch and an unwithdrawn territorial policy approval. Turning the switch on does
+not approve either jurisdiction.
+
+The switch also pauses designated-agent email. The SES worker leaves every inbound message in
+`copyright-incoming/` and processes it once the switch is on again, including replies on existing
+cases. Emailed counter-notices and court/CCB filing notices start their §512(g) clocks on receipt,
+so while intake is off staff must read the designated-agent inbox directly so no statutory
+deadline is missed.
 
 The web footer must link to the Copyright policy, designated-agent status, repeat-infringer policy,
 Terms, Privacy, and Community Guidelines. Before launch, counsel must update the DB-backed Terms,
@@ -206,3 +230,71 @@ privacy leak, or media-delivery bypass:
 Never call the destructive image-deletion path to implement a copyright restriction. Never update or
 delete a submission, evidence artifact, assessment, lifecycle event, restriction, deadline, or
 action-intent record by hand.
+
+## DMCA §512(h) subpoenas
+
+This procedure routes a subpoena to counsel. It is not legal advice. Counsel decides validity,
+scope, user notice, and what is produced. Keep the matter file, counsel contacts, and produced
+copies in the private operations repository.
+
+Under [17 U.S.C. §512(h)](https://www.law.cornell.edu/uscode/text/17/512), a copyright owner can ask
+the clerk of any US district court to issue a subpoena. It orders Voucha to disclose information
+sufficient to identify an alleged infringer, to the extent Voucha has it.
+
+1. **Intake.** Subpoenas are served on the designated agent, by post or process server at the
+   registered address or through the designated inbox. Record when and how it was served, and
+   send it to counsel the same day. A subpoena emailed to the designated inbox becomes an email
+   intake in the email review queue. Do not approve it, because approval admits it as a copyright
+   notice. Do not reject it either, because rejection queues the standard notice-rejection reply
+   to the sender. Record a disposition only after counsel says whether that reply may go out.
+2. **Validity checks.** Before anything is disclosed, record for counsel whether:
+   - a clerk of a US district court issued and signed it;
+   - it attaches or follows a notification that meets §512(c)(3)(A);
+   - it attaches the requester's sworn declaration that the identity is sought only to protect
+     rights under Title 17;
+   - its URLs identify material hosted on Voucha, and which copyright case and exact placements
+     they match, if any; and
+   - its return date and any required format.
+
+   A missing element is for counsel to weigh, not a reason to let the return date pass.
+
+3. **Counsel review.** Nothing is disclosed until counsel approves the scope in writing. Counsel
+   decides whether to comply, narrow the request, object, or move to quash. Section 512(h)(6)
+   applies the Federal Rules of Civil Procedure for subpoenas duces tecum. Staff do not tell the
+   requester whether an account exists.
+4. **User notice.** The product has no channel for notice of legal process. If counsel approves
+   notice and no court order or law forbids it, send it from the operator mailbox before any
+   production, so the user can respond. Record the date it was sent in the matter file.
+5. **Preservation.** The product has no preservation hold for a subpoena. The legal holds in
+   `copyright_notice_legal_hold_assessments` record only §512(g)(2)(C) court and CCB filings, and
+   they change restoration. Never record a subpoena as a court or CCB filing, or as a submission
+   of kind `court_or_ccb_hold`.
+   - Copyright case records are append-only, and nothing in the product currently destroys case
+     evidence (see [evidence retention](../requirements/moderation/COPYRIGHT-NOTICES.md#evidence-retention-preview)).
+   - Account records are not protected. The user or an administrator can delete the account at any
+     time. [Account deletion](../requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md) scrubs direct
+     personal data immediately and reattributes the account's posts to `[deleted]`, so the case no
+     longer links to the account. Only an operative repeat-infringer incident or an unresolved
+     qualifying court or CCB hold blocks deletion; a subpoena does not.
+
+   If counsel directs preservation, an administrator requests an
+   [account data export](../requirements/users/ACCOUNT-DATA-EXPORT.md) for the account and saves
+   the download to the matter file before its link expires. The export omits session IP
+   addresses, so capture any that counsel needs from `user_sessions`. The account holder can see
+   this export: their data page shows the latest request, whoever made it, along with its status
+   and download link, and blocks the account holder's own request while it runs. Counsel decides
+   whether to request the export together with the user-notice decision in step 4.
+
+6. **Records that may exist.** Produce only what counsel approves.
+   - Account: the export categories (username, profile, creation date, email addresses, phone
+     numbers, OAuth account and passkey metadata), plus `user_sessions` rows. Each row holds a
+     device name, a user agent, a last-seen time, and the IP address captured at the latest
+     login or refresh. Earlier addresses are overwritten.
+   - Copyright case: the targets with their captured placement revisions, the immutable
+     submissions, assessments, restrictions, lifecycle events, and correspondence, plus private
+     evidence artifacts identified by SHA-256 digest. A counter-notice, if filed, holds the poster's
+     name, address, and telephone number, and the claimant has already received it with the
+     forwarded counter-notice.
+7. **Close out.** In the matter file, record the requester, the service date, the validity
+   checks, counsel's decision, the notice sent, and what was produced and when. The case record
+   has no subpoena event or correspondence type, so don't add one to it.

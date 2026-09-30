@@ -1,6 +1,4 @@
 import { execFileSync } from 'node:child_process'
-import { realpathSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
 
 import {
   findBlockedGitReason,
@@ -79,7 +77,6 @@ function main(): number {
   return 1
 }
 
-const entry = process.argv[1]
-if (entry !== undefined && import.meta.url === pathToFileURL(realpathSync(entry)).href) {
+if (import.meta.main) {
   process.exit(main())
 }

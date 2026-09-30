@@ -11,6 +11,7 @@ import {
   type FeatureFlags,
 } from '@ts-shared/feature-flags'
 import { getFeatureFlags } from '@/lib/api/server/feature-flags'
+import { mergeFeatureFlagOverrides } from './shared'
 
 const GLOBAL_FEATURE_FLAGS_REQUEST_KIND = 'global-feature-flags'
 
@@ -35,7 +36,7 @@ export async function getServerFeatureFlagOverrides(): Promise<FeatureFlags> {
 
 export async function getEffectiveServerFeatureFlags(): Promise<FeatureFlags> {
   const overrides = await getServerFeatureFlagOverrides()
-  return { ...(await getGlobalServerFeatureFlags()), ...overrides }
+  return mergeFeatureFlagOverrides(await getGlobalServerFeatureFlags(), overrides)
 }
 
 export interface GlobalFeatureFlagsFetchSuccess {

@@ -3,8 +3,7 @@
 import { execFile } from 'node:child_process'
 import { realpath, stat, statfs } from 'node:fs/promises'
 import { homedir, platform, tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
 
 import {
@@ -187,5 +186,4 @@ export async function runHostStoragePreflightCli(
   }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url))
-  process.exitCode = await runHostStoragePreflightCli(process.argv.slice(2))
+if (import.meta.main) process.exitCode = await runHostStoragePreflightCli(process.argv.slice(2))

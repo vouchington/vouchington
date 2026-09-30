@@ -4,6 +4,7 @@ import {
   createTestUserWithAge,
   expireContributionAdmissionClaimForTest,
   getContributionAdmissionReservationStateForTest,
+  executeTestAdmittedPost,
 } from '@voucha/test-helpers'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { DUPLICATE_TOPIC } from '@modules/on-error/error-codes'
@@ -63,7 +64,7 @@ describe('contribution admission failure cleanup', () => {
         beforeCapacity: async () => {
           throw error
         },
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).rejects.toBe(error)
     await expect(

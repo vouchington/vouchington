@@ -13,6 +13,19 @@ export async function hardDeleteTestTopic(topicId: string): Promise<void> {
   await write(sql`/* hardDeleteTestTopic */ DELETE FROM topics WHERE id = ${topicId}`)
 }
 
+export async function reviewSuccessionTopicDeleteErrorCode(topicId: string): Promise<string> {
+  try {
+    await write(sql`
+      /* reviewSuccessionTopicDeleteErrorCode */
+      DELETE FROM review_succession_topics WHERE topic_id = ${topicId}
+    `)
+    return 'ok'
+  } catch (error) {
+    const code = (error as { code?: string }).code
+    return code ?? 'error'
+  }
+}
+
 /**
  * Directly sets the three merge columns on a topic row for testing purposes.
  * Use when you need a topic in the "merged" lifecycle state without running the

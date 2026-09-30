@@ -95,6 +95,8 @@ Seed articles for blog publishing and RAG ingestion. These serve dual purpose: p
 - [Privacy Policy](../../../../articles/privacy-policy.md) — Data handling and user rights
 - [Community Guidelines](../../../../articles/community-guidelines.md) — User-generated content and community rules
 - [Cookie Policy](../../../../articles/cookie-policy.md) — What cookies Voucha uses and how to control them
+- [Copyright and the DMCA on Voucha](../../../../articles/copyright-and-dmca.md) — US copyright policy, moderator review, and what a takedown does
+- [How Copyright Complaints Work](../../../../articles/copyright-complaints.md) — Filing notices, appeals, and counter-notices, with the restoration timeline
 
 ## Frontmatter Format
 

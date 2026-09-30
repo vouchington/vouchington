@@ -1,6 +1,6 @@
-// Regression coverage for the fields that produced issue #8940's wrong premise: the issue read
-// heapUsedMB/heapTotalMB ("~97% occupancy") as though it were measuring against a limit, when V8
-// steady-state keeps heapTotal near heapUsed by design. formatProcessResources() now also reports
+// Regression coverage for the fields that guard against a misread: heapUsedMB/heapTotalMB
+// ("~97% occupancy") is not measured against a limit, since V8 steady-state keeps heapTotal near
+// heapUsed by design. formatProcessResources() therefore also reports
 // heapLimitMB/heapPctOfLimit from v8.getHeapStatistics().heap_size_limit — the actual ceiling —
 // and this file is the first dedicated spec for that computation.
 import { getHeapStatistics } from 'node:v8'
@@ -28,12 +28,11 @@ describe('formatPercent', () => {
 })
 
 describe('formatProcessResources', () => {
-  it('reports every field the diagnostics reporter and fork-exit sentinel depend on', () => {
+  it('reports every field the teardown-overrun diagnostics depend on', () => {
     const line = formatProcessResources()
 
-    // An absent field here would silently blank a column in [vitest-worker-exit-diagnostics] or
-    // main-process: output instead of failing loudly — so presence, not just parseability, is
-    // the assertion.
+    // An absent field here would silently blank a column in [vitest-teardown-overrun] output
+    // instead of failing loudly — so presence, not just parseability, is the assertion.
     for (const field of [
       'pid',
       'rssMB',

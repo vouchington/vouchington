@@ -97,12 +97,21 @@ async function archiveAutomaticPredecessors(
         AND predecessor.archived_at IS NULL
     ), inserted AS (
       INSERT INTO review_successions (
-        predecessor_post_id, successor_post_id, author_user_id, topic_ids, predecessor_archived_at
+        predecessor_post_id, successor_post_id, author_user_id, predecessor_archived_at
       )
-      SELECT predecessor_post_id, successor_post_id, author_user_id, topic_ids, predecessor_archived_at
+      SELECT predecessor_post_id, successor_post_id, author_user_id, predecessor_archived_at
       FROM archive_epochs
       ON CONFLICT (predecessor_post_id, predecessor_archived_at) DO NOTHING
-      RETURNING predecessor_post_id, predecessor_archived_at
+      RETURNING id, predecessor_post_id, predecessor_archived_at
+    ), inserted_topics AS (
+      INSERT INTO review_succession_topics (review_succession_id, topic_id)
+      SELECT inserted.id, topic_id
+      FROM inserted
+      JOIN archive_epochs
+        ON archive_epochs.predecessor_post_id = inserted.predecessor_post_id
+        AND archive_epochs.predecessor_archived_at = inserted.predecessor_archived_at
+      CROSS JOIN LATERAL unnest(archive_epochs.topic_ids) AS topic_id
+      RETURNING review_succession_id
     ), archived AS (
       UPDATE posts
       SET archived_at = inserted.predecessor_archived_at, archived_by_id = NULL
@@ -111,7 +120,9 @@ async function archiveAutomaticPredecessors(
         AND posts.archived_at IS NULL
       RETURNING posts.id
     )
-    SELECT id AS predecessor_post_id FROM archived ORDER BY id`,
+    SELECT archived.id AS predecessor_post_id
+    FROM archived
+    ORDER BY archived.id`,
     [
       JSON.stringify(
         archives.map(archive => ({

@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
 import { electedRelationMetadata } from '@services/users/relation-impact-targets'
 
 function retainedRelationReferences(subjectType: string): [string, string][] {
@@ -9,7 +10,7 @@ function retainedRelationReferences(subjectType: string): [string, string][] {
   )
 }
 
-const ROOT_FAMILIES = {
+export const ROOT_FAMILIES = {
   user: {
     table: 'retained_user_identities',
     references: [
@@ -19,12 +20,29 @@ const ROOT_FAMILIES = {
       ['user_deletion_audit_logs', 'user_id'],
       ['user_deletion_audit_logs', 'requested_by_id'],
       ['post_publication_author_identities', 'id'],
+      ['post_category_finalization_actors', 'user_id'],
+      ['membership_changes', 'user_id'],
+      ['membership_changes', 'changed_by_id'],
+      ['membership_grants', 'granted_by_id'],
+      ['membership_grants', 'revoked_by_id'],
+      ['membership_refunds', 'user_id'],
+      ['membership_refunds', 'issued_by_id'],
+      ['membership_administrator_refund_operation_requests', 'issued_by_id'],
+      ['membership_sources', 'user_id'],
+      ['oauth_authorization_server_events', 'user_id'],
+      ['post_moderation_dispositions', 'actor_user_id'],
+      ['post_clearance_changes', 'changed_by_id'],
       ...retainedRelationReferences('user'),
     ],
   },
   topic: {
     table: 'retained_topic_identities',
-    references: [['topics', 'id'], ...retainedRelationReferences('topic')],
+    references: [
+      ['topics', 'id'],
+      ['post_category_finalization_admission_topics', 'topic_id'],
+      ['review_succession_topics', 'topic_id'],
+      ...retainedRelationReferences('topic'),
+    ],
   },
   post: {
     table: 'retained_post_identities',
@@ -32,6 +50,7 @@ const ROOT_FAMILIES = {
       ['posts', 'id'],
       ['post_publication_post_identities', 'id'],
       ['notifications', 'publication_post_id'],
+      ['post_admission_reservations', 'committed_post_id'],
       ...retainedRelationReferences('post'),
     ],
   },
@@ -76,6 +95,7 @@ export async function cleanupRetainedIdentityRoots(
     if (idsByFamily && !ids?.length) continue
     if (ids && ids.length > pageSize)
       throw new RangeError('Scoped retained identity cleanup must fit one page')
+    observeSharedDbScope('cleanupRetainedIdentityRoots', sharedDbIdsScope(ids))
     // oxlint-disable-next-line no-await-in-loop -- each family has an independent bounded cursor transaction
     results.push(await cleanupRetainedIdentityFamily(family, pageSize, ids))
   }

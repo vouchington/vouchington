@@ -1,6 +1,5 @@
 import { execFile as execFileCallback } from 'node:child_process'
 import { appendFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 import {
@@ -114,7 +113,7 @@ export async function runSourceStateCheck(
   return result
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   const result = await runSourceStateCheck({
     GITHUB_OUTPUT: process.env.GITHUB_OUTPUT,
     GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY,

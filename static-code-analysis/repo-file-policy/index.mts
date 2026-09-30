@@ -30,7 +30,7 @@ import { checkPostPublicationReaderInventory } from './post-publication-reader-i
 import { checkPostPublicationWriterInventory } from './post-publication-writer-inventory.mts'
 import { checkPublicSourceLiterals } from './public-source-literal-guard.mts'
 import { checkRelationalStorage } from './relational-storage-guard.mts'
-import { verifyEntityRelationVotePartitionForeignKeys } from './partition-foreign-key-proof.mts'
+import { verifyEntityRelationVotePartitionForeignKeysAt } from './partition-foreign-key-proof.mts'
 
 type RepoFilePolicyOptions = {
   schemaSnapshot?: unknown
@@ -63,7 +63,9 @@ export async function checkRepoFilePolicy(
   checkMonetaryContracts(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
   checkMonetarySnapshot(schema, errors)
   const injectedSnapshot = options.schemaSnapshot !== undefined
-  const partitionFkErrors = injectedSnapshot ? [] : verifyEntityRelationVotePartitionForeignKeys()
+  const partitionFkErrors = injectedSnapshot
+    ? []
+    : await verifyEntityRelationVotePartitionForeignKeysAt(ctx.repoRoot)
   errors.push(...partitionFkErrors)
   errors.push(
     ...checkRelationalStorage(schema, {

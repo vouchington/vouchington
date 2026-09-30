@@ -83,6 +83,17 @@ describe('0000-00-01b-entity-relation-indexes', () => {
     ).toHaveLength(1)
   })
 
+  it('adds the mutation fence foreign key once, after the relation table exists', () => {
+    const sql = idempotent()
+    const constraint = 'story_post_url_projection_mutations_relation_fkey'
+
+    expect(sql).toContain(
+      'FOREIGN KEY (post_id, relation_id) REFERENCES relation__post__related__url (subject_id, id) ON DELETE CASCADE NOT VALID',
+    )
+    expect(sql).toContain(`VALIDATE CONSTRAINT ${constraint}`)
+    expect(sql.match(new RegExp(`ADD CONSTRAINT ${constraint}`, 'g'))).toHaveLength(1)
+  })
+
   it('has no differently-named indexes with an identical definition shape', () => {
     const collisions = findIndexShapeCollisions(extractIndexShapes(idempotent()))
 

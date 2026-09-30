@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { fileURLToPath } from 'node:url'
 
 import { hookSessionId, readHookPayload, resolvePreToolUseRuntime } from './hook-payload.mts'
 import type { HookPayload } from './types.mts'
@@ -83,7 +82,7 @@ async function main(): Promise<void> {
   if (reminder) await emitReminder(reminder)
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   main()
     .catch(() => {
       // Fail-open: nothing here may block, delay, or crash the calling tool.

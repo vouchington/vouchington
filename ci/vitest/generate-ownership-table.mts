@@ -10,13 +10,11 @@
  *   node ci/vitest/generate-ownership-table.mts          # write
  *   node ci/vitest/generate-ownership-table.mts --check  # verify only, exit non-zero if stale
  */
-import { readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { format } from 'oxfmt'
 import { VITEST_OWNERSHIP } from './project-ownership.mts'
 
-const __filename = fileURLToPath(import.meta.url)
 const ROOT = path.join(import.meta.dirname, '../..')
 const DEFAULT_DOC_PATH = path.join(ROOT, 'docs/development/ci/workflows/VITEST.md')
 
@@ -104,7 +102,7 @@ export async function writeVitestOwnershipDoc({
 /* v8 ignore start -- direct-execution entry; exercised by the static-code-analysis --check CI
    step, not unit tests. writeVitestOwnershipDoc (the testable half) is covered directly in
    generate-ownership-table.test.mts. */
-if (process.argv?.[1] && realpathSync(process.argv[1]) === __filename) {
+if (import.meta.main) {
   const check = process.argv.includes('--check')
   try {
     await writeVitestOwnershipDoc({ check })

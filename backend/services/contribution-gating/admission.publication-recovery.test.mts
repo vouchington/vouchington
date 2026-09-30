@@ -8,6 +8,8 @@ import {
   expireContributionAdmissionClaimForTest,
   getContributionAdmissionReservationStateForTest,
   setContributionAdmissionReplayMetadataForTest,
+  ensureTestAdmittedPostIdentity,
+  executeTestAdmittedPost,
   stopTestQueryCapture,
 } from '@voucha/test-helpers'
 import { runContributionAdmission } from './admission.mts'
@@ -26,8 +28,9 @@ describe('contribution admission response publication', () => {
       actorId: user.id,
       idempotencyKey,
       intent,
-      execute: query =>
-        executePreparedContribution(query, async () => ({
+      execute: async query => {
+        await ensureTestAdmittedPostIdentity(query, postId)
+        return executePreparedContribution(query, async () => ({
           response: staleResponse,
           finalize: async () => {
             await completeContributionAdmissionResponseForTest({
@@ -36,7 +39,8 @@ describe('contribution admission response publication', () => {
               response: durableResponse,
             })
           },
-        })),
+        }))
+      },
     })
 
     expect(created).toEqual({ kind: 'created', response: durableResponse })
@@ -45,7 +49,7 @@ describe('contribution admission response publication', () => {
         actorId: user.id,
         idempotencyKey,
         intent,
-        execute: async () => ({ post: { id: crypto.randomUUID() } }),
+        execute: executeTestAdmittedPost,
       }),
     ).resolves.toEqual({ kind: 'replay', response: durableResponse })
   })
@@ -61,8 +65,9 @@ describe('contribution admission response publication', () => {
       actorId: user.id,
       idempotencyKey,
       intent,
-      execute: query =>
-        executePreparedContribution(query, async () => {
+      execute: async query => {
+        await ensureTestAdmittedPostIdentity(query, response.post.id)
+        return executePreparedContribution(query, async () => {
           executions += 1
           return {
             response,
@@ -74,7 +79,8 @@ describe('contribution admission response publication', () => {
               })
             },
           }
-        }),
+        })
+      },
     })
 
     await expect(first).resolves.toEqual({ kind: 'in_progress', retryAfterSeconds: 1 })
@@ -112,8 +118,9 @@ describe('contribution admission response publication', () => {
           idempotencyKey,
           callerCanReplayIdempotencyIdentity: false,
           intent: { request: crypto.randomUUID() },
-          execute: query =>
-            executePreparedContribution(query, async () => ({
+          execute: async query => {
+            await ensureTestAdmittedPostIdentity(query, response.post.id)
+            return executePreparedContribution(query, async () => ({
               response,
               finalize: async () => {
                 await setContributionAdmissionReplayMetadataForTest({
@@ -122,7 +129,8 @@ describe('contribution admission response publication', () => {
                   replayMetadata: { padding: 'x'.repeat(8_170) },
                 })
               },
-            })),
+            }))
+          },
         }),
       ).resolves.toEqual({ kind: 'created', response })
     } finally {

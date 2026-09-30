@@ -9,8 +9,11 @@ Report concrete findings with file/line evidence:
 - Correctness and security: authorization, input validation, secrets, races, and failure handling.
 - Performance and cost: query shape, unnecessary external calls, fan-out, and hot-path allocations.
 - Simplicity: obsolete paths, duplication, or indirection that obscures behavior.
-- Prelaunch storage: enforce [One current contract](../../../AGENTS.md), typed relationships, and
-  concrete foreign keys for internal references, including retained identities.
+- Prelaunch storage: enforce [One current contract](../../../AGENTS.md) and
+  [prelaunch relational storage](../../../docs/development/postgres-schema-rules.md#prelaunch-relational-storage):
+  internal entity ids and UUID arrays of entity ids become foreign-key columns or child rows,
+  including retained identities. Structured documents, data points, and change history stay JSON;
+  do not ask for a JSON document to become a typed column per field.
 - Requirements and PR accuracy: identify binding requirements left unmet, unsupported claims,
   unexplained scope, and incomplete root-cause fixes. Human direction and the accepted plan outrank
   advisory reviews. Alternative designs are advisory unless they reveal a concrete blocker.

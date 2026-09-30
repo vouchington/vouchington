@@ -12,6 +12,7 @@ Not partitioned — growth: unbounded.
 | `url`                 | `text`                     | no       |                              |          |           |           | Full HTTPS URL (max 2083 chars). Unique, trimmed.                       |
 | `hostname_id`         | `uuid`                     | no       |                              |          |           |           | The hostname this URL belongs to.                                       |
 | `pathname`            | `text`                     | no       | `'/'::text`                  |          |           |           | URL pathname component (e.g. /path/to/page). Max 2048 chars.            |
+| `search_params`       | `jsonb`                    | no       |                              |          |           |           | URL query parameters stored as JSONB.                                   |
 | `url_content_type_id` | `bigint`                   | yes      |                              |          |           |           | Detected MIME content type of the URL.                                  |
 | `canonical_url_id`    | `uuid`                     | yes      |                              |          |           |           | Self-referencing FK to the canonical version of this URL, if different. |
 | `created_by_id`       | `uuid`                     | yes      |                              |          |           |           |                                                                         |

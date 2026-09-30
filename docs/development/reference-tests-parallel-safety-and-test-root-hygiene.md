@@ -36,9 +36,13 @@ Seven DB-backed Vitest projects install the shared-DB scope observer before test
 The production-neutral service observer is inert outside tests. Its finite operation catalog lives
 in `backend/data-stores/psql/shared-db-scope-observer.mts`; it covers copyright staff heads and
 recovery/sweep pages, media registry staging/replay/recovery and repair markers, retained media
-binding cleanup, ActivityPub
+binding, identity-root, and relation-identity cleanup, ActivityPub
 delivery recovery/rearm, OAuth exchange recovery/expiry deletion, notification push-intent
 recovery, and stale chat generation selection. It does **not** prove every SQL query scoped.
+
+Retained identity-root and relation-identity cleanup report their exact owned ids (a relation tuple
+as its subject id then relation id). Their no-argument production default scans globally, so a shared
+test must pass exact ids or tuples.
 
 These service calls must bind owned IDs/keys before their `ORDER BY`/`LIMIT` or use a complete
 bound keyset cursor where the catalog policy allows one. The staff email intake queue and

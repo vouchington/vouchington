@@ -1,6 +1,5 @@
-import { readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { serializeCatalogTable } from '@vouchington/localization'
 import { loadCatalogDirectory } from '@vouchington/localization-compiler'
 import { format, type FormatConfig } from 'oxfmt'
@@ -156,7 +155,7 @@ export async function writeRouteAliasArtifacts(
   if (diagnostics) writeDiagnostics(diagnostics.summary())
 }
 
-if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   await writeRouteAliasArtifacts(
     process.argv.includes('--check'),
     process.argv.includes('--diagnostics'),

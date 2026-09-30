@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
@@ -126,54 +126,6 @@ describe('ReportsClient judgement controls', () => {
     )
 
     expect(container.querySelector('[data-pw="report-judgement-chip"]')).toBeNull()
-  })
-
-  it('shows the Re-run judgement button on all staff rows including non-pending', () => {
-    render(
-      <ReportsClient
-        viewerTier='staff'
-        data={makeReportsResponse({ status: 'reviewed' })}
-      />,
-    )
-
-    expect(screen.getByRole('button', { name: /re-run ai judgement/i })).toBeVisible()
-  })
-
-  it('calls rerunReportJudgement and shows a success toast on success', async () => {
-    mockRerunReportJudgement.mockResolvedValueOnce({ queued: true, rerun_by_id: 'admin-1' })
-    render(
-      <ReportsClient
-        viewerTier='staff'
-        data={makeReportsResponse()}
-      />,
-    )
-
-    fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i }))
-
-    await waitFor(() => expect(mockRerunReportJudgement).toHaveBeenCalledWith('report-1'))
-    await waitFor(() => expect(mockOnSuccess).toHaveBeenCalledWith('Judgement re-run queued'))
-    await waitFor(() => expect(mockNav.refresh).toHaveBeenCalled())
-  })
-
-  it('routes a failed re-run through onError and keeps the row', async () => {
-    const failure = new Error('Queue unavailable')
-    mockRerunReportJudgement.mockRejectedValueOnce(failure)
-    render(
-      <ReportsClient
-        viewerTier='staff'
-        data={makeReportsResponse()}
-      />,
-    )
-
-    fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i }))
-
-    await waitFor(() =>
-      expect(mockOnError).toHaveBeenCalledWith(
-        failure,
-        expect.objectContaining({ fallback: 'Failed to re-run judgement' }),
-      ),
-    )
-    expect(screen.getByText('Reported post')).toBeVisible()
   })
 })
 

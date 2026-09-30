@@ -6,21 +6,21 @@ Administrator-issued calendar-day grants, activated in FIFO order.
 
 Not partitioned — growth: unbounded.
 
-| Column                  | Type                       | Nullable | Default                                  | Identity | Generated | Collation | Comment                                                                         |
-| ----------------------- | -------------------------- | -------- | ---------------------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------- |
-| `id`                    | `uuid`                     | no       | `uuidv7()`                               |          |           |           |                                                                                 |
-| `membership_source_id`  | `uuid`                     | no       |                                          |          |           |           | Dedicated administrator source for this grant.                                  |
-| `source_kind`           | `membership_source_kinds`  | no       | `'admin_grant'::membership_source_kinds` |          |           |           | Invariant discriminator proving this is an administrator grant source.          |
-| `user_id`               | `uuid`                     | no       |                                          |          |           |           | Recipient user retained as an audit snapshot after final purge.                 |
-| `membership_product_id` | `uuid`                     | no       |                                          |          |           |           | Canonical product granted to the recipient.                                     |
-| `calendar_days`         | `integer`                  | no       |                                          |          |           |           | Number of calendar days granted after activation.                               |
-| `granted_by_id`         | `uuid`                     | yes      |                                          |          |           |           | Administrator identity retained without an FK for audit persistence.            |
-| `issuer_snapshot`       | `text`                     | no       |                                          |          |           |           | Human-readable issuer snapshot retained after account deletion.                 |
-| `revoked_at`            | `timestamp with time zone` | yes      |                                          |          |           |           | When the grant was revoked before or during activation.                         |
-| `revoked_by_id`         | `uuid`                     | yes      |                                          |          |           |           | Administrator identity retained without an FK for revocation audit persistence. |
-| `revocation_reason`     | `text`                     | yes      |                                          |          |           |           | Bounded reason for revoking the grant.                                          |
-| `note`                  | `text`                     | yes      |                                          |          |           |           | Optional administrative note for the grant.                                     |
-| `created_at`            | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`             |          | virtual   |           |                                                                                 |
+| Column                  | Type                       | Nullable | Default                                  | Identity | Generated | Collation | Comment                                                                                                                        |
+| ----------------------- | -------------------------- | -------- | ---------------------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                    | `uuid`                     | no       | `uuidv7()`                               |          |           |           |                                                                                                                                |
+| `membership_source_id`  | `uuid`                     | no       |                                          |          |           |           | Dedicated administrator source for this grant.                                                                                 |
+| `source_kind`           | `membership_source_kinds`  | no       | `'admin_grant'::membership_source_kinds` |          |           |           | Invariant discriminator proving this is an administrator grant source.                                                         |
+| `user_id`               | `uuid`                     | no       |                                          |          |           |           | Recipient user retained as an audit snapshot after final purge.                                                                |
+| `membership_product_id` | `uuid`                     | no       |                                          |          |           |           | Canonical product granted to the recipient.                                                                                    |
+| `calendar_days`         | `integer`                  | no       |                                          |          |           |           | Number of calendar days granted after activation.                                                                              |
+| `granted_by_id`         | `uuid`                     | yes      |                                          |          |           |           | Retained user identity of the granting administrator; outlives the live account and never authorizes.                          |
+| `issuer_snapshot`       | `text`                     | no       |                                          |          |           |           | Human-readable issuer snapshot retained after account deletion.                                                                |
+| `revoked_at`            | `timestamp with time zone` | yes      |                                          |          |           |           | When the grant was revoked before or during activation.                                                                        |
+| `revoked_by_id`         | `uuid`                     | yes      |                                          |          |           |           | Retained user identity of the revoking administrator or deleted-user sentinel; outlives the live account and never authorizes. |
+| `revocation_reason`     | `text`                     | yes      |                                          |          |           |           | Bounded reason for revoking the grant.                                                                                         |
+| `note`                  | `text`                     | yes      |                                          |          |           |           | Optional administrative note for the grant.                                                                                    |
+| `created_at`            | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`             |          | virtual   |           |                                                                                                                                |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -40,13 +40,17 @@ _none_
 
 - `fk_membership_grants__admin_source`: `FOREIGN KEY (membership_source_id, source_kind) REFERENCES membership_sources(id, source_kind) ON DELETE RESTRICT`
 - `fk_membership_grants__source_user`: `FOREIGN KEY (membership_source_id, user_id) REFERENCES membership_sources(id, user_id) ON DELETE RESTRICT`
+- `membership_grants_granted_by_id_fkey`: `FOREIGN KEY (granted_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `membership_grants_membership_product_id_fkey`: `FOREIGN KEY (membership_product_id) REFERENCES membership_products(id) ON DELETE RESTRICT`
 - `membership_grants_membership_source_id_fkey`: `FOREIGN KEY (membership_source_id) REFERENCES membership_sources(id) ON DELETE RESTRICT`
+- `membership_grants_revoked_by_id_fkey`: `FOREIGN KEY (revoked_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
+- `idx_membership_grants__granted_by_id`: `CREATE INDEX idx_membership_grants__granted_by_id ON public.membership_grants USING btree (granted_by_id) WHERE (granted_by_id IS NOT NULL)`
 - `idx_membership_grants__id_user_id`: `CREATE UNIQUE INDEX idx_membership_grants__id_user_id ON public.membership_grants USING btree (id, user_id)`
 - `idx_membership_grants__product_id`: `CREATE INDEX idx_membership_grants__product_id ON public.membership_grants USING btree (membership_product_id)`
+- `idx_membership_grants__revoked_by_id`: `CREATE INDEX idx_membership_grants__revoked_by_id ON public.membership_grants USING btree (revoked_by_id) WHERE (revoked_by_id IS NOT NULL)`
 - `idx_membership_grants__source_id`: `CREATE UNIQUE INDEX idx_membership_grants__source_id ON public.membership_grants USING btree (membership_source_id)`
 - `idx_membership_grants__user_id`: `CREATE INDEX idx_membership_grants__user_id ON public.membership_grants USING btree (user_id, id)`
 - `membership_grants_pkey`: `CREATE UNIQUE INDEX membership_grants_pkey ON public.membership_grants USING btree (id)`

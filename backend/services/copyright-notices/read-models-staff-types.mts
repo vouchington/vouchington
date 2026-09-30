@@ -86,3 +86,22 @@ export type CopyrightStaffCase = {
     reviewed_at: Date
   }>
 }
+
+export type CopyrightStaffQueueReason =
+  | 'form_intake_review'
+  | 'restriction_review'
+  | 'appeal_review'
+  | 'counter_notice_review'
+  | 'legal_hold_review'
+  | 'action_failed'
+  | 'enforcement_pending'
+  | 'delivery_failed'
+  | 'deadline_due'
+  | 'deadline_missed'
+
+/** A queued case plus why it is queued, how long it has waited, and its next open deadline. */
+export interface CopyrightStaffQueueCase extends CopyrightStaffCase {
+  reasons: CopyrightStaffQueueReason[]
+  waiting_since: Date
+  next_deadline: { escalation_at: Date; restoration_deadline_at: Date } | null
+}

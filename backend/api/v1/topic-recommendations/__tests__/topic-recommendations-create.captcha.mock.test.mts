@@ -9,6 +9,7 @@ import {
   createTestUserWithAge,
   getContributionAdmissionConsumptionCountForTest,
   getContributionAdmissionReservationStateForTest,
+  executeTestAdmittedPost,
 } from '@voucha/test-helpers'
 import { normalizeRouteAdmissionIntent } from '@services/contribution-gating/admit-route-contribution'
 import { runContributionAdmission } from '@services/contribution-gating/admission'
@@ -137,7 +138,7 @@ describe('POST /api/v1/topic-recommendations CAPTCHA', () => {
         claimed.resolve()
         await release.promise
       },
-      execute: async () => ({ post: { id: crypto.randomUUID() } }),
+      execute: executeTestAdmittedPost,
     })
     await claimed.promise
 

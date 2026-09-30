@@ -297,19 +297,32 @@ and attached (`-XGET`, `--method=GET`) forms — `gh` 2.96.0 parses both — mir
 detection already tolerates attached forms. `gh api graphql` calls are exempt: GraphQL has no GET
 form, so `-f`/`-F` there always POSTs by design (#10956).
 
+The `no-argv-main-module-guard.yml` rule bans detecting a script's entry point by comparing
+`process.argv[1]` with `import.meta.url`, `import.meta.filename`, or `__filename`, directly or
+through `fileURLToPath`, `pathToFileURL`, `resolve`, or `realpathSync`. Node resolves the main module
+through `realpath`, so a script started through a symlinked path (macOS temp directories under
+`/var/folders`, where `/var` links to `/private/var`) never matches: the guard is false, the script
+does nothing, and it exits 0 (#778). Use `import.meta.main`, or default an injected `isMain`
+parameter to it. Other reads of `process.argv[1]`, such as a positional CLI argument, are fine.
+
 ## Migration Artifact Cleanup
 
 The PostgreSQL [relational-storage guard](../../../../static-code-analysis/repo-file-policy/relational-storage-guard.mts) reads the
-tracked generated schema snapshot. Its [exact catalog](../../../../static-code-analysis/repo-file-policy/relational-storage-catalog.mts)
-permits reviewed opaque/provider/protocol/replay JSON and nonrelationship UUID tokens/cursors;
-existing business JSON, UUID arrays, missing FKs, and scoped encoded keys are recorded in the
-[remediation inventory](../../../../static-code-analysis/repo-file-policy/relational-storage-debt.mts). Every declaration is checked
-for staleness, and new undeclared columns fail the aggregate
-`repo-file-policy` check. A catalog entry whose column no longer needs the exception is stale.
-The guard recognizes composite and partition FKs and generated aliases
-derived from FK columns. It cannot infer whether arbitrary content in an allowed document is
-application-owned; reviewers must inspect producers and consumers under the
-[prelaunch relational storage policy](../../postgres-schema-rules.md#prelaunch-relational-storage).
+tracked generated schema snapshot. There is no debt inventory: every UUID array, UUID reference
+without a target FK, and scoped encoded key fails the aggregate `repo-file-policy` check unless an
+exact entry in the [reviewed catalog](../../../../static-code-analysis/repo-file-policy/relational-storage-catalog.mts)
+covers it. A UUID array has no catalog exception. A missing FK can be covered by a nonrelationship
+UUID, a token/cursor/protocol id, or an audit snapshot id; an encoded key only by a
+token/cursor/protocol id; a sole UUID primary key without a generator or target FK only by an own
+primary UUID. Reviewed opaque/provider/protocol/replay JSON is recorded for freshness only: a JSON
+column is not a defect, and structured documents, data points, and change history stay JSON. A
+catalog entry whose column no longer needs the exception is stale, and unresolved domain types are
+rejected before classification. The guard recognizes composite and proven partition FKs, and a
+generated alias also needs its exact `num_nonnulls(...) = 1` check. The partition proof loads the
+target checkout's entity-relation generator. It cannot infer whether arbitrary content in an
+allowed document is application-owned; reviewers must inspect producers and consumers under the
+[prelaunch relational storage policy](../../postgres-schema-rules.md#prelaunch-relational-storage),
+which defines the reviewed id categories.
 
 Migration-only AST-grep rules, tests, redirect stubs, and scaffolding are temporary. When the legacy surface is confirmed gone, remove those artifacts unless they still protect an active compatibility contract or invariant. Keep durable checks that enforce current behavior, such as route existence, auth boundaries, API contracts, or helper usage.
 

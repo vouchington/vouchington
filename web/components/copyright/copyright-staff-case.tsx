@@ -16,6 +16,7 @@ import { CopyrightStaffFormGuidance } from './copyright-staff-form-guidance'
 import { CopyrightStaffGuestCapability } from './copyright-staff-guest-capability'
 import { CopyrightRepeatInfringerActions } from './copyright-repeat-infringer-actions'
 import { CopyrightStaffLegalHoldReview } from './copyright-staff-case-legal-hold'
+import { CopyrightStaffQueueStatus } from './copyright-staff-queue-status'
 import {
   ReviewButtons,
   type SubmitRecovery,
@@ -45,6 +46,7 @@ export function CopyrightStaffCase({
         <p className='text-sm text-muted-foreground'>
           {notice.jurisdiction} · received {new Date(notice.received_at).toLocaleString()}
         </p>
+        <CopyrightStaffQueueStatus notice={notice} />
       </header>
       <CopyrightStaffComplaint notice={notice} />
       <CopyrightStaffFormReview {...{ canSubmit, notice, pending, rationale, submit }} />

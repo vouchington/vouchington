@@ -1,0 +1,90 @@
+id: no-argv-main-module-guard
+language: Tsx
+severity: error
+message: >-
+  Don't detect the entry point by comparing `process.argv[1]` with `import.meta.url`,
+  `import.meta.filename` or `__filename` (directly or through `fileURLToPath`, `pathToFileURL`,
+  `resolve` or `realpathSync`). Node's ESM loader resolves the main module through `realpath`, so
+  when the script is started through a symlinked path (macOS temp directories live under
+  `/var/folders/...` and `/var` links to `/private/var`) `process.argv[1]` keeps the symlinked spelling, the comparison
+  is false, and the script silently does nothing and exits 0 (#778). Use `import.meta.main`
+  instead, or default an injected `isMain` parameter to it.
+files:
+  - '**/*.mts'
+  - '**/*.cts'
+  - '**/*.ts'
+ignores:
+  - '**/node_modules/**'
+rule:
+  any:
+    # Any (in)equality comparison that reads argv[1]: `argv[1] === fileURLToPath(import.meta.url)`,
+    # `resolve(argv[1]) === __filename`, `import.meta.url === pathToFileURL(argv[1]).href`,
+    # `` import.meta.url === `file://${argv[1]}` ``, and the same inside `Boolean(...)`.
+    - all:
+        - any:
+            - pattern: $LEFT === $RIGHT
+            - pattern: $LEFT !== $RIGHT
+            - pattern: $LEFT == $RIGHT
+            - pattern: $LEFT != $RIGHT
+        - has:
+            stopBy: end
+            any:
+              - pattern: process.argv[1]
+              - pattern: process.argv?.[1]
+              - pattern: process.argv.at(1)
+    # An alias of argv[1] (`const invokedPath = process.argv[1]`) that is compared elsewhere.
+    - all:
+        - kind: variable_declarator
+        - has:
+            field: value
+            any:
+              - pattern: process.argv[1]
+              - pattern: process.argv?.[1]
+              - pattern: process.argv.at(1)
+examples:
+  - code: |
+      if (process.argv[1] === fileURLToPath(import.meta.url)) main()
+    isValid: false
+    file: 'ci/example.mts'
+  - code: |
+      if (process.argv[1] === import.meta.filename) main()
+    isValid: false
+    file: 'dev/example.mts'
+  - code: |
+      if (process.argv?.[1] && realpathSync(process.argv[1]) === __filename) main()
+    isValid: false
+    file: 'backend/example.mts'
+  - code: |
+      if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main()
+    isValid: false
+    file: 'ci/example.mts'
+  - code: |
+      if (import.meta.url === `file://${process.argv[1]}`) main()
+    isValid: false
+    file: 'backend/scripts/example.mts'
+  - code: |
+      run({ isMain: Boolean(process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) })
+    isValid: false
+    file: 'static-code-analysis/example.mts'
+  - code: |
+      const invokedPath = process.argv[1]
+      if (invokedPath !== undefined && fileURLToPath(import.meta.url) === resolve(invokedPath)) main()
+    isValid: false
+    file: 'ci/example.mts'
+  - code: |
+      if (import.meta.main) main()
+    isValid: true
+    file: 'ci/example.mts'
+  - code: |
+      run({ args: process.argv.slice(2), isMain: import.meta.main })
+    isValid: true
+    file: 'static-code-analysis/example.mts'
+  - code: |
+      const root = fileURLToPath(new URL('..', import.meta.url))
+    isValid: true
+    file: 'dev/example.mts'
+  - code: |
+      const [command] = process.argv.slice(2)
+      if (process.argv[2] === '--help') usage()
+    isValid: true
+    file: 'dev/example.mts'

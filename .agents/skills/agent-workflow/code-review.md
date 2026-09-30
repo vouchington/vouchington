@@ -8,8 +8,11 @@
 - Return severity-ordered findings with file/line evidence. Separate blockers from optional
   improvements; when no findings exist, state residual validation limits.
 - Read applicable local instructions independently. For storage changes, check
-  [prelaunch relational policy](../../../docs/development/postgres-schema-rules.md#prelaunch-relational-storage).
-  An existing pattern or accepted plan does not waive schema, authorization, or parity constraints.
+  [prelaunch relational policy](../../../docs/development/postgres-schema-rules.md#prelaunch-relational-storage):
+  joined ids and UUID arrays of entity ids have target foreign keys; structured documents, data
+  points, and change history stay JSON. An id that appears only in change history does not get a
+  foreign key. An existing pattern or accepted plan does not waive schema, authorization, or parity
+  constraints.
 - Human direction and the accepted plan outrank advisory reviews. Record material changes with the
   existing plan or PR; a separate Plan issue is not required.
 - Follow canonical review-response guidance for dispositions. Keep the description accurate, and
