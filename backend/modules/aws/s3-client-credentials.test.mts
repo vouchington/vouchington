@@ -1,4 +1,5 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { registerClientCredentialEnvCases } from './client-credential-env-cases.mts'
 import { buildS3Buckets, getS3ClientCredentials } from './s3.mts'
 
 const ENV_KEYS = [
@@ -14,74 +15,17 @@ const ENV_KEYS = [
   'S3_BUCKET_IMAGE_UPLOADS',
 ] as const
 
-const originalEnv = Object.fromEntries(ENV_KEYS.map(key => [key, process.env[key]])) as Record<
-  (typeof ENV_KEYS)[number],
-  string | undefined
->
-
-// getS3ClientCredentials() re-reads process.env on every call (no module-load-time state), so
-// these tests mutate process.env directly against the static import above rather than
-// re-importing via vi.resetModules() — a dynamic re-import here would race sibling test files'
-// static `import ... from './s3.mts'` the same way the env-key/bucket tests below used to.
 describe('getS3ClientCredentials', () => {
-  beforeEach(() => {
-    for (const key of ENV_KEYS) {
-      delete process.env[key]
-    }
-  })
-
-  afterEach(() => {
-    restoreEnv()
-  })
-
-  afterAll(() => {
-    restoreEnv()
-  })
-
-  it('uses deterministic credentials for test S3 clients when no AWS env exists', () => {
-    process.env.NODE_ENV = 'test'
-
-    expect(getS3ClientCredentials()).toEqual({
-      accessKeyId: 'test-s3-access-key-id',
-      secretAccessKey: 'test-s3-secret-access-key',
-    })
-  })
-
-  it('uses deterministic credentials in Vitest even when NODE_ENV is stubbed', () => {
-    process.env.NODE_ENV = 'development'
-    process.env.VITEST = 'true'
-
-    expect(getS3ClientCredentials()).toEqual({
-      accessKeyId: 'test-s3-access-key-id',
-      secretAccessKey: 'test-s3-secret-access-key',
-    })
-  })
-
-  it('still prefers configured S3 credentials in test mode', () => {
-    process.env.NODE_ENV = 'test'
-    process.env.S3_AWS_ACCESS_KEY_ID = 'real-s3-key'
-    process.env.S3_AWS_SECRET_ACCESS_KEY = 'real-s3-secret'
-
-    expect(getS3ClientCredentials()).toEqual({
-      accessKeyId: 'real-s3-key',
-      secretAccessKey: 'real-s3-secret',
-    })
-  })
-
-  it('requires configured S3 credentials outside test mode', () => {
-    process.env.NODE_ENV = 'development'
-
-    const error = getThrownError(() => getS3ClientCredentials())
-    expect(error).toMatchObject({
-      message: expect.stringContaining('S3 credentials are not configured'),
-      status: 503,
-    })
-  })
-
-  it('falls back to IAM task role credentials in deployed environments', () => {
-    expect(
-      getS3ClientCredentials({ ENVIRONMENT: 'staging', NODE_ENV: 'production' }),
-    ).toBeUndefined()
+  registerClientCredentialEnvCases({
+    envKeys: ENV_KEYS,
+    readCredentials: getS3ClientCredentials,
+    serviceName: 'S3',
+    accessKeyEnv: 'S3_AWS_ACCESS_KEY_ID',
+    secretAccessKeyEnv: 'S3_AWS_SECRET_ACCESS_KEY',
+    testAccessKeyId: 'test-s3-access-key-id',
+    testSecretAccessKey: 'test-s3-secret-access-key',
+    configuredAccessKeyId: 'real-s3-key',
+    configuredSecretAccessKey: 'real-s3-secret',
   })
 })
 
@@ -123,24 +67,3 @@ describe('buildS3Buckets', () => {
     })
   })
 })
-
-function restoreEnv() {
-  for (const key of ENV_KEYS) {
-    const value = originalEnv[key]
-    if (value === undefined) {
-      delete process.env[key]
-    } else {
-      process.env[key] = value
-    }
-  }
-}
-
-function getThrownError(fn: () => unknown): Error {
-  try {
-    fn()
-  } catch (error) {
-    if (error instanceof Error) return error
-  }
-
-  throw new Error('Expected function to throw')
-}
