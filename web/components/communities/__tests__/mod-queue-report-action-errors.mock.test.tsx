@@ -1,5 +1,10 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { render } from '@testing-library/react'
+import { describe, expect, vi } from 'vitest'
+import {
+  registerModQueueActionErrorTests,
+  type ModQueueActionErrorCase,
+  type ModQueueRejectedAction,
+} from '@/test-helpers/components/communities/mod-queue-action-errors'
 import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
 import type {
   CommunityModerationReport,
@@ -80,72 +85,70 @@ function makeClaim(): ModerationQueueClaim {
   }
 }
 
-describe('ModQueueReports action errors', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mockNav.reset()
+const reportActionErrorCases: readonly ModQueueActionErrorCase<CommunityModerationReport>[] = [
+  {
+    action: 'mod-internal-thread',
+    apiMock: mockDiscuss,
+    buttonName: /discuss/i,
+    item: makeReport({}),
+    fallback: 'Failed to open internal discussion thread',
+  },
+  {
+    action: 'claim-report',
+    apiMock: mockClaim,
+    buttonName: /^claim$/i,
+    item: makeReport({}),
+    fallback: 'Failed to claim report',
+  },
+  {
+    action: 'release-report',
+    apiMock: mockRelease,
+    buttonName: /^release$/i,
+    item: makeReport({ claim: makeClaim() }),
+    fallback: 'Failed to release report claim',
+  },
+  {
+    action: 'escalate-report',
+    apiMock: mockEscalate,
+    buttonName: /^escalate$/i,
+    item: makeReport({}),
+    fallback: 'Failed to escalate report',
+  },
+  {
+    action: 'de-escalate-report',
+    apiMock: mockDeEscalate,
+    buttonName: /remove escalation/i,
+    item: makeReport({ escalated_at: '2026-01-01T00:00:00.000Z' }),
+    fallback: 'Failed to remove escalation',
+  },
+]
+
+function assertRejectedReportAction({ action, error, fallback }: ModQueueRejectedAction): void {
+  expect(mockOnError).toHaveBeenCalledWith(error, {
+    fallback,
+    tags: { action, communitySlug: 'test-community' },
   })
+  expect(onClaimToggle).not.toHaveBeenCalled()
+  expect(onEscalateToggle).not.toHaveBeenCalled()
+  expect(mockNav.refresh).not.toHaveBeenCalled()
+  expect(mockNav.push).not.toHaveBeenCalled()
+}
 
-  afterEach(() => vi.restoreAllMocks())
-
-  it.each([
-    [
-      'mod-internal-thread',
-      mockDiscuss,
-      /discuss/i,
-      {},
-      'Failed to open internal discussion thread',
-    ],
-    ['claim-report', mockClaim, /^claim$/i, {}, 'Failed to claim report'],
-    [
-      'release-report',
-      mockRelease,
-      /^release$/i,
-      { claim: makeClaim() },
-      'Failed to release report claim',
-    ],
-    ['escalate-report', mockEscalate, /^escalate$/i, {}, 'Failed to escalate report'],
-    [
-      'de-escalate-report',
-      mockDeEscalate,
-      /remove escalation/i,
-      { escalated_at: '2026-01-01T00:00:00.000Z' },
-      'Failed to remove escalation',
-    ],
-  ])(
-    'reports a rejected action and restores %s',
-    async (action, apiMock, buttonName, overrides, fallback) => {
-      let rejectRequest: (reason?: unknown) => void = () => {}
-      apiMock.mockImplementationOnce(
-        () =>
-          new Promise<never>((_resolve, reject) => {
-            rejectRequest = reject
-          }),
-      )
-      const error = new Error(`${action} failed`)
-
+describe('ModQueueReports action errors', () => {
+  registerModQueueActionErrorTests({
+    reset: () => {
+      mockNav.reset()
+    },
+    cases: reportActionErrorCases,
+    renderItem: report => {
       render(
         <ModQueueReports
           {...BASE_PROPS}
-          reports={[makeReport(overrides)]}
+          reports={[report]}
           currentUserId='user-1'
         />,
       )
-      const button = screen.getByRole('button', { name: buttonName })
-      fireEvent.click(button)
-      await waitFor(() => expect(button).toBeDisabled())
-
-      act(() => rejectRequest(error))
-
-      await waitFor(() => expect(button).toBeEnabled())
-      expect(mockOnError).toHaveBeenCalledWith(error, {
-        fallback,
-        tags: { action, communitySlug: 'test-community' },
-      })
-      expect(onClaimToggle).not.toHaveBeenCalled()
-      expect(onEscalateToggle).not.toHaveBeenCalled()
-      expect(mockNav.refresh).not.toHaveBeenCalled()
-      expect(mockNav.push).not.toHaveBeenCalled()
     },
-  )
+    assertRejected: assertRejectedReportAction,
+  })
 })
