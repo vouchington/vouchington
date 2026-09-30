@@ -31,3 +31,9 @@ schema: invoking the adapter against an empty object is not coverage. Compiler-b
 assertions in [API fixtures](../../../backend/test-helpers/api-fixtures/openapi/write-openapi.test.mts) verify
 emitted carriers and schemas; route HTTP tests verify invocation order, status, and no-write
 behavior.
+
+## Coverage by route family
+
+- [Content, list, household and public user routes](reference-content-routes-request-validation.md)
+  record the validated operations, the skipped path-only operations, and the 400-versus-422
+  decisions for that family.
