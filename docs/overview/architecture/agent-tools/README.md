@@ -130,12 +130,7 @@ exposing separate tools per write operation. The mapping to REST verbs is:
 | `remove`       | `DELETE /api/v1/my/…` |
 
 The `id` parameter is required for `update` and `remove` actions; it is the row UUID
-returned by the matching `get_my_*` tool.
-
-Each tool returns `{ success: true, result }`. For `add` and `update`, `result` is the stored row
-the REST twin documents (for example `IndividualCard`). For `remove`, `result` is only `{ id }`,
-the id of the row that was deleted, because the REST `DELETE` returns no body. A manage tool must
-name that row type as its `entity`, and the factory builds the tool's output schema from it.
+returned by the matching `get_my_*` tool. `remove` returns only `{ id }`; see [Structured tool results](../services/mcp-tools/README.md#structured-tool-results).
 
 `add_entity_relation` is MCP-only and uses the same relation command as the session REST route.
 REST supplies first-party authority; MCP receives verified delegated credential authority. Public

@@ -55,25 +55,15 @@ keyed like `operations`, and a `components` map of every named type. `route-resp
 `backend/tools` resolves an entry into a self-contained schema (recursive components stay a `$ref`
 into a root `$defs`). `createGetMyEntityListTool` derives its `{ success, result }` schema from its
 single `meta.api` endpoint this way. A tool that reshapes the REST body, or has no REST twin, owns
-its schema explicitly. It builds that schema from the named components, through `componentSchema`
-and `componentPropertySchema`, so a field the REST API documents is never retyped by hand, and
-`output-schema-shapes.mts` supplies the closed-object, `oneOf` and nullable shapes. Where
-`openapi.json` documents the same data, a test pins the tool's schema to it (`get_my_profile` pins
-each section, `output-schema-pins.test.mts` pins the `manage_my_*` rows, the financial profile
-fields and the referral link fields). A route that documents its response inline has no contract;
-give it a named response type, run `pnpm run openapi:generate`, and then derive the tool's schema.
+its schema, built from those components and the shapes in `output-schema-shapes.mts`, with a test
+that pins it to `openapi.json` where documented (`output-schema-pins.test.mts`).
+A route that documents its response inline has no contract; give it a named response type, run
+`pnpm run openapi:generate`, and then derive the tool's schema.
 
-**Normal failure results.** A lookup tool that reports a miss as a result (`{ success: false, error }`
-or `{ found: false, error }`) instead of throwing has two result shapes, and its schema must admit
-both or every miss would fail output validation and surface as a tool failure. `outcomeSchema`
-builds that schema. The `manage_*` tools return `{ success: true, result }`, where `result` is the
-stored row for `add` and `update`, and only `{ id }` for `remove`, because the deleted row is not
-part of the REST contract either (`DELETE` returns `204`).
-
-**Contract tests.** `output-schema-contract*.test.mts` call each converted tool through `callMcpTool`
-against the real database with populated fixtures, so a service row that drifts from its schema
-fails a test instead of a caller. The Wikipedia tools have no REST twin and call an external API, so
-their test replaces only the upstream HTTP call.
+**Normal failure results.** A lookup tool that returns a miss (`{ success: false, error }` or
+`{ found: false, error }`) rather than throwing must admit that shape, or the miss fails
+validation; `outcomeSchema` builds both. `manage_*` tools return only `{ id }` for `remove`,
+because REST `DELETE` is `204`.
 
 **Ratchet.** `catalog/output-schema-ratchet.mts` names the listed tools that still lack a schema.
 Its test compares the list with the generated catalog in both directions and caps its length, so a
