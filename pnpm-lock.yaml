@@ -11083,9 +11083,6 @@ importers:
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
-      '@services/moderation-appeals':
-        specifier: workspace:^
-        version: link:../../services/moderation-appeals
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds
