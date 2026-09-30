@@ -25,11 +25,11 @@ describe('Storybook browser session timeout retry', () => {
       deps,
     )
 
-    first.stdout.emit('data', 'VITE v8.1.5 ready in 573 ms')
+    first.stdout.emit('data', 'VITE v0.0.0 ready in 573 ms')
     first.stderr.emit('data', sessionTimeout)
     first.emit('close', 1, null)
     await waitFor(() => spawnCalls.length === 2)
-    second.stdout.emit('data', 'VITE v8.1.5 ready in 573 ms')
+    second.stdout.emit('data', 'VITE v0.0.0 ready in 573 ms')
     second.stderr.emit('data', sessionTimeout)
     second.emit('close', 1, null)
     await waitFor(() => spawnCalls.length === 3)
@@ -47,7 +47,7 @@ describe('Storybook browser session timeout retry', () => {
   it('retries browser-session timeouts after cold or warm Vite startup', async () => {
     for (const [pid, startupOutput] of [
       [951, '[vite] (client) [optimizer] scanning dependencies...\n✨ dependencies optimized'],
-      [961, 'VITE v8.0.16  ready in 573 ms'],
+      [961, 'VITE v0.0.0  ready in 573 ms'],
       [971, '[vite] (client) hash is consistent; skipping dependency scan'],
     ] as const) {
       const first = makeChild(pid)
@@ -95,7 +95,7 @@ describe('Storybook browser session timeout retry', () => {
       deps,
     )
 
-    first.stdout.emit('data', 'VITE v8.0.16  ready in 573 ms')
+    first.stdout.emit('data', 'VITE v0.0.0  ready in 573 ms')
     first.stderr.emit('data', sessionTimeout)
     first.stdout.emit('data', '|web-storybook-browser| story output started')
     first.emit('close', 1, null)
@@ -114,7 +114,7 @@ describe('Storybook browser session timeout retry', () => {
       deps,
     )
 
-    first.stdout.emit('data', 'VITE v8.1.5 ready in 573 ms')
+    first.stdout.emit('data', 'VITE v0.0.0 ready in 573 ms')
     first.stderr.emit('data', sessionTimeout)
     first.emit('close', 1, null)
     await waitFor(() => spawnCalls.length === 2)
