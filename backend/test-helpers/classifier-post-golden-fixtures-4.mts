@@ -9,12 +9,12 @@ export const classifierPostGoldenFixtures4: readonly ClassifierGoldenFixture[] =
     state:
       'Airlines hate this simple trick for free upgrades. Click to discover the one rule they never tell passengers.',
     rationale:
-      'A second curiosity-driven teaser withholding its claim should be tagged as click-bait.',
+      'A sensational secret teaser withholds information and uses low-effort engagement bait, matching click-bait and shit-post.',
     expected: expectations(
       postClassifierKeys,
-      ['click-bait'],
+      ['click-bait', 'shit-post'],
       'The text does not meet this candidate definition.',
-      'The text presents a sensational secret and asks readers to click for withheld information.',
+      'The text presents a sensational secret, withholds information, and offers no useful substance.',
     ),
   },
   {
@@ -22,12 +22,13 @@ export const classifierPostGoldenFixtures4: readonly ClassifierGoldenFixture[] =
     subjectKind: 'post',
     candidateSlate: 'production-post-classifier-catalog',
     state: 'Not sure what to do about everything lately. Maybe the first option is better?',
-    rationale: 'A second context-free prompt should be tagged as vague-post.',
+    rationale:
+      'This context-free one-liner lacks essential details and useful substance, matching vague-post and shit-post.',
     expected: expectations(
       postClassifierKeys,
-      ['vague-post'],
+      ['vague-post', 'shit-post'],
       'The text does not meet this candidate definition.',
-      'The statement refers to undefined options and circumstances.',
+      'The statement refers to undefined options and circumstances and gives no useful substance.',
     ),
   },
   {

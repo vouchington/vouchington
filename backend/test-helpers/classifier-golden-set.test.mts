@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  autotaggerGoldenFixtures,
+  postClassifierGoldenFixtures,
+} from './classifier-golden-fixtures.mts'
+import {
   classifierGoldenBatchId,
   missingOrDuplicateClassifierGoldenResults,
   unexpectedClassifierGoldenBand,
@@ -7,6 +11,22 @@ import {
 } from './classifier-golden-set.mts'
 
 describe('classifier golden band regression', () => {
+  it('keeps minimum fixture and independent positive coverage for every candidate', () => {
+    for (const fixtures of [postClassifierGoldenFixtures, autotaggerGoldenFixtures]) {
+      const candidateKeys = Object.keys(fixtures[0]!.expected)
+      expect(new Set(fixtures.map(fixture => fixture.id)).size).toBe(fixtures.length)
+      expect(fixtures.length).toBeGreaterThanOrEqual(3)
+      for (const key of candidateKeys) {
+        expect(fixtures.every(fixture => key in fixture.expected)).toBe(true)
+        expect(
+          fixtures.filter(fixture =>
+            fixture.expected[key]!.acceptableBands.includes('at-or-above-upper'),
+          ).length,
+        ).toBeGreaterThanOrEqual(2)
+      }
+    }
+  })
+
   it('creates valid UUIDv7 batch identities for non-persisting prepared calls', () => {
     expect(classifierGoldenBatchId()).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,

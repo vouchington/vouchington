@@ -36,12 +36,13 @@ export const classifierPostGoldenFixtures2: readonly ClassifierGoldenFixture[] =
     candidateSlate: 'production-post-classifier-catalog',
     state:
       'I am available to help book award flights for a fee. Send me your dates and I will quote the service.',
-    rationale: 'Offering paid travel-planning services should be tagged as for-hire.',
+    rationale:
+      'The author offers a paid travel-planning service and promotes their own service, matching for-hire and self-promotion.',
     expected: expectations(
       postClassifierKeys,
-      ['for-hire'],
+      ['for-hire', 'self-promotion'],
       'The text does not meet this candidate definition.',
-      'The author explicitly offers award-booking work in exchange for payment.',
+      'The author offers paid award-booking work and promotes their own service.',
     ),
   },
   {

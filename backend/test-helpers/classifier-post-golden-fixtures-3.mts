@@ -22,12 +22,13 @@ export const classifierPostGoldenFixtures3: readonly ClassifierGoldenFixture[] =
     candidateSlate: 'production-post-classifier-catalog',
     state:
       'This one secret airport trick changes everything!!! You will not believe what happened when I boarded.',
-    rationale: 'Sensational teaser language withholding the point should be tagged as click-bait.',
+    rationale:
+      'Sensational teaser language withholds information and uses low-effort engagement bait, matching click-bait and shit-post.',
     expected: expectations(
       postClassifierKeys,
-      ['click-bait'],
+      ['click-bait', 'shit-post'],
       'The text does not meet this candidate definition.',
-      'The headline uses exaggerated curiosity hooks while withholding its subject.',
+      'The headline uses exaggerated curiosity hooks while withholding its subject and useful substance.',
     ),
   },
   {
@@ -36,12 +37,12 @@ export const classifierPostGoldenFixtures3: readonly ClassifierGoldenFixture[] =
     candidateSlate: 'production-post-classifier-catalog',
     state: 'Thoughts on this? Is it worth it, or should I just do the other thing instead?',
     rationale:
-      'A post without enough context to identify its subject should be tagged as vague-post.',
+      'This context-free low-effort one-liner is both too vague to discuss and a shit-post.',
     expected: expectations(
       postClassifierKeys,
-      ['vague-post'],
+      ['vague-post', 'shit-post'],
       'The text does not meet this candidate definition.',
-      'The post gives no identifiable subject, option, or context for its question.',
+      'The post gives no identifiable subject, option, or context, and offers no useful substance.',
     ),
   },
   {
