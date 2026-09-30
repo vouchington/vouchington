@@ -31,5 +31,7 @@
     "@voucha/types": "workspace:^",
     "sql-template-strings": "^2.2.2"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
 }

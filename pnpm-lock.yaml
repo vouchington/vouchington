@@ -4045,6 +4045,10 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/services/availability:
     dependencies:

@@ -40,7 +40,10 @@ export async function hasCurrentAutotaggerEmbedding(
  * part of it; an ineligible subject is dispatched once and settles as no work.
  */
 export function autotaggerRequestEligibility(): SQLStatement {
-  return approvedPostRequestEligibility(sql`AND `.append(currentEmbedding('post')))
+  return approvedPostRequestEligibility(
+    sql`
+        AND `.append(currentEmbedding('post')),
+  )
     .append(sql` OR EXISTS (
       SELECT 1 FROM rss_feed_items item
       WHERE item.id = request.rss_feed_item_id AND item.deleted_at IS NULL
