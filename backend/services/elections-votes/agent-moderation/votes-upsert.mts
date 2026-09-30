@@ -101,9 +101,9 @@ export async function upsertAgentModerationElectionVotes(
   LEFT JOIN previous_votes ON previous_votes.agent_moderation_id = input_votes.agent_moderation_id
   WHERE input_votes.score IS DISTINCT FROM previous_votes.score
   ORDER BY input_votes.agent_moderation_id
-  RETURNING agent_moderation_id AS entity_id, user_id, score, created_at
+  RETURNING agent_moderation_id AS entity_id, post_id, user_id, score, created_at
   `)
-  const inserted = result.rows as ElectionVoteMutationResult[]
+  const inserted = result.rows as (ElectionVoteMutationResult & { post_id: string })[]
   if (onVote) {
     await Promise.all(inserted.map(vote => onVote(vote, query)))
   }
@@ -115,6 +115,8 @@ export async function upsertAgentModerationElectionVotes(
           actionType:
             vote.score === null ? 'agent_moderation_vote_delete' : 'agent_moderation_vote_set',
           agentModerationId: vote.entity_id,
+          agentModerationPostId: vote.post_id,
+          postId: vote.post_id,
           metadata: {
             before: { score: previousScores.get(vote.entity_id) ?? null },
             after: { score: vote.score },
@@ -124,7 +126,7 @@ export async function upsertAgentModerationElectionVotes(
       ),
     ),
   )
-  const rows = inserted
+  const rows = inserted.map(({ post_id: _postId, ...vote }) => vote)
 
   await query.commit()
 

@@ -92,7 +92,8 @@ CREATE TABLE IF NOT EXISTS moderator_actions (
   report_abuse_penalty_id uuid,
   vote_integrity_flag_id uuid REFERENCES vote_integrity_flags (id) ON DELETE SET NULL,
   vote_weight_penalty_id uuid REFERENCES vote_weight_penalties (id) ON DELETE SET NULL,
-  agent_moderation_id uuid REFERENCES agent_moderations (id) ON DELETE SET NULL,
+  agent_moderation_id uuid,
+  agent_moderation_post_id uuid,
   oauth_client_id uuid,
   user_mod_note_id uuid REFERENCES user_mod_notes (id) ON DELETE SET NULL,
   crawler_id uuid REFERENCES crawlers (id) ON DELETE SET NULL,
@@ -108,7 +109,10 @@ CREATE TABLE IF NOT EXISTS moderator_actions (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   -- Note: no num_nonnulls >= 1 CHECK here — ON DELETE SET NULL on FK columns could
   -- null out the only target reference and cause the CHECK to block hard-deletes.
-  CHECK (jsonb_typeof(metadata) = 'object')
+  CHECK (jsonb_typeof(metadata) = 'object'),
+  FOREIGN KEY (agent_moderation_post_id, agent_moderation_id)
+    REFERENCES agent_moderations (post_id, id) ON DELETE SET NULL,
+  CHECK ((agent_moderation_id IS NULL) = (agent_moderation_post_id IS NULL))
 );
 
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__community__id
@@ -119,6 +123,9 @@ CREATE INDEX IF NOT EXISTS idx_moderator_actions__id
 
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__actor__id
   ON moderator_actions (actor_id, id DESC);
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__agent_moderation_post_id__agent_moderation_id
+  ON moderator_actions (agent_moderation_post_id, agent_moderation_id);
 
 COMMENT ON TABLE moderator_actions IS 'Append-only unified log of moderator/admin actions.';
 

@@ -5,6 +5,9 @@ import sql from 'sql-template-strings'
 export async function readStaffActionHistory(actorId: string) {
   const { rows } = await write<{
     id: string
+    post_id: string | null
+    agent_moderation_id: string | null
+    agent_moderation_post_id: string | null
     moderation_appeal_id: string | null
     review_dispute_id: string | null
     action_type: string

@@ -23,6 +23,7 @@ export interface ModeratorAction {
   vote_integrity_flag_id: string | null
   vote_weight_penalty_id: string | null
   agent_moderation_id: string | null
+  agent_moderation_post_id: string | null
   oauth_client_id: string | null
   user_mod_note_id: string | null
   crawler_id: string | null

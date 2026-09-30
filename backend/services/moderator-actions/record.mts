@@ -18,6 +18,7 @@ export interface RecordModeratorActionInput {
   voteIntegrityFlagId?: string | null
   voteWeightPenaltyId?: string | null
   agentModerationId?: string | null
+  agentModerationPostId?: string | null
   oauthClientId?: string | null
   userModNoteId?: string | null
   crawlerId?: string | null
@@ -39,7 +40,7 @@ export type RecordModeratorActionsInput = Omit<
   'communityRestrictionIds'
 >
 
-const INSERT_COLUMNS = `actor_id, action_type, community_id, post_id, target_user_id, report_id, review_dispute_id, moderation_appeal_id, community_application_id, topic_claim_id, report_integrity_flag_id, report_abuse_penalty_id, vote_integrity_flag_id, vote_weight_penalty_id, agent_moderation_id, oauth_client_id, user_mod_note_id, crawler_id, topic_id, operation_request_id, queue_name, scheduled_job_key, backfill_key, rss_category_text, admin_import_batch_id, reason, metadata`
+const INSERT_COLUMNS = `actor_id, action_type, community_id, post_id, target_user_id, report_id, review_dispute_id, moderation_appeal_id, community_application_id, topic_claim_id, report_integrity_flag_id, report_abuse_penalty_id, vote_integrity_flag_id, vote_weight_penalty_id, agent_moderation_id, agent_moderation_post_id, oauth_client_id, user_mod_note_id, crawler_id, topic_id, operation_request_id, queue_name, scheduled_job_key, backfill_key, rss_category_text, admin_import_batch_id, reason, metadata`
 
 function actionRow(actorId: string | null, input: RecordModeratorActionsInput) {
   return {
@@ -58,6 +59,7 @@ function actionRow(actorId: string | null, input: RecordModeratorActionsInput) {
     vote_integrity_flag_id: input.voteIntegrityFlagId ?? null,
     vote_weight_penalty_id: input.voteWeightPenaltyId ?? null,
     agent_moderation_id: input.agentModerationId ?? null,
+    agent_moderation_post_id: input.agentModerationPostId ?? null,
     oauth_client_id: input.oauthClientId ?? null,
     user_mod_note_id: input.userModNoteId ?? null,
     crawler_id: input.crawlerId ?? null,

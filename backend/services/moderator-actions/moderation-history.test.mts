@@ -286,6 +286,11 @@ describe('moderation staff history transactions', () => {
           ]),
         () => getAgentModerationElectionVote(actor.id, moderationId),
       )
+      expect((await readStaffActionHistory(actor.id)).at(-1)).toMatchObject({
+        post_id: postId,
+        agent_moderation_id: moderationId,
+        agent_moderation_post_id: postId,
+      })
     },
   )
 })
