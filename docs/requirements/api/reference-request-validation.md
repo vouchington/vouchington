@@ -37,3 +37,5 @@ behavior.
 - [Content, list, household and public user routes](reference-content-routes-request-validation.md)
   record the validated operations, the skipped path-only operations, and the 400-versus-422
   decisions for that family.
+- [Staff, admin, and operations routes](reference-staff-operations-request-validation.md) record
+  their status changes, carrier skips, and specialized ingress.
