@@ -61,6 +61,30 @@ describe('preview', () => {
       expect(response.body).toEqual({ html: '' })
     })
 
+    it.each([
+      ['a non-string markdown field', { markdown: 5 }],
+      ['an unknown field', { markdown: '# Hello', extra: true }],
+    ])('returns 422 for %s', async (_name, body) => {
+      const request = createRequest()
+      await request.authenticateAs(user)
+
+      await request
+        .post('/api/v1/markdown/preview')
+        .set('Content-Type', 'application/json')
+        .send(body)
+        .expect(422)
+    })
+
+    it('returns 401 without a diagnostic for an unauthenticated malformed body', async () => {
+      const response = await createRequest()
+        .post('/api/v1/markdown/preview')
+        .set('Content-Type', 'application/json')
+        .send({ markdown: 5 })
+        .expect(401)
+
+      expect(response.body.message).toBe('Unauthorized')
+    })
+
     it('renders GFM tables', async () => {
       const request = createRequest()
       await request.authenticateAs(user)

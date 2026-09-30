@@ -5,11 +5,21 @@ import { recordLandingPageVisit } from '@services/landing-page-analytics'
 import { resolveUtmSource } from '@ts-shared/utm'
 import { hasGlobalPrivacyControlHeaders, isUUID } from '@modules/utils'
 import onError from '@modules/on-error'
+import { validateRequestContract } from '../../response-helpers.mts'
 
 const visitRateLimiter = new RateLimiter({
   prefix: 'landing-page-visits',
   ttlSeconds: 60,
 })
+
+/** Closed request body for `POST /api/v1/landing-pages/:landingPageId/visits`. */
+type LandingPageVisitBody = {
+  referrer?: string
+  utm_source?: string
+  utm_medium?: string
+  utm_campaign?: string
+  utm_content?: string
+}
 
 const MAX_REFERRER_LENGTH = 2048
 const MAX_UTM_LENGTH = 255
@@ -21,14 +31,16 @@ app.route('/api/v1/landing-pages/:landingPageId/visits').post(async (ctx: Contex
   const { landingPageId } = ctx.params
   ctx.assert(landingPageId && isUUID(landingPageId), 400, 'Invalid landingPageId')
 
-  const body = (await ctx.request.json('10kb')) as Record<string, unknown>
-  const referrer = body.referrer && typeof body.referrer === 'string' ? body.referrer : null
-  const utmSource = body.utm_source && typeof body.utm_source === 'string' ? body.utm_source : null
-  const utmMedium = body.utm_medium && typeof body.utm_medium === 'string' ? body.utm_medium : null
-  const utmCampaign =
-    body.utm_campaign && typeof body.utm_campaign === 'string' ? body.utm_campaign : null
-  const utmContent =
-    body.utm_content && typeof body.utm_content === 'string' ? body.utm_content : null
+  const body = (await ctx.request.json('10kb')) as LandingPageVisitBody
+  validateRequestContract(ctx, 'POST:/api/v1/landing-pages/:landingPageId/visits', {
+    body,
+    path: ctx.params,
+  })
+  const referrer = body.referrer || null
+  const utmSource = body.utm_source || null
+  const utmMedium = body.utm_medium || null
+  const utmCampaign = body.utm_campaign || null
+  const utmContent = body.utm_content || null
 
   if (referrer) ctx.assert(referrer.length <= MAX_REFERRER_LENGTH, 400, 'referrer is too long')
   if (utmSource) ctx.assert(utmSource.length <= MAX_UTM_LENGTH, 400, 'utm_source is too long')

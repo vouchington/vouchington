@@ -5,12 +5,28 @@ import { createSessionReferralAttribution } from '@services/attribution'
 import { resolveUtmSource } from '@ts-shared/utm'
 import { isHttpError } from 'http-errors'
 import { hasGlobalPrivacyControlHeaders } from '@modules/utils'
+import { validateRequestContract } from '../../response-helpers.mts'
 
 // 10 attribution calls per minute per session/IP (threshold 11 since addAndCheck adds before counting)
 const attributionRateLimiter = new RateLimiter({
   prefix: 'attribution-referrer',
   ttlSeconds: 60,
 })
+
+/** Optional UTM parameters; a null or empty value means the parameter was not present. */
+type AttributionReferrerUtmBody = {
+  utm_source?: string | null
+  utm_medium?: string | null
+  utm_campaign?: string | null
+  utm_content?: string | null
+}
+
+/** Closed request body for `POST /api/v1/attribution/referrer`. */
+type AttributionReferrerBody = {
+  referrer: string
+  landing_url: string
+  utm?: AttributionReferrerUtmBody
+}
 
 const MAX_REFERRER_LENGTH = 255
 const MAX_LANDING_URL_LENGTH = 2048
@@ -19,14 +35,11 @@ app.route('/api/v1/attribution/referrer').post(async (ctx: Context) => {
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   await ctx.applyRouteRateLimit('POST:/api/v1/attribution/referrer')
 
-  const body = (await ctx.request.json('100kb')) as Record<string, unknown>
-  ctx.assert(body.referrer && typeof body.referrer === 'string', 400, 'referrer is required')
+  const body = (await ctx.request.json('100kb')) as AttributionReferrerBody
+  validateRequestContract(ctx, 'POST:/api/v1/attribution/referrer', { body })
+  ctx.assert(body.referrer, 400, 'referrer is required')
   ctx.assert(body.referrer.length <= MAX_REFERRER_LENGTH, 400, 'referrer is too long')
-  ctx.assert(
-    body.landing_url && typeof body.landing_url === 'string',
-    400,
-    'landing_url is required',
-  )
+  ctx.assert(body.landing_url, 400, 'landing_url is required')
   ctx.assert(body.landing_url.length <= MAX_LANDING_URL_LENGTH, 400, 'landing_url is too long')
   const landingUrlHref = (() => {
     try {
@@ -39,16 +52,10 @@ app.route('/api/v1/attribution/referrer').post(async (ctx: Context) => {
 
   const MAX_UTM_LENGTH = 255
   // Extract and validate optional UTM params
-  const utmBody =
-    body.utm && typeof body.utm === 'object' ? (body.utm as Record<string, unknown>) : null
-  const utmSource =
-    utmBody?.utm_source && typeof utmBody.utm_source === 'string' ? utmBody.utm_source : null
-  const utmMedium =
-    utmBody?.utm_medium && typeof utmBody.utm_medium === 'string' ? utmBody.utm_medium : null
-  const utmCampaign =
-    utmBody?.utm_campaign && typeof utmBody.utm_campaign === 'string' ? utmBody.utm_campaign : null
-  const utmContent =
-    utmBody?.utm_content && typeof utmBody.utm_content === 'string' ? utmBody.utm_content : null
+  const utmSource = body.utm?.utm_source || null
+  const utmMedium = body.utm?.utm_medium || null
+  const utmCampaign = body.utm?.utm_campaign || null
+  const utmContent = body.utm?.utm_content || null
 
   if (utmSource) ctx.assert(utmSource.length <= MAX_UTM_LENGTH, 400, 'utm_source is too long')
   if (utmMedium) ctx.assert(utmMedium.length <= MAX_UTM_LENGTH, 400, 'utm_medium is too long')

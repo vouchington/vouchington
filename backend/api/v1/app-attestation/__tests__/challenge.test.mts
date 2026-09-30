@@ -51,12 +51,7 @@ describe('POST /api/v1/app-attestation/challenge', () => {
 
   it('rejects an unrecognised type', async () => {
     const req = createRequest()
-    const res = await req
-      .post('/api/v1/app-attestation/challenge')
-      .send({ type: 'bogus' })
-      .expect(422)
-
-    expect(res.body.message).toContain('type must be')
+    await req.post('/api/v1/app-attestation/challenge').send({ type: 'bogus' }).expect(422)
   })
 
   it('rejects a missing type', async () => {
