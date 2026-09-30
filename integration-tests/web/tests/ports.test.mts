@@ -1,6 +1,26 @@
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import type { Server } from 'node:net'
 import { describe, expect, it } from 'vitest'
 import { allocateReservedPorts, listenOnFetchSafeEphemeralPort } from '../helpers/ports.mts'
+
+function kernelEphemeralPortRange(): { first: number; last: number } {
+  if (process.platform === 'linux') {
+    const text = readFileSync('/proc/sys/net/ipv4/ip_local_port_range', 'utf8').trim()
+    const match = /^(\d+)\s+(\d+)$/.exec(text)
+    if (!match) throw new Error(`Unreadable kernel ephemeral port range: ${text}`)
+    return { first: Number(match[1]), last: Number(match[2]) }
+  }
+  if (process.platform === 'darwin') {
+    const readSysctl = (name: string): number =>
+      Number(execFileSync('sysctl', ['-n', name], { encoding: 'utf8' }).trim())
+    return {
+      first: readSysctl('net.inet.ip.portrange.first'),
+      last: readSysctl('net.inet.ip.portrange.last'),
+    }
+  }
+  throw new Error(`Cannot read the kernel ephemeral port range on ${process.platform}`)
+}
 
 describe('web integration test port helpers', () => {
   it('releases a disallowed reservation and returns the next safe port', async () => {
@@ -86,5 +106,18 @@ describe('web integration test port helpers', () => {
     ).rejects.toThrow('forbidden release failed')
 
     expect(releasedPorts).toEqual([4046, 4047])
+  })
+
+  it('reserves a service port outside the kernel ephemeral range', async () => {
+    const range = kernelEphemeralPortRange()
+    const reservations = await allocateReservedPorts(1)
+    try {
+      const port = reservations[0]?.port
+      expect(port).toEqual(expect.any(Number))
+      if (typeof port !== 'number') return
+      expect(port >= range.first && port <= range.last).toBe(false)
+    } finally {
+      await Promise.all(reservations.map(reservation => reservation.release()))
+    }
   })
 })
