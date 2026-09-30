@@ -16,6 +16,8 @@ const parser = createPaginationParser({
 app.route('/api/v1/admin/modlog').get(async (ctx: Context) => {
   await requireAuthAndRateLimit(ctx, isAdminUser, 'GET:/api/v1/admin/modlog')
 
+  // Intentional carrier skip: this route has no registered response contract and `limit` is an
+  // integer on the wire, so the shared query schema cannot describe it. The ids are checked below.
   const { limit, after } = parser.parse(ctx.query)
   // Normalize empty strings to undefined so falsy checks are consistent
   const communityId = ctx.query.community_id ? (ctx.query.community_id as string) : undefined

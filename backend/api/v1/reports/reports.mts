@@ -4,6 +4,7 @@ import type { Context } from '@jongleberry/api-server'
 import {
   parseJsonBody,
   requireAuthAndRateLimit,
+  validateRequestContract,
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import {
@@ -15,7 +16,6 @@ import {
   type ModerationReportSort,
   type ModerationReportStatus,
   MODERATION_REPORT_STATUSES,
-  MODERATION_REPORT_RESOLUTION_STATUSES,
   type ModerationReportResolutionStatus,
   buildReportPageInfo,
   withoutClusterCursorMetadata,
@@ -30,6 +30,8 @@ import {
 } from '../../report-pagination-helpers.mts'
 import './reports-create.mts'
 
+type ResolveModerationReportRequest = { status: ModerationReportResolutionStatus }
+
 app.route('/api/v1/reports').get(async (ctx: Context) => {
   const currentUser = await requireAuthAndRateLimit(
     ctx,
@@ -37,6 +39,8 @@ app.route('/api/v1/reports').get(async (ctx: Context) => {
     'GET:/api/v1/reports',
   )
 
+  // Intentional carrier skip: `limit` is an integer on the wire and ctx.query holds raw strings,
+  // so the shared adapter would reject valid requests. The pagination parsers own these values.
   const cursorQuery = parseReportCursorQueryParams(ctx, ctx.query)
   const { limit } = reportsPaginationParser.parse(ctx.query)
   const { after, before } = cursorQuery
@@ -149,17 +153,12 @@ app.route('/api/v1/reports/:id').patch(async (ctx: Context) => {
     'PATCH:/api/v1/reports/:id',
   )
   const id = validateUUIDParam(ctx, 'id')
-  const body = await parseJsonBody<{ status?: unknown }>(ctx)
-  const status =
-    typeof body.status === 'string' &&
-    MODERATION_REPORT_RESOLUTION_STATUSES.includes(body.status as ModerationReportResolutionStatus)
-      ? (body.status as ModerationReportResolutionStatus)
-      : null
-  ctx.assert(status, 422, 'Invalid status')
+  const body = await parseJsonBody<ResolveModerationReportRequest>(ctx)
+  validateRequestContract(ctx, 'PATCH:/api/v1/reports/:id', { body, path: ctx.params })
 
   const { resolveModerationReport } = await import('@services/moderation-reports/resolve')
   const report = await resolveModerationReport(id, {
-    status,
+    status: body.status,
     resolvedById: currentUser.id,
   })
 
@@ -173,6 +172,7 @@ app.route('/api/v1/reports/:id/judgements').post(async (ctx: Context) => {
     'POST:/api/v1/reports/:id/judgements',
   )
   const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'POST:/api/v1/reports/:id/judgements', { path: ctx.params })
 
   const report = await getModerationReportById(id)
   ctx.assert(report, 404, 'Report not found')

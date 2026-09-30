@@ -1,6 +1,6 @@
 import app from '../../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { isUUID } from '@modules/utils'
 import {
   getImportBatch,
@@ -18,6 +18,7 @@ app.route('/api/v1/imports/:batchId').get(async (ctx: Context) => {
 
   const batchId = ctx.params.batchId!
   ctx.assert(isUUID(batchId), 400, 'Invalid batch ID')
+  validateRequestContract(ctx, 'GET:/api/v1/imports/:batchId', { path: ctx.params })
 
   const batch = await getImportBatch(batchId)
   ctx.assert(batch, 404, 'Import batch not found')

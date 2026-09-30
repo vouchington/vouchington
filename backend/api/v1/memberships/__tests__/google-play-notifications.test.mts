@@ -128,6 +128,26 @@ describe('Google Play RTDN ingress route', () => {
     })
   })
 
+  // Specialized ingress: the OIDC bearer and re-serialized raw envelope own validation, so the shared
+  // JSON contract adapter is intentionally absent. Body-parse failures stay 401 and never reach ingest.
+  it('answers an oversized envelope with the specialized 401, not a schema 422', async () => {
+    vi.stubEnv('ENVIRONMENT', 'staging')
+    vi.stubEnv('GOOGLE_PLAY_PUBSUB_AUDIENCE', audience)
+    vi.stubEnv('GOOGLE_PLAY_PUBSUB_SERVICE_ACCOUNT_EMAIL', serviceAccountEmail)
+    await googleOidcValkeyTrustStore.save({
+      keysById: {
+        [keyId]: publicKey.export({ format: 'jwk' }) as { kty: 'RSA'; n: string; e: string },
+      },
+      expiresAt: new Date(Date.now() + 60_000),
+    })
+
+    await createRequest()
+      .post('/api/v1/memberships/google-play/notifications')
+      .set('Authorization', `Bearer ${oidcJwt(keyId)}`)
+      .send({ message: { messageId: `synthetic-${randomUUID()}`, data: 'x'.repeat(40 * 1024) } })
+      .expect(401)
+  })
+
   it('propagates an unexpected durable-write failure as a server error', async () => {
     vi.stubEnv('ENVIRONMENT', 'staging')
     vi.stubEnv('GOOGLE_PLAY_PUBSUB_AUDIENCE', audience)

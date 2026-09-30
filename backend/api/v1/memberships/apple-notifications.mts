@@ -8,6 +8,9 @@ import {
 } from '@services/memberships/apple'
 import { parseJsonBody } from '../../response-helpers.mts'
 
+// Specialized ingress (server-to-server webhook): Apple signs the payload as a JWS, so the shared
+// JSON contract adapter is intentionally absent. `ingestAppleAppStoreNotification` verifies the
+// signature and shape (400 on failure) before anything is persisted.
 app.route('/api/v1/memberships/apple-app-store/notifications').post(async (ctx: Context) => {
   const evidence = await parseJsonBody(ctx, '32kb')
   const context = getMembershipProviderContext('apple_app_store')

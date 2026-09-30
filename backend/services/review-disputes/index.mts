@@ -1,6 +1,7 @@
 export type {
   ReviewDispute,
   ReviewDisputeStatus,
+  ReviewDisputeReason,
   ReviewDisputeRecommendedAction,
   ReviewDisputeResolutionAction,
 } from './config.mts'

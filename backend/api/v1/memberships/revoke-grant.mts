@@ -9,8 +9,11 @@ import app from '../../app.mts'
 import {
   parseJsonBody,
   requireAuthAndRateLimit,
+  validateRequestContract,
   validateUUIDParam,
 } from '../../response-helpers.mts'
+
+type RevokeMembershipGrantRequest = { reason: string }
 
 app.route('/api/v1/membership-grants/:grantId').delete(async (ctx: Context) => {
   const currentUser = await requireAuthAndRateLimit(
@@ -20,11 +23,13 @@ app.route('/api/v1/membership-grants/:grantId').delete(async (ctx: Context) => {
   )
   assertNotSuspended(currentUser)
   const grantId = validateUUIDParam(ctx, 'grantId')
-  const body = await parseJsonBody<{ reason: string }>(ctx)
+  const body = await parseJsonBody<RevokeMembershipGrantRequest>(ctx)
+  validateRequestContract(ctx, 'DELETE:/api/v1/membership-grants/:grantId', {
+    body,
+    path: ctx.params,
+  })
   ctx.assert(
-    typeof body?.reason === 'string' &&
-      body.reason.trim().length >= 1 &&
-      body.reason.trim().length <= 1000,
+    body.reason.trim().length >= 1 && body.reason.trim().length <= 1000,
     400,
     'Invalid reason',
   )

@@ -44,12 +44,12 @@ describe('DELETE /api/v1/membership-grants/:grantId', () => {
       .delete('/api/v1/membership-grants/not-a-uuid')
       .send({ reason: 'Incorrect grant' })
       .expect(422)
-    await request.delete(`/api/v1/membership-grants/${v7()}`).send({}).expect(400)
+    await request.delete(`/api/v1/membership-grants/${v7()}`).send({}).expect(422)
     await request
       .delete(`/api/v1/membership-grants/${v7()}`)
       .set('Content-Type', 'application/json')
       .send('null')
-      .expect(400)
+      .expect(422)
   })
 
   it('returns 404 for an unknown grant', async () => {

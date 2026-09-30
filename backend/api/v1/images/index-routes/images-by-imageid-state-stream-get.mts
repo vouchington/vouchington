@@ -1,6 +1,10 @@
 import app from '../../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateUUIDParam } from '../../../response-helpers.mts'
+import {
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../../response-helpers.mts'
 import { getImageUploadState, type ImageUploadState } from '@services/images/get-upload-state'
 import { imageStatePubSub } from '@data-stores/valkey-pubsub'
 import { startSSE, pipeChannelToSSE, watchForAbortBeforeSSE } from '../../../sse-helpers.mts'
@@ -13,6 +17,7 @@ app.route('/api/v1/images/:id/state/stream').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/images/:id/state/stream')
 
   const imageId = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'GET:/api/v1/images/:id/state/stream', { path: ctx.params })
 
   // Subscribe BEFORE reading current state to avoid race conditions.
   const subscription = await imageStatePubSub.subscribe(imageId)

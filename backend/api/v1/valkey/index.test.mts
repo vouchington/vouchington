@@ -46,10 +46,10 @@ describe('POST /api/v1/valkey/flush', () => {
     expect(flushConcernMock).not.toHaveBeenCalled()
   })
 
-  it('returns 400 for an invalid concern', async () => {
+  it('returns 422 for an invalid concern', async () => {
     const request = createRequest()
     await request.authenticateAs(adminUser)
-    await request.post('/api/v1/valkey/flush').send({ concern: 'not-a-concern' }).expect(400)
+    await request.post('/api/v1/valkey/flush').send({ concern: 'not-a-concern' }).expect(422)
 
     expect(flushConcernMock).not.toHaveBeenCalled()
   })

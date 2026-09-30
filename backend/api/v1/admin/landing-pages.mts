@@ -5,7 +5,11 @@ import { getSignupCountByReferrerId } from '@services/attribution'
 import { getLandingPageAnalyticsByPageId } from '@services/landing-page-analytics'
 import { getLandingPageById, listLandingPagesForUserPage } from '@services/my'
 import { isAdminUser } from '@services/users'
-import { requireAuthAndRateLimit, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  requireAuthAndRateLimit,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 
 const landingPagesPagination = createPaginationParser({
   cursor: { type: 'tier' },
@@ -16,6 +20,9 @@ app.route('/api/v1/admin/users/:userId/landing-pages').get(async (ctx: Context) 
   await requireAuthAndRateLimit(ctx, isAdminUser, 'GET:/api/v1/admin/users/:userId/landing-pages')
 
   const userId = validateUUIDParam(ctx, 'userId')
+  validateRequestContract(ctx, 'GET:/api/v1/admin/users/:userId/landing-pages', {
+    path: ctx.params,
+  })
   const pagination = landingPagesPagination.parse(ctx.query)
   ctx.json(
     await listLandingPagesForUserPage(userId, {
@@ -33,6 +40,9 @@ app.route('/api/v1/admin/landing-pages/:pageId/analytics').get(async (ctx: Conte
   )
 
   const pageId = validateUUIDParam(ctx, 'pageId')
+  validateRequestContract(ctx, 'GET:/api/v1/admin/landing-pages/:pageId/analytics', {
+    path: ctx.params,
+  })
   const landingPage = await getLandingPageById(pageId)
   const [analytics, totalSignups] = await Promise.all([
     getLandingPageAnalyticsByPageId(pageId),
