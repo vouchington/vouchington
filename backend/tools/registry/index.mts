@@ -10,7 +10,6 @@ import getMySpendingTool from '../get-my-spending.mts'
 import getRecommendedTopicsTool from '../get-recommended-topics.mts'
 import getReferralLinksTool from '../get-referral-links.mts'
 import getTopicDetailsTool from '../get-topic-details.mts'
-import getTopicHierarchyTool from '../get-topic-hierarchy.mts'
 import getTopicInsightsTool from '../get-topic-insights.mts'
 import getTopicMetricsTool from '../get-topic-metrics.mts'
 import getTrendingPostsTool from '../get-trending-posts.mts'
@@ -44,7 +43,6 @@ export const ALL_TOOLS: readonly Tool[] = [
   getRecommendedTopicsTool,
   getReferralLinksTool,
   getTopicDetailsTool,
-  getTopicHierarchyTool,
   getTopicInsightsTool,
   getTopicMetricsTool,
   getTrendingPostsTool,

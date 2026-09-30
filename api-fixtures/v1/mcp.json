@@ -2049,13 +2049,27 @@
           "tool": {
             "name": "get_topic_details",
             "title": "Get Topic Details",
-            "description": "Get detailed information about a topic (card, bank account, rewards program, etc.). For cards, returns the annual fee, issuing bank, and card brand. For rewards programs, returns the parent company. Always includes the full description and aliases.",
+            "description": "Get detailed information about a topic (card, bank account, rewards program, etc.). For cards, returns the annual fee, issuing bank, and card brand. For rewards programs, returns the parent company. Always includes the full description and aliases. Set hierarchy to also get parent topics (the organization that issues a card) and/or child topics (all cards a bank issues, all tiers in a rewards program); children come one page at a time, so pass children_page_info.end_cursor as children_after for the next page.",
             "inputSchema": {
               "type": "object",
               "properties": {
                 "topic_id": {
                   "type": "string",
                   "description": "The topic UUID or slug to retrieve details for"
+                },
+                "hierarchy": {
+                  "type": "string",
+                  "enum": ["parents", "children", "both"],
+                  "description": "Also return related topics. \"parents\" = what this topic belongs to (for example the bank that issues a card), \"children\" = what belongs to this topic (for example every card a bank issues), \"both\" = each. Omit for no related topics."
+                },
+                "children_after": {
+                  "type": "string",
+                  "description": "Cursor from a previous result children_page_info.end_cursor, for the next page of children. Only used when hierarchy is \"children\" or \"both\"."
+                },
+                "children_limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Maximum number of children per page. Defaults to 25; values over 100 are clamped to 100. Only used when hierarchy is \"children\" or \"both\"."
                 }
               },
               "required": ["topic_id"]
@@ -2152,6 +2166,100 @@
                           "type": "string"
                         }
                       ]
+                    },
+                    "parents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "topic_type": {
+                            "enum": [
+                              "bank_account",
+                              "card",
+                              "fediverse_instance",
+                              "referral_program",
+                              "rewards_program_status",
+                              "rewards_program",
+                              "rss_feed",
+                              "topic"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "name", "slug", "topic_type"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "children": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "topic_type": {
+                            "enum": [
+                              "bank_account",
+                              "card",
+                              "fediverse_instance",
+                              "referral_program",
+                              "rewards_program_status",
+                              "rewards_program",
+                              "rss_feed",
+                              "topic"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "name", "slug", "topic_type"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "children_page_info": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["end_cursor", "has_next_page", "start_cursor"],
+                      "type": "object"
                     }
                   },
                   "required": [
@@ -2179,43 +2287,6 @@
                   "additionalProperties": false
                 }
               ]
-            },
-            "annotations": {
-              "readOnlyHint": true,
-              "idempotentHint": true
-            },
-            "_meta": {
-              "voucha/requiredScopes": ["topics:read"]
-            }
-          },
-          "plan": "free",
-          "roles": null,
-          "api": [
-            {
-              "method": "GET",
-              "path": "/api/v1/topics/:idOrSlug"
-            }
-          ]
-        },
-        {
-          "tool": {
-            "name": "get_topic_hierarchy",
-            "title": "Get Topic Hierarchy",
-            "description": "Get the parent and/or child topics for a given topic. Useful for finding all cards issued by a bank (children of the bank topic), all tiers in a rewards program (children of the program topic), or discovering what organization issues a card (parents of the card topic).",
-            "inputSchema": {
-              "type": "object",
-              "properties": {
-                "topic_id": {
-                  "type": "string",
-                  "description": "The topic UUID or slug to look up hierarchy for"
-                },
-                "direction": {
-                  "type": "string",
-                  "enum": ["parents", "children", "both"],
-                  "description": "Which direction to traverse. \"parents\" = what this topic belongs to, \"children\" = what belongs to this topic, \"both\" = all relations. Defaults to \"both\"."
-                }
-              },
-              "required": ["topic_id"]
             },
             "annotations": {
               "readOnlyHint": true,
@@ -2479,7 +2550,7 @@
           "tool": {
             "name": "get_trending_posts",
             "title": "Get Trending Posts",
-            "description": "Get posts that are trending based on time-decay voting. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic.",
+            "description": "Get posts that are trending based on time-decay voting. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic. Returns page_info.end_cursor; pass it as after to get the next page.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -2497,12 +2568,95 @@
                   "type": "string",
                   "description": "Optionally filter to posts tagged with a specific topic, by UUID or slug."
                 },
+                "after": {
+                  "type": "string",
+                  "description": "Cursor from a previous result page_info.end_cursor, for the next page."
+                },
                 "limit": {
-                  "type": "number",
-                  "description": "Maximum number of results to return (1-10). Defaults to 10."
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Maximum number of results to return. Defaults to 20; values over 100 are clamped to 100."
                 }
               },
               "required": []
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "time_range": {
+                      "type": "string",
+                      "enum": ["day", "week", "month"]
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "trending_score": {
+                            "type": "number"
+                          }
+                        },
+                        "required": ["id", "trending_score"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["end_cursor", "has_next_page", "start_cursor"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["success", "time_range", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
             },
             "annotations": {
               "readOnlyHint": true,
@@ -2525,7 +2679,7 @@
           "tool": {
             "name": "get_trending_topics",
             "title": "Get Trending Topics",
-            "description": "Get topics (cards, bank accounts, rewards programs, etc.) that are trending based on recent post and news activity. Useful for answering \"what credit cards are popular right now?\" or \"what topics are being discussed?\". Returns topic IDs with trending scores — use get_topic_details to get full card information.",
+            "description": "Get topics (cards, bank accounts, rewards programs, etc.) that are trending based on recent post and news activity. Useful for answering \"what credit cards are popular right now?\" or \"what topics are being discussed?\". Returns topic IDs with trending scores — use get_topic_details to get full card information. Returns page_info.end_cursor; pass it as after to get the next page.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -2534,12 +2688,85 @@
                   "enum": ["day", "week", "month"],
                   "description": "Time window for trending calculation. Defaults to \"week\"."
                 },
+                "after": {
+                  "type": "string",
+                  "description": "Cursor from a previous result page_info.end_cursor, for the next page."
+                },
                 "limit": {
-                  "type": "number",
-                  "description": "Maximum number of results to return (1-25). Defaults to 10."
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Maximum number of results to return. Defaults to 20; values over 100 are clamped to 100."
                 }
               },
               "required": []
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "time_range": {
+                  "type": "string",
+                  "enum": ["day", "week", "month"]
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "trending_score": {
+                        "type": "number"
+                      },
+                      "post_tag_count": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "rss_item_tag_count": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": ["id", "trending_score", "post_tag_count", "rss_item_tag_count"],
+                    "additionalProperties": false
+                  }
+                },
+                "page_info": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "end_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "has_next_page": {
+                      "type": "boolean"
+                    },
+                    "start_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["end_cursor", "has_next_page", "start_cursor"],
+                  "type": "object"
+                }
+              },
+              "required": ["success", "time_range", "results", "page_info"],
+              "additionalProperties": false
             },
             "annotations": {
               "readOnlyHint": true,
@@ -3577,62 +3804,16 @@
         },
         {
           "tool": {
-            "name": "search_posts_semantic",
-            "title": "Search Posts by Meaning",
-            "description": "Search for posts using semantic similarity (vector embeddings). Best for finding conceptually related posts.",
-            "inputSchema": {
-              "type": "object",
-              "properties": {
-                "semantic_search_query": {
-                  "type": "string",
-                  "description": "Natural language search query"
-                },
-                "limit": {
-                  "type": "number",
-                  "description": "Maximum number of results to return (default: 5, max: 10)"
-                },
-                "post_type": {
-                  "type": "string",
-                  "enum": [
-                    "discussion",
-                    "review",
-                    "data_point",
-                    "comment",
-                    "link",
-                    "article",
-                    "blog_post",
-                    "story"
-                  ],
-                  "description": "Filter by post type"
-                }
-              },
-              "required": ["semantic_search_query"]
-            },
-            "annotations": {
-              "readOnlyHint": true,
-              "idempotentHint": true
-            },
-            "_meta": {
-              "voucha/requiredScopes": ["posts:read"]
-            }
-          },
-          "plan": "free",
-          "roles": null,
-          "api": [
-            {
-              "method": "GET",
-              "path": "/api/v1/posts"
-            }
-          ]
-        },
-        {
-          "tool": {
             "name": "search_posts",
             "title": "Search Posts",
-            "description": "Search for posts using text, semantic, and similar-item signals. Use search for hybrid text+semantic search.",
+            "description": "Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page.",
             "inputSchema": {
               "type": "object",
               "properties": {
+                "q": {
+                  "type": "string",
+                  "description": "Keyword search. Same as GET /api/v1/posts q: matches post text and #hashtags."
+                },
                 "search": {
                   "type": "string",
                   "description": "Hybrid search shortcut. Same as setting both text_search_query and semantic_search_query to this value."
@@ -3657,14 +3838,19 @@
                   "type": "string",
                   "description": "Find results similar to an RSS feed item UUID"
                 },
+                "after": {
+                  "type": "string",
+                  "description": "Cursor from a previous result page_info.end_cursor, for the next page."
+                },
                 "limit": {
-                  "type": "number",
-                  "description": "Maximum number of results to return (default: 5, max: 10)"
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Maximum number of results per page. Defaults to 25; values over 100 are clamped to 100."
                 },
                 "sort": {
                   "type": "string",
-                  "enum": ["new", "best", "ranking"],
-                  "description": "Sort order: new (most recent), best (highest voted), ranking (search relevance)"
+                  "enum": ["new", "best", "hot", "relevance", "following_new"],
+                  "description": "Sort order: new (most recent), best (highest voted), hot, relevance (search relevance; the default when searching), following_new"
                 },
                 "post_type": {
                   "type": "string",
@@ -3683,6 +3869,68 @@
               },
               "required": []
             },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "markdown": {
+                        "type": "string"
+                      },
+                      "post_type": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "title", "markdown", "post_type"],
+                    "additionalProperties": false
+                  }
+                },
+                "page_info": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "end_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "has_next_page": {
+                      "type": "boolean"
+                    },
+                    "start_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["end_cursor", "has_next_page", "start_cursor"],
+                  "type": "object"
+                }
+              },
+              "required": ["success", "results", "page_info"],
+              "additionalProperties": false
+            },
             "annotations": {
               "readOnlyHint": true,
               "idempotentHint": true
@@ -3697,78 +3945,6 @@
             {
               "method": "GET",
               "path": "/api/v1/posts"
-            }
-          ]
-        },
-        {
-          "tool": {
-            "name": "search_topics_semantic",
-            "title": "Search Topics by Meaning",
-            "description": "Search topics using semantic similarity (vector embeddings). Best for finding conceptually related topics.",
-            "inputSchema": {
-              "type": "object",
-              "properties": {
-                "semantic_search_query": {
-                  "type": "string",
-                  "description": "Natural language search query"
-                },
-                "limit": {
-                  "type": "number",
-                  "description": "Max results (default: 10, max: 25)"
-                }
-              },
-              "required": ["semantic_search_query"]
-            },
-            "annotations": {
-              "readOnlyHint": true,
-              "idempotentHint": true
-            },
-            "_meta": {
-              "voucha/requiredScopes": ["topics:read"]
-            }
-          },
-          "plan": "free",
-          "roles": null,
-          "api": [
-            {
-              "method": "GET",
-              "path": "/api/v1/topics"
-            }
-          ]
-        },
-        {
-          "tool": {
-            "name": "search_topics_text",
-            "title": "Search Topics by Text",
-            "description": "Search topics using text matching. Best for finding topics by name or slug.",
-            "inputSchema": {
-              "type": "object",
-              "properties": {
-                "text_search_query": {
-                  "type": "string",
-                  "description": "Text query to match against topic names and slugs"
-                },
-                "limit": {
-                  "type": "number",
-                  "description": "Max results (default: 10, max: 25)"
-                }
-              },
-              "required": ["text_search_query"]
-            },
-            "annotations": {
-              "readOnlyHint": true,
-              "idempotentHint": true
-            },
-            "_meta": {
-              "voucha/requiredScopes": ["topics:read"]
-            }
-          },
-          "plan": "free",
-          "roles": null,
-          "api": [
-            {
-              "method": "GET",
-              "path": "/api/v1/topics"
             }
           ]
         },
@@ -3776,10 +3952,14 @@
           "tool": {
             "name": "search_topics",
             "title": "Search Topics",
-            "description": "Search topics using text, semantic, and similar-item signals. Use search for hybrid text+semantic search.",
+            "description": "Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page.",
             "inputSchema": {
               "type": "object",
               "properties": {
+                "q": {
+                  "type": "string",
+                  "description": "Keyword search. Same as GET /api/v1/topics q: matches topic names and slugs, and #hashtags."
+                },
                 "search": {
                   "type": "string",
                   "description": "Hybrid search shortcut. Same as setting both text_search_query and semantic_search_query to this value."
@@ -3804,12 +3984,76 @@
                   "type": "string",
                   "description": "Find results similar to an RSS feed item UUID"
                 },
+                "after": {
+                  "type": "string",
+                  "description": "Cursor from a previous result page_info.end_cursor, for the next page."
+                },
                 "limit": {
-                  "type": "number",
-                  "description": "Max results (default: 10, max: 25)"
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Maximum number of results per page. Defaults to 25; values over 100 are clamped to 100."
                 }
               },
               "required": []
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "topics": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "slug": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "name", "slug"],
+                    "additionalProperties": false
+                  }
+                },
+                "page_info": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "end_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "has_next_page": {
+                      "type": "boolean"
+                    },
+                    "start_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["end_cursor", "has_next_page", "start_cursor"],
+                  "type": "object"
+                }
+              },
+              "required": ["success", "topics", "page_info"],
+              "additionalProperties": false
             },
             "annotations": {
               "readOnlyHint": true,

@@ -24,8 +24,7 @@ Implements the MCP (Model Context Protocol) server logic: listing tools, executi
 | `index.mts`                          | Barrel: exports request handlers, helpers, and user/admin MCP configs                        |
 | `catalog/build-mcp-catalog.mts`      | Build the `api-fixtures/v1/mcp.json` catalog and find `meta.api` routes missing from OpenAPI |
 | `catalog/agent-tool-catalog.mts`     | Render the agent-tools catalog table and the native-client `manifest.json`                   |
-| `catalog/output-schema-ratchet.mts`  | Frozen list of listed tools that still return text only; it can only shrink                  |
-| `catalog/build-mcp-catalog.test.mts` | Snapshot every generated catalog artifact; `pnpm run mcp:catalog` regenerates them           |
+| `catalog/build-mcp-catalog.test.mts` | Snapshot every generated catalog artifact; fail any MCP tool with no output schema           |
 
 `catalog/find-api-hint-conflicts.mts` finds tools whose MCP hints disagree with the REST operations
 in `meta.api`; see [MCP Metadata](../../agent-tools/README.md#mcp-metadata).
@@ -65,10 +64,18 @@ A route that documents its response inline has no contract; give it a named resp
 validation; `outcomeSchema` builds both. `manage_*` tools return only `{ id }` for `remove`,
 because REST `DELETE` is `204`.
 
-**Ratchet.** `catalog/output-schema-ratchet.mts` names the listed tools that still lack a schema.
-Its test compares the list with the generated catalog in both directions and caps its length, so a
-converted tool must leave the list and a tool newly exposed on `mcp` or `admin_mcp` must declare a
-schema instead of joining it.
+**Every MCP tool declares one.** `catalog/build-mcp-catalog.test.mts` fails for any tool exposed on
+`mcp` or `admin_mcp` that has no `outputSchema`, so a new tool declares its schema from the start
+and there is no list of exceptions. `pnpm run mcp:catalog` regenerates the catalog artifacts that
+test snapshots.
+
+**Paged results.** A paged tool (`search_posts`, `search_topics`, `get_trending_posts`,
+`get_trending_topics`, and the children of `get_topic_details`) takes its REST twin's parsers, not
+a copy of them: the `@services/search-params` parsers for search, and the `parse-pagination.mts` of
+`@services/trending-posts` and `@services/trending-topics` (shared with the routes) for trending.
+`page_info` in every paged result is the generated `PageInfo` component. The GET trending routes
+document no query parameters in OpenAPI, so their `after` and `limit` are pinned by the real-DB
+contract tests instead.
 
 ## Authorization
 
