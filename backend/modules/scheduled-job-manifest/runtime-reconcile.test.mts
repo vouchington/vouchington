@@ -151,18 +151,14 @@ describe('upsertScheduledJobManifest leftover scheduler reconcile', () => {
 describe('removeScheduledJobScheduler', () => {
   it('removes only the requested scheduler and is idempotent', async () => {
     const queue = new Queue(`targeted-tombstone-${randomUUID()}`, {})
-    await queue.upsertJobScheduler(
-      'wikipedia-recommender-dispatch',
-      { every: 60_000 },
-      { name: 'dispatch' },
-    )
+    await queue.upsertJobScheduler('retired-dispatch', { every: 60_000 }, { name: 'dispatch' })
     await queue.upsertJobScheduler('unrelated-scheduler', { every: 60_000 }, { name: 'unrelated' })
 
-    const first = await removeScheduledJobScheduler(queue, 'wikipedia-recommender-dispatch')
-    const second = await removeScheduledJobScheduler(queue, 'wikipedia-recommender-dispatch')
+    const first = await removeScheduledJobScheduler(queue, 'retired-dispatch')
+    const second = await removeScheduledJobScheduler(queue, 'retired-dispatch')
 
     expect(first.removed).toBe(true)
-    expect(first.before).toContain('wikipedia-recommender-dispatch')
+    expect(first.before).toContain('retired-dispatch')
     expect(first.after).toEqual(['unrelated-scheduler'])
     expect(second).toEqual({
       before: ['unrelated-scheduler'],
