@@ -5,22 +5,6 @@ import createHttpError from 'http-errors'
 
 const MAX_HASHTAG_TOPIC_MENTIONS = 10
 
-// Retained for API error-shaping compatibility; unresolved valid hashtags no longer throw it.
-export class HashtagTopicSearchError extends Error {
-  status = 400
-  error: string
-
-  constructor(raw: string) {
-    const message = `Topic not found: ${raw}`
-    super(message)
-    this.name = 'HashtagTopicSearchError'
-    this.error = message
-  }
-}
-export function isHashtagTopicSearchError(error: unknown): error is HashtagTopicSearchError {
-  return error instanceof HashtagTopicSearchError
-}
-
 export type HashtagSearchFilter =
   | { kind: 'linked_topic'; topicId: string }
   | { kind: 'exact_alias'; aliasId: string }

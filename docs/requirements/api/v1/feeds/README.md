@@ -21,7 +21,7 @@ Query parameters:
 - `limit` — 1–100, default 25
 - `community` — optional community slug/ID scope for community-specific feeds
 - `post_types` — filter by post types
-- `q` — full-text search query. `#topic-slug` tokens are parsed as universal topic filters and removed from the text query; unresolved hashtag topics return `400 { "error": "Topic not found: #topic-slug" }`.
+- `q` — full-text search query. `#topic-slug` tokens are parsed as universal topic filters and removed from the text query; unknown hashtags return an empty result and malformed hashtags return a `422` validation error (see [Combined Text And Topic Search](../../../navigation/FEED-LIST-FILTERS.md#combined-text-and-topic-search)).
 - `time_range` — time range filter
 - `min_score_follow_users` — minimum score from followed users
 - `min_score_follow_topics` — minimum score from followed topics
@@ -40,7 +40,7 @@ Query parameters:
 - `after` — cursor for pagination
 - `limit` — 1–100, default 25
 - `community` — optional community slug/ID scope for community-specific feeds
-- `q` — full-text search query. `#topic-slug` tokens are parsed as topic filters and removed from the text query; unresolved hashtag topics return `400 { "error": "Topic not found: #topic-slug" }`.
+- `q` — full-text search query. `#topic-slug` tokens are parsed as topic filters and removed from the text query; unknown hashtags return an empty result and malformed hashtags return a `422` validation error (see [Combined Text And Topic Search](../../../navigation/FEED-LIST-FILTERS.md#combined-text-and-topic-search)).
 - `time_range` — time range filter
 - `min_score_follow_rss_feeds` — minimum score from followed RSS feeds
 - `min_score_follow_topics` — minimum score from followed topics

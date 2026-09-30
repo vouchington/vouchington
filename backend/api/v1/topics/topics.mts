@@ -23,7 +23,6 @@ import {
   resolveTopicsSearchParams,
 } from '@services/search-params'
 import { clampAnonLimit } from '@modules/search-utils'
-import { sendHashtagTopicSearchErrorResponse } from '../hashtag-search-error-response.mts'
 import { getTopicElectionVotesByUser } from '@services/elections-votes/topic'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import { getUserActivePlan } from '@services/memberships'
@@ -41,10 +40,7 @@ app
       query: preparedSearchParams.validationQuery,
     })
 
-    const parsedSearchParams = await resolveTopicsSearchParams(preparedSearchParams).catch(error =>
-      sendHashtagTopicSearchErrorResponse(ctx, error),
-    )
-    if (!parsedSearchParams) return
+    const parsedSearchParams = await resolveTopicsSearchParams(preparedSearchParams)
     const { shouldReturnEmpty, searchOptions } = parsedSearchParams
     if (!currentUser) {
       searchOptions.limit = clampAnonLimit(searchOptions.limit)

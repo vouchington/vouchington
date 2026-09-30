@@ -31,7 +31,6 @@ Revisions are written **synchronously** inside the same transaction as the topic
 - **Create**: `createTopic()` inserts a `create` revision
 - **Update**: `updateTopic()` inserts an `update` revision with only the changed fields
 - **Delete**: topic deletion is intentionally unsupported; the enum value is retained only for historical rows.
-- **Upsert**: `upsertTopic()` does not track revisions (automated workflow with no user attribution)
 
 Topic detail pages use the latest admin-authored `create` or `update` revision whose `changes`
 include `name` or `markdown` as the public topic content update attribution. The admin decision uses

@@ -24,7 +24,6 @@ import { indexById } from '@modules/utils'
 import { clampAnonLimit } from '@modules/search-utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { resolveHashtagTopicSearch } from '@services/search-params'
-import { sendHashtagTopicSearchErrorResponse } from '../hashtag-search-error-response.mts'
 import { parseCommunitiesListQuery, parseEligiblePostType } from './list-query.mts'
 
 const VALID_MEMBER_ROSTER_VISIBILITIES = ['public', 'users', 'members', 'moderators']
@@ -54,20 +53,12 @@ app
       limit = clampAnonLimit(limit)
     }
 
-    let hashtagTopicIds: string[] = []
-    let hashtagHasNoMatches = false
-    let textSearchQuery: string | undefined
-    try {
-      const hashtagResult = await resolveHashtagTopicSearch(rawQ)
-      hashtagTopicIds = hashtagResult.topicIds
-      textSearchQuery = hashtagResult.textSearchQuery
-      hashtagHasNoMatches =
-        hashtagResult.hasUnknown ||
-        hashtagResult.filters.some(filter => filter.kind === 'exact_alias')
-    } catch (err) {
-      sendHashtagTopicSearchErrorResponse(ctx, err)
-      return
-    }
+    const hashtagResult = await resolveHashtagTopicSearch(rawQ)
+    const hashtagTopicIds = hashtagResult.topicIds
+    const textSearchQuery = hashtagResult.textSearchQuery
+    const hashtagHasNoMatches =
+      hashtagResult.hasUnknown ||
+      hashtagResult.filters.some(filter => filter.kind === 'exact_alias')
 
     const topicParam = ctx.query.topic
     const topicParams = Array.isArray(topicParam)

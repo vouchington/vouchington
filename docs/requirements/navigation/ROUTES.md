@@ -121,7 +121,7 @@ See also: [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md) — maps each ro
   - `/feed/news/sources` - show news from sources you follow
   - `/feed/news/topics` - show news from topics you follow
   - Feed pages use breadcrumbs, a borderless title dropdown for post/news feed switching, a filter-row dropdown for All/Friends/Sources/Topics that defaults to All on `/feed/posts` and `/feed/news`, and no global community dropdown filter. Community-specific feeds remain available from `/communities/:slug` and `/communities/:slug/news`. See [Feed And List Filters](./FEED-LIST-FILTERS.md).
-  - Feed, post/news, topic-scoped, and community-scoped list searches use `Search by text or #topic`; unresolved hashtag topics return a frontend-visible backend payload shaped as `{ error }`. See [Feed And List Filters](./FEED-LIST-FILTERS.md).
+  - Feed, post/news, topic-scoped, and community-scoped list searches use `Search by text or #topic`; malformed hashtags return a recoverable `{ error }` payload and unknown hashtags return an empty result. See [Feed And List Filters](./FEED-LIST-FILTERS.md).
 - Users
   - `/users` - search users
   - `/user/:idOrUsername` - canonical, indexable profile overview page

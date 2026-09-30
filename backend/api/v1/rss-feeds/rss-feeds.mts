@@ -10,7 +10,6 @@ import {
   prepareRssFeedsSearchParams,
   resolveRssFeedsSearchParams,
 } from '@services/search-params'
-import { sendHashtagTopicSearchErrorResponse } from '../hashtag-search-error-response.mts'
 import {
   getOptionalAuthAndRateLimit,
   requireAuth,
@@ -66,10 +65,7 @@ app
         ...(ctx.query.limit !== undefined && { limit: paginationOptions.limit }),
       },
     })
-    const parsedSearchParams = await resolveRssFeedsSearchParams(preparedSearchParams).catch(
-      error => sendHashtagTopicSearchErrorResponse(ctx, error),
-    )
-    if (!parsedSearchParams) return
+    const parsedSearchParams = await resolveRssFeedsSearchParams(preparedSearchParams)
     const { shouldReturnEmpty, searchOptions } = parsedSearchParams
 
     const { limit, after } = paginationOptions

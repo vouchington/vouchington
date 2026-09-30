@@ -21,7 +21,6 @@ import {
 } from '../aliases.mts'
 import { getTopicByAny } from '../get.mts'
 import { mergeTopicAliases } from '../merge-aliases.mts'
-import { upsertTopic } from '../upsert.mts'
 import { updateTopic } from '../update.mts'
 
 describe('topic alias post-cache invalidation', () => {
@@ -91,19 +90,6 @@ describe('topic alias post-cache invalidation', () => {
     ])
 
     await mergeTopicAliases(user, sourceTopic!, destinationTopic!)
-
-    await expectPostCachesInvalidated(postIds)
-  })
-
-  it('invalidates posts when upsert claims an unlinked alias', async () => {
-    const suffix = Math.random().toString(36).slice(2, 12)
-    const user = await createTestUser({ administrator: true })
-    const alias = await createUnlinkedTopicAlias(`cache-upsert-${suffix}`)
-    const postIds = await createCachedAliasPosts(alias.id, user, suffix)
-
-    await upsertTopic(`Cache upsert topic ${suffix}`, `cache-upsert-topic-${suffix}`, {
-      aliases: [alias.alias],
-    })
 
     await expectPostCachesInvalidated(postIds)
   })
