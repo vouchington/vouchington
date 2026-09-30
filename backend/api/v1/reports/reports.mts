@@ -14,8 +14,6 @@ import {
   listRedactedModerationReports,
   currentUserCanResolveModerationReport,
   type ModerationReportSort,
-  type ModerationReportStatus,
-  MODERATION_REPORT_STATUSES,
   type ModerationReportResolutionStatus,
   buildReportPageInfo,
   withoutClusterCursorMetadata,
@@ -23,9 +21,11 @@ import {
 } from '@services/moderation-reports'
 import { isModerationStaff } from '@services/users'
 import { parseReportCursor, reportCursorScope } from './reports-cursor.mts'
-import { apiResponse } from '../../response-contract.mts'
+import { apiQuery, apiResponse } from '../../response-contract.mts'
 import {
   parseReportCursorQueryParams,
+  parseReportListFilters,
+  reportsFilterQuery,
   reportsPaginationParser,
 } from '../../report-pagination-helpers.mts'
 import './reports-create.mts'
@@ -33,43 +33,36 @@ import './reports-create.mts'
 type ResolveModerationReportRequest = { status: ModerationReportResolutionStatus }
 
 app.route('/api/v1/reports').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/reports', reportsPaginationParser, reportsFilterQuery)
   const currentUser = await requireAuthAndRateLimit(
     ctx,
     user => user !== null,
     'GET:/api/v1/reports',
   )
 
-  // Intentional carrier skip: `limit` is an integer on the wire and ctx.query holds raw strings,
-  // so the shared adapter would reject valid requests. The pagination parsers own these values.
+  // `status` and `sort` fall back to their defaults instead of failing, and the parsers keep their
+  // own 400/422 answers, so the contract below checks the settled values.
   const cursorQuery = parseReportCursorQueryParams(ctx, ctx.query)
   const { limit } = reportsPaginationParser.parse(ctx.query)
   const { after, before } = cursorQuery
 
-  const statusParam = ctx.query.status
-  const status: ModerationReportStatus =
-    typeof statusParam === 'string' &&
-    MODERATION_REPORT_STATUSES.includes(statusParam as ModerationReportStatus)
-      ? (statusParam as ModerationReportStatus)
-      : 'pending'
-
   const isStaff = isModerationStaff(currentUser)
+  const { status, sort } = parseReportListFilters(ctx.query, isStaff)
   const sortParam = ctx.query.sort
-  const sort: ModerationReportSort = isStaff
-    ? sortParam === 'created_at_asc' ||
-      sortParam === 'created_at_desc' ||
-      sortParam === 'most_reported' ||
-      sortParam === 'severity'
-      ? sortParam
-      : 'severity'
-    : sortParam === 'created_at_asc'
-      ? 'created_at_asc'
-      : 'created_at_desc'
+  const clusterParam = ctx.query.cluster
+  validateRequestContract(ctx, 'GET:/api/v1/reports', {
+    query: {
+      limit,
+      status,
+      sort,
+      ...(clusterParam !== undefined && { cluster: clusterParam }),
+      ...(after !== undefined && { after }),
+      ...(before !== undefined && { before }),
+    },
+  })
 
   const beforeCursor = after || before ? parseReportCursor(ctx, after ?? before!) : undefined
   const cursorDirection: 'after' | 'before' = before ? 'before' : 'after'
-
-  const clusterParam = ctx.query.cluster
-  ctx.assert(clusterParam === undefined || clusterParam === 'entity', 422, 'Invalid cluster mode')
 
   const cursorScope = reportCursorScope(
     isStaff ? 'staff' : 'member',
