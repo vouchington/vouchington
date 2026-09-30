@@ -39,7 +39,6 @@
     "@modules/openai-utils": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/scopes": "workspace:^",
-    "@modules/search-utils": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
