@@ -11,6 +11,25 @@ import {
   moneySchema,
 } from '@ts-shared/data-points/json-schemas'
 import type { CurrencyCode, Money, MoneyRange } from '@ts-shared/money'
+import { successSchema, objectSchema } from './output-schema-shapes.mts'
+import { componentPropertySchema } from './route-response-schema.mts'
+
+// The REST twin returns the whole stored profile, including its owner and update time. The tool
+// returns only the five fields the caller can set, each taken from that documented profile.
+const PROFILE_FIELDS = [
+  'credit_score_range',
+  'stated_income_range',
+  'total_credit_limit',
+  'currency',
+  'years_of_credit_history',
+] as const
+const OUTPUT_SCHEMA = successSchema({
+  profile: objectSchema(
+    Object.fromEntries(
+      PROFILE_FIELDS.map(field => [field, componentPropertySchema('UserFinancialProfile', field)]),
+    ),
+  ),
+})
 
 const VALID_CREDIT_SCORE_RANGES = CREDIT_SCORE_RANGES.map(o => o.value)
 
@@ -76,6 +95,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     requiredScopes: { mcp: ['financial-profile:read', 'financial-profile:write'] },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     api: [{ method: 'PUT', path: '/api/v1/my/financial-profile' }],
+    outputSchema: OUTPUT_SCHEMA,
   },
   function:
     (currentUser: BasicUser) =>

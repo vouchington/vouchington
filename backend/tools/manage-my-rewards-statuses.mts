@@ -36,6 +36,7 @@ export default createManageEntityTool<
       until: args.until as string | undefined,
     }),
   removeFn: (user, id) => deleteIndividualRewardsProgramStatusById(user, user, id),
+  entity: 'IndividualRewardsProgramStatus',
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
     title: 'Manage My Rewards Statuses',

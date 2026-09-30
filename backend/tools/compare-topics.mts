@@ -6,8 +6,17 @@ import {
 } from '@services/data-points/insights'
 import { DATA_POINT_VERTICALS } from '@ts-shared/data-points'
 import { resolveTopics } from './resolve-topic.mts'
+import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'
+import { INSIGHTS_PROPERTIES } from './topic-output-schema-parts.mts'
 
 const VERTICALS = DATA_POINT_VERTICALS.map(o => o.value)
+
+// The REST twin streams an untyped body, so the tool owns this schema.
+const comparison = objectSchema({
+  topic_id: { type: 'string' },
+  topic_name: { type: 'string' },
+  ...INSIGHTS_PROPERTIES,
+})
 
 type ToolArgs = {
   topic_id_a: string
@@ -64,6 +73,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     requiredScopes: { mcp: ['topics:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/topics/compare' }],
+    outputSchema: outcomeSchema('success', { topic_a: comparison, topic_b: comparison }),
   },
   function:
     (_currentUser: BasicUser) =>

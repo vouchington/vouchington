@@ -1,6 +1,7 @@
 import { searchWikipediaByTitle } from '@modules/wikipedia-api'
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from './types.mts'
+import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'
 
 type ToolArgs = {
   query: string
@@ -52,6 +53,13 @@ const tool: Tool<ToolArgs, ToolResult> = {
     requiredScopes: { mcp: ['wikipedia:read'] },
     annotations: { readOnlyHint: true, openWorldHint: true },
     api: null,
+    outputSchema: outcomeSchema('success', {
+      results: {
+        type: 'array',
+        items: objectSchema({ title: { type: 'string' }, pageid: { type: 'integer' } }),
+      },
+      count: { type: 'integer', minimum: 0 },
+    }),
   },
   function:
     (_currentUser: BasicUser) =>

@@ -6,6 +6,28 @@ import { getRewardsProgramAttributes } from '@services/topics/rewards-programs'
 import { getTopicsByAnyBatch } from '@services/topics/get-batch'
 import type { Money } from '@ts-shared/money'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
+import { nullable, outcomeSchema } from './output-schema-shapes.mts'
+import { componentPropertySchema, componentSchema } from './route-response-schema.mts'
+
+// The REST twin streams an untyped body, so the tool owns this schema. The fields it shares with
+// the documented topic come from that component; the attribute fields appear per topic type.
+const nullableName = nullable({ type: 'string' })
+const OUTPUT_SCHEMA = outcomeSchema(
+  'success',
+  {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    slug: { type: 'string' },
+    topic_type: componentPropertySchema('TopicBasic', 'topic_type'),
+    markdown: { type: 'string' },
+    aliases: componentPropertySchema('TopicBasic', 'aliases'),
+    annual_fee: nullable(componentSchema('Money')),
+    bank_name: nullableName,
+    brand_name: nullableName,
+    rewards_program_company: nullableName,
+  },
+  ['annual_fee', 'bank_name', 'brand_name', 'rewards_program_company'],
+)
 
 type ToolArgs = {
   topic_id: string
@@ -54,6 +76,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     requiredScopes: { mcp: ['topics:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/topics/:idOrSlug' }],
+    outputSchema: OUTPUT_SCHEMA,
   },
   function:
     (_currentUser: BasicUser) =>

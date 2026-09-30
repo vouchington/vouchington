@@ -73,8 +73,11 @@ export type ToolMeta = {
   // Equivalent existing REST endpoint(s), or null if none exist.
   api: readonly ToolApiEndpoint[] | null
   // Declares the result shape. The MCP adapter publishes it as `outputSchema` and returns the
-  // result as `structuredContent`, validated against it. Derive it from the REST twin's
-  // generated response contract (backend/tools/route-response-schema.mts), never hand-write it.
+  // result as `structuredContent`, validated against it. A tool that returns its REST twin's
+  // body unchanged derives it from the generated response contract
+  // (backend/tools/route-response-schema.mts). A tool that reshapes the body, or has no REST twin,
+  // owns it, built from the named components that contract carries. A lookup tool that reports a
+  // miss as a normal result must admit that result too (backend/tools/output-schema-shapes.mts).
   outputSchema?: ToolOutputSchema
 }
 
