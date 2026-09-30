@@ -40,9 +40,9 @@ type Fixture =
 
 const subjectIdOf = (fixture: Fixture) => fixture.subject.postId ?? fixture.subject.rssFeedItemId
 
-function track(fixture: Fixture, runId?: string) {
-  if (fixture.subject.postId) scope.postIds.add(fixture.subject.postId)
-  else scope.rssFeedItemIds.add(fixture.subject.rssFeedItemId)
+function track({ subject }: Fixture, runId?: string) {
+  if (subject.postId === null) scope.rssFeedItemIds.add(subject.rssFeedItemId)
+  else scope.postIds.add(subject.postId)
   if (runId) scope.runIds.add(runId)
 }
 

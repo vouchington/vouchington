@@ -29,7 +29,6 @@
     "@services/elections-votes": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/moderation": "workspace:^",
-    "@services/post-publication": "workspace:^",
     "@voucha/types": "workspace:^",
     "sql-template-strings": "^2.2.2"
   },

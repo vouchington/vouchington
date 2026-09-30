@@ -38,7 +38,7 @@ describe('createAutotaggerClient', () => {
   it('reserves the provider attempt once, before the single physical request', async () => {
     const calls: string[] = []
     const fetch = provider(calls)
-    const beforeAttempt = vi.fn(async () => void calls.push('reserve'))
+    const beforeAttempt = vi.fn<() => Promise<void>>(async () => void calls.push('reserve'))
     const client = createAutotaggerClient(
       { postId: null, modelProvider: 'openrouter', beforeAttempt },
       { fetch, apiKey: 'test-provider-key' },
@@ -53,7 +53,7 @@ describe('createAutotaggerClient', () => {
 
   it('sends nothing when the durable reservation refuses the attempt', async () => {
     const fetch = provider([])
-    const beforeAttempt = vi.fn(async () => {
+    const beforeAttempt = vi.fn<() => Promise<void>>(async () => {
       throw new Error('attempt cap reached')
     })
     const client = createAutotaggerClient(
@@ -69,10 +69,10 @@ describe('createAutotaggerClient', () => {
   it('cannot be built for a provider it has no key source for', () => {
     expect(() =>
       createAutotaggerClient(
-        { postId: null, modelProvider: 'openai', beforeAttempt: async () => {} },
+        { postId: null, modelProvider: 'typesafe', beforeAttempt: async () => {} },
         { apiKey: 'test-provider-key' },
       ),
-    ).toThrow("no API key source for provider 'openai'")
+    ).toThrow("no API key source for provider 'typesafe'")
   })
 
   it('cannot be built without an API key', () => {

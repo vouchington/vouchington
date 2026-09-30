@@ -7,10 +7,6 @@ import type { AutotaggerRssFeedItemJobData } from '../types.mts'
 
 const FIVE_SECONDS_MS = 5000
 
-export function enqueueAutotaggerRssFeedItem(rss_feed_item_id: string): void {
-  enqueueBulkAutotaggerRssFeedItems([{ rss_feed_item_id }])
-}
-
 export function enqueueBulkAutotaggerRssFeedItems(
   items: Array<{ rss_feed_item_id: string }>,
 ): void {

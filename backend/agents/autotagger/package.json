@@ -37,7 +37,10 @@
     "@voucha/types": "workspace:^"
   },
   "devDependencies": {
+    "@services/ai-usage": "workspace:^",
     "@services/elections-votes": "workspace:^",
-    "@voucha/test-helpers": "workspace:^"
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/test-helpers": "workspace:^",
+    "undici": "^8.11.2"
   }
 }
