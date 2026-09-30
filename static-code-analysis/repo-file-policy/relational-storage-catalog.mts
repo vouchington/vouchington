@@ -51,7 +51,6 @@ export {
 // Tokens, traversal cursors, and a retained table's own primary identity are not foreign references.
 export const ALLOWED_NONRELATION_UUID = new Set([
   'ap_inbox_deliveries.processing_attempt_id',
-  'autotagger_receipts.batch_id',
   'follower_distribution_deliveries.delivery_id',
   'membership_google_play_recovery_cursors.last_evidence_id',
   'membership_google_play_recovery_cursors.sweep_upper_bound_id',
