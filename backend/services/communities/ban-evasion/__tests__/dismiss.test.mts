@@ -37,6 +37,8 @@ describe('dismissBanEvasionFlag', () => {
       'user',
       member.id,
       'Suspected ban evasion',
+      undefined,
+      community.id,
     )
 
     await dismissBanEvasionFlag(owner, community.id, member.id)

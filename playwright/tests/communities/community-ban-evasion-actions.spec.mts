@@ -43,6 +43,7 @@ async function seedCommunityBanEvasionReport(suffix: string) {
     suspect.id,
     `Suspected ban evasion ${suffix}`,
     seededReportCreatedAt,
+    community.id,
   )
 
   return { slug, communityId: community.id, sourceId: source.id, suspectId: suspect.id, reportId }
@@ -109,6 +110,7 @@ test.describe('Community ban-evasion — CM persona', () => {
       suspect.id,
       `Suspected ban evasion CM ${suffix}`,
       seededReportCreatedAt,
+      community.id,
     )
 
     await loginAsUser(page, moderator.id)
@@ -172,6 +174,7 @@ test.describe('Community ban-evasion — CM persona', () => {
       suspect.id,
       `Suspected ban evasion CM confirm ${suffix}`,
       seededReportCreatedAt,
+      community.id,
     )
 
     await loginAsUser(page, moderator.id)

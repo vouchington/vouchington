@@ -47,6 +47,7 @@ async function seedBanEvasionReport(suffix: string) {
     suspect.id,
     `${suiteReportNotePrefix} ${suffix}`,
     seededReportCreatedAt,
+    community.id,
   )
 
   return { communitySlug, reportId, communityId: community.id, suspectId: suspect.id }
