@@ -164,8 +164,7 @@ app
       } else {
         const isRunning = await hasActiveChatTurnByConversationId(conversationId)
         ctx.assert(!isRunning, 409, 'A message is already being processed')
-        await checkApiMessageSafety(message)
-        await checkApiMessageSafety(assistantContent)
+        await checkTurnSafety(message, assistantContent)
         result = await createClientGeneratedChatTurn(params)
       }
     } catch (error) {
@@ -193,3 +192,8 @@ app
       },
     })
   })
+
+async function checkTurnSafety(message: string, assistantContent: string): Promise<void> {
+  await checkApiMessageSafety(message)
+  await checkApiMessageSafety(assistantContent)
+}

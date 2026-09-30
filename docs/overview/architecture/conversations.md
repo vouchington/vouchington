@@ -43,8 +43,11 @@ appear in transcript responses. Incomplete stored assistant placeholders remain 
 The shared decode examples are generated under `api-fixtures/v1/responses/native.chat.*.json` for
 Swift, Android, .NET and web; clients adopt them through clients#149 and clients#150 independently.
 
-The transitional hosted streaming route and agentic-run records remain only until native client
-migrations complete. They are not a web product surface and must not gain new web consumers.
+The transitional hosted streaming route and agentic-run records are removed by
+[A6 (#185)](https://github.com/vouchington/vouchington/issues/185) after this shared transcript
+contract. Under decision D1, server removal proceeds without waiting on native client migrations;
+clients adopt independently. These retained paths are not a web product surface and must not gain
+new web consumers.
 
 Native clients use REST/API calls derived from `backend/tools/manifest.json` for client-surface
 tools rather than runtime MCP. See [Agent Tools](agent-tools/README.md).
