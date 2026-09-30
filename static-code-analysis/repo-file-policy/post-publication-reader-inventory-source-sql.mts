@@ -36,6 +36,9 @@ export function allowedImportSources(symbol: string): Set<string> {
   }
   if (symbol === 'getPublicPostIds') return new Set(['@services/posts'])
   if (symbol === 'getCommentDescendantsPage') return new Set(['@services/comments'])
+  if (symbol === 'getVisibleCommentDescendantIdsPage') {
+    return new Set(['@services/comments', './descendant-ids.mts'])
+  }
   if (symbol === 'getVisiblePostStoryIdsByStoryIds') return new Set(['@services/stories'])
   return new Set(['@services/posts', '@services/posts/check-privacy-access'])
 }
