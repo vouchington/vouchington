@@ -121,6 +121,20 @@ describe('parseSesVerdicts', () => {
     })
   })
 
+  it('treats a backslash-escaped character as text, inside and outside a comment', () => {
+    const escapedParenthesis =
+      'Authentication-Results: amazonses.com; spf=pass; dkim=pass (note \\) ; dkim=fail) header.i=@a.example; dmarc=pass;'
+    expect(
+      parseSesVerdicts(message(sesHeaders({ authResults: escapedParenthesis }))),
+    ).toMatchObject({ dkim: 'pass', spf: 'pass', dmarc: 'pass' })
+    const escapedSemicolon =
+      'Authentication-Results: amazonses.com; spf=pass smtp.mailfrom=a\\;dkim=fail@b.example; dkim=pass; dmarc=pass;'
+    expect(parseSesVerdicts(message(sesHeaders({ authResults: escapedSemicolon })))).toMatchObject({
+      dkim: 'pass',
+      spf: 'pass',
+    })
+  })
+
   it('reports the least favourable result when a method appears more than once', () => {
     const headers = sesHeaders({
       authResults:
