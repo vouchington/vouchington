@@ -54,7 +54,7 @@ Neither workflow here uses `merge_group: destroyed`. The Actions documentation l
 
 Both list `merge_group` runs in the `queued`, `in_progress`, `waiting`, `requested` and `pending`
 states across every workflow and match the pull request by branch prefix, with the trailing hyphen
-so that `pr-14-` never matches `pr-140-`, and skip runs whose id is not lower than their own. A cancel request for a run that already completed returns
+so that `pr-14-` never matches `pr-140-`, and skip runs whose id is not lower than their own. The replaced workflow also skips the new entry's own branch. A cancel request for a run that already completed returns
 HTTP 409, which both treat as success.
 
 ## Dequeued pull requests

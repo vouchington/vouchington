@@ -38,10 +38,7 @@ describe('merge-queue ejection workflow', () => {
         const parsed = parse(readFileSync(join('.github/workflows', file), 'utf8')) as Workflow
         return workflowHasTrigger(parsed.on, 'pull_request_target')
       })
-    expect(privileged).toEqual([
-      'cancel-dequeued-merge-group-runs.yml',
-      'merge-queue-ejection.yml',
-    ])
+    expect(privileged).toEqual(['cancel-dequeued-merge-group-runs.yml', 'merge-queue-ejection.yml'])
   })
 
   it('gates dispatch on both harness variables and a CI ejection reason', () => {

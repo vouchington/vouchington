@@ -45,9 +45,11 @@ The repository reduces the risk with layered authorization, freshness, scope, an
    update, one existing Shepherd PR, one merge-queue triage result (one fix PR from `main` or one
    issue, plus one comment on the ejected PR), or at most 50 idempotent issue mutations. No flow may
    merge or arm auto-merge.
-6. Merge Queue Ejection is the only `pull_request_target` workflow. It runs from `main`, never
-   checks out or executes pull-request content, and passes PR fields only as prompt text. Only a
-   user with write access can enqueue a pull request, so the session may reproduce a same-repository
+6. Merge Queue Ejection is the only `pull_request_target` workflow that dispatches Auto Harness;
+   [Cancel Dequeued Merge Group Runs](reference-merge-queue-run-cancellation.md) is the other
+   `pull_request_target` workflow and uses no Harness token. Both run from `main` and never check
+   out or execute pull-request content. Ejection passes PR fields only as prompt text. Only a user
+   with write access can enqueue a pull request, so the session may reproduce a same-repository
    PR's failure on the trusted host, as Shepherd does; it classifies fork PRs from CI evidence
    alone.
 7. Shepherd resume and immediate status updates are bound to a validated, bot-authored checkpoint
