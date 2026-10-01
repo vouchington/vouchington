@@ -130,7 +130,8 @@ own `sessionId` for every call, obtained in this order:
 1. The `Blackboard sessionId:` line its own SessionStart hook printed, when the harness runs the
    hook for the child.
 2. Otherwise its runtime environment: `CODEX_THREAD_ID` for Codex, read with
-   `printenv CODEX_THREAD_ID`. This is the same id `dev/agent-session-id/resolve.mts` resolves.
+   `printenv CODEX_THREAD_ID`. Use it only for Codex; when a child also inherits another harness's
+   session env, `dev/agent-session-id/resolve.mts` refuses to guess, so this step is the answer.
 
 The child then calls `session_ensure` with that id as `sessionId`, the parent id it was given as
 `parentSessionId`, its own `agent` name, and its version, before any blackboard-aware or substantive
