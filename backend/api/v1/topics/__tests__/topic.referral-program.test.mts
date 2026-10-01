@@ -7,6 +7,7 @@ import {
   insertTestTopic,
 } from '@voucha/test-helpers'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
+import { registerTopicProgramAttributeRouteTests } from '../../../../test-helpers/topic-program-attribute-route-tests.mts'
 
 const longPublicCacheControl = `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`
 
@@ -14,60 +15,7 @@ describe('topic.referral-program', () => {
   afterAll(async () => {}, 30000)
 
   describe('Topic Referral Program Routes', () => {
-    describe('GET /api/v1/topics/:idOrSlug/referral-program', () => {
-      it('should return referral program attributes', async () => {
-        const admin = await createTestUser({ administrator: true })
-        const random = Math.random().toString(36).slice(2, 8)
-        const topicId = await insertTestTopic({
-          name: `Test Referral Program ${random}`,
-          slug: `test-referral-${random}`,
-          createdById: admin!.id,
-          topicType: 'referral_program',
-        })
-        const companyId = await insertTestTopic({
-          name: `Test Company ${random}`,
-          slug: `test-company-ref-get-${random}`,
-          createdById: admin!.id,
-        })
-        const request = createRequest()
-        await request.authenticateAs(admin!)
-
-        await request
-          .patch(`/api/v1/topics/${topicId}/referral-program`)
-          .send({ company_id: companyId })
-          .expect(200)
-
-        const response = await request.get(`/api/v1/topics/${topicId}/referral-program`).expect(200)
-
-        expect(response.body.referral_program_attributes.company_id).toBe(companyId)
-        expect(response.headers['cache-control']).toBe(longPublicCacheControl)
-      })
-
-      it('should return 400 for non-referral-program topic', async () => {
-        const user = await createTestUser()
-        const random = Math.random().toString(36).slice(2, 8)
-        const topicId = await insertTestTopic({
-          name: `Test Topic ${random}`,
-          slug: `test-topic-referral-400-${random}`,
-          createdById: user!.id,
-        })
-        const request = createRequest()
-        await request.get(`/api/v1/topics/${topicId}/referral-program`).expect(400)
-      })
-
-      it('should return 404 when referral program attributes are missing', async () => {
-        const user = await createTestUser()
-        const random = Math.random().toString(36).slice(2, 8)
-        const topicId = await insertTestTopic({
-          name: `Test Referral Program ${random}`,
-          slug: `test-referral-missing-${random}`,
-          createdById: user!.id,
-          topicType: 'referral_program',
-        })
-        const request = createRequest()
-        await request.get(`/api/v1/topics/${topicId}/referral-program`).expect(404)
-      })
-    })
+    registerTopicProgramAttributeRouteTests('referral', ['get'], longPublicCacheControl)
 
     describe('GET /api/v1/topics/:idOrSlug/referral-program/validation-info', () => {
       it('returns 404 for non-existent topic', async () => {

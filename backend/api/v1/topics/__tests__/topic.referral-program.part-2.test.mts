@@ -1,11 +1,13 @@
 import { describe, it, expect, afterAll } from 'vitest'
 
+import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
   enableReferralProgramByTopicId,
   insertTestTopic,
 } from '@voucha/test-helpers'
+import { registerTopicProgramAttributeRouteTests } from '../../../../test-helpers/topic-program-attribute-route-tests.mts'
 
 describe('topic.referral-program', () => {
   afterAll(async () => {}, 30000)
@@ -155,65 +157,10 @@ describe('topic.referral-program', () => {
       })
     })
 
-    describe('PATCH /api/v1/topics/:idOrSlug/referral-program', () => {
-      it('should update referral program attributes when authenticated', async () => {
-        const admin = await createTestUser({ administrator: true })
-        const random = Math.random().toString(36).slice(2, 8)
-        const topicId = await insertTestTopic({
-          name: `Test Referral Program ${random}`,
-          slug: `test-referral-patch-${random}`,
-          createdById: admin!.id,
-          topicType: 'referral_program',
-        })
-        const companyId = await insertTestTopic({
-          name: `Test Company ${random}`,
-          slug: `test-company-ref-${random}`,
-          createdById: admin!.id,
-        })
-        const request = createRequest()
-        await request.authenticateAs(admin!)
-
-        const response = await request
-          .patch(`/api/v1/topics/${topicId}/referral-program`)
-          .send({ company_id: companyId })
-          .expect(200)
-
-        expect(response.body.referral_program_attributes.company_id).toBe(companyId)
-      })
-
-      it('should return 401 when not authenticated', async () => {
-        const user = await createTestUser()
-        const random = Math.random().toString(36).slice(2, 8)
-        const topicId = await insertTestTopic({
-          name: `Test Referral Program ${random}`,
-          slug: `test-referral-401-${random}`,
-          createdById: user!.id,
-          topicType: 'referral_program',
-        })
-        const request = createRequest()
-        await request
-          .patch(`/api/v1/topics/${topicId}/referral-program`)
-          .send({ company_id: null })
-          .expect(401)
-      })
-
-      it('should return 403 when user is not admin', async () => {
-        const user = await createTestUser()
-        const random = Math.random().toString(36).slice(2, 8)
-        const topicId = await insertTestTopic({
-          name: `Test Referral Program ${random}`,
-          slug: `test-referral-403-${random}`,
-          createdById: user!.id,
-          topicType: 'referral_program',
-        })
-        const request = createRequest()
-        await request.authenticateAs(user!)
-
-        await request
-          .patch(`/api/v1/topics/${topicId}/referral-program`)
-          .send({ company_id: null })
-          .expect(403)
-      })
-    })
+    registerTopicProgramAttributeRouteTests(
+      'referral',
+      ['patch'],
+      `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`,
+    )
   })
 })
