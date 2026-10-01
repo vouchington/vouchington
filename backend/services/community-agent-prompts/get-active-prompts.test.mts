@@ -1,5 +1,6 @@
 import { it, expect, describe, beforeAll } from 'vitest'
 import {
+  beginTransaction,
   createTestMembership,
   createTestUser,
   insertTestCommunity,
@@ -7,6 +8,10 @@ import {
   insertTestCommunityMember,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
+import {
+  activateTestCommunityAgentPromptHoursAgo,
+  deactivateTestCommunityAgentPromptInTransaction,
+} from '@voucha/test-helpers/entities/community-automod-effects'
 import { getActiveCommunityAgentPrompts } from './get-active-prompts.mts'
 import { deleteCommunityAgentPrompt } from './delete.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -104,6 +109,75 @@ describe('get-active-prompts', () => {
       expect(r.slot_allocated).toBe(true)
       expect(r.activated_at).not.toBeNull()
       expect(r.deactivated_at).toBeNull()
+    })
+
+    async function activatedPrompts(options: {
+      plan: 'plus' | 'pro'
+      hoursAgo: readonly number[]
+    }) {
+      const owner = await createTestUser()
+      await createTestMembership({ user_id: owner.id, plan: options.plan })
+      const promptCommunity = await insertTestCommunity({ createdById: owner.id })
+      const prompts = []
+      for (const hoursAgo of options.hoursAgo) {
+        const prompt = await insertTestCommunityAgentPrompt({
+          communityId: promptCommunity.id,
+          createdById: owner.id,
+          slotAllocated: true,
+        })
+        await activateTestCommunityAgentPromptHoursAgo(prompt.id, hoursAgo)
+        prompts.push(prompt)
+      }
+      return { owner, community: promptCommunity, prompts }
+    }
+
+    it('returns prompts in activation order, whatever order they were created in', async () => {
+      const { community: ordered, prompts } = await activatedPrompts({
+        plan: 'pro',
+        hoursAgo: [1, 3, 2],
+      })
+
+      const results = await getActiveCommunityAgentPrompts(ordered.id)
+
+      expect(results.map(r => r.id)).toEqual([prompts[1]!.id, prompts[2]!.id, prompts[0]!.id])
+    })
+
+    it('keeps the first three activated prompts of a plus plan and drops the later ones', async () => {
+      const { community: capped, prompts } = await activatedPrompts({
+        plan: 'plus',
+        hoursAgo: [1, 4, 2, 3],
+      })
+
+      const results = await getActiveCommunityAgentPrompts(capped.id)
+
+      expect(results.map(r => r.id)).toEqual([prompts[1]!.id, prompts[3]!.id, prompts[2]!.id])
+    })
+
+    it('keeps ten prompts for a pro plan', async () => {
+      const { community: proCommunity, prompts } = await activatedPrompts({
+        plan: 'pro',
+        hoursAgo: Array.from({ length: 12 }, (_, index) => 12 - index),
+      })
+
+      const results = await getActiveCommunityAgentPrompts(proCommunity.id)
+
+      expect(results.map(r => r.id)).toEqual(prompts.slice(0, 10).map(r => r.id))
+    })
+
+    it('resolves on the executor it is given, so a run sees the prompts it locked', async () => {
+      const { community: locked, prompts } = await activatedPrompts({
+        plan: 'pro',
+        hoursAgo: [2, 1],
+      })
+      await using query = await beginTransaction()
+      await deactivateTestCommunityAgentPromptInTransaction(query, prompts[0]!.id)
+
+      const inTransaction = await getActiveCommunityAgentPrompts(locked.id, query)
+      const outside = await getActiveCommunityAgentPrompts(locked.id)
+      await query.rollback()
+
+      expect(inTransaction.map(r => r.id)).toEqual([prompts[1]!.id])
+      expect(outside.map(r => r.id)).toEqual(prompts.map(r => r.id))
     })
 
     it('excludes an allocated prompt when its owner no longer has a paid membership', async () => {

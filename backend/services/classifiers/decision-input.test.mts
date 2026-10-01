@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import {
   classifierDecisionCandidateKind,
+  classifierDecisionEntityId,
   classifierDecisionResultKey,
   flattenClassifierDecisionResults,
   normalizeClassifierDecisionInput,
-  serializeClassifierRawResponse,
 } from './decision-input.mts'
 import type { PersistClassifierDecisionInput, TopicClassifierDecisionResult } from './types.mts'
 
@@ -127,7 +127,7 @@ describe('normalizeClassifierDecisionInput', () => {
         ...input,
         calls: [{ shardOrdinal: 0, results: [topic, story] }],
       }),
-    ).toThrow('cannot mix topic and story')
+    ).toThrow('cannot mix candidate kinds')
     expect(() =>
       normalizeClassifierDecisionInput({
         ...input,
@@ -199,20 +199,40 @@ describe('classifier decision helpers', () => {
     expect(classifierDecisionResultKey(storyInput.calls[0]!.results[0]!)).toBe(`story:${storyId}`)
   })
 
+  it('keys a community prompt result by its prompt id and rejects mixing it with another kind', () => {
+    const input = createInput()
+    const prompt = {
+      candidateKind: 'community_prompt' as const,
+      communityPromptId: uuidv7(),
+      storedCandidateId: null,
+      probability: 0.9,
+      rawResponse: {},
+    }
+    expect(classifierDecisionEntityId(prompt)).toBe(prompt.communityPromptId)
+    expect(classifierDecisionResultKey(prompt)).toBe(`community_prompt:${prompt.communityPromptId}`)
+    const promptInput = {
+      ...input,
+      scope: { scopeCategory: 'community_ai' as const, scopeCommunityId: uuidv7() },
+      calls: [{ shardOrdinal: 0, results: [prompt] }],
+    }
+    expect(classifierDecisionCandidateKind(normalizeClassifierDecisionInput(promptInput))).toBe(
+      'community_prompt',
+    )
+    expect(() =>
+      normalizeClassifierDecisionInput({
+        ...promptInput,
+        calls: [{ shardOrdinal: 0, results: [prompt, input.calls[0]!.results[0]!] }],
+      }),
+    ).toThrow('cannot mix candidate kinds')
+    expect(() =>
+      normalizeClassifierDecisionInput({
+        ...promptInput,
+        calls: [{ shardOrdinal: 0, results: [{ ...prompt, communityPromptId: 'not-a-uuid' }] }],
+      }),
+    ).toThrow('durable IDs must be UUIDs')
+  })
+
   it('rejects candidate-kind lookup without a result', () => {
     expect(() => classifierDecisionCandidateKind({ calls: [] })).toThrow('candidate result')
   })
-
-  it('serializes JSON recursively with stable object key order', () => {
-    expect(serializeClassifierRawResponse({ z: [2, null], a: { y: true, x: 'value' } })).toBe(
-      '{"a":{"x":"value","y":true},"z":[2,null]}',
-    )
-  })
-
-  it.each([Number.NaN, Number.NEGATIVE_INFINITY, undefined, () => undefined])(
-    'rejects a non-JSON value',
-    value => {
-      expect(() => serializeClassifierRawResponse(value)).toThrow('JSON serializable')
-    },
-  )
 })

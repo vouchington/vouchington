@@ -29,16 +29,6 @@ function spyWith<TArgs extends unknown[], TReturn>(
   )
 }
 
-// Tracked async write function compatible with RunEventWriter
-function writeEventSpy() {
-  const calls: unknown[][] = []
-  const fn: NonNullable<ExecuteToolCallsParams['writeRunEvent']> = (...args) => {
-    calls.push(args as unknown[])
-    return Promise.resolve()
-  }
-  return Object.assign(fn, { calls })
-}
-
 function call(name: string, args?: unknown, callId = `call_${name}`): OpenAIFunctionCall {
   return {
     type: 'function_call',
@@ -96,5 +86,4 @@ export {
   spyWith,
   streamingExecuteToolCalls,
   tool,
-  writeEventSpy,
 }

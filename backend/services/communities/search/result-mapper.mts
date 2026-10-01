@@ -45,6 +45,7 @@ export function mapCommunitySearchResult(
       post_approval_required_at: row.post_approval_required_at,
       allow_review_posts: row.allow_review_posts,
       allow_data_point_posts: row.allow_data_point_posts,
+      automod_action: row.automod_action,
       trusted_at: row.trusted_at,
       profile_image_id: row.profile_image_id,
       banner_image_id: row.banner_image_id,

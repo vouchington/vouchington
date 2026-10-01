@@ -1,5 +1,6 @@
 import communitiesAutomodFeedbackCreateDefault from '../../../../api-fixtures/v1/responses/web.communities.automod-feedback.create.default.json'
 import communitiesAutomodRecentActionsDefault from '../../../../api-fixtures/v1/responses/web.communities.automod-recent-actions.default.json'
+import communitiesAutomodSettingsUpdateDefault from '../../../../api-fixtures/v1/responses/web.communities.automod-settings.update.default.json'
 import communitiesAutomodSimulateDefault from '../../../../api-fixtures/v1/responses/web.communities.automod-simulate.default.json'
 import communitiesModerationResultsDefault from '../../../../api-fixtures/v1/responses/web.communities.moderation-results.default.json'
 import communitiesPostTypeSettingsUpdateDefault from '../../../../api-fixtures/v1/responses/web.communities.post-type-settings.update.default.json'
@@ -10,6 +11,7 @@ import nativeCommunityPendingReportsPaginated from '../../../../api-fixtures/v1/
 import type {
   CommunityAutomodActionsResponseBody,
   CommunityAutomodFeedbackResponseBody,
+  CommunityAutomodSettingsResponseBody,
   CommunityAutomodSimulationResponseBody,
   CommunityModerationReportsResponseBody,
   CommunityPostTypeSettingsResponseBody,
@@ -87,6 +89,14 @@ export const COMMUNITY_AUTOMATION_DECLARATIONS = [
       context.rawServer.get<CommunityModerationResultsFixture>(
         '/api/v1/communities/test-community/posts/post-1/moderation-results',
       ),
+  ),
+  defineWebApiFixture<CommunityAutomodSettingsResponseBody>()(
+    'web.communities.automod-settings.update.default',
+    communitiesAutomodSettingsUpdateDefault,
+    context =>
+      context.client.communityAutomod.updateCommunityAutomodSettings('test-community', {
+        automod_action: 'review_queue',
+      }),
   ),
   defineWebApiFixture<CommunityPostTypeSettingsResponseBody>()(
     'web.communities.post-type-settings.update.default',

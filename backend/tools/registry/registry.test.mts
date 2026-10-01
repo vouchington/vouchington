@@ -10,11 +10,15 @@ const TOOLS_DIR = path.join(import.meta.dirname, '..')
 
 // Files in tools/ that are NOT tool definitions (factories, helpers, types, barrel)
 const NON_TOOL_FILES = new Set([
+  'bookmark-tool-support.mts',
   'create-get-my-entity-list-tool.mts',
   'create-manage-entity-tool.mts',
+  'delegated-authority.mts',
   'get-domain-ratings-helpers.mts',
   'get-domain-ratings-output-schema.mts',
   'index.mts',
+  'list-tool-support.mts',
+  'mcp-community-output.mts',
   'mcp-post-access.mts',
   'mcp-post-output.mts',
   'mcp-story-output.mts',
@@ -205,6 +209,13 @@ describe('tool registry', () => {
     expect(nonClientTools.map(t => t.schema.name)).toEqual([])
     const internalTools = listToolsForSurface('internal', ALL_TOOLS)
     expect(internalTools.map(tool => tool.schema.name)).not.toContain('add_entity_relation')
-    expect(internalTools).toHaveLength(ALL_TOOLS.length - 1)
+    // The tools that opt out of the internal surface are the credential-only MCP writes.
+    const mcpOnlyTools = ALL_TOOLS.filter(
+      tool => !(tool.meta?.surfaces ?? ['internal']).includes('internal'),
+    )
+    expect(mcpOnlyTools.map(tool => tool.schema.name)).toEqual(
+      expect.arrayContaining(['add_entity_relation', 'set_bookmark', 'create_list']),
+    )
+    expect(internalTools).toHaveLength(ALL_TOOLS.length - mcpOnlyTools.length)
   })
 })

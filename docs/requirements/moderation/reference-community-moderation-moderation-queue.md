@@ -14,6 +14,29 @@ When a post is published or approved in a community:
 
 This means re-running the queue for the same content is a no-op.
 
+## Automod Review Queue
+
+`GET /api/v1/communities/:idOrSlug/moderation-queue` returns entries from three sources
+(`queue_source`): `report`, `community_review`, and `automod_flag`. Pass `source=` to narrow to one.
+Moderator-tier viewers receive `community_review` and `automod_flag`; member-tier viewers receive
+reports only.
+
+An `automod_flag` entry is row-level state on the post's `community_post_reviews` row, not a
+separate queue table. It is open while all of these hold:
+
+- `automod_action = 'review_queue'` (an `unpublish` flag records the action already taken and is
+  never queued).
+- `automod_flagged_content_sha256` equals the post's current `llm_moderation_content_sha256`, so
+  editing the post supersedes the flag without any write.
+- `automod_dismissed_at` is null.
+- The post is approved, not rejected, not unpublished, and not deleted.
+
+A moderator or site staff resolves a flag with
+`POST /api/v1/communities/:idOrSlug/posts/:postId/automod-flag/dismissal` (204; idempotent for an
+already-dismissed flag; 404 when no flag is current). The dismissal columns
+(`automod_dismissed_at`, `automod_dismissed_by_id`) are the audit record. Unpublishing the post
+through the existing flow also closes the flag. `record_only` classifications never touch this row.
+
 ## Slot Reclaim on Moderator Removal
 
 When a moderator is removed from a community, all of their allocated (active) prompts in that community are automatically deactivated:

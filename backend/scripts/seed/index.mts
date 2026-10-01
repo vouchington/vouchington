@@ -3,6 +3,7 @@
 import '@backend/service-registrations'
 import { seedTopicsFromCsvs } from '@services/admin-imports/seed-csvs'
 import { seedArticles } from './articles.mts'
+import { seedCopyright } from './copyright.mts'
 
 // Invariant data (system users, blacklist sources, communities, jong admin) is now
 // seeded by config-driven generators that run on every `db:migrate`, including in
@@ -10,4 +11,5 @@ import { seedArticles } from './articles.mts'
 export default async function main() {
   await seedTopicsFromCsvs()
   await seedArticles()
+  await seedCopyright()
 }

@@ -109,5 +109,7 @@ export const MODERATOR_ACTION_TYPES = [
   'backfill_run',
   'article_sync_run',
   'import_batch_create',
+  'preservation_hold_place',
+  'preservation_hold_release',
 ] as const
 export type ModeratorActionType = (typeof MODERATOR_ACTION_TYPES)[number]

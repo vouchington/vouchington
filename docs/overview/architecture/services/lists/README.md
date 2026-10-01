@@ -17,6 +17,10 @@ User-curated named collections of RSS feed items and posts.
 - `getListsContainingEntity(ownerUserId, itemType, entityId)` — list IDs containing an entity
 - `currentUserCanViewList(currentUserId, list)` — visibility check for read access
 - `currentUserCanManageList(currentUserId, list)` — ownership check for write access
+- `getManageableList(currentUserId, listId)` — load a list the caller owns (`404` missing or
+  deleted, `403` not the owner) as a branded `ManageableList`
+- `createOwnedList(currentUserId, data)` / `updateOwnedList(currentUserId, list, data)` — validate
+  the name (`422`) and write; shared by the REST routes and the MCP list tools
 
 Mutation routes apply `assertNotSuspended` before these ownership checks. See the
 cross-file contract in [authorization.mts](../../../../../backend/services/lists/authorization.mts).

@@ -1,9 +1,17 @@
 import addEntityRelationTool from '../add-entity-relation.mts'
+import addListItemTool from '../add-list-item.mts'
 import compareTopicsTool from '../compare-topics.mts'
+import createListTool from '../create-list.mts'
+import deleteListTool from '../delete-list.mts'
+import getCommunityMembersTool from '../get-community-members.mts'
+import getCommunityPinnedPostsTool from '../get-community-pinned-posts.mts'
+import getCommunityPostsTool from '../get-community-posts.mts'
+import getCommunityTool from '../get-community.mts'
 import getDomainRatingsTool from '../get-domain-ratings.mts'
 import getMyCardsTool from '../get-my-cards.mts'
 import getMyPointValuationsTool from '../get-my-point-valuations.mts'
 import getMyProfileTool from '../get-my-profile.mts'
+import getMyFinancialProfileTool from '../get-my-financial-profile.mts'
 import getMyRewardsStatusesTool from '../get-my-rewards-statuses.mts'
 import getMySpendingTool from '../get-my-spending.mts'
 import getPostAncestorsTool from '../get-post-ancestors.mts'
@@ -21,20 +29,33 @@ import manageMyCardsTool from '../manage-my-cards.mts'
 import manageMyPointValuationsTool from '../manage-my-point-valuations.mts'
 import manageMyRewardsStatusesTool from '../manage-my-rewards-statuses.mts'
 import manageMySpendingTool from '../manage-my-spending.mts'
+import removeBookmarkTool from '../remove-bookmark.mts'
+import removeListItemTool from '../remove-list-item.mts'
+import searchCommunitiesTool from '../search-communities.mts'
 import searchDataPointsTool from '../search-data-points.mts'
 import searchPostsTool from '../search-posts.mts'
 import searchRssFeedItemsTool from '../search-rss-feed-items.mts'
 import searchTopicsTool from '../search-topics.mts'
+import setBookmarkTool from '../set-bookmark.mts'
+import updateListTool from '../update-list.mts'
 import updateMyFinancialProfileTool from '../update-my-financial-profile.mts'
 import type { Tool } from '../types.mts'
 
 export const ALL_TOOLS: readonly Tool[] = [
   addEntityRelationTool,
+  addListItemTool,
   compareTopicsTool,
+  createListTool,
+  deleteListTool,
+  getCommunityMembersTool,
+  getCommunityPinnedPostsTool,
+  getCommunityPostsTool,
+  getCommunityTool,
   getDomainRatingsTool,
   getMyCardsTool,
   getMyPointValuationsTool,
   getMyProfileTool,
+  getMyFinancialProfileTool,
   getMyRewardsStatusesTool,
   getMySpendingTool,
   getPostAncestorsTool,
@@ -52,10 +73,15 @@ export const ALL_TOOLS: readonly Tool[] = [
   manageMyPointValuationsTool,
   manageMyRewardsStatusesTool,
   manageMySpendingTool,
+  removeBookmarkTool,
+  removeListItemTool,
+  searchCommunitiesTool,
   searchDataPointsTool,
   searchPostsTool,
   searchRssFeedItemsTool,
   searchTopicsTool,
+  setBookmarkTool,
+  updateListTool,
   updateMyFinancialProfileTool,
 ] as unknown as Tool[]
 

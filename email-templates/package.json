@@ -25,15 +25,15 @@
   },
   "dependencies": {
     "@ts-shared/money": "workspace:^",
-    "@vouchington/localization": "0.2.0",
-    "@vouchington/localization-compiler": "0.2.2"
+    "@vouchington/localization": "^0.2.0",
+    "@vouchington/localization-compiler": "^0.2.2"
   },
   "devDependencies": {
     "@react-email/render": "^2.1.0",
     "@react-email/ui": "^6.11.0",
     "@ts-shared/languages": "workspace:^",
     "@types/node": "^26.6.3",
-    "@types/react": "^19",
+    "@types/react": "^19.3.0",
     "@types/react-dom": "^19",
     "esbuild": "^0.28.2",
     "react": "^19.3.0",

@@ -36,7 +36,7 @@ Psql jobs are always enqueued, including in tests. Tests must use the queue fixt
 
 ## Partition Jobs
 
-- `createPartitions` and `cleanupPartitions` operate on the monthly RANGE tables registered in the canonical [partitioning strategy](../../partitioning-strategy.md): conversation agentic runs/events, crawls, crawl chunks, and RSS feed crawls.
+- `createPartitions` and `cleanupPartitions` operate on the monthly RANGE tables registered in the canonical [partitioning strategy](../../partitioning-strategy.md): crawls, crawl chunks, and RSS feed crawls.
 - `createPartitions` creates explicit future monthly partitions for those tables.
 - `cleanupPartitions` drops expired monthly partitions for those tables.
 - Partition cleanup is for whole-partition retention only; do not replace it with row-delete cleanup for debug tables unless the access pattern changes materially.
@@ -46,6 +46,12 @@ Psql jobs are always enqueued, including in tests. Tests must use the queue fixt
 - `dataRetentionCleanup` runs on the serialized `psql` worker and delegates business rules to [`@services/data-retention`](../../services/data-retention/README.md).
 - Cleanup is idempotent and uses bounded batches with short transactions/statements; repeated runs continue deleting remaining eligible rows.
 - Soft-deleted user cleanup first reassigns or nulls dependent references for the selected user batch, then hard-deletes only that batch.
+
+Monthly partition cleanup performs FK referential actions before detaching and dropping each
+partition. Crawl and crawl-chunk retirement clear referencing batch, entity and referral pointers,
+including rows in newer months. Each partition commits independently; failures are reported and
+rolled back without stopping other retirements. Crawl dependency handling is documented in the
+[crawls service](../../services/crawls/README.md).
 
 ## Related
 

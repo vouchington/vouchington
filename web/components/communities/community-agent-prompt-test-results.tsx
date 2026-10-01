@@ -5,6 +5,7 @@ import { PostContentText } from '@/components/posts/post-content-text'
 import type { CommunityAutomodSimulation } from '@/lib/api/client/community-agent-prompts'
 import { formatNumber, formatPercent } from '@ts-shared/utils/format'
 import { CommunityAgentPromptSimulationMetric as Metric } from './community-agent-prompt-simulation-metric'
+import { communityAutomodActionLabel } from './community-automod-action-options'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 export function CommunityAgentPromptTestResults({
@@ -32,8 +33,8 @@ export function CommunityAgentPromptTestResults({
           value={formatNumber(simulation.simulation.would_flag_count, uiLocale)}
         />
         <Metric
-          label='Removals'
-          value={formatNumber(simulation.simulation.would_unpublish_count, uiLocale)}
+          label='Community action'
+          value={communityAutomodActionLabel(simulation.simulation.community_automod_action, t)}
         />
         <Metric
           label='Historical FP'
@@ -69,7 +70,7 @@ export function CommunityAgentPromptTestResults({
                     lingua_rs_detected_language: result.lingua_rs_detected_language,
                   }}
                 />
-                <Badge variant='outline'>{result.would_unpublish ? 'Would remove' : 'Flag'}</Badge>
+                <Badge variant='outline'>Flag</Badge>
               </div>
               <PostContentText
                 as='p'

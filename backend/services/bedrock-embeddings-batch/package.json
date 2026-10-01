@@ -23,8 +23,8 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/client-bedrock": "^3.1141.0",
-    "@aws-sdk/client-s3": "^3.1141.0",
+    "@aws-sdk/client-bedrock": "^3.1142.0",
+    "@aws-sdk/client-s3": "^3.1142.0",
     "@data-stores/psql": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
@@ -39,7 +39,7 @@
     "@services/stories": "workspace:^",
     "@services/topics": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
-    "@vouchington/image-resize": "0.2.0",
+    "@vouchington/image-resize": "^0.2.0",
     "pg-copy-streams": "^7.0.0"
   },
   "devDependencies": {

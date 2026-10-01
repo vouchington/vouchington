@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 
-import { getApprovedReviewsForPost } from '@services/communities/publications/get'
 import { getPostRecoverySourceUrlIds } from '@services/posts/create/source-url-relation'
 import { getPostStoryByPostId } from '@services/stories/get-post-stories'
 import {
@@ -23,7 +22,6 @@ describe('post-created recovery primary reads', () => {
       'utf8',
     )
     expect(recoverySource).toContain('getPostRecoverySourceUrlIds(post.id, { readOnly: false })')
-    expect(recoverySource).toContain('getApprovedReviewsForPost(postId, { readOnly: false })')
     expect(recoverySource).toContain('getUrlById(urlId, { readOnly: false })')
     expect(recoverySource).toContain('getPostStoryByPostId(post.id, { readOnly: false })')
   })
@@ -34,15 +32,12 @@ describe('post-created recovery primary reads', () => {
       observeTestPostgresQueryPools('/* getPostRecoverySourceUrlIds */', () =>
         getPostRecoverySourceUrlIds(postId, { readOnly: false }),
       ),
-      observeTestPostgresQueryPools('/* getApprovedReviewsForPost */', () =>
-        getApprovedReviewsForPost(postId, { readOnly: false }),
-      ),
       observeTestPostgresQueryPools('/* getPostStoryByPostId */', () =>
         getPostStoryByPostId(postId, { readOnly: false }),
       ),
     ])
 
-    expect(observed.map(result => result.pools)).toEqual([['write'], ['write'], ['write']])
+    expect(observed.map(result => result.pools)).toEqual([['write'], ['write']])
   })
 
   it('uses only the immutable creation source URL for recovery', async () => {

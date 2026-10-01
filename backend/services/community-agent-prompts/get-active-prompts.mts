@@ -1,11 +1,16 @@
-import { read } from '@data-stores/psql'
+import { read, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CommunityAgentPrompt } from './types.mts'
 
+/**
+ * The community's prompts the classifier may ask, in `activated_at, id` order. A classifier run
+ * resolves them on its transaction (`query`) so the question set it pins is the one it locked.
+ */
 export async function getActiveCommunityAgentPrompts(
   communityId: string,
+  query: QueryExecutor = read,
 ): Promise<CommunityAgentPrompt[]> {
-  const { rows } = await read(
+  const { rows } = await query(
     sql`/* getActiveCommunityAgentPrompts */
     WITH eligible_prompts AS (
     SELECT
@@ -13,7 +18,6 @@ export async function getActiveCommunityAgentPrompts(
       cap.community_id,
       cap.created_by_id,
       cap.slot_allocated,
-      cap.on_flag_action,
       cap.activated_at,
       cap.deactivated_at,
       cap.deleted_at,
@@ -42,6 +46,7 @@ export async function getActiveCommunityAgentPrompts(
     SELECT * FROM ranked_prompts
     WHERE community_id = ${communityId}
       AND membership_slot <= CASE plan WHEN 'plus' THEN 3 WHEN 'pro' THEN 10 END
+    ORDER BY activated_at, id
     `,
   )
   return rows as CommunityAgentPrompt[]

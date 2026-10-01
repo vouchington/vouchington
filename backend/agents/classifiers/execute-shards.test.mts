@@ -63,7 +63,7 @@ describe('executeClassifierDecision shards', () => {
     expect(
       persisted[0]?.calls
         .flatMap(call => call.results)
-        .map(result => (result.candidateKind === 'topic' ? result.topicId : result.storyId)),
+        .map(result => (result.candidateKind === 'topic' ? result.topicId : null)),
     ).toEqual([topicAId, topicBId, topicCId])
   })
 

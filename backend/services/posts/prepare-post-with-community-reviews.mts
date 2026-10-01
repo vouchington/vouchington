@@ -13,7 +13,6 @@ import { addUrl } from '@services/urls/upsert'
 import { getUrlById } from '@services/urls/get'
 import { recordCreatedPostPublicationChange } from './create/publication-change.mts'
 import sql from 'sql-template-strings'
-import type { PostCategoryFinalization } from './post-category-finalizations.mts'
 import { persistPostSourceUrlRelation } from './create/source-url-relation.mts'
 import { lockActivePostAuthorImageAdmission } from './create/active-author.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
@@ -29,7 +28,6 @@ export const preparePostWithCommunityReviews = async (
   const defaults = await validateCreatePostInput(creator, input, membershipPlan)
   const shouldValidateResolvedLinkCategories = defaults.postType === 'link' && !input.title?.trim()
   let communityReviews: CommunityPostReview[] = []
-  let postCategoryFinalization: PostCategoryFinalization | undefined
   let resolvedUrlStrings: string[] = []
   let resolvedUrlHostnameId: string | undefined
   let sourceUrlId: string | undefined
@@ -121,7 +119,6 @@ export const preparePostWithCommunityReviews = async (
       updates,
     })
     communityReviews = sideEffects.communityReviews
-    postCategoryFinalization = sideEffects.postCategoryFinalization
     await recordCreatedPostPublicationChange(
       query,
       insertedPost.id,
@@ -162,9 +159,7 @@ export const preparePostWithCommunityReviews = async (
     return finalizePreparedPost({
       communityReviews,
       creator,
-      isAdminCreator,
       post: post!,
-      postCategoryFinalization: postCategoryFinalization!,
       postType: defaults.postType,
       resolvedUrlHostnameId,
       resolvedUrlStrings,

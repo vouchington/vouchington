@@ -1,0 +1,228 @@
+{
+  "version": 1,
+  "groups": [
+    {
+      "id": "contribute",
+      "benefits": [
+        {
+          "id": "public_contribution_access",
+          "placements": ["card", "comparison"],
+          "values": {
+            "free": {
+              "kind": "access",
+              "access": "after_wait"
+            },
+            "plus": {
+              "kind": "access",
+              "access": "immediate"
+            },
+            "pro": {
+              "kind": "access",
+              "access": "immediate"
+            }
+          }
+        },
+        {
+          "id": "contribution_capacity",
+          "placements": ["card", "comparison"],
+          "values": {
+            "free": {
+              "kind": "level",
+              "level": "standard"
+            },
+            "plus": {
+              "kind": "level",
+              "level": "more"
+            },
+            "pro": {
+              "kind": "level",
+              "level": "most"
+            }
+          }
+        },
+        {
+          "id": "manual_topic_tags",
+          "placements": ["comparison"],
+          "values": {
+            "free": {
+              "kind": "level",
+              "level": "standard"
+            },
+            "plus": {
+              "kind": "level",
+              "level": "more"
+            },
+            "pro": {
+              "kind": "level",
+              "level": "most"
+            }
+          }
+        },
+        {
+          "id": "automatic_post_topics",
+          "placements": ["card", "comparison"],
+          "values": {
+            "free": {
+              "kind": "level",
+              "level": "none"
+            },
+            "plus": {
+              "kind": "level",
+              "level": "more"
+            },
+            "pro": {
+              "kind": "level",
+              "level": "most"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "research",
+      "benefits": [
+        {
+          "id": "research_agent_requests",
+          "placements": ["comparison"],
+          "values": {
+            "free": {
+              "kind": "level",
+              "level": "standard"
+            },
+            "plus": {
+              "kind": "level",
+              "level": "more"
+            },
+            "pro": {
+              "kind": "level",
+              "level": "most"
+            }
+          }
+        },
+        {
+          "id": "api_allowance_boost",
+          "placements": ["comparison"],
+          "values": {
+            "free": {
+              "kind": "level",
+              "level": "standard"
+            },
+            "plus": {
+              "kind": "level",
+              "level": "higher"
+            },
+            "pro": {
+              "kind": "level",
+              "level": "higher"
+            }
+          }
+        },
+        {
+          "id": "ugc_downvote_counts",
+          "placements": ["card", "comparison"],
+          "values": {
+            "free": {
+              "kind": "availability",
+              "included": false
+            },
+            "plus": {
+              "kind": "availability",
+              "included": true
+            },
+            "pro": {
+              "kind": "availability",
+              "included": true
+            }
+          }
+        },
+        {
+          "id": "url_crawl_history",
+          "placements": ["comparison"],
+          "values": {
+            "free": {
+              "kind": "availability",
+              "included": false
+            },
+            "plus": {
+              "kind": "availability",
+              "included": true
+            },
+            "pro": {
+              "kind": "availability",
+              "included": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "communities",
+      "benefits": [
+        {
+          "id": "community_agent_rules",
+          "placements": ["card", "comparison"],
+          "values": {
+            "free": {
+              "kind": "quantity",
+              "quantity": 0
+            },
+            "plus": {
+              "kind": "quantity",
+              "quantity": 3
+            },
+            "pro": {
+              "kind": "quantity",
+              "quantity": 10
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "support",
+      "benefits": [
+        {
+          "id": "support_service_level",
+          "placements": ["card", "comparison"],
+          "values": {
+            "free": {
+              "kind": "level",
+              "level": "standard"
+            },
+            "plus": {
+              "kind": "level",
+              "level": "priority"
+            },
+            "pro": {
+              "kind": "level",
+              "level": "highest_priority"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "referrals",
+      "benefits": [
+        {
+          "id": "amex_card_link_expansion",
+          "placements": ["comparison"],
+          "values": {
+            "free": {
+              "kind": "availability",
+              "included": false
+            },
+            "plus": {
+              "kind": "availability",
+              "included": true
+            },
+            "pro": {
+              "kind": "availability",
+              "included": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

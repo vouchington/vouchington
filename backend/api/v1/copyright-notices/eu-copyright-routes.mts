@@ -4,19 +4,12 @@ import { verifyCaptchaOrAttestation } from '@services/captcha'
 import {
   acknowledgeEuCopyrightNotice,
   assertCopyrightIntakeEnabled,
-  compileEuCopyrightTransparencyReport,
-  currentUserCanReviewCopyrightNotices,
   receiveEuCopyrightNotice,
-  recordEuCopyrightAcknowledgmentFailure,
-  recordEuCopyrightRedressDecision,
-  recordEuCopyrightStatementOfReasons,
   recordEuCopyrightSupervisedComplaint,
   submitEuCopyrightRedress,
 } from '@services/copyright-notices'
 import {
   parseTerritorialNoticeBody,
-  parseTerritorialRedressDecision,
-  parseTerritorialReportPeriod,
   parseTerritorialText,
 } from '@services/copyright-notices/territorial-http-input'
 import { assertNotSuspended } from '@services/users'
@@ -25,61 +18,35 @@ import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
 import {
   parseJsonBody,
   requireAuth,
-  requireAuthAndRateLimit,
+  validateRequestContract,
   validateUUIDParam,
 } from '../../response-helpers.mts'
+import type {
+  CopyrightTerritorialNoticeRequest,
+  CopyrightTerritorialRedressRequest,
+  CopyrightTerritorialSupervisedComplaintRequest,
+} from './territorial-request-types.mts'
 
+// Every handler keeps its admission order (kill switch, content type, authentication, suspension,
+// CAPTCHA, Idempotency-Key, field-named parsers, path id) and adds the generated contract
+// immediately before the first service call. The service still decides ownership, territorial
+// availability, and existence, so those rejections stay behind a malformed body, as a missing
+// field already did. The staff routes live in `eu-copyright-staff-routes.mts`.
 app.route('/api/v1/copyright-eu-notices').post(async (ctx: Context) => {
   setPrivateNoStoreCacheHeaders(ctx)
   assertCopyrightIntakeEnabled()
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/copyright-eu-notices')
   assertNotSuspended(currentUser)
-  const body = await parseJsonBody<Record<string, unknown>>(ctx)
+  const body = await parseJsonBody<CopyrightTerritorialNoticeRequest>(ctx)
   await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'copyright-eu-notices.create' })
   const idempotencyKey = requireIdempotencyKey(ctx)
-  const receipt = await receiveEuCopyrightNotice(
-    currentUser,
-    idempotencyKey,
-    parseTerritorialNoticeBody(body),
-  )
+  const notice = parseTerritorialNoticeBody(body)
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-eu-notices', { body })
+  const receipt = await receiveEuCopyrightNotice(currentUser, idempotencyKey, notice)
   const acknowledgment = await acknowledgeEuCopyrightNotice(currentUser, receipt.notice_id)
   ctx.setStatus(receipt.is_duplicate ? 200 : 201)
   ctx.json({ copyright_eu_notice: receipt, acknowledgment })
-})
-
-app.route('/api/v1/copyright-eu-notices/:id/acknowledgment-failures').post(async (ctx: Context) => {
-  setPrivateNoStoreCacheHeaders(ctx)
-  const currentUser = await requireAuthAndRateLimit(
-    ctx,
-    currentUserCanReviewCopyrightNotices,
-    'POST:/api/v1/copyright-eu-notices/:id/acknowledgment-failures',
-  )
-  assertNotSuspended(currentUser)
-  const acknowledgment = await recordEuCopyrightAcknowledgmentFailure(
-    currentUser,
-    validateUUIDParam(ctx, 'id'),
-  )
-  ctx.json({ acknowledgment })
-})
-
-app.route('/api/v1/copyright-eu-notices/:id/statements-of-reasons').post(async (ctx: Context) => {
-  setPrivateNoStoreCacheHeaders(ctx)
-  const currentUser = await requireAuthAndRateLimit(
-    ctx,
-    currentUserCanReviewCopyrightNotices,
-    'POST:/api/v1/copyright-eu-notices/:id/statements-of-reasons',
-  )
-  assertNotSuspended(currentUser)
-  ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
-  const body = await parseJsonBody<Record<string, unknown>>(ctx)
-  const statement = await recordEuCopyrightStatementOfReasons(
-    currentUser,
-    validateUUIDParam(ctx, 'id'),
-    parseTerritorialText(body, 'statement'),
-  )
-  ctx.setStatus(201)
-  ctx.json({ copyright_eu_statement_of_reasons: statement })
 })
 
 app.route('/api/v1/copyright-eu-notices/:id/redress-requests').post(async (ctx: Context) => {
@@ -90,39 +57,19 @@ app.route('/api/v1/copyright-eu-notices/:id/redress-requests').post(async (ctx: 
     'POST:/api/v1/copyright-eu-notices/:id/redress-requests',
   )
   assertNotSuspended(currentUser)
-  const body = await parseJsonBody<Record<string, unknown>>(ctx)
+  const body = await parseJsonBody<CopyrightTerritorialRedressRequest>(ctx)
   await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'copyright-eu-redress.create' })
-  const redress = await submitEuCopyrightRedress(
-    currentUser,
-    validateUUIDParam(ctx, 'id'),
-    requireIdempotencyKey(ctx),
-    parseTerritorialText(body, 'explanation'),
-  )
+  const noticeId = validateUUIDParam(ctx, 'id')
+  const idempotencyKey = requireIdempotencyKey(ctx)
+  const explanation = parseTerritorialText(body, 'explanation')
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-eu-notices/:id/redress-requests', {
+    path: ctx.params,
+    body,
+  })
+  const redress = await submitEuCopyrightRedress(currentUser, noticeId, idempotencyKey, explanation)
   ctx.setStatus(redress.is_duplicate ? 200 : 201)
   ctx.json({ copyright_eu_redress_request: redress })
 })
-
-app
-  .route('/api/v1/copyright-eu-notices/:id/redress-requests/:redressId/decisions')
-  .post(async (ctx: Context) => {
-    setPrivateNoStoreCacheHeaders(ctx)
-    const currentUser = await requireAuthAndRateLimit(
-      ctx,
-      currentUserCanReviewCopyrightNotices,
-      'POST:/api/v1/copyright-eu-notices/:id/redress-requests/:redressId/decisions',
-    )
-    assertNotSuspended(currentUser)
-    ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
-    const body = await parseJsonBody<Record<string, unknown>>(ctx)
-    const decision = await recordEuCopyrightRedressDecision(
-      currentUser,
-      validateUUIDParam(ctx, 'id'),
-      validateUUIDParam(ctx, 'redressId'),
-      parseTerritorialRedressDecision(body),
-    )
-    ctx.setStatus(201)
-    ctx.json({ copyright_eu_redress_decision: decision })
-  })
 
 app.route('/api/v1/copyright-eu-notices/:id/supervised-complaints').post(async (ctx: Context) => {
   setPrivateNoStoreCacheHeaders(ctx)
@@ -132,37 +79,20 @@ app.route('/api/v1/copyright-eu-notices/:id/supervised-complaints').post(async (
   )
   assertNotSuspended(currentUser)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
-  const body = await parseJsonBody<Record<string, unknown>>(ctx)
-  const complaint = await recordEuCopyrightSupervisedComplaint(
-    currentUser,
-    validateUUIDParam(ctx, 'id'),
-    {
-      authorityReference: parseTerritorialText(body, 'authority_reference'),
-      explanation: parseTerritorialText(body, 'explanation'),
-    },
-  )
+  const body = await parseJsonBody<CopyrightTerritorialSupervisedComplaintRequest>(ctx)
+  const noticeId = validateUUIDParam(ctx, 'id')
+  const authorityReference = parseTerritorialText(body, 'authority_reference')
+  const explanation = parseTerritorialText(body, 'explanation')
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-eu-notices/:id/supervised-complaints', {
+    path: ctx.params,
+    body,
+  })
+  const complaint = await recordEuCopyrightSupervisedComplaint(currentUser, noticeId, {
+    authorityReference,
+    explanation,
+  })
   ctx.setStatus(201)
   ctx.json({ copyright_eu_supervised_complaint: complaint })
-})
-
-app.route('/api/v1/copyright-eu-reports').post(async (ctx: Context) => {
-  setPrivateNoStoreCacheHeaders(ctx)
-  const currentUser = await requireAuthAndRateLimit(
-    ctx,
-    currentUserCanReviewCopyrightNotices,
-    'POST:/api/v1/copyright-eu-reports',
-  )
-  assertNotSuspended(currentUser)
-  ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
-  const body = await parseJsonBody<Record<string, unknown>>(ctx)
-  const period = parseTerritorialReportPeriod(body)
-  const report = await compileEuCopyrightTransparencyReport(
-    currentUser,
-    period.periodStartedAt,
-    period.periodEndedAt,
-  )
-  ctx.setStatus(201)
-  ctx.json({ copyright_eu_report: report })
 })
 
 function requireIdempotencyKey(ctx: Context): string {

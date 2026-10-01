@@ -16,16 +16,27 @@ type McpUser = PrivateUser & { membership_plan: 'plus' | 'pro' | null }
 // backend/tools/registry/registry.test.mts ('every user-mcp mutating tool declares a plus or
 // pro plan').
 const PLUS_GATED_WRITE_TOOL_NAMES = [
+  'add_list_item',
+  'create_list',
+  'delete_list',
   'manage_my_cards',
   'manage_my_point_valuations',
   'manage_my_rewards_statuses',
   'manage_my_spending',
+  'remove_bookmark',
+  'remove_list_item',
+  'set_bookmark',
+  'update_list',
   'update_my_financial_profile',
 ]
 
 // Union of every scope required by the tools above, so a listing call is never denied by the
 // scope check first — this file is only exercising the plan gate.
 const PLUS_GATED_WRITE_SCOPES: ApiScope[] = [
+  'bookmarks:read',
+  'bookmarks:write',
+  'lists:read',
+  'lists:write',
   'cards:read',
   'cards:write',
   'point-valuations:read',

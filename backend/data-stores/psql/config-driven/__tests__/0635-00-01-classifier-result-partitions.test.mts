@@ -13,5 +13,7 @@ describe('createClassifierResultPartitions', () => {
     expect(sql).toContain('PARTITION OF topic_classifier_results DEFAULT')
     expect(sql).toContain('CREATE TABLE IF NOT EXISTS story_classifier_results__default')
     expect(sql).toContain('PARTITION OF story_classifier_results DEFAULT')
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS community_prompt_classifier_results__default')
+    expect(sql).toContain('PARTITION OF community_prompt_classifier_results DEFAULT')
   })
 })

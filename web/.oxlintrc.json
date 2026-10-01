@@ -12,13 +12,17 @@
     "jest",
     "promise",
     "oxc",
-    "typescript"
+    "typescript",
+    "unicorn",
+    "import"
   ],
   "env": {
     "browser": true,
     "es2024": true
   },
   "rules": {
+    // Keep the clean web scope enforced, including its ES2019 bigint exception.
+    "unicorn/prefer-bigint-literals": "error",
     "require-await": "off",
     // Native React Compiler rules. Replaces the removed react/react-compiler catch-all.
     // Recommended rules are error. Suspicious/perf compiler rules stay off so root
@@ -45,19 +49,7 @@
     "react-doctor/no-create-ref-in-function-component": "error",
     "react-doctor/no-mutating-reducer-state": "error",
     "react-doctor/no-self-updating-effect": "error",
-    "import/extensions": [
-      "error",
-      "ignorePackages",
-      {
-        "mts": "always",
-        "tsx": "always",
-        "js": "never",
-        "jsx": "never",
-        "cjs": "never",
-        "cts": "never",
-        "mjs": "never"
-      }
-    ]
+    "import/extensions": "off" // Policy: web imports remain extensionless.
   },
   "overrides": [
     {

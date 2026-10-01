@@ -14,9 +14,9 @@ import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/co
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
-  processCopyrightEnforcementRequest,
+  enforceCopyrightAssessment,
   recoverRejectedCopyrightFormReviewEffect,
-  searchReconcilableCopyrightEnforcementRequestIds,
+  searchPendingCopyrightEnforcementAssessmentIds,
   searchRecoverableCopyrightFormReviewIntakeIds,
 } from './index.mts'
 import {
@@ -162,7 +162,7 @@ describe('copyright form-screening recovery', () => {
     await expectNoFormEffect(notice.intake.copyright_notice_submission_id)
   })
 
-  it('lists an owned pending enforcement request until it is processed', async () => {
+  it('lists an owned assessment with unrestricted targets until it is enforced', async () => {
     const { notice, screeningId } = await createClearScreenedForm()
     const assessment = await appendCopyrightSubmissionAssessment({
       submissionId: notice.intake.copyright_notice_submission_id,
@@ -172,22 +172,16 @@ describe('copyright form-screening recovery', () => {
       copyrightFormScreeningId: screeningId,
     })
     await expect(
-      readTestOwnedCopyrightSweepIds(
-        searchReconcilableCopyrightEnforcementRequestIds,
-        assessment.id,
-      ),
+      readTestOwnedCopyrightSweepIds(searchPendingCopyrightEnforcementAssessmentIds, assessment.id),
     ).resolves.toEqual([assessment.id])
 
-    await expect(processCopyrightEnforcementRequest(assessment.id)).resolves.toBe('completed')
+    await enforceCopyrightAssessment(assessment.id)
 
     await expect(
       countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
     ).resolves.toBe(1)
     await expect(
-      readTestOwnedCopyrightSweepIds(
-        searchReconcilableCopyrightEnforcementRequestIds,
-        assessment.id,
-      ),
+      readTestOwnedCopyrightSweepIds(searchPendingCopyrightEnforcementAssessmentIds, assessment.id),
     ).resolves.toEqual([])
   })
 

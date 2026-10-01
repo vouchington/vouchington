@@ -1,9 +1,7 @@
 import type { CommunityPromptSimulationResult } from '@agents/community-moderation'
-import type { CommunityAgentPrompt } from '@services/community-agent-prompts'
 import type { CommunityAgentPromptSimulationPost } from '@services/community-agent-prompts/simulations'
 
 export function createAutomodSimulationResults(
-  prompt: CommunityAgentPrompt,
   posts: CommunityAgentPromptSimulationPost[],
   simulationResults: CommunityPromptSimulationResult[],
 ) {
@@ -20,7 +18,6 @@ export function createAutomodSimulationResults(
       content_excerpt: post.content_excerpt,
       flagged: result.flagged,
       reason: result.reason,
-      would_unpublish: result.flagged && prompt.on_flag_action === 'unpublish',
     }
   })
 }

@@ -12,7 +12,9 @@
     "jest",
     "promise",
     "oxc",
-    "typescript"
+    "typescript",
+    "unicorn",
+    "import"
   ],
   "rules": {
     "no-console": "off",

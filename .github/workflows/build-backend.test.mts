@@ -65,16 +65,14 @@ describe('backend image workflow', () => {
     expect(serverSmoke).not.toContain('ENVIRONMENT=test')
     expect(step?.run).toContain('docker run --rm --network host')
     expect(diagnosticSmoke).toContain('-e NODE_ENV=test -e ENVIRONMENT=test -e VALKEY_URL')
-    expect(step?.run).toContain('valkey-admin.mts diagnose')
+    expect(step?.run).toContain('"$IMAGE" valkey-admin.mts diagnose)')
     expect(step?.run).toContain("jq -s -e '")
     expect(step?.run).toContain('length == 1 and')
     expect(step?.run).toContain('(.[0] |')
     expect(step?.run).toContain('.schemaVersion == 1')
     expect(step?.run).toContain('.operation == "diagnose"')
     expect(step?.run).toContain('observedFlushTargetKeyCounts | keys ==')
-    expect(step?.run).not.toContain(
-      'docker exec "$SERVER_CONTAINER" /nodejs/bin/node --experimental-strip-types',
-    )
+    expect(step?.run).not.toContain('--experimental-strip-types')
   })
 
   it('limits every image gate to OS vulnerabilities and writes complete findings reports', () => {

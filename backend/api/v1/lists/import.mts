@@ -2,7 +2,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import { loadCommunityForViewer } from '@services/communities'
-import { currentUserCanManageList, getListForWrite, importCommunityList } from '@services/lists'
+import { getManageableList, importCommunityList } from '@services/lists'
 import { assertNotSuspended } from '@services/users'
 
 type ImportCommunityListBody = { community_slug: string }
@@ -11,9 +11,7 @@ app.route('/api/v1/lists/:id/import').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/lists/:id/import')
   assertNotSuspended(currentUser)
   const listId = validateUUIDParam(ctx, 'id')
-  const list = await getListForWrite(listId)
-  ctx.assert(list, 404, 'List not found')
-  ctx.assert(currentUserCanManageList(currentUser.id, list), 403, 'Forbidden')
+  const list = await getManageableList(currentUser.id, listId)
 
   const body = (await ctx.request.json('1mb')) as ImportCommunityListBody
   validateRequestContract(ctx, 'POST:/api/v1/lists/:id/import', { path: ctx.params, body })
@@ -23,7 +21,7 @@ app.route('/api/v1/lists/:id/import').post(async (ctx: Context) => {
 
   const result = await importCommunityList(currentUser.id, {
     communityId: community.id,
-    targetListId: listId,
+    targetListId: list.id,
   })
 
   ctx.setStatus(200)

@@ -33,6 +33,7 @@
     "@modules/openai-utils": "workspace:^",
     "@modules/queue-config": "workspace:^",
     "@modules/queue-errors": "workspace:^",
+    "@modules/structured-decisions": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@services/ai-usage": "workspace:^",
@@ -58,10 +59,9 @@
     "@ts-shared/utils": "workspace:^",
     "glide-mq": "^0.15.5",
     "openai": "^7.23.0",
-    "p-map": "7.0.8"
+    "p-map": "^7.0.8"
   },
   "devDependencies": {
-    "@modules/structured-decisions": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "undici": "^8.11.2",

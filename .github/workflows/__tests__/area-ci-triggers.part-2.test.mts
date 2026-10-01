@@ -129,7 +129,7 @@ describe('Area CI triggers', () => {
     for (const filterName of expensiveRuntimeFilters) {
       expectRefinedRuntimeFilterMisses(filterName, [
         '.github/actions/build-web-targets/build-web-targets.test.mts',
-        'backend/test-helpers/subagent-test-utils.mts',
+        'backend/test-helpers/agents/_shared/run-tool-loop-test-helpers.mts',
         'backend/services/foo.test.mts',
         'backend/test-helpers/entities/users.mts',
         'cloudflare-worker/src/proxy.spec.mts',
@@ -152,7 +152,7 @@ describe('Area CI triggers', () => {
     ).toBe(false)
     expect(
       refinedRuntimeFilterMatchesChangedFiles('build-backend', [
-        'backend/test-helpers/subagent-test-utils.mts',
+        'backend/test-helpers/agents/_shared/run-tool-loop-test-helpers.mts',
         'backend/test-helpers/entities/users.mts',
         'backend/services/foo.test.mts',
       ]),

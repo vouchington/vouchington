@@ -5,7 +5,6 @@
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import type { FullConfig } from '@playwright/test'
 import { assertPlaywrightSeedData } from '../backend/scripts/seeds/playwright-seed-assertions.mts'
 import { seedPlaywrightTestData } from '../backend/scripts/seeds/playwright-test-data.mts'
@@ -20,7 +19,7 @@ import {
   getWranglerRuntimePaths,
 } from '../cloudflare-worker/scripts/wrangler/runtime.mts'
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url))
+const __dirname = import.meta.dirname
 
 const PLAYWRIGHT_TOPIC_IDS = [
   '019c64e6-f710-74cb-b36d-130af8ff1067',

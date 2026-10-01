@@ -1,6 +1,5 @@
-import { enqueueBulkCommunityModerationDispatchersAwaited } from '@queues/ai-agents/enqueues/community-moderation'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
-import { getApprovedReviewsForPost } from '@services/communities/publications/get'
+import { requestCommunityModerationRunForPost } from '@services/communities/publications/moderation-run'
 import { getOrCreateCrawlerForHostname } from '@services/crawlers'
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
 import { invalidate } from '@services/entity-cache/invalidate'
@@ -23,7 +22,6 @@ type CreatedPost = {
 }
 
 type RecoveryDependencies = {
-  enqueueCommunityModerationDispatchers?: typeof enqueueBulkCommunityModerationDispatchersAwaited
   enqueueStoryPostAgent?: typeof enqueueStoryPostAgent
 }
 
@@ -38,11 +36,7 @@ export async function recoverPostCreatedEffects(
 
   await Promise.all([
     recoverPostUrlEffects(post),
-    recoverApprovedCommunityModeration(
-      post.id,
-      dependencies.enqueueCommunityModerationDispatchers ??
-        enqueueBulkCommunityModerationDispatchersAwaited,
-    ),
+    recoverApprovedCommunityModeration(post.id),
     recoverStoryEffects(post, dependencies.enqueueStoryPostAgent ?? enqueueStoryPostAgent),
   ])
 }
@@ -69,16 +63,10 @@ async function getPostRecoveryUrlIds(post: CreatedPost): Promise<string[]> {
   return [...new Set([...canonicalUrlIds, ...sourceUrlIds, ...storyUrlIds])]
 }
 
-async function recoverApprovedCommunityModeration(
-  postId: string,
-  enqueueCommunityModerationDispatchers: typeof enqueueBulkCommunityModerationDispatchersAwaited,
-): Promise<void> {
+/** Re-requests the C8 run for a published post; idempotent per content digest. */
+async function recoverApprovedCommunityModeration(postId: string): Promise<void> {
   if (await hasPostCreationModerationBypass(postId)) return
-  const communityIds = await getApprovedReviewsForPost(postId, { readOnly: false })
-  if (communityIds.length === 0) return
-  await enqueueCommunityModerationDispatchers(
-    communityIds.map(communityId => ({ postId, communityId })),
-  )
+  await requestCommunityModerationRunForPost(postId)
 }
 
 async function recoverStoryEffects(

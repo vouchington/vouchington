@@ -74,6 +74,14 @@ paths = ['''^backend/test-helpers/entities/totp\.mts$''']
 regexes = ["TEST_TOTP_SECRET = 'JBSWY3DPEHPK3PXP'"]
 
 [[allowlists]]
+description = "Preservation hold confidentiality test uses one fake matter reference to prove the reference never reaches logs or the audit trail"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''^backend/services/users/preservation-holds\.test\.mts$''']
+regexes = ["const secret = 'Subpoena-Ref-7f3a9c'$"]
+
+[[allowlists]]
 description = "SES inbound contract tests use one deterministic fake S3 object-key fixture; only its exact assignment and object-property lines are suppressed"
 targetRules = ["generic-api-key"]
 condition = "AND"

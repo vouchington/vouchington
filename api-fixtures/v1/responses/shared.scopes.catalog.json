@@ -5,6 +5,24 @@
       "audience": "user",
       "description_key": null,
       "requires": null,
+      "resource": "bookmarks",
+      "scope": "bookmarks:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "description_key": null,
+      "requires": "bookmarks:read",
+      "resource": "bookmarks",
+      "scope": "bookmarks:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "description_key": null,
+      "requires": null,
       "resource": "cards",
       "scope": "cards:read",
       "surfaces": ["api-key", "oauth"]
@@ -16,6 +34,15 @@
       "requires": "cards:read",
       "resource": "cards",
       "scope": "cards:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "description_key": null,
+      "requires": null,
+      "resource": "communities",
+      "scope": "communities:read",
       "surfaces": ["api-key", "oauth"]
     },
     {
@@ -57,7 +84,7 @@
     {
       "action": "read",
       "audience": "user",
-      "description_key": null,
+      "description_key": "financial_profile_read",
       "requires": null,
       "resource": "financial-profile",
       "scope": "financial-profile:read",
@@ -66,10 +93,28 @@
     {
       "action": "write",
       "audience": "user",
-      "description_key": null,
+      "description_key": "financial_profile_write",
       "requires": "financial-profile:read",
       "resource": "financial-profile",
       "scope": "financial-profile:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "description_key": null,
+      "requires": null,
+      "resource": "lists",
+      "scope": "lists:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "description_key": null,
+      "requires": "lists:read",
+      "resource": "lists",
+      "scope": "lists:write",
       "surfaces": ["api-key", "oauth"]
     },
     {
@@ -201,7 +246,7 @@
     {
       "action": "read",
       "audience": "user",
-      "description_key": null,
+      "description_key": "spending_read",
       "requires": null,
       "resource": "spending",
       "scope": "spending:read",
@@ -210,7 +255,7 @@
     {
       "action": "write",
       "audience": "user",
-      "description_key": null,
+      "description_key": "spending_write",
       "requires": "spending:read",
       "resource": "spending",
       "scope": "spending:write",

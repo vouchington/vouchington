@@ -41,7 +41,7 @@
       "values": ["everyone", "users", "followers", "mutual_followers"]
     },
     "classifier_candidate_kind": {
-      "values": ["topic", "story"]
+      "values": ["topic", "story", "community_prompt"]
     },
     "classifier_model_provider": {
       "values": ["typesafe", "openrouter"]
@@ -55,6 +55,9 @@
     "community_application_question_field_types": {
       "values": ["short_text", "long_text", "single_select", "multi_select", "checkbox"]
     },
+    "community_automod_action": {
+      "values": ["record_only", "review_queue", "unpublish"]
+    },
     "community_list_item_types": {
       "values": ["topic", "rss_feed", "post", "url_hostname", "url"]
     },
@@ -66,9 +69,6 @@
     },
     "community_member_roster_visibility_types": {
       "values": ["public", "users", "members", "moderators"]
-    },
-    "community_prompt_on_flag_action": {
-      "values": ["none", "unpublish"]
     },
     "community_restriction_types": {
       "values": [
@@ -89,12 +89,6 @@
     },
     "conversation_channel_types": {
       "values": ["chat", "direct_message", "modmail", "mod_internal"]
-    },
-    "conversation_message_agentic_runs_events_types": {
-      "values": ["function_call", "model_response"]
-    },
-    "conversation_message_agentic_runs_termination_reasons": {
-      "values": ["no_tool_calls", "max_topics", "max_iterations", "stalled", "error", "superseded"]
     },
     "conversation_message_directions": {
       "values": ["inbound", "outbound"]
@@ -353,7 +347,9 @@
         "scheduled_job_run",
         "backfill_run",
         "article_sync_run",
-        "import_batch_create"
+        "import_batch_create",
+        "preservation_hold_place",
+        "preservation_hold_release"
       ]
     },
     "moderator_on_flag_action": {
@@ -573,9 +569,6 @@
     "fn_assert_follower_distribution_recipient_bounds": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_follower_distribution_recipient_bounds()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  distribution_ids UUID[] := ARRAY[]::UUID[];\n  checked_distribution_id UUID;\n  audience_value follower_distribution_audiences;\n  recipient_count INTEGER;\nBEGIN\n  IF TG_TABLE_NAME = 'follower_distributions' THEN\n    distribution_ids := ARRAY[COALESCE(NEW.id, OLD.id)];\n  ELSE\n    distribution_ids := ARRAY[COALESCE(NEW.distribution_id, OLD.distribution_id)];\n    IF TG_OP = 'UPDATE' AND OLD.distribution_id IS DISTINCT FROM NEW.distribution_id THEN\n      distribution_ids := distribution_ids || OLD.distribution_id;\n    END IF;\n  END IF;\n\n  FOREACH checked_distribution_id IN ARRAY distribution_ids LOOP\n    SELECT audience INTO audience_value\n    FROM follower_distributions\n    WHERE id = checked_distribution_id;\n    IF NOT FOUND THEN\n      CONTINUE;\n    END IF;\n\n    SELECT COUNT(*) INTO recipient_count\n    FROM follower_distribution_selected_recipients\n    WHERE follower_distribution_selected_recipients.distribution_id = checked_distribution_id;\n\n    IF audience_value = 'all_followers' AND recipient_count <> 0 THEN\n      RAISE EXCEPTION 'all_followers distributions cannot store selected recipients'\n        USING ERRCODE = '23514';\n    END IF;\n\n    IF audience_value = 'selected_followers' AND recipient_count > 100 THEN\n      RAISE EXCEPTION 'selected_followers distributions require between 1 and 100 recipients'\n        USING ERRCODE = '23514';\n    END IF;\n\n    IF audience_value = 'selected_followers'\n      AND recipient_count < 1\n      AND NOT (\n        TG_TABLE_NAME = 'follower_distribution_selected_recipients'\n        AND TG_OP = 'DELETE'\n      ) THEN\n      RAISE EXCEPTION 'selected_followers distributions require between 1 and 100 recipients'\n        USING ERRCODE = '23514';\n    END IF;\n  END LOOP;\n\n  RETURN NULL;\nEND;\n$function$\n"
     },
-    "fn_assert_post_category_finalization_children": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_post_category_finalization_children()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  target_post_id UUID;\n  actor_count INTEGER;\n  topic_count INTEGER;\n  response_generation BIGINT;\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    target_post_id := OLD.post_id;\n  ELSE\n    target_post_id := NEW.post_id;\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1 FROM post_category_finalizations WHERE post_id = target_post_id\n  ) THEN\n    RETURN NULL;\n  END IF;\n  SELECT admission_response_generation INTO response_generation\n  FROM post_category_finalizations WHERE post_id = target_post_id;\n  SELECT COUNT(*) INTO actor_count\n  FROM post_category_finalization_actors WHERE post_id = target_post_id;\n  SELECT COUNT(*) INTO topic_count\n  FROM post_category_finalization_admission_topics WHERE post_id = target_post_id;\n  IF actor_count < 1 THEN\n    RAISE EXCEPTION 'post category finalization requires at least one actor'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF response_generation IS NULL AND topic_count <> 0 THEN\n    RAISE EXCEPTION 'absent admission response cannot retain topic snapshots'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NULL;\nEND;\n$function$\n"
-    },
     "fn_assert_review_succession_topics": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_review_succession_topics()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  succession_id UUID;\n  topic_count INTEGER;\nBEGIN\n  IF TG_TABLE_NAME = 'review_successions' THEN\n    IF TG_OP = 'DELETE' THEN\n      succession_id := OLD.id;\n    ELSE\n      succession_id := NEW.id;\n    END IF;\n  ELSIF TG_OP = 'DELETE' THEN\n    succession_id := OLD.review_succession_id;\n  ELSE\n    succession_id := NEW.review_succession_id;\n  END IF;\n  IF NOT EXISTS (SELECT 1 FROM review_successions WHERE id = succession_id) THEN\n    RETURN NULL;\n  END IF;\n  SELECT COUNT(*) INTO topic_count\n  FROM review_succession_topics\n  WHERE review_succession_id = succession_id;\n  IF topic_count < 1 THEN\n    RAISE EXCEPTION 'review succession topic set must be nonempty' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NULL;\nEND;\n$function$\n"
     },
@@ -655,13 +648,10 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_deadline()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright deadlines are durable statutory records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(\n    OLD.copyright_notice_id,\n    OLD.qualifying_counter_notice_assessment_id,\n    OLD.earliest_restoration_at,\n    OLD.escalation_at,\n    OLD.restoration_deadline_at\n  ) IS DISTINCT FROM ROW(\n    NEW.copyright_notice_id,\n    NEW.qualifying_counter_notice_assessment_id,\n    NEW.earliest_restoration_at,\n    NEW.escalation_at,\n    NEW.restoration_deadline_at\n  ) THEN\n    RAISE EXCEPTION 'copyright deadline origin and schedule are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (OLD.resolved_at IS NOT NULL OR OLD.cancelled_at IS NOT NULL)\n    AND ROW(OLD.resolved_at, OLD.cancelled_at) IS DISTINCT FROM ROW(NEW.resolved_at, NEW.cancelled_at) THEN\n    RAISE EXCEPTION 'copyright deadline terminal outcome is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_delivery_intent_transition": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_delivery_intent_transition()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright delivery intents are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id\n    OR NEW.copyright_notice_submission_id IS DISTINCT FROM OLD.copyright_notice_submission_id\n    OR NEW.copyright_notice_correspondence_message_id IS DISTINCT FROM OLD.copyright_notice_correspondence_message_id\n    OR NEW.recipient_role IS DISTINCT FROM OLD.recipient_role\n    OR NEW.delivery_kind IS DISTINCT FROM OLD.delivery_kind\n    OR NEW.channel IS DISTINCT FROM OLD.channel\n    OR NEW.idempotency_key IS DISTINCT FROM OLD.idempotency_key THEN\n    RAISE EXCEPTION 'copyright delivery intent facts are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.recipient_user_id IS DISTINCT FROM NEW.recipient_user_id THEN\n    IF OLD.recipient_user_id IS NULL OR NEW.recipient_user_id IS NOT NULL THEN\n      RAISE EXCEPTION 'copyright delivery recipient cannot change' USING ERRCODE = 'check_violation';\n    END IF;\n    NEW.recipient_user_erased_at := CURRENT_TIMESTAMP;\n  ELSIF NEW.recipient_user_erased_at IS DISTINCT FROM OLD.recipient_user_erased_at THEN\n    RAISE EXCEPTION 'copyright delivery recipient erasure is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'bounced' AND NEW.state IS DISTINCT FROM OLD.state THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'failed' AND NEW.state IS DISTINCT FROM OLD.state\n    AND NOT (\n      NEW.state = 'pending' AND NEW.claimed_at IS NULL AND NEW.failed_at IS NULL\n      AND NEW.next_attempt_at IS NULL AND NEW.delivery_attempt_count = 0\n    ) THEN\n    RAISE EXCEPTION 'failed copyright delivery intents may only be explicitly replayed'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'sent' AND NEW.state NOT IN ('sent', 'bounced') THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_delivery_intent_transition()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright delivery intents are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id\n    OR NEW.copyright_notice_email_intake_id IS DISTINCT FROM OLD.copyright_notice_email_intake_id\n    OR NEW.copyright_notice_submission_id IS DISTINCT FROM OLD.copyright_notice_submission_id\n    OR NEW.copyright_notice_correspondence_message_id IS DISTINCT FROM OLD.copyright_notice_correspondence_message_id\n    OR NEW.recipient_role IS DISTINCT FROM OLD.recipient_role\n    OR NEW.delivery_kind IS DISTINCT FROM OLD.delivery_kind\n    OR NEW.channel IS DISTINCT FROM OLD.channel\n    OR NEW.body_ciphertext IS DISTINCT FROM OLD.body_ciphertext\n    OR NEW.idempotency_key IS DISTINCT FROM OLD.idempotency_key THEN\n    RAISE EXCEPTION 'copyright delivery intent facts are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.recipient_user_id IS DISTINCT FROM NEW.recipient_user_id THEN\n    IF OLD.recipient_user_id IS NULL OR NEW.recipient_user_id IS NOT NULL THEN\n      RAISE EXCEPTION 'copyright delivery recipient cannot change' USING ERRCODE = 'check_violation';\n    END IF;\n    NEW.recipient_user_erased_at := CURRENT_TIMESTAMP;\n  ELSIF NEW.recipient_user_erased_at IS DISTINCT FROM OLD.recipient_user_erased_at THEN\n    RAISE EXCEPTION 'copyright delivery recipient erasure is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'bounced' AND NEW.state IS DISTINCT FROM OLD.state THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'failed' AND NEW.state IS DISTINCT FROM OLD.state\n    AND NOT (\n      NEW.state = 'pending' AND NEW.claimed_at IS NULL AND NEW.failed_at IS NULL\n      AND NEW.next_attempt_at IS NULL AND NEW.delivery_attempt_count = 0\n    ) THEN\n    RAISE EXCEPTION 'failed copyright delivery intents may only be explicitly replayed'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'sent' AND NEW.state NOT IN ('sent', 'bounced') THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_email_correspondence_recommendation_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_correspondence_recommendation_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.copyright_notice_email_intake_recommendation_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_email_intake_recommendations recommendation\n    WHERE recommendation.id = NEW.copyright_notice_email_intake_recommendation_id\n      AND recommendation.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id\n  ) THEN\n    RAISE EXCEPTION 'copyright email correspondence recommendation must belong to the same intake' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_guard_copyright_email_intake_response_transition": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_intake_response_transition()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright email intake responses are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_notice_email_intake_id IS DISTINCT FROM OLD.copyright_notice_email_intake_id\n    OR NEW.response_kind IS DISTINCT FROM OLD.response_kind\n    OR NEW.recipient_email_ciphertext IS DISTINCT FROM OLD.recipient_email_ciphertext\n    OR NEW.subject_ciphertext IS DISTINCT FROM OLD.subject_ciphertext\n    OR NEW.body_ciphertext IS DISTINCT FROM OLD.body_ciphertext\n    OR NEW.idempotency_key IS DISTINCT FROM OLD.idempotency_key THEN\n    RAISE EXCEPTION 'copyright email intake response facts are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (OLD.state IN ('bounced', 'failed') AND NEW.state IS DISTINCT FROM OLD.state)\n    OR (OLD.state = 'sent' AND NEW.state NOT IN ('sent', 'bounced')) THEN\n    RAISE EXCEPTION 'terminal copyright email intake response cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_email_review_recommendation_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_review_recommendation_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.copyright_notice_email_intake_recommendation_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_email_intake_recommendations recommendation\n    WHERE recommendation.id = NEW.copyright_notice_email_intake_recommendation_id\n      AND recommendation.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id\n  ) THEN\n    RAISE EXCEPTION 'copyright email review recommendation must belong to the same intake' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -825,9 +815,6 @@
     "fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE\n    WHEN notification_entity_type IN (\n      'community_application_decision',\n      'community_role_change',\n      'community_ownership_transfer'\n    ) THEN jsonb_build_object('__entity_type', 'community', 'id', notification_community_id)\n    ELSE NULL\n  END\n$function$\n"
     },
-    "fn_post_category_finalization_actor_ids(target_post_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_post_category_finalization_actor_ids(target_post_id uuid)\n RETURNS uuid[]\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT COALESCE(ARRAY_AGG(actor.user_id ORDER BY actor.user_id), '{}'::uuid[])\n  FROM post_category_finalization_actors actor\n  WHERE actor.post_id = target_post_id;\n$function$\n"
-    },
     "fn_preserve_notification_publication_target": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_preserve_notification_publication_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    NEW.publication_post_id := COALESCE(NEW.publication_post_id, NEW.post_id);\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id\n    );\n  ELSE\n    NEW.publication_post_id := COALESCE(\n      NEW.publication_post_id,\n      NEW.post_id,\n      OLD.publication_post_id,\n      OLD.post_id\n    );\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id,\n      OLD.publication_rss_feed_item_id,\n      OLD.rss_feed_item_id\n    );\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -939,6 +926,9 @@
     "fn_reject_oauth_authorization_server_event_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_oauth_authorization_server_event_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'oauth authorization server events are append-only' USING ERRCODE = '23514';\nEND $function$\n"
     },
+    "fn_reject_user_legal_preservation_hold_mutation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_user_legal_preservation_hold_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'legal preservation holds are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.released_at IS NOT NULL\n    OR NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.account_user_id IS DISTINCT FROM OLD.account_user_id\n    OR NEW.placed_by_id IS DISTINCT FROM OLD.placed_by_id\n    OR NEW.reference_ciphertext IS DISTINCT FROM OLD.reference_ciphertext THEN\n    RAISE EXCEPTION 'legal preservation holds change only by a single release' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_release_moderation_transparency_daily_rollup(p_day date, p_community_id uuid, p_metric text, p_category text, p_cutoff timestamp with time zone)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_release_moderation_transparency_daily_rollup(p_day date, p_community_id uuid, p_metric text, p_category text, p_cutoff timestamp with time zone)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- Share the same per-cohort lock as source-triggered increments and decrements.\n  -- A release must snapshot and remove a candidate atomically with respect to a\n  -- source lifecycle mutation, otherwise an old write could recreate it.\n  PERFORM pg_advisory_xact_lock(hashtextextended(\n    'moderation-transparency-rollup:' || p_day::text || ':'\n      || COALESCE(p_community_id::text, 'global') || ':' || p_metric || ':' || p_category,\n    0\n  ));\n  INSERT INTO moderation_transparency_released_daily_rollups(\n    day, community_id, metric, category, count, latest_occurred_at\n  )\n  SELECT day, community_id, metric, category, count, latest_occurred_at\n  FROM moderation_transparency_daily_rollups\n  WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n    AND metric = p_metric AND category = p_category\n    AND count >= 20 AND latest_occurred_at <= p_cutoff\n  ON CONFLICT ON CONSTRAINT moderation_transparency_released_daily_rollups_key DO NOTHING\n  ;\n  DELETE FROM moderation_transparency_daily_rollups\n  WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n    AND metric = p_metric AND category = p_category\n    AND EXISTS (\n      SELECT 1 FROM moderation_transparency_released_daily_rollups\n      WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n        AND metric = p_metric AND category = p_category\n    );\nEND $function$\n"
     },
@@ -968,6 +958,9 @@
     },
     "fn_require_classifier_result_batch_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_result_batch_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  candidate classifier_candidates%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\n  batch_candidate classifier_decision_batch_candidates%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO candidate FROM classifier_candidates WHERE id = NEW.candidate_id FOR SHARE;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  IF NEW.candidate_id IS NOT NULL THEN\n    SELECT * INTO batch_candidate FROM classifier_decision_batch_candidates\n    WHERE batch_id = NEW.batch_id AND candidate_id = NEW.candidate_id\n    FOR SHARE;\n  END IF;\n  IF NEW.scope_category IS DISTINCT FROM batch.scope_category\n    OR NEW.scope_community_id IS DISTINCT FROM batch.scope_community_id THEN\n    RAISE EXCEPTION 'classifier result scope must match its batch' USING ERRCODE = '23514';\n  END IF;\n  IF candidate.community_id IS NOT NULL\n    AND (\n      batch.scope_category <> 'community_ai'\n      OR batch.scope_community_id IS DISTINCT FROM candidate.community_id\n    ) THEN\n    RAISE EXCEPTION 'community classifier candidate scope must match its owning community' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.candidate_id IS NOT NULL AND batch_candidate.batch_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n  effective_lower := COALESCE(\n    batch_candidate.effective_lower_threshold,\n    prompt.default_lower_threshold\n  );\n  effective_upper := COALESCE(\n    batch_candidate.effective_upper_threshold,\n    prompt.default_upper_threshold\n  );\n  IF NEW.effective_lower_threshold IS DISTINCT FROM effective_lower\n    OR NEW.effective_upper_threshold IS DISTINCT FROM effective_upper THEN\n    RAISE EXCEPTION 'classifier result thresholds must match prompt and candidate configuration' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.threshold_id IS DISTINCT FROM batch_candidate.threshold_id THEN\n    RAISE EXCEPTION 'classifier result threshold revision must match its batch candidate snapshot' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_require_community_prompt_result_configuration": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_community_prompt_result_configuration()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  IF batch.post_id IS NULL THEN\n    RAISE EXCEPTION 'community prompt classifier results require a post batch' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.effective_lower_threshold IS DISTINCT FROM prompt.default_lower_threshold\n    OR NEW.effective_upper_threshold IS DISTINCT FROM prompt.default_upper_threshold THEN\n    RAISE EXCEPTION 'community prompt classifier result thresholds must match the prompt revision defaults' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_require_copyright_human_actor": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_copyright_human_actor()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF to_jsonb(NEW) ->> TG_ARGV[0] IS NULL THEN\n    RAISE EXCEPTION 'copyright human decisions require an identified actor' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1079,9 +1072,6 @@
     },
     "membership_grant_remaining_duration(grant_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.membership_grant_remaining_duration(grant_id uuid)\n RETURNS interval\n LANGUAGE sql\n STABLE PARALLEL SAFE\nAS $function$\n  SELECT make_interval(days => grant_row.calendar_days) - COALESCE(\n    (\n      SELECT SUM(GREATEST(INTERVAL '0', COALESCE(period.ended_at, CURRENT_TIMESTAMP) - period.started_at))\n      FROM membership_grant_activation_periods period\n      WHERE period.membership_grant_id = grant_row.id\n    ),\n    INTERVAL '0'\n  )\n  FROM membership_grants grant_row\n  WHERE grant_row.id = grant_id\n$function$\n"
-    },
-    "repair_post_category_finalization_admission_response_on_delete": {
-      "definition": "CREATE OR REPLACE FUNCTION public.repair_post_category_finalization_admission_response_on_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  finalized_topics JSONB;\nBEGIN\n  -- A posts cascade has no replayable post response to repair. Every ordinary acknowledgement\n  -- reaches the update below.\n  IF NOT EXISTS (SELECT 1 FROM posts WHERE id = OLD.post_id) THEN\n    RETURN OLD;\n  END IF;\n\n  SELECT COALESCE(\n    jsonb_agg(TO_JSONB(topic.*) ORDER BY selected.votes_score_net DESC, selected.object_id),\n    '[]'::jsonb\n  )\n  INTO finalized_topics\n  FROM (\n    SELECT relation.object_id, relation.votes_score_net\n    FROM relation__post__category__topic relation\n    WHERE relation.subject_id = OLD.post_id\n      AND OLD.admission_response_generation = OLD.generation\n      AND EXISTS (\n        SELECT 1\n        FROM post_category_finalization_admission_topics admission_topic\n        WHERE admission_topic.post_id = OLD.post_id\n          AND admission_topic.topic_id = relation.object_id\n      )\n      AND relation.deleted_at IS NULL\n      AND relation.votes_score_net > 0\n    ORDER BY relation.votes_score_net DESC, relation.object_id\n    LIMIT 5\n  ) selected\n  INNER JOIN view_embedded_topics topic ON topic.id = selected.object_id;\n\n  UPDATE post_admission_reservations\n  SET response = CASE\n        WHEN OLD.admission_response_generation = OLD.generation\n          AND OLD.admission_response_generation IS NOT NULL\n        THEN CASE\n          WHEN jsonb_typeof(response) = 'object'\n            AND jsonb_typeof(response->'post') = 'object'\n          THEN jsonb_set(response, '{post,post_related_topics}', finalized_topics)\n          WHEN jsonb_typeof(response) = 'object'\n          THEN jsonb_set(response, '{post_related_topics}', finalized_topics)\n          ELSE response\n        END\n        ELSE response\n      END,\n      replay_metadata = replay_metadata || '{\"finalization\":\"complete\"}'::jsonb,\n      updated_at = NOW()\n  WHERE committed_post_id = OLD.post_id\n    AND state = 'committed'\n    AND retention_expires_at > NOW();\n\n  RETURN OLD;\nEND;\n$function$\n"
     }
   },
   "policies": {},
@@ -12079,7 +12069,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "archived_by_id": {
@@ -12090,8 +12080,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "uuid"
+        },
+        "automod_action": {
+          "collation": null,
+          "comment": "What the community moderation classifier does when a post trips one of the community's active prompts: record_only (the default, only the per-prompt agent_moderations projection), review_queue (the post stays published and enters the moderator review queue) or unpublish. Read when the classifier run completes, so changing it never re-runs a classification.",
+          "defaultExpression": "'record_only'::community_automod_action",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 13,
+          "type": "community_automod_action"
         },
         "banner_image_id": {
           "collation": null,
@@ -12101,7 +12102,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "uuid"
         },
         "created_at": {
@@ -12112,7 +12113,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -12123,7 +12124,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "uuid"
         },
         "created_via": {
@@ -12156,7 +12157,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 26,
           "type": "text"
         },
         "deleted_at": {
@@ -12167,7 +12168,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -12178,7 +12179,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "uuid"
         },
         "id": {
@@ -12200,7 +12201,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 28,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -12211,7 +12212,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -12222,7 +12223,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 27,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -12233,7 +12234,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 29,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -12244,7 +12245,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 30,
           "type": "jsonb"
         },
         "list_type": {
@@ -12255,7 +12256,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "community_list_types"
         },
         "markdown": {
@@ -12321,7 +12322,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "uuid"
         },
         "rules_markdown": {
@@ -12332,7 +12333,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 32,
           "type": "text"
         },
         "search_vector": {
@@ -12343,7 +12344,7 @@
           "generatedExpression": "((setweight(to_tsvector('voucha_english'::regconfig, COALESCE(name, ''::text)), 'A'::\"char\") || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(slug, ''::text)), 'A'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(markdown, ''::text)), 'B'::\"char\"))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "tsvector"
         },
         "slug": {
@@ -12365,7 +12366,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -12376,7 +12377,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "visibility": {
@@ -13120,7 +13121,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -13131,7 +13132,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "uuid"
         },
         "id": {
@@ -13144,17 +13145,6 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
-        },
-        "on_flag_action": {
-          "collation": null,
-          "comment": "Action taken when this community prompt flags content: none or unpublish.",
-          "defaultExpression": "'none'::community_prompt_on_flag_action",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "community_prompt_on_flag_action"
         },
         "slot_allocated": {
           "collation": null,
@@ -13335,6 +13325,33 @@
           "ready": true,
           "unique": false,
           "valid": true
+        },
+        "uq_community_agent_prompts__id__community": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_community_agent_prompts__id__community ON public.community_agent_prompts USING btree (id, community_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "partition": null,
@@ -13347,7 +13364,12 @@
       "triggers": {
         "moderation_transparency_community_prompts_lock": "CREATE TRIGGER moderation_transparency_community_prompts_lock BEFORE INSERT OR DELETE OR UPDATE ON public.community_agent_prompts FOR EACH ROW EXECUTE FUNCTION fn_lock_agent_moderation_transparency_community_prompt()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "uq_community_agent_prompts__id__community": {
+          "columns": ["id", "community_id"],
+          "definition": "UNIQUE (id, community_id)"
+        }
+      }
     },
     "community_application_answers": {
       "checkConstraints": {
@@ -17095,6 +17117,8 @@
     },
     "community_post_reviews": {
       "checkConstraints": {
+        "chk_community_post_reviews__automod_dismissal": "CHECK ((((automod_dismissed_at IS NULL) AND (automod_dismissed_by_id IS NULL)) OR ((automod_dismissed_at IS NOT NULL) AND (automod_action = 'review_queue'::community_automod_action))))",
+        "chk_community_post_reviews__automod_flag": "CHECK ((((automod_action IS NULL) AND (automod_flagged_at IS NULL) AND (automod_flagged_content_sha256 IS NULL)) OR ((automod_action = ANY (ARRAY['review_queue'::community_automod_action, 'unpublish'::community_automod_action])) AND (automod_flagged_at IS NOT NULL) AND (octet_length(automod_flagged_content_sha256) = 32))))",
         "community_post_reviews_check": "CHECK ((NOT ((approved_at IS NOT NULL) AND (rejected_at IS NOT NULL))))",
         "community_post_reviews_check1": "CHECK ((((approved_at IS NULL) AND (rejected_at IS NULL)) OR (reviewed_at IS NOT NULL)))",
         "community_post_reviews_check2": "CHECK (((escalated_at IS NOT NULL) OR (escalated_by_id IS NULL)))",
@@ -17118,6 +17142,61 @@
           "nullable": true,
           "ordinalPosition": 7,
           "type": "timestamp with time zone"
+        },
+        "automod_action": {
+          "collation": null,
+          "comment": "What the community moderation classifier did when it last flagged this post: review_queue (queued for a moderator) or unpublish. NULL means never flagged. record_only flags are projected to agent_moderations only and never stored here. Flags written for new content must clear the dismissal columns in the same update.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 19,
+          "type": "community_automod_action"
+        },
+        "automod_dismissed_at": {
+          "collation": null,
+          "comment": "When a moderator dismissed the review_queue flag as not needing action. NULL means not dismissed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 22,
+          "type": "timestamp with time zone"
+        },
+        "automod_dismissed_by_id": {
+          "collation": null,
+          "comment": "The moderator who dismissed the review_queue flag; NULL after that user is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 23,
+          "type": "uuid"
+        },
+        "automod_flagged_at": {
+          "collation": null,
+          "comment": "When the classifier flag in automod_action was written.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 20,
+          "type": "timestamp with time zone"
+        },
+        "automod_flagged_content_sha256": {
+          "collation": null,
+          "comment": "The post llm_moderation_content_sha256 the flag was computed for. The flag is current only while it equals the post's digest, so an edit supersedes it without a write.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 21,
+          "type": "bytea"
         },
         "community_id": {
           "collation": null,
@@ -17309,6 +17388,15 @@
       },
       "comment": "Tracks the single community review state for community-scoped posts.",
       "foreignKeys": {
+        "community_post_reviews_automod_dismissed_by_id_fkey": {
+          "columns": ["automod_dismissed_by_id"],
+          "definition": "FOREIGN KEY (automod_dismissed_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
         "community_post_reviews_community_id_fkey": {
           "columns": ["community_id"],
           "definition": "FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE",
@@ -17429,6 +17517,40 @@
           "unique": false,
           "valid": true
         },
+        "idx_comm_post_reviews__automod_open": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_comm_post_reviews__automod_open ON public.community_post_reviews USING btree (community_id, automod_flagged_at DESC, post_id DESC) WHERE ((automod_action = 'review_queue'::community_automod_action) AND (automod_dismissed_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "automod_flagged_at",
+              "descending": true,
+              "expression": "automod_flagged_at",
+              "nullsFirst": true,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": true,
+              "expression": "post_id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((automod_action = 'review_queue'::community_automod_action) AND (automod_dismissed_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_comm_post_reviews__community": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -17539,6 +17661,397 @@
       },
       "relationKind": "table",
       "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "community_prompt_classifier_results": {
+      "checkConstraints": {
+        "chk_community_prompt_classifier_results__effective_thresholds": "CHECK (((effective_lower_threshold >= (0)::numeric) AND (effective_upper_threshold <= (1)::numeric) AND (effective_lower_threshold < effective_upper_threshold)))",
+        "community_prompt_classifier_results_candidate_kind_check": "CHECK ((candidate_kind = 'community_prompt'::classifier_candidate_kind))",
+        "community_prompt_classifier_results_probability_check": "CHECK (((probability >= (0)::numeric) AND (probability <= (1)::numeric)))",
+        "community_prompt_classifier_results_scope_category_check": "CHECK ((scope_category = 'community_ai'::text))"
+      },
+      "columns": {
+        "batch_id": {
+          "collation": null,
+          "comment": "Logical decision batch that produced this result and the partition key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "candidate_kind": {
+          "collation": null,
+          "comment": "Fixed community_prompt discriminator used only for the classifier-kind foreign key.",
+          "defaultExpression": "'community_prompt'::classifier_candidate_kind",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "classifier_candidate_kind"
+        },
+        "classifier_id": {
+          "collation": null,
+          "comment": "Classifier copied from the owning batch for relational enforcement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "community_prompt_id": {
+          "collation": null,
+          "comment": "Community moderation prompt scored by this result; its community must equal the batch scope.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        },
+        "decision_call_id": {
+          "collation": null,
+          "comment": "Specific provider call that produced this result.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "effective_lower_threshold": {
+          "collation": null,
+          "comment": "Prompt-revision lower boundary used for this immutable decision result.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "numeric(5,4)"
+        },
+        "effective_upper_threshold": {
+          "collation": null,
+          "comment": "Prompt-revision upper boundary above which this prompt counts as flagged.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "numeric(5,4)"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "probability": {
+          "collation": null,
+          "comment": "Native per-prompt probability preserved without threshold mapping.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "numeric"
+        },
+        "prompt_version_id": {
+          "collation": null,
+          "comment": "Prompt revision copied from the owning batch for relational enforcement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "raw_response": {
+          "collation": null,
+          "comment": "Full native structured-decision answer for audit and diagnostics.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "jsonb"
+        },
+        "scope_category": {
+          "collation": null,
+          "comment": "Always community_ai, copied from the owning batch.",
+          "defaultExpression": "'community_ai'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "text"
+        },
+        "scope_community_id": {
+          "collation": null,
+          "comment": "Community provenance copied from the owning batch; deleting the community cascades to its results.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 13,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 15,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Per-prompt classifier results for community moderation prompts, RANGE-partitioned by batch_id.",
+      "foreignKeys": {
+        "fk_community_prompt_classifier_results__batch_classifier": {
+          "columns": ["batch_id", "classifier_id"],
+          "definition": "FOREIGN KEY (batch_id, classifier_id) REFERENCES classifier_decision_batches(id, classifier_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_community_prompt_classifier_results__batch_prompt": {
+          "columns": ["batch_id", "prompt_version_id"],
+          "definition": "FOREIGN KEY (batch_id, prompt_version_id) REFERENCES classifier_decision_batches(id, prompt_version_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "prompt_version_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_community_prompt_classifier_results__batch_scope": {
+          "columns": ["batch_id", "scope_category", "scope_community_id"],
+          "definition": "FOREIGN KEY (batch_id, scope_category, scope_community_id) REFERENCES classifier_decision_batches(id, scope_category, scope_community_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "scope_category", "scope_community_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_community_prompt_classifier_results__call_batch": {
+          "columns": ["decision_call_id", "batch_id"],
+          "definition": "FOREIGN KEY (decision_call_id, batch_id) REFERENCES classifier_decision_calls(id, batch_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "batch_id"],
+          "referencedTable": "classifier_decision_calls",
+          "validated": true
+        },
+        "fk_community_prompt_classifier_results__classifier_kind": {
+          "columns": ["classifier_id", "candidate_kind"],
+          "definition": "FOREIGN KEY (classifier_id, candidate_kind) REFERENCES classifiers(id, candidate_kind) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "candidate_kind"],
+          "referencedTable": "classifiers",
+          "validated": true
+        },
+        "fk_community_prompt_classifier_results__prompt_community": {
+          "columns": ["community_prompt_id", "scope_community_id"],
+          "definition": "FOREIGN KEY (community_prompt_id, scope_community_id) REFERENCES community_agent_prompts(id, community_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "community_id"],
+          "referencedTable": "community_agent_prompts",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "community_prompt_classifier_results_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX community_prompt_classifier_results_pkey ON ONLY public.community_prompt_classifier_results USING btree (batch_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_community_prompt_classifier_results__batch_prompt_unique": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_community_prompt_classifier_results__batch_prompt_unique ON ONLY public.community_prompt_classifier_results USING btree (batch_id, community_prompt_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_prompt_id",
+              "descending": false,
+              "expression": "community_prompt_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_community_prompt_classifier_results__call_batch": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_prompt_classifier_results__call_batch ON ONLY public.community_prompt_classifier_results USING btree (decision_call_id, batch_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "decision_call_id",
+              "descending": false,
+              "expression": "decision_call_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_prompt_classifier_results__classifier_kind": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_prompt_classifier_results__classifier_kind ON ONLY public.community_prompt_classifier_results USING btree (classifier_id, candidate_kind)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "candidate_kind",
+              "descending": false,
+              "expression": "candidate_kind",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_prompt_classifier_results__prompt_community": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_prompt_classifier_results__prompt_community ON ONLY public.community_prompt_classifier_results USING btree (community_prompt_id, scope_community_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_prompt_id",
+              "descending": false,
+              "expression": "community_prompt_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "scope_community_id",
+              "descending": false,
+              "expression": "scope_community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": {
+        "accessClass": "target-scoped",
+        "children": "default",
+        "key": "batch_id",
+        "retentionOwner": null,
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (batch_id)",
+        "strategy": "range"
+      },
+      "primaryKey": {
+        "columns": ["batch_id", "id"],
+        "definition": "PRIMARY KEY (batch_id, id)"
+      },
+      "relationKind": "partitioned table",
+      "triggers": {
+        "trigger_community_prompt_classifier_results_append_only": "CREATE TRIGGER trigger_community_prompt_classifier_results_append_only BEFORE UPDATE ON public.community_prompt_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()",
+        "trigger_community_prompt_classifier_results_configuration": "CREATE TRIGGER trigger_community_prompt_classifier_results_configuration BEFORE INSERT OR UPDATE OF batch_id, prompt_version_id, effective_lower_threshold, effective_upper_threshold ON public.community_prompt_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_require_community_prompt_result_configuration()"
+      },
       "uniqueConstraints": {}
     },
     "community_restrictions": {
@@ -18040,522 +18553,6 @@
       "relationKind": "table",
       "triggers": {
         "trigger_community_saved_replies_updated_at": "CREATE TRIGGER trigger_community_saved_replies_updated_at BEFORE UPDATE ON public.community_saved_replies FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
-    "conversation_message_agentic_runs": {
-      "checkConstraints": {
-        "conversation_message_agentic_runs_check": "CHECK (((completed_at IS NULL) OR (failed_at IS NULL)))"
-      },
-      "columns": {
-        "completed_at": {
-          "collation": null,
-          "comment": "When the agentic run completed successfully. Derived status is completed when set.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 12,
-          "type": "timestamp with time zone"
-        },
-        "conversation_id": {
-          "collation": null,
-          "comment": "The conversation containing the triggering message.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "conversation_message_id": {
-          "collation": null,
-          "comment": "The message that triggered this agentic run.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 14,
-          "type": "timestamp with time zone"
-        },
-        "deleted_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 16,
-          "type": "timestamp with time zone"
-        },
-        "error": {
-          "collation": null,
-          "comment": "Error details if the run failed.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "jsonb"
-        },
-        "failed_at": {
-          "collation": null,
-          "comment": "When the agentic run failed. Derived status is failed when set.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "input": {
-          "collation": null,
-          "comment": "New input for this run, excluding prior context.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "jsonb"
-        },
-        "model_name": {
-          "collation": null,
-          "comment": "The LLM model used for this run.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "text"
-        },
-        "model_provider": {
-          "collation": null,
-          "comment": "The provider of the LLM model (e.g. openai).",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "agent_model_providers"
-        },
-        "output": {
-          "collation": null,
-          "comment": "Output of the run, passed as context to subsequent messages.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "jsonb"
-        },
-        "parent_agentic_run_id": {
-          "collation": null,
-          "comment": "The orchestrator agentic run that spawned this subagent run. NULL for top-level runs.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 13,
-          "type": "uuid"
-        },
-        "started_at": {
-          "collation": null,
-          "comment": "When the agentic run began executing.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 11,
-          "type": "timestamp with time zone"
-        },
-        "termination_reason": {
-          "collation": null,
-          "comment": "Why the run ended (e.g. no_tool_calls, max_iterations, error).",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10,
-          "type": "conversation_message_agentic_runs_termination_reasons"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 15,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Tracks individual agentic LLM runs triggered by a conversation message, range-partitioned by id for retention.",
-      "foreignKeys": {
-        "conversation_message_agentic__conversation_id_conversation_fkey": {
-          "columns": ["conversation_id", "conversation_message_id"],
-          "definition": "FOREIGN KEY (conversation_id, conversation_message_id) REFERENCES conversation_messages(conversation_id, id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["conversation_id", "id"],
-          "referencedTable": "conversation_messages",
-          "validated": true
-        },
-        "conversation_message_agentic_runs_parent_agentic_run_id_fkey": {
-          "columns": ["parent_agentic_run_id"],
-          "definition": "FOREIGN KEY (parent_agentic_run_id) REFERENCES conversation_message_agentic_runs(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "conversation_message_agentic_runs",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "conversation_message_agentic_runs_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX conversation_message_agentic_runs_pkey ON ONLY public.conversation_message_agentic_runs USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_conv_msg_agentic_runs__parent": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_conv_msg_agentic_runs__parent ON ONLY public.conversation_message_agentic_runs USING btree (parent_agentic_run_id) WHERE (parent_agentic_run_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "parent_agentic_run_id",
-              "descending": false,
-              "expression": "parent_agentic_run_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(parent_agentic_run_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_conversation_message_agentic_runs__active_conversation": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_conversation_message_agentic_runs__active_conversation ON ONLY public.conversation_message_agentic_runs USING btree (conversation_id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL) AND (deleted_at IS NULL))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "conversation_id",
-              "descending": false,
-              "expression": "conversation_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "((completed_at IS NULL) AND (failed_at IS NULL) AND (deleted_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_conversation_message_agentic_runs__conv_msg": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_conversation_message_agentic_runs__conv_msg ON ONLY public.conversation_message_agentic_runs USING btree (conversation_id, conversation_message_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "conversation_id",
-              "descending": false,
-              "expression": "conversation_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "conversation_message_id",
-              "descending": false,
-              "expression": "conversation_message_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_conversation_message_agentic_runs__conversation_message_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_conversation_message_agentic_runs__conversation_message_id ON ONLY public.conversation_message_agentic_runs USING btree (conversation_message_id, id DESC)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "conversation_message_id",
-              "descending": false,
-              "expression": "conversation_message_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "partition": {
-        "accessClass": "retention-window",
-        "children": "monthly",
-        "key": "id",
-        "retentionOwner": "cleanupPartitions",
-        "strategy": "RANGE"
-      },
-      "physicalPartition": {
-        "key": "RANGE (id)",
-        "strategy": "range"
-      },
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "partitioned table",
-      "triggers": {
-        "trigger_conversation_message_agentic_runs_updated_at": "CREATE TRIGGER trigger_conversation_message_agentic_runs_updated_at BEFORE UPDATE ON public.conversation_message_agentic_runs FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
-    "conversation_message_agentic_runs_events": {
-      "checkConstraints": {},
-      "columns": {
-        "conversation_message_agentic_run_id": {
-          "collation": null,
-          "comment": "The agentic run this event belongs to; also the partition key.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6,
-          "type": "timestamp with time zone"
-        },
-        "deleted_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "input": {
-          "collation": null,
-          "comment": "Input data for this event (e.g. function arguments or prompt).",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "jsonb"
-        },
-        "output": {
-          "collation": null,
-          "comment": "Output data from this event (e.g. function result or model response).",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "jsonb"
-        },
-        "type": {
-          "collation": null,
-          "comment": "Event type: function_call or model_response.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "conversation_message_agentic_runs_events_types"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Individual events (function calls, model responses) within an agentic run, partitioned by parent run ID.",
-      "foreignKeys": {
-        "conversation_message_agentic__conversation_message_agentic_fkey": {
-          "columns": ["conversation_message_agentic_run_id"],
-          "definition": "FOREIGN KEY (conversation_message_agentic_run_id) REFERENCES conversation_message_agentic_runs(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "conversation_message_agentic_runs",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "conversation_message_agentic_runs_events_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX conversation_message_agentic_runs_events_pkey ON ONLY public.conversation_message_agentic_runs_events USING btree (conversation_message_agentic_run_id, id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "conversation_message_agentic_run_id",
-              "descending": false,
-              "expression": "conversation_message_agentic_run_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_conv_msg_agentic_run_events__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_conv_msg_agentic_run_events__id ON ONLY public.conversation_message_agentic_runs_events USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "partition": {
-        "accessClass": "retention-window",
-        "children": "monthly",
-        "key": "conversation_message_agentic_run_id",
-        "retentionOwner": "cleanupPartitions",
-        "strategy": "RANGE"
-      },
-      "physicalPartition": {
-        "key": "RANGE (conversation_message_agentic_run_id)",
-        "strategy": "range"
-      },
-      "primaryKey": {
-        "columns": ["conversation_message_agentic_run_id", "id"],
-        "definition": "PRIMARY KEY (conversation_message_agentic_run_id, id)"
-      },
-      "relationKind": "partitioned table",
-      "triggers": {
-        "trigger_conversation_message_agentic_runs_events_updated_at": "CREATE TRIGGER trigger_conversation_message_agentic_runs_events_updated_at BEFORE UPDATE ON public.conversation_message_agentic_runs_events FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },
@@ -19272,7 +19269,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "assigned_mod_id": {
@@ -19283,7 +19280,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 17,
           "type": "uuid"
         },
         "channel_type": {
@@ -19305,7 +19302,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 15,
           "type": "uuid"
         },
         "created_at": {
@@ -19316,7 +19313,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -19327,7 +19324,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "deleted_at": {
@@ -19338,7 +19335,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -19349,7 +19346,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "id": {
@@ -19363,17 +19360,6 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "last_response_id": {
-          "collation": null,
-          "comment": "The last OpenAI response ID for this conversation, used to chain turns via previous_response_id.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "text"
-        },
         "moderation_report_id": {
           "collation": null,
           "comment": "The moderation report this internal mod-discussion thread is about. Set when channel_type is mod_internal and the item is a report. Mutually exclusive with post_id for mod_internal threads.",
@@ -19382,7 +19368,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 14,
           "type": "uuid"
         },
         "participant_add_policy": {
@@ -19393,7 +19379,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 20,
+          "ordinalPosition": 19,
           "type": "conversation_participant_add_policies"
         },
         "post_id": {
@@ -19404,7 +19390,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 12,
           "type": "uuid"
         },
         "resolved_at": {
@@ -19415,7 +19401,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "resolved_by_id": {
@@ -19426,7 +19412,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 11,
           "type": "uuid"
         },
         "rss_feed_item_id": {
@@ -19437,7 +19423,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 13,
           "type": "uuid"
         },
         "subject_user_id": {
@@ -19448,7 +19434,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 16,
           "type": "uuid"
         },
         "title": {
@@ -19470,7 +19456,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "updated_by_id": {
@@ -19481,7 +19467,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "uuid"
         }
       },
@@ -22577,17 +22563,23 @@
     },
     "copyright_notice_delivery_intents": {
       "checkConstraints": {
-        "copyright_delivery_intents_email_correspondence": "CHECK (((channel <> 'email'::text) OR (copyright_notice_correspondence_message_id IS NOT NULL)))",
+        "copyright_delivery_intents_email_correspondence": "CHECK (((channel <> 'email'::text) OR (copyright_notice_correspondence_message_id IS NOT NULL) OR (copyright_notice_email_intake_id IS NOT NULL)))",
+        "copyright_notice_delivery_intents_body_ciphertext_check": "CHECK (((body_ciphertext IS NULL) OR ((char_length(body_ciphertext) >= 1) AND (char_length(body_ciphertext) <= 1048576))))",
         "copyright_notice_delivery_intents_channel_check": "CHECK ((channel = ANY (ARRAY['in_app'::text, 'email'::text])))",
         "copyright_notice_delivery_intents_check": "CHECK (((recipient_role <> 'poster'::text) OR (recipient_user_id IS NOT NULL) OR (recipient_user_erased_at IS NOT NULL)))",
         "copyright_notice_delivery_intents_check1": "CHECK (((recipient_role <> 'correspondent'::text) OR (recipient_user_id IS NULL)))",
+        "copyright_notice_delivery_intents_check10": "CHECK (((copyright_notice_email_intake_id IS NOT NULL) = (body_ciphertext IS NOT NULL)))",
+        "copyright_notice_delivery_intents_check11": "CHECK (((copyright_notice_email_intake_id IS NULL) OR ((recipient_role = 'correspondent'::text) AND (channel = 'email'::text) AND (copyright_notice_submission_id IS NULL) AND (copyright_notice_correspondence_message_id IS NULL))))",
         "copyright_notice_delivery_intents_check2": "CHECK (((recipient_user_erased_at IS NULL) OR (recipient_user_id IS NULL)))",
         "copyright_notice_delivery_intents_check3": "CHECK ((((state = 'pending'::text) AND (claimed_at IS NULL) AND (sent_at IS NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'claimed'::text) AND (claimed_at IS NOT NULL) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'sent'::text) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NOT NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'failed'::text) AND (delivery_attempted_at IS NOT NULL) AND (failed_at IS NOT NULL) AND (sent_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'bounced'::text) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NOT NULL) AND (bounced_at IS NOT NULL) AND (failed_at IS NULL))))",
         "copyright_notice_delivery_intents_check4": "CHECK (((failure_ciphertext IS NULL) OR (state = ANY (ARRAY['pending'::text, 'failed'::text]))))",
         "copyright_notice_delivery_intents_check5": "CHECK ((((state = 'pending'::text) AND ((delivery_attempt_count = 0) OR (next_attempt_at IS NOT NULL))) OR ((state <> 'pending'::text) AND (next_attempt_at IS NULL))))",
         "copyright_notice_delivery_intents_check6": "CHECK (((ses_message_id IS NULL) OR (channel = 'email'::text)))",
+        "copyright_notice_delivery_intents_check7": "CHECK ((num_nonnulls(copyright_notice_id, copyright_notice_email_intake_id) = 1))",
+        "copyright_notice_delivery_intents_check8": "CHECK (((delivery_kind <> 'staff_information_request'::text) OR ((recipient_role = 'claimant'::text) AND (channel = 'email'::text) AND (recipient_user_id IS NULL) AND (copyright_notice_correspondence_message_id IS NOT NULL))))",
+        "copyright_notice_delivery_intents_check9": "CHECK (((copyright_notice_email_intake_id IS NOT NULL) = (delivery_kind = ANY (ARRAY['email_intake_rejected'::text, 'email_intake_needs_information'::text]))))",
         "copyright_notice_delivery_intents_delivery_attempt_count_check": "CHECK (((delivery_attempt_count >= 0) AND (delivery_attempt_count <= 5)))",
-        "copyright_notice_delivery_intents_delivery_kind_check": "CHECK ((delivery_kind = ANY (ARRAY['claimant_receipt'::text, 'status_update'::text, 'poster_restriction_notice'::text, 'counter_notice_forwarding'::text])))",
+        "copyright_notice_delivery_intents_delivery_kind_check": "CHECK ((delivery_kind = ANY (ARRAY['claimant_receipt'::text, 'status_update'::text, 'poster_restriction_notice'::text, 'counter_notice_forwarding'::text, 'staff_information_request'::text, 'email_intake_rejected'::text, 'email_intake_needs_information'::text])))",
         "copyright_notice_delivery_intents_failure_ciphertext_check": "CHECK (((failure_ciphertext IS NULL) OR ((char_length(failure_ciphertext) >= 1) AND (char_length(failure_ciphertext) <= 1048576))))",
         "copyright_notice_delivery_intents_idempotency_key_check": "CHECK (((char_length(idempotency_key) >= 1) AND (char_length(idempotency_key) <= 512)))",
         "copyright_notice_delivery_intents_recipient_role_check": "CHECK ((recipient_role = ANY (ARRAY['claimant'::text, 'poster'::text, 'correspondent'::text])))",
@@ -22595,6 +22587,17 @@
         "copyright_notice_delivery_intents_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'sent'::text, 'failed'::text, 'bounced'::text])))"
       },
       "columns": {
+        "body_ciphertext": {
+          "collation": null,
+          "comment": "Immutable encrypted reply body sent for an email-intake reply, so every retry sends the same legal text; NULL for case deliveries.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 23,
+          "type": "text"
+        },
         "bounced_at": {
           "collation": null,
           "comment": "Time SES reported a bounce or complaint for an accepted email.",
@@ -22603,7 +22606,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "channel": {
@@ -22614,7 +22617,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "text"
         },
         "claimed_at": {
@@ -22625,7 +22628,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "copyright_notice_correspondence_message_id": {
@@ -22636,17 +22639,28 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
-        "copyright_notice_id": {
+        "copyright_notice_email_intake_id": {
           "collation": null,
-          "comment": "Copyright case that owns the delivery obligation.",
+          "comment": "Declined private inbound email this reply answers; exactly one of this and copyright_notice_id is set, and at most one reply exists per intake.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "Copyright case that owns the delivery obligation; NULL for a reply to a declined email intake, which never creates a case.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
           "ordinalPosition": 2,
           "type": "uuid"
         },
@@ -22658,7 +22672,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "created_at": {
@@ -22669,7 +22683,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 24,
           "type": "timestamp with time zone"
         },
         "delivery_attempt_count": {
@@ -22680,7 +22694,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "integer"
         },
         "delivery_attempted_at": {
@@ -22691,18 +22705,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "delivery_kind": {
           "collation": null,
-          "comment": "Legal event communicated by this delivery.",
+          "comment": "Legal event communicated by this delivery. staff_information_request emails the notice claimant a staff request for more information and always references its immutable correspondence message.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "text"
         },
         "failed_at": {
@@ -22713,7 +22727,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "failure_ciphertext": {
@@ -22724,7 +22738,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "text"
         },
         "id": {
@@ -22746,7 +22760,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "text"
         },
         "lease_token": {
@@ -22757,7 +22771,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "uuid"
         },
         "next_attempt_at": {
@@ -22768,7 +22782,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "recipient_role": {
@@ -22779,7 +22793,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "recipient_user_erased_at": {
@@ -22790,7 +22804,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "recipient_user_id": {
@@ -22801,7 +22815,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "sent_at": {
@@ -22812,7 +22826,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "ses_message_id": {
@@ -22823,7 +22837,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "text"
         },
         "state": {
@@ -22834,7 +22848,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "updated_at": {
@@ -22845,11 +22859,11 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 23,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Durable, idempotent legal-notice delivery obligations. Transport workers claim and transition intents; they cannot alter case facts.",
+      "comment": "Durable, idempotent legal-notice delivery obligations, including private replies to rejected email intakes. Transport workers claim and transition intents; they cannot alter case facts.",
       "foreignKeys": {
         "copyright_notice_delivery_int_copyright_notice_corresponde_fkey": {
           "columns": ["copyright_notice_correspondence_message_id", "copyright_notice_id"],
@@ -22858,6 +22872,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id", "copyright_notice_id"],
           "referencedTable": "copyright_notice_correspondence_messages",
+          "validated": true
+        },
+        "copyright_notice_delivery_int_copyright_notice_email_intak_fkey": {
+          "columns": ["copyright_notice_email_intake_id"],
+          "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_email_intakes",
           "validated": true
         },
         "copyright_notice_delivery_int_copyright_notice_submission__fkey": {
@@ -22890,6 +22913,26 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "copyright_notice_delivery_int_copyright_notice_email_intake_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_delivery_int_copyright_notice_email_intake_key ON public.copyright_notice_delivery_intents USING btree (copyright_notice_email_intake_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_email_intake_id",
+              "descending": false,
+              "expression": "copyright_notice_email_intake_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "copyright_notice_delivery_intents_idempotency_key_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -23091,6 +23134,10 @@
         "trigger_copyright_delivery_intents_updated_at": "CREATE TRIGGER trigger_copyright_delivery_intents_updated_at BEFORE UPDATE ON public.copyright_notice_delivery_intents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
+        "copyright_notice_delivery_int_copyright_notice_email_intake_key": {
+          "columns": ["copyright_notice_email_intake_id"],
+          "definition": "UNIQUE (copyright_notice_email_intake_id)"
+        },
         "copyright_notice_delivery_intents_idempotency_key_key": {
           "columns": ["idempotency_key"],
           "definition": "UNIQUE (idempotency_key)"
@@ -24544,381 +24591,6 @@
         }
       }
     },
-    "copyright_notice_email_intake_responses": {
-      "checkConstraints": {
-        "copyright_notice_email_intake__recipient_email_ciphertext_check": "CHECK (((char_length(recipient_email_ciphertext) >= 1) AND (char_length(recipient_email_ciphertext) <= 1048576)))",
-        "copyright_notice_email_intake_resp_delivery_attempt_count_check": "CHECK (((delivery_attempt_count >= 0) AND (delivery_attempt_count <= 5)))",
-        "copyright_notice_email_intake_response_failure_ciphertext_check": "CHECK (((failure_ciphertext IS NULL) OR ((char_length(failure_ciphertext) >= 1) AND (char_length(failure_ciphertext) <= 1048576))))",
-        "copyright_notice_email_intake_response_subject_ciphertext_check": "CHECK (((char_length(subject_ciphertext) >= 1) AND (char_length(subject_ciphertext) <= 1048576)))",
-        "copyright_notice_email_intake_responses_body_ciphertext_check": "CHECK (((char_length(body_ciphertext) >= 1) AND (char_length(body_ciphertext) <= 1048576)))",
-        "copyright_notice_email_intake_responses_check": "CHECK ((((state = 'pending'::text) AND (claimed_at IS NULL) AND (sent_at IS NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'claimed'::text) AND (claimed_at IS NOT NULL) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'sent'::text) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NOT NULL) AND (failed_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'failed'::text) AND (delivery_attempted_at IS NOT NULL) AND (failed_at IS NOT NULL) AND (sent_at IS NULL) AND (bounced_at IS NULL)) OR ((state = 'bounced'::text) AND (delivery_attempted_at IS NOT NULL) AND (sent_at IS NOT NULL) AND (bounced_at IS NOT NULL) AND (failed_at IS NULL))))",
-        "copyright_notice_email_intake_responses_check1": "CHECK (((failure_ciphertext IS NULL) OR (state = ANY (ARRAY['pending'::text, 'failed'::text]))))",
-        "copyright_notice_email_intake_responses_check2": "CHECK ((((state = 'pending'::text) AND ((delivery_attempt_count = 0) OR (next_attempt_at IS NOT NULL))) OR ((state <> 'pending'::text) AND (next_attempt_at IS NULL))))",
-        "copyright_notice_email_intake_responses_check3": "CHECK (((ses_message_id IS NULL) OR (state = ANY (ARRAY['sent'::text, 'bounced'::text]))))",
-        "copyright_notice_email_intake_responses_idempotency_key_check": "CHECK (((char_length(idempotency_key) >= 1) AND (char_length(idempotency_key) <= 512)))",
-        "copyright_notice_email_intake_responses_response_kind_check": "CHECK ((response_kind = ANY (ARRAY['rejected'::text, 'needs_information'::text])))",
-        "copyright_notice_email_intake_responses_ses_message_id_check": "CHECK (((ses_message_id IS NULL) OR ((char_length(ses_message_id) >= 1) AND (char_length(ses_message_id) <= 1024))))",
-        "copyright_notice_email_intake_responses_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'sent'::text, 'failed'::text, 'bounced'::text])))"
-      },
-      "columns": {
-        "body_ciphertext": {
-          "collation": null,
-          "comment": "Immutable encrypted response body.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "text"
-        },
-        "bounced_at": {
-          "collation": null,
-          "comment": "Time SES reported this response undeliverable.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 16,
-          "type": "timestamp with time zone"
-        },
-        "claimed_at": {
-          "collation": null,
-          "comment": "Time a worker claimed this response.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11,
-          "type": "timestamp with time zone"
-        },
-        "copyright_notice_email_intake_id": {
-          "collation": null,
-          "comment": "The private inbound email receiving this response.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 19,
-          "type": "timestamp with time zone"
-        },
-        "delivery_attempt_count": {
-          "collation": null,
-          "comment": "Number of claimed send attempts, capped at five.",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 9,
-          "type": "integer"
-        },
-        "delivery_attempted_at": {
-          "collation": null,
-          "comment": "Time the latest send attempt began.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 12,
-          "type": "timestamp with time zone"
-        },
-        "failed_at": {
-          "collation": null,
-          "comment": "Time delivery became terminally failed.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 14,
-          "type": "timestamp with time zone"
-        },
-        "failure_ciphertext": {
-          "collation": null,
-          "comment": "Encrypted bounded latest transport failure.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 18,
-          "type": "text"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "idempotency_key": {
-          "collation": null,
-          "comment": "Stable key preventing duplicate responses to one intake.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "text"
-        },
-        "lease_token": {
-          "collation": null,
-          "comment": "Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10,
-          "type": "uuid"
-        },
-        "next_attempt_at": {
-          "collation": null,
-          "comment": "Earliest retry time after a retryable failure.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 15,
-          "type": "timestamp with time zone"
-        },
-        "recipient_email_ciphertext": {
-          "collation": null,
-          "comment": "Intake sender address encrypted specifically for this response.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "text"
-        },
-        "response_kind": {
-          "collation": null,
-          "comment": "Whether the intake was rejected or requires more information.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "text"
-        },
-        "sent_at": {
-          "collation": null,
-          "comment": "Time SES accepted this response.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 13,
-          "type": "timestamp with time zone"
-        },
-        "ses_message_id": {
-          "collation": null,
-          "comment": "SES provider identifier for this response.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 17,
-          "type": "text"
-        },
-        "state": {
-          "collation": null,
-          "comment": "Bounded durable email delivery lifecycle.",
-          "defaultExpression": "'pending'::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 8,
-          "type": "text"
-        },
-        "subject_ciphertext": {
-          "collation": null,
-          "comment": "Immutable encrypted response subject.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "text"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 20,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Private, durable responses to rejected or incomplete email intakes. These rows never create a copyright case.",
-      "foreignKeys": {
-        "copyright_notice_email_intak_copyright_notice_email_intak_fkey7": {
-          "columns": ["copyright_notice_email_intake_id"],
-          "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notice_email_intakes",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_notice_email_intake_copyright_notice_email_intak_key5": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_notice_email_intake_copyright_notice_email_intak_key5 ON public.copyright_notice_email_intake_responses USING btree (copyright_notice_email_intake_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_email_intake_id",
-              "descending": false,
-              "expression": "copyright_notice_email_intake_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "copyright_notice_email_intake_responses_idempotency_key_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_notice_email_intake_responses_idempotency_key_key ON public.copyright_notice_email_intake_responses USING btree (idempotency_key)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "idempotency_key",
-              "descending": false,
-              "expression": "idempotency_key",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "copyright_notice_email_intake_responses_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_notice_email_intake_responses_pkey ON public.copyright_notice_email_intake_responses USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_copyright_email_intake_responses__recoverable": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_email_intake_responses__recoverable ON public.copyright_notice_email_intake_responses USING btree (id) WHERE (state = ANY (ARRAY['pending'::text, 'claimed'::text]))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(state = ANY (ARRAY['pending'::text, 'claimed'::text]))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_copyright_email_intake_responses__ses_message": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_email_intake_responses__ses_message ON public.copyright_notice_email_intake_responses USING btree (ses_message_id) WHERE (ses_message_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "ses_message_id",
-              "descending": false,
-              "expression": "ses_message_id",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": "(ses_message_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_copyright_email_intake_response_transition": "CREATE TRIGGER trigger_copyright_email_intake_response_transition BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_responses FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_email_intake_response_transition()",
-        "trigger_copyright_email_intake_responses_updated_at": "CREATE TRIGGER trigger_copyright_email_intake_responses_updated_at BEFORE UPDATE ON public.copyright_notice_email_intake_responses FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {
-        "copyright_notice_email_intake_copyright_notice_email_intak_key5": {
-          "columns": ["copyright_notice_email_intake_id"],
-          "definition": "UNIQUE (copyright_notice_email_intake_id)"
-        },
-        "copyright_notice_email_intake_responses_idempotency_key_key": {
-          "columns": ["idempotency_key"],
-          "definition": "UNIQUE (idempotency_key)"
-        }
-      }
-    },
     "copyright_notice_email_intake_reviews": {
       "checkConstraints": {
         "copyright_notice_email_intake_review_rationale_ciphertext_check": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))",
@@ -25237,11 +24909,16 @@
     },
     "copyright_notice_email_intakes": {
       "checkConstraints": {
+        "copyright_notice_email_intakes_dkim_verdict_check": "CHECK ((dkim_verdict = ANY (ARRAY['pass'::text, 'fail'::text, 'gray'::text, 'processing_failed'::text, 'unknown'::text])))",
+        "copyright_notice_email_intakes_dmarc_verdict_check": "CHECK ((dmarc_verdict = ANY (ARRAY['pass'::text, 'fail'::text, 'gray'::text, 'processing_failed'::text, 'unknown'::text])))",
         "copyright_notice_email_intakes_raw_byte_size_check": "CHECK ((raw_byte_size >= 0))",
         "copyright_notice_email_intakes_raw_mime_type_check": "CHECK (((char_length(raw_mime_type) >= 1) AND (char_length(raw_mime_type) <= 255)))",
         "copyright_notice_email_intakes_raw_sha256_check": "CHECK ((octet_length(raw_sha256) = 32))",
         "copyright_notice_email_intakes_raw_storage_key_check": "CHECK (((char_length(raw_storage_key) >= 1) AND (char_length(raw_storage_key) <= 1024)))",
-        "copyright_notice_email_intakes_ses_message_id_check": "CHECK (((char_length(ses_message_id) >= 1) AND (char_length(ses_message_id) <= 512)))"
+        "copyright_notice_email_intakes_ses_message_id_check": "CHECK (((char_length(ses_message_id) >= 1) AND (char_length(ses_message_id) <= 512)))",
+        "copyright_notice_email_intakes_spam_verdict_check": "CHECK ((spam_verdict = ANY (ARRAY['pass'::text, 'fail'::text, 'gray'::text, 'processing_failed'::text, 'unknown'::text])))",
+        "copyright_notice_email_intakes_spf_verdict_check": "CHECK ((spf_verdict = ANY (ARRAY['pass'::text, 'fail'::text, 'gray'::text, 'processing_failed'::text, 'unknown'::text])))",
+        "copyright_notice_email_intakes_virus_verdict_check": "CHECK ((virus_verdict = ANY (ARRAY['pass'::text, 'fail'::text, 'gray'::text, 'processing_failed'::text, 'unknown'::text])))"
       },
       "columns": {
         "created_at": {
@@ -25252,8 +24929,30 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
+        },
+        "dkim_verdict": {
+          "collation": null,
+          "comment": "SES DKIM verdict from the amazonses.com Authentication-Results header; pass means a DKIM signature validated, not that the signing domain aligns with the From domain. unknown when SES reported none. Advisory risk signal only.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text"
+        },
+        "dmarc_verdict": {
+          "collation": null,
+          "comment": "SES DMARC verdict from the amazonses.com Authentication-Results header; unknown when SES reported none. Advisory risk signal only.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "text"
         },
         "id": {
           "collation": null,
@@ -25332,6 +25031,28 @@
           "ordinalPosition": 2,
           "type": "text"
         },
+        "spam_verdict": {
+          "collation": null,
+          "comment": "SES spam verdict from the X-SES-Spam-Verdict header SES added at receipt; unknown when SES reported none. Advisory risk signal only.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "text"
+        },
+        "spf_verdict": {
+          "collation": null,
+          "comment": "SES SPF verdict from the amazonses.com Authentication-Results header SES added at receipt; unknown when SES reported none. Advisory risk signal only.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text"
+        },
         "updated_at": {
           "collation": null,
           "comment": null,
@@ -25340,8 +25061,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
+        },
+        "virus_verdict": {
+          "collation": null,
+          "comment": "SES malware verdict from the X-SES-Virus-Verdict header SES added at receipt; unknown when SES reported none. A fail quarantines the original message so staff cannot download it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "text"
         }
       },
       "comment": "Immutable, private records for email sent to the designated copyright inbox before a moderator validates it into a legal case.",
@@ -25618,261 +25350,6 @@
           "definition": "UNIQUE (copyright_notice_email_intake_id, lookup_token, reference_kind)"
         }
       }
-    },
-    "copyright_notice_enforcement_requests": {
-      "checkConstraints": {
-        "copyright_notice_enforcement_requests_attempt_count_check": "CHECK ((attempt_count >= 0))",
-        "copyright_notice_enforcement_requests_check": "CHECK (((state = 'completed'::text) = (completed_at IS NOT NULL)))",
-        "copyright_notice_enforcement_requests_check1": "CHECK (((state = 'claimed'::text) = (claimed_at IS NOT NULL)))",
-        "copyright_notice_enforcement_requests_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'completed'::text])))"
-      },
-      "columns": {
-        "attempt_count": {
-          "collation": null,
-          "comment": "Count of durable worker claims made to impose the request.",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "integer"
-        },
-        "claimed_at": {
-          "collation": null,
-          "comment": "Time the current worker claim began.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11,
-          "type": "timestamp with time zone"
-        },
-        "completed_at": {
-          "collation": null,
-          "comment": "Time every required target restriction became active or the authorizing assessment became non-enforceable.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
-        },
-        "copyright_notice_id": {
-          "collation": null,
-          "comment": "Copyright case whose current compliant initial-notice assessment authorizes target restrictions.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "copyright_notice_submission_assessment_id": {
-          "collation": null,
-          "comment": "One-to-one initial-notice assessment that authorizes this enforcement request and supplies its idempotency identity.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 8,
-          "type": "timestamp with time zone"
-        },
-        "imposed_by_id": {
-          "collation": null,
-          "comment": "Optional moderator whose approval imposed the associated assessment; NULL for automated form enforcement.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "uuid"
-        },
-        "last_attempt_at": {
-          "collation": null,
-          "comment": "Most recent time a worker attempted to impose the required restrictions.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6,
-          "type": "timestamp with time zone"
-        },
-        "lease_token": {
-          "collation": null,
-          "comment": "Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10,
-          "type": "uuid"
-        },
-        "state": {
-          "collation": null,
-          "comment": "Outbox lifecycle state: pending, worker-claimed, or completed after target restrictions succeed or the authorizing assessment becomes non-enforceable.",
-          "defaultExpression": "'pending'::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "text"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 9,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Durable outbox created atomically with every compliant initial-notice assessment; completes after every target is restricted or when its authorizing assessment is no longer enforceable.",
-      "foreignKeys": {
-        "copyright_notice_enforcement__copyright_notice_submission__fkey": {
-          "columns": ["copyright_notice_submission_assessment_id"],
-          "definition": "FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notice_submission_assessments",
-          "validated": true
-        },
-        "copyright_notice_enforcement_requests_copyright_notice_id_fkey": {
-          "columns": ["copyright_notice_id"],
-          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notices",
-          "validated": true
-        },
-        "copyright_notice_enforcement_requests_imposed_by_id_fkey": {
-          "columns": ["imposed_by_id"],
-          "definition": "FOREIGN KEY (imposed_by_id) REFERENCES users(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "copyright_notice_enforcement_requests_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_notice_enforcement_requests_pkey ON public.copyright_notice_enforcement_requests USING btree (copyright_notice_submission_assessment_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_submission_assessment_id",
-              "descending": false,
-              "expression": "copyright_notice_submission_assessment_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_copyright_notice_enforcement_requests__imposed_by": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_enforcement_requests__imposed_by ON public.copyright_notice_enforcement_requests USING btree (imposed_by_id) WHERE (imposed_by_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "imposed_by_id",
-              "descending": false,
-              "expression": "imposed_by_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(imposed_by_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_copyright_notice_enforcement_requests__notice": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_enforcement_requests__notice ON public.copyright_notice_enforcement_requests USING btree (copyright_notice_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_copyright_notice_enforcement_requests__reconcilable": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_enforcement_requests__reconcilable ON public.copyright_notice_enforcement_requests USING btree (copyright_notice_submission_assessment_id) WHERE (state = ANY (ARRAY['pending'::text, 'claimed'::text]))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_submission_assessment_id",
-              "descending": false,
-              "expression": "copyright_notice_submission_assessment_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(state = ANY (ARRAY['pending'::text, 'claimed'::text]))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["copyright_notice_submission_assessment_id"],
-        "definition": "PRIMARY KEY (copyright_notice_submission_assessment_id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_copyright_notice_enforcement_requests_updated_at": "CREATE TRIGGER trigger_copyright_notice_enforcement_requests_updated_at BEFORE UPDATE ON public.copyright_notice_enforcement_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
     },
     "copyright_notice_evidence_artifacts": {
       "checkConstraints": {
@@ -65557,447 +65034,6 @@
       "relationKind": "partitioned table",
       "triggers": {
         "trigger_post_autotagger_results_updated_at": "CREATE TRIGGER trigger_post_autotagger_results_updated_at BEFORE UPDATE ON public.post_autotagger_results FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
-    "post_category_finalization_actors": {
-      "checkConstraints": {},
-      "columns": {
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "post_id": {
-          "collation": null,
-          "comment": "Finalization row these editors belong to. Deleting the finalization removes the actor set.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        },
-        "user_id": {
-          "collation": null,
-          "comment": "Retained user identity of an editor included in this finalization.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        }
-      },
-      "comment": "Finalization-owned editors whose hashtag relation votes must be finalized. user_id is a retained identity and does not authorize a deleted user.",
-      "foreignKeys": {
-        "post_category_finalization_actors_post_id_fkey": {
-          "columns": ["post_id"],
-          "definition": "FOREIGN KEY (post_id) REFERENCES post_category_finalizations(post_id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["post_id"],
-          "referencedTable": "post_category_finalizations",
-          "validated": true
-        },
-        "post_category_finalization_actors_user_id_fkey": {
-          "columns": ["user_id"],
-          "definition": "FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "retained_user_identities",
-          "validated": true
-        }
-      },
-      "growth": "bounded",
-      "indexes": {
-        "idx_post_category_finalization_actors__user_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_category_finalization_actors__user_id ON public.post_category_finalization_actors USING btree (user_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "user_id",
-              "descending": false,
-              "expression": "user_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "post_category_finalization_actors_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_category_finalization_actors_pkey ON public.post_category_finalization_actors USING btree (post_id, user_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "user_id",
-              "descending": false,
-              "expression": "user_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["post_id", "user_id"],
-        "definition": "PRIMARY KEY (post_id, user_id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_post_category_finalization_actors_children": "CREATE CONSTRAINT TRIGGER trigger_post_category_finalization_actors_children AFTER INSERT OR DELETE OR UPDATE ON public.post_category_finalization_actors DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_post_category_finalization_children()",
-        "trigger_post_category_finalization_actors_updated_at": "CREATE TRIGGER trigger_post_category_finalization_actors_updated_at BEFORE UPDATE ON public.post_category_finalization_actors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
-    "post_category_finalization_admission_topics": {
-      "checkConstraints": {},
-      "columns": {
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "post_id": {
-          "collation": null,
-          "comment": "Finalization whose create-time topic snapshot these rows belong to.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "topic_id": {
-          "collation": null,
-          "comment": "Retained topic identity captured at create time. It does not authorize a deleted topic.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Create-time explicit and data-point topic snapshot for admission-response repair. Zero rows with a non-null admission_response_generation is an explicit empty snapshot.",
-      "foreignKeys": {
-        "post_category_finalization_admission_topics_post_id_fkey": {
-          "columns": ["post_id"],
-          "definition": "FOREIGN KEY (post_id) REFERENCES post_category_finalizations(post_id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["post_id"],
-          "referencedTable": "post_category_finalizations",
-          "validated": true
-        },
-        "post_category_finalization_admission_topics_topic_id_fkey": {
-          "columns": ["topic_id"],
-          "definition": "FOREIGN KEY (topic_id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "retained_topic_identities",
-          "validated": true
-        }
-      },
-      "growth": "bounded",
-      "indexes": {
-        "idx_post_category_finalization_admission_topics__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_category_finalization_admission_topics__topic_id ON public.post_category_finalization_admission_topics USING btree (topic_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "post_category_finalization_admission_topics_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_category_finalization_admission_topics_pkey ON public.post_category_finalization_admission_topics USING btree (post_id, topic_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["post_id", "topic_id"],
-        "definition": "PRIMARY KEY (post_id, topic_id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_post_category_finalization_admission_topics_children": "CREATE CONSTRAINT TRIGGER trigger_post_category_finalization_admission_topics_children AFTER INSERT OR DELETE OR UPDATE ON public.post_category_finalization_admission_topics DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_post_category_finalization_children()",
-        "trigger_post_category_finalization_admission_topics_updated_at": "CREATE TRIGGER trigger_post_category_finalization_admission_topics_updated_at BEFORE UPDATE ON public.post_category_finalization_admission_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
-    "post_category_finalizations": {
-      "checkConstraints": {
-        "post_category_finalizations_admission_response_generation_check": "CHECK (((admission_response_generation IS NULL) OR (admission_response_generation > 0)))",
-        "post_category_finalizations_generation_check": "CHECK ((generation > 0))"
-      },
-      "columns": {
-        "admission_response_generation": {
-          "collation": null,
-          "comment": "Exact category-finalization generation whose create response may be repaired. NULL means an update with no topic snapshot; a non-null value with zero topic children is an explicit empty create snapshot.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "bigint"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        },
-        "generation": {
-          "collation": null,
-          "comment": "Monotonic per-post fence while the finalization row remains retained; the worker reloads recreated rows after acquiring the post lock.",
-          "defaultExpression": "1",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "bigint"
-        },
-        "post_id": {
-          "collation": null,
-          "comment": "The post whose persisted category relations require vote finalization.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "topic_category_owner_id": {
-          "collation": null,
-          "comment": "The post owner whose explicit and data-point topic votes must be finalized.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "One coalesced durable category-vote finalization per post; retained actor rows and exact-generation acknowledgement prevent stale workers from omitting or deleting later edits.",
-      "foreignKeys": {
-        "post_category_finalizations_post_id_fkey": {
-          "columns": ["post_id"],
-          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "posts",
-          "validated": true
-        },
-        "post_category_finalizations_topic_category_owner_id_fkey": {
-          "columns": ["topic_category_owner_id"],
-          "definition": "FOREIGN KEY (topic_category_owner_id) REFERENCES users(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        }
-      },
-      "growth": "bounded",
-      "indexes": {
-        "idx_post_category_finalizations__topic_category_owner_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_category_finalizations__topic_category_owner_id ON public.post_category_finalizations USING btree (topic_category_owner_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "topic_category_owner_id",
-              "descending": false,
-              "expression": "topic_category_owner_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_post_category_finalizations__updated_at": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_category_finalizations__updated_at ON public.post_category_finalizations USING btree (updated_at, post_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "updated_at",
-              "descending": false,
-              "expression": "updated_at",
-              "nullsFirst": false,
-              "opclass": "timestamptz_ops"
-            },
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "post_category_finalizations_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_category_finalizations_pkey ON public.post_category_finalizations USING btree (post_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["post_id"],
-        "definition": "PRIMARY KEY (post_id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "post_category_finalizations_repair_admission_response_on_delete": "CREATE TRIGGER post_category_finalizations_repair_admission_response_on_delete BEFORE DELETE ON public.post_category_finalizations FOR EACH ROW EXECUTE FUNCTION repair_post_category_finalization_admission_response_on_delete()",
-        "trigger_post_category_finalizations_children": "CREATE CONSTRAINT TRIGGER trigger_post_category_finalizations_children AFTER INSERT OR DELETE OR UPDATE ON public.post_category_finalizations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_post_category_finalization_children()"
       },
       "uniqueConstraints": {}
     },
@@ -108611,7 +107647,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -108622,7 +107658,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "dispatched_at": {
@@ -108633,7 +107669,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "expires_at": {
@@ -108644,7 +107680,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "failed_at": {
@@ -108655,7 +107691,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -108677,7 +107713,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "processing_attempt_id": {
@@ -108688,7 +107724,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "processing_attempts": {
@@ -108699,7 +107735,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "integer"
         },
         "processing_started_at": {
@@ -108710,7 +107746,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "queued_at": {
@@ -108721,8 +107757,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
+        },
+        "requested_by_id": {
+          "collation": null,
+          "comment": "The user who requested the export: the subject, or an administrator acting on their behalf. Only the requester may read the request; NULL (requester deleted) is visible to no one.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
         },
         "s3_key": {
           "collation": null,
@@ -108732,7 +107779,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "text"
         },
         "updated_at": {
@@ -108743,12 +107790,12 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "user_id": {
           "collation": null,
-          "comment": "The user who requested the data export.",
+          "comment": "The subject: the user whose data is exported.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -108760,6 +107807,15 @@
       },
       "comment": "Tracks user data export requests with lifecycle from queued through download or expiration. Status is derived from timestamp columns.",
       "foreignKeys": {
+        "user_data_requests_requested_by_id_fkey": {
+          "columns": ["requested_by_id"],
+          "definition": "FOREIGN KEY (requested_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
         "user_data_requests_user_id_fkey": {
           "columns": ["user_id"],
           "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL",
@@ -108772,16 +107828,23 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_user_data_requests__active_per_user": {
+        "idx_user_data_requests__active_per_requester": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_user_data_requests__active_per_user ON public.user_data_requests USING btree (user_id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL))",
+          "definition": "CREATE UNIQUE INDEX idx_user_data_requests__active_per_requester ON public.user_data_requests USING btree (user_id, requested_by_id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL))",
           "includedColumns": [],
           "keys": [
             {
               "column": "user_id",
               "descending": false,
               "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "requested_by_id",
+              "descending": false,
+              "expression": "requested_by_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -108812,16 +107875,43 @@
           "unique": true,
           "valid": true
         },
-        "idx_user_data_requests__user_id": {
+        "idx_user_data_requests__requested_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_data_requests__user_id ON public.user_data_requests USING btree (user_id, id DESC)",
+          "definition": "CREATE INDEX idx_user_data_requests__requested_by_id ON public.user_data_requests USING btree (requested_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "requested_by_id",
+              "descending": false,
+              "expression": "requested_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_data_requests__user_id_requested_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_data_requests__user_id_requested_by_id ON public.user_data_requests USING btree (user_id, requested_by_id, id DESC)",
           "includedColumns": [],
           "keys": [
             {
               "column": "user_id",
               "descending": false,
               "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "requested_by_id",
+              "descending": false,
+              "expression": "requested_by_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
@@ -112282,6 +111372,242 @@
           "definition": "UNIQUE (user_id, slug)"
         }
       }
+    },
+    "user_legal_preservation_holds": {
+      "checkConstraints": {
+        "user_legal_preservation_holds_check": "CHECK (((released_at IS NULL) = (released_by_id IS NULL)))",
+        "user_legal_preservation_holds_reference_ciphertext_check": "CHECK (((char_length(reference_ciphertext) >= 1) AND (char_length(reference_ciphertext) <= 4096)))"
+      },
+      "columns": {
+        "account_user_id": {
+          "collation": null,
+          "comment": "Account whose records are preserved; the retained identity shares the user id.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "placed_by_id": {
+          "collation": null,
+          "comment": "Administrator who placed the hold.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "reference_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted short reference, such as a matter id, for the legal process; sensitive, shown only to administrators and never logged or copied to other audit rows.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "released_at": {
+          "collation": null,
+          "comment": "When the hold was released; NULL while the hold is open.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "released_by_id": {
+          "collation": null,
+          "comment": "Administrator who released the hold; set together with released_at.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        }
+      },
+      "comment": "Staff-placed legal-process preservation holds on a user account (for example a DMCA 512(h) subpoena). A hold with released_at NULL is open and blocks account deletion; at most one hold per account is open at a time. Rows are append-only apart from a single release, and survive the account: every user reference targets retained_user_identities, so a released hold never blocks the 90-day hard delete and an open hold cannot coexist with a deleted account (placement refuses one). Counsel decides scope and duration, so neither is stored.",
+      "foreignKeys": {
+        "user_legal_preservation_holds_account_user_id_fkey": {
+          "columns": ["account_user_id"],
+          "definition": "FOREIGN KEY (account_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
+        "user_legal_preservation_holds_placed_by_id_fkey": {
+          "columns": ["placed_by_id"],
+          "definition": "FOREIGN KEY (placed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
+        "user_legal_preservation_holds_released_by_id_fkey": {
+          "columns": ["released_by_id"],
+          "definition": "FOREIGN KEY (released_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_user_legal_preservation_holds__account_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_legal_preservation_holds__account_user_id ON public.user_legal_preservation_holds USING btree (account_user_id, id DESC)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "account_user_id",
+              "descending": false,
+              "expression": "account_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_legal_preservation_holds__one_open": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_user_legal_preservation_holds__one_open ON public.user_legal_preservation_holds USING btree (account_user_id) WHERE (released_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "account_user_id",
+              "descending": false,
+              "expression": "account_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(released_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_user_legal_preservation_holds__placed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_legal_preservation_holds__placed_by_id ON public.user_legal_preservation_holds USING btree (placed_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "placed_by_id",
+              "descending": false,
+              "expression": "placed_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_legal_preservation_holds__released_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_legal_preservation_holds__released_by_id ON public.user_legal_preservation_holds USING btree (released_by_id) WHERE (released_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "released_by_id",
+              "descending": false,
+              "expression": "released_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(released_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "user_legal_preservation_holds_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_legal_preservation_holds_pkey ON public.user_legal_preservation_holds USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_user_legal_preservation_holds_reject_mutation": "CREATE TRIGGER trigger_user_legal_preservation_holds_reject_mutation BEFORE DELETE OR UPDATE ON public.user_legal_preservation_holds FOR EACH ROW EXECUTE FUNCTION fn_reject_user_legal_preservation_hold_mutation()"
+      },
+      "uniqueConstraints": {}
     },
     "user_metrics": {
       "checkConstraints": {},

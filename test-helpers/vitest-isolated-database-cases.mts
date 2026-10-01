@@ -1,54 +1,69 @@
+// Vitest matches `testNamePattern` against the suite and test titles joined by " > ", so every
+// registered name keeps that separator; the template type rejects a space-joined name at compile time.
+type IsolatedDatabaseCaseDefinition = { file: string; fullName: `${string} > ${string}` }
+
 const isolatedDatabaseCases = {
   'media-replay': {
     file: 'backend/api/v1/copyright-notices/copyright-notices.replay.isolated.test.mts',
     fullName:
-      'isolated global media replay route replays failed media registry records only for review staff and writes one audit event',
+      'isolated global media replay route > replays failed media registry records only for review staff and writes one audit event',
   },
   'activitypub-expiry': {
     file: 'backend/services/ap-inbox-activities/durable-delivery-storage.test.mts',
     fullName:
-      'ActivityPub inbox durable storage bounds deletes expired rows in deterministic lease-aware locked batches',
+      'ActivityPub inbox durable storage bounds > deletes expired rows in deterministic lease-aware locked batches',
   },
   'copyright-staff-email-intakes': {
     file: 'backend/services/copyright-notices/email-intakes-staff-queue.test.mts',
     fullName:
-      'searchCopyrightStaffEmailIntakes hides the queue from non-reviewers and lists unreviewed intakes, parsed or not, for staff',
+      'searchCopyrightStaffEmailIntakes > hides the queue from non-reviewers and lists unreviewed intakes, parsed or not, for staff',
+  },
+  'copyright-staff-email-intake-reply-failures': {
+    file: 'backend/services/copyright-notices/email-intakes-staff-queue-reply-failures.test.mts',
+    fullName:
+      'copyright email intake queue reply failures > lists a declined intake whose reply failed or bounced with its reason and wait, and hides the rest',
   },
   'copyright-email-queue-exact-limit': {
     file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
     fullName:
-      'copyright email intake queue pagination ends on an exact-limit final page with no next cursor',
+      'copyright email intake queue pagination > ends on an exact-limit final page with no next cursor',
   },
   'copyright-email-queue-partial': {
     file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
-    fullName: 'copyright email intake queue pagination ends on a partial final page',
+    fullName: 'copyright email intake queue pagination > ends on a partial final page',
   },
   'copyright-email-queue-walk': {
     file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
     fullName:
-      'copyright email intake queue pagination walks every owned intake one page at a time without repeats',
+      'copyright email intake queue pagination > walks every owned intake one page at a time without repeats',
   },
   'copyright-email-queue-tie': {
     file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
     fullName:
-      'copyright email intake queue pagination uses the UUID tie-breaker when two intakes share a received timestamp',
+      'copyright email intake queue pagination > uses the UUID tie-breaker when two intakes share a received timestamp',
   },
   'copyright-staff-queue-urgency': {
     file: 'backend/api/v1/copyright-notices/staff-queue-urgency.test.mts',
     fullName:
-      'copyright staff queue urgency lists missed then due restoration deadlines ahead of older intake work across pages',
+      'copyright staff queue urgency > lists missed then due restoration deadlines ahead of older intake work across pages',
+  },
+  'copyright-dev-seed': {
+    file: 'backend/scripts/seed/copyright.test.mts',
+    // Joined with ' > ' because that is what Vitest 5 matches.
+    fullName:
+      'seedCopyright > fills both staff queues with every review state and adds nothing when run again',
   },
   'copyright-cache-policy': {
     file: 'backend/api/v1/copyright-notices/copyright-cache.test.mts',
     fullName:
-      'copyright API cache policy marks member, staff, and raw-email responses private and no-store',
+      'copyright API cache policy > marks member, staff, and raw-email responses private and no-store',
   },
   'embedding-reconciliation-router': {
     file: 'backend/workers/bedrock-embeddings-batch/__tests__/worker-router.test.mts',
     fullName:
-      'bedrock embeddings batch worker processor reconciles a cached topic even when Bedrock creation is saturated',
+      'bedrock embeddings batch worker processor > reconciles a cached topic even when Bedrock creation is saturated',
   },
-} as const
+} as const satisfies Record<string, IsolatedDatabaseCaseDefinition>
 
 export type IsolatedDatabaseCaseId = keyof typeof isolatedDatabaseCases
 

@@ -18,6 +18,9 @@ User profile lookup, update, account deletion, and data export requests.
 - <a id="delete-apiv1usersuseridvote-weight"></a>[DELETE /api/v1/users/:userId/vote-weight](../../../../docs/requirements/api/v1/users/reference-delete-api-v1-users-userid-vote-weight.md)
 - <a id="put-apiv1usersuseridsuspension"></a>[PUT /api/v1/users/:userId/suspension](../../../../docs/requirements/api/v1/users/reference-put-api-v1-users-userid-suspension.md)
 - <a id="delete-apiv1usersuseridsuspension"></a>[DELETE /api/v1/users/:userId/suspension](../../../../docs/requirements/api/v1/users/reference-delete-api-v1-users-userid-suspension.md)
+- <a id="get-apiv1usersuseridpreservation-hold"></a>[GET /api/v1/users/:userId/preservation-hold](../../../../docs/requirements/api/v1/users/reference-get-api-v1-users-userid-preservation-hold.md)
+- <a id="put-apiv1usersuseridpreservation-hold"></a>[PUT /api/v1/users/:userId/preservation-hold](../../../../docs/requirements/api/v1/users/reference-put-api-v1-users-userid-preservation-hold.md)
+- <a id="delete-apiv1usersuseridpreservation-hold"></a>[DELETE /api/v1/users/:userId/preservation-hold](../../../../docs/requirements/api/v1/users/reference-delete-api-v1-users-userid-preservation-hold.md)
 - <a id="related"></a>[Related](../../../../docs/requirements/api/v1/users/reference-related.md)
 
 ## Performance

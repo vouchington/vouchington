@@ -6,8 +6,6 @@ import {
   type ReviewSuccessionHistoryAuditRow,
 } from './audit-query.mts'
 
-export { REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE } from './audit-query.mts'
-
 export type ReviewSuccessionHistoryAuditClassification =
   | 'active_automatic'
   | 'terminal_manual'

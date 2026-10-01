@@ -213,8 +213,7 @@ runs:
         echo "Running deployed Valkey diagnostic in a fresh container..."
         DIAGNOSTIC_OUTPUT=$(docker run --rm --network host \
           -e NODE_ENV=test -e ENVIRONMENT=test -e VALKEY_URL \
-          "$IMAGE" --experimental-strip-types --disable-warning=ExperimentalWarning \
-          valkey-admin.mts diagnose)
+          "$IMAGE" valkey-admin.mts diagnose)
         printf '%s\n' "$DIAGNOSTIC_OUTPUT" | jq -s -e '
           length == 1 and
           (.[0] |

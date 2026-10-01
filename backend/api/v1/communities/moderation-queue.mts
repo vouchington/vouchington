@@ -10,6 +10,7 @@ import { isModerationStaff } from '@services/users'
 import {
   searchCommunityModerationQueue,
   encodeCommunityModerationQueueCursor,
+  type CommunityModerationQueueSource,
 } from '@services/communities/publications/moderation-queue'
 
 /**
@@ -49,8 +50,10 @@ app.route('/api/v1/communities/:idOrSlug/moderation-queue').get(async (ctx: Cont
   const { entries, hasNextPage } = await searchCommunityModerationQueue(community.id, {
     limit,
     after,
-    // Pre-publication reviews leak unpublished post titles; restrict to moderator tier.
-    includePendingReviews: viewerTier === 'moderator',
+    source: parseQueueSource(ctx.query.source),
+    // Pre-publication reviews leak unpublished post titles and automod flags are moderation
+    // signals; restrict both to moderator tier.
+    includeModeratorSources: viewerTier === 'moderator',
     viewerTier,
   })
 
@@ -131,3 +134,9 @@ app.route('/api/v1/communities/:idOrSlug/moderation-queue').get(async (ctx: Cont
     viewer_tier: viewerTier,
   })
 })
+
+function parseQueueSource(value: unknown): CommunityModerationQueueSource | undefined {
+  return value === 'report' || value === 'community_review' || value === 'automod_flag'
+    ? value
+    : undefined
+}

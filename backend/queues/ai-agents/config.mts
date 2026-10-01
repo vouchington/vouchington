@@ -8,13 +8,31 @@ export const AI_AGENTS_DEFAULTS = {
   removeOnFail: 100,
 } as const
 
+/**
+ * A `classifier-run` job rides out a provider outage of minutes (#689), which the shared defaults
+ * above (3 attempts, about 3 seconds) cannot. Only this job uses it; every other ai-agents queue
+ * keeps `AI_AGENTS_DEFAULTS`.
+ *
+ * One number caps both the queue and the receipt: the job's `attempts` and the executor's
+ * `maxAttempts` are both `CLASSIFIER_RUN_ATTEMPTS`, so a retry can never reserve a provider attempt
+ * the receipt would refuse, and the recovery sweep can never buy an attempt beyond it. The backoff
+ * is `delay * 2^(n-1)` for the nth retry, so the 7 waits are 30s, 1m, 2m, 4m, 8m, 16m, 32m: about
+ * 63.5 minutes before jitter (up to about 79 with it). `classifierRunBackoffMs` also honours a
+ * provider `Retry-After` up to `CLASSIFIER_RUN_RETRY_AFTER_CEILING_MS`.
+ */
+export const CLASSIFIER_RUN_ATTEMPTS = 8
+export const CLASSIFIER_RUN_BACKOFF = {
+  type: 'classifier-run-outage' as const,
+  delay: 30_000,
+  jitter: 0.25,
+}
+export const CLASSIFIER_RUN_RETRY_AFTER_CEILING_MS = 10 * 60_000
+
 export type AIAgentJobName =
   | 'autotagger-rss-feed-item'
   | 'classifier-run-dispatcher'
   | 'classifier-run'
   | 'reconcile-classifier-runs'
-  | 'community-moderation-dispatcher'
-  | 'community-moderation-prompt'
   | 'report-judgement'
   | 'dispute-resolution'
   | 'appeal-resolution'
@@ -30,11 +48,9 @@ export type AIAgentJobName =
   | 'reconcile-copyright-agent-dispatches'
 
 export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
-  'community-moderation-prompt': 3,
   'classifier-run-dispatcher': 8,
   'classifier-run': 3,
   'reconcile-classifier-runs': 100,
-  'community-moderation-dispatcher': 8,
   'report-judgement': 9,
   'dispute-resolution': 9,
   'appeal-resolution': 9,
@@ -59,8 +75,7 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // blocking it on the spend cap would increase spend, not bound it. `auto-dispatch-judgement` is
 // exempt for the same reason: it only applies an already-computed judgement (remove content, warn
 // a user, escalate, resolve a report) -- it never calls OpenAI itself, and blocking it on the cap
-// would leave harmful content live and reports unactioned. `community-moderation-dispatcher`
-// stays gated: every `community-moderation-prompt` job it can enqueue calls OpenAI.
+// would leave harmful content live and reports unactioned.
 // `autotagger-rss-feed-item` only runs the collaborative-follower pass, which reads follow and vote
 // relations and never calls a model, so it is spend-free. C6's model call is the shared
 // `classifier-run` job, whose structured-decision client performs the authoritative pre-call cap
@@ -72,14 +87,12 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // though it cannot itself add to the day's spend. `core.mts`'s gate defers to
 // `wouldStoryPostCallOpenAI` (`backend/workers/ai-agents/processors/process-story-post.mts`) for it.
 export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
-  'community-moderation-prompt': true,
   // The dispatcher only reserves durable intent. The run job can finish local-only/effect replay
   // without provider spend; its structured-decision client performs the authoritative pre-call cap
   // check. The reconciler stops itself on a breach and never calls a provider.
   'classifier-run-dispatcher': false,
   'classifier-run': false,
   'reconcile-classifier-runs': false,
-  'community-moderation-dispatcher': true,
   'report-judgement': true,
   'dispute-resolution': true,
   'appeal-resolution': true,

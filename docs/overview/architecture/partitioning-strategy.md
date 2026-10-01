@@ -39,8 +39,7 @@ This block is rendered from the typed registry, and its normalized rows are chec
 | `ai_usage_records`                                      | RANGE         | `id`                                   | default            | none              | target-scoped      |
 | `classifier_decision_batch_candidates`                  | RANGE         | `batch_id`                             | default            | none              | target-scoped      |
 | `community_post_review_changes`                         | RANGE         | `id`                                   | default            | none              | target-scoped      |
-| `conversation_message_agentic_runs`                     | RANGE         | `id`                                   | monthly            | cleanupPartitions | retention-window   |
-| `conversation_message_agentic_runs_events`              | RANGE         | `conversation_message_agentic_run_id`  | monthly            | cleanupPartitions | retention-window   |
+| `community_prompt_classifier_results`                   | RANGE         | `batch_id`                             | default            | none              | target-scoped      |
 | `conversation_messages`                                 | RANGE         | `conversation_id`                      | default            | none              | target-scoped      |
 | `crawl_chunks`                                          | RANGE         | `crawl_id`                             | monthly            | cleanupPartitions | retention-window   |
 | `crawls`                                                | RANGE         | `id`                                   | monthly            | cleanupPartitions | retention-window   |
@@ -149,10 +148,9 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_notice_counter_notice_reviews`, `copyright_notice_deadlines`,
   `copyright_notice_delivery_intents`, `copyright_notice_delivery_recipients`,
   `copyright_notice_email_correspondence_reviews`, `copyright_notice_email_intake_attachments`,
-  `copyright_notice_enforcement_requests`,
   `copyright_notice_email_intake_notice_links`,
   `copyright_notice_email_intake_parses`,
-  `copyright_notice_email_intake_recommendations`, `copyright_notice_email_intake_responses`,
+  `copyright_notice_email_intake_recommendations`,
   `copyright_notice_email_intake_reviews`,
   `copyright_notice_email_intakes`, `copyright_notice_email_thread_references`,
   `copyright_notice_evidence_artifacts`,
@@ -192,7 +190,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `review_disputes`, `ses_bounce_events`, `stripe_events`, `user_data_request_attempts`,
   `user_data_requests`, `user_deletion_audit_logs`, `user_deletion_external_works`,
   `user_deletion_relation_impacts`, `user_deletion_requests`, `user_engagement_email_sends`,
-  `user_import_requests`, `user_moderation_email_sends`, `user_rss_feed_import_batches`,
+  `user_import_requests`, `user_legal_preservation_holds`, `user_moderation_email_sends`, `user_rss_feed_import_batches`,
   `user_rss_feed_import_rows`, `vote_integrity_flags`.
 - Post moderation ledger: `post_moderation_attempts`, `post_moderation_dispositions`,
   `post_moderation_versions`, and `post_moderation_work_items`. Rows follow the retained post and

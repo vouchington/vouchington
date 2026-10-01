@@ -157,8 +157,12 @@ examples describe the review baseline, rather than the current generated snapsho
     (`copyright_notice_intents` for `copyright_notice_action_intents`); a word under 3 letters
     (`comm_app_q`).
 
-  Abbreviating is allowed at any length. NM-4 `postgres-identifier-length` (jonathanong/no-mistakes#1058) still rejects names over 63 bytes. Today 1,108 of
-  1,394 non-constraint indexes use the full table name, and 22 use a valid abbreviation.
+  A shortened word must not be a denylisted token, even though it expands: `user_mod_notes` for
+  `user_moderator_notes` is an error because `mod` is denied, so spell that word out.
+
+  Abbreviating is allowed at any length. NM-4 `postgres-identifier-length` (jonathanong/no-mistakes#1058) still rejects names over 63 bytes. Today 1,125 of
+  1,398 non-constraint indexes use the full table name, and 20 use an abbreviation that expands; 8 of
+  those use a denylisted word (`conv`, `msg`, `pub`).
 
 - In table names, `__` has one meaning: generated entity-relation tables
   (`relation__<s>__<verb>__<o>`, and `retained_relation__…`). Everything else uses plain names:
@@ -261,8 +265,8 @@ examples describe the review baseline, rather than the current generated snapsho
     table per target (R3, relation votes). State kept per relation is keyed by an enum generated
     from the same metadata as the relation tables.
 - Enum names are plural like tables: only the last word is plural (`invoice_statuses`, not
-  `invoice_status` or `invoices_statuses`). About 22 renames: the 20 singular names and the 2
-  `agentic_runs_*` names. `verified_identity_statuses` is unused and deleted. The two duplicate
+  `invoice_status` or `invoices_statuses`). About 20 renames: the 20 singular names (the two
+  `agentic_runs_*` enums left with the agentic-run storage). `verified_identity_statuses` is unused and deleted. The two duplicate
   pairs (`admin_import_types` = `user_import_request_entity_types`,
   `community_visibility_types` = `privacy_types`) merge when they mean the same thing.
 - **Lifecycle timestamps are the facts; status is never stored beside them.** 10 tables store
@@ -275,9 +279,8 @@ examples describe the review baseline, rather than the current generated snapsho
     requires `sent_at`). A final state with no timestamp today gets one (`rejected_at`,
     `expired_at`, `stale_at`). A time-based state (`expires_at < now()`) can't be generated,
     because generation expressions must be immutable, so the sweeper writes `expired_at`.
-    - Final: `copyright_notice_delivery_intents`, `copyright_notice_email_intake_responses`,
-      `copyright_notice_enforcement_requests`, `notification_push_intents`,
-      `notification_push_intent_subscription_receipts`.
+    - Final: `copyright_notice_delivery_intents` (which also holds the one reply to each declined
+      email intake), `notification_push_intents`, `notification_push_intent_subscription_receipts`.
     - Final, with a retry loop: `copyright_notice_action_intents` (`blocked`/`failed` → `pending`),
       `oauth_authorizations` (`exchanging` → `callback_received`), `post_admission_reservations`
       (`retryable_failed` → `in_progress`). The final outcomes become timestamps and a generated
@@ -489,9 +492,7 @@ These go away: `_change_logs`, `_history`, `_audit_logs`, mutable `_events`, `_r
 `_events` stays only for append-only inbound or protocol logs that use `occurred_at`:
 `oauth_authorization_server_events`, `stripe_events` (append-only once its processing moves to
 `stripe_event_processing_work_items`) and `amazon_ses_bounce_events` (`ses_timestamp` →
-`occurred_at`). The two mutable `_events` tables are renamed:
-`conversation_message_agentic_runs_events` → `conversation_message_agentic_run_steps` (its output
-is filled in after insert), and `copyright_notice_lifecycle_events` →
+`occurred_at`). The mutable `copyright_notice_lifecycle_events` table is renamed
 `copyright_notice_lifecycle_changes` (the `_changes` shape).
 
 Queue details (decision 16):

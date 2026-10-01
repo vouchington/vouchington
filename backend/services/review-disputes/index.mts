@@ -1,5 +1,4 @@
 export type {
-  ReviewDispute,
   ReviewDisputeReason,
   ReviewDisputeRecommendedAction,
   ReviewDisputeResolutionAction,

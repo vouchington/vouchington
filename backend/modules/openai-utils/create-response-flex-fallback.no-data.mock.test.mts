@@ -1,7 +1,7 @@
 import { APIError } from 'openai'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runWithBackgroundResponseHooks } from './background-response-context.mts'
-import { createOpenAIResponse, streamOpenAIResponse } from './create-response.mts'
+import { createOpenAIResponse } from './create-response.mts'
 import { runWithOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
 import {
   makeFlexCapacityFailedStream,
@@ -179,79 +179,6 @@ describe('OpenAI flex capacity fallback', () => {
 
     expect(mocks.create).toHaveBeenCalledOnce()
     expect(sentryCaptureMessageMock).not.toHaveBeenCalled()
-  })
-
-  it('resends a foreground stream that failed before emitting any delta', async () => {
-    mocks.create
-      .mockResolvedValueOnce(makeFlexCapacityFailedStream())
-      .mockResolvedValueOnce(completedStream())
-
-    const generator = streamOpenAIResponse(flexParams)
-
-    await expect(generator.next()).resolves.toEqual({ done: false, value: { delta: 'ok' } })
-    await expect(generator.next()).resolves.toMatchObject({
-      done: true,
-      value: { id: 'resp-default' },
-    })
-    expect(mocks.create.mock.calls.map(([params]) => params.service_tier)).toEqual([
-      'flex',
-      'default',
-    ])
-    expect(mocks.create).toHaveBeenLastCalledWith(
-      expect.objectContaining({ stream: true, background: false }),
-      { maxRetries: 0 },
-    )
-  })
-
-  it('does not resend a foreground stream once a delta has reached the consumer', async () => {
-    const failedAfterDelta = makeResponseStream([
-      makeStreamEvent({
-        type: 'response.output_text.delta',
-        content_index: 0,
-        delta: 'partial',
-        item_id: 'msg-test',
-        logprobs: [],
-        output_index: 0,
-        sequence_number: 1,
-      }),
-      ...(await collect(makeFlexCapacityFailedStream())),
-    ])
-    mocks.create.mockResolvedValueOnce(failedAfterDelta)
-
-    const generator = streamOpenAIResponse(flexParams)
-
-    await expect(generator.next()).resolves.toEqual({ done: false, value: { delta: 'partial' } })
-    await expect(generator.next()).rejects.toMatchObject({ status: 'failed', code: 'server_error' })
-    expect(mocks.create).toHaveBeenCalledOnce()
-    expect(sentryCaptureMessageMock).not.toHaveBeenCalled()
-  })
-
-  it('closes the underlying stream when the consumer stops early', async () => {
-    let closed = false
-    mocks.create.mockResolvedValueOnce({
-      async *[Symbol.asyncIterator]() {
-        try {
-          yield makeStreamEvent({
-            type: 'response.output_text.delta',
-            content_index: 0,
-            delta: 'partial',
-            item_id: 'msg-test',
-            logprobs: [],
-            output_index: 0,
-            sequence_number: 1,
-          })
-          await new Promise<never>(() => {})
-        } finally {
-          closed = true
-        }
-      },
-    })
-
-    const generator = streamOpenAIResponse(flexParams)
-    await generator.next()
-    await generator.return(undefined as never)
-
-    expect(closed).toBe(true)
   })
 })
 

@@ -32,7 +32,6 @@ const prompt: CommunityAgentPrompt = {
   model_name: 'gpt-4.1-mini',
   model_provider: 'openai',
   slot_allocated: true,
-  on_flag_action: 'unpublish',
   activated_at: '2026-04-02T15:00:00.000Z',
   deactivated_at: null,
   created_at: '2026-04-02T15:00:00.000Z',

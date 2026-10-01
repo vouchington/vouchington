@@ -31,6 +31,7 @@ const community: Community = {
   post_approval_required_at: null,
   allow_review_posts: true,
   allow_data_point_posts: true,
+  automod_action: 'record_only',
   trusted_at: null,
   profile_image_id: null,
   banner_image_id: null,

@@ -11,8 +11,8 @@ import {
   insertTestCommunityPostReview,
   insertTestPendingCommunityPostReview,
 } from '@voucha/test-helpers/entities/community-post-reviews'
-import { approvePublication, rejectPublication, unpublishPost } from './moderate.mts'
-import { searchCommunityPosts, searchPendingPosts, getApprovedReviewsForPost } from './get.mts'
+import { approvePublication, rejectPublication } from './moderate.mts'
+import { searchCommunityPosts, searchPendingPosts } from './get.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '../types.mts'
 
@@ -21,16 +21,6 @@ describe('index', () => {
   let member: PrivateUser
   let community: Community
   let approvalCommunity: Community
-
-  function makePost(createdById: string): Promise<string> {
-    const r = createRandomString(8)
-    return insertTestPost({
-      title: `Pub Test Post ${r}`,
-      slug: `pub-test-post-${r}`,
-      markdown: 'Test content',
-      createdById,
-    })
-  }
 
   // Raw-helper equivalents of the real community-post creation path: skip createPost's
   // authorization/restriction enforcement (covered separately in
@@ -245,45 +235,6 @@ describe('index', () => {
       await expect(approvePublication(member, approvalCommunity.id, postId)).rejects.toMatchObject({
         status: 403,
       })
-    })
-  })
-
-  describe('getApprovedReviewsForPost', () => {
-    it('returns community IDs for approved reviews', async () => {
-      const postId = await insertApprovedPost(community.id, member.id)
-
-      const communityIds = await getApprovedReviewsForPost(postId)
-      expect(communityIds).toContain(community.id)
-    })
-
-    it('does not return pending reviews', async () => {
-      const postId = await insertPendingPost(approvalCommunity.id, member.id)
-
-      const communityIds = await getApprovedReviewsForPost(postId)
-      expect(communityIds).not.toContain(approvalCommunity.id)
-    })
-
-    it('does not return unpublished reviews', async () => {
-      const postId = await insertApprovedPost(community.id, member.id)
-      await unpublishPost(owner, community.id, postId)
-
-      const communityIds = await getApprovedReviewsForPost(postId)
-      expect(communityIds).not.toContain(community.id)
-    })
-
-    it('does not return rejected reviews', async () => {
-      const postId = await insertPendingPost(approvalCommunity.id, member.id)
-      await rejectPublication(owner, approvalCommunity.id, postId)
-
-      const communityIds = await getApprovedReviewsForPost(postId)
-      expect(communityIds).not.toContain(approvalCommunity.id)
-    })
-
-    it('returns empty array when post has no approved review', async () => {
-      const postId = await makePost(member.id)
-
-      const communityIds = await getApprovedReviewsForPost(postId)
-      expect(communityIds).toHaveLength(0)
     })
   })
 })

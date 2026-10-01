@@ -14,6 +14,7 @@ import { readCopyrightAcceptedNoticeCursorBefore } from '@voucha/test-helpers/da
 import { setUserDisplayNameFrom } from '@voucha/test-helpers/data-stores/psql/views/view-users'
 import { createCopyrightFormFixture } from '@services/copyright-notices/route-test-fixtures'
 import { createCopyrightFormIntake, reviewCopyrightFormIntake } from '@services/copyright-notices'
+import { createAcceptedCopyrightNotice } from '@voucha/test-helpers/services/copyright-notices/accepted-notice'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 
 describe('copyright notice member claimant attribution', () => {
@@ -36,7 +37,7 @@ describe('copyright notice member claimant attribution', () => {
 
   it('returns only the current claimant public profile on member list, detail, and participant reads', async () => {
     const fixture = await createCopyrightFormFixture()
-    const noticeId = await createAcceptedNotice(fixture)
+    const noticeId = await createAcceptedCopyrightNotice(fixture)
     const member = createRequest()
     await member.authenticateAs(await createTestUser())
 
@@ -74,7 +75,7 @@ describe('copyright notice member claimant attribution', () => {
 
   it('updates claimant attribution after a username change and removes it after erasure', async () => {
     const fixture = await createCopyrightFormFixture()
-    const noticeId = await createAcceptedNotice(fixture)
+    const noticeId = await createAcceptedCopyrightNotice(fixture)
     const member = createRequest()
     await member.authenticateAs(await createTestUser())
     const currentUsername = `copyright-claimant-${crypto.randomUUID()}`
@@ -166,36 +167,3 @@ describe('copyright notice member claimant attribution', () => {
     expect(body).not.toContain('Guest signature private')
   })
 })
-
-async function createAcceptedNotice(
-  fixture: Awaited<ReturnType<typeof createCopyrightFormFixture>>,
-): Promise<string> {
-  const intake = await createCopyrightFormIntake({
-    requesterUserId: fixture.claimant.id,
-    requesterIdentity: `user:${fixture.claimant.id}`,
-    idempotencyKey: crypto.randomUUID(),
-    request: {
-      jurisdiction: 'us_dmca',
-      claimantDisplayName: fixture.form.claimant_display_name,
-      claimantContact: fixture.form.claimant_contact,
-      claimantEmail: fixture.form.claimant_email,
-      workDescription: fixture.form.work_description,
-      goodFaithBelief: fixture.form.good_faith_belief,
-      accuracyAuthorityUnderPenaltyOfPerjury:
-        fixture.form.accuracy_authority_under_penalty_of_perjury,
-      electronicSignature: fixture.form.electronic_signature,
-      claimantTargets: fixture.form.targets.map(target => ({
-        postId: target.post_id,
-        imageId: target.image_id,
-        hostedUseUrl: target.target_url,
-      })),
-    },
-  })
-  await reviewCopyrightFormIntake({
-    intakeId: intake.intake.id,
-    currentUser: await createTestUser({ extraRoles: ['moderator'] }),
-    accepted: true,
-    rationale: 'The notice is complete.',
-  })
-  return intake.intake.copyright_notice_id
-}

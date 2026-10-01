@@ -23,7 +23,7 @@ export const LEGACY_EDITED_IN_PLACE_MARKER_MIGRATIONS = new Set<string>([
   'backend/data-stores/psql/migrations/0070-00-00-posts-feed-content.sql',
   'backend/data-stores/psql/migrations/0080-00-00-rss-feeds-items.sql',
   'backend/data-stores/psql/migrations/0100-00-00-bedrock-embeddings-autotagger.sql',
-  'backend/data-stores/psql/migrations/0110-00-00-conversations-agentic-runs.sql',
+  'backend/data-stores/psql/migrations/0110-00-00-conversations.sql',
   'backend/data-stores/psql/migrations/0120-00-00-notifications-recommendations.sql',
   'backend/data-stores/psql/migrations/0130-00-00-referral-programs-links.sql',
   'backend/data-stores/psql/migrations/0140-00-00-communities-publications.sql',

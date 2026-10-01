@@ -58,7 +58,7 @@ describe('searchCommunityModerationQueue', () => {
     })
   })
 
-  it('returns community_review entries when includePendingReviews is true', async () => {
+  it('returns community_review entries when includeModeratorSources is true', async () => {
     const community = await insertTestCommunity({
       createdById: author.id,
       name: `Mod Queue Reviews Community ${crypto.randomUUID().slice(0, 8)}`,
@@ -79,7 +79,7 @@ describe('searchCommunityModerationQueue', () => {
 
     const result = await searchCommunityModerationQueue(community.id, {
       limit: 50,
-      includePendingReviews: true,
+      includeModeratorSources: true,
     })
 
     const reviewEntry = result.entries.find(
@@ -94,7 +94,7 @@ describe('searchCommunityModerationQueue', () => {
     })
   })
 
-  it('does NOT return community_review entries when includePendingReviews is false', async () => {
+  it('does NOT return community_review entries when includeModeratorSources is false', async () => {
     const community = await insertTestCommunity({
       createdById: author.id,
       name: `Mod Queue No Reviews Community ${crypto.randomUUID().slice(0, 8)}`,
@@ -115,7 +115,7 @@ describe('searchCommunityModerationQueue', () => {
 
     const result = await searchCommunityModerationQueue(community.id, {
       limit: 50,
-      includePendingReviews: false,
+      includeModeratorSources: false,
     })
 
     const reviewEntry = result.entries.find(

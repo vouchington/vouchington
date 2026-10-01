@@ -3,6 +3,7 @@ import type {
   NoulQuestion,
   StructuredDecisionQuestion,
 } from '@modules/structured-decisions'
+import type { ClassifierDecisionInputResult } from '@services/classifiers'
 import type { ClassifierDecisionCandidate, ClassifierQuestionBinding } from './types.mts'
 
 export function toClassifierQuestions(
@@ -32,8 +33,22 @@ export function candidatesForBinding(
     : binding.criteria.flatMap(criterion => (criterion.candidate ? [criterion.candidate] : []))
 }
 
-export function classifierCandidateKey(candidate: ClassifierDecisionCandidate): string {
-  return candidate.candidateKind === 'topic'
-    ? `topic:${candidate.topicId}`
-    : `story:${candidate.storyId}`
+/** The concrete entity a candidate or its result names, whichever kind it is. */
+export function classifierCandidateEntityId(
+  candidate: ClassifierDecisionCandidate | ClassifierDecisionInputResult,
+): string {
+  switch (candidate.candidateKind) {
+    case 'topic':
+      return candidate.topicId
+    case 'story':
+      return candidate.storyId
+    case 'community_prompt':
+      return candidate.communityPromptId
+  }
+}
+
+export function classifierCandidateKey(
+  candidate: ClassifierDecisionCandidate | ClassifierDecisionInputResult,
+): string {
+  return `${candidate.candidateKind}:${classifierCandidateEntityId(candidate)}`
 }

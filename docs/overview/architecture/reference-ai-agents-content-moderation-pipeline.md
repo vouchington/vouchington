@@ -15,14 +15,16 @@ flowchart TD
   approved --> classifier[classifier-run-dispatcher]
   classifier --> labels[Label classifiers and local AI-generated detector]
   labels --> effects[Topic votes and tags]
-  post --> community[community-moderation-dispatcher]
-  community --> prompt[community-moderation-prompt per active community prompt]
-  prompt --> run[runCommunityPromptOnPost]
-  run --> action{Flagged by prompt?}
-  action -- Yes --> review[Unpublish when the prompt on_flag_action is unpublish]
-  action -- No --> clean[Store clean result]
-  review --> stored[Store in agent_moderations]
-  clean --> stored
+  post --> request[classifier_run_requests row for community-moderation]
+  request --> community[classifier-run-dispatcher]
+  community --> run[One provider call over every active community prompt]
+  run --> stored[Store in agent_moderations]
+  stored --> action{Flagged by a prompt?}
+  action -- No --> clean[Nothing more to do]
+  action -- Yes --> setting{communities.automod_action}
+  setting -- record_only --> recorded[Flag stays in agent_moderations]
+  setting -- review_queue --> review[Post stays published and joins the review queue]
+  setting -- unpublish --> unpublish[Unpublish unless a platform override applies]
 ```
 
 Admin-created posts are the exception: they publish immediately and skip the moderation branch on
@@ -32,7 +34,10 @@ initial create event.
 
 ### Deduplication
 
-Community prompt results are keyed by `(post_id, content_sha256, prompt_id)`. If post content hasn't changed, existing moderation results are reused — no OpenAI call made. Automated review-queue moves are attributed to the `automod` system user.
+Community prompt results are keyed by `(post_id, content_sha256, prompt_id)`. A community moderation
+run is requested per post content digest and completes at most once, so a replay never repeats the
+provider call or the community's chosen action. Automated review-queue moves and unpublishes are
+attributed to the `automod` system user.
 
 ### Community AI Agent Toggles
 
@@ -68,8 +73,10 @@ entitlement service without changing the API response shape or toggle UI contrac
 ### Custom Moderators
 
 Community toggles expose only the fixed-label built-in agents above. Custom community prompts use
-the separate community moderation prompt system: `community-moderation-dispatcher` fans out one
-`community-moderation-prompt` job per active prompt, and each job runs `runCommunityPromptOnPost`.
+the separate community moderation classifier (`community-moderation`) on the shared classifier-run
+lifecycle: one provider call asks every active community prompt, and the community-level
+`communities.automod_action` setting (`record_only`, `review_queue` or `unpublish`) decides what a
+flag does. Moderators set it from the moderation settings page.
 
 `ai-generated` uses the local Rust `is-it-slop` detector rather than an OpenAI call. Its confidence
 score and threshold are stored in `agent_moderations.results`.

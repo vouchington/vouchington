@@ -1,4 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
+import { pendingCopyrightEnforcementSql } from './enforcement-pending-sql.mts'
 
 /**
  * Opens a `queue_key` CTE with one row per actionable case: the case's urgency tier (0 missed
@@ -68,14 +69,18 @@ export function copyrightStaffQueueKeysSql(): SQLStatement {
       JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
       WHERE intent.state = 'failed'
       UNION ALL
-      SELECT request.copyright_notice_id, 'enforcement_pending', request.created_at
-      FROM copyright_notice_enforcement_requests request
-      WHERE request.state <> 'completed'
+      `.append(
+    // Includes the assessments the automatic-withholding switch is holding back, so staff see them.
+    pendingCopyrightEnforcementSql(
+      "DISTINCT submission.copyright_notice_id, 'enforcement_pending'::text, assessment.created_at",
+      true,
+    ),
+  ).append(sql`
       UNION ALL
       SELECT intent.copyright_notice_id, 'delivery_failed',
         COALESCE(intent.bounced_at, intent.failed_at, intent.updated_at)
       FROM copyright_notice_delivery_intents intent
-      WHERE intent.state IN ('failed', 'bounced')
+      WHERE intent.state IN ('failed', 'bounced') AND intent.copyright_notice_id IS NOT NULL
       UNION ALL
       SELECT deadline.copyright_notice_id,
         CASE WHEN deadline.restoration_deadline_at <= CURRENT_TIMESTAMP
@@ -96,5 +101,5 @@ export function copyrightStaffQueueKeysSql(): SQLStatement {
       FROM open_item
       GROUP BY open_item.copyright_notice_id
     )
-  `
+  `)
 }

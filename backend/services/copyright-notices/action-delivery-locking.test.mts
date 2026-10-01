@@ -1,16 +1,12 @@
-import { readCopyrightEnforcementRequest } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { describe, expect, it } from 'vitest'
 import {
   completeTestCopyrightActionClaim,
   createTestUnreadableCopyrightResponse,
   readTestCopyrightResponseFailure,
   createTestRejectedCopyrightResponse,
-  expireTestCopyrightEnforcementClaim,
 } from '@voucha/test-helpers/copyright-lease-fencing'
-import {
-  expireTestCopyrightDeliveryIntentClaim,
-  expireTestCopyrightEmailIntakeResponseClaim,
-} from '@voucha/test-helpers/data-stores/psql/copyright-delivery-claims'
+import { expireTestCopyrightDeliveryIntentClaim } from '@voucha/test-helpers/data-stores/psql/copyright-delivery-claims'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import {
@@ -23,19 +19,13 @@ import {
   createCopyrightDeliveryIntent,
   markCopyrightDeliveryIntentSent,
   markCopyrightDeliveryIntentFailed,
-  markCopyrightEmailIntakeResponseSent,
-  markCopyrightEmailIntakeResponseFailed,
-  prepareCopyrightEmailIntakeResponseDelivery,
-  processCopyrightEnforcementRequest,
+  prepareCopyrightEmailDelivery,
+  enforceCopyrightAssessment,
 } from './index.mts'
 import { claimCopyrightActionIntent, failCopyrightActionIntent } from './action-delivery-state.mts'
 import { compensateCopyrightActionFailure } from './action-delivery-compensation.mts'
 import { executeCopyrightActionIntent } from './action-delivery-execution.mts'
 import { getCopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
-import {
-  claimCopyrightEnforcementRequest,
-  completeNonEnforceableCopyrightEnforcementRequest,
-} from './enforcement-request-claim.mts'
 
 // Form screening's reclaimed-owner regression is owned by form-screening-executions.test.mts.
 describe('copyright queue lease fencing', () => {
@@ -80,48 +70,48 @@ describe('copyright queue lease fencing', () => {
     ).toBe(false)
   })
 
-  it('rejects the reclaimed intake response owner completion and failure', async () => {
-    const responseId = await createTestRejectedCopyrightResponse()
-    const old = await prepareCopyrightEmailIntakeResponseDelivery(responseId)
-    await expireTestCopyrightEmailIntakeResponseClaim(responseId, 1)
-    const current = await prepareCopyrightEmailIntakeResponseDelivery(responseId)
+  it('rejects the reclaimed intake reply owner completion and failure', async () => {
+    const intentId = await createTestRejectedCopyrightResponse()
+    const old = await prepareCopyrightEmailDelivery(intentId)
+    await expireTestCopyrightDeliveryIntentClaim(intentId, 1)
+    const current = await prepareCopyrightEmailDelivery(intentId)
     expect(current.leaseToken).not.toBe(old.leaseToken)
     expect(
-      await markCopyrightEmailIntakeResponseFailed({
-        responseId,
+      await markCopyrightDeliveryIntentFailed({
+        intentId,
         leaseToken: old.leaseToken,
         error: 'late',
       }),
     ).toBe(false)
     expect(
-      await markCopyrightEmailIntakeResponseSent({
-        responseId,
+      await markCopyrightDeliveryIntentSent({
+        intentId,
         leaseToken: old.leaseToken,
         sesMessageId: 'late',
       }),
     ).toBe(false)
     expect(
-      await markCopyrightEmailIntakeResponseSent({
-        responseId,
+      await markCopyrightDeliveryIntentSent({
+        intentId,
         leaseToken: current.leaseToken,
         sesMessageId: crypto.randomUUID(),
       }),
     ).toBe(true)
     expect(
-      await markCopyrightEmailIntakeResponseFailed({
-        responseId,
+      await markCopyrightDeliveryIntentFailed({
+        intentId,
         leaseToken: old.leaseToken,
         error: 'late',
       }),
     ).toBe(false)
   })
 
-  it('records an owned retry failure when intake response preparation cannot decrypt', async () => {
-    const responseId = await createTestUnreadableCopyrightResponse()
-    await expect(prepareCopyrightEmailIntakeResponseDelivery(responseId)).rejects.toThrow(
+  it('records an owned retry failure when intake reply preparation cannot decrypt', async () => {
+    const intentId = await createTestUnreadableCopyrightResponse()
+    await expect(prepareCopyrightEmailDelivery(intentId)).rejects.toThrow(
       'Invalid encrypted secret format',
     )
-    expect(await readTestCopyrightResponseFailure(responseId)).toEqual({
+    expect(await readTestCopyrightResponseFailure(intentId)).toEqual({
       state: 'pending',
       leaseToken: expect.any(String),
       claimedAt: null,
@@ -129,8 +119,8 @@ describe('copyright queue lease fencing', () => {
       nextAttemptAt: expect.any(Date),
       failure: 'Invalid encrypted secret format',
     })
-    await expect(prepareCopyrightEmailIntakeResponseDelivery(responseId)).rejects.toThrow(
-      'Copyright email intake response is not available to send',
+    await expect(prepareCopyrightEmailDelivery(intentId)).rejects.toThrow(
+      'Copyright delivery intent is not available to send',
     )
   })
 
@@ -230,40 +220,37 @@ describe('copyright queue lease fencing', () => {
   })
 
   it.each(['complete', 'fail'])(
-    'preserves the new enforcement result after stale %s',
+    'keeps the concurrent enforcer result when the first enforcer then %ss',
     async outcome => {
-      const { assessment } = await createCopyrightRestorationHoldFixture()
+      const { assessment, notice } = await createCopyrightRestorationHoldFixture()
       await expect(
-        processCopyrightEnforcementRequest(assessment.id, {
+        enforceCopyrightAssessment(assessment.id, {
           imposeRestriction: async input => {
-            await expireTestCopyrightEnforcementClaim(assessment.id)
-            const reclaimed = await claimCopyrightEnforcementRequest(assessment.id)
-            expect(reclaimed).toBeTypeOf('object')
+            await enforceCopyrightAssessment(assessment.id)
             if (outcome === 'fail') throw new Error('stalled owner resumed')
             return acceptCopyrightNoticeAndImposeRestriction(input)
           },
         }),
-      ).rejects.toThrow(
-        outcome === 'fail'
-          ? 'stalled owner resumed'
-          : 'Copyright enforcement request still has unrestricted targets',
-      )
-      expect(await readCopyrightEnforcementRequest(assessment.id)).toEqual({
-        state: 'claimed',
-        completed_at: null,
-      })
-      expect(await claimCopyrightEnforcementRequest(assessment.id)).toBeNull()
-      expect(
-        await completeNonEnforceableCopyrightEnforcementRequest(assessment.id, crypto.randomUUID()),
-      ).toBe(false)
-      await expireTestCopyrightEnforcementClaim(assessment.id)
-      await expect(processCopyrightEnforcementRequest(assessment.id)).resolves.toBe('completed')
-      expect(await readCopyrightEnforcementRequest(assessment.id)).toEqual({
-        state: 'completed',
-        completed_at: expect.any(Date),
-      })
+      ).resolves.toBeUndefined()
+      expect(await countCopyrightActiveRestrictionsForNotice(notice.id)).toBe(1)
+      await enforceCopyrightAssessment(assessment.id)
+      expect(await countCopyrightActiveRestrictionsForNotice(notice.id)).toBe(1)
     },
   )
+
+  it('rethrows an imposition failure that leaves the target owed', async () => {
+    const { assessment, notice } = await createCopyrightRestorationHoldFixture()
+    await expect(
+      enforceCopyrightAssessment(assessment.id, {
+        imposeRestriction: async () => {
+          throw new Error('provider outage')
+        },
+      }),
+    ).rejects.toThrow('provider outage')
+    expect(await countCopyrightActiveRestrictionsForNotice(notice.id)).toBe(0)
+    await enforceCopyrightAssessment(assessment.id)
+    expect(await countCopyrightActiveRestrictionsForNotice(notice.id)).toBe(1)
+  })
 })
 
 async function createActionClaimFixture(action: 'withhold' | 'restore' = 'withhold') {

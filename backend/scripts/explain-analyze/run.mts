@@ -8,7 +8,6 @@ import {
 } from './run-support.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
 import { runEntityAndCommunityScenarios } from './run-scenarios/entities-and-communities.mts'
-import { runAdmissionReservationScenarios } from './run-scenarios/admission-reservations.mts'
 import { runFeedAndMetricScenarios } from './run-scenarios/feed-and-metrics.mts'
 import { runHeavyFollowScenarios } from './run-scenarios/heavy-follows.mts'
 import { runHotPathLoaderScenarios } from './run-scenarios/hot-path-loaders.mts'
@@ -33,7 +32,6 @@ async function main() {
     await runSearchAndFacetScenarios()
     await runOAuthClientVerificationScenarios()
     await runEntityAndCommunityScenarios()
-    await runAdmissionReservationScenarios()
     await runTopicImportAttemptScenarios()
     await runHotPathLoaderScenarios()
     await runMembershipRefundScenarios()

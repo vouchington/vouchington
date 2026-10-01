@@ -110,6 +110,12 @@ Nova 2 Multimodal Embeddings V1 through the
 - Batch polling saves new embeddings into each `crawl_chunks` row. After confirming that all chunks
   for the current URL crawl have embeddings, it sets `embeddings_generated_at`.
 
+Partition retirement deletes embedding batch entity rows before detaching chunk partitions.
+Before detaching crawls, it clears batch and referral-link crawl pointers and deletes any
+remaining chunks, allowing their embedding rows to cascade. Each partition retires in its own
+transaction; a failure rolls back that partition, is reported, and leaves other partitions eligible
+for cleanup. Failed partitions remain attached for a later cleanup run.
+
 ## Related
 
 - [Crawling Overview](../../crawling.md)

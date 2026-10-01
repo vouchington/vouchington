@@ -62,6 +62,7 @@
 
 - `topic`
 - `story`
+- `community_prompt`
 
 ## `classifier_model_provider`
 
@@ -91,6 +92,12 @@
 - `multi_select`
 - `checkbox`
 
+## `community_automod_action`
+
+- `record_only`
+- `review_queue`
+- `unpublish`
+
 ## `community_list_item_types`
 
 - `topic`
@@ -116,11 +123,6 @@
 - `users`
 - `members`
 - `moderators`
-
-## `community_prompt_on_flag_action`
-
-- `none`
-- `unpublish`
 
 ## `community_restriction_types`
 
@@ -155,20 +157,6 @@
 - `direct_message`
 - `modmail`
 - `mod_internal`
-
-## `conversation_message_agentic_runs_events_types`
-
-- `function_call`
-- `model_response`
-
-## `conversation_message_agentic_runs_termination_reasons`
-
-- `no_tool_calls`
-- `max_topics`
-- `max_iterations`
-- `stalled`
-- `error`
-- `superseded`
 
 ## `conversation_message_directions`
 
@@ -502,6 +490,8 @@
 - `backfill_run`
 - `article_sync_run`
 - `import_batch_create`
+- `preservation_hold_place`
+- `preservation_hold_release`
 
 ## `moderator_on_flag_action`
 

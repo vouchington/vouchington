@@ -99,6 +99,25 @@ hidden ancestor hides the whole thread. Paged tools (`get_post_descendants`, `ge
 malformed cursor returns `{ success: false, error: "Invalid cursor" }`. Post and article text is
 wrapped as external content.
 
+`search_posts` follows the same rule: it lists only posts that `get_post` would return to the
+credential owner, so the owner's private, audience-limited and unapproved posts and the comments of
+a thread `get_post` refuses are never listed, even to their author or an administrator. A
+`similar_post_id` that `get_post` would refuse returns an empty page, like an id that matches
+nothing. Muted and blocked users, topics and hostnames are still left out. `GET /api/v1/posts` is
+unchanged.
+
+The [community read tools](../../../../overview/architecture/services/mcp-tools/read-tools.md#community-read-tools)
+(`search_communities`, `get_community`, `get_community_posts`, `get_community_pinned_posts`,
+`get_community_members`, each requiring the `communities:read` scope) return the same
+`{ success: true, ... }` or `{ success: false, error }` object. They read as a signed-out reader for
+every caller: a private, deleted or unknown community is
+`{ success: false, error: "Community not found" }`, even to its member, moderator, owner and an
+administrator, and never appears in `search_communities`. An anonymous post never names its author,
+even to the author or an administrator, and no result carries a viewer sidecar. The paged tools take
+`limit` (1 to 25, default 20) and `after` and return `page_info`; a malformed cursor, or one from a
+different sort, returns `{ success: false, error: "Invalid cursor" }`. Descriptions, rules and post
+text are wrapped as external content.
+
 ### Paged results
 
 `search_posts`, `search_topics`, `get_trending_posts` and `get_trending_topics` take the `after` and

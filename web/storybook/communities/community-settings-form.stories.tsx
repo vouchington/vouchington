@@ -44,6 +44,7 @@ const community: Community = {
   post_approval_required_at: '2026-02-01T00:00:00.000Z',
   allow_review_posts: true,
   allow_data_point_posts: true,
+  automod_action: 'record_only',
   trusted_at: '2026-03-01T00:00:00.000Z',
   profile_image_id: null,
   banner_image_id: null,

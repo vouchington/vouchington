@@ -8,9 +8,8 @@ import {
 import {
   loadCommunityForViewer,
   loadCommunityForPublicationModerator,
-  searchCommunityPosts,
+  getCommunityPostsPage,
   searchPendingPosts,
-  getPinnedPostIds,
 } from '@services/communities'
 import { attachPostClaims } from '@services/moderation-claims'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
@@ -19,11 +18,6 @@ import { getUrlEmbedsByUrlIds } from '@services/rss-feed-items/get-url-embed'
 import { isAdminUser } from '@services/users'
 import { indexById } from '@modules/utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { resolveHashtagTopicSearch } from '@services/search-params'
-import {
-  shouldExcludeCommunityPinnedPosts,
-  shouldIncludeCommunityPinnedPosts,
-} from './posts-pinned-helpers.mts'
 type CachedPost = Awaited<ReturnType<typeof getPostByAnyCachedBatch>>[number]
 async function buildLinkEmbedsSidecar(
   posts: CachedPost[],
@@ -56,44 +50,18 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
   const after = ctx.query.after as string | undefined
   const requestedSort = ctx.query.sort as string | undefined
   const sort = requestedSort === 'hot' ? 'hot' : 'new'
-  const hashtagSearchOptions = await resolveHashtagTopicSearch(ctx.query.q)
-  const hasHashtagFilter =
-    hashtagSearchOptions.hasUnknown || hashtagSearchOptions.filters.length > 0
 
-  const isFirstPage = !after
-  const shouldIncludePinnedPosts = shouldIncludeCommunityPinnedPosts({
-    after,
-    hasHashtagFilter,
-    textSearchQuery: hashtagSearchOptions.textSearchQuery,
-    topicIds: hashtagSearchOptions.topicIds,
-  })
-  const shouldExcludePinnedPosts = shouldExcludeCommunityPinnedPosts({
-    hasHashtagFilter,
-    textSearchQuery: hashtagSearchOptions.textSearchQuery,
-    topicIds: hashtagSearchOptions.topicIds,
-  })
-  const pinnedPostIds = shouldExcludePinnedPosts
-    ? await getPinnedPostIds(community.id, currentUser ?? null)
-    : []
-
-  const result = await searchCommunityPosts(community.id, {
+  const result = await getCommunityPostsPage(community.id, {
     currentUser: currentUser ?? null,
+    q: ctx.query.q,
+    sort,
     limit,
     after,
-    sort,
-    excludePostIds: pinnedPostIds,
-    text_search_query: hashtagSearchOptions.textSearchQuery,
-    hashtag_topic_ids: hashtagSearchOptions.topicIds,
-    hashtag_alias_ids: hashtagSearchOptions.filters.flatMap(filter =>
-      filter.kind === 'exact_alias' ? [filter.aliasId] : [],
-    ),
-    has_unknown_hashtag: hashtagSearchOptions.hasUnknown,
   })
+  const pinnedPostIds = result.pinned_post_ids
 
   const resultPostIds = result.results.map(p => p.id)
-  const allPostIds = isFirstPage
-    ? [...new Set([...pinnedPostIds, ...resultPostIds])]
-    : resultPostIds
+  const allPostIds = [...new Set([...pinnedPostIds, ...resultPostIds])]
 
   if (!currentUser) {
     ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
@@ -103,7 +71,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
   const embedAccess = isAdminUser(currentUser) ? 'administrator' : 'public'
 
   const output: Record<string, unknown> = {
-    pinned_post_ids: isFirstPage && shouldIncludePinnedPosts ? pinnedPostIds : [],
+    pinned_post_ids: pinnedPostIds,
     results: resultPostIds.map(id => ({ __entity_type: 'post' as const, id })),
     page_info: result.page_info,
     posts: rawPostsPromise.then(indexById),

@@ -32,8 +32,16 @@ const defaultDependencies: UsageQuotaDependencies = {
 
 // The bucket is the owner and surface, so every credential a user holds draws on one allowance and
 // minting more API keys or OAuth grants does not widen it. It never contains a credential.
-function usageBucketId(surface: UsageSurface, userId: string): string {
+function userBucketId(surface: UsageSurface, userId: string): string {
   return `${surface}:user:${userId}`
+}
+
+// Anonymous traffic shares one bucket per surface. There is deliberately nothing to tell callers
+// apart: an IP address or device id in the key would be a persisted identifier.
+function usageBucketId(surface: UsageSurface, identity: UsageIdentity): string {
+  return identity.credential === 'anonymous'
+    ? `${surface}:aggregate`
+    : userBucketId(surface, identity.userId)
 }
 
 // A 429 was refused before it ran and an actual 5xx is the API's failure, so neither is charged.
@@ -52,7 +60,7 @@ export async function checkUsageQuota(
   if (!isRouteRateLimitEnabled()) return { limited: false, retryAfterSeconds: 0 }
   try {
     const limited = await limiter.isRateLimited(
-      [usageBucketId(surface, userId)],
+      [userBucketId(surface, userId)],
       quota.limit,
       quota.windowSeconds,
     )
@@ -74,7 +82,7 @@ export async function settleUsage(
   const units = usageUnitsForStatus(settlement.statusCode)
   if (units > 0 && isRouteRateLimitEnabled()) {
     try {
-      await limiter.add([usageBucketId(settlement.surface, settlement.identity.userId)])
+      await limiter.add([usageBucketId(settlement.surface, settlement.identity)])
     } catch (err) {
       reportError(err instanceof Error ? err : new Error(String(err)))
     }
@@ -99,17 +107,19 @@ function toApiUsage(settlement: UsageSettlement, units: number): ApiUsage {
 function identityDimensions(
   identity: UsageIdentity,
 ): Pick<ApiUsage, 'credential' | 'user_id' | 'api_key_id' | 'oauth_client_id' | 'oauth_grant_id'> {
-  if (identity.credential === 'api_key') {
-    return {
-      credential: 'api_key',
-      user_id: identity.userId,
-      api_key_id: identity.apiKeyId,
-    }
-  }
-  return {
-    credential: 'oauth',
-    user_id: identity.userId,
-    oauth_client_id: identity.oauthClientId,
-    oauth_grant_id: identity.oauthGrantId,
+  switch (identity.credential) {
+    case 'api_key':
+      return { credential: 'api_key', user_id: identity.userId, api_key_id: identity.apiKeyId }
+    case 'oauth':
+      return {
+        credential: 'oauth',
+        user_id: identity.userId,
+        oauth_client_id: identity.oauthClientId,
+        oauth_grant_id: identity.oauthGrantId,
+      }
+    case 'session':
+      return { credential: 'session', user_id: identity.userId }
+    case 'anonymous':
+      return { credential: 'anonymous' }
   }
 }

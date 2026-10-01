@@ -145,7 +145,7 @@ prepare_service_commands() {
   if [ "$need_catalog" = 1 ]; then
     # A helper that silently does nothing exits 0 with empty output, and `set -e` is suppressed
     # while the reuse path runs under `||`, so verify each capture explicitly.
-    LOCALIZATION_SQLITE_PATH="$(node --experimental-strip-types "$REPO_ROOT/dev/localization/local-catalog.mts")"
+    LOCALIZATION_SQLITE_PATH="$(node "$REPO_ROOT/dev/localization/local-catalog.mts")"
     if [ -z "$LOCALIZATION_SQLITE_PATH" ]; then
       echo "Error: localization catalog step (dev/localization/local-catalog.mts) printed no catalog path." >&2
       exit 1

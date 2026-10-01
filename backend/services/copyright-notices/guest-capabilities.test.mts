@@ -5,6 +5,7 @@ import {
   readCopyrightGuestCapabilityState,
 } from '@voucha/test-helpers/data-stores/psql/copyright-guest-lifecycle'
 import { createTestCopyrightStaff } from '@voucha/test-helpers/services/copyright-notices/guest-capability'
+import { recordTestClaimantEmailReceipt } from '@voucha/test-helpers/services/copyright-notices/claimant-delivery'
 import {
   createTestUserDirect,
   getTestPostImagePlacement,
@@ -238,6 +239,7 @@ describe('copyright guest capabilities', () => {
 
   it('lets staff request information without extending the guest capability', async () => {
     const { notice } = await openNotice()
+    await recordTestClaimantEmailReceipt(notice.id)
     const staff = await createTestCopyrightStaff()
     const outsiderRecord = await createTestUserDirect()
     const outsider = { ...outsiderRecord, roles: [] } as typeof outsiderRecord

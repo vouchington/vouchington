@@ -10,14 +10,14 @@ The posts service is the core content creation system. It handles multiple post 
 
 ## Key Files
 
-- `create.mts` — Transactional post creation: validates inputs, inserts post + slug + images + review ratings + community review row, enqueues post-created events
+- `create.mts` — Transactional post creation: validates inputs, inserts post + slug + images + review ratings + community review row, synchronizes category relations and votes, and captures the response before commit; post-created events run after commit
 - `create-story-post.mts` — `insertStoryPostRecord()`: INSERT INTO posts for story posts, called from the stories service; accepts `QueryOptions` to participate in transactions
 - `get.mts` / `get-batch.mts` — Single and batch post lookups
 - `update.mts` — Post updates (title, markdown, broadcast, privacy, images)
 - `add-hashtag.mts` — Authored, additive post hashtag action. It applies the same direct-reader,
   author, and content-edit admission as post PATCH, then passes an internal tag intent into
   `updatePost()`. The locked update unions retained categories, checks the final standing cap,
-  and uses the existing category synchronization and post-commit finalization. Delegated
+  and uses the existing category synchronization and transactional vote application. Delegated
   own-private restrictions reuse the lower entity-relation post-access guard; the result reads
   the canonical alias identifier from the primary after commit.
 - `delete.mts` — Soft deletion
@@ -34,8 +34,8 @@ The posts service is the core content creation system. It handles multiple post 
 - `slugs.mts` — Post slug generation and management
 - `content.mts` — Generates content hashes for embeddings and moderation
 - `images.mts` — Validates post image inputs
-- `post-category-finalizations.mts` — Durable, generation-fenced replay of category-vote finalization after a post mutation commits
-- `category-vote-stats.mts` — Primary category-score refresh in atomic bounded chunks, coalescing publication capture per post/chunk. Successful changed chunks publish notification reconciliation; a failed chunk durably queues its full target set, leaving earlier committed chunks' effects intact.
+- `hashtag-votes.mts` — Casts editor hashtag votes and active post-owner topic votes in the create/update transaction, including score-zero writes for removed relations
+- `category-vote-stats.mts` — Recomputes primary category scores in the same transaction and registers cache, top-hashtag, and one post-notification publication action for commit
 - `review-successions/` — Exact-topic root-review reconciliation, immutable automatic archive epochs, and read-only historical audit
 
 ### [`search/`](../../../../../backend/services/posts/search/)
@@ -92,7 +92,7 @@ The `posts.ai_summary_markdown` column holds AI-generated summary content, separ
 ## Architecture Notes
 
 - Post creation is transactional: post, slug, images, ratings, and community review state are committed atomically
-- Hashtag, explicit-topic, and data-point topic category mutations atomically persist one coalesced post-category finalization carrying every editing actor, the post owner, and any create-response topic snapshot. The direct replay runs after commit; a serialized five-minute queue recovery drains interrupted finalizations in 25-row pages, reloads the current row after taking the per-post [session advisory lock](../session-advisory-lock/README.md), chains full pages, and acknowledges only the matching generation. A generation increments only while its row remains retained; a recreated row starts at generation 1 and is safe because the worker reloads it under that lock. The database repairs a retained create response in the same transaction as every exact-generation acknowledgement; an update atomically clears the create-response marker so recovery never rewrites a response with later category edits.
+- Hashtag, explicit-topic, and data-point topic category mutations write their relations and actor/owner votes in the owning post transaction. The response is captured from that transaction, so an exact create replay retains the original category projection even if the post changes later. Election statistics update from the primary in the same transaction; cache invalidation, top-hashtag refresh, and one post-notification reconciliation run after commit. Rollback discards those post-commit effects.
 - Side effects (auto-subscribe, auto-vote, mentions, moderation, fan-out) are handled by entity listener jobs, not inline
 - Admin-created posts record an `approve` clearance change and skip automated moderation, moderator-agent dispatch, community moderation, and spam detection on create. They still enqueue mentions, embeddings, autotagger, sitemap, and cache/metrics work. The bypass applies only at creation: a later moderation-affecting edit through `updatePost()` resets clearance and stale moderation status inside the same transaction, then the post-updated listener re-runs the normal moderation path.
 - Review ratings use individual CRUD operations — never bulk DELETE + INSERT

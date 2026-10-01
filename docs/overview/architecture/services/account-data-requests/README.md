@@ -6,11 +6,11 @@ GDPR/data portability export system that generates downloadable ZIP archives of 
 
 ## Overview
 
-This service handles the full lifecycle of user data export requests: creating a request record, streaming all user data into CSV files, packaging them into a ZIP archive, uploading to S3, and generating time-limited presigned download URLs. Exports include profile, posts, votes, emails, phones, passkeys, OAuth accounts, followed RSS feeds, followed topics, entity relations, bookmarks, consents, and referral attributions.
+This service handles the full lifecycle of user data export requests: creating a request record, streaming all user data into CSV files, packaging them into a ZIP archive, uploading to S3, and generating time-limited presigned download URLs. Exports include profile, posts, votes, emails, phones, passkeys, OAuth accounts, followed RSS feeds, followed topics, entity relations, bookmarks, consents, referral attributions, and copyright records.
 
 ## Key Files
 
-- `create.mts` — Creates a `user_data_requests` record with `pending` status
+- `create.mts` — Creates a `user_data_requests` record with `pending` status, recording the subject (`user_id`) and the requester (`requested_by_id`)
 - `create-or-conflict.mts` — Idempotent request creation (prevents duplicate in-flight requests)
 - `export.mts` — Orchestrates CSV generation: streams each data category, writes CSV files, merges multi-source CSVs, creates ZIP archive
 - `stream.mts` — PostgreSQL cursor-based streaming for profile, posts, votes, emails, phones, passkeys
@@ -20,8 +20,11 @@ This service handles the full lifecycle of user data export requests: creating a
 - `stream-followed-rss-feeds.mts` — Streams followed RSS feed details
 - `stream-followed-topics.mts` — Streams followed topic details
 - `stream-consents.mts` — Streams consent records and referral attributions
+- `stream-copyright.mts` — Streams the account's own decrypted copyright notices, appeals and counter-notices, and lists the copyright CSVs
+- `stream-copyright-cases.mts` — Streams accepted copyright cases as the in-app participant projection shows them to a member
+- `stream-copyright-incidents.mts` — Streams repeat-infringer incidents and decided reviews about the account
 - `s3.mts` — S3 operations: upload ZIP, generate presigned download URL (1-hour default), and delete expired exports in serial S3 batches of at most 1,000 objects
-- `get.mts` — Query request status and metadata
+- `get.mts` — Query request status and metadata, scoped to the requester so an admin-run export never reaches the subject; `wasDataRequestMadeBySubject` gates the ready email
 - `update.mts` — Status transitions (pending → processing → ready/failed/expired)
 - `types.mts` — `UserDataRequest` type with status lifecycle
 
@@ -42,6 +45,26 @@ This service handles the full lifecycle of user data export requests: creating a
 | `bookmarks.csv`             | Merged bookmark data                                                                                  |
 | `consents.csv`              | Legal and cookie consent ledger records                                                               |
 | `referral-attributions.csv` | Referral click attributions                                                                           |
+| `copyright-*.csv`           | The account's own copyright filings in full, plus the participant view of its cases (six files)       |
+
+## Copyright Records
+
+Redaction rule: the export decrypts only what the account itself submitted as a signed-in user
+(notices, appeals, counter-notices). Every other party's data comes from the participant projection
+in `backend/services/copyright-notices/read-models.mts`, so it never holds another party's legal
+name, address, contact, signature, staff rationale or raw email, and it omits delivery and outbox rows.
+The rule is deliberately conservative and counsel confirms it under
+[#1230](https://github.com/vouchington/vouchington/issues/1230). See
+[account data export](../../../../requirements/users/ACCOUNT-DATA-EXPORT.md#copyright-records) for the exact files and
+[copyright notices](../../../../requirements/moderation/COPYRIGHT-NOTICES.md#data-export) for the
+owning rule.
+
+`@services/copyright-notices` depends on `@services/users`, which depends on this package, so the
+export mirrors the member projection SQL, the member timeline event list, and the
+`copyright-form:` and `copyright-submission:` secret purposes instead of importing them. Tests in
+`backend/api/v1/copyright-notices/data-export.test.mts` pin the mirror to the read model. A decrypt
+failure fails the whole export rather than omitting a record, and the export worker therefore needs
+the stored-secret encryption keys.
 
 ## Architecture Notes
 

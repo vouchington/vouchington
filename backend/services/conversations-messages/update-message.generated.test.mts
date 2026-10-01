@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { createSystemUser } from '@voucha/test-helpers'
-import { hasActiveChatTurnByConversationId } from './agentic-runs.mts'
 import {
   createConversation,
   createConversationMessage,
@@ -84,20 +83,17 @@ describe('updateConversationMessageContent', () => {
       role: 'assistant',
       content: null,
     })
-    await expect(hasActiveChatTurnByConversationId(conversation.id)).resolves.toBe(true)
 
     await updateConversationMessageContent(conversation.id, pending.id, {
       role: 'assistant',
       content: null,
       error: 'provider failed',
     })
-    await expect(hasActiveChatTurnByConversationId(conversation.id)).resolves.toBe(false)
     await createConversationMessage(conversation.id, user.id, { role: 'user', content: 'Retry' })
     const retry = await createConversationMessage(conversation.id, user.id, {
       role: 'assistant',
       content: null,
     })
-    await expect(hasActiveChatTurnByConversationId(conversation.id)).resolves.toBe(true)
     await updateConversationMessageContent(conversation.id, retry.id, {
       role: 'assistant',
       content: 'Completed',
@@ -110,6 +106,5 @@ describe('updateConversationMessageContent', () => {
       { role: 'user', content: 'Retry' },
       { role: 'assistant', content: 'Completed' },
     ])
-    await expect(hasActiveChatTurnByConversationId(conversation.id)).resolves.toBe(false)
   })
 })

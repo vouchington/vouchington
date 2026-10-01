@@ -1,10 +1,7 @@
 import { prepareSingleCallClassifierDecision } from '@agents/classifiers/prepare-single-call'
 import type { ExecuteSingleCallClassifierDecisionInput } from '@agents/classifiers/types'
 import { recordClassifierRunAlarm } from '@modules/on-error'
-import {
-  StructuredDecisionError,
-  type StructuredDecisionClient,
-} from '@modules/structured-decisions'
+import type { StructuredDecisionClient } from '@modules/structured-decisions'
 import { OpenAiSpendCapBreachError } from '@services/ai-usage'
 import {
   failClassifierClientUnavailable,
@@ -14,10 +11,10 @@ import {
   releaseClassifierRunLease,
   startClassifierProviderAttempt,
   type ClassifierRunAdapter,
-  type ClassifierRunFailureKind,
   type ClassifierRunLease,
 } from '@services/classifier-runs'
 import type { PersistClassifierDecisionInput } from '@services/classifiers'
+import { alarmPermanentProviderRejection, classifyFailure } from './failure-classification.mts'
 
 export type ClassifierRunRemoteInput = Omit<
   ExecuteSingleCallClassifierDecisionInput,
@@ -43,24 +40,6 @@ class AttemptStopped extends Error {
     super(`classifier run provider attempt did not start: ${outcome}`)
     this.outcome = outcome
   }
-}
-
-function classifyFailure(
-  error: unknown,
-  phase: { reserved: boolean; returned: boolean },
-  signal: AbortSignal,
-): ClassifierRunFailureKind | null {
-  if (!phase.reserved) return null
-  if (error instanceof StructuredDecisionError && error.code === 'invalid-response')
-    return 'invalid-result'
-  // Once the provider has returned, an abort is not a provider failure: the response is already
-  // billed, so only a defect in what came back may fail the attempt.
-  if (
-    (error instanceof StructuredDecisionError && error.code === 'provider-error') ||
-    (signal.aborted && !phase.returned)
-  )
-    return 'provider-error'
-  return phase.returned ? 'invalid-result' : null
 }
 
 /**
@@ -134,14 +113,22 @@ export async function executeClassifierRun<C, L, E>(
       if (error instanceof AttemptStopped) return error.outcome
       if (!phase.reserved && error instanceof OpenAiSpendCapBreachError)
         await releaseClassifierRunLease(adapter, lease)
-      const failureKind = classifyFailure(error, phase, signal)
-      if (failureKind) {
+      const classified = classifyFailure(error, phase, signal)
+      if (classified) {
         const failure = await failClassifierRunAttempt(adapter, {
           lease,
           maxAttempts,
-          failureKind,
+          failureKind: classified.kind,
+          permanent: classified.permanent,
           local,
         })
+        if (failure === 'terminal') {
+          alarmPermanentProviderRejection(
+            { classifier: adapter.slug, runId: lease.runId },
+            classified,
+            error,
+          )
+        }
         if (failure !== 'released') return failure
       }
       throw error

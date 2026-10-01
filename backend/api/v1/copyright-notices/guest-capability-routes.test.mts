@@ -7,6 +7,10 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
+import {
+  readTestInformationRequestIntents,
+  recordTestClaimantEmailReceipt,
+} from '@voucha/test-helpers/services/copyright-notices/claimant-delivery'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 
 const dayMs = 24 * 60 * 60 * 1000
@@ -55,6 +59,7 @@ async function openNotice() {
 describe('copyright guest capability routes', () => {
   it('issues, files, and revokes a case capability without returning the statement', async () => {
     const noticeId = await openNotice()
+    const claimantEmail = await recordTestClaimantEmailReceipt(noticeId)
     const [moderator, outsider] = await Promise.all([
       createTestUser({ extraRoles: ['moderator'] }),
       createTestUser(),
@@ -137,6 +142,13 @@ describe('copyright guest capability routes', () => {
       .send({ statement: 'Send the registration number.' })
       .expect(201)
     expect(requested.body.copyright_correspondence.id).toEqual(expect.any(String))
+    await expect(readTestInformationRequestIntents(noticeId)).resolves.toEqual([
+      expect.objectContaining({
+        correspondenceId: requested.body.copyright_correspondence.id,
+        recipientEmail: claimantEmail,
+        state: 'pending',
+      }),
+    ])
     const revoked = await staff
       .post(`/api/v1/copyright-notices/${noticeId}/guest-capabilities/${capability.id}/revocation`)
       .expect(200)

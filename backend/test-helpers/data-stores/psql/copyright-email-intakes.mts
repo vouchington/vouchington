@@ -17,20 +17,43 @@ export async function readCopyrightEmailIntakeReview(intakeId: string): Promise<
   return rows
 }
 
+export async function readCopyrightEmailIntakeSesVerdicts(intakeId: string): Promise<{
+  spf: string
+  dkim: string
+  dmarc: string
+  spam: string
+  virus: string
+}> {
+  const { rows } = await read<{
+    spf: string
+    dkim: string
+    dmarc: string
+    spam: string
+    virus: string
+  }>(sql`/* readCopyrightEmailIntakeSesVerdicts */
+    SELECT spf_verdict AS spf, dkim_verdict AS dkim, dmarc_verdict AS dmarc,
+      spam_verdict AS spam, virus_verdict AS virus
+    FROM copyright_notice_email_intakes
+    WHERE id = ${intakeId}`)
+  const verdicts = rows[0]
+  if (!verdicts) throw new Error(`Copyright email intake ${intakeId} was not found`)
+  return verdicts
+}
+
 export async function readCopyrightEmailIntakeResponses(intakeId: string): Promise<
   {
     id: string
-    response_kind: 'rejected' | 'needs_information'
+    delivery_kind: 'email_intake_rejected' | 'email_intake_needs_information'
     state: string
   }[]
 > {
   const { rows } = await read<{
     id: string
-    response_kind: 'rejected' | 'needs_information'
+    delivery_kind: 'email_intake_rejected' | 'email_intake_needs_information'
     state: string
   }>(sql`/* readCopyrightEmailIntakeResponses */
-    SELECT id, response_kind, state
-    FROM copyright_notice_email_intake_responses
+    SELECT id, delivery_kind, state
+    FROM copyright_notice_delivery_intents
     WHERE copyright_notice_email_intake_id = ${intakeId}`)
   return rows
 }

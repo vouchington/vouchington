@@ -16,8 +16,8 @@ import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/co
 import {
   appendCopyrightSubmissionAssessment,
   applyNonSpamSignedInCopyrightFormScreening,
-  processCopyrightEnforcementRequest,
-  searchReconcilableCopyrightEnforcementRequestIds,
+  enforceCopyrightAssessment,
+  searchPendingCopyrightEnforcementAssessmentIds,
 } from '@services/copyright-notices'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
@@ -30,17 +30,26 @@ async function createStaffRequest(): Promise<StaffRequest> {
   return request
 }
 
-async function isListedInReviewQueue(request: StaffRequest, noticeId: string): Promise<boolean> {
+async function findInReviewQueue(
+  request: StaffRequest,
+  noticeId: string,
+): Promise<{ id: string; reasons: string[] } | undefined> {
   let after = await readCopyrightStaffQueueCursorBefore([noticeId])
   for (;;) {
     const page = await request
       .get(`/api/v1/copyright-notices/review-queue?limit=100&after=${encodeURIComponent(after)}`)
       .expect(200)
-    const ids = page.body.copyright_notices.map((notice: { id: string }) => notice.id)
-    if (ids.includes(noticeId)) return true
-    if (!page.body.page_info.has_next_page || !page.body.page_info.end_cursor) return false
+    const queued = page.body.copyright_notices.find(
+      (notice: { id: string }) => notice.id === noticeId,
+    )
+    if (queued) return queued
+    if (!page.body.page_info.has_next_page || !page.body.page_info.end_cursor) return undefined
     after = page.body.page_info.end_cursor
   }
+}
+
+async function isListedInReviewQueue(request: StaffRequest, noticeId: string): Promise<boolean> {
+  return (await findInReviewQueue(request, noticeId)) !== undefined
 }
 
 function reviewFormIntake(request: StaffRequest, intakeId: string) {
@@ -76,7 +85,7 @@ describe('moderator-first copyright withholding', () => {
     )
   })
 
-  it('keeps an automated request from before the switch-off pending and queued until a moderator accepts', async () => {
+  it('keeps an automated assessment from before the switch-off unrestricted and queued until a moderator accepts', async () => {
     const restoreSwitch = await enableAutomaticProvisionalWithholdingForTest()
     const [{ notice, screeningId }, staff] = await Promise.all([
       createClearScreenedForm(),
@@ -91,25 +100,25 @@ describe('moderator-first copyright withholding', () => {
     })
     restoreSwitch()
 
-    await expect(processCopyrightEnforcementRequest(automated.id)).resolves.toBe('not_claimed')
+    await enforceCopyrightAssessment(automated.id)
     await expect(
-      readTestOwnedCopyrightSweepIds(
-        searchReconcilableCopyrightEnforcementRequestIds,
-        automated.id,
-      ),
-    ).resolves.toEqual([automated.id])
+      readTestOwnedCopyrightSweepIds(searchPendingCopyrightEnforcementAssessmentIds, automated.id),
+    ).resolves.toEqual([])
     await expect(
       countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
     ).resolves.toBe(0)
-    await expect(isListedInReviewQueue(staff, notice.intake.copyright_notice_id)).resolves.toBe(
-      true,
-    )
+    await expect(
+      findInReviewQueue(staff, notice.intake.copyright_notice_id),
+    ).resolves.toMatchObject({ reasons: expect.arrayContaining(['enforcement_pending']) })
 
     await reviewFormIntake(staff, notice.intake.id).expect(200)
     await expect(
       countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
     ).resolves.toBe(1)
-    await expect(processCopyrightEnforcementRequest(automated.id)).resolves.toBe('completed')
+    await enforceCopyrightAssessment(automated.id)
+    await expect(
+      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
+    ).resolves.toBe(1)
   })
 
   it('withholds when a moderator accepts a clear-screened signed-in intake', async () => {

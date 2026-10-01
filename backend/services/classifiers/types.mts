@@ -37,9 +37,17 @@ export type StoryClassifierDecisionResult = PersistedDecisionResultBase & {
   storedCandidateId: string | null
 }
 
+/** A community moderation prompt is its own candidate: nothing is stored for it. */
+export type CommunityPromptClassifierDecisionResult = PersistedDecisionResultBase & {
+  candidateKind: 'community_prompt'
+  communityPromptId: string
+  storedCandidateId: null
+}
+
 export type ClassifierDecisionInputResult =
   | TopicClassifierDecisionResult
   | StoryClassifierDecisionResult
+  | CommunityPromptClassifierDecisionResult
 
 export type PersistClassifierDecisionCall = {
   shardOrdinal: number
@@ -66,31 +74,26 @@ export type ClassifierDecisionReservationInput = {
   promptVersionId: string
   scope: ClassifierDecisionScope
   subject: { postId: string; rssFeedItemId: null } | { postId: null; rssFeedItemId: string }
-  candidateKind: 'topic' | 'story'
+  candidateKind: ClassifierCandidateKind
   storedCandidateIds: readonly string[]
 }
 
+type PersistedDecisionResultLineage = {
+  id: string
+  batchId: string
+  decisionCallId: string
+  classifierId: string
+  promptVersionId: string
+  thresholdId: string | null
+  effectiveThresholds: ClassifierThresholds
+  scope: ClassifierDecisionScope
+}
+
 export type PersistedClassifierDecisionResult =
-  | (TopicClassifierDecisionResult & {
-      id: string
-      batchId: string
-      decisionCallId: string
-      classifierId: string
-      promptVersionId: string
-      thresholdId: string | null
-      effectiveThresholds: ClassifierThresholds
-      scope: ClassifierDecisionScope
-    })
-  | (StoryClassifierDecisionResult & {
-      id: string
-      batchId: string
-      decisionCallId: string
-      classifierId: string
-      promptVersionId: string
-      thresholdId: string | null
-      effectiveThresholds: ClassifierThresholds
-      scope: ClassifierDecisionScope
-    })
+  | (TopicClassifierDecisionResult & PersistedDecisionResultLineage)
+  | (StoryClassifierDecisionResult & PersistedDecisionResultLineage)
+  | (CommunityPromptClassifierDecisionResult &
+      PersistedDecisionResultLineage & { thresholdId: null })
 
 export type PersistedClassifierDecisionCall = {
   id: string

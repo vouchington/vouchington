@@ -8,7 +8,7 @@ Processes GDPR-style user account data export requests and cleans up expired exp
 
 ### `account-data-requests` (concurrency: 2)
 
-- `processExportRequest` — generates a user's data export archive and uploads it to S3, then emails the user a download link
+- `processExportRequest` — generates a user's data export archive and uploads it to S3, then emails the user a download link when the user requested the export themselves (an admin-requested export sends no email)
 - `processCleanupExpiredExports` — removes expired export archives from S3
 - `recoverExportRequests` — every five minutes re-enqueues unstarted requests and rotates attempts stuck for 30 minutes
 - **Lock duration**: 600,000 ms (10 min); stalled interval: 30,000 ms (default) — covers full export archive generation p99 ~5 min for large accounts

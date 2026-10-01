@@ -1,4 +1,5 @@
 import { write, type QueryExecutor } from '@data-stores/psql'
+import type { ClassifierCandidateKind } from '@voucha/types'
 import sql from 'sql-template-strings'
 import { readResults, toScope } from './read-complete-decision-results.mts'
 import type { ClassifierDecisionScope, PersistedClassifierDecision } from './types.mts'
@@ -19,7 +20,7 @@ type CallRow = { id: string; shard_ordinal: number }
 export async function readCompleteClassifierDecision(
   query: QueryExecutor,
   batchId: string,
-  candidateKind: 'topic' | 'story',
+  candidateKind: ClassifierCandidateKind,
 ): Promise<PersistedClassifierDecision> {
   const batch = await readBatchRow(query, batchId)
   if (!batch) throw new Error('Classifier decision batch disappeared before replay verification')
@@ -42,7 +43,7 @@ export async function readCompleteClassifierDecision(
  */
 export async function readCompleteClassifierDecisionIfExistsFromPrimary(
   batchId: string,
-  candidateKind: 'topic' | 'story',
+  candidateKind: ClassifierCandidateKind,
 ): Promise<PersistedClassifierDecision | null> {
   const batch = await readBatchRow(write, batchId)
   if (!batch || batch.completed_at === null) return null
@@ -52,7 +53,7 @@ export async function readCompleteClassifierDecisionIfExistsFromPrimary(
 async function assembleCompleteClassifierDecision(
   query: QueryExecutor,
   batch: BatchRow,
-  candidateKind: 'topic' | 'story',
+  candidateKind: ClassifierCandidateKind,
 ): Promise<PersistedClassifierDecision> {
   const [calls, results] = await Promise.all([
     readCalls(query, batch.id),

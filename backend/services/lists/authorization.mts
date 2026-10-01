@@ -1,18 +1,20 @@
 /**
- * List-route authorization contract — cross-file summary
+ * List-write authorization contract — cross-file summary
  *
- * Mutation routes (POST/PATCH/DELETE) in backend/api/v1/lists apply guards at
- * two layers. Every list mutation route must apply both layers in full.
+ * Every list write has two callers with the same rules: the mutation routes in backend/api/v1/lists
+ * and the MCP list tools in backend/tools. Each applies the guards below in full.
  *
- * Route layer:
- *   - POST/PATCH/DELETE: requireAuth + assertNotSuspended
- *   - PATCH/DELETE list, item add/remove, and import: currentUserCanManageList → 403
+ * Caller layer (route or tool):
+ *   - POST/PATCH/DELETE: an authenticated caller who passes assertNotSuspended
+ *   - PATCH/DELETE list, item add/remove, and import: getManageableList → 404 / 403
+ *     (the only way to obtain a ManageableList, which the update helper requires)
  *
  * Service layer:
  *   - update/delete/import: currentUserCanManageList → 403
- *   - item add/remove: route-layer ownership only; storage is list-id scoped
+ *   - item add/remove: caller-layer ownership only; storage is list-id scoped
  *
- * Rejection-path tests: backend/api/v1/lists/lists.suspension-guard.test.mts
+ * Rejection-path tests: backend/api/v1/lists/lists.suspension-guard.test.mts and
+ * backend/tools/list-write-tools.contract.test.mts
  */
 export function currentUserCanManageList(
   currentUserId: string,

@@ -3,6 +3,7 @@ import { reserveClassifierDecisionBatch } from '@services/classifiers/write-deci
 import { retainPublicationIdentityBridges } from '@services/post-publication/identity-bridges'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { insertClassifierRunCandidates } from './run-candidates.mts'
+import { capturesCandidates, pinnedStoredCandidateIds } from './remote-plan.mts'
 import { settleClassifierRunRequest } from './run-requests.mts'
 import type {
   ClassifierRunAdapter,
@@ -91,7 +92,7 @@ async function captureRunCandidates<C, L, E>(
   current: CurrentClassifierRunInput,
   resolved: ResolvedClassifierRun<C>,
 ): Promise<readonly string[] | null> {
-  if (!resolved.remote?.capturedCandidates) return []
+  if (!capturesCandidates(resolved.remote)) return []
   if (!adapter.captureCandidates) {
     throw new Error(`Classifier ${adapter.slug} captures candidates without a capture hook`)
   }
@@ -151,9 +152,9 @@ async function insertClassifierRun<C>(
       classifierId: remote.classifierId,
       promptVersionId: remote.promptVersionId,
       subject,
-      scope: { scopeCategory: 'global', scopeCommunityId: null },
-      candidateKind: 'topic',
-      storedCandidateIds: remote.candidates.map(candidate => candidate.candidateId),
+      scope: remote.scope,
+      candidateKind: remote.candidateKind,
+      storedCandidateIds: pinnedStoredCandidateIds(remote),
     })
     if (!reserved) throw new Error('classifier run decision batch reservation was not inserted')
   }

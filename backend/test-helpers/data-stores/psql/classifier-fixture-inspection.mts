@@ -57,6 +57,7 @@ export function buildClassifierFixtureInspection(data: ClassifierFixtureData) {
         snapshots: number
         topic_results: number
         story_results: number
+        community_prompt_results: number
       }>(sql`/* getClassifierFixtureDecisionPersistenceFacts */
         SELECT
           (SELECT count(*)::integer FROM classifier_decision_batches
@@ -68,7 +69,9 @@ export function buildClassifierFixtureInspection(data: ClassifierFixtureData) {
           (SELECT count(*)::integer FROM topic_classifier_results
             WHERE batch_id = ${batchId}) AS topic_results,
           (SELECT count(*)::integer FROM story_classifier_results
-            WHERE batch_id = ${batchId}) AS story_results
+            WHERE batch_id = ${batchId}) AS story_results,
+          (SELECT count(*)::integer FROM community_prompt_classifier_results
+            WHERE batch_id = ${batchId}) AS community_prompt_results
       `)
       return rows[0]!
     },
@@ -88,6 +91,7 @@ export function buildClassifierFixtureInspection(data: ClassifierFixtureData) {
         JOIN pg_class child ON child.oid = pg_inherits.inhrelid
         WHERE parent.relname IN (
           'classifier_decision_batch_candidates',
+          'community_prompt_classifier_results',
           'topic_classifier_results',
           'story_classifier_results'
         )

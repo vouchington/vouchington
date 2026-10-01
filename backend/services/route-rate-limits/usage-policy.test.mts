@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  isUsageQuotaExemptRoute,
+  resolveRouteUsageScopeClass,
   resolveUsagePlan,
   resolveUsageScopeClass,
   selectUsageQuota,
@@ -35,6 +37,14 @@ describe('selectUsageQuota', () => {
     )
   })
 
+  it('sizes the REST surfaces by scope class and plan like the MCP ones', () => {
+    for (const surface of ['rest_user', 'rest_anonymous'] as const) {
+      expect(limitFor(surface, 'free', 'write')).toBeLessThan(limitFor(surface, 'free', 'read'))
+    }
+    expect(limitFor('rest_user', 'plus', 'read')).toBe(2 * limitFor('rest_user', 'free', 'read'))
+    expect(limitFor('rest_user', 'pro', 'write')).toBe(4 * limitFor('rest_user', 'free', 'write'))
+  })
+
   it('counts every selection over the one sliding window', () => {
     expect(selectUsageQuota({ surface: 'mcp_user', plan: 'pro', scopeClass: 'read' })).toEqual(
       expect.objectContaining({ windowSeconds: USAGE_QUOTA_WINDOW_SECONDS }),
@@ -48,6 +58,39 @@ describe('resolveUsagePlan', () => {
     expect(resolveUsagePlan({ membership_plan: 'pro' })).toBe('pro')
     expect(resolveUsagePlan({ membership_plan: null })).toBe('free')
     expect(resolveUsagePlan({})).toBe('free')
+  })
+})
+
+describe('resolveRouteUsageScopeClass', () => {
+  it('is read-class only for the read category and write-class for every state change', () => {
+    expect(resolveRouteUsageScopeClass('read')).toBe('read')
+    expect(resolveRouteUsageScopeClass('write')).toBe('write')
+    expect(resolveRouteUsageScopeClass('sensitive')).toBe('write')
+    expect(resolveRouteUsageScopeClass('oauth_callback')).toBe('write')
+  })
+})
+
+describe('isUsageQuotaExemptRoute', () => {
+  it('exempts the session and sign-in routes from refusal on any method', () => {
+    for (const routeKey of [
+      'GET:/api/v1/auth/me',
+      'PATCH:/api/v1/session',
+      'DELETE:/api/v1/session',
+      'POST:/api/v1/auth/passkeys/authentication/verify',
+    ]) {
+      expect(isUsageQuotaExemptRoute(routeKey)).toBe(true)
+    }
+  })
+
+  it('does not exempt other routes, including look-alike prefixes', () => {
+    for (const routeKey of [
+      'GET:/api/v1/posts',
+      'POST:/api/v1/my/email-addresses',
+      'GET:/api/v1/sessions',
+      'GET:/api/v1/authors',
+    ]) {
+      expect(isUsageQuotaExemptRoute(routeKey)).toBe(false)
+    }
   })
 })
 

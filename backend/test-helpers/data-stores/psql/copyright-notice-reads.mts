@@ -79,6 +79,16 @@ export async function readCopyrightStaffQueueCursorRows(
   return rows
 }
 
+/** Queue keys that name no case; a reply to a declined email intake must never become one. */
+export async function countCopyrightStaffQueueKeysWithoutNotice(): Promise<number> {
+  const { rows } = await read<{ count: number }>(
+    sql`/* countCopyrightStaffQueueKeysWithoutNotice */`
+      .append(copyrightStaffQueueKeysSql())
+      .append(sql`SELECT count(*)::int AS count FROM queue_key WHERE id IS NULL`),
+  )
+  return rows[0]!.count
+}
+
 export async function readCopyrightNoticeTargetIds(noticeId: string): Promise<string[]> {
   const { rows } = await read<{ id: string }>(sql`/* readCopyrightNoticeTargetIds */
     SELECT id FROM copyright_notice_targets WHERE copyright_notice_id = ${noticeId} ORDER BY id`)
@@ -92,20 +102,6 @@ export async function countCopyrightActiveRestrictionsForNotice(noticeId: string
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     WHERE target.copyright_notice_id = ${noticeId} AND restriction.lifted_at IS NULL`)
   return rows[0]!.count
-}
-
-export async function readCopyrightEnforcementRequest(assessmentId: string): Promise<{
-  state: 'pending' | 'claimed' | 'completed'
-  completed_at: Date | null
-} | null> {
-  const { rows } = await write<{
-    state: 'pending' | 'claimed' | 'completed'
-    completed_at: Date | null
-  }>(sql`/* readCopyrightEnforcementRequest */
-    SELECT state, completed_at
-    FROM copyright_notice_enforcement_requests
-    WHERE copyright_notice_submission_assessment_id = ${assessmentId}`)
-  return rows[0] ?? null
 }
 
 export async function failTestCopyrightDeliveryIntent(intentId: string): Promise<void> {

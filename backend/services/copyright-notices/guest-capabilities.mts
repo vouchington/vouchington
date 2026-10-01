@@ -1,15 +1,11 @@
-import { randomBytes } from 'crypto'
+import { randomBytes } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
-import { encryptSecret, hashToken } from '@modules/token-secrets'
+import { hashToken } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
-import {
-  copyrightCorrespondencePurpose,
-  createOutboundCopyrightCorrespondence,
-} from './correspondence.mts'
 
 export const copyrightGuestCapabilityPurpose = 'copyright-guest-capability'
 export const copyrightGuestCapabilityMaxLifetimeMs = 30 * 24 * 60 * 60 * 1000
@@ -100,42 +96,4 @@ export async function authorizeCopyrightGuestCapability(input: {
   `)
   await transaction.commit()
   return rows[0]?.id ?? null
-}
-
-export async function requestCopyrightGuestInformation(input: {
-  currentUser: PrivateUser
-  noticeId: string
-  capabilityId: string
-  statement: string
-}): Promise<{ id: string }> {
-  assert(input.statement.trim().length > 0, 422, 'Information request is required')
-  assert(
-    currentUserCanReviewCopyrightNotices(input.currentUser),
-    403,
-    'Only copyright staff can request information',
-  )
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ id: string }>(
-    sql`/* requestCopyrightGuestInformation:capability */
-    SELECT id FROM copyright_notice_guest_capabilities
-    WHERE id = ${input.capabilityId} AND copyright_notice_id = ${input.noticeId}
-    FOR UPDATE
-  `,
-  )
-  assert(rows[0], 404, 'Copyright guest capability was not found')
-  await transaction.commit()
-  const correspondenceId = uuidv7()
-  const correspondence = await createOutboundCopyrightCorrespondence({
-    id: correspondenceId,
-    noticeId: input.noticeId,
-    submissionId: null,
-    correspondenceKind: 'request_information',
-    compositionKind: 'staff',
-    bodyCiphertext: encryptSecret(
-      input.statement,
-      copyrightCorrespondencePurpose(correspondenceId),
-    ),
-    draftedById: input.currentUser.id,
-  })
-  return { id: correspondence.id }
 }

@@ -23,7 +23,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1141.0",
+    "@aws-sdk/client-s3": "^3.1142.0",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@modules/aws": "workspace:^",
@@ -60,6 +60,6 @@
     "@services/users": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
-    "@vouchington/embeds": "0.0.2"
+    "@vouchington/embeds": "^0.0.2"
   }
 }

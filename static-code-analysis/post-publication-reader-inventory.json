@@ -213,6 +213,13 @@
       "owner_classification": "mixed-discovery-sql"
     },
     {
+      "path": "backend/services/posts/search/query-builder/thread-readability.mts",
+      "classification": "raw-hydrator",
+      "reason": "Search fragment; base-filters composes this comment-chain rule onto its public-only eligibility for MCP search.",
+      "owner_path": "backend/services/posts/search/query-builder/base-filters.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
       "path": "backend/services/entity-relations/build-select-query.mts",
       "classification": "raw-hydrator",
       "reason": "Relation read assembler delegates its subject and object post predicates to post-access.",
@@ -230,6 +237,20 @@
       "path": "backend/services/communities/publications/add.mts",
       "classification": "mutation",
       "reason": "Community publication mutation.",
+      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/communities/publications/automod-flag.mts",
+      "classification": "mutation",
+      "reason": "Automod flag dismissal mutation; returns only a flag count and never serializes post rows.",
+      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/communities/publications/moderation-run.mts",
+      "classification": "mutation",
+      "reason": "Community moderation run request locks a still-published post and records durable classifier work; it never serializes post rows.",
       "owner_path": "backend/services/communities/publications/approved-posts.mts",
       "owner_classification": "mixed-discovery-sql"
     },

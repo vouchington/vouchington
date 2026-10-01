@@ -2,6 +2,7 @@ import createHttpError from 'http-errors'
 import type { BasicUser } from '@services/users/types'
 import { createEntityRelationAction } from '@services/entity-relation-actions'
 import { addPostHashtag } from '@services/posts'
+import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { requirePrivateToolUser } from './private-user.mts'
 import type { Tool, ToolInvocationContext } from './types.mts'
 import { objectSchema, oneOfSchema } from './output-schema-shapes.mts'
@@ -104,14 +105,7 @@ const tool: Tool<AddEntityRelationArgs, AddEntityRelationResult> = {
       invocationContext?: ToolInvocationContext,
     ): Promise<AddEntityRelationResult> => {
       const currentPrivateUser = await requirePrivateToolUser(currentUser)
-      if (!invocationContext) throw createHttpError(403, 'Delegated tool context is required')
-      if (invocationContext.credentialOwnerId !== currentPrivateUser.id)
-        throw createHttpError(403, 'Forbidden')
-      const authority = {
-        kind: 'delegated' as const,
-        credentialOwnerId: invocationContext.credentialOwnerId,
-        grantedScopes: invocationContext.grantedScopes,
-      }
+      const authority = getDelegatedToolAuthority(currentPrivateUser, invocationContext)
       if (args.action === 'add_tag') {
         return addPostHashtag(currentPrivateUser, args.post_id, args.tag, authority)
       }

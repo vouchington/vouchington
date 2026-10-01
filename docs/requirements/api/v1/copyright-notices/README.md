@@ -29,6 +29,11 @@ equivalent verified App Attest assertion path with the endpoint's action tag; br
 not have that attestation path. The server rejects an incomplete or invalid App Attest attempt
 rather than falling back to CAPTCHA.
 
+The notice, appeal, and counter-notice bodies are closed: an unknown key, or a `cf_turnstile_response`
+that is not a string, is a `422` before any service call, and each statutory declaration must be the
+literal `true`. Existing field-named `422` messages and the `Idempotency-Key` `400` are unchanged;
+see [request validation](../../reference-copyright-submission-request-validation.md).
+
 Signed-in affected posters may submit an informal appeal or a separate statutory counter-notice.
 Both flows require CAPTCHA, exact case targets, and server-verified ownership. Email intake approval
 is staff-only and cannot create a case until a moderator supplies and approves the structured fields. Matched
@@ -69,6 +74,23 @@ reachable after the first page. That includes an email whose parse was never rec
 `parse_status` is `unparsed`, beside `succeeded` and `failed`, and staff review it from the original
 MIME object. A reviewer's decision refreshes the queue from its first page.
 
+Each queue item carries `waiting_reason` and `waiting_since`. An unreviewed intake is
+`awaiting_review` and waits since `received_at`. A declined intake whose reply failed or bounced
+stays on the queue as `reply_failed` or `reply_bounced`, waiting since that failure, so a sender
+who never received the reply is not lost. The queue never lists a declined intake whose reply is
+pending or sent.
+
+The staff intake response, `GET /api/v1/copyright-email-intakes/:id`, carries
+`copyright_email_intake.ses_verdicts`: `{ spf, dkim, dmarc, spam, virus }`, each `pass`, `fail`,
+`gray`, `processing_failed`, or `unknown`. SES reported them in headers it prepended to the message
+when it received it, they are fixed when the intake is created, and `unknown` means SES stated
+nothing; it never means `pass`. DKIM `pass` means a signature validated, not that the signing domain
+aligns with the From address. An SPF, DKIM, or DMARC failure never rejects or changes the status of
+an intake. `raw_email.download_url` is `null` when `virus` is `fail`, and
+`GET /api/v1/copyright-email-intakes/:id/raw` then answers `409` with the code
+`COPYRIGHT_EMAIL_QUARANTINED` before it reads any storage. The other `virus` verdicts keep the
+download available, and the staff page warns staff to open the original only in isolation.
+
 `POST /api/v1/copyright-email-intakes/:id/rejections` rejects an email or, with
 `response_kind: needs_information`, asks the sender for more information. That kind requires a
 `response_message` that is not blank and at most 10,000 characters, which follows the fixed reply
@@ -92,11 +114,30 @@ The expiry must be no more than 30 days after issue, and the token is returned o
 response. `GET /api/v1/copyright-notices/:id/guest-capabilities` lists the case's capabilities
 newest first with issuer, expiry, and revocation state, using the bounded `after` and `limit`
 (1–100; default 25) contract with a case-scoped cursor; it never returns a token. Staff revoke one
-with `POST .../guest-capabilities/:capabilityId/revocation` and record a request for more
-information with `POST .../guest-capabilities/:capabilityId/information-requests`. A guest files
+with `POST .../guest-capabilities/:capabilityId/revocation` and request more information with
+`POST .../guest-capabilities/:capabilityId/information-requests`. That request records the
+correspondence and, in the same transaction, one email delivery to the claimant email retained from
+the case's receipt (guest or signed-in); it returns 422 when the case has none. Issuing a capability
+emails nothing. A guest files
 with `POST /api/v1/copyright-notices/:id/guest-filings` and the `Copyright-Guest-Capability`
 header. A capability files at most one court or CCB hold (409 on a repeat), and a received
 withdrawal revokes every live capability on the case.
+
+The guest capability and guest filing bodies are closed: an unknown key, or a `cf_turnstile_response`
+that is not a string, is a `422` before any service call. The `Copyright-Guest-Capability` header is
+checked by the route and never passed to the schema validator, so it cannot appear in a diagnostic.
+Existing field-named `422` and the capability `403` are unchanged; see
+[request validation](../../reference-copyright-guest-request-validation.md).
+
+The EU, UK, and territorial policy routes validate their path and JSON body against closed
+generated schemas: an unknown body key answers 422 before anything is written, and the
+field-named 422 messages for missing or mistyped fields are unchanged. `cf_turnstile_response` is
+an optional string on the notice and redress bodies; an explicit `null` or non-string value now
+answers 422 instead of being ignored when CAPTCHA verification does not read it (an attested
+caller or an always-approve configuration). Authentication, staff role, and the kill switch
+answer before the schema. The service still decides ownership, territorial availability, and
+existence, so a malformed body answers 422 before those 403, 404, and 409 outcomes. See
+[Copyright EU, UK, and territorial request validation](../../reference-copyright-territorial-request-validation.md).
 
 ## Performance
 

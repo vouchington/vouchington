@@ -11,6 +11,7 @@ import {
 } from './copyright-staff-case-detail'
 import { CopyrightStaffFormReview } from './copyright-staff-case-form-review'
 import { CopyrightStaffGuestCapability } from './copyright-staff-guest-capability'
+import { CopyrightStaffInformationRequests } from './copyright-staff-information-requests'
 import { CopyrightRepeatInfringerActions } from './copyright-repeat-infringer-actions'
 import { CopyrightStaffLegalHoldReview } from './copyright-staff-case-legal-hold'
 import { CopyrightStaffQueueStatus } from './copyright-staff-queue-status'
@@ -74,6 +75,7 @@ export function CopyrightStaffCase({
         />
       ))}
       <CopyrightStaffGuestCapability noticeId={notice.id} />
+      <CopyrightStaffInformationRequests notice={notice} />
       <CopyrightStaffCorrespondence notice={notice} />
       <CopyrightStaffIntentRecovery {...{ notice, pending, submitRecovery }} />
       <CopyrightRepeatInfringerActions

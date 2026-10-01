@@ -1,14 +1,16 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityPostReview,
   insertTestPost,
-  readAllQueueJobs,
   setPostLLMModerationContentSha256,
+  updateTestCommunityPostReviewState,
 } from '@voucha/test-helpers'
-import { ai_agents } from '@queues/ai-agents/queues'
+import { readClassifierRunDispatcherJobsForTest } from '@voucha/test-helpers/classifier-run-queue-jobs'
+import { getClassifierRunRequestFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
+import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
 import { createPostModerationContent } from '@services/posts/content'
 import { getPostByAny } from '@services/posts/get'
 import { createPostRevision } from '@services/post-revisions'
@@ -17,39 +19,58 @@ import type { Post } from '@services/posts/types'
 import { processPostUpdated } from '../posts.mts'
 import { recoverPostCreatedEffects } from '../post-created-recovery.mts'
 
-describe('post entity listener community moderation dispatch', () => {
-  it('enqueues community moderation dispatchers for approved reviews when content changes', async () => {
+async function readCommunityModerationDispatchers(postId: string) {
+  const jobs = await readClassifierRunDispatcherJobsForTest(postId)
+  return jobs.filter(
+    job =>
+      (job.data as { classifier?: string }).classifier === COMMUNITY_MODERATION_CLASSIFIER_SLUG,
+  )
+}
+
+async function createPublishedPost(createdById: string) {
+  const postId = await insertTestPost({
+    title: `Community moderation post ${randomUUID()}`,
+    slug: `community-moderation-post-${randomUUID()}`,
+    createdById,
+    markdown: 'Community moderation post body',
+    clearanceStatus: 'approved',
+  })
+  const community = await insertTestCommunity({ createdById })
+  await insertTestCommunityPostReview({
+    communityId: community.id,
+    postId,
+    submittedById: createdById,
+  })
+  return { postId, communityId: community.id }
+}
+
+describe('post entity listener community moderation request', () => {
+  it('requests the C8 run at the edited content and queues one dispatcher when content changes', async () => {
     const creator = await createTestUser()
-    expect(creator).toBeTruthy()
-    const postId = await insertTestPost({
-      title: `Community moderation listener post ${randomUUID()}`,
-      slug: `community-moderation-listener-post-${randomUUID()}`,
-      createdById: creator!.id,
-      markdown: 'Community moderation post body',
-      clearanceStatus: 'approved',
-    })
-    const community = await insertTestCommunity({ createdById: creator!.id })
-    await insertTestCommunityPostReview({
-      communityId: community.id,
-      postId,
-      submittedById: creator!.id,
-    })
+    const { postId } = await createPublishedPost(creator.id)
     const post = (await getPostByAny(postId)) as Post
     const { content_sha256 } = createPostModerationContent(post)
     await setPostLLMModerationContentSha256(postId, content_sha256)
 
     await processPostUpdated({ id: postId, contentChanged: true })
-    await expect
-      .poll(async () => {
-        const jobs = await readAllQueueJobs(ai_agents)
-        return jobs.some(
-          job =>
-            job.name === 'community-moderation-dispatcher' &&
-            (job.data as { postId?: string; communityId?: string }).postId === postId &&
-            (job.data as { postId?: string; communityId?: string }).communityId === community.id,
-        )
-      })
-      .toBe(true)
+
+    expect(
+      await getClassifierRunRequestFacts(postId, COMMUNITY_MODERATION_CLASSIFIER_SLUG),
+    ).toMatchObject([{ input_sha256: content_sha256, run_id: null, stale_at: null }])
+    await expect.poll(() => readCommunityModerationDispatchers(postId)).toHaveLength(1)
+  })
+
+  it('requests nothing for a post that is no longer published in its community', async () => {
+    const creator = await createTestUser()
+    const { postId, communityId } = await createPublishedPost(creator.id)
+    await updateTestCommunityPostReviewState({ communityId, postId, unpublishedAt: new Date() })
+
+    await recoverPostCreatedEffects({ id: postId, post_type: 'discussion' })
+
+    expect(
+      await getClassifierRunRequestFacts(postId, COMMUNITY_MODERATION_CLASSIFIER_SLUG),
+    ).toEqual([])
+    expect(await readCommunityModerationDispatchers(postId)).toEqual([])
   })
 
   it('skips moderation for a pre-marker administrator creation', async () => {
@@ -70,46 +91,25 @@ describe('post entity listener community moderation dispatch', () => {
       postId,
       submittedById: administrator.id,
     })
-    const enqueueCommunityModerationDispatchers = vi
-      .fn<(items: Array<{ postId: string; communityId: string }>) => Promise<void>>()
-      .mockResolvedValue()
 
-    await recoverPostCreatedEffects(
-      { id: postId, post_type: 'discussion' },
-      { enqueueCommunityModerationDispatchers },
-    )
+    await recoverPostCreatedEffects({ id: postId, post_type: 'discussion' })
 
-    expect(enqueueCommunityModerationDispatchers).not.toHaveBeenCalled()
+    expect(
+      await getClassifierRunRequestFacts(postId, COMMUNITY_MODERATION_CLASSIFIER_SLUG),
+    ).toEqual([])
+    expect(await readCommunityModerationDispatchers(postId)).toEqual([])
   })
 
-  it('propagates a recovered moderation enqueue failure for checkpoint retry', async () => {
+  it('recovers the request of a published post once, however often creation is replayed', async () => {
     const creator = await createTestUser()
-    const postId = await insertTestPost({
-      title: `Recovered moderation ${randomUUID()}`,
-      slug: `recovered-moderation-${randomUUID()}`,
-      createdById: creator.id,
-      markdown: 'Recovered moderation body',
-      clearanceStatus: 'approved',
-    })
-    const community = await insertTestCommunity({ createdById: creator.id })
-    await insertTestCommunityPostReview({
-      communityId: community.id,
-      postId,
-      submittedById: creator.id,
-    })
-    const enqueueError = new Error('community moderation queue unavailable')
-    const enqueueCommunityModerationDispatchers = vi
-      .fn<(items: Array<{ postId: string; communityId: string }>) => Promise<void>>()
-      .mockRejectedValue(enqueueError)
+    const { postId } = await createPublishedPost(creator.id)
 
-    await expect(
-      recoverPostCreatedEffects(
-        { id: postId, post_type: 'discussion' },
-        { enqueueCommunityModerationDispatchers },
-      ),
-    ).rejects.toBe(enqueueError)
-    expect(enqueueCommunityModerationDispatchers).toHaveBeenCalledWith([
-      { postId, communityId: community.id },
-    ])
+    await recoverPostCreatedEffects({ id: postId, post_type: 'discussion' })
+    await recoverPostCreatedEffects({ id: postId, post_type: 'discussion' })
+
+    expect(
+      await getClassifierRunRequestFacts(postId, COMMUNITY_MODERATION_CLASSIFIER_SLUG),
+    ).toHaveLength(1)
+    expect(await readCommunityModerationDispatchers(postId)).toHaveLength(1)
   })
 })

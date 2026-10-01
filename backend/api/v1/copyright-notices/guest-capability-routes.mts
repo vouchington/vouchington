@@ -13,15 +13,24 @@ import { assertNotSuspended } from '@services/users'
 import {
   getOptionalAuthAndRateLimit,
   requireAuthAndRateLimit,
+  validateRequestContract,
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
-import { apiHeaders, apiNoRequestBody, apiRequest, apiResponse } from '../../response-contract.mts'
+import { apiHeaders, apiNoRequestBody, apiResponse } from '../../response-contract.mts'
+import type {
+  CopyrightGuestCapabilityIssueRequest,
+  CopyrightGuestFilingRequest,
+  CopyrightGuestInformationRequest,
+} from './guest-capability-request-types.mts'
 
-const guestFilingKinds = ['supplement', 'withdrawal', 'court_or_ccb_hold'] as const
-type GuestFilingKind = (typeof guestFilingKinds)[number]
+const guestFilingKinds: readonly CopyrightGuestFilingRequest['kind'][] = [
+  'supplement',
+  'withdrawal',
+  'court_or_ccb_hold',
+]
 
-function isGuestFilingKind(value: unknown): value is GuestFilingKind {
+function isGuestFilingKind(value: unknown): value is CopyrightGuestFilingRequest['kind'] {
   return guestFilingKinds.some(kind => kind === value)
 }
 
@@ -31,6 +40,9 @@ function futureInstant(value: unknown): Date | null {
   return Number.isNaN(parsed.getTime()) || parsed <= new Date() ? null : parsed
 }
 
+// Every handler keeps its admission order (content type, authentication and role, rate limit,
+// suspension, field-named parsers) and adds the generated contract immediately before the first
+// service call.
 app.route('/api/v1/copyright-notices/:id/guest-capabilities').post(async (ctx: Context) => {
   setPrivateNoStoreCacheHeaders(ctx)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
@@ -40,17 +52,15 @@ app.route('/api/v1/copyright-notices/:id/guest-capabilities').post(async (ctx: C
     'POST:/api/v1/copyright-notices/:id/guest-capabilities',
   )
   assertNotSuspended(currentUser)
-  const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+  const body = (await ctx.request.json('1mb')) as CopyrightGuestCapabilityIssueRequest
   const expiresAt = futureInstant(body.expires_at)
   if (!expiresAt) ctx.throw(422, 'expires_at must be a future instant')
-  apiRequest('POST:/api/v1/copyright-notices/:id/guest-capabilities', {
-    expires_at: expiresAt.toISOString(),
+  const noticeId = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-notices/:id/guest-capabilities', {
+    path: ctx.params,
+    body,
   })
-  const capability = await issueCopyrightGuestCapability({
-    currentUser,
-    noticeId: validateUUIDParam(ctx, 'id'),
-    expiresAt,
-  })
+  const capability = await issueCopyrightGuestCapability({ currentUser, noticeId, expiresAt })
   ctx.setStatus(201)
   ctx.json(
     apiResponse('POST:/api/v1/copyright-notices/:id/guest-capabilities', {
@@ -76,21 +86,20 @@ app
       'POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation',
     )
     assertNotSuspended(currentUser)
+    const noticeId = validateUUIDParam(ctx, 'id')
+    const capabilityId = validateUUIDParam(ctx, 'capabilityId')
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation',
+      { path: ctx.params },
+    )
     const revokedAt = new Date()
-    await revokeCopyrightGuestCapability({
-      currentUser,
-      noticeId: validateUUIDParam(ctx, 'id'),
-      capabilityId: validateUUIDParam(ctx, 'capabilityId'),
-      revokedAt,
-    })
+    await revokeCopyrightGuestCapability({ currentUser, noticeId, capabilityId, revokedAt })
     ctx.json(
       apiResponse(
         'POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation',
         {
-          copyright_guest_capability: {
-            id: validateUUIDParam(ctx, 'capabilityId'),
-            revoked_at: revokedAt.toISOString(),
-          },
+          copyright_guest_capability: { id: capabilityId, revoked_at: revokedAt.toISOString() },
         },
       ),
     )
@@ -107,18 +116,20 @@ app
       'POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/information-requests',
     )
     assertNotSuspended(currentUser)
-    const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+    const body = (await ctx.request.json('1mb')) as CopyrightGuestInformationRequest
     if (!boundedString(body.statement, 50_000)) ctx.throw(422, 'statement is required')
-    const statement = body.statement
-    apiRequest(
+    const noticeId = validateUUIDParam(ctx, 'id')
+    const capabilityId = validateUUIDParam(ctx, 'capabilityId')
+    validateRequestContract(
+      ctx,
       'POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/information-requests',
-      { statement },
+      { path: ctx.params, body },
     )
     const correspondence = await requestCopyrightGuestInformation({
       currentUser,
-      noticeId: validateUUIDParam(ctx, 'id'),
-      capabilityId: validateUUIDParam(ctx, 'capabilityId'),
-      statement,
+      noticeId,
+      capabilityId,
+      statement: body.statement,
     })
     ctx.setStatus(201)
     ctx.json(
@@ -129,6 +140,9 @@ app
     )
   })
 
+// The guest presents a case capability in the `Copyright-Guest-Capability` header. The header is
+// checked locally (`403`) and is never passed to the contract validator, logged, or echoed, so a
+// schema diagnostic cannot disclose it.
 app.route('/api/v1/copyright-notices/:id/guest-filings').post(async (ctx: Context) => {
   setPrivateNoStoreCacheHeaders(ctx)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
@@ -142,28 +156,25 @@ app.route('/api/v1/copyright-notices/:id/guest-filings').post(async (ctx: Contex
     },
   })
   await getOptionalAuthAndRateLimit(ctx, 'POST:/api/v1/copyright-notices/:id/guest-filings')
-  const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+  const body = (await ctx.request.json('1mb')) as CopyrightGuestFilingRequest
   await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'copyright-notices.guest-filing' })
   if (!isGuestFilingKind(body.kind)) ctx.throw(422, 'kind is not a guest filing')
   if (!boundedString(body.statement, 50_000)) ctx.throw(422, 'statement is required')
-  const kind = body.kind
-  const statement = body.statement
   const token = ctx.req.headers['copyright-guest-capability']
   if (typeof token !== 'string' || token.length === 0 || token.length > 256) {
     ctx.throw(403, 'Copyright guest capability is required')
   }
-  apiRequest('POST:/api/v1/copyright-notices/:id/guest-filings', {
-    kind,
-    statement,
-    cf_turnstile_response:
-      typeof body.cf_turnstile_response === 'string' ? body.cf_turnstile_response : null,
+  const noticeId = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-notices/:id/guest-filings', {
+    path: ctx.params,
+    body,
   })
   const filing = await appendCopyrightGuestFiling({
-    noticeId: validateUUIDParam(ctx, 'id'),
+    noticeId,
     token,
     now: new Date(),
-    kind,
-    statement,
+    kind: body.kind,
+    statement: body.statement,
   })
   ctx.setStatus(201)
   ctx.json(

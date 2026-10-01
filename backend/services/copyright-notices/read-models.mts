@@ -6,6 +6,7 @@ import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
+import type { CopyrightEmailSesVerdict, CopyrightEmailSesVerdicts } from './email-ses-verdicts.mts'
 import {
   copyrightTimelineEventTypesFor,
   type CopyrightTimelineAudience,
@@ -19,7 +20,9 @@ export type CopyrightStaffEmailIntake = {
     id: string
     targets: Array<{ id: string; placement_key: string }>
   } | null
-  raw_email: { mime_type: string; byte_size: number; sha256: string; download_url: string }
+  /** `download_url` is null while SES's malware verdict quarantines the original message. */
+  raw_email: { mime_type: string; byte_size: number; sha256: string; download_url: string | null }
+  ses_verdicts: CopyrightEmailSesVerdicts
   parsed_email: { sender_email: string; subject: string; body_text: string } | null
   parser_error: string | null
   recommendation: { id: string; structured_output: Record<string, unknown> } | null
@@ -40,6 +43,11 @@ export async function getCopyrightStaffEmailIntake(
     raw_mime_type: string
     raw_byte_size: number
     raw_sha256: Buffer
+    spf_verdict: CopyrightEmailSesVerdict
+    dkim_verdict: CopyrightEmailSesVerdict
+    dmarc_verdict: CopyrightEmailSesVerdict
+    spam_verdict: CopyrightEmailSesVerdict
+    virus_verdict: CopyrightEmailSesVerdict
     sender_email_ciphertext: string | null
     subject_ciphertext: string | null
     body_ciphertext: string | null
@@ -51,6 +59,7 @@ export async function getCopyrightStaffEmailIntake(
     has_reply_reference: boolean
   }>(sql`/* getCopyrightStaffEmailIntake */
     SELECT intake.id, intake.ses_message_id, intake.received_at, intake.raw_storage_key, intake.raw_mime_type, intake.raw_byte_size, intake.raw_sha256,
+      intake.spf_verdict, intake.dkim_verdict, intake.dmarc_verdict, intake.spam_verdict, intake.virus_verdict,
       parse.sender_email_ciphertext, parse.subject_ciphertext, parse.body_ciphertext, parse.error_ciphertext,
       recommendation.id AS recommendation_id, recommendation.structured_output_ciphertext,
       link.link_kind, link.copyright_notice_id AS linked_notice_id,
@@ -88,7 +97,15 @@ export async function getCopyrightStaffEmailIntake(
       mime_type: row.raw_mime_type,
       byte_size: row.raw_byte_size,
       sha256: row.raw_sha256.toString('hex'),
-      download_url: `/api/v1/copyright-email-intakes/${row.id}/raw`,
+      download_url:
+        row.virus_verdict === 'fail' ? null : `/api/v1/copyright-email-intakes/${row.id}/raw`,
+    },
+    ses_verdicts: {
+      spf: row.spf_verdict,
+      dkim: row.dkim_verdict,
+      dmarc: row.dmarc_verdict,
+      spam: row.spam_verdict,
+      virus: row.virus_verdict,
     },
     parsed_email:
       row.sender_email_ciphertext && row.subject_ciphertext && row.body_ciphertext

@@ -74,6 +74,14 @@
       "reason": "new empty community has no published posts"
     },
     {
+      "path": "backend/services/communities/publications/automod-flag.mts",
+      "reason": "dismissal sets only the automod_dismissed_* audit columns; publication state is unchanged"
+    },
+    {
+      "path": "backend/services/communities/automod-settings.mts",
+      "reason": "the moderation action is read when a classifier run applies its effects; it never changes existing publication"
+    },
+    {
       "path": "backend/services/communities/post-type-settings.mts",
       "reason": "future authoring policy does not change existing publication"
     },

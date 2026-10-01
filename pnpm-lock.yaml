@@ -11,7 +11,7 @@ importers:
   .:
     devDependencies:
       '@ast-grep/cli':
-        specifier: 0.45.3
+        specifier: ^0.45.3
         version: 0.45.3
       '@commitlint/cli':
         specifier: ^21.2.3
@@ -29,7 +29,7 @@ importers:
         specifier: ^0.80.0
         version: 0.80.0(@opentelemetry/api@1.9.1)(@opentelemetry/core@2.11.0(@opentelemetry/api@1.9.1))(supports-color@10.2.2)
       '@playwright/test':
-        specifier: 1.63.0
+        specifier: ^1.63.0
         version: 1.63.0
       '@redocly/cli':
         specifier: ^2.54.3
@@ -71,16 +71,16 @@ importers:
         specifier: ^5.0.2
         version: 5.0.2(@vitest/browser@5.0.2)(vitest@5.0.2)
       '@vouchington/localization':
-        specifier: 0.2.0
+        specifier: ^0.2.0
         version: 0.2.0
       '@vouchington/localization-compiler':
-        specifier: 0.2.2
+        specifier: ^0.2.2
         version: 0.2.2
       agent-blackboard:
-        specifier: 0.6.0
-        version: 0.6.0(supports-color@10.2.2)(zod@4.6.5)
+        specifier: ^0.6.1
+        version: 0.6.1(supports-color@10.2.2)(zod@4.6.5)
       csv-parse:
-        specifier: 7.0.3
+        specifier: ^7.0.3
         version: 7.0.3
       dependency-cruiser:
         specifier: ^18.4.0
@@ -98,7 +98,7 @@ importers:
         specifier: ^0.0.3
         version: 0.0.3(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))
       gh-pr-attach-screenshots:
-        specifier: 0.2.0
+        specifier: ^0.2.0
         version: 0.2.0
       glide-mq:
         specifier: ^0.15.5
@@ -110,7 +110,7 @@ importers:
         specifier: ^6.2.12
         version: 6.2.12
       jscpd:
-        specifier: 5.3.2
+        specifier: ^5.3.2
         version: 5.3.2
       jsdom:
         specifier: ^30.1.1
@@ -125,29 +125,29 @@ importers:
         specifier: ^0.71.0
         version: 0.71.0
       oxlint:
-        specifier: 1.86.0
+        specifier: ^1.86.0
         version: 1.86.0(oxlint-tsgolint@7.0.2003)
       oxlint-plugin-react-doctor:
         specifier: ^0.9.14
         version: 0.9.14
       oxlint-tsgolint:
-        specifier: 7.0.2003
+        specifier: ^7.0.2003
         version: 7.0.2003
       p-settle:
-        specifier: 5.2.1
+        specifier: ^5.2.1
         version: 5.2.1
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
       playwright:
-        specifier: 1.63.0
+        specifier: ^1.63.0
         version: 1.63.0
       playwright-core:
-        specifier: 1.63.0
+        specifier: ^1.63.0
         version: 1.63.0
       pr-shepherd:
-        specifier: ^0.55.2
-        version: 0.55.2(supports-color@10.2.2)
+        specifier: ^0.56.1
+        version: 0.56.1(supports-color@10.2.2)
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1(supports-color@10.2.2)
@@ -155,7 +155,7 @@ importers:
         specifier: ^11.0.0
         version: 11.0.0(supports-color@10.2.2)
       squawk-cli:
-        specifier: 2.66.0
+        specifier: ^2.66.0
         version: 2.66.0
       syncpack:
         specifier: ^15.3.3
@@ -170,8 +170,8 @@ importers:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
-        specifier: ^0.26.0
-        version: 0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
+        specifier: ^0.27.0
+        version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -211,18 +211,12 @@ importers:
       '@modules/openrouter-utils':
         specifier: workspace:^
         version: link:../../modules/openrouter-utils
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
       '@services/ai-usage':
         specifier: workspace:^
         version: link:../../services/ai-usage
-      '@services/conversations-messages':
-        specifier: workspace:^
-        version: link:../../services/conversations-messages
       '@services/openai-agents':
         specifier: workspace:^
         version: link:../../services/openai-agents
@@ -332,64 +326,6 @@ importers:
         specifier: ^8.11.2
         version: 8.11.2
 
-  backend/agents/chat:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@agents/discovery-agent':
-        specifier: workspace:^
-        version: link:../discovery-agent
-      '@agents/profile-agent':
-        specifier: workspace:^
-        version: link:../profile-agent
-      '@agents/research-agent':
-        specifier: workspace:^
-        version: link:../research-agent
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
-      '@modules/sse-lifecycle':
-        specifier: workspace:^
-        version: link:../../modules/sse-lifecycle
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@services/agents':
-        specifier: workspace:^
-        version: link:../../services/agents
-      '@services/ai-usage':
-        specifier: workspace:^
-        version: link:../../services/ai-usage
-      '@services/conversations-messages':
-        specifier: workspace:^
-        version: link:../../services/conversations-messages
-      '@services/openai-agents':
-        specifier: workspace:^
-        version: link:../../services/openai-agents
-      '@services/openai-moderation':
-        specifier: workspace:^
-        version: link:../../services/openai-moderation
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-      undici:
-        specifier: ^8.11.2
-        version: 8.11.2
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
   backend/agents/classifier-runs:
     dependencies:
       '@agents/classifiers':
@@ -435,18 +371,24 @@ importers:
       '@agents/_shared':
         specifier: workspace:^
         version: link:../_shared
+      '@agents/classifier-runs':
+        specifier: workspace:^
+        version: link:../classifier-runs
+      '@agents/classifiers':
+        specifier: workspace:^
+        version: link:../classifiers
       '@agents/politics-averse':
         specifier: workspace:^
         version: link:../politics-averse
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../../modules/openai-utils
-      '@services/communities':
+      '@modules/structured-decisions':
         specifier: workspace:^
-        version: link:../../services/communities
+        version: link:../../modules/structured-decisions
+      '@services/classifier-runs':
+        specifier: workspace:^
+        version: link:../../services/classifier-runs
       '@services/community-agent-prompts':
         specifier: workspace:^
         version: link:../../services/community-agent-prompts
@@ -459,13 +401,13 @@ importers:
       '@services/posts':
         specifier: workspace:^
         version: link:../../services/posts
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       openai:
         specifier: ^7.23.0
         version: 7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
     devDependencies:
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -550,22 +492,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-
-  backend/agents/discovery-agent:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-    devDependencies:
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
 
   backend/agents/dispute-resolution:
     dependencies:
@@ -662,31 +588,12 @@ importers:
         specifier: workspace:^
         version: link:../../types
     devDependencies:
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
         specifier: ^8.11.2
         version: 8.11.2
-
-  backend/agents/profile-agent:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-    devDependencies:
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
 
   backend/agents/report-judgement:
     dependencies:
@@ -718,31 +625,6 @@ importers:
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
-
-  backend/agents/research-agent:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-    devDependencies:
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
-      '@services/conversations-messages':
-        specifier: workspace:^
-        version: link:../../services/conversations-messages
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/agents/story-clustering:
     dependencies:
@@ -777,7 +659,7 @@ importers:
         specifier: ^7.23.0
         version: 7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
       p-map:
-        specifier: 7.0.8
+        specifier: ^7.0.8
         version: 7.0.8
     devDependencies:
       '@services/rss-feeds':
@@ -1490,7 +1372,7 @@ importers:
         specifier: ^9.5.2
         version: 9.5.2
       p-map:
-        specifier: 7.0.8
+        specifier: ^7.0.8
         version: 7.0.8
       undici:
         specifier: ^8.11.2
@@ -1498,16 +1380,19 @@ importers:
       uuid:
         specifier: ^14.0.2
         version: 14.0.2
+      valkyries:
+        specifier: ^0.8.1
+        version: 0.8.1
     devDependencies:
       '@aws-sdk/client-cloudfront':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-dynamodb':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@services/ap-post-likes':
         specifier: workspace:^
         version: link:../services/ap-post-likes
@@ -1597,7 +1482,7 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: 0.0.12
+        specifier: ^0.0.12
         version: 0.0.12
       pg:
         specifier: ^8.23.0
@@ -1613,8 +1498,8 @@ importers:
         specifier: npm:@typescript/typescript6@^6.0.2
         version: '@typescript/typescript6@6.0.2'
       vouchington-tooling:
-        specifier: ^0.26.0
-        version: 0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
+        specifier: ^0.27.0
+        version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
 
   backend/data-stores/valkey:
     dependencies:
@@ -1628,8 +1513,8 @@ importers:
         specifier: ^2.5.3
         version: 2.5.3
       valkyries:
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.1
+        version: 0.8.1
     devDependencies:
       uuid:
         specifier: ^14.0.2
@@ -1647,8 +1532,8 @@ importers:
         specifier: workspace:^
         version: link:../../modules/on-error
       valkyries:
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.1
+        version: 0.8.1
 
   backend/data-stores/valkey-glide-mq:
     dependencies:
@@ -1668,8 +1553,8 @@ importers:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       valkyries:
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.1
+        version: 0.8.1
 
   backend/data-stores/valkey-pubsub:
     dependencies:
@@ -1686,8 +1571,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       valkyries:
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.1
+        version: 0.8.1
 
   backend/data-stores/valkey-rate-limiter:
     dependencies:
@@ -1695,8 +1580,8 @@ importers:
         specifier: workspace:^
         version: link:../valkey-core
       valkyries:
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.1
+        version: 0.8.1
 
   backend/entrypoints/api:
     dependencies:
@@ -2202,35 +2087,35 @@ importers:
   backend/modules/aws:
     dependencies:
       '@aws-sdk/client-bedrock':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-bedrock-runtime':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-cloudfront':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-cloudwatch':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-dynamodb':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-firehose':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-ses':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-sqs':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
@@ -2290,7 +2175,7 @@ importers:
   backend/modules/csv:
     dependencies:
       '@vouchington/csv':
-        specifier: 0.0.1
+        specifier: ^0.0.1
         version: 0.0.1
 
   backend/modules/feed-query-builders:
@@ -2324,7 +2209,7 @@ importers:
   backend/modules/http-signatures:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
 
   backend/modules/markdown-extraction:
@@ -2345,7 +2230,7 @@ importers:
         specifier: workspace:^
         version: link:../request-client-info
       '@sentry/node':
-        specifier: 11.0.0
+        specifier: ^11.0.0
         version: 11.0.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))
       '@ts-shared/utils':
         specifier: workspace:^
@@ -2400,7 +2285,7 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/pagination':
-        specifier: 0.0.1
+        specifier: ^0.0.1
         version: 0.0.1
 
   backend/modules/queue-config: {}
@@ -2408,7 +2293,7 @@ importers:
   backend/modules/queue-errors:
     dependencies:
       '@vouchington/queue-errors':
-        specifier: 0.1.1
+        specifier: ^0.1.1
         version: 0.1.1(glide-mq@0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))
       glide-mq:
         specifier: ^0.15.5
@@ -2457,7 +2342,7 @@ importers:
   backend/modules/scopes:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
 
   backend/modules/search-utils:
@@ -2480,7 +2365,7 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
       stripe:
         specifier: ^22.6.2
@@ -2508,7 +2393,7 @@ importers:
   backend/modules/token-secrets:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
 
   backend/modules/utils:
@@ -2535,13 +2420,13 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/frontmatter':
-        specifier: 0.0.0
+        specifier: ^0.0.0
         version: 0.0.0
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
       '@vouchington/uuid-v7':
-        specifier: 0.0.0
+        specifier: ^0.0.0
         version: 0.0.0
       http-assert:
         specifier: ^1.5.0
@@ -3377,12 +3262,12 @@ importers:
       '@services/communities':
         specifier: workspace:^
         version: link:../services/communities
-      '@services/contribution-gating':
-        specifier: workspace:^
-        version: link:../services/contribution-gating
       '@services/conversations-messages':
         specifier: workspace:^
         version: link:../services/conversations-messages
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../services/copyright-notices
       '@services/crawls':
         specifier: workspace:^
         version: link:../services/crawls
@@ -3413,6 +3298,9 @@ importers:
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../services/jwt-session
+      '@services/media-delivery-safety':
+        specifier: workspace:^
+        version: link:../services/media-delivery-safety
       '@services/memberships':
         specifier: workspace:^
         version: link:../services/memberships
@@ -3501,8 +3389,11 @@ importers:
         specifier: workspace:^
         version: link:../types
       '@vouchington/rss-parser':
-        specifier: 0.1.0
+        specifier: ^0.1.0
         version: 0.1.0
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
       uuid:
         specifier: ^14.0.2
         version: 14.0.2
@@ -3548,17 +3439,20 @@ importers:
   backend/services/account-data-requests:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
+      '@modules/token-secrets':
+        specifier: workspace:^
+        version: link:../../modules/token-secrets
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
@@ -3734,7 +3628,7 @@ importers:
         specifier: workspace:^
         version: link:../../types
       p-map:
-        specifier: 7.0.8
+        specifier: ^7.0.8
         version: 7.0.8
       sql-template-strings:
         specifier: ^2.2.2
@@ -3944,8 +3838,8 @@ importers:
   backend/services/articles:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -4089,8 +3983,8 @@ importers:
   backend/services/bedrock-embeddings:
     dependencies:
       '@aws-sdk/client-bedrock-runtime':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -4141,11 +4035,11 @@ importers:
   backend/services/bedrock-embeddings-batch:
     dependencies:
       '@aws-sdk/client-bedrock':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -4189,7 +4083,7 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
       '@vouchington/image-resize':
-        specifier: 0.2.0
+        specifier: ^0.2.0
         version: 0.2.0(@types/node@26.6.3)
       pg-copy-streams:
         specifier: ^7.0.0
@@ -4410,10 +4304,10 @@ importers:
         specifier: workspace:^
         version: link:../../modules/on-error
       playwright:
-        specifier: 1.63.0
+        specifier: ^1.63.0
         version: 1.63.0
       playwright-core:
-        specifier: 1.63.0
+        specifier: ^1.63.0
         version: 1.63.0
       ssrf-guard:
         specifier: ^1.0.0
@@ -4487,6 +4381,9 @@ importers:
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
+      '@services/entity-relations':
+        specifier: workspace:^
+        version: link:../entity-relations
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -4582,6 +4479,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
+      '@services/classifier-runs':
+        specifier: workspace:^
+        version: link:../classifier-runs
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
@@ -4609,6 +4509,9 @@ importers:
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
+      '@services/search-params':
+        specifier: workspace:^
+        version: link:../search-params
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -4628,7 +4531,7 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       p-map:
-        specifier: 7.0.8
+        specifier: ^7.0.8
         version: 7.0.8
       sql-template-strings:
         specifier: ^2.2.2
@@ -4680,6 +4583,12 @@ importers:
       '@services/agents':
         specifier: workspace:^
         version: link:../agents
+      '@services/classifier-runs':
+        specifier: workspace:^
+        version: link:../classifier-runs
+      '@services/classifiers':
+        specifier: workspace:^
+        version: link:../classifiers
       '@services/communities':
         specifier: workspace:^
         version: link:../communities
@@ -4695,6 +4604,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -4770,9 +4682,6 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -4783,9 +4692,6 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
-      '@services/ai-usage':
-        specifier: workspace:^
-        version: link:../ai-usage
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -4793,8 +4699,8 @@ importers:
   backend/services/copyright-notices:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -4807,6 +4713,9 @@ importers:
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
@@ -4917,10 +4826,10 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/crawler-html':
-        specifier: 0.0.1
+        specifier: ^0.0.1
         version: 0.0.1
       '@vouchington/embeds':
-        specifier: 0.0.2
+        specifier: ^0.0.2
         version: 0.0.2
       http-errors:
         specifier: ^2.0.1
@@ -4966,10 +4875,10 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/crawler-html':
-        specifier: 0.0.1
+        specifier: ^0.0.1
         version: 0.0.1
       '@vouchington/embeds':
-        specifier: 0.0.2
+        specifier: ^0.0.2
         version: 0.0.2
       ssrf-guard:
         specifier: ^1.0.0
@@ -5034,13 +4943,13 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/embeds':
-        specifier: 0.0.2
+        specifier: ^0.0.2
         version: 0.0.2
       '@vouchington/rss-crawler':
-        specifier: 0.1.0
+        specifier: ^0.1.0
         version: 0.1.0
       '@vouchington/rss-parser':
-        specifier: 0.1.0
+        specifier: ^0.1.0
         version: 0.1.0
     devDependencies:
       '@data-stores/analytics':
@@ -5114,8 +5023,8 @@ importers:
   backend/services/crawls:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -5220,7 +5129,7 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       '@vouchington/embeds':
-        specifier: 0.0.2
+        specifier: ^0.0.2
         version: 0.0.2
 
   backend/services/curated-aside-items:
@@ -5294,7 +5203,7 @@ importers:
         specifier: workspace:^
         version: link:../../types
       ajv:
-        specifier: ^8.18.0
+        specifier: ^8.20.0
         version: 8.20.0
       ajv-formats:
         specifier: ^3.0.1
@@ -5650,7 +5559,7 @@ importers:
         specifier: workspace:^
         version: link:../users
       p-map:
-        specifier: 7.0.8
+        specifier: ^7.0.8
         version: 7.0.8
       sql-template-strings:
         specifier: ^2.2.2
@@ -5848,6 +5757,12 @@ importers:
       '@modules/scopes':
         specifier: workspace:^
         version: link:../../modules/scopes
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
+      '@services/bookmarks':
+        specifier: workspace:^
+        version: link:../bookmarks
       '@services/communities':
         specifier: workspace:^
         version: link:../communities
@@ -6321,11 +6236,11 @@ importers:
   backend/services/images:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -6369,7 +6284,7 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/media':
-        specifier: 0.2.0
+        specifier: ^0.2.0
         version: 0.2.0
       http-assert:
         specifier: ^1.5.0
@@ -6589,10 +6504,10 @@ importers:
   backend/services/localization:
     dependencies:
       '@vouchington/localization':
-        specifier: 0.2.0
+        specifier: ^0.2.0
         version: 0.2.0
       '@vouchington/localization-compiler':
-        specifier: 0.2.2
+        specifier: ^0.2.2
         version: 0.2.2
 
   backend/services/markdown:
@@ -6656,6 +6571,9 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1(ajv@8.20.0)
     devDependencies:
+      '@services/communities':
+        specifier: workspace:^
+        version: link:../communities
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -6733,10 +6651,10 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/memberships':
-        specifier: 0.2.0
+        specifier: ^0.2.0
         version: 0.2.0
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
       http-errors:
         specifier: ^2.0.1
@@ -6896,7 +6814,7 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       p-map:
-        specifier: 7.0.8
+        specifier: ^7.0.8
         version: 7.0.8
       sql-template-strings:
         specifier: ^2.2.2
@@ -7081,7 +6999,7 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
       http-assert:
         specifier: ^1.5.0
@@ -7350,7 +7268,7 @@ importers:
         specifier: workspace:^
         version: link:../notifications
       p-map:
-        specifier: 7.0.8
+        specifier: ^7.0.8
         version: 7.0.8
       sql-template-strings:
         specifier: ^2.2.2
@@ -7578,7 +7496,7 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
       http-errors:
         specifier: ^2.0.1
@@ -7730,9 +7648,6 @@ importers:
 
   backend/services/openai-agents:
     dependencies:
-      '@services/conversations-messages':
-        specifier: workspace:^
-        version: link:../conversations-messages
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -7857,7 +7772,7 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/auth':
-        specifier: 0.1.0
+        specifier: ^0.1.0
         version: 0.1.0
       http-assert:
         specifier: ^1.5.0
@@ -8079,9 +7994,6 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/ai-agents':
-        specifier: workspace:^
-        version: link:../../queues/ai-agents
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings
@@ -8160,9 +8072,6 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds
-      '@services/session-advisory-lock':
-        specifier: workspace:^
-        version: link:../session-advisory-lock
       '@services/tag-limits':
         specifier: workspace:^
         version: link:../tag-limits
@@ -8172,6 +8081,9 @@ importers:
       '@services/urls':
         specifier: workspace:^
         version: link:../urls
+      '@services/user-deletions':
+        specifier: workspace:^
+        version: link:../user-deletions
       '@services/user-rate-limits':
         specifier: workspace:^
         version: link:../user-rate-limits
@@ -8774,7 +8686,7 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/embeds':
-        specifier: 0.0.2
+        specifier: ^0.0.2
         version: 0.0.2
       http-assert:
         specifier: ^1.5.0
@@ -8938,7 +8850,7 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/rss-parser':
-        specifier: 0.1.0
+        specifier: ^0.1.0
         version: 0.1.0
 
   backend/services/rss-xml:
@@ -9008,7 +8920,7 @@ importers:
         specifier: workspace:^
         version: link:../../../api-fixtures
       '@vouchington/request-contract-validation':
-        specifier: 0.0.1
+        specifier: ^0.0.1
         version: 0.0.1
 
   backend/services/search:
@@ -9102,8 +9014,8 @@ importers:
   backend/services/sitemaps:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -9129,7 +9041,7 @@ importers:
         specifier: workspace:^
         version: link:../../types
       p-map:
-        specifier: 7.0.8
+        specifier: ^7.0.8
         version: 7.0.8
       sql-template-strings:
         specifier: ^2.2.2
@@ -9250,7 +9162,7 @@ importers:
         specifier: ^1.5.0
         version: 1.5.0
       p-map:
-        specifier: 7.0.8
+        specifier: ^7.0.8
         version: 7.0.8
       sql-template-strings:
         specifier: ^2.2.2
@@ -9281,7 +9193,7 @@ importers:
         specifier: workspace:^
         version: link:../memberships
       '@vouchington/memberships':
-        specifier: 0.2.0
+        specifier: ^0.2.0
         version: 0.2.0
       http-assert:
         specifier: ^1.5.0
@@ -9374,7 +9286,7 @@ importers:
         specifier: workspace:^
         version: link:../users
       '@vouchington/domain-verification':
-        specifier: 0.0.0
+        specifier: ^0.0.0
         version: 0.0.0
       http-assert:
         specifier: ^1.5.0
@@ -9548,7 +9460,7 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/typed-entities':
-        specifier: 0.1.0
+        specifier: ^0.1.0
         version: 0.1.0
       http-assert:
         specifier: ^1.5.0
@@ -9917,7 +9829,7 @@ importers:
         specifier: workspace:^
         version: link:../urls-domains-blacklist
       '@vouchington/robots':
-        specifier: 0.0.1
+        specifier: ^0.0.1
         version: 0.0.1
       sql-template-strings:
         specifier: ^2.2.2
@@ -10368,8 +10280,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       valkyries:
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.1
+        version: 0.8.1
     devDependencies:
       '@services/entity-cache':
         specifier: workspace:^
@@ -10541,8 +10453,8 @@ importers:
   backend/test-helpers:
     dependencies:
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/analytics':
         specifier: workspace:^
         version: link:../data-stores/analytics
@@ -10610,7 +10522,7 @@ importers:
         specifier: workspace:^
         version: link:../queues/sitemaps
       '@sentry/node':
-        specifier: 11.0.0
+        specifier: ^11.0.0
         version: 11.0.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))
       '@ts-shared/money':
         specifier: workspace:^
@@ -10625,10 +10537,10 @@ importers:
         specifier: workspace:^
         version: link:../types
       '@vouchington/localization':
-        specifier: 0.2.0
+        specifier: ^0.2.0
         version: 0.2.0
       '@vouchington/localization-compiler':
-        specifier: 0.2.2
+        specifier: ^0.2.2
         version: 0.2.2
       glide-mq:
         specifier: ^0.15.5
@@ -10658,8 +10570,8 @@ importers:
         specifier: ^14.0.2
         version: 14.0.2
       vouchington-tooling:
-        specifier: ^0.26.0
-        version: 0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
+        specifier: ^0.27.0
+        version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -10697,6 +10609,9 @@ importers:
       '@services/comments':
         specifier: workspace:^
         version: link:../services/comments
+      '@services/communities':
+        specifier: workspace:^
+        version: link:../services/communities
       '@services/data-points':
         specifier: workspace:^
         version: link:../services/data-points
@@ -10706,12 +10621,18 @@ importers:
       '@services/entity-relation-actions':
         specifier: workspace:^
         version: link:../services/entity-relation-actions
+      '@services/entity-relations':
+        specifier: workspace:^
+        version: link:../services/entity-relations
       '@services/feeds':
         specifier: workspace:^
         version: link:../services/feeds
       '@services/individuals-households':
         specifier: workspace:^
         version: link:../services/individuals-households
+      '@services/lists':
+        specifier: workspace:^
+        version: link:../services/lists
       '@services/posts':
         specifier: workspace:^
         version: link:../services/posts
@@ -10783,7 +10704,7 @@ importers:
         specifier: workspace:^
         version: link:../../ts-shared/utils
       '@vouchington/embeds':
-        specifier: 0.0.2
+        specifier: ^0.0.2
         version: 0.0.2
       sql-template-strings:
         specifier: ^2.2.2
@@ -10792,8 +10713,8 @@ importers:
   backend/worker-runtime:
     dependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../data-stores/graceful-shutdown
@@ -10831,7 +10752,7 @@ importers:
         specifier: workspace:^
         version: link:../../ts-shared/utils
       '@vouchington/worker-runtime':
-        specifier: 0.1.0
+        specifier: ^0.1.0
         version: 0.1.0(glide-mq@0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))
       '@workers/heartbeat':
         specifier: workspace:^
@@ -11049,6 +10970,9 @@ importers:
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
+      '@modules/structured-decisions':
+        specifier: workspace:^
+        version: link:../../modules/structured-decisions
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
@@ -11125,12 +11049,9 @@ importers:
         specifier: ^7.23.0
         version: 7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
       p-map:
-        specifier: 7.0.8
+        specifier: ^7.0.8
         version: 7.0.8
     devDependencies:
-      '@modules/structured-decisions':
-        specifier: workspace:^
-        version: link:../../modules/structured-decisions
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds
@@ -11212,8 +11133,8 @@ importers:
         version: link:../../services/bedrock-embeddings
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -11917,7 +11838,7 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
       '@vouchington/media':
-        specifier: 0.2.0
+        specifier: ^0.2.0
         version: 0.2.0
       glide-mq:
         specifier: ^0.15.5
@@ -12342,8 +12263,8 @@ importers:
         version: 1.5.0
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -12354,8 +12275,8 @@ importers:
   backend/workers/ses-inbound:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
@@ -12416,8 +12337,8 @@ importers:
         version: 1.5.0
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -12511,8 +12432,8 @@ importers:
         version: link:../../services/stripe
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -12704,7 +12625,7 @@ importers:
         specifier: workspace:^
         version: link:../ts-shared/utils
       auto-harness-client:
-        specifier: 0.8.1
+        specifier: ^0.8.1
         version: 0.8.1
       coverage-check:
         specifier: ^0.17.0
@@ -12718,6 +12639,9 @@ importers:
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
+      playwright:
+        specifier: ^1.63.0
+        version: 1.63.0
       rehype-stringify:
         specifier: ^10.0.1
         version: 10.0.1
@@ -12734,8 +12658,8 @@ importers:
         specifier: ^11.0.5
         version: 11.0.5
       vouchington-tooling:
-        specifier: ^0.26.0
-        version: 0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
+        specifier: ^0.27.0
+        version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -12759,7 +12683,7 @@ importers:
   cloudflare-worker:
     dependencies:
       '@sentry/cloudflare':
-        specifier: 11.0.0
+        specifier: ^11.0.0
         version: 11.0.0(@cloudflare/workers-types@5.20260928.1)(wrangler@4.142.0(@cloudflare/workers-types@5.20260928.1)(@types/node@26.6.3))
       '@ts-shared/cache':
         specifier: workspace:^
@@ -12789,7 +12713,7 @@ importers:
         specifier: workspace:^
         version: link:../backend/config
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
       isbot:
         specifier: ^5.2.2
@@ -12820,10 +12744,10 @@ importers:
         specifier: workspace:^
         version: link:../ts-shared/money
       '@vouchington/localization':
-        specifier: 0.2.0
+        specifier: ^0.2.0
         version: 0.2.0
       '@vouchington/localization-compiler':
-        specifier: 0.2.2
+        specifier: ^0.2.2
         version: 0.2.2
     devDependencies:
       '@react-email/render':
@@ -12839,7 +12763,7 @@ importers:
         specifier: ^26.6.3
         version: 26.6.3
       '@types/react':
-        specifier: ^19
+        specifier: ^19.3.0
         version: 19.3.0
       '@types/react-dom':
         specifier: ^19
@@ -12863,8 +12787,8 @@ importers:
   lambdas/image-resize:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@fontsource/inter':
         specifier: ^5.3.0
         version: 5.3.0
@@ -12875,10 +12799,10 @@ importers:
         specifier: workspace:^
         version: link:../../ts-shared/url-signing
       '@vouchington/image-resize':
-        specifier: 0.2.0
+        specifier: ^0.2.0
         version: 0.2.0(@types/node@26.6.3)
       '@vouchington/media':
-        specifier: 0.2.0
+        specifier: ^0.2.0
         version: 0.2.0
       satori:
         specifier: ^0.33.5
@@ -12912,10 +12836,10 @@ importers:
   lambdas/shared:
     dependencies:
       '@aws-sdk/client-ssm':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@sentry/aws-serverless':
-        specifier: 11.0.0
+        specifier: ^11.0.0
         version: 11.0.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))
       '@ts-shared/deploy-environment':
         specifier: workspace:^
@@ -12937,7 +12861,7 @@ importers:
         specifier: ^4.13.0
         version: 4.13.0(playwright-core@1.63.0)
       '@playwright/test':
-        specifier: 1.63.0
+        specifier: ^1.63.0
         version: 1.63.0
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -12952,16 +12876,16 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
       '@typescript-eslint/parser':
-        specifier: ^8.70.1
-        version: 8.70.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
+        specifier: ^8.71.0
+        version: 8.71.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
       '@vouchington/localization':
-        specifier: 0.2.0
+        specifier: ^0.2.0
         version: 0.2.0
       '@vouchington/localization-compiler':
-        specifier: 0.2.2
+        specifier: ^0.2.2
         version: 0.2.2
       '@vouchington/postgres':
-        specifier: 0.0.12
+        specifier: ^0.0.12
         version: 0.0.12
       ajv:
         specifier: ^8.20.0
@@ -12976,8 +12900,8 @@ importers:
         specifier: ^1.9.0
         version: 1.9.0
       vouchington-tooling:
-        specifier: ^0.26.0
-        version: 0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
+        specifier: ^0.27.0
+        version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -12992,7 +12916,7 @@ importers:
   ts-shared/cache:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
 
   ts-shared/data-points:
@@ -13004,19 +12928,19 @@ importers:
   ts-shared/deploy-environment:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
 
   ts-shared/env-contract:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
 
   ts-shared/feature-flags:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
 
   ts-shared/feed-capabilities: {}
@@ -13024,19 +12948,19 @@ importers:
   ts-shared/languages:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
 
   ts-shared/money:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
 
   ts-shared/request-client-info:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
 
   ts-shared/route-classification:
@@ -13050,10 +12974,10 @@ importers:
   ts-shared/session-jwt:
     dependencies:
       '@vouchington/session-jwt':
-        specifier: 0.0.1
+        specifier: ^0.0.1
         version: 0.0.1
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
       jose:
         specifier: ^6.2.12
@@ -13068,10 +12992,10 @@ importers:
         specifier: workspace:^
         version: link:../utils
       '@vouchington/localization':
-        specifier: 0.2.0
+        specifier: ^0.2.0
         version: 0.2.0
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
       fast-xml-parser:
         specifier: ^5.11.1
@@ -13080,7 +13004,7 @@ importers:
   ts-shared/url-signing:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
 
   ts-shared/user-profile-collections:
@@ -13092,19 +13016,22 @@ importers:
   ts-shared/utils:
     dependencies:
       '@vouchington/html-utils':
-        specifier: 0.1.1
+        specifier: ^0.1.1
         version: 0.1.1
+      '@vouchington/memberships':
+        specifier: ^0.2.0
+        version: 0.2.0
       '@vouchington/phone-validation':
-        specifier: 0.0.0
+        specifier: ^0.0.0
         version: 0.0.0
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
 
   ts-shared/utm:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.3
+        specifier: ^0.5.3
         version: 0.5.3
 
   web:
@@ -13173,7 +13100,7 @@ importers:
         specifier: ^1.2.16
         version: 1.2.16(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@sentry/nextjs':
-        specifier: 11.0.0
+        specifier: ^11.0.0
         version: 11.0.0(next@16.3.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))
       '@simplewebauthn/browser':
         specifier: ^14.0.0
@@ -13215,7 +13142,7 @@ importers:
         specifier: workspace:^
         version: link:../backend/types
       '@vouchington/localization':
-        specifier: 0.2.0
+        specifier: ^0.2.0
         version: 0.2.0
       class-variance-authority:
         specifier: ^0.7.1
@@ -13245,7 +13172,7 @@ importers:
         specifier: ^16.3.6
         version: 16.3.6(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       parse5:
-        specifier: 8.0.1
+        specifier: ^8.0.1
         version: 8.0.1
       qrcode.react:
         specifier: ^4.2.0
@@ -13260,7 +13187,7 @@ importers:
         specifier: ^3.10.1
         version: 3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.2.5)(react@19.3.0)(redux@5.0.1)
       server-only:
-        specifier: 0.0.1
+        specifier: ^0.0.1
         version: 0.0.1
       sharp:
         specifier: ^0.35.5
@@ -13276,7 +13203,7 @@ importers:
         version: 3.7.0
     devDependencies:
       '@playwright/test':
-        specifier: 1.63.0
+        specifier: ^1.63.0
         version: 1.63.0
       '@storybook/addon-a11y':
         specifier: ^10.6.0
@@ -13303,7 +13230,7 @@ importers:
         specifier: ^26.6.3
         version: 26.6.3
       '@types/react':
-        specifier: ^19
+        specifier: ^19.3.0
         version: 19.3.0
       '@types/react-dom':
         specifier: ^19
@@ -13495,48 +13422,48 @@ packages:
     resolution: {integrity: sha512-x12Q17KYlJAd3nKf8LV5LV0vt8sh8/6YfQLGPtrGnQf/tW4jqxPGq5GPpuVitpQYM3eUR4XB7CbxZf751NMbLw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-bedrock-runtime@3.1141.0':
-    resolution: {integrity: sha512-AoA3qW7HcFDa2MoZu9hozh68mBYI5KyvhHxN8Cbi5UtSTDDfq0JXW2fXGg7UzVNKVPRyRq2lrOQRzKPB1UEDxQ==}
+  '@aws-sdk/client-bedrock-runtime@3.1142.0':
+    resolution: {integrity: sha512-b8ITozQBv7jeOAWZcxTfhzK/nXrVvvqOvfL7PePZtZm9AnOB5rEd/pIZZl0eBcRd56Nnd4zrtptvUhpN0336fA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-bedrock@3.1141.0':
-    resolution: {integrity: sha512-cZWUoWPzDxtn/V6rHkSyRo0xUfT1WhI68SqUaeriYYHfk3arX+c+fMkuhLB+wwFykaMlduM5Qe1Nhyiq1aWicw==}
+  '@aws-sdk/client-bedrock@3.1142.0':
+    resolution: {integrity: sha512-6pUhepBJO7N9xV9tMbKl1eC/15et+Y3Nq6o9sNkF75VMpwEeTPIVrtBOfmq/JbKhpIKqhxc8l75ByEtJVaufYw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-cloudfront@3.1141.0':
-    resolution: {integrity: sha512-OTjl/BYPxjzR78/NUT2looGwh+CSzT08F27FvUlfMgDNaWGMwTJaSBhz478D2rq5k3Bd6flFkZmLl3pCReRymw==}
+  '@aws-sdk/client-cloudfront@3.1142.0':
+    resolution: {integrity: sha512-wjTi3Ozl1Pa9cAN3CXraGua6KML68qIQIAOQfKuprLGcPyA9QUMxsucnhl8HpL3b9LThEBqlbnzomYfRGPV/ng==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-cloudwatch@3.1141.0':
-    resolution: {integrity: sha512-udD2i0AI4Tp6FnspqZdjex9EnIVi8b0fzhdwdl17RxxSlEMfnOC3oVOuBErKVQH4Hf5cOPGaR4QCd4YCjVDP6A==}
+  '@aws-sdk/client-cloudwatch@3.1142.0':
+    resolution: {integrity: sha512-JAJ4pT5i1VpoY+XTwvYJSaLiXp8369mNBuWCgoKvncphDCf/Gu3P3qQaEA3TUOn7goZSqL5q8/klxSgoOAMiCg==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-dynamodb@3.1141.0':
-    resolution: {integrity: sha512-R36EN5Ti01NtoJrgR5ryM+3msAmxob4s+xHKsJRbTwQUO5xQf1Hs8lKQ/QEuiQOG445UCwZbTjBUhekSmk1cyg==}
+  '@aws-sdk/client-dynamodb@3.1142.0':
+    resolution: {integrity: sha512-/p+qS8o18FMVlGQmA85zeUtG+vw1vN1TjfOoQzvD1VvZXWgicp2D771mlvuMdQ/QBVPcjwHbYD3e2TBefw6FSw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-firehose@3.1141.0':
-    resolution: {integrity: sha512-f65FL76vFBR02nt88loDYi6E+i4GO+OXqwyu1vDIQsoGhQu8QvP/jFvKOsg7f3xoKlK2I8DavjIDAf4A9ID5mQ==}
+  '@aws-sdk/client-firehose@3.1142.0':
+    resolution: {integrity: sha512-6guuJ4989BocJEyudUgK7nqVGnj/cK3VjjaRYo2AY0HHbcnwyFti4YHQP0tF+oVX25hBYO0sCMmI5NcoO7zsmA==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/client-s3@3.1121.0':
     resolution: {integrity: sha512-hBnoqaVBeWdkgXcJElMXA2yUZWkBCBntu2qmN+tfqmzC+j4LzJC3ox8qIgS2WdMS1cb8UwyBogUVrkRXybNm0A==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-s3@3.1141.0':
-    resolution: {integrity: sha512-uOVH37xGLenAdJkCPCin/JJG2PgWrFcSsDnQ9+C9Zq8N9Oalo5ol4xmn5fG28iWAlA/b/9boQZgHbMh+UsIhcg==}
+  '@aws-sdk/client-s3@3.1142.0':
+    resolution: {integrity: sha512-OC9AcGMFOsBc95YSPWH3O7DE6RUTy7jqeOpVvzO2Dv3rw3w4vQRK+YdLXIbO2yXfmx3N59Y55yAJdDRJFMQK3Q==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-ses@3.1141.0':
-    resolution: {integrity: sha512-qBedTSL6KISayoQvkNndjlHAGC3+S0ojmmDao8nWIkAEqO6LeeuduS9G7kqmpF0LXRyMvvISaR5JpgY+VHlf1A==}
+  '@aws-sdk/client-ses@3.1142.0':
+    resolution: {integrity: sha512-jDcUkAVsLjBTRBVNHR4OYPuv5nmYporoDbXG9MxWEjoxlhxwPK4gGT1pvIid2rdkhrhtXo+sSinQ1uBO3v7F3w==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-sqs@3.1141.0':
-    resolution: {integrity: sha512-97MRJvJi3H5BFXc673JvlNekbogdPPbaAFo4JH16wQcnrIEibsCAeMqk3A4rej0Ufv6p9SgQjbiCZHB7sUYZzA==}
+  '@aws-sdk/client-sqs@3.1142.0':
+    resolution: {integrity: sha512-NPuhwE5gd9I7DhK0TXxsakWwBBgzYxcB3XJ7ZopXunT2FaI5njCg/viydDsWwlZxhdsCCYZJbFpHHZqMDWksZQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-ssm@3.1141.0':
-    resolution: {integrity: sha512-zMGUGocXCtUYThen14djmU0c4BjHEpSeQIm/dhzZPN4Zr7ipogSTnpmZOlMv5zvOcmDwSlEGwCWbYjqZUhUEuw==}
+  '@aws-sdk/client-ssm@3.1142.0':
+    resolution: {integrity: sha512-Z1OHRppaMMVVqLsg2+fzCTw7WtEWcusvUh1RKnHfFWjazMC8VBqbJmewtGFXO14w5oq7ruaygWcFHRltCkZhLQ==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/core@3.978.1':
@@ -13611,8 +13538,8 @@ packages:
     resolution: {integrity: sha512-oRxtBcka/JGHGs9l9p9IVajGoTP8vTPmoAzdHGy4Qcy9P5vPnDf6nhIeM/COQNY9k/OahImTRaLkHftoXvfcmQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/s3-request-presigner@3.1141.0':
-    resolution: {integrity: sha512-HHHcP3gvLqeY9GPptpxLvA6VwDu+MWKCoaGGm0UtSUBh1hC7xJ9nNHoybgFfstC4lrj+k8oD6a1rWbGBWKYdag==}
+  '@aws-sdk/s3-request-presigner@3.1142.0':
+    resolution: {integrity: sha512-8SXEcjAo7l2b0WNwQcf7a40AxjcArcRkgSF7LqeMR9rxXrladWPuWGV+uv9FjxBIMbhxOPuY1Ny1h4yPNlXTNg==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/signature-v4-multi-region@3.996.47':
@@ -13623,8 +13550,8 @@ packages:
     resolution: {integrity: sha512-GpyAr0DD63YOEmYFM6Df+gJuIgC92MMTiBK4FTKfxii5MJ9ge20epR7LyroulscYlG89J+ZB2ivFDPjvfQhzdw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/token-providers@3.1141.0':
-    resolution: {integrity: sha512-ErZTCJEjGO9RLFxREEZ07HgDe2SunXkwdG+ZvMoIElVXDGG2krhGs+rEhbVjK6DlxzhQ6/YHMjoYmBxPnqWMsA==}
+  '@aws-sdk/token-providers@3.1142.0':
+    resolution: {integrity: sha512-jtJUURbLkqjeRQgP6al2cEe8M7nuywW9GqUx+nse+qMXwQvMdICCzXA2eGGdtNineNIq24GZXh22EsDkh/fQbA==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/types@3.974.6':
@@ -18138,25 +18065,25 @@ packages:
   '@types/yazl@3.3.1':
     resolution: {integrity: sha512-DIWfCKpsTp6hE5BDBHV3+fIL/bLUF9Bv13iDrWnMlmhQpH67buNvI291ZauQ1xcccxK3FqQ9honnXpq4R8NMuQ==}
 
-  '@typescript-eslint/parser@8.70.1':
-    resolution: {integrity: sha512-nO974WLllwhSFWQXnMLj6nDGa8f0khKEz1JzpPJ1u7Vm/4X1X6ZHajpoknU4bb41vJyMB0HHVyS2GqdhWfIXZw==}
+  '@typescript-eslint/parser@8.71.0':
+    resolution: {integrity: sha512-CG4nPk1f2zc8yw4pALqHsFYH2hdo+h1T9daSp21+Hnxi9LOE3GT9hAfTKJCBXVNM2GmYs1eMEP615wPoeOgk3A==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
       eslint: ^8.57.0 || ^9.0.0 || ^10.0.0
       typescript: '>=4.8.4 <6.1.0'
 
-  '@typescript-eslint/project-service@8.70.1':
-    resolution: {integrity: sha512-62xOgboPfwc3/IgPSX/W6oQR3ZbF04194FPGUGH8HL8iLFHbt/456/8Ph1wLNUgVF+s94FlHoipBsz+v7+LMnA==}
+  '@typescript-eslint/project-service@8.71.0':
+    resolution: {integrity: sha512-aABjw5rjBacYONVPaPiWOCjJu0vEF4a25iQuodlmQYL1trtLZ0X/y+2Vzl3BKI1odM4LnwLE1oUDXYp1wzx1TQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
       typescript: '>=4.8.4 <6.1.0'
 
-  '@typescript-eslint/scope-manager@8.70.1':
-    resolution: {integrity: sha512-Pa0EeSeAusQc1WbjQMac+YfenewYTBu0KjgYvkUKwhXaHUKbFog23Dm/rp0DX/6tyYOQ3Xl1a+3EcFNZynGHCw==}
+  '@typescript-eslint/scope-manager@8.71.0':
+    resolution: {integrity: sha512-gWF0BhUcnjZxSpLE8ngS/59n2SB0J3YqRxvX1+2aoRJk9hNtHSLOV+TcarFiOr5ipXm3yc1QrI4c9YZc8zyCxw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@typescript-eslint/tsconfig-utils@8.70.1':
-    resolution: {integrity: sha512-jumze1fPI+sDOaM2TWGQdn39PDxTr7TZGeuyLkAbNyx2vtMT3uRnVKChN0hfht5V2TugphJzF6bYXvBcE09qqg==}
+  '@typescript-eslint/tsconfig-utils@8.71.0':
+    resolution: {integrity: sha512-Z1UlWHADEK2Mlb9NpWfDeSjqoZ5EyrOv4R3eQpbkzqn/EwaIdOpXXupEA1+0ZIOSJSZZDBHG0BrQyN8zUG6Pwg==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
       typescript: '>=4.8.4 <6.1.0'
@@ -18165,14 +18092,18 @@ packages:
     resolution: {integrity: sha512-Dm1ypdhhrGCTyyehxElhgJ6kgk8MVCv5qXdoOVqPr1uqk42jX8KjrZqhROvdShczA8qrDoYiOWn1ykWlx2k81Q==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@typescript-eslint/typescript-estree@8.70.1':
-    resolution: {integrity: sha512-TU8PwyGN0PQJUcE96mw8eCQ44SmxGdQlJmlWakHaHQ15eIuuvye5yNtmh/i6oS88jzXVQB71xdNkbkB/fMwL0g==}
+  '@typescript-eslint/types@8.71.0':
+    resolution: {integrity: sha512-cJ4OoxPGWvFnBTnSZyaU+qJzGTqPTGJY+gDchj6cRyLRdmIdt4rcsE4twj+zPfrNiWuVi38wijHzShL++Z9atQ==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@typescript-eslint/typescript-estree@8.71.0':
+    resolution: {integrity: sha512-PEEF4G5sLLWAS5BpPrUvms4ySZkiBQQZM4z+3ReI46axK5Vqr/vXBQatJQIZZOYdGyPUAKTtsrWzpqKuU+3DEw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
       typescript: '>=4.8.4 <6.1.0'
 
-  '@typescript-eslint/visitor-keys@8.70.1':
-    resolution: {integrity: sha512-Vwj9lUIW5Xq3wQ9w6gv3R86g1hMK8f2zNOdGTAgeXUMMXFK78G9ruCjjqutHMNJc0+CH7LYRnHeUB9IT8wFmcw==}
+  '@typescript-eslint/visitor-keys@8.71.0':
+    resolution: {integrity: sha512-8eQ9R218XORK+KLosnf4bu/QsUXvUyVwTbArg7/0NMB1Pu87OJKvj4nhFblkYE8gQV73mW1dx1ptlPCkwRGa7A==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   '@typescript/typescript-aix-ppc64@7.0.2':
@@ -18643,18 +18574,13 @@ packages:
     resolution: {integrity: sha512-TQf59BsZnytt8GdJKLPfUZ54g/iaUL2OWDSFCCvMOhsHduDQxO8xC4PNeyIkVcA5KwL2phPSv0douC0fgWzmnA==}
     engines: {node: '>= 20'}
 
-  agent-blackboard@0.6.0:
-    resolution: {integrity: sha512-WhwgBJVLHjwS4K4T3FZGbAS90pXNy/tQqep86q1WrLlzMseGGfI90n0Jb3ukd7ovsAhkSXQ2rJhAB5Xsn1HSDw==}
+  agent-blackboard@0.6.1:
+    resolution: {integrity: sha512-3faF/qWRsUjeVQtnYkSV+MpAqFxbnXj3SPvZDuN0ucVI+IkbjjJ8VtY32lsj8U9u0pGUbwoNj/k5+L/mtPHJPw==}
     engines: {node: '>=24.0.0'}
     hasBin: true
 
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
-    peerDependencies:
-      ajv: ^8.0.0
-    peerDependenciesMeta:
-      ajv:
-        optional: true
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -21198,8 +21124,8 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-  pr-shepherd@0.55.2:
-    resolution: {integrity: sha512-zajjaDXanYE9cTplHp765U9lJUaeB4Pq1q/3kVyTQaeZB6QkyxWkdoj0cFtKHRuI4ezBV/reyhRGLuhMEnmjLQ==}
+  pr-shepherd@0.56.1:
+    resolution: {integrity: sha512-vTvylDmKYBXILTvxiVqbrCzuxumJQTHWKGVPPXQ59cGB5B5CNEoyDL5wG/dGeIyFMEm+oWAdrK8vqgXga4DfwA==}
     engines: {node: '>=22.18.0'}
     hasBin: true
 
@@ -22185,8 +22111,8 @@ packages:
     resolution: {integrity: sha512-TQ5pAGhd5whStmqWvYF4OjQROlmv9SMFVt37qoCBdqRffuuklWYQlCNnEs2ZaIBD1kZRNnikiZOS1eqgkar0iw==}
     engines: {node: '>= 0.10'}
 
-  valkyries@0.8.0:
-    resolution: {integrity: sha512-oNEKunMsnZMR0Ioz8tt3HksnbFf4WQhfzgeC2DoJJ7G0gVNAyc9EYk3lXtGuuUumlOwYOQPVxiuVK6gd1Y+7Bg==}
+  valkyries@0.8.1:
+    resolution: {integrity: sha512-9ddwmEBr/ex50NJK5H3FIsGQWPhaZOAklXV4NnM/eXm82dR+SJrQIELWtJvXV/0rqI4UCnfDIVlsiy2oF/tGmQ==}
     engines: {node: '>=24.0.0'}
 
   vary@1.1.2:
@@ -22301,8 +22227,8 @@ packages:
       jsdom:
         optional: true
 
-  vouchington-tooling@0.26.0:
-    resolution: {integrity: sha512-jDlwSnm1/4Mr50DXdxZYa+qYLk2EK2tONj4UoBzMhsFYM/SJydWeBvLfjZxI9Z60G3ARuQKs4k/xnKSZpgroWw==}
+  vouchington-tooling@0.27.0:
+    resolution: {integrity: sha512-hTLI2+jaxjH5fBqZRdrGu9+yt230zKuqekowcyT1A+VW0r6Z7u5RaLr5eyo1GevhO8RYp0+kZvSyRiaZJnd3dQ==}
     engines: {node: '>=24.0.0'}
     hasBin: true
     peerDependencies:
@@ -22775,14 +22701,14 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-bedrock-runtime@3.1141.0':
+  '@aws-sdk/client-bedrock-runtime@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
       '@aws-sdk/eventstream-handler-node': 3.972.35
       '@aws-sdk/middleware-eventstream': 3.972.30
       '@aws-sdk/middleware-websocket': 3.972.54
-      '@aws-sdk/token-providers': 3.1141.0
+      '@aws-sdk/token-providers': 3.1142.0
       '@aws-sdk/types': 3.974.6
       '@smithy/core': 3.35.0
       '@smithy/fetch-http-handler': 5.8.0
@@ -22790,11 +22716,11 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-bedrock@3.1141.0':
+  '@aws-sdk/client-bedrock@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
-      '@aws-sdk/token-providers': 3.1141.0
+      '@aws-sdk/token-providers': 3.1142.0
       '@aws-sdk/types': 3.974.6
       '@smithy/core': 3.35.0
       '@smithy/fetch-http-handler': 5.8.0
@@ -22802,7 +22728,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-cloudfront@3.1141.0':
+  '@aws-sdk/client-cloudfront@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
@@ -22813,7 +22739,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-cloudwatch@3.1141.0':
+  '@aws-sdk/client-cloudwatch@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
@@ -22825,7 +22751,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-dynamodb@3.1141.0':
+  '@aws-sdk/client-dynamodb@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
@@ -22838,7 +22764,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-firehose@3.1141.0':
+  '@aws-sdk/client-firehose@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
@@ -22863,7 +22789,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-s3@3.1141.0':
+  '@aws-sdk/client-s3@3.1142.0':
     dependencies:
       '@aws-sdk/checksums': 3.1001.1
       '@aws-sdk/core': 3.978.1
@@ -22877,7 +22803,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-ses@3.1141.0':
+  '@aws-sdk/client-ses@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
@@ -22888,7 +22814,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-sqs@3.1141.0':
+  '@aws-sdk/client-sqs@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
@@ -22900,7 +22826,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-ssm@3.1141.0':
+  '@aws-sdk/client-ssm@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
@@ -23077,7 +23003,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/s3-request-presigner@3.1141.0':
+  '@aws-sdk/s3-request-presigner@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/signature-v4-multi-region': 3.996.47
@@ -23102,7 +23028,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/token-providers@3.1141.0':
+  '@aws-sdk/token-providers@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/nested-clients': 3.997.46
@@ -27173,44 +27099,46 @@ snapshots:
     dependencies:
       '@types/node': 26.6.3
 
-  '@typescript-eslint/parser@8.70.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)':
+  '@typescript-eslint/parser@8.71.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)':
     dependencies:
-      '@typescript-eslint/scope-manager': 8.70.1
-      '@typescript-eslint/types': 8.70.1
-      '@typescript-eslint/typescript-estree': 8.70.1(@typescript/typescript6@6.0.2)(supports-color@10.2.2)
-      '@typescript-eslint/visitor-keys': 8.70.1
+      '@typescript-eslint/scope-manager': 8.71.0
+      '@typescript-eslint/types': 8.71.0
+      '@typescript-eslint/typescript-estree': 8.71.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)
+      '@typescript-eslint/visitor-keys': 8.71.0
       debug: 4.4.3(supports-color@10.2.2)
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
       typescript: '@typescript/typescript6@6.0.2'
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/project-service@8.70.1(@typescript/typescript6@6.0.2)(supports-color@10.2.2)':
+  '@typescript-eslint/project-service@8.71.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.70.1(@typescript/typescript6@6.0.2)
-      '@typescript-eslint/types': 8.70.1
+      '@typescript-eslint/tsconfig-utils': 8.71.0(@typescript/typescript6@6.0.2)
+      '@typescript-eslint/types': 8.71.0
       debug: 4.4.3(supports-color@10.2.2)
       typescript: '@typescript/typescript6@6.0.2'
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/scope-manager@8.70.1':
+  '@typescript-eslint/scope-manager@8.71.0':
     dependencies:
-      '@typescript-eslint/types': 8.70.1
-      '@typescript-eslint/visitor-keys': 8.70.1
+      '@typescript-eslint/types': 8.71.0
+      '@typescript-eslint/visitor-keys': 8.71.0
 
-  '@typescript-eslint/tsconfig-utils@8.70.1(@typescript/typescript6@6.0.2)':
+  '@typescript-eslint/tsconfig-utils@8.71.0(@typescript/typescript6@6.0.2)':
     dependencies:
       typescript: '@typescript/typescript6@6.0.2'
 
   '@typescript-eslint/types@8.70.1': {}
 
-  '@typescript-eslint/typescript-estree@8.70.1(@typescript/typescript6@6.0.2)(supports-color@10.2.2)':
+  '@typescript-eslint/types@8.71.0': {}
+
+  '@typescript-eslint/typescript-estree@8.71.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)':
     dependencies:
-      '@typescript-eslint/project-service': 8.70.1(@typescript/typescript6@6.0.2)(supports-color@10.2.2)
-      '@typescript-eslint/tsconfig-utils': 8.70.1(@typescript/typescript6@6.0.2)
-      '@typescript-eslint/types': 8.70.1
-      '@typescript-eslint/visitor-keys': 8.70.1
+      '@typescript-eslint/project-service': 8.71.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)
+      '@typescript-eslint/tsconfig-utils': 8.71.0(@typescript/typescript6@6.0.2)
+      '@typescript-eslint/types': 8.71.0
+      '@typescript-eslint/visitor-keys': 8.71.0
       debug: 4.4.3(supports-color@10.2.2)
       minimatch: 10.2.6
       semver: 7.8.5
@@ -27220,9 +27148,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/visitor-keys@8.70.1':
+  '@typescript-eslint/visitor-keys@8.71.0':
     dependencies:
-      '@typescript-eslint/types': 8.70.1
+      '@typescript-eslint/types': 8.71.0
       eslint-visitor-keys: 5.0.1
 
   '@typescript/typescript-aix-ppc64@7.0.2':
@@ -27497,8 +27425,8 @@ snapshots:
 
   '@vouchington/media@0.2.0':
     dependencies:
-      '@aws-sdk/client-s3': 3.1141.0
-      '@aws-sdk/s3-request-presigner': 3.1141.0
+      '@aws-sdk/client-s3': 3.1142.0
+      '@aws-sdk/s3-request-presigner': 3.1142.0
 
   '@vouchington/memberships@0.2.0': {}
 
@@ -27702,7 +27630,7 @@ snapshots:
 
   agent-base@9.0.0: {}
 
-  agent-blackboard@0.6.0(supports-color@10.2.2)(zod@4.6.5):
+  agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5):
     dependencies:
       '@modelcontextprotocol/sdk': 1.30.1(supports-color@10.2.2)(zod@4.6.5)
     transitivePeerDependencies:
@@ -27710,8 +27638,8 @@ snapshots:
       - supports-color
       - zod
 
-  ajv-formats@2.1.1(ajv@8.20.0):
-    optionalDependencies:
+  ajv-formats@2.1.1:
+    dependencies:
       ajv: 8.20.0
     optional: true
 
@@ -30487,7 +30415,7 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  pr-shepherd@0.55.2(supports-color@10.2.2):
+  pr-shepherd@0.56.1(supports-color@10.2.2):
     dependencies:
       '@modelcontextprotocol/sdk': 1.30.1(supports-color@10.2.2)(zod@4.6.5)
       picomatch: 4.0.7
@@ -30919,7 +30847,7 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
       ajv: 8.20.0
-      ajv-formats: 2.1.1(ajv@8.20.0)
+      ajv-formats: 2.1.1
       ajv-keywords: 5.1.0(ajv@8.20.0)
     optional: true
 
@@ -31613,7 +31541,7 @@ snapshots:
 
   validator@13.15.35: {}
 
-  valkyries@0.8.0:
+  valkyries@0.8.1:
     dependencies:
       '@valkey/valkey-glide': 2.5.3
 
@@ -31717,7 +31645,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2):
+  vouchington-tooling@0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3

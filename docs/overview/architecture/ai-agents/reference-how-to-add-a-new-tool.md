@@ -7,8 +7,8 @@
 3. Use `currentUser as unknown as PrivateUser` if the tool needs an authenticated user
 4. Add `strict: null` to the schema (repo convention: leave provider strict-mode unset)
 5. Write `backend/tools/<name>.test.mts` — real DB test with `createTestUser()` in `beforeAll`
-6. Import the tool in any agent's `tool.mts` that should expose it
-7. Update the agent's `build-system-prompt.mts` to document the new tool
+6. Add the tool to the `buildAgentTools` entries of the agent that should expose it
+7. Update that agent's system prompt to document the new tool
 
 ### Tool file structure
 

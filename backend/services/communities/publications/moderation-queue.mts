@@ -1,24 +1,23 @@
 import { read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
-import {
-  appendReportTargetColumns,
-  communityPostNotApprovedSql,
-  moderationReportsWithEntitySql,
-  reportTargetJoinsSql,
-  type ModerationReportTargetContent,
-} from '@services/moderation-reports/target-metadata'
+import sql, { type SQLStatement } from 'sql-template-strings'
+import type { ModerationReportTargetContent } from '@services/moderation-reports/target-metadata'
 import type { ModerationReportStatus } from '@services/moderation-reports/config'
 import type { PendingModerationReport } from '@services/moderation-reports/get'
-import { appendModerationReportStatusPredicate } from '@services/moderation-reports/sort-sql'
 import { applyDeletedTargetLabel } from '@services/moderation-reports/redaction'
 import { attachJudgements } from '@services/moderation-reports/judgement-attach'
 import { attachPostModerationContext } from '@services/moderation-reports/post-moderation-context-attach'
 import { decodeCommunityModerationQueueCursor } from './moderation-queue-cursor.mts'
-import { buildCommunityReviewQueueQuery } from './moderation-queue-review-sql.mts'
+import { buildCommunityReportQueueQuery } from './moderation-queue-report-sql.mts'
+import {
+  buildCommunityAutomodFlagQueueQuery,
+  buildCommunityReviewQueueQuery,
+} from './moderation-queue-review-sql.mts'
 export { encodeCommunityModerationQueueCursor } from './moderation-queue-cursor.mts'
 
+export type CommunityModerationQueueSource = 'report' | 'community_review' | 'automod_flag'
+
 export type CommunityModerationQueueEntry = PendingModerationReport & {
-  queue_source: 'report' | 'community_review'
+  queue_source: CommunityModerationQueueSource
   /** Kept explicit so API-contract extraction retains the JSON object rather than its SQL origin. */
   target_content: ModerationReportTargetContent | null
   /** True for private/followers-only targets; the route masks these for member-tier viewers. */
@@ -32,11 +31,13 @@ export type SearchCommunityModerationQueueOptions = {
   status?: ModerationReportStatus
   limit?: number
   after?: string | null
+  /** Return only this queue source; every permitted source when omitted. */
+  source?: CommunityModerationQueueSource
   /**
-   * Whether to include pre-publication `community_post_reviews` rows.
-   * Only moderator-tier viewers may see unpublished post titles/paths.
+   * Whether to include the moderator-only sources: pre-publication `community_post_reviews`
+   * rows (unpublished post titles/paths) and open automod flags (a moderation signal).
    */
-  includePendingReviews?: boolean
+  includeModeratorSources?: boolean
   /** Viewer tier for post_moderation_context: moderators get full context; members get coarse. */
   viewerTier?: 'moderator' | 'member'
 }
@@ -47,8 +48,8 @@ export type CommunityModerationQueueResult = {
 }
 
 /**
- * Returns a UNION of community moderation reports + community_post_reviews pending rows,
- * ordered by created_at DESC. Member-tier viewers receive a redacted result set.
+ * Returns a UNION of community moderation reports, pending `community_post_reviews` rows and
+ * open automod flags, ordered by created_at DESC. Member-tier viewers receive a redacted result set.
  */
 export async function searchCommunityModerationQueue(
   communityId: string,
@@ -58,7 +59,8 @@ export async function searchCommunityModerationQueue(
     status = 'pending',
     limit: rawLimit = 50,
     after,
-    includePendingReviews = true,
+    source,
+    includeModeratorSources = true,
     viewerTier = 'moderator',
   } = options
   const limit = Math.min(Math.max(Math.floor(rawLimit), 1), 100)
@@ -66,90 +68,25 @@ export async function searchCommunityModerationQueue(
   const decoded = after ? decodeCommunityModerationQueueCursor(after) : null
   const afterCreatedAt = decoded?.afterCreatedAt ?? null
   const afterId = decoded?.afterId ?? null
-  const reportQuery = sql`/* searchCommunityModerationQueue:reports */
-    SELECT
-      r.id,
-      r.created_at,
-      to_char(
-        r.created_at AT TIME ZONE 'UTC',
-        'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
-      ) AS cursor_created_at,
-      r.reviewed_at,
-      r.reporter_user_id,
-      NULL::text AS reporter_username,
-      r.entity_type,
-      r.entity_id,
-  `
-  appendReportTargetColumns(reportQuery, { includeAvailable: true })
-  reportQuery.append(sql`,
-      r.reason,
-      r.note,
-      r.status,
-      r.resolved_by_id,
-      report_counts.report_count,
-      report_counts.report_count AS cursor_report_count,
-      CASE latest_judgement.recommended_action
-        WHEN 'escalate' THEN 4
-        WHEN 'remove' THEN 3
-        WHEN 'warn' THEN 2
-        WHEN 'no_action' THEN 1
-        ELSE 0
-      END AS cursor_severity_rank,
-      CASE
-        WHEN r.post_id IS NOT NULL AND target_post.post_type = 'comment' THEN
-          (root_post.broadcast <> 'everyone' OR root_post.privacy <> 'public'
-          OR `)
-  reportQuery.append(communityPostNotApprovedSql('root_post'))
-  reportQuery.append(sql`)
-        ELSE
-          (target_post.broadcast <> 'everyone' OR target_post.privacy <> 'public'
-          OR `)
-  reportQuery.append(communityPostNotApprovedSql('target_post'))
-  reportQuery.append(sql`)
-      END AS target_is_restricted,
-      COALESCE(target_post.is_anonymous, false) AS target_is_anonymous,
-      'report'::text AS queue_source
-    FROM `)
-  reportQuery.append(moderationReportsWithEntitySql())
-  reportQuery.append(sql` r
-  `)
-  reportQuery.append(reportTargetJoinsSql())
-  reportQuery.append(sql`
-    LEFT JOIN LATERAL (
-      SELECT COUNT(DISTINCT rc.reporter_user_id)::integer AS report_count
-      FROM moderation_reports rc
-      WHERE COALESCE(rc.post_id, rc.reported_user_id, rc.hostname_id, rc.rss_feed_item_id)
-              = COALESCE(r.post_id, r.reported_user_id, r.hostname_id, r.rss_feed_item_id)
-        AND `)
-  appendModerationReportStatusPredicate(reportQuery, 'rc', status)
-  reportQuery.append(sql`
-    ) report_counts ON true
-    LEFT JOIN LATERAL (
-      SELECT mj.recommended_action
-      FROM moderation_report_judgements mj
-      WHERE COALESCE(mj.post_id, mj.reported_user_id, mj.hostname_id, mj.rss_feed_item_id)
-              = COALESCE(r.post_id, r.reported_user_id, r.hostname_id, r.rss_feed_item_id)
-      ORDER BY mj.id DESC
-      LIMIT 1
-    ) latest_judgement ON true
-  `)
-  reportQuery.append(sql`
-    WHERE `)
-  appendModerationReportStatusPredicate(reportQuery, 'r', status)
-  reportQuery.append(sql`
-      AND r.post_id IS NOT NULL
-      AND target_post.community_id = ${communityId}
-  `)
 
-  const reviewQuery = buildCommunityReviewQueueQuery(communityId)
+  const wants = (candidate: CommunityModerationQueueSource) =>
+    source === undefined || source === candidate
+  const parts: SQLStatement[] = []
+  if (wants('report')) parts.push(buildCommunityReportQueueQuery(communityId, status))
+  // Reviews expose unpublished post titles/paths and flags are moderation signals; moderator only.
+  if (includeModeratorSources && wants('community_review')) {
+    parts.push(buildCommunityReviewQueueQuery(communityId))
+  }
+  if (includeModeratorSources && wants('automod_flag')) {
+    parts.push(buildCommunityAutomodFlagQueueQuery(communityId))
+  }
+  if (parts.length === 0) return { entries: [], hasNextPage: false }
 
   const unionQuery = sql`/* searchCommunityModerationQueue */
     SELECT * FROM (`
-  unionQuery.append(reportQuery)
-  // Pre-publication reviews expose unpublished post titles/paths; moderator-tier only.
-  if (includePendingReviews) {
-    unionQuery.append(sql` UNION ALL `)
-    unionQuery.append(reviewQuery)
+  for (const [index, part] of parts.entries()) {
+    if (index > 0) unionQuery.append(sql` UNION ALL `)
+    unionQuery.append(part)
   }
   unionQuery.append(sql`) combined`)
 

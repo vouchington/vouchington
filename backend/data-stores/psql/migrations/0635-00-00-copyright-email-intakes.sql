@@ -10,6 +10,11 @@ CREATE TABLE copyright_notice_email_intakes (
   raw_sha256 bytea NOT NULL CHECK (octet_length(raw_sha256) = 32),
   raw_mime_type text NOT NULL CHECK (char_length(raw_mime_type) BETWEEN 1 AND 255),
   raw_byte_size integer NOT NULL CHECK (raw_byte_size >= 0),
+  spf_verdict text NOT NULL CHECK (spf_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
+  dkim_verdict text NOT NULL CHECK (dkim_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
+  dmarc_verdict text NOT NULL CHECK (dmarc_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
+  spam_verdict text NOT NULL CHECK (spam_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
+  virus_verdict text NOT NULL CHECK (virus_verdict IN ('pass', 'fail', 'gray', 'processing_failed', 'unknown')),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -123,6 +128,11 @@ COMMENT ON COLUMN copyright_notice_email_intakes.received_at IS 'Timestamp assig
 COMMENT ON COLUMN copyright_notice_email_intakes.raw_sha256 IS 'SHA-256 digest of the preserved original RFC 5322 message.';
 COMMENT ON COLUMN copyright_notice_email_intakes.raw_mime_type IS 'Media type of the preserved original message.';
 COMMENT ON COLUMN copyright_notice_email_intakes.raw_byte_size IS 'Byte size of the preserved original message.';
+COMMENT ON COLUMN copyright_notice_email_intakes.spf_verdict IS 'SES SPF verdict from the amazonses.com Authentication-Results header SES added at receipt; unknown when SES reported none. Advisory risk signal only.';
+COMMENT ON COLUMN copyright_notice_email_intakes.dkim_verdict IS 'SES DKIM verdict from the amazonses.com Authentication-Results header; pass means a DKIM signature validated, not that the signing domain aligns with the From domain. unknown when SES reported none. Advisory risk signal only.';
+COMMENT ON COLUMN copyright_notice_email_intakes.dmarc_verdict IS 'SES DMARC verdict from the amazonses.com Authentication-Results header; unknown when SES reported none. Advisory risk signal only.';
+COMMENT ON COLUMN copyright_notice_email_intakes.spam_verdict IS 'SES spam verdict from the X-SES-Spam-Verdict header SES added at receipt; unknown when SES reported none. Advisory risk signal only.';
+COMMENT ON COLUMN copyright_notice_email_intakes.virus_verdict IS 'SES malware verdict from the X-SES-Virus-Verdict header SES added at receipt; unknown when SES reported none. A fail quarantines the original message so staff cannot download it.';
 COMMENT ON TABLE copyright_notice_email_intake_parses IS 'Append-only bounded MIME parse result. Failed parsing remains a staff-visible legal intake with the immutable original attached.';
 COMMENT ON COLUMN copyright_notice_email_intake_parses.copyright_notice_email_intake_id IS 'Immutable email evidence record parsed by this result.';
 COMMENT ON COLUMN copyright_notice_email_intake_parses.status IS 'Whether bounded MIME parsing succeeded or failed.';

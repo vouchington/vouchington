@@ -9,6 +9,7 @@ import type { UserDataRequestRow } from './types.mts'
 const baseRow: UserDataRequestRow = {
   id: '019c8390-0000-7000-8000-000000000001',
   user_id: '00000000-0000-7000-8000-000000000001',
+  requested_by_id: '00000000-0000-7000-8000-000000000001',
   queued_at: new Date('2026-02-22T00:00:00.000Z'),
   processing_attempt_id: '019c8390-0000-7000-8000-000000000002',
   dispatched_at: new Date('2026-02-22T00:00:00.000Z'),

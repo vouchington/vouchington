@@ -12,7 +12,6 @@ import {
 } from '@voucha/test-helpers'
 import { runContributionAdmission } from './admission.mts'
 import { preparePostWithCommunityReviews } from '../posts/create.mts'
-import { reconcilePostCategoryFinalizations } from '../posts/post-category-finalizations.mts'
 import { executePreparedContribution } from './prepared-contribution.mts'
 import { CONTRIBUTION_ADMISSION_CLAIM_SECONDS } from './config.mts'
 import { CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES } from './admission-replay-retention.mts'
@@ -190,7 +189,7 @@ describe('contribution admission finalization', () => {
     await expect(create()).resolves.toEqual({ kind: 'replay', response: first.response })
   })
 
-  it('repairs an abandoned pre-finalization replay from durable create state after claim expiry', async () => {
+  it('replays transaction-captured category topics after the admission claim expires', async () => {
     const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const suffix = crypto.randomUUID()
     const topicId = await insertTestTopic({
@@ -217,7 +216,12 @@ describe('contribution admission finalization', () => {
           )
         ).response.post,
     })
-    expect(created).toEqual({ kind: 'in_progress', retryAfterSeconds: 1 })
+    expect(created).toMatchObject({
+      kind: 'created',
+      response: {
+        post_related_topics: [expect.objectContaining({ id: topicId })],
+      },
+    })
     await expect(
       getContributionAdmissionClaimExpiryForTest({ actorId: user.id, idempotencyKey }),
     ).resolves.toBeNull()
@@ -228,22 +232,6 @@ describe('contribution admission finalization', () => {
       idempotencyKey,
       expiresInSeconds: 300,
     })
-    await expect(
-      runContributionAdmission({
-        actorId: user.id,
-        idempotencyKey,
-        intent,
-        execute: executeTestAdmittedPost,
-      }),
-    ).resolves.toEqual({ kind: 'in_progress', retryAfterSeconds: 1 })
-    const pendingRetention = await getContributionAdmissionReplayRetentionForTest({
-      actorId: user.id,
-      idempotencyKey,
-    })
-    expect(pendingRetention?.secondsUntilExpiry).toBeGreaterThan(MINIMUM_REPLAY_RETENTION_SECONDS)
-    expect(pendingRetention?.retentionExpiresAt).toEqual(pendingRetention?.expiresAt)
-
-    await reconcilePostCategoryFinalizations()
     const replay = await runContributionAdmission({
       actorId: user.id,
       idempotencyKey,

@@ -25,9 +25,15 @@ listing and calling enforce the same requirement. `mcp.user:*` remains an explic
 grant for existing keys, while new keys can request a resource scope. `mcp.admin:*` accepts only
 the `oauth` surface: administrator MCP access is OAuth-only, so no API key can carry it.
 
+`communities:read` is a user-audience resource scope for the community MCP read tools. It covers only
+public community data: the tools read as a signed-out reader whatever the credential owner's
+membership, so the scope never exposes a private community. `mcp.user:read` covers it like every
+other user read scope.
+
 `post-relations.owned-private:write` is an exact, non-inheritable user capability. It requires
 `entity-relations:write` (and therefore read) for API keys and OAuth grants, but broad
-`mcp.user:write` never covers it.
+`mcp.user:write` never covers it. The `set_bookmark` and `add_list_item` MCP tools check the same
+grant before they touch an own private post; `bookmarks:write` and `lists:write` never imply it.
 
 The same coverage rule (`hasEveryScope`) decides whether an OAuth client's registered scopes cover
 a requested scope. `listScopesForAudience` feeds OAuth discovery metadata, and

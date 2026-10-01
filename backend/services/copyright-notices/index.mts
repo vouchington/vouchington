@@ -5,9 +5,9 @@ export {
   authorizeCopyrightGuestCapability,
   copyrightGuestCapabilityMaxLifetimeMs,
   issueCopyrightGuestCapability,
-  requestCopyrightGuestInformation,
   revokeCopyrightGuestCapability,
 } from './guest-capabilities.mts'
+export { requestCopyrightGuestInformation } from './information-requests.mts'
 export { appendCopyrightGuestFiling } from './guest-filings.mts'
 export {
   copyrightGuestCapabilityCursorScope,
@@ -17,6 +17,7 @@ export { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mt
 export { reviewCopyrightFormIntake } from './form-reviews.mts'
 export { createCopyrightAppeal, createCopyrightCounterNotice } from './submissions.mts'
 export { createCopyrightEmailIntake } from './email-intakes.mts'
+export type { CopyrightEmailSesVerdict, CopyrightEmailSesVerdicts } from './email-ses-verdicts.mts'
 export { loadCopyrightEmailRawEvidence } from './email-raw-evidence.mts'
 export { recordCopyrightEmailParse } from './email-intake-parses.mts'
 export {
@@ -25,14 +26,6 @@ export {
 } from './email-correspondence-admission.mts'
 export { promoteCopyrightEmailIntake } from './email-promotion.mts'
 export { rejectCopyrightEmailIntake } from './email-rejection.mts'
-export {
-  CopyrightEmailIntakeResponseNotClaimedError,
-  markCopyrightEmailIntakeResponseFailed,
-  markCopyrightEmailIntakeResponseSent,
-  markCopyrightEmailIntakeResponseBouncedBySesMessageId,
-  prepareCopyrightEmailIntakeResponseDelivery,
-  searchRecoverableCopyrightEmailIntakeResponseIds,
-} from './email-intake-responses.mts'
 export {
   getCopyrightStaffEmailIntake,
   getCopyrightParticipantNoticeDetail,
@@ -80,11 +73,9 @@ export {
   searchRecoverableCopyrightActionIntentIds,
 } from './action-delivery.mts'
 export { currentUserCanReviewCopyrightNotices } from './authorization.mts'
-export { processCopyrightEnforcementRequest } from './enforcement-requests.mts'
-export {
-  createMissingCopyrightEnforcementRequests,
-  searchReconcilableCopyrightEnforcementRequestIds,
-} from './enforcement-request-reconciliation.mts'
+export { enforceCopyrightAssessment } from './enforce-assessment.mts'
+export { recoverMissingDecisionAssessments } from './enforcement-recovery.mts'
+export { searchPendingCopyrightEnforcementAssessmentIds } from './enforcement-pending.mts'
 export {
   recoverRejectedCopyrightFormReviewEffect,
   searchRecoverableCopyrightFormReviewIntakeIds,

@@ -25,7 +25,7 @@ Business logic for user memberships (plans, billing, admin grants).
 
 ## Public benefit catalog
 
-`benefit-catalog.mts` owns `GET /api/v1/memberships/plans` `benefit_catalog`. It delegates generic
+`@ts-shared/utils/membership-benefit-catalog` owns `GET /api/v1/memberships/plans` `benefit_catalog`. It delegates generic
 catalog validation to `@vouchington/memberships` while retaining Vouchington's benefit IDs, values, and
 public JSON shape. Catalog data never authorizes a request; domain services remain authoritative. See
 [Membership plans and entitlements](../../../../requirements/users/reference-memberships-plans.md).

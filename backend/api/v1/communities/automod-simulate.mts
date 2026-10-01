@@ -71,7 +71,7 @@ app.route('/api/v1/communities/:idOrSlug/automod/simulate').post(async (ctx: Con
     currentUserId: currentUser.id,
     promptOverride,
   })
-  const results = createAutomodSimulationResults(prompt, posts, simulationResults)
+  const results = createAutomodSimulationResults(posts, simulationResults)
 
   ctx.json({
     simulation: {
@@ -79,7 +79,8 @@ app.route('/api/v1/communities/:idOrSlug/automod/simulate').post(async (ctx: Con
       time_window_hours: timeWindowHours,
       sample_count: posts.length,
       would_flag_count: results.filter(result => result.flagged).length,
-      would_unpublish_count: results.filter(result => result.would_unpublish).length,
+      // What a real flag does in this community; a dry run never acts.
+      community_automod_action: community.automod_action,
       false_positive_estimate: falsePositiveEstimate,
     },
     results,

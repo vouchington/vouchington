@@ -1,13 +1,11 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { stableStringify } from '@modules/utils/stable-stringify'
 import { buildSchemaSnapshot } from './build-snapshot.mts'
 import { readSchemaCatalog } from './catalog-queries.mts'
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+const __dirname = import.meta.dirname
 
 /**
  * Extension versions are provisioned by the platform (AWS Aurora, Homebrew, Docker), not by this

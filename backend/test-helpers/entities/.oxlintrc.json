@@ -14,7 +14,9 @@
     "jest",
     "promise",
     "oxc",
-    "typescript"
+    "typescript",
+    "unicorn",
+    "import"
   ],
   // Root overrides do not correctly re-match paths once a directory has its own .oxlintrc.json,
   // because their globs are evaluated relative to this config's directory. Keep the backend

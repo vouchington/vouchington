@@ -16,6 +16,7 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
+import { recordTestClaimantEmailReceipt } from '@voucha/test-helpers/services/copyright-notices/claimant-delivery'
 import { copyrightCorrespondencePurpose } from './correspondence.mts'
 import {
   appendCopyrightGuestFiling,
@@ -157,6 +158,7 @@ describe('copyright guest lifecycle guards', () => {
 
   it('does not treat mail or a staff information request as a capability', async () => {
     const { notice } = await openNotice()
+    await recordTestClaimantEmailReceipt(notice.id)
     const staffRecord = await createTestUserDirect()
     const staff = { ...staffRecord, roles: ['moderator'] as const }
     const capability = await issueCopyrightGuestCapability({

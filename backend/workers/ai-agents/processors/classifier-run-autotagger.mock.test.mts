@@ -3,7 +3,7 @@ import { Response } from 'undici'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createAutotaggerClient, executeAutotaggerRun } from '@agents/autotagger'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
-import { AI_AGENTS_DEFAULTS } from '@queues/ai-agents/config'
+import { CLASSIFIER_RUN_ATTEMPTS } from '@queues/ai-agents/config'
 import { openAiSpendCapConfig } from '@services/ai-usage'
 import { createAutotaggerRunAdapter } from '@services/autotagger'
 import { claimClassifierRun } from '@services/classifier-runs'
@@ -12,7 +12,6 @@ import {
   createAutotaggerFeedItemFixture,
   createAutotaggerPostFixture,
   createNearbyTopic,
-  readAutotaggerVotedTopicIds,
   requestAutotaggerRun,
   TAGGING_CLASSIFIER_SLUG,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-fixture'
@@ -21,6 +20,10 @@ import {
   getClassifierRunCandidateTopicIdsForTest,
   getSubjectClassifierRunFacts,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
+import {
+  readLiveSubjectTopicIds,
+  readSubjectTopicRelationFacts,
+} from '@voucha/test-helpers/data-stores/psql/classifier-runs/subject-topic-relations'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { toClassifierRunJobData } from './classifier-run-handler.mts'
@@ -111,13 +114,15 @@ describe('C6 classifier run through the shared lifecycle (real PG, mocked provid
       provider_attempts_started: 1,
       completed_at: expect.any(Date),
     })
-    expect(await readAutotaggerVotedTopicIds(fixture.subject)).toEqual(idsOf(fixture.topics))
+    expect(await readLiveSubjectTopicIds(fixture.subject)).toEqual(idsOf(fixture.topics))
   })
 
   it('replays a completed run without reserving or billing a second provider attempt', async () => {
     const fixture = await createAutotaggerPostFixture({ topicCount: 2 })
     const data = toClassifierRunJobData(TAGGING_CLASSIFIER_SLUG, await reserveRun(fixture))
     await processClassifierRun(classifierRunJobFor(data))
+
+    const tagged = await readSubjectTopicRelationFacts(fixture.subject)
 
     await expect(processClassifierRun(classifierRunJobFor(data))).resolves.toEqual({
       kind: 'replay',
@@ -127,6 +132,8 @@ describe('C6 classifier run through the shared lifecycle (real PG, mocked provid
     })
 
     expect(provider).toHaveBeenCalledOnce()
+    expect(tagged).toHaveLength(2)
+    expect(await readSubjectTopicRelationFacts(fixture.subject)).toEqual(tagged)
     expect(await runFacts(fixture)).toMatchObject({ provider_attempts_started: 1 })
   })
 
@@ -147,7 +154,7 @@ describe('C6 classifier run through the shared lifecycle (real PG, mocked provid
         {
           adapter,
           lease,
-          maxAttempts: AI_AGENTS_DEFAULTS.attempts,
+          maxAttempts: CLASSIFIER_RUN_ATTEMPTS,
           signal: AbortSignal.timeout(30_000),
         },
         {
@@ -207,7 +214,7 @@ describe('C6 classifier run through the shared lifecycle (real PG, mocked provid
       rss_feed_item_id: fixture.itemId,
       provider_attempts_started: 1,
     })
-    expect(await readAutotaggerVotedTopicIds(fixture.subject)).toEqual(idsOf(fixture.topics))
+    expect(await readLiveSubjectTopicIds(fixture.subject)).toEqual(idsOf(fixture.topics))
   })
 
   it('ends the run at the attempt cap and never reaches the provider again', async () => {
@@ -220,12 +227,12 @@ describe('C6 classifier run through the shared lifecycle (real PG, mocked provid
         () => 'threw',
       )
 
-    const outcomes = await drain(attempt, AI_AGENTS_DEFAULTS.attempts + 1)
+    const outcomes = await drain(attempt, CLASSIFIER_RUN_ATTEMPTS + 1)
 
-    expect(provider).toHaveBeenCalledTimes(AI_AGENTS_DEFAULTS.attempts)
+    expect(provider).toHaveBeenCalledTimes(CLASSIFIER_RUN_ATTEMPTS)
     expect(outcomes.at(-1)).toBe('terminal')
     expect(await runFacts(fixture)).toMatchObject({
-      provider_attempts_started: AI_AGENTS_DEFAULTS.attempts,
+      provider_attempts_started: CLASSIFIER_RUN_ATTEMPTS,
       terminal_failure_kind: 'provider-error',
     })
   })

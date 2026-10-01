@@ -10,6 +10,7 @@ import {
   getCommunityAiAgents,
   getCommunityAutomodRecentActions,
   getCommunityBans,
+  getCommunityModerationQueue,
   getCommunityModeratorStats,
   getCommunityRestrictions,
   getCommunityPendingModerationReports,
@@ -23,6 +24,8 @@ import { ModQueue } from '@/components/communities/mod-queue'
 import { CommunityAgentPromptHistory } from '@/components/communities/community-agent-prompt-history'
 import { CommunityAgentPromptsPanel } from '@/components/communities/community-agent-prompts-panel'
 import { CommunityAiAgentsPanel } from '@/components/communities/community-ai-agents-panel'
+import { CommunityAutomodActionForm } from '@/components/communities/community-automod-action-form'
+import { CommunityAutomodFlagsPanel } from '@/components/communities/community-automod-flags-panel'
 import { CommunityAutomodReviewPanel } from '@/components/communities/community-automod-review-panel'
 import { CommunityBansPanel } from '@/components/communities/community-bans-panel'
 import { CommunityRaidModePanel } from '@/components/communities/community-raid-mode-panel'
@@ -89,6 +92,7 @@ export default async function CommunityModerationPage({ params, searchParams }: 
   const [
     aiAgentsResult,
     automodActionsResult,
+    automodFlagsResult,
     pendingPostsResult,
     pendingReportsResult,
     agentPromptsResult,
@@ -101,6 +105,7 @@ export default async function CommunityModerationPage({ params, searchParams }: 
   ] = await Promise.allSettled([
     getCommunityAiAgents(slug),
     getCommunityAutomodRecentActions(slug, { searchParams: { window: '48h', limit: 10 } }),
+    getCommunityModerationQueue(slug, { searchParams: { source: 'automod_flag', limit: 25 } }),
     getCommunityPendingPosts(slug),
     getCommunityPendingModerationReports(slug, { searchParams: { sort: reportSort } }),
     getCommunityAgentPrompts(slug),
@@ -115,6 +120,7 @@ export default async function CommunityModerationPage({ params, searchParams }: 
   const aiAgents = aiAgentsResult.status === 'fulfilled' ? aiAgentsResult.value : null
   const automodActions =
     automodActionsResult.status === 'fulfilled' ? automodActionsResult.value : null
+  const automodFlags = automodFlagsResult.status === 'fulfilled' ? automodFlagsResult.value : null
   const pendingPosts = pendingPostsResult.status === 'fulfilled' ? pendingPostsResult.value : null
   const pendingReports =
     pendingReportsResult.status === 'fulfilled' ? pendingReportsResult.value : null
@@ -131,6 +137,7 @@ export default async function CommunityModerationPage({ params, searchParams }: 
   for (const [name, result] of Object.entries({
     aiAgents: aiAgentsResult,
     automodActions: automodActionsResult,
+    automodFlags: automodFlagsResult,
     pendingPosts: pendingPostsResult,
     pendingReports: pendingReportsResult,
     agentPrompts: agentPromptsResult,
@@ -194,6 +201,10 @@ export default async function CommunityModerationPage({ params, searchParams }: 
       ) : (
         <PanelError label={t('extracted.moderation.page.agentPrompts_b17006d4')} />
       )}
+      <CommunityAutomodActionForm
+        key={`${community.slug}-${community.automod_action}`}
+        community={community}
+      />
       {agentPromptHistory ? (
         <CommunityAgentPromptHistory
           key={agentPromptHistory.entries[0]?.id ?? community.slug}
@@ -212,6 +223,16 @@ export default async function CommunityModerationPage({ params, searchParams }: 
         />
       ) : (
         <PanelError label={t('extracted.moderation.page.automodReview_207675c0')} />
+      )}
+      {automodFlags ? (
+        <CommunityAutomodFlagsPanel
+          entries={automodFlags.entries}
+          communitySlug={community.slug}
+        />
+      ) : (
+        <PanelError
+          label={t('extracted.communities.communityAutomodFlagsPanel.automodFlags_b5fc56db')}
+        />
       )}
       {pendingPosts && pendingReports ? (
         <ModQueue

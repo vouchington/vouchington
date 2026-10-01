@@ -13,6 +13,54 @@
       "requiredScopes": ["topics:read"]
     },
     {
+      "name": "get_community_members",
+      "description": "List the members of a public community by its UUID or slug, as a signed-out reader sees the roster: the owner and moderators always, and regular members only when the community lets the public see them (member_roster_visibility: public). Returns at most 25 members per page and page_info.end_cursor; pass it as after to get the next page. A private, deleted or unknown community returns { success: false, error: \"Community not found\" }. A malformed cursor returns { success: false, error: \"Invalid cursor\" }.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/communities/:idOrSlug/members"
+        }
+      ],
+      "requiredScopes": ["communities:read"]
+    },
+    {
+      "name": "get_community_pinned_posts",
+      "description": "Get the posts a public community has pinned, in pin order, by its UUID or slug, as a signed-out reader sees them: an anonymous post never names its author, whoever asks. A pinned post the public cannot see is left out. A private, deleted or unknown community returns { success: false, error: \"Community not found\" }.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/communities/:idOrSlug/pinned-posts"
+        }
+      ],
+      "requiredScopes": ["communities:read"]
+    },
+    {
+      "name": "get_community_posts",
+      "description": "List the approved posts of a public community by its UUID or slug, newest first or by hot, as a signed-out reader sees them: an anonymous post never names its author, whoever asks. q matches post text and may carry #hashtags. Pinned posts are left out of every unfiltered page; their ids come back in pinned_post_ids on the first unfiltered page only (read them with get_community_pinned_posts). Returns at most 25 posts per page and page_info.end_cursor; pass it as after, with the same sort, to get the next page. A private, deleted or unknown community returns { success: false, error: \"Community not found\" }. A malformed cursor, or one from a different sort, returns { success: false, error: \"Invalid cursor\" }.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/communities/:idOrSlug/posts"
+        }
+      ],
+      "requiredScopes": ["communities:read"]
+    },
+    {
+      "name": "get_community",
+      "description": "Get one community by its UUID or slug: its name, description, rules, owner and public counts. Only public communities are readable, for every caller: a private, deleted or unknown community returns { success: false, error: \"Community not found\" }, even to its own members, moderators and owner. Use get_community_posts, get_community_pinned_posts and get_community_members to read inside it.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/communities/:idOrSlug"
+        }
+      ],
+      "requiredScopes": ["communities:read"]
+    },
+    {
       "name": "get_my_cards",
       "description": "List the current user's wallet cards.",
       "parameters": null,
@@ -38,7 +86,7 @@
     },
     {
       "name": "get_my_profile",
-      "description": "Get the current user's wallet profile including their cards, point valuations, rewards program statuses, and financial profile (credit score range, income range).",
+      "description": "Get the current user's wallet profile including their cards, point valuations, rewards program statuses.",
       "parameters": null,
       "api": [
         {
@@ -52,13 +100,21 @@
         {
           "method": "GET",
           "path": "/api/v1/my/rewards-program-statuses"
-        },
+        }
+      ],
+      "requiredScopes": ["profile:read"]
+    },
+    {
+      "name": "get_my_financial_profile",
+      "description": "Read the current user's credit score range, stated income range, total credit limit and years of credit history.",
+      "parameters": null,
+      "api": [
         {
           "method": "GET",
           "path": "/api/v1/my/financial-profile"
         }
       ],
-      "requiredScopes": ["profile:read"]
+      "requiredScopes": ["financial-profile:read"]
     },
     {
       "name": "get_my_rewards_statuses",
@@ -271,6 +327,18 @@
         }
       ],
       "requiredScopes": ["spending:read", "spending:write"]
+    },
+    {
+      "name": "search_communities",
+      "description": "Search public communities, as a signed-out reader sees them: a private community never appears, whoever asks. q matches names and descriptions and may carry #hashtags. Sorted by name (the default, A to Z), members or virtual_subscriptions (most first). Returns at most 25 communities per page and page_info.end_cursor; pass it as after, with the same sort, to get the next page. A malformed cursor, or one from a different sort, returns { success: false, error: \"Invalid cursor\" }.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/communities"
+        }
+      ],
+      "requiredScopes": ["communities:read"]
     },
     {
       "name": "search_posts",

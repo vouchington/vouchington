@@ -7,11 +7,13 @@ BEGIN
     RAISE EXCEPTION 'copyright delivery intents are retained' USING ERRCODE = 'check_violation';
   END IF;
   IF NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id
+    OR NEW.copyright_notice_email_intake_id IS DISTINCT FROM OLD.copyright_notice_email_intake_id
     OR NEW.copyright_notice_submission_id IS DISTINCT FROM OLD.copyright_notice_submission_id
     OR NEW.copyright_notice_correspondence_message_id IS DISTINCT FROM OLD.copyright_notice_correspondence_message_id
     OR NEW.recipient_role IS DISTINCT FROM OLD.recipient_role
     OR NEW.delivery_kind IS DISTINCT FROM OLD.delivery_kind
     OR NEW.channel IS DISTINCT FROM OLD.channel
+    OR NEW.body_ciphertext IS DISTINCT FROM OLD.body_ciphertext
     OR NEW.idempotency_key IS DISTINCT FROM OLD.idempotency_key THEN
     RAISE EXCEPTION 'copyright delivery intent facts are immutable' USING ERRCODE = 'check_violation';
   END IF;

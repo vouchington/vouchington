@@ -91,6 +91,7 @@ describe('GET /api/v1/users/:idOrSlug communities collections', () => {
       'allow_review_posts',
       'archived_at',
       'archived_by_id',
+      'automod_action',
       'banner_image_id',
       'created_at',
       'created_by_id',

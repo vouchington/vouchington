@@ -78,7 +78,7 @@ export async function syncPostHashtagCategoriesInTransaction(
     aliasRelation,
     { id: postId },
     [...aliases.values()].map(alias => ({ id: alias.id })),
-    { ...options, vote: false },
+    { ...options, vote: false, suppressNotificationReconcile: true },
   )
   const topicIds = [
     ...new Set(
@@ -99,7 +99,7 @@ export async function syncPostHashtagCategoriesInTransaction(
         topicRelation,
         { id: postId },
         topicIds.map(id => ({ id })),
-        { ...options, vote: false },
+        { ...options, vote: false, suppressNotificationReconcile: true },
       )
   }
 }

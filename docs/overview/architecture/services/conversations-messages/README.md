@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/services/conversations-messages/README.md](../../../../../backend/services/conversations-messages/README.md)
 
-Manages AI agent conversation messages, agentic run tracking, and streaming run event writes.
+Manages conversations, their messages, and client-generated native chat turns.
 
 List reads use the repository's [cursor pagination contract](../../pagination.md).
 `getConversationsByCreatedById` accepts a decoded simple `after` cursor and probes `limit + 1`.
@@ -21,11 +21,9 @@ and prevent gaps or duplicates.
 
 - `createConversation(createdById, title?)` — starts a new conversation
 - `createConversationMessage(conversationId, createdById, content)` — validates and stores the `{ role, content, error }` chat envelope as JSON in `conversation_messages.content`
-- `createConversationMessageAgenticRun(params)` — records a new agentic run for a message
-- `createRunEventWriter(agenticRunId)` — returns a writer function for streaming run events
+- `createClientGeneratedChatTurn(params)` — atomically stores a native user/assistant pair under a conversation row lock; an identical retry replays it, and changed text or model or reused partial identity throws `ClientGeneratedTurnIdentityConflictError`
 - `getConversationById(id)` / `getConversationByIdForMutation(id)` / `getConversationsByCreatedById(userId, options)` — conversation retrieval
 - `getConversationMessagesByConversationId(conversationId)` — message list
-- `getConversationMessageAgenticRunById(id)` — agentic run retrieval with status derived from lifecycle timestamps
 - `currentUserCanViewConversation(currentUser, conversation)` / `currentUserCanUpdateConversation(...)` — authorization checks
 
 ## Related

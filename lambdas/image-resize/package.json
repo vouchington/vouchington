@@ -27,12 +27,12 @@
     "build:deps": "SHARP_VERSION=$(node -p \"require('./package.json').dependencies.sharp.replace(/^[\\^~]/, '')\") && mkdir -p dist && node -e \"require('node:fs').writeFileSync('dist/package.json', JSON.stringify({name:'image-resize-deps',private:true,version:'0.0.0'}))\" && cd dist && npm install --no-save --no-package-lock --os=linux --cpu=arm64 --libc=glibc sharp@$SHARP_VERSION"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1141.0",
+    "@aws-sdk/client-s3": "^3.1142.0",
     "@fontsource/inter": "^5.3.0",
     "@lambdas/shared": "workspace:^",
     "@ts-shared/url-signing": "workspace:^",
-    "@vouchington/image-resize": "0.2.0",
-    "@vouchington/media": "0.2.0",
+    "@vouchington/image-resize": "^0.2.0",
+    "@vouchington/media": "^0.2.0",
     "satori": "^0.33.5",
     "sharp": "^0.35.5",
     "ssrf-guard": "^1.0.0"

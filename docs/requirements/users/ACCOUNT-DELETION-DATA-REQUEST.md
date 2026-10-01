@@ -105,13 +105,43 @@ through a second transport. A provider response that the customer is already mis
 successful idempotent cleanup. Other provider failures leave the durable work item pending and
 block the internal completion marker while the immediate database privacy fence remains in effect.
 
+### Deletion Refusals
+
+`DELETE /api/v1/users/:idOrSlug` returns `409` with one message, `Account deletion is blocked while
+a copyright incident or legal hold is unresolved`, for the account holder and for an administrator
+alike, in any of these cases:
+
+- the account has an operative repeat-infringer incident;
+- an unresolved qualifying court or CCB hold covers a placement the account owns (both in
+  [copyright notices](../moderation/COPYRIGHT-NOTICES.md)); or
+- an administrator has an open **legal-process preservation hold** on the account (below).
+
+The check runs in the request transaction under the user and author lifecycle locks, before the
+privacy fence, so a refused request changes nothing. The single message does not say which case
+applies, so it does not tell the account holder that legal process exists. `deleteUser` is the only
+path that sets `deleted_at`. The retention cron and the erasure phases act only on accounts that are
+already soft-deleted, so they have no second check.
+
+A preservation hold keeps an account's records while counsel decides what a subpoena requires (see
+the [§512(h) runbook](../../runbooks/copyright-notices.md#dmca-512h-subpoenas)). It stores who
+placed it, when, an encrypted short matter reference, and who released it and when. It has no
+duration or scope, because counsel decides both. Release writes the release columns once and the
+row is never deleted, so the history persists. All three user references target
+`retained_user_identities` with `ON DELETE RESTRICT`: the history survives the account's hard
+delete, a released hold never blocks it, and the hold cannot be removed by deleting the user.
+Placing a hold on an account that is already deleted is refused, so an open hold never coexists
+with a deleted account. An administrator releases a hold to let deletion proceed.
+
 ---
 
 ## API Endpoints
 
 `DELETE /api/v1/users/:idOrSlug` accepts deletion and returns `202 { logout: true }` after the
-privacy fence commits. The [data-export requirements](./ACCOUNT-DATA-EXPORT.md#api-endpoints)
-document the request and status routes.
+privacy fence commits, or the `409` above. The
+[data-export requirements](./ACCOUNT-DATA-EXPORT.md#api-endpoints) document the request and status
+routes. Administrators place, list, and release a preservation hold with
+`PUT|GET|DELETE /api/v1/users/:userId/preservation-hold`; see the
+[users endpoint reference](../api/v1/users/reference-endpoints.md).
 
 Authorization: Users can only access their own requests; admins can access any user's requests.
 

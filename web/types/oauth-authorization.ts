@@ -4,6 +4,7 @@ export interface OAuthAuthorizationRequest {
   client_hostname: string | null
   resource: string
   scopes: string[]
+  sensitive_scopes: string[]
   expires_at: string
 }
 

@@ -10,6 +10,7 @@ import {
   insertTestCommunityMember,
   insertTestCommunityPostReview,
   insertTestPost,
+  setTestCommunityPostReviewAutomodFlag,
   setTestPostClearanceStatus,
   updateTestCommunityPostReviewState,
 } from '@voucha/test-helpers'
@@ -90,13 +91,11 @@ describe('automod feedback current input matching', () => {
       communityId: community.id,
       createdById: owner.id,
       slotAllocated: true,
-      onFlagAction: 'unpublish',
     })
     const currentPrompt = await insertTestCommunityAgentPrompt({
       communityId: community.id,
       createdById: owner.id,
       slotAllocated: true,
-      onFlagAction: 'unpublish',
     })
     const postId = await insertTestPost({
       title: `Current prompt candidate ${random}`,
@@ -111,11 +110,13 @@ describe('automod feedback current input matching', () => {
       postId,
       submittedById: owner.id,
     })
+    const flaggedAt = new Date()
     await updateTestCommunityPostReviewState({
       communityId: community.id,
       postId,
-      unpublishedAt: new Date(),
+      unpublishedAt: flaggedAt,
     })
+    await setTestCommunityPostReviewAutomodFlag({ postId, action: 'unpublish', flaggedAt })
     const olderModerationId = await insertTestAgentModeration({
       postId,
       agentId: olderPrompt.agent_id,

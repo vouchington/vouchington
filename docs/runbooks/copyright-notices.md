@@ -37,14 +37,21 @@ intake queue shows each message's wait age.
    recommendation exists, use the explicit manual-fallback reason; never silently bypass the agent.
 3. Confirm the target is an exact Voucha-hosted placement and preserve its captured revision.
 4. Record missing elements as an assessment and request information. Do not silently reject a
-   substantially compliant notice for failing to match Voucha's form wording.
+   substantially compliant notice for failing to match Voucha's form wording. For a form-filed
+   case, send the request from the case's Guest access section (issue access, then Request
+   information). It is emailed to the claimant address on the notice, with no need to contact the
+   claimant another way. Its state (Queued, Sent, Failed, or Bounced) shows under Information
+   request delivery. Retry a failed one under Delivery failures, and verify the address after a
+   bounce. A case with no retained claimant email refuses the request with 422.
 5. To reject an email or ask the sender for more information, check who will receive the reply. An
    email with a parsed sender replies to that sender. An email with no parsed sender (a `failed`
    or `unparsed` parse) has nobody to reply to, so the reply field appears and a decision queues no
    reply unless you type an address there. Type one only when the original MIME shows a sender
    worth answering; the server refuses an address for an email that has a parsed sender. The
    staff page then reports "A reply was queued." or "No reply sent."; the API returns
-   `reply_queued`.
+   `reply_queued`. If the queued reply later fails or bounces, the intake returns to the email-review
+   queue with a `reply_failed` or `reply_bounced` reason and the time since the failure. The reply
+   has no replay control yet (tracked in #1657), so contact the sender by another channel.
    - **Reject email intake** closes the intake without opening a case. It needs the review
      rationale, plus the manual-fallback reason when there is no recommendation.
    - **Request information** closes the intake the same way and sends your message to the sender.
@@ -60,6 +67,29 @@ intake queue shows each message's wait age.
    a guest form. Accept it to withhold its targets, or reject it. The screen is advisory only.
 7. If a signed-in case was provisionally restricted automatically, record a human `confirm`,
    `modify`, or `reverse` decision even when nobody appeals.
+
+### Email authentication and malware verdicts
+
+The email review page lists the SPF, DKIM, DMARC, spam, and malware verdicts Amazon SES recorded
+when it received the message, each shown as Pass, Fail, Inconclusive, Check failed, or Not reported.
+
+- An SPF, DKIM, or DMARC failure, or a spam verdict, adds an Authentication risk note. It is context,
+  not a decision: a real claimant can fail these through a forwarder or mailing list, so weigh the
+  note with the rest of the evidence and decide the intake as usual. Do not reject a notice for it
+  alone. DKIM Pass means a signature validated, not that the signing domain matches the From address.
+- Not reported means SES did not state a verdict, so treat it as unverified, never as Pass.
+
+### Quarantined originals
+
+When SES reports malware in an email (Malware: Fail) the page shows "Original email withheld" in
+place of the download link, and the raw `.eml` route answers `409 COPYRIGHT_EMAIL_QUARANTINED`. Review
+the parsed text and decide the intake normally; do not look for another way to open the original.
+Report a suspected false positive to engineering rather than working around it.
+
+When the malware verdict is Inconclusive, Check failed, or Not reported, the download stays
+available and the page warns you. Download it only if the parsed text is not enough, and open it in
+an isolated environment. Those verdicts do not block the download because a sender can force Check
+failed with a malformed message, and blocking would keep a valid notice from review.
 
 ## Intake activation
 
@@ -230,9 +260,10 @@ as usual.
    the user admin panel after the reinstatement row exists. The decision, any new suspension,
    moderator action, and publication invalidation work commit together after the account lifecycle
    lock; a failed decision leaves the review open for retry.
-4. Account deletion returns 409 while an operative incident remains, or while an unresolved
-   qualifying legal hold covers a placement that account owns. An open review alone does not refuse
-   deletion.
+4. Account deletion returns 409 while an operative incident remains, while an unresolved
+   qualifying legal hold covers a placement that account owns, or while an administrator has an
+   open [preservation hold](#dmca-512h-subpoenas) on the account. An open review alone does not
+   refuse deletion.
 5. Retention durations are still an approved-policy gate. Do not invent a clock in the product.
 
 ## Recovery scans
@@ -304,7 +335,7 @@ Its `reason` tag has the same value, and one boolean tag per count shows which c
     or CCB filing awaiting assessment or resolution, timed from receipt;
   - an active restriction with no human review, timed from when it was imposed;
   - a failed media action or failed or bounced delivery, timed from the failure; and
-  - an enforcement request that has not completed, timed from its creation.
+  - a compliant assessment with a target it has not yet restricted, timed from the assessment.
 
   Deadline items are left out here because the two counts below cover them.
 
@@ -405,27 +436,44 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
 4. **User notice.** The product has no channel for notice of legal process. If counsel approves
    notice and no court order or law forbids it, send it from the operator mailbox before any
    production, so the user can respond. Record the date it was sent in the matter file.
-5. **Preservation.** The product has no preservation hold for a subpoena. The legal holds in
-   `copyright_notice_legal_hold_assessments` record only §512(g)(2)(C) court and CCB filings, and
-   they change restoration. Never record a subpoena as a court or CCB filing, or as a submission
-   of kind `court_or_ccb_hold`.
+5. **Preservation.** If counsel directs that the account's records be preserved, an administrator
+   places a **preservation hold** on the account. The legal holds in
+   `copyright_notice_legal_hold_assessments` are a different record: they capture only §512(g)(2)(C)
+   court and CCB filings and change restoration. Never record a subpoena as a court or CCB filing,
+   or as a submission of kind `court_or_ccb_hold`.
+   - **Place and release.** Use the "Legal preservation hold" card in the user admin panel
+     (`/user/<id>/admin`, administrators only; moderators and reviewers cannot see or call it).
+     Enter a short matter reference of up to 500 characters, such as a matter id. Do not put the
+     requester's name, the subpoena text, or the account holder's data in it. It is stored
+     encrypted, shown only to administrators, and never logged. The hold has no duration or scope:
+     counsel decides when it ends, and an administrator releases it from the same card. Only one
+     hold is open per account at a time.
+   - **Effect.** While a hold is open, deletion of the account by the user or by an administrator
+     returns the same `409` as for an operative incident or a court or CCB hold. The message does
+     not say which, so it does not reveal that legal process exists. A hold does not copy or freeze
+     any other record. It only stops the account being deleted.
+   - **Audit.** Placing and releasing each write a moderator action (`preservation_hold_place`,
+     `preservation_hold_release`), visible to administrators in the admin modlog and to no
+     community. The hold row records who placed it and when, and who released it and when. Rows are
+     never deleted, so this history outlives the account and its eventual hard delete (see
+     [account deletion](../requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md#deletion-refusals)).
+   - **Already deleted.** A hold cannot be placed on an account that is already deleted. If the
+     subpoena arrives after deletion, tell counsel the same day: the account's personal data was
+     scrubbed at deletion, and the soft-deleted row is purged 90 days after it.
    - Copyright case records are append-only, and nothing in the product destroys case evidence.
      Retention deletion is not built yet, so nothing is deleted today; a switched-off deletion sweep
      is tracked in [#1101](https://github.com/vouchington/vouchington/issues/1101) (see
      [evidence retention](../requirements/moderation/COPYRIGHT-NOTICES.md#evidence-retention)).
-   - Account records are not protected. The user or an administrator can delete the account at any
-     time. [Account deletion](../requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md) scrubs direct
-     personal data immediately and reattributes the account's posts to `[deleted]`, so the case no
-     longer links to the account. Only an operative repeat-infringer incident or an unresolved
-     qualifying court or CCB hold blocks deletion; a subpoena does not.
 
-   If counsel directs preservation, an administrator requests an
+   If counsel also directs a copy of the data, an administrator requests an
    [account data export](../requirements/users/ACCOUNT-DATA-EXPORT.md) for the account and saves
    the download to the matter file before its link expires. The export omits session IP
-   addresses, so capture any that counsel needs from `user_sessions`. The account holder can see
-   this export: their data page shows the latest request, whoever made it, along with its status
-   and download link, and blocks the account holder's own request while it runs. Counsel decides
-   whether to request the export together with the user-notice decision in step 4.
+   addresses, so capture any that counsel needs from `user_sessions`. The account holder cannot see
+   this export: it is recorded against the administrator who requested it, so their data page, its
+   status stream and its download link do not return it, no ready email is sent, and it does not
+   block their own export request. Only that administrator can read its status and download link,
+   through the data-request route on the account. Counsel still decides separately, in step 4,
+   whether to give the user notice of the legal process.
 
 6. **Records that may exist.** Produce only what counsel approves.
    - Account: the export categories (username, profile, creation date, email addresses, phone

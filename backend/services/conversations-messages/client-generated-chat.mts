@@ -3,7 +3,6 @@ import { beginTransaction, write, type TransactionQuery } from '@data-stores/psq
 import sql from 'sql-template-strings'
 import type { AgentModelProvider } from '@voucha/types/entities/agent-model'
 import { appendConversationMessageReturning } from './chat-content.mts'
-import { lockConversationAndAssertNoActiveChatTurn } from './chat-turns.mts'
 import type { ConversationMessage } from './types.mts'
 
 export class ClientGeneratedTurnIdentityConflictError extends Error {
@@ -34,13 +33,20 @@ export async function createClientGeneratedChatTurn(
   userMessage: ConversationMessage
   assistantMessage: ConversationMessage
 }> {
-  const { conversationId, createdById, message, assistantContent, modelProvider, modelName } =
-    params
-  const { userMessageId, assistantMessageId } = params
+  const {
+    conversationId,
+    userMessageId,
+    assistantMessageId,
+    createdById,
+    message,
+    assistantContent,
+    modelProvider,
+    modelName,
+  } = params
   const turnKey = getTurnKey(params)
 
   await using query = await beginTransaction()
-  // Serialize identity lookup with insertion; retries precede the active-turn guard.
+  // Serialize identity lookup with insertion so concurrent retries replay one persisted turn.
   await query(sql`/* lockClientGeneratedTurn */
     SELECT id FROM conversations WHERE id = ${conversationId} FOR UPDATE
   `)
@@ -49,7 +55,6 @@ export async function createClientGeneratedChatTurn(
     await query.commit()
     return replay
   }
-  await lockConversationAndAssertNoActiveChatTurn(query, conversationId)
   const userInsert = sql`/* createClientGeneratedChatTurnUser */
     INSERT INTO conversation_messages (id, conversation_id, created_by_id, content)
     VALUES (${userMessageId}, ${conversationId}, ${createdById}, ${JSON.stringify({ role: 'user', content: message, turn_key: turnKey })})
@@ -65,6 +70,8 @@ export async function createClientGeneratedChatTurn(
       role: 'assistant',
       content: assistantContent,
       turn_key: turnKey,
+      model_provider: modelProvider,
+      model_name: modelName,
     })})
     RETURNING
   `
@@ -72,35 +79,10 @@ export async function createClientGeneratedChatTurn(
   const assistantMessageResult = await query<ConversationMessage>(assistantInsert)
   const assistantMessage = assistantMessageResult.rows[0]!
 
-  await query(sql`/* clearClientGeneratedChatLastResponseId */
+  await query(sql`/* touchClientGeneratedChatConversation */
     UPDATE conversations
-    SET last_response_id = NULL
+    SET updated_at = CURRENT_TIMESTAMP
     WHERE id = ${conversationId}
-  `)
-
-  await query(sql`/* createClientGeneratedChatTurnRun */
-    INSERT INTO conversation_message_agentic_runs
-      (
-        conversation_id,
-        conversation_message_id,
-        model_name,
-        model_provider,
-        input,
-        output,
-        termination_reason,
-        completed_at
-      )
-    VALUES
-      (
-        ${conversationId},
-        ${assistantMessage.id},
-        ${modelName},
-        ${modelProvider},
-        ${JSON.stringify({ message })},
-        ${JSON.stringify({ response: assistantContent })},
-        'no_tool_calls',
-        CURRENT_TIMESTAMP
-      )
   `)
 
   const result = {
@@ -121,14 +103,7 @@ async function findClientGeneratedChatTurnReplay(
   query: TransactionQuery | typeof write,
   params: ClientGeneratedChatTurnParams,
 ) {
-  const {
-    conversationId,
-    userMessageId,
-    assistantMessageId,
-    createdById,
-    message,
-    assistantContent,
-  } = params
+  const { conversationId, userMessageId, assistantMessageId } = params
   const existing = await query<ConversationMessage>(sql`/* replayClientGeneratedTurn */
     SELECT id, conversation_id, created_at, created_by_id, updated_at, updated_by_id,
       deleted_at, deleted_by_id, content
@@ -139,25 +114,40 @@ async function findClientGeneratedChatTurnReplay(
   if (existing.rows.length > 0) {
     const userMessage = existing.rows.find(row => row.id === userMessageId)
     const assistantMessage = existing.rows.find(row => row.id === assistantMessageId)
-    if (
-      !userMessage ||
-      !assistantMessage ||
-      userMessage.deleted_at ||
-      assistantMessage.deleted_at ||
-      userMessage.created_by_id !== createdById ||
-      assistantMessage.created_by_id !== createdById ||
-      userMessage.content?.turn_key !== getTurnKey(params) ||
-      assistantMessage.content?.turn_key !== getTurnKey(params) ||
-      userMessage.content?.role !== 'user' ||
-      userMessage.content.content !== message ||
-      assistantMessage.content?.role !== 'assistant' ||
-      assistantMessage.content.content !== assistantContent
-    ) {
+    if (!userMessage || !assistantMessage || !isSameTurn(userMessage, assistantMessage, params)) {
       throw new ClientGeneratedTurnIdentityConflictError()
     }
     return { userMessage, assistantMessage }
   }
   return undefined
+}
+
+/**
+ * The turn key is the opaque identity of the message-id pair. A retry must also repeat every value
+ * the client supplied, including the completion model, or it conflicts instead of replaying.
+ */
+function isSameTurn(
+  userMessage: ConversationMessage,
+  assistantMessage: ConversationMessage,
+  params: ClientGeneratedChatTurnParams,
+): boolean {
+  const turnKey = getTurnKey(params)
+  const user = userMessage.content
+  const assistant = assistantMessage.content
+  return (
+    !userMessage.deleted_at &&
+    !assistantMessage.deleted_at &&
+    userMessage.created_by_id === params.createdById &&
+    assistantMessage.created_by_id === params.createdById &&
+    user?.role === 'user' &&
+    user.turn_key === turnKey &&
+    user.content === params.message &&
+    assistant?.role === 'assistant' &&
+    assistant.turn_key === turnKey &&
+    assistant.content === params.assistantContent &&
+    assistant.model_provider === params.modelProvider &&
+    assistant.model_name === params.modelName
+  )
 }
 
 function getTurnKey(params: ClientGeneratedChatTurnParams): string {

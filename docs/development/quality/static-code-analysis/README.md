@@ -426,11 +426,20 @@ for a worked example. Both restatements are enforced by `structured-config-polic
 enabled from [`.oxlintrc.react.json`](../../../../.oxlintrc.react.json); React/Next/JSX doctor _enables_
 live there too. Generic `js-*` and security doctor rules stay at root.
 
-The root and nested plugin lists also enable Oxlint's configured TypeScript rules. Keep
-`typescript` present in every inherited-config copy; `structured-config-policy` enforces parity,
-while [`typescript-plugin-oxlint.test.mts`](../../../../static-code-analysis/oxlint-plugin/typescript-plugin-oxlint.test.mts) runs
+The root and nested plugin lists enable the configured TypeScript, Unicorn, and Import rules. Keep
+`typescript`, `unicorn`, and `import` present in every inherited-config copy; `structured-config-policy` enforces parity.
+[`configured-plugins-oxlint.test.mts`](../../../../static-code-analysis/oxlint-plugin/configured-plugins-oxlint.test.mts)
+checks every concrete tracked config against the installed analyzer, including inherited rules and
+overrides and disabled rule declarations, so another missing builtin plugin fails CI.
+Staged Unicorn entries record rule-specific scan counts and link their remediation issues; permanent
+opt-outs state their repository policy beside the rule. Catch bindings prefer `err`; string literals
+use the simplest readable form rather than requiring `String.raw`. Meanwhile, [`typescript-plugin-oxlint.test.mts`](../../../../static-code-analysis/oxlint-plugin/typescript-plugin-oxlint.test.mts) runs
 the installed analyzer with the real root and backend-agent configurations to prove syntax and
 type-aware TypeScript rules are active. The full lint command is `pnpm run oxlint`.
+
+`unicorn/prefer-import-meta-properties` is enforced wherever the root configuration is inherited, including backend and tooling workspaces. Use native `import.meta.dirname` and `import.meta.filename` rather than reconstructing them from `import.meta.url`.
+
+Clean import safety rules remain errors; module-style rules deliberately allow named exports, namespace and parent imports, Node builtins, framework default exports, and side-effect imports. The small import correctness backlog is staged in [#1696](https://github.com/vouchington/vouchington/issues/1696). Resolving imports also exposes canonical package and service entrypoint barrels to `oxc/no-barrel-file`; that rule stays off because `index.mts` barrels are the backend module contract.
 
 Each selected area coverage job consumes only its own full-LCOV artifacts and runs
 `ci/coverage-artifacts.sh area-check`; a missing full LCOV is a producer failure, not an optional
@@ -773,10 +782,9 @@ This section records the outcomes of the evaluation in #5044 so the tracking iss
   `package-json-workspace-coverage`**: the deleted `isWorkspacePackageJson` loop compared every
   tracked `package.json` against a hand-maintained EXACT set and regex PATTERNS that had already
   drifted from live `pnpm-workspace.yaml` (`integration-tests/*`, `rust/packages/*`, over-broad
-  `backend/entrypoints/*`). The replacement rule reads the yaml directly. `requireNamedPackage` is
-  omitted on purpose: at pinned no-mistakes 0.43.2 that flag skips unnamed/`{}` manifests instead of
-  requiring a `name`. `packageRoots` lists every tracked top-level directory.
-  Reproduce with `pnpm run no-mistakes`.
+  `backend/entrypoints/*`). The replacement rule reads the yaml directly. `requireNamedPackage: true`
+  also reports a manifest that omits `name` or leaves it empty. `packageRoots` lists every tracked
+  top-level directory. Reproduce with `pnpm run no-mistakes`.
 - **`repo-file-policy/` FK supporting-index, markdown-eval tests, patch/diff paths, generic CI job
   timeouts, and named constraint pairing → `no-mistakes` 0.46.1**: `postgres-fk-index` (with
   `allowDirective: fk-index-guard-allow` and enumerated SET NULL audit `allowedColumns`),
@@ -790,18 +798,25 @@ This section records the outcomes of the evaluation in #5044 so the tracking iss
   outright once the S3 coverage-transport it budgeted for was reverted; `github-actions-job-timeouts`
   now covers those jobs generically.
   Reproduce with `pnpm run no-mistakes`.
-- **Test Git revisions and sparse checkouts → `no-mistakes` 0.53.0**: the package-owned
-  `no-test-git-sha` rule scans Vouchington test and fixture surfaces, retaining only narrow null-ref
-  and historical GitHub-link contexts in `.no-mistakes.yml`; `no-sparse-checkout` parses both
-  GitHub Actions directories and `ci/no-mistakes-workflows/`. The local repository-policy guards
-  and their generic fixture suites are deleted. Reproduce with `pnpm run no-mistakes`.
-- **`oxlintrc-policy/` and six 0.47.0 engines → `no-mistakes`**: nested oxlintrc `"plugins"`
+- **Test Git revisions → `no-mistakes` 0.53.0**: the package-owned `no-test-git-sha` rule scans
+  Vouchington test and fixture surfaces through the `include`/`exclude` globs in `.no-mistakes.yml`,
+  with no `allowedContexts` configured. The local repository-policy guards and their generic fixture
+  suites are deleted. Reproduce with `pnpm run no-mistakes`.
+- **Sparse checkout → retired, not enforced**: `no-sparse-checkout` guarded the persistent
+  self-hosted `_work` directory. Every runner is ephemeral now, so #159 removed the rule and sparse
+  checkout is allowed; see the [GitHub Actions checklist](../../../checklists/github-actions.md).
+  `ci/no-mistakes-config.test.mts` keeps the rule unconfigured.
+- **`oxlintrc-policy/` and five 0.47.0 engines → `no-mistakes`**: nested oxlintrc `"plugins"`
   `equals-file`, `not-single-file` after stripping `**/`, override `.bind` `match: any`, plus
-  `tsconfig-file-coverage`, `version-pin-consistency`, `no-raw-ephemeral-port`,
-  `github-actions-test-timeout-literals`, `github-actions-action-timeout-pair`, and
-  `postgres-redundant-index`. The local `oxlintrc-policy/` directory and the replaced
-  `repo-file-policy` / ast-grep copies are deleted. See #9735 / #9858.
-  Reproduce with `pnpm run no-mistakes`.
+  `tsconfig-file-coverage`, `version-pin-consistency`, `github-actions-test-timeout-literals`,
+  `github-actions-action-timeout-pair`, and `postgres-redundant-index`. The local
+  `oxlintrc-policy/` directory and the replaced `repo-file-policy` / ast-grep copies are deleted.
+  See #9735 / #9858. Reproduce with `pnpm run no-mistakes`.
+- **Raw ephemeral port binds → retired, not enforced**: `no-raw-ephemeral-port` was migrated here
+  with the 0.47.0 engines, then removed by #165 together with the shared-host port allocator it
+  protected. Nothing replaced it: `listenOnEphemeralPort()` in
+  [`@ts-shared/utils/ephemeral-ports`](../../../../ts-shared/utils/ephemeral-ports.mts) is a
+  documented convention in [CI](../../ci.md), not a lint guard.
 
 ### Kept custom (evaluated, cannot migrate)
 

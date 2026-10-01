@@ -53,7 +53,7 @@ Constraints:
 - For `openai_compatible`, `model_name` is required, trimmed, maximum 256 characters, and persisted exactly as sent by the native client
 - For fixed native providers, `model_name` is optional and must match the provider when supplied; it is persisted as `apple-foundation-system`, `windows-system-language-model`, or `android-aicore-system`. During the Windows migration, the deployed `phi-silica` identity is accepted on input and normalized to `windows-system-language-model` before persistence.
 
-**Response:** `200 OK` with transcript `user_message`, `assistant_message`, and `turn` containing their two message IDs. Messages include `completion.status` (`completed`, `incomplete`, or `failed`); generation/run identities are omitted. Duplicate submissions and retries return the same saved pair. Reusing either ID with different text or an incomplete identity pair returns 409 without inserting messages.
+**Response:** `200 OK` with transcript `user_message`, `assistant_message`, and `turn` containing their two message IDs. Messages include `completion.status` (`completed`, `incomplete`, or `failed`); generation/run identities are omitted. Duplicate submissions and retries return the same saved pair. Reusing either ID with different text, a different `model_provider` or `model_name`, or an incomplete identity pair returns 409 without inserting messages. An incomplete assistant placeholder elsewhere in the conversation never blocks a new turn.
 
 Conversation DTOs expose only `id`, `title`, `created_at`, and `updated_at`. History remains durable and paginated, including incomplete assistant placeholders. See [the transcript identity contract](../../../../overview/architecture/conversations.md#native-client-flow).
 
@@ -130,5 +130,4 @@ Soft-deletes a conversation. The conversation is hidden from list endpoints but 
 ## Related
 
 - Service: [../../services/conversations-messages/](../../../../overview/architecture/services/conversations-messages/README.md)
-- Chat agent: [../../agents/chat/README.md](../../../../overview/architecture/ai-agents/chat/README.md)
 - Parent: [../AGENTS.md](../../../../../backend/api/AGENTS.md)

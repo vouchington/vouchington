@@ -28,7 +28,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/s3-request-presigner": "^3.1141.0",
+    "@aws-sdk/s3-request-presigner": "^3.1142.0",
     "@data-stores/analytics": "workspace:^",
     "@data-stores/graceful-shutdown": "workspace:^",
     "@data-stores/psql": "workspace:^",
@@ -51,13 +51,13 @@
     "@queues/post-publication": "workspace:^",
     "@queues/psql": "workspace:^",
     "@queues/sitemaps": "workspace:^",
-    "@sentry/node": "11.0.0",
+    "@sentry/node": "^11.0.0",
     "@ts-shared/money": "workspace:^",
     "@valkey/valkey-glide": "^2.5.3",
     "@voucha/api-fixtures": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/localization": "0.2.0",
-    "@vouchington/localization-compiler": "0.2.2",
+    "@vouchington/localization": "^0.2.0",
+    "@vouchington/localization-compiler": "^0.2.2",
     "glide-mq": "^0.15.5",
     "jose": "^6.2.12",
     "openai": "^7.23.0",
@@ -67,7 +67,7 @@
     "supertest": "^7.3.0",
     "undici": "^8.11.2",
     "uuid": "^14.0.2",
-    "vouchington-tooling": "^0.26.0"
+    "vouchington-tooling": "^0.27.0"
   },
   "devDependencies": {
     "@ts-shared/utils": "workspace:^",

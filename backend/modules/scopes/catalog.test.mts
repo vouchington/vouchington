@@ -26,7 +26,7 @@ describe('listScopeCatalog', () => {
     expect(SCOPE_DEFINITIONS['rss:read'].surfaces).toEqual(['api-key'])
   })
 
-  it('projects stable descriptions only for MCP umbrella scopes', () => {
+  it('projects stable descriptions for umbrella and sensitive financial scopes', () => {
     const catalog = listScopeCatalog()
 
     expect(catalog.find(entry => entry.scope === 'mcp.user:read')?.description_key).toBe(
@@ -40,6 +40,18 @@ describe('listScopeCatalog', () => {
     )
     expect(catalog.find(entry => entry.scope === 'mcp.admin:write')?.description_key).toBe(
       'mcp_admin_full_access',
+    )
+    expect(catalog.find(entry => entry.scope === 'financial-profile:read')?.description_key).toBe(
+      'financial_profile_read',
+    )
+    expect(catalog.find(entry => entry.scope === 'financial-profile:write')?.description_key).toBe(
+      'financial_profile_write',
+    )
+    expect(catalog.find(entry => entry.scope === 'spending:read')?.description_key).toBe(
+      'spending_read',
+    )
+    expect(catalog.find(entry => entry.scope === 'spending:write')?.description_key).toBe(
+      'spending_write',
     )
     expect(catalog.find(entry => entry.scope === 'cards:read')?.description_key).toBeNull()
   })

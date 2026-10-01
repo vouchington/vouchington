@@ -24,8 +24,7 @@ async function fetchConversationById(query: typeof read, id: string): Promise<Co
       updated_at,
       updated_by_id,
       deleted_at,
-      deleted_by_id,
-      last_response_id
+      deleted_by_id
     FROM conversations
     WHERE id = ${id}
       AND deleted_at IS NULL
@@ -48,8 +47,7 @@ export async function getConversationByCreatedByAndTitle(
       updated_at,
       updated_by_id,
       deleted_at,
-      deleted_by_id,
-      last_response_id
+      deleted_by_id
     FROM conversations
     WHERE created_by_id = ${createdById}
       AND title = ${title}
@@ -77,8 +75,7 @@ export async function getConversationsByCreatedById(
       updated_at,
       updated_by_id,
       deleted_at,
-      deleted_by_id,
-      last_response_id
+      deleted_by_id
     FROM conversations
     WHERE created_by_id = ${createdById}
       AND channel_type = 'chat'
@@ -122,30 +119,4 @@ export async function softDeleteConversation(
     WHERE id = ${conversationId}
       AND deleted_at IS NULL
   `)
-}
-
-export async function updateConversationLastResponseId(
-  conversationId: string,
-  lastResponseId: string | null,
-): Promise<void> {
-  await write(sql`/* updateConversationLastResponseId */
-    UPDATE conversations
-    SET last_response_id = ${lastResponseId}
-    WHERE id = ${conversationId}
-  `)
-}
-
-export async function clearConversationLastResponseIdIfMatches(
-  conversationId: string,
-  expectedLastResponseId: string,
-): Promise<boolean> {
-  const { rowCount } = await write(sql`/* clearConversationLastResponseIdIfMatches */
-    UPDATE conversations
-    SET last_response_id = NULL
-    WHERE id = ${conversationId}
-      AND last_response_id = ${expectedLastResponseId}
-      AND deleted_at IS NULL
-    RETURNING id
-  `)
-  return rowCount === 1
 }

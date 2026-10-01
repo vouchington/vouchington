@@ -1,3 +1,5 @@
 export * from './create.mts'
+export * from './bookmark.mts'
+export * from './post-target-access.mts'
 export * from './user-tag-authorization.mts'
 export * from './authorization.mts'

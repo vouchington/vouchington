@@ -42,7 +42,7 @@ export function ScopePicker({ idPrefix, rows, selected, onToggle }: ScopePickerP
                 >
                   {row.resource}
                 </code>
-                {row.descriptionKey && (
+                {row.umbrella && row.descriptionKey && (
                   <span className='text-xs text-muted-foreground'>
                     {t(scopeDescriptionMessageKey(row.descriptionKey))}
                   </span>
@@ -93,7 +93,7 @@ function ScopeCheckbox({
   const t = useTranslations()
   const id = `${resourceId}-${entry.action}`
   return (
-    <span className='flex min-h-11 items-center gap-2'>
+    <span className='flex min-h-11 flex-wrap items-center gap-2'>
       <Checkbox
         id={id}
         checked={checked}
@@ -111,6 +111,11 @@ function ScopeCheckbox({
           ? t('extracted.apiKeysManager.scopePicker.read_9b9a8d05')
           : t('extracted.apiKeysManager.scopePicker.write_3f00927a')}
       </Label>
+      {entry.description_key && !entry.resource.startsWith('mcp.') && (
+        <span className='text-xs text-muted-foreground'>
+          {t(scopeDescriptionMessageKey(entry.description_key))}
+        </span>
+      )}
     </span>
   )
 }

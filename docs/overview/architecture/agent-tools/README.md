@@ -71,10 +71,8 @@ field cannot express separate per-surface plans, so a mutating tool cannot share
 and `admin_mcp` surfaces until the metadata model can (enforced by the registry invariant
 tests in `backend/tools/registry/registry.test.mts`).
 
-Every mutating tool currently exposed on the user `mcp` surface (`manage_my_cards`,
-`manage_my_point_valuations`, `manage_my_rewards_statuses`, `manage_my_spending`,
-`update_my_financial_profile`) requires `plan: 'plus'`; every user-`mcp` read tool stays
-`'free'`. No production tool requires `'pro'` yet — see the generated
+Every mutating tool currently exposed on the user `mcp` surface requires `plan: 'plus'`; every
+user-`mcp` read tool stays `'free'`. No production tool requires `'pro'` yet — see the generated
 [tool catalog](catalog.md)'s Plan column for the authoritative per-tool value.
 
 ---
@@ -139,6 +137,9 @@ effective root. Its `add_tag` branch adds one authored `#tag` through the locked
 category path described in [Tags](../../../requirements/content/TAGS.md). Its relation result always
 returns the canonical subject/predicate/object tuple; `relation_id` is included only for relation
 tables that persist a row identifier.
+
+`set_bookmark`, `remove_bookmark`, and the five list write tools follow the same delegated-authority
+model; see [Bookmark and List Write Tools](bookmark-list-write-tools.md).
 
 ---
 

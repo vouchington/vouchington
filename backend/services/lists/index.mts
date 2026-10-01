@@ -1,6 +1,7 @@
 export * from './types.mts'
 export * from './catalog.mts'
 export * from './authorization.mts'
+export * from './manage.mts'
 export * from './lists.mts'
 export * from './items.mts'
 export * from './lookup.mts'
