@@ -26,12 +26,7 @@ function readYaml<T>(relativePath: string): T {
   return parseYaml(readFileSync(`${repoRoot}/${relativePath}`, 'utf8')) as T
 }
 
-const allTrackedFiles = execFileSync('git', ['ls-files'], {
-  cwd: repoRoot,
-  encoding: 'utf8',
-  // The tracked-file list is over the 1 MiB execFileSync default, which fails with ENOBUFS.
-  maxBuffer: 32 * 1024 * 1024,
-})
+const allTrackedFiles = execFileSync('git', ['ls-files'], { cwd: repoRoot, encoding: 'utf8' })
   .split('\n')
   .filter(Boolean)
 
