@@ -1,15 +1,14 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
 import { PLAIN_FORCE_PUSH_REASON } from './codex-hooks/policy/blocked-command-patterns.mts'
 import { gitPushAncestorCommand, plainForcePushReason } from './plain-force-push.mts'
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const repoRoot = resolve(import.meta.dirname, '..')
 const hookPath = resolve(repoRoot, '.husky/pre-push')
 
 const rejected = [

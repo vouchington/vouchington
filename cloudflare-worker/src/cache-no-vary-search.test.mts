@@ -1,11 +1,10 @@
 import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { NO_VARY_SEARCH_PARAM_NAMES, normalizeCacheUrl } from './cache-no-vary-search.mts'
 
 const SPECULATION_NO_VARY_HEADER_FILE = join(
-  dirname(fileURLToPath(import.meta.url)),
+  import.meta.dirname,
   '../../web/lib/seo/navigation-performance.ts',
 )
 

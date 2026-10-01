@@ -1,12 +1,8 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { read } from '@data-stores/psql'
 
-const migrationsFolder = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../../data-stores/psql/migrations',
-)
+const migrationsFolder = path.resolve(import.meta.dirname, '../../data-stores/psql/migrations')
 
 export interface MigrationStatus {
   applied: string[]

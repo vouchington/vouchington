@@ -432,6 +432,20 @@ while [`typescript-plugin-oxlint.test.mts`](../../../../static-code-analysis/oxl
 the installed analyzer with the real root and backend-agent configurations to prove syntax and
 type-aware TypeScript rules are active. The full lint command is `pnpm run oxlint`.
 
+The `unicorn` plugin is absent from those plugin lists, so the `unicorn/*` entries in
+the root [`.oxlintrc.json`](../../../../.oxlintrc.json) run only where another extended config
+re-enables it. Today that is `web/` and `email-templates/`: they extend
+[`.oxlintrc.react.json`](../../../../.oxlintrc.react.json), which sets no `"plugins"` key and so
+contributes Oxlint's default plugin set (including `unicorn`). Backend, `ci/`, `dev/`, `lambdas/`,
+`cloudflare-worker/`, `playwright/`, and `ts-shared/` do not run them. Enabling the plugin repo-wide
+surfaces roughly 2,100 findings across about 40 already-configured rules (measured 2026-10-01), and
+a per-file `overrides` entry cannot isolate one rule: overrides accept `"plugins"` but not
+`"categories"`, so the plugin's default categories come with it. Treat that as a separate
+remediation, not as a side effect of enabling one more rule. `unicorn/prefer-import-meta-properties`
+follows the same pattern: it keeps `web/` and `email-templates/` from regressing to
+`dirname(fileURLToPath(import.meta.url))`. The other workspaces were converted with a one-rule
+autofix pass and have no lint guard until the plugin is enabled there.
+
 Each selected area coverage job consumes only its own full-LCOV artifacts and runs
 `ci/coverage-artifacts.sh area-check`; a missing full LCOV is a producer failure, not an optional
 fan-in probe. Generic missing/over-cap job timeouts and step-exceeds-job checks live in
