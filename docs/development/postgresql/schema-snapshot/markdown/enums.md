@@ -503,6 +503,8 @@
 - `backfill_run`
 - `article_sync_run`
 - `import_batch_create`
+- `preservation_hold_place`
+- `preservation_hold_release`
 
 ## `moderator_on_flag_action`
 
