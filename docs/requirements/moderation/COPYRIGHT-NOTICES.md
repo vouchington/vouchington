@@ -89,8 +89,8 @@ changes its revision/deadline, or gates its delivery workers.
 
 ## Delivery obligations
 
-Each claimant receipt, poster restriction notice, status update, and counter-notice forwarding is
-recorded as an idempotent `copyright_notice_delivery_intents` row before it reaches a transport.
+Each claimant receipt, poster restriction notice, status update, counter-notice forwarding, and
+staff information request is recorded as an idempotent `copyright_notice_delivery_intents` row before it reaches a transport.
 The row is staff-visible through the private case aggregate and transitions from `pending` to
 `claimed`, then `sent`, `failed`, or `bounced`. A retryable failure returns to `pending`; bounded
 retry uses exponential backoff and stops after five attempts so poison deliveries cannot
@@ -334,6 +334,20 @@ file at most one court or CCB hold; a second attempt is refused with a conflict.
 more information without extending the capability. Staff list a case's capabilities, newest first
 with issuer, expiry, and revocation state but never the token, at
 `GET /api/v1/copyright-notices/:id/guest-capabilities`, so they can revoke tokens after a reload.
+
+That request is the provider's attempt to contact the notifier about a deficient notice (17 U.S.C.
+§ 512(c)(3)(B)(ii)), so it never depends on staff reaching the claimant another way. In one
+transaction it records the outbound correspondence and exactly one email delivery intent with a
+`delivery_kind` of `staff_information_request` and the `claimant` role, addressed to the claimant
+email retained from the case's receipt. Guest and signed-in form notices behave alike, and the
+claimant need not hold a capability or an account. A constraint keeps that kind to the claimant
+role, the email channel, no user, and a correspondence row. The text is encrypted on the
+correspondence row and never logged, and a retry sends the same text. The case aggregate shows the
+delivery as queued, sent, failed, or bounced beside the request, and a failed or bounced one also
+raises the queue's `delivery_failed` reason. A case with no retained claimant email refuses the
+request with 422 rather than recording a request nobody can receive. Issuing a capability sends no
+email: staff hand the token over themselves, and a claimant email address proves nothing about who
+may act on the case.
 
 Claimants and affected posters receive a participant projection for their own submissions. Copyright
 review staff receive a separate queue and private case projection. Staff-only routes may expose

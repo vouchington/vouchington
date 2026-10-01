@@ -62,6 +62,30 @@ describe('CopyrightStaffQueue recovery actions', () => {
     },
   )
 
+  it('shows whether an emailed information request reached the claimant on the case', () => {
+    const notice = makeNotice()
+    notice.delivery_intents = [
+      {
+        id: 'information-request-1',
+        delivery_kind: 'staff_information_request',
+        channel: 'email',
+        state: 'bounced',
+        delivery_attempt_count: 1,
+      },
+    ]
+    render(
+      <CopyrightStaffQueue
+        data={{
+          copyright_notices: [notice],
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        }}
+      />,
+    )
+
+    expect(screen.getByText('Information request 1 emailed to the claimant')).toBeVisible()
+    expect(screen.getByText('Bounced')).toBeVisible()
+  })
+
   it('loads a subsequent page from the staff cursor and renders its cases', async () => {
     mockList.mockResolvedValue({
       copyright_notices: [{ ...makeNotice(), id: 'case-456' }],

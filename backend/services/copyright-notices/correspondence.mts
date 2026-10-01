@@ -87,17 +87,31 @@ export function copyrightCorrespondencePurpose(correspondenceId: string): string
   return `copyright-correspondence:${correspondenceId}`
 }
 
-export async function createOutboundCopyrightCorrespondence(input: {
-  id?: string
-  noticeId: string
-  submissionId: string | null
-  correspondenceKind: CopyrightCorrespondenceKind
-  compositionKind: OutboundCompositionKind
-  bodyCiphertext: string
-  draftedById: string | null
-}): Promise<CopyrightCorrespondenceRecord> {
+/** Pass `transaction` to create the message with the caller's other writes; the caller commits. */
+export async function createOutboundCopyrightCorrespondence(
+  input: {
+    id?: string
+    noticeId: string
+    submissionId: string | null
+    correspondenceKind: CopyrightCorrespondenceKind
+    compositionKind: OutboundCompositionKind
+    bodyCiphertext: string
+    draftedById: string | null
+  },
+  transaction?: TransactionQuery,
+): Promise<CopyrightCorrespondenceRecord> {
+  if (transaction) return insertOutboundCopyrightCorrespondence(input, transaction)
+  await using owned = await beginTransaction()
+  const correspondence = await insertOutboundCopyrightCorrespondence(input, owned)
+  await owned.commit()
+  return correspondence
+}
+
+async function insertOutboundCopyrightCorrespondence(
+  input: Parameters<typeof createOutboundCopyrightCorrespondence>[0],
+  transaction: TransactionQuery,
+): Promise<CopyrightCorrespondenceRecord> {
   const id = input.id ?? uuidv7()
-  await using transaction = await beginTransaction()
   const { rows } =
     await transaction<CopyrightCorrespondenceRecord>(sql`/* createOutboundCopyrightCorrespondence */
     INSERT INTO copyright_notice_correspondence_messages (
@@ -127,6 +141,5 @@ export async function createOutboundCopyrightCorrespondence(input: {
     INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_correspondence_id)
     VALUES (${input.noticeId}, 'outbound_correspondence_created', ${correspondence.id})
   `)
-  await transaction.commit()
   return correspondence
 }

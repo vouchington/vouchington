@@ -5,9 +5,9 @@ export {
   authorizeCopyrightGuestCapability,
   copyrightGuestCapabilityMaxLifetimeMs,
   issueCopyrightGuestCapability,
-  requestCopyrightGuestInformation,
   revokeCopyrightGuestCapability,
 } from './guest-capabilities.mts'
+export { requestCopyrightGuestInformation } from './information-requests.mts'
 export { appendCopyrightGuestFiling } from './guest-filings.mts'
 export {
   copyrightGuestCapabilityCursorScope,

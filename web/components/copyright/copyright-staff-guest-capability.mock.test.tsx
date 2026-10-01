@@ -160,6 +160,9 @@ describe('CopyrightStaffGuestCapability', () => {
       expect(screen.queryByLabelText('Information request')).not.toBeInTheDocument()
     })
     expect(mockRequest).toHaveBeenCalledWith(noticeId, capabilityId, 'Send the original URL.')
+    expect(onSuccess).toHaveBeenCalledWith(
+      'Information request queued by email to the claimant. Guest access expiry is unchanged.',
+    )
 
     mockList.mockResolvedValue(page([capability({ revoked_at: now.toISOString() })]))
     await clickEnabled('Revoke')

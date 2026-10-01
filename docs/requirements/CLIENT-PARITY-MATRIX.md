@@ -79,7 +79,9 @@ server per audience (members and case participants: case-facing events only; sta
 a native client renders only the event types it receives and must not treat an unrecognized type
 as display-safe. Staff guest-capability management (issue, list, revoke, and information requests)
 is web-only staff tooling; its fixtures, including `web.copyright.guest-capabilities.listed`, have
-only the web consumer. Staff email-intake review is web-only staff tooling too. Its rejection and
+only the web consumer. The staff case's emailed information-request delivery state (queued, sent,
+failed, or bounced) comes from `delivery_intents` entries whose `delivery_kind` is
+`staff_information_request`; it is web-only too, and no native client renders it. Staff email-intake review is web-only staff tooling too. Its rejection and
 information-request responses (`web.copyright.email-intake-rejection.reply-queued` and `.no-reply`,
 `web.copyright.email-intake-information-request.reply-queued` and `.no-reply`) have only the web
 consumer; native clients have no staff email review action, including the
