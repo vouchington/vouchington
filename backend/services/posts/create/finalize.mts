@@ -2,7 +2,6 @@ import type { CommunityPostReview } from '@services/communities/types'
 import { getOrCreateCrawlerForHostname } from '@services/crawlers'
 import { invalidate } from '@services/entity-cache'
 import { applyPostCommitSideEffects } from '../create/post-commit-side-effects.mts'
-import type { PostCategoryFinalization } from '../post-category-finalizations.mts'
 import type { CreatePostInput, Post } from '../types.mts'
 import type { PrivateUser } from '@services/users/types'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
@@ -13,7 +12,6 @@ type FinalizePreparedPostInput = {
   creator: PrivateUser
   isAdminCreator: boolean
   post: Post
-  postCategoryFinalization: PostCategoryFinalization
   postType: NonNullable<CreatePostInput['post_type']>
   resolvedUrlHostnameId: string | undefined
   resolvedUrlStrings: string[]
@@ -28,7 +26,6 @@ export async function finalizePreparedPost(
     creator,
     isAdminCreator,
     post,
-    postCategoryFinalization,
     postType,
     resolvedUrlHostnameId,
     resolvedUrlStrings,
@@ -45,18 +42,13 @@ export async function finalizePreparedPost(
         .catch(onError)
     }
   }
-  const postRelatedTopics = await applyPostCommitSideEffects({
+  await applyPostCommitSideEffects({
     communityReviews,
     creator,
     isAdminCreator,
     post,
-    postCategoryFinalization,
     postType,
     updates,
   })
-  return {
-    post:
-      postRelatedTopics === undefined ? post : { ...post, post_related_topics: postRelatedTopics },
-    communityReviews,
-  }
+  return { post, communityReviews }
 }

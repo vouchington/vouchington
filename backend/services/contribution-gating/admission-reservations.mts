@@ -48,15 +48,10 @@ export async function claimContributionAdmission<T>(
     state: State
     response: unknown
     finalization_pending: boolean
-    category_finalization_pending: boolean
     expired: boolean
   }>(sql`/* claimContributionAdmission.reservation */
       SELECT id, intent_sha256, state, response,
         COALESCE(replay_metadata->>'finalization', 'pending') <> 'complete' AS finalization_pending,
-        EXISTS (
-          SELECT 1 FROM post_category_finalizations f
-          WHERE f.post_id = post_admission_reservations.committed_post_id
-        ) AS category_finalization_pending,
         COALESCE(expires_at <= clock_timestamp(), false) AS expired
       FROM post_admission_reservations
       WHERE actor_id = ${actorId} AND idempotency_key = ${idempotencyKey} FOR UPDATE`)
@@ -106,11 +101,6 @@ export async function claimContributionAdmission<T>(
     return { kind: 'in_progress', retryAfterSeconds: liveClaimRetryAfterSeconds }
   }
   if (!row.expired && row.state === 'committed') {
-    if (row.category_finalization_pending) {
-      await extendContributionAdmissionReplay(query, reservationId)
-      await query.commit()
-      return { kind: 'in_progress', retryAfterSeconds: 1 }
-    }
     await completeMarkerlessContributionAdmissionReplay(query, reservationId)
     await query.commit()
     return { kind: 'replay', response: row.response as T }

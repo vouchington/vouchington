@@ -3,8 +3,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   enqueueBulkOnPostUpdated,
   enqueueBulkReconcileEntities,
-  enqueueContinuePostCategoryFinalizations,
-  enqueueReconcilePostCategoryFinalizations,
   enqueueOnTopicDeleted,
 } from './enqueues.mts'
 import { entitiesListeners } from './queues.mts'
@@ -90,46 +88,6 @@ describe('entity listener enqueues', () => {
       id: jobId,
       data,
       opts: { deduplication: { id: jobId, mode: 'simple' } },
-    })
-  })
-
-  it('enqueues the durable post-category finalization recovery job', async () => {
-    await enqueueReconcilePostCategoryFinalizations()
-
-    expect(
-      (await getAllEntityListenerJobs()).find(
-        candidate => candidate.name === 'processReconcilePostCategoryFinalizations',
-      ),
-    ).toMatchObject({
-      name: 'processReconcilePostCategoryFinalizations',
-      data: {},
-      opts: {
-        priority: 100,
-        deduplication: {
-          id: 'entity-listeners:reconcile-post-category-finalizations',
-          mode: 'throttle',
-        },
-        ordering: { key: 'post-category-finalization-reconciliation', concurrency: 1 },
-      },
-    })
-  })
-
-  it('enqueues an unthrottled serialized continuation for a full finalization batch', async () => {
-    await enqueueContinuePostCategoryFinalizations()
-
-    expect(
-      (await getAllEntityListenerJobs()).find(
-        candidate =>
-          candidate.name === 'processReconcilePostCategoryFinalizations' &&
-          !candidate.opts?.deduplication,
-      ),
-    ).toMatchObject({
-      name: 'processReconcilePostCategoryFinalizations',
-      data: {},
-      opts: {
-        priority: 100,
-        ordering: { key: 'post-category-finalization-reconciliation', concurrency: 1 },
-      },
     })
   })
 })

@@ -46,11 +46,11 @@ export async function recordPostUpdatePublicationChanges(
     changes: UpdatePostChanges
     contentChanged: boolean
     post: Post
-    previousTopicIds: string[]
     syncHashtagCategories: boolean
+    previousTopicIds?: string[]
   },
 ): Promise<void> {
-  const { changed, changes, contentChanged, post, previousTopicIds, syncHashtagCategories } = params
+  const { changed, changes, contentChanged, post, syncHashtagCategories } = params
   const footprint = {
     priorAuthorUserId: post.created_by_id ?? undefined,
     priorCommunityId: post.community_id ?? undefined,
@@ -68,6 +68,8 @@ export async function recordPostUpdatePublicationChanges(
 
   const topicsChanged = changes.categories !== undefined || changes.structured_data !== undefined
   if (!topicsChanged && !syncHashtagCategories) return
+  const previousTopicIds =
+    params.previousTopicIds ?? (await getPreviousPostPublicationTopicIds(query, post.id, true))
   await recordPostPublicationChange(query, {
     scope: { type: 'post', postId: post.id },
     reason: 'post_topics_changed',

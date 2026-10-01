@@ -24,31 +24,11 @@ export async function publishFinalizedContributionResponse<T>(
     await query.commit()
     return { kind: 'lost' }
   }
-  if (await contributionReplayFinalizationPending(query, input.reservationId)) {
-    await query(sql`/* publishFinalizedContributionResponse.releasePending */
-        DELETE FROM post_admission_claims
-        WHERE reservation_id = ${input.reservationId} AND lease_id = ${input.leaseId}`)
-    await query.commit()
-    return { kind: 'pending' }
-  }
   const response = await persistFinalizedContributionResponse<T>(query, input.reservationId)
   await query(sql`/* publishFinalizedContributionResponse.release */
       DELETE FROM post_admission_claims WHERE reservation_id = ${input.reservationId} AND lease_id = ${input.leaseId}`)
   await query.commit()
   return { kind: 'published', response }
-}
-
-async function contributionReplayFinalizationPending(
-  query: TransactionQuery,
-  reservationId: string,
-): Promise<boolean> {
-  const result = await query<{ pending: boolean }>(sql`/* contributionReplayFinalizationPending */
-    SELECT EXISTS(
-      SELECT 1 FROM post_category_finalizations f
-      JOIN post_admission_reservations r ON r.committed_post_id = f.post_id
-      WHERE r.id = ${reservationId}
-    ) AS pending`)
-  return result.rows[0]?.pending ?? false
 }
 
 async function persistFinalizedContributionResponse<T>(

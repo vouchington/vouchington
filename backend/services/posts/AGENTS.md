@@ -1,7 +1,7 @@
 # Posts
 
 - All SQL writes to `posts` belong here; other domains call service functions, including `insertStoryPostRecord()` for story posts. [README.md](../../../docs/overview/architecture/services/posts/README.md) and [requirements](../../../docs/requirements/content/POSTS.md) own behavior.
-- Publish immediately without draft state. Creation side effects belong to entity-listener jobs, never the creation transaction.
+- Publish immediately without draft state. Post category relations, actor/owner votes, and primary score refreshes belong to the create/update transaction; cache publication and notification reconciliation run after commit. Other creation listeners remain post-commit effects.
 - Admin creation records approval and bypasses automated/community moderation, moderator-agent dispatch, and spam detection, while preserving every non-moderation fan-out (mentions, embeddings, autotagging, sitemap, caches, metrics). This bypass is create-only; moderation-affecting `updatePost()` edits reset clearance/re-enter moderation.
 - Search hides flagged posts except from owners/admins. Validate review content before insert/update with the documented admin bypass.
 - Keep `topic_recommendation` out of generic/public routes/tools; embeddings include rationale and proposed topic payload.
