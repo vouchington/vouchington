@@ -1,5 +1,6 @@
 import { getPostByAny } from '@services/posts'
 import type { BasicUser } from '@voucha/types/entities/user'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { beginTransaction, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
@@ -30,6 +31,7 @@ type CreateTopicRecommendationOptions = QueryOptions & {
 
 export async function createTopicRecommendation(
   currentUser: BasicUser,
+  provenance: ContentProvenance,
   input: CreateTopicRecommendationInput,
   options: CreateTopicRecommendationOptions = {},
 ): Promise<TopicRecommendationPost> {
@@ -42,10 +44,13 @@ export async function createTopicRecommendation(
       : null
   let post: TopicRecommendationPost | null
   if (queryOptions) {
-    post = await createTopicRecommendationInStore(currentUser, input, queryOptions)
+    post = await createTopicRecommendationInStore(currentUser, provenance, input, queryOptions)
   } else {
     await using query = await beginTransaction()
-    post = await createTopicRecommendationInStore(currentUser, input, { ...options, query })
+    post = await createTopicRecommendationInStore(currentUser, provenance, input, {
+      ...options,
+      query,
+    })
     await query.commit()
   }
   assert(post, 500, 'Failed to load created topic recommendation')
@@ -60,10 +65,11 @@ export async function createTopicRecommendation(
 
 export async function prepareTopicRecommendation(
   currentUser: BasicUser,
+  provenance: ContentProvenance,
   input: CreateTopicRecommendationInput,
   options: CreateTopicRecommendationOptions = {},
 ): Promise<{ response: TopicRecommendationPost; finalize: () => Promise<void> }> {
-  const post = await createTopicRecommendation(currentUser, input, {
+  const post = await createTopicRecommendation(currentUser, provenance, input, {
     ...options,
     skipCreatedEvents: true,
   })
@@ -78,6 +84,7 @@ export async function prepareTopicRecommendation(
 
 async function createTopicRecommendationInStore(
   currentUser: BasicUser,
+  provenance: ContentProvenance,
   input: CreateTopicRecommendationInput,
   options: CreateTopicRecommendationOptions,
 ): Promise<TopicRecommendationPost> {
@@ -121,6 +128,7 @@ async function createTopicRecommendationInStore(
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   const postId = await insertTopicRecommendationPost(
     currentUser,
+    provenance,
     materialized,
     moderationContentSha,
     options,
@@ -145,6 +153,7 @@ async function createTopicRecommendationInStore(
 
 async function insertTopicRecommendationPost(
   currentUser: BasicUser,
+  provenance: ContentProvenance,
   materialized: MaterializedTopicRecommendationInput,
   moderationContentSha: Buffer,
   options: QueryOptions,
@@ -162,7 +171,8 @@ async function insertTopicRecommendationPost(
         privacy,
         is_anonymous,
         bedrock_nova_multimodal_v1_content_sha256,
-        llm_moderation_content_sha256
+        llm_moderation_content_sha256,
+        created_via, created_via_oauth_client_id
       )
       VALUES (
         'topic_recommendation',
@@ -175,7 +185,8 @@ async function insertTopicRecommendationPost(
         'private',
         false,
         ${materialized.embedding_content_sha},
-        ${moderationContentSha}
+        ${moderationContentSha},
+        ${provenance.createdVia}, ${provenance.oauthClientId}
       )
       RETURNING id
     `,

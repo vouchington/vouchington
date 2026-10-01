@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
+  WEB_PROVENANCE,
   beginTransaction,
   CONTRIBUTING_USER_AGE_MS,
   approveTestPost,
@@ -42,7 +43,7 @@ describe('addPostHashtag', () => {
       slug: `additive-category-${suffix}`,
       createdById: creator.id,
     })
-    const post = await createPost(creator, {
+    const post = await createPost(creator, WEB_PROVENANCE, {
       title: `Additive hashtag ${suffix}`,
       categories: [
         { type: 'topic', topic_id: topicId },
@@ -77,7 +78,7 @@ describe('addPostHashtag', () => {
     const suffix = createRandomString(8).toLowerCase()
     const tag = `existing-${suffix}`
     const alias = await createUnlinkedTopicAlias(`#${tag}`)
-    const post = await createPost(creator, { title: `Existing hashtag ${suffix}` })
+    const post = await createPost(creator, WEB_PROVENANCE, { title: `Existing hashtag ${suffix}` })
     const updated = onceEntityListenerCompleted('processPostUpdated', post.id)
 
     const first = await addPostHashtag(creator, post.id, `#${tag}`, firstParty)
@@ -102,7 +103,7 @@ describe('addPostHashtag', () => {
     try {
       const suffix = createRandomString(8).toLowerCase()
       const tag = `over-cap-${suffix}`
-      const post = await createPost(creator, {
+      const post = await createPost(creator, WEB_PROVENANCE, {
         title: `Cap hashtag ${suffix}`,
         categories: [1, 2, 3].map(number => ({
           type: 'hashtag' as const,
@@ -124,7 +125,7 @@ describe('addPostHashtag', () => {
   it('rejects a non-author and an expired content edit', async () => {
     const suffix = createRandomString(8).toLowerCase()
     const other = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-    const post = await createPost(creator, { title: `Author only ${suffix}` })
+    const post = await createPost(creator, WEB_PROVENANCE, { title: `Author only ${suffix}` })
     await approveTestPost(post.id)
     const agedId = await insertTestPost({
       id: getMinUUIDv7ForDate(new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)),
@@ -149,7 +150,7 @@ describe('addPostHashtag', () => {
 
   it('requires exact delegated authority over both private candidate and root', async () => {
     const suffix = createRandomString(8).toLowerCase()
-    const privatePost = await createPost(creator, {
+    const privatePost = await createPost(creator, WEB_PROVENANCE, {
       title: `Private tag ${suffix}`,
       broadcast: 'users',
       privacy: 'private',
@@ -174,13 +175,13 @@ describe('addPostHashtag', () => {
     ).resolves.toMatchObject({ tag: `allowed-${suffix}` })
 
     const anotherAuthor = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-    const foreignRoot = await createPost(anotherAuthor, {
+    const foreignRoot = await createPost(anotherAuthor, WEB_PROVENANCE, {
       title: `Foreign root ${suffix}`,
       broadcast: 'users',
       privacy: 'private',
     })
     await approveTestPost(foreignRoot.id)
-    const reply = await createPost(creator, {
+    const reply = await createPost(creator, WEB_PROVENANCE, {
       post_type: 'comment',
       parent_id: foreignRoot.id,
       markdown: `Reply ${suffix}`,
@@ -194,7 +195,9 @@ describe('addPostHashtag', () => {
 
   it('preserves public delegated and private first-party administrator authority', async () => {
     const suffix = createRandomString(8).toLowerCase()
-    const publicPost = await createPost(creator, { title: `Public delegated ${suffix}` })
+    const publicPost = await createPost(creator, WEB_PROVENANCE, {
+      title: `Public delegated ${suffix}`,
+    })
     const delegated = {
       kind: 'delegated',
       credentialOwnerId: creator.id,
@@ -204,7 +207,7 @@ describe('addPostHashtag', () => {
       addPostHashtag(creator, publicPost.id, `#public-${suffix}`, delegated),
     ).resolves.toMatchObject({ tag: `public-${suffix}` })
 
-    const privatePost = await createPost(creator, {
+    const privatePost = await createPost(creator, WEB_PROVENANCE, {
       title: `Admin private ${suffix}`,
       broadcast: 'users',
       privacy: 'private',
@@ -217,7 +220,7 @@ describe('addPostHashtag', () => {
 
   it('serializes additive intent with a replacement category update', async () => {
     const suffix = createRandomString(8).toLowerCase()
-    const post = await createPost(creator, {
+    const post = await createPost(creator, WEB_PROVENANCE, {
       title: `Race ${suffix}`,
       categories: [{ type: 'hashtag', hashtag: `#initial-${suffix}` }],
     })
@@ -247,7 +250,7 @@ describe('addPostHashtag', () => {
 
   it('unions against the locked replacement when the replacement wins first', async () => {
     const suffix = createRandomString(8).toLowerCase()
-    const post = await createPost(creator, {
+    const post = await createPost(creator, WEB_PROVENANCE, {
       title: `Reverse race ${suffix}`,
       categories: [{ type: 'hashtag', hashtag: `#initial-${suffix}` }],
     })

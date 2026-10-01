@@ -15,7 +15,7 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS lists (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  created_via content_creation_channels,
+  created_via content_creation_channels NOT NULL,
   created_via_oauth_client_id UUID,
   CONSTRAINT lists_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   owner_user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,

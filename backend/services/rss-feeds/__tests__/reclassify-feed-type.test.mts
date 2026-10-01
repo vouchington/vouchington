@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { createTestTopic } from '@voucha/test-helpers'
+import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { reclassifyRssFeedTypeIfNeeded } from '../reclassify-feed-type.mts'
 import { createRssFeed } from '../create.mts'
 import { updateRssFeedById } from '../update.mts'
@@ -14,6 +14,7 @@ describe('reclassifyRssFeedTypeIfNeeded', () => {
       hostname: `empty-items-guard-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/empty-items-${random}.xml`,
       topic_id: topic.id,
@@ -41,6 +42,7 @@ describe('reclassifyRssFeedTypeIfNeeded', () => {
       hostname: `reclassify-yt-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://www.youtube.com/feeds/videos.xml?channel_id=UCtest${random}`,
       topic_id: topic.id,
@@ -70,6 +72,7 @@ describe('reclassifyRssFeedTypeIfNeeded', () => {
       hostname: `filter-media-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/podcast-${random}.xml`,
       topic_id: topic.id,
@@ -95,6 +98,7 @@ describe('reclassifyRssFeedTypeIfNeeded', () => {
       hostname: `no-update-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed-${random}.xml`,
       topic_id: topic.id,

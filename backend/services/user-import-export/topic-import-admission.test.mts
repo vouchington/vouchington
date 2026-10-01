@@ -5,6 +5,7 @@ import {
   getContributionAdmissionConsumptionCountForTest,
   getContributionAdmissionPolicyRevisionForTest,
   getTopicImportRequestCountByRecommendationForTest,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { contributionLimitConfig } from '@services/contribution-gating/limits-config'
@@ -27,6 +28,7 @@ describe('topic import admission', () => {
     await expect(
       admitImportedTopicRecommendation(
         user,
+        WEB_PROVENANCE,
         { name: `Administrator import ${crypto.randomUUID()}`, slug },
         null,
         importAttemptId,
@@ -55,7 +57,7 @@ describe('topic import admission', () => {
     })
 
     try {
-      const results = await importTopics(user, batch, {
+      const results = await importTopics(user, WEB_PROVENANCE, batch, {
         assertCanCreateTopicRecommendations: async () => {},
         importAttemptId: crypto.randomUUID(),
       })
@@ -86,8 +88,8 @@ describe('topic import admission', () => {
       assertCanCreateTopicRecommendations: async () => {},
       importAttemptId: crypto.randomUUID(),
     }
-    const [first] = await importTopics(user, [topicName], options)
-    const [replay] = await importTopics(user, [topicName], options)
+    const [first] = await importTopics(user, WEB_PROVENANCE, [topicName], options)
+    const [replay] = await importTopics(user, WEB_PROVENANCE, [topicName], options)
 
     expect(first).toMatchObject({ status: 'recommendation_created' })
     expect(replay).toEqual({
@@ -109,11 +111,23 @@ describe('topic import admission', () => {
     const slug = `import-intent-${crypto.randomUUID()}`
     const importAttemptId = crypto.randomUUID()
     await expect(
-      admitImportedTopicRecommendation(user, { name: 'First name', slug }, null, importAttemptId),
+      admitImportedTopicRecommendation(
+        user,
+        WEB_PROVENANCE,
+        { name: 'First name', slug },
+        null,
+        importAttemptId,
+      ),
     ).resolves.toMatchObject({ kind: 'created' })
 
     await expect(
-      admitImportedTopicRecommendation(user, { name: 'Changed name', slug }, null, importAttemptId),
+      admitImportedTopicRecommendation(
+        user,
+        WEB_PROVENANCE,
+        { name: 'Changed name', slug },
+        null,
+        importAttemptId,
+      ),
     ).rejects.toMatchObject({ code: IDEMPOTENCY_KEY_REUSED, status: 409 })
     await expect(
       getContributionAdmissionConsumptionCountForTest(user.id, 'topic_recommendation'),
@@ -127,16 +141,29 @@ describe('topic import admission', () => {
       slug: `withdrawn-imported-topic-${crypto.randomUUID()}`,
     }
     const firstAttemptId = crypto.randomUUID()
-    const first = await admitImportedTopicRecommendation(user, input, null, firstAttemptId)
+    const first = await admitImportedTopicRecommendation(
+      user,
+      WEB_PROVENANCE,
+      input,
+      null,
+      firstAttemptId,
+    )
     if (first.kind !== 'created') throw new Error('Expected the first import attempt to create')
     await deletePendingRecommendation(user, first.response)
 
-    const replay = await admitImportedTopicRecommendation(user, input, null, firstAttemptId)
+    const replay = await admitImportedTopicRecommendation(
+      user,
+      WEB_PROVENANCE,
+      input,
+      null,
+      firstAttemptId,
+    )
     if (replay.kind !== 'replay') throw new Error('Expected the matching import retry to replay')
     expect(replay.response.id).toBe(first.response.id)
 
     const laterAttempt = await admitImportedTopicRecommendation(
       user,
+      WEB_PROVENANCE,
       input,
       null,
       crypto.randomUUID(),

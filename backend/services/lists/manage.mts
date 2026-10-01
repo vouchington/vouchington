@@ -1,5 +1,6 @@
 import assert from 'http-assert'
 import { currentUserCanManageList } from './authorization.mts'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { createList, getListForWrite, updateList } from './lists.mts'
 import type { List, ListVisibility } from './types.mts'
 
@@ -42,9 +43,9 @@ export function assertValidListName(name: string): void {
 }
 
 /** Creates a list for its owner, defaulting to a private list with no description. */
-export async function createOwnedList(currentUserId: string, input: CreateOwnedListInput) {
+export async function createOwnedList(currentUserId: string, provenance: ContentProvenance, input: CreateOwnedListInput) {
   assertValidListName(input.name)
-  return createList(currentUserId, {
+  return createList(currentUserId, provenance, {
     name: input.name,
     description: input.description ?? null,
     visibility: input.visibility ?? 'private',

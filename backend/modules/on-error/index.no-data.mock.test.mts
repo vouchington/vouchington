@@ -35,7 +35,10 @@ const flush = sentryMocks.flush
 
 import onError, { flushSentry } from './index.mts'
 import { CrawlerNetworkError, CrawlerTimeoutError } from './errors.mts'
-import { runWithRequestClientInfo } from '@modules/request-client-info'
+import {
+  runWithCredentialRequestContext,
+  runWithSessionRequestContext,
+} from '@modules/request-client-info'
 
 function makeErrorWithFields(fields: Record<string, unknown>): Error & Record<string, unknown> {
   const error = new Error(stringFromUnknown(fields.message ?? 'error')) as Error &
@@ -90,7 +93,7 @@ describe('onError console logging', () => {
     delete process.env.CI
     const err = new Error('request failed')
 
-    runWithRequestClientInfo(
+    runWithSessionRequestContext(
       {
         client: 'swift',
         platform: 'ios',
@@ -104,6 +107,8 @@ describe('onError console logging', () => {
     )
 
     expect(consoleSpy).toHaveBeenCalledWith(err, {
+      request_interface: 'rest',
+      request_credential: 'session',
       client: 'swift',
       client_platform: 'ios',
       client_app_version: '1.2.3',
@@ -215,7 +220,7 @@ describe('onError console logging', () => {
 
   it('enriches captured errors from request client context', () => {
     const err = new Error('request failed')
-    runWithRequestClientInfo(
+    runWithSessionRequestContext(
       {
         client: 'swift',
         platform: 'ios',
@@ -229,6 +234,8 @@ describe('onError console logging', () => {
     )
     expect(captureException).toHaveBeenCalledWith(err, {
       tags: {
+        request_interface: 'rest',
+        request_credential: 'session',
         client: 'swift',
         client_platform: 'ios',
         client_app_version: '1.2.3',
@@ -236,6 +243,17 @@ describe('onError console logging', () => {
         request_id: 'request-1',
       },
       extra: { client_device_id: 'device-1', client_ip_address: '203.0.113.1' },
+    })
+  })
+
+  it('tags captured errors with a credentialed request origin', () => {
+    const err = new Error('tool failed')
+    runWithCredentialRequestContext(
+      { interface: 'mcp', credential: 'oauth', client: null, oauthClientId: 'client-1' },
+      () => onError(err),
+    )
+    expect(captureException).toHaveBeenCalledWith(err, {
+      tags: { request_interface: 'mcp', request_credential: 'oauth', oauth_client_id: 'client-1' },
     })
   })
 

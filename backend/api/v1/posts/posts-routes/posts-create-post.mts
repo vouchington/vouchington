@@ -31,6 +31,7 @@ type CreatePostRequestBody = CreatePostInput & {
   cf_turnstile_response?: string
   recaptcha_token?: string
 }
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 app.route('/api/v1/posts').post(async (ctx: Context) => {
   apiRequestContract<'POST:/api/v1/posts', CreatePostRequestBody>('POST:/api/v1/posts')
@@ -61,6 +62,7 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
     },
   })
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/posts')
+  const provenance = getRequestContentProvenance()
   assertNotSuspended(currentUser)
   if (!currentUserCanCreatePost(currentUser)) {
     ctx.throw(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
@@ -159,9 +161,13 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
       }),
     execute: query =>
       executePreparedContribution(query, async () => {
-        const prepared = await preparePostWithCommunityReviews(currentUser, body, membershipPlan, {
-          query,
-        })
+        const prepared = await preparePostWithCommunityReviews(
+          currentUser,
+          provenance,
+          body,
+          membershipPlan,
+          { query },
+        )
         return {
           response: prepared.response.post,
           finalize: async () => (await prepared.finalize()).post,

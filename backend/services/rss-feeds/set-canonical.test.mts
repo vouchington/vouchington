@@ -3,7 +3,7 @@ import { setCanonicalRssFeed, CircularRssFeedCanonicalError } from './set-canoni
 import { createRssFeed } from './create.mts'
 import { updateRssFeedById } from './update.mts'
 import { getRssFeedById } from './get.mts'
-import { createTestTopic } from '@voucha/test-helpers'
+import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 
 describe('set-canonical', () => {
   async function makeFeed(suffix: string) {
@@ -14,6 +14,7 @@ describe('set-canonical', () => {
       hostname: `set-canonical-${suffix}-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://set-canonical-${suffix}-${random}.example.com/feed.xml`,
       topic_id: topic.id,

@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUserDirect } from '@voucha/test-helpers'
+import { WEB_PROVENANCE, createTestUserDirect } from '@voucha/test-helpers'
 import { addUserRole } from '@services/users/roles-permissions'
 import { createReferralProgramFixture } from '@voucha/test-helpers/entities/referral-programs'
 import { createChildReferralLink } from '@services/user-referral-program-links'
@@ -160,7 +160,7 @@ describe('links', () => {
         .expect(403)
       expect(officialUpdate.body.code).toBe(OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN)
 
-      const child = await createChildReferralLink(regularUser!.id, {
+      const child = await createChildReferralLink(regularUser!.id, WEB_PROVENANCE, {
         userId: regularUser!.id,
         referralProgramId: referralProgramId!,
         url: `https://${testHostname}/ref/preflight-child-${Date.now()}`,

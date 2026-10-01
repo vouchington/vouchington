@@ -12,6 +12,7 @@ import {
   getRssFeedDeletedAt,
   updateUrlHostnameBlocked,
   updateUrlHostnameUnreliableStatusCodes,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { CrawlerHttpClientError } from '@modules/on-error/errors'
@@ -45,6 +46,7 @@ async function makeFeed(suffix: string) {
     hostname: `redir-test-${suffix}-${random}.example.com`,
   })
   const feed = await createRssFeed({
+    provenance: WEB_PROVENANCE,
     skipRemoteValidation: true,
     rss_feed_url: feedUrl,
     topic_id: topic.id,

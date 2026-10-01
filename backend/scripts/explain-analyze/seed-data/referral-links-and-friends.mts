@@ -17,8 +17,8 @@ export async function seedPrioritizedReferralLink(): Promise<void> {
     const query = transaction
     await query(
       `/* seedExplainData */ INSERT INTO topics
-         (id, topic_type, name, slug, bedrock_nova_multimodal_v1_content_sha256)
-       VALUES ($1, 'referral_program', $2, $3, $4) ON CONFLICT DO NOTHING`,
+         (id, topic_type, name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via)
+       VALUES ($1, 'referral_program', $2, $3, $4, 'system') ON CONFLICT DO NOTHING`,
       [
         referralProgramId,
         'Seed Referral Program',
@@ -32,8 +32,8 @@ export async function seedPrioritizedReferralLink(): Promise<void> {
       [referralProgramId],
     )
     await query(
-      `/* seedExplainData */ INSERT INTO user_referral_program_links (user_id, referral_program_id, url_id)
-       VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+      `/* seedExplainData */ INSERT INTO user_referral_program_links (user_id, referral_program_id, url_id, created_via)
+       VALUES ($1, $2, $3, 'system') ON CONFLICT DO NOTHING`,
       [linkOwnerId, referralProgramId, urlId],
     )
 

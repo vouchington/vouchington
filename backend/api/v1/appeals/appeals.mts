@@ -14,6 +14,7 @@ import {
   MODERATION_APPEAL_STATUSES,
 } from '@services/moderation-appeals'
 import { isModerationStaff } from '@services/users'
+<<<<<<< HEAD
 import { apiQuery, apiResponse } from '../../response-contract.mts'
 import {
   defineQueryContract,
@@ -46,9 +47,18 @@ app.route('/api/v1/appeals').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/appeals')
   const body = (await ctx.request.json('1mb')) as CreateModerationAppealRequest
   validateRequestContract(ctx, 'POST:/api/v1/appeals', { body })
+=======
+import { apiResponse } from '../../response-contract.mts'
+import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
+app.route('/api/v1/appeals').post(async (ctx: Context) => {
+  const currentUser = await requireAuth(ctx, 'POST:/api/v1/appeals')
+  const provenance = getRequestContentProvenance()
+  const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+>>>>>>> e84d83fd2 (feat(content): require creation provenance for all content writers)
   await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'appeals.create' })
   const input = parseCreateModerationAppealInput(body)
-  const { appeal, isDuplicate } = await createModerationAppeal(currentUser, input)
+  const { appeal, isDuplicate } = await createModerationAppeal(currentUser, provenance, input)
   const isStaff = isModerationStaff(currentUser)
   ctx.setStatus(isDuplicate ? 200 : 201)
   ctx.json({ appeal: isStaff ? appeal : redactModerationAppeal(appeal), isDuplicate })

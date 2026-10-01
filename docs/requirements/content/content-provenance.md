@@ -35,7 +35,7 @@ Every user-content table carries two columns:
 
 | Column                        | Notes                                                                                        |
 | ----------------------------- | -------------------------------------------------------------------------------------------- |
-| `created_via`                 | `content_creation_channels`; `NULL` for rows written before provenance tracking              |
+| `created_via`                 | Required `content_creation_channels`; no default                                             |
 | `created_via_oauth_client_id` | FK → `oauth_clients.id`, `ON DELETE RESTRICT`; set only when `created_via` is `api` or `mcp` |
 
 The tables are `posts` (including comments, stories and topic recommendations), `communities`,
@@ -48,8 +48,7 @@ Invariants and what enforces each:
 - **Client only on agent channels:** `<table>_created_via_oauth_client_id_check` rejects an OAuth
   client on any channel other than `api` or `mcp`.
 - **Immutable:** the `<table>_content_provenance_immutable` trigger fires `AFTER UPDATE` only when
-  either column changes, and `fn_prevent_content_provenance_update()` rejects the change, including
-  setting a value on a row that predates tracking. Provenance describes the row's creation, so an
+  either column changes, and `fn_prevent_content_provenance_update()` rejects the change. Provenance describes the row's creation, so an
   upsert that revives an existing row keeps the original channel, and writers leave both columns
   out of `ON CONFLICT DO UPDATE SET`.
 - **Clients are kept:** `ON DELETE RESTRICT` blocks deleting an OAuth client that created content.
@@ -78,33 +77,41 @@ dynamically registered clients keep it `NULL`. Administrators set and clear `ver
 [OAuth client verification routes](../api/v1/admin/README.md), and renaming a client
 or replacing its redirect URIs clears them. Labels stay generic until the exposure stage below.
 
-The migrations are `backend/data-stores/psql/migrations/0726-00-*-content-provenance*.sql`.
-`0726-00-00` adds the enum, trigger function and OAuth client label columns. `0726-00-01` through
-`0726-00-09` each alter one table, so no transaction holds `ACCESS EXCLUSIVE` on two tables.
-`0726-00-10` validates the constraints, `0726-00-11` builds the indexes online, and `0726-00-12`
-attaches the `posts__default` index to its partitioned parent.
+The enum, columns, checks, indexes and immutability triggers live in the canonical table creators.
+The `0726-00-01` through `0726-00-09` migrations add the cross-file OAuth client foreign keys.
+`created_via` is `NOT NULL` with no default on all nine tables; fresh-bootstrap seeds explicitly
+record `system`. See the [prelaunch schema policy](../../development/postgres-schema-rules.md#prelaunch-relational-storage).
 [`schema-content-provenance.test.mts`](../../../backend/data-stores/psql/__tests__/schema-content-provenance.test.mts)
 checks every table's columns, validated constraints, valid index and trigger, the trigger on a real
 `posts` partition row, the OAuth client label columns, and that no view references either
 provenance column.
 
-## Rollout
+## Recording
 
-Provenance ships as an expand and contract change, following the
-[deploy decoupling](../../overview/infrastructure/deployment.md#deploy-decoupling--independent-safety)
-rules. Each stage is a sub-issue of [#237](https://github.com/vouchington/vouchington/issues/237).
+Every creation service requires a typed `ContentProvenance`. The union permits an OAuth client
+only for `api` and `mcp`, matching the database check. One pure resolver maps the request origin:
 
-| Stage    | Change                                                                                  | Status  |
-| -------- | --------------------------------------------------------------------------------------- | ------- |
-| Expand   | Nullable columns, constraints and immutability trigger on every table                   | Shipped |
-| Record   | Every writer records its channel and OAuth client; seeds and jobs record `system`       | Planned |
-| Expose   | Public "via API" and "via MCP" labels; staff see every channel                          | Planned |
-| Contract | A validated `CHECK` requires provenance on rows created after each table's writer ships | Planned |
+| Origin                | Recorded channel                            | OAuth client               |
+| --------------------- | ------------------------------------------- | -------------------------- |
+| REST session          | Validated client (`web`, `swift`, `dotnet`) | None                       |
+| MCP API key           | `mcp`                                       | None                       |
+| MCP OAuth             | `mcp`                                       | Issuing `oauth_clients.id` |
+| REST API key or OAuth | `api`                                       | Issuing client for OAuth   |
 
-The Record stage includes writers outside request handlers: queue jobs, and the config-driven seeds
-that insert topics and communities on every deploy
-([`0005-00-01-seed-topics.mts`](../../../backend/data-stores/psql/config-driven/0005-00-01-seed-topics.mts),
-[`0080-00-01-publisher-type-topics.mts`](../../../backend/data-stores/psql/config-driven/0080-00-01-publisher-type-topics.mts)
-and
-[`0140-00-01-seed-communities.mts`](../../../backend/data-stores/psql/config-driven/0140-00-01-seed-communities.mts)).
-They record `system`, or the Contract stage's `CHECK` rejects their inserts.
+REST API-key and OAuth writes have no route producer yet. Request handlers pass request
+provenance; queue jobs, config-driven seeds, fixtures and scripts pass `system`. Platform-authored
+StoryTeller posts and ban-evasion reports always record `system`, even when a request triggered
+the work. A revived row preserves its original provenance.
+
+### Unclassified session writes fail closed
+
+A session origin with missing or invalid client information cannot create content. Creation
+routes return `400` with `INVALID_CLIENT_INFO`, including while client metadata enforcement is
+in observe mode. This prevents an unknown channel from being recorded.
+
+## Delivery scope
+
+[#611](https://github.com/vouchington/vouchington/issues/611) delivers writers, seeds and required
+schema together as one current contract. There is no historical untracked-row state or separate
+Contract stage. [#706](https://github.com/vouchington/vouchington/issues/706) owns public “via API”
+and “via MCP” labels and staff visibility; these columns remain private until that stage.

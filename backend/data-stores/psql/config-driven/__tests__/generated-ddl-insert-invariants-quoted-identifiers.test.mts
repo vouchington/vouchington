@@ -53,13 +53,13 @@ END $$;`,
       // parsing or judging CTE b's own, entirely unguarded, insert.
       expect(
         findFirstUnguardedInsertViolation(`WITH "a" AS (
-  INSERT INTO topics (slug) SELECT 'a' WHERE NOT EXISTS (SELECT 1)
+  INSERT INTO topics (created_via, slug) SELECT 'system', 'a' WHERE NOT EXISTS (SELECT 1)
 ), b AS (
   INSERT INTO topic_aliases (alias) VALUES ('a')
 )
 SELECT 1;`),
       ).toBe(
-        "INSERT INTO topics (slug) SELECT 'a' WHERE NOT EXISTS (SELECT 1)\n" +
+        "INSERT INTO topics (created_via, slug) SELECT 'system', 'a' WHERE NOT EXISTS (SELECT 1)\n" +
           '), b AS (\n' +
           "  INSERT INTO topic_aliases (alias) VALUES ('a')\n" +
           ')\n' +
@@ -71,7 +71,7 @@ SELECT 1;`),
   it('does not flag a double-quoted-CTE statement when every sibling guards its own insert', () => {
     expect(
       findFirstUnguardedInsertViolation(`WITH "a" AS (
-  INSERT INTO topics (slug) SELECT 'a' WHERE NOT EXISTS (SELECT 1)
+  INSERT INTO topics (created_via, slug) SELECT 'system', 'a' WHERE NOT EXISTS (SELECT 1)
 ), b AS (
   INSERT INTO topic_aliases (alias) SELECT 'a' WHERE NOT EXISTS (SELECT 1)
 )

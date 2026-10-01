@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createTestUser, insertTestLocalFollow, insertTestPost } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  insertTestLocalFollow,
+  insertTestPost,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createModerationReport } from '../create.mts'
 import { parseCreateModerationReportInput } from '../parse.mts'
@@ -15,7 +20,6 @@ describe('createModerationReport', () => {
     otherUser = await createTestUser()
     postId = await createReportPost(otherUser.id, 'test-post')
   })
-
   it('creates a new report and returns isDuplicate false', async () => {
     const input = parseCreateModerationReportInput({
       entityType: 'post',
@@ -23,8 +27,7 @@ describe('createModerationReport', () => {
       reason: 'spam',
       note: null,
     })
-    const { report, isDuplicate } = await createModerationReport(reporter.id, input)
-
+    const { report, isDuplicate } = await createModerationReport(reporter.id, WEB_PROVENANCE, input)
     expect(isDuplicate).toBe(false)
     expect(report.reporter_user_id).toBe(reporter.id)
     expect(report.entity_type).toBe('post')
@@ -33,7 +36,6 @@ describe('createModerationReport', () => {
     expect(report.note).toBeNull()
     expect(report.status).toBe('pending')
   })
-
   it('returns isDuplicate true on second report for same entity', async () => {
     const freshPostId = await createReportPost(otherUser.id, 'dup-post')
     const freshReporter = await createTestUser()
@@ -43,12 +45,11 @@ describe('createModerationReport', () => {
       reason: 'harassment',
       note: 'First note',
     })
-
-    const first = await createModerationReport(freshReporter.id, input)
+    const first = await createModerationReport(freshReporter.id, WEB_PROVENANCE, input)
     expect(first.isDuplicate).toBe(false)
-
     const second = await createModerationReport(
       freshReporter.id,
+      WEB_PROVENANCE,
       parseCreateModerationReportInput({
         entityType: 'post',
         entityId: freshPostId,
@@ -69,7 +70,7 @@ describe('createModerationReport', () => {
       reason: 'spam',
       note: null,
     })
-    await expect(createModerationReport(reporter.id, input)).rejects.toThrow(
+    await expect(createModerationReport(reporter.id, WEB_PROVENANCE, input)).rejects.toThrow(
       /Cannot report yourself/,
     )
   })
@@ -83,7 +84,7 @@ describe('createModerationReport', () => {
       reason: 'other',
       note: 'This is a test note',
     })
-    const { report } = await createModerationReport(noteReporter.id, input)
+    const { report } = await createModerationReport(noteReporter.id, WEB_PROVENANCE, input)
     expect(report.note).toBe('This is a test note')
   })
 
@@ -109,7 +110,7 @@ describe('createModerationReport', () => {
       reason: 'harassment',
       note: null,
     })
-    const { report, isDuplicate } = await createModerationReport(reporter.id, input)
+    const { report, isDuplicate } = await createModerationReport(reporter.id, WEB_PROVENANCE, input)
 
     expect(isDuplicate).toBe(false)
     expect(report.entity_type).toBe('comment')
@@ -133,7 +134,7 @@ describe('createModerationReport', () => {
       note: null,
     })
 
-    await expect(createModerationReport(reporter.id, input)).rejects.toThrow(
+    await expect(createModerationReport(reporter.id, WEB_PROVENANCE, input)).rejects.toThrow(
       /Reportable entity not found/,
     )
   })
@@ -153,7 +154,7 @@ describe('createModerationReport', () => {
       note: null,
     })
 
-    await expect(createModerationReport(reporter.id, input)).rejects.toThrow(
+    await expect(createModerationReport(reporter.id, WEB_PROVENANCE, input)).rejects.toThrow(
       /Reportable entity not found/,
     )
   })
@@ -182,7 +183,7 @@ describe('createModerationReport', () => {
       note: null,
     })
 
-    await expect(createModerationReport(reporter.id, input)).rejects.toThrow(
+    await expect(createModerationReport(reporter.id, WEB_PROVENANCE, input)).rejects.toThrow(
       /Reportable entity not found/,
     )
   })
@@ -236,7 +237,7 @@ describe('createModerationReport', () => {
       reason: 'illegal_content',
       note: null,
     })
-    const { report, isDuplicate } = await createModerationReport(reporter.id, input)
+    const { report, isDuplicate } = await createModerationReport(reporter.id, WEB_PROVENANCE, input)
 
     expect(isDuplicate).toBe(false)
     expect(report.reason).toBe('illegal_content')

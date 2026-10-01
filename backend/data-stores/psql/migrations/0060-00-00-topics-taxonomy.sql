@@ -24,7 +24,7 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS topics (
   id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES retained_topic_identities (id) ON DELETE RESTRICT,
-  created_via content_creation_channels,
+  created_via content_creation_channels NOT NULL,
   created_via_oauth_client_id UUID,
   CONSTRAINT topics_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
 
@@ -748,28 +748,28 @@ EXECUTE FUNCTION fn_sync_fediverse_instance_integration_status();
 
 -- 1. Insert category topics
 -- Using digest() from pgcrypto extension (already installed for embeddings)
-INSERT INTO topics (id, name, slug, bedrock_nova_multimodal_v1_content_sha256)
+INSERT INTO topics (created_via, id, name, slug, bedrock_nova_multimodal_v1_content_sha256)
 VALUES
-  (uuidv7(), 'Voucha', 'voucha', digest('Voucha' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Books', 'books', digest('Books' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Courses', 'courses', digest('Courses' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Events', 'events', digest('Events' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Local Businesses', 'local-businesses', digest('Local Businesses' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Movies', 'movies', digest('Movies' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Products', 'products', digest('Products' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Software Products', 'software-products', digest('Software Products' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Hardware Products', 'hardware-products', digest('Hardware Products' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Recipes', 'recipes', digest('Recipes' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Creative Work Seasons', 'creative-work-seasons', digest('Creative Work Seasons' || E'\n\n', 'sha256')),
-  (uuidv7(), 'TV Show Seasons', 'tv-show-seasons', digest('TV Show Seasons' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Creative Work Series', 'creative-work-series', digest('Creative Work Series' || E'\n\n', 'sha256')),
-  (uuidv7(), 'TV Shows', 'tv-shows', digest('TV Shows' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Creative Work Episodes', 'creative-work-episodes', digest('Creative Work Episodes' || E'\n\n', 'sha256')),
-  (uuidv7(), 'TV Show Episodes', 'tv-show-episodes', digest('TV Show Episodes' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Games', 'games', digest('Games' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Songs', 'songs', digest('Songs' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Playlists', 'playlists', digest('Playlists' || E'\n\n', 'sha256')),
-  (uuidv7(), 'Organizations', 'organizations', digest('Organizations' || E'\n\n', 'sha256'))
+  ('system', uuidv7(), 'Voucha', 'voucha', digest('Voucha' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Books', 'books', digest('Books' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Courses', 'courses', digest('Courses' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Events', 'events', digest('Events' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Local Businesses', 'local-businesses', digest('Local Businesses' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Movies', 'movies', digest('Movies' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Products', 'products', digest('Products' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Software Products', 'software-products', digest('Software Products' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Hardware Products', 'hardware-products', digest('Hardware Products' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Recipes', 'recipes', digest('Recipes' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Creative Work Seasons', 'creative-work-seasons', digest('Creative Work Seasons' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'TV Show Seasons', 'tv-show-seasons', digest('TV Show Seasons' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Creative Work Series', 'creative-work-series', digest('Creative Work Series' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'TV Shows', 'tv-shows', digest('TV Shows' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Creative Work Episodes', 'creative-work-episodes', digest('Creative Work Episodes' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'TV Show Episodes', 'tv-show-episodes', digest('TV Show Episodes' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Games', 'games', digest('Games' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Songs', 'songs', digest('Songs' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Playlists', 'playlists', digest('Playlists' || E'\n\n', 'sha256')),
+  ('system', uuidv7(), 'Organizations', 'organizations', digest('Organizations' || E'\n\n', 'sha256'))
 ON CONFLICT DO NOTHING;
 
 -- Every active topic's current slug is an alias. Runtime creates and slug updates maintain this;

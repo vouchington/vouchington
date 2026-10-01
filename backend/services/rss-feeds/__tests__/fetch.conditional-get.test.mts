@@ -8,7 +8,7 @@ import { createRssFeed } from '../create.mts'
 import { updateRssFeedById } from '../update.mts'
 import { getLatestRssFeedCrawlForFeed, insertRssFeedCrawl } from '../crawls.mts'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
-import { createTestTopic } from '@voucha/test-helpers'
+import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 
 const mockCrawlerRss = vi.fn<typeof CrawlerRss>()
 const mockCheckRssFeedCrawlable = vi.fn<typeof checkRssFeedCrawlable>()
@@ -44,6 +44,7 @@ describe('fetch.conditional-get', () => {
       hostname: `fetch-sha256-only-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/sha256-only-${random}.xml`,
       topic_id: topic.id,
@@ -67,6 +68,7 @@ describe('fetch.conditional-get', () => {
       hostname: `fetch-stale-304-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/stale-304-${random}.xml`,
       topic_id: topic.id,
@@ -115,6 +117,7 @@ describe('fetch.conditional-get', () => {
       hostname: `fetch-replay-304-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/replay-304-${random}.xml`,
       topic_id: topic.id,

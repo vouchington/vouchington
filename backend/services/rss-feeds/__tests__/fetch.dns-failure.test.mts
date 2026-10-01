@@ -11,6 +11,7 @@ import {
   createTestTopic,
   getTestHostnameDnsStats,
   updateUrlHostnameCrawlable,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 const mockCrawlerRss = vi.fn<typeof CrawlerRss>()
@@ -60,6 +61,7 @@ async function makeFeed(label: string) {
     hostname,
   })
   const feed = await createRssFeed({
+    provenance: WEB_PROVENANCE,
     rss_feed_url: feedUrl,
     topic_id: topic.id,
     title: `DNS RSS Feed ${label} ${random}`,

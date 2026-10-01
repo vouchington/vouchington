@@ -2,6 +2,7 @@ import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@voucha/types/entities/user'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { ModerationAppeal } from './config.mts'
 import type { ModerationAppealResponse } from './types.mts'
 import type { CreateModerationAppealInput } from './parse.mts'
@@ -11,6 +12,7 @@ import { getModerationAppealAfterMutation, getModerationAppealByIdFromPrimary } 
 
 export async function createModerationAppeal(
   currentUser: PrivateUser,
+  provenance: ContentProvenance,
   input: CreateModerationAppealInput,
 ): Promise<{ appeal: ModerationAppealResponse; isDuplicate: boolean }> {
   const { appealReason } = input
@@ -52,7 +54,9 @@ export async function createModerationAppeal(
         community_id, post_removal_kind,
         appeal_reason,
         case_id,
-        latest_lifecycle_change_id
+        latest_lifecycle_change_id,
+        created_via,
+        created_via_oauth_client_id
       )
       VALUES (
         ${currentUser.id},
@@ -63,7 +67,9 @@ export async function createModerationAppeal(
         ${communityId}, ${postRemovalKind},
         ${appealReason},
         ${caseId},
-        (SELECT id FROM lifecycle_change_id)
+        (SELECT id FROM lifecycle_change_id),
+        ${provenance.createdVia},
+        ${provenance.oauthClientId}
       )
       ON CONFLICT (appellant_id, user_warning_id)
       WHERE resolved_at IS NULL AND user_warning_id IS NOT NULL

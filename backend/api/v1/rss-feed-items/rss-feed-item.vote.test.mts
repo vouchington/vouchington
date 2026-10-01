@@ -7,6 +7,7 @@ import {
   insertTestTopic,
   insertTestUrlHostname,
   CONTRIBUTING_USER_AGE_MS,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { addUrls } from '@services/urls'
 import { createRssFeed } from '@services/rss-feeds'
@@ -39,6 +40,7 @@ describe('rss-feed-item.vote', () => {
         )
 
         const rssFeed = await createRssFeed({
+          provenance: WEB_PROVENANCE,
           skipRemoteValidation: true,
           rss_feed_url: `https://example.com/feed-vote-${suffix}-1.xml`,
           topic_id: topicId,
@@ -73,6 +75,7 @@ describe('rss-feed-item.vote', () => {
         )
 
         const rssFeed = await createRssFeed({
+          provenance: WEB_PROVENANCE,
           skipRemoteValidation: true,
           rss_feed_url: `https://example.com/feed-vote-${suffix}-2.xml`,
           topic_id: topicId,
@@ -105,6 +108,7 @@ describe('rss-feed-item.vote', () => {
         )
 
         const rssFeed = await createRssFeed({
+          provenance: WEB_PROVENANCE,
           skipRemoteValidation: true,
           rss_feed_url: `https://example.com/feed-vote-${suffix}-3.xml`,
           topic_id: topicId,
@@ -141,6 +145,7 @@ describe('rss-feed-item.vote', () => {
         )
 
         const rssFeed = await createRssFeed({
+          provenance: WEB_PROVENANCE,
           skipRemoteValidation: true,
           rss_feed_url: `https://example.com/feed-vote-${suffix}-4.xml`,
           topic_id: topicId,
@@ -184,6 +189,7 @@ describe('rss-feed-item.vote', () => {
         )
 
         const rssFeed = await createRssFeed({
+          provenance: WEB_PROVENANCE,
           skipRemoteValidation: true,
           rss_feed_url: `https://example.com/feed-vote-${suffix}-5.xml`,
           topic_id: topicId,
@@ -216,6 +222,7 @@ describe('rss-feed-item.vote', () => {
         )
 
         const rssFeed = await createRssFeed({
+          provenance: WEB_PROVENANCE,
           skipRemoteValidation: true,
           rss_feed_url: `https://example.com/feed-vote-admin-${suffix}.xml`,
           topic_id: topicId,

@@ -22,8 +22,8 @@ export async function insertQuestion(communityId: string, orderIndex = 0): Promi
 export async function insertApplication(communityId: string, userId: string): Promise<string> {
   const { rows } = await write(
     `/* insertCommunityApplication */
-      INSERT INTO community_applications (community_id, user_id)
-      VALUES ($1, $2)
+      INSERT INTO community_applications (created_via, community_id, user_id)
+      VALUES ('system', $1, $2)
       RETURNING id`,
     [communityId, userId],
   )

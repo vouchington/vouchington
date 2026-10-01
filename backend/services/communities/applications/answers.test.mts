@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  WEB_PROVENANCE,
   createTestUser,
   deleteTestCommunityApplication,
   insertTestCommunity,
@@ -45,7 +46,7 @@ describe('application answers', () => {
       [byQuestion.get('Many')!.id]: [],
       [byQuestion.get('Check')!.id]: false,
     }
-    const application = await createApplication(applicant.id, community.id, answers)
+    const application = await createApplication(applicant.id, WEB_PROVENANCE, community.id, answers)
     expect(application.answers).toEqual(answers)
     expect(application.answers).not.toHaveProperty(byQuestion.get('Skipped')!.id)
     const listed = await searchApplications(community.id)
@@ -61,7 +62,7 @@ describe('application answers', () => {
       { question: 'Long', field_type: 'long_text', required: false },
       { question: 'Skipped', field_type: 'short_text', required: false },
     ])
-    const application = await createApplication(applicant.id, community.id, {
+    const application = await createApplication(applicant.id, WEB_PROVENANCE, community.id, {
       [short!.id]: 'text',
       [long!.id]: null,
     })
@@ -88,7 +89,7 @@ describe('application answers', () => {
     ])
     const many = questions[0]!
     const check = questions[1]!
-    const application = await createApplication(applicant.id, community.id, {
+    const application = await createApplication(applicant.id, WEB_PROVENANCE, community.id, {
       [many.id]: ['Beta', 'Alpha'],
       [check.id]: false,
     })
@@ -105,7 +106,7 @@ describe('application answers', () => {
     const [original] = await setApplicationQuestions(owner.id, community.id, [
       { question: 'Pick one', field_type: 'single_select', options: ['Legacy'], required: true },
     ])
-    const application = await createApplication(applicant.id, community.id, {
+    const application = await createApplication(applicant.id, WEB_PROVENANCE, community.id, {
       [original!.id]: 'Legacy',
     })
     await setApplicationQuestions(owner.id, community.id, [
@@ -128,28 +129,32 @@ describe('application answers', () => {
     const [question] = await getApplicationQuestions(community.id)
 
     await expect(
-      createApplication(applicant.id, community.id, { 'not-a-question': 'x' }),
+      createApplication(applicant.id, WEB_PROVENANCE, community.id, { 'not-a-question': 'x' }),
     ).rejects.toMatchObject({ status: 422, message: 'Unknown question' })
     expect(await getPendingApplicationForUser(community.id, applicant.id)).toBeNull()
     await expect(
-      createApplication(applicant.id, community.id, { [question!.id]: ['Missing'] }),
+      createApplication(applicant.id, WEB_PROVENANCE, community.id, {
+        [question!.id]: ['Missing'],
+      }),
     ).rejects.toMatchObject({ status: 422, message: 'Unknown option' })
     await expect(
-      createApplication(applicant.id, community.id, { [question!.id]: [1] }),
+      createApplication(applicant.id, WEB_PROVENANCE, community.id, { [question!.id]: [1] }),
     ).rejects.toMatchObject({ status: 422 })
     await expect(
-      createApplication(applicant.id, community.id, { [question!.id]: ['Alpha', 'Alpha'] }),
+      createApplication(applicant.id, WEB_PROVENANCE, community.id, {
+        [question!.id]: ['Alpha', 'Alpha'],
+      }),
     ).rejects.toMatchObject({ status: 422, message: 'Duplicate option' })
 
     await insertTestCommunityMember({ communityId: community.id, userId: applicant.id })
     await expect(
-      createApplication(applicant.id, community.id, { 'not-a-question': 'x' }),
+      createApplication(applicant.id, WEB_PROVENANCE, community.id, { 'not-a-question': 'x' }),
     ).rejects.toMatchObject({ status: 422, message: 'Unknown question' })
 
     const banned = await createTestUser()
     await banUserFromCommunity(owner, community.id, banned.id)
     await expect(
-      createApplication(banned.id, community.id, { 'not-a-question': 'x' }),
+      createApplication(banned.id, WEB_PROVENANCE, community.id, { 'not-a-question': 'x' }),
     ).rejects.toMatchObject({ status: 422, message: 'Unknown question' })
   })
 
@@ -190,44 +195,68 @@ describe('application answers', () => {
     const manyId = byQuestion.get('Many')!.id
 
     await expect(
-      createApplication(applicant.id, community.id, null as unknown as Record<string, unknown>),
+      createApplication(
+        applicant.id,
+        WEB_PROVENANCE,
+        community.id,
+        null as unknown as Record<string, unknown>,
+      ),
     ).rejects.toMatchObject({ status: 422, message: 'answers must be an object' })
     await expect(
-      createApplication(applicant.id, community.id, [] as unknown as Record<string, unknown>),
+      createApplication(
+        applicant.id,
+        WEB_PROVENANCE,
+        community.id,
+        [] as unknown as Record<string, unknown>,
+      ),
     ).rejects.toMatchObject({ status: 422, message: 'answers must be an object' })
-    await expect(createApplication(applicant.id, community.id, {})).rejects.toMatchObject({
-      status: 422,
-      message: 'Answer required for question: Short',
-    })
     await expect(
-      createApplication(applicant.id, community.id, { [shortId]: '' }),
+      createApplication(applicant.id, WEB_PROVENANCE, community.id, {}),
     ).rejects.toMatchObject({
       status: 422,
       message: 'Answer required for question: Short',
     })
     await expect(
-      createApplication(applicant.id, community.id, { [shortId]: 1 }),
+      createApplication(applicant.id, WEB_PROVENANCE, community.id, { [shortId]: '' }),
+    ).rejects.toMatchObject({
+      status: 422,
+      message: 'Answer required for question: Short',
+    })
+    await expect(
+      createApplication(applicant.id, WEB_PROVENANCE, community.id, { [shortId]: 1 }),
     ).rejects.toMatchObject({
       status: 422,
       message: 'Expected string for question: Short',
     })
     await expect(
-      createApplication(applicant.id, community.id, { [shortId]: 'ok', [checkId]: 'no' }),
+      createApplication(applicant.id, WEB_PROVENANCE, community.id, {
+        [shortId]: 'ok',
+        [checkId]: 'no',
+      }),
     ).rejects.toMatchObject({
       status: 422,
       message: 'Expected boolean for checkbox question: Check',
     })
     await expect(
-      createApplication(applicant.id, community.id, { [shortId]: 'ok', [oneId]: 1 }),
+      createApplication(applicant.id, WEB_PROVENANCE, community.id, {
+        [shortId]: 'ok',
+        [oneId]: 1,
+      }),
     ).rejects.toMatchObject({
       status: 422,
       message: 'Expected string for question: One',
     })
     await expect(
-      createApplication(applicant.id, community.id, { [shortId]: 'ok', [oneId]: 'Missing' }),
+      createApplication(applicant.id, WEB_PROVENANCE, community.id, {
+        [shortId]: 'ok',
+        [oneId]: 'Missing',
+      }),
     ).rejects.toMatchObject({ status: 422, message: 'Unknown option' })
     await expect(
-      createApplication(applicant.id, community.id, { [shortId]: 'ok', [manyId]: 'Alpha' }),
+      createApplication(applicant.id, WEB_PROVENANCE, community.id, {
+        [shortId]: 'ok',
+        [manyId]: 'Alpha',
+      }),
     ).rejects.toMatchObject({
       status: 422,
       message: 'Expected array for multi_select question: Many',
@@ -245,7 +274,9 @@ describe('application answers', () => {
       visibility: 'public',
     })
     await expect(
-      createApplication(applicant.id, publicCommunity.id, { 'not-a-question': 'x' }),
+      createApplication(applicant.id, WEB_PROVENANCE, publicCommunity.id, {
+        'not-a-question': 'x',
+      }),
     ).rejects.toMatchObject({
       status: 422,
       message: 'Applications are only for private communities',
@@ -254,7 +285,7 @@ describe('application answers', () => {
     const community = await ownedCommunity(owner)
     await archiveCommunity(community.id, null)
     await expect(
-      createApplication(applicant.id, community.id, { 'not-a-question': 'x' }),
+      createApplication(applicant.id, WEB_PROVENANCE, community.id, { 'not-a-question': 'x' }),
     ).rejects.toMatchObject({
       status: 409,
       message: 'Archived communities cannot be updated',

@@ -16,7 +16,7 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS moderation_reports (
   id               uuid PRIMARY KEY DEFAULT uuidv7(),
-  created_via content_creation_channels,
+  created_via content_creation_channels NOT NULL,
   created_via_oauth_client_id UUID,
   CONSTRAINT moderation_reports_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   created_at       timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,

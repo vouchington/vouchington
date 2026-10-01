@@ -1,3 +1,4 @@
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
@@ -124,6 +125,7 @@ app
   })
   .post(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/communities')
+    const provenance = getRequestContentProvenance()
     assertNotSuspended(currentUser)
     assertCanCreateCommunity(currentUser)
 
@@ -152,7 +154,7 @@ app
     await verifyCaptchaOrAttestation(ctx, raw, { actionTag: 'communities.create' })
     await assertWithinContributionActionLimit(currentUser, membershipPlan, 'community')
 
-    const community = await createCommunity(currentUser.id, body)
+    const community = await createCommunity(currentUser.id, provenance, body)
     const { owner: _owner, ...communityData } = community
 
     ctx.setStatus(201)

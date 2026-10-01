@@ -10,6 +10,7 @@ import {
   insertTestCommunityMember,
 } from '@voucha/test-helpers/entities/communities'
 import type { PrivateUser } from '@services/users/types'
+import { WEB_PROVENANCE } from '@voucha/test-helpers'
 
 describe('create.broadcast-privacy', () => {
   let creator: PrivateUser
@@ -27,7 +28,7 @@ describe('create.broadcast-privacy', () => {
       })
       await insertTestCommunityMember({ communityId: community.id, userId: creator.id })
 
-      const post = await createPost(creator, {
+      const post = await createPost(creator, WEB_PROVENANCE, {
         title: 'Pending community comment root',
         markdown: 'pending review',
         post_type: 'discussion',
@@ -60,7 +61,7 @@ describe('create.broadcast-privacy', () => {
       })
       await insertTestCommunityMember({ communityId: community.id, userId: creator.id })
 
-      const post = await createPost(creator, {
+      const post = await createPost(creator, WEB_PROVENANCE, {
         title: 'Pending community comment target',
         markdown: 'pending review',
         post_type: 'discussion',
@@ -70,7 +71,7 @@ describe('create.broadcast-privacy', () => {
       })
 
       await expect(
-        createPost(creator, {
+        createPost(creator, WEB_PROVENANCE, {
           markdown: 'blocked comment',
           post_type: 'comment',
           parent_id: post.id,
@@ -80,18 +81,18 @@ describe('create.broadcast-privacy', () => {
 
     it('rejects multi-community creation inputs', async () => {
       await expect(
-        createPost(creator, {
+        createPost(creator, WEB_PROVENANCE, {
           title: 'Old cross post input',
           markdown: 'unsupported',
           post_type: 'discussion',
           community_ids: ['00000000-0000-0000-0000-000000000000'],
-        } as Parameters<typeof createPost>[1] & { community_ids: string[] }),
+        } as Parameters<typeof createPost>[2] & { community_ids: string[] }),
       ).rejects.toThrow('community_ids is no longer supported')
     })
 
     it('rejects invalid explicit community scope on top-level posts', async () => {
       await expect(
-        createPost(creator, {
+        createPost(creator, WEB_PROVENANCE, {
           title: 'Invalid community scope',
           markdown: 'invalid',
           post_type: 'discussion',
@@ -103,7 +104,7 @@ describe('create.broadcast-privacy', () => {
 
   describe('update broadcast/privacy', () => {
     it('update broadcast and privacy', async () => {
-      const post = await createPost(creator, {
+      const post = await createPost(creator, WEB_PROVENANCE, {
         title: 'Updatable',
         markdown: 'test',
       })
@@ -117,7 +118,7 @@ describe('create.broadcast-privacy', () => {
     })
 
     it('rejects invalid update combination', async () => {
-      const post = await createPost(creator, {
+      const post = await createPost(creator, WEB_PROVENANCE, {
         title: 'Invalid update',
         markdown: 'test',
         broadcast: 'followers',
@@ -131,7 +132,7 @@ describe('create.broadcast-privacy', () => {
     })
 
     it('updates anonymous state', async () => {
-      const post = await createPost(creator, {
+      const post = await createPost(creator, WEB_PROVENANCE, {
         title: 'Anonymous toggle',
         markdown: 'test',
       })

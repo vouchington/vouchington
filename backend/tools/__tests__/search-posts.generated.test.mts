@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import searchPostsTool from '../search-posts.mts'
-import { approveTestPost, createTestUser } from '@voucha/test-helpers'
+import { approveTestPost, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import { createPost } from '@services/posts'
 import type { PrivateUser } from '@services/users/types'
@@ -20,8 +20,8 @@ describe('search-posts tool', () => {
 
   // The real createPost leaves a post awaiting moderation, and MCP search hides even its author's
   // own uncleared posts, so each fixture is cleared as the moderation pipeline would clear it.
-  const publishPost = async (input: Parameters<typeof createPost>[1]) => {
-    const post = await createPost(testUser, input)
+  const publishPost = async (input: Parameters<typeof createPost>[2]) => {
+    const post = await createPost(testUser, WEB_PROVENANCE, input)
     await approveTestPost(post.id)
     return post
   }

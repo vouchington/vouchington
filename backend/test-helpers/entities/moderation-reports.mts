@@ -31,7 +31,6 @@ export async function insertTestModerationReport(options: {
 }): Promise<string> {
   const fkColumn = ENTITY_TYPE_TO_REPORT_FK[options.entityType]
   if (!fkColumn) throw new Error(`Unknown entity type: ${options.entityType}`)
-
   const caseId = await openOrGetOpenCase({
     entityType: options.entityType,
     entityId: options.entityId,
@@ -43,7 +42,7 @@ export async function insertTestModerationReport(options: {
   if (reportId) query.append(sql`id, `)
   query.append(sql`reporter_user_id, `)
   query.append(fkColumn)
-  query.append(sql`, case_id, reason, original_reason, moderation_transparency_community_id, note)
+  query.append(sql`, case_id, reason, original_reason, moderation_transparency_community_id, note, created_via)
     VALUES (
       `)
   if (reportId) query.append(sql`${reportId}, `)
@@ -54,7 +53,8 @@ export async function insertTestModerationReport(options: {
       ${options.reason ?? 'spam'},
       ${options.reason ?? 'spam'},
       ${options.communityId ?? null},
-      ${options.note ?? null}
+      ${options.note ?? null},
+      'system'
     )
     RETURNING id
   `)
@@ -133,10 +133,10 @@ export async function insertTestModerationReportsForTarget(options: {
   if (options.createdAt) query.append(sql`id, `)
   query.append(sql`reporter_user_id, `)
   query.append(fkColumn)
-  query.append(sql`, case_id, reason, original_reason)
+  query.append(sql`, case_id, reason, original_reason, created_via)
     SELECT `)
   if (options.createdAt) query.append(sql`report_id, `)
-  query.append(sql`reporter_user_id, ${options.entityId}::uuid, ${caseId}, ${options.reason ?? 'spam'}, ${options.reason ?? 'spam'}
+  query.append(sql`reporter_user_id, ${options.entityId}::uuid, ${caseId}, ${options.reason ?? 'spam'}, ${options.reason ?? 'spam'}, 'system'
     FROM input
     ORDER BY ord
     RETURNING id, reporter_user_id

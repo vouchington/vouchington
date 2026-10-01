@@ -5,7 +5,7 @@ import { createTopic } from '@services/topics'
 import { createTopicAliases } from '@services/topics/aliases'
 import { upsertRssFeedItems } from '../upsert.mts'
 import { v4 as uuid } from 'uuid'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createRssFeedItemCategoryTestFixture } from '../../../test-helpers/services/rss-feed-items/category-test-fixture.mts'
 
 describe('categories', () => {
@@ -95,7 +95,7 @@ describe('categories', () => {
 
     // Create a topic with alias matching the category
     const user = await createTestUser({ administrator: true })
-    const scienceTopic = await createTopic(user!, {
+    const scienceTopic = await createTopic(user!, WEB_PROVENANCE, {
       name: `Science ${random}`,
       slug: `science-topic-${random}`,
     })
@@ -167,7 +167,7 @@ describe('categories', () => {
 
     // Create a topic and add matching aliases
     const user = await createTestUser({ administrator: true })
-    const scienceTopic = await createTopic(user!, {
+    const scienceTopic = await createTopic(user!, WEB_PROVENANCE, {
       name: `Science ${random}`,
       slug: `science-topic-${random}`,
     })
@@ -188,7 +188,7 @@ describe('categories', () => {
   it('backfillCategoriesForTopicAliases handles no aliases', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const emptyTopic = await createTopic(user!, {
+    const emptyTopic = await createTopic(user!, WEB_PROVENANCE, {
       name: `Empty Topic ${random}`,
       slug: `empty-${random}`,
     })

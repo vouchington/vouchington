@@ -15,6 +15,16 @@ describe('0080-00-01-publisher-type-topics', () => {
     expect(sql).toContain('Publisher Types')
   })
 
+  it('records publisher type topics as platform-created content', () => {
+    const sql = generatePublisherTypeTopicsSQL()
+    const inserts = sql.match(/INSERT INTO topics \([^)]*\)\s+SELECT [^\n]*/g) ?? []
+
+    expect(inserts).toHaveLength(PUBLISHER_TYPE_SLUGS.length + 1)
+    for (const insert of inserts) {
+      expect(insert).toMatch(/, created_via\)\s+SELECT .*, 'system'$/)
+    }
+  })
+
   it('includes all child topics', () => {
     const sql = generatePublisherTypeTopicsSQL()
     for (const slug of PUBLISHER_TYPE_SLUGS) {

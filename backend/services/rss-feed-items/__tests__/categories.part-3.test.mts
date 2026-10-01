@@ -2,7 +2,7 @@ import { it, expect, beforeEach, describe } from 'vitest'
 import { upsertRssFeedItemCategories, getRssFeedItemCategories } from '../categories.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
 import { createTopic } from '@services/topics'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createRssFeedItemCategoryTestFixture } from '../../../test-helpers/services/rss-feed-items/category-test-fixture.mts'
 
 describe('categories', () => {
@@ -29,7 +29,7 @@ describe('categories', () => {
     const before = allCategories.find(c => c.category_text === slug)
     expect(before?.topic_id).toBeNull()
 
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(user!, WEB_PROVENANCE, {
       name: `Energy ${random}`,
       slug,
     })

@@ -29,6 +29,7 @@ import { getUserActivePlan } from '@services/memberships'
 import { currentUserCanCreateTopic } from '@services/topics/authorization'
 import { assertNotSuspended } from '@services/users'
 import { apiQuery } from '../../response-contract.mts'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 app
   .route('/api/v1/topics')
@@ -131,6 +132,7 @@ app
   })
   .post(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/topics')
+    const provenance = getRequestContentProvenance()
     ctx.assert(currentUserCanCreateTopic(currentUser), 403, 'Forbidden')
     assertNotSuspended(currentUser)
 
@@ -154,7 +156,7 @@ app
     // ast-grep-ignore: no-three-sequential-awaits -- route handler validates auth/input before dependent mutation or response work
     const membershipPlan = await getUserActivePlan(currentUser.id)
     await assertWithinContributionActionLimit(currentUser, membershipPlan, 'topic')
-    const topic = await createTopic(currentUser, body)
+    const topic = await createTopic(currentUser, provenance, body)
 
     ctx.setStatus(201)
     ctx.json({ topic })

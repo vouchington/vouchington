@@ -5,6 +5,8 @@ import {
   insertTestTopic,
   mergeTopicForTest,
   softDeleteTopic,
+  WEB_PROVENANCE,
+  readTestContentProvenance,
 } from '@voucha/test-helpers'
 import { createTopicAliases, createUnlinkedTopicAlias } from './aliases.mts'
 import { createTopic } from './create.mts'
@@ -49,7 +51,7 @@ describe('createTopic hashtag alias source', () => {
         await mergeTopicForTest(staleTopicId, mergeDestinationId, user!.id)
       }
 
-      const topic = await createTopic(user!, {
+      const topic = await createTopic(user!, WEB_PROVENANCE, {
         name: `Reclaimed source alias ${suffix}`,
         slug: sourceAlias,
         source_topic_alias_id: alias!.id,
@@ -75,7 +77,7 @@ describe('createTopic hashtag alias source', () => {
     try {
       await testBloomFilter.delete()
       await testBloomFilter.ensureExists()
-      const topic = await createTopic(user!, {
+      const topic = await createTopic(user!, WEB_PROVENANCE, {
         name: `Source alias ${suffix}`,
         slug: `source-alias-${suffix}`,
         source_topic_alias_id: alias.id,
@@ -102,12 +104,20 @@ describe('createTopic hashtag alias source', () => {
     const [alias] = await createTopicAliases(staleTopicId, slug)
     await softDeleteTopic(staleTopicId, user!.id)
 
-    const topic = await createTopic(user!, {
-      name: `Revived source ${suffix}`,
-      slug,
-      source_topic_alias_id: alias!.id,
-    })
+    const topic = await createTopic(
+      user!,
+      { createdVia: 'mcp', oauthClientId: null },
+      {
+        name: `Revived source ${suffix}`,
+        slug,
+        source_topic_alias_id: alias!.id,
+      },
+    )
 
     expect(topic).toMatchObject({ id: staleTopicId, name: `Revived source ${suffix}`, slug })
+    await expect(readTestContentProvenance('topics', topic.id)).resolves.toEqual({
+      createdVia: 'system',
+      oauthClientId: null,
+    })
   })
 })

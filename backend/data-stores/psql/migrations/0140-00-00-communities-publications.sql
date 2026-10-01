@@ -57,7 +57,7 @@ END $$;
 -- communities
 CREATE TABLE IF NOT EXISTS communities (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
-  created_via content_creation_channels,
+  created_via content_creation_channels NOT NULL,
   created_via_oauth_client_id UUID,
   CONSTRAINT communities_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   name TEXT NOT NULL,
@@ -239,7 +239,7 @@ COMMENT ON COLUMN community_application_questions.required IS 'Whether the appli
 -- community_applications
 CREATE TABLE IF NOT EXISTS community_applications (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
-  created_via content_creation_channels,
+  created_via content_creation_channels NOT NULL,
   created_via_oauth_client_id UUID,
   CONSTRAINT community_applications_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,

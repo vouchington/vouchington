@@ -10,6 +10,7 @@ import {
   insertTestVoteIntegrityFlag,
   insertTestVoteWeightPenaltyRecord,
   suspendTestUserGetId,
+  WEB_PROVENANCE,
 } from '../../../test-helpers/index.mts'
 import {
   type LifecycleScenarioInput,
@@ -137,7 +138,6 @@ async function runModerationAppealScenario(
       { strategy: 'not-applicable' },
     )
   }
-
   const probeAppellant = await createTestUser()
   const probe = await createAppeal(administrator, probeAppellant, true)
   await updateModerationAppealDraft(administrator.id, probe.id, {
@@ -156,7 +156,6 @@ async function runModerationAppealScenario(
     { strategy: 'not-applicable' },
   )
 }
-
 async function createAppeal(
   administrator: NonNullable<Awaited<ReturnType<typeof createTestUser>>>,
   appellant: NonNullable<Awaited<ReturnType<typeof createTestUser>>>,
@@ -167,6 +166,7 @@ async function createAppeal(
     return (
       await createModerationAppeal(
         appellant,
+        WEB_PROVENANCE,
         parseCreateModerationAppealInput({
           target_type: 'suspension',
           appeal_reason: 'Appeal reason.',
@@ -182,6 +182,7 @@ async function createAppeal(
   return (
     await createModerationAppeal(
       appellant,
+      WEB_PROVENANCE,
       parseCreateModerationAppealInput({
         target_type: 'warning',
         target_id: warning.id,
@@ -190,7 +191,6 @@ async function createAppeal(
     )
   ).appeal
 }
-
 async function runIntegrityAuthorityScenario(
   input: LifecycleScenarioInput,
 ): Promise<LifecycleScenarioObservation> {

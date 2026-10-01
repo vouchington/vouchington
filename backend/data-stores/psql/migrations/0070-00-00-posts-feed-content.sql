@@ -31,7 +31,7 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS posts (
   id UUID NOT NULL DEFAULT uuidv7() REFERENCES retained_post_identities (id) ON DELETE RESTRICT,
-  created_via content_creation_channels,
+  created_via content_creation_channels NOT NULL,
   created_via_oauth_client_id UUID,
   CONSTRAINT posts_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   post_type post_types NOT NULL,

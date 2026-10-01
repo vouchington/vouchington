@@ -1,4 +1,5 @@
 import {
+  WEB_PROVENANCE,
   createRandomString,
   createReferralProgramFixture,
   createTestTopic,
@@ -142,7 +143,7 @@ describe('MCP output schema contract for the other read tools — real DB', () =
     // A user holds one link per program, so each label needs its own owner.
     for (const label of ['My referral link', null]) {
       const linkOwner = await createTestUser()
-      await createUserReferralLink(linkOwner, {
+      await createUserReferralLink(linkOwner, WEB_PROVENANCE, {
         user_id: linkOwner.id,
         referral_program_id: fixture.referralProgramId,
         url: `https://${fixture.hostname}/ref/${createRandomString(8)}`,

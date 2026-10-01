@@ -57,13 +57,13 @@ export async function seedPosts(count = 10_000): Promise<void> {
           )
           const base = values.length - 8
           rows.push(
-            `($${base}, $${base + 1}::post_types, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}::jsonb)`,
+            `('system', $${base}, $${base + 1}::post_types, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}::jsonb)`,
           )
         }
         await diagnostics.operation('insert', batchIndex, () =>
           query(
             `/* seedExplainData */ INSERT INTO posts (
-          id, post_type, title, markdown, created_by_id,
+          created_via, id, post_type, title, markdown, created_by_id,
           bedrock_nova_multimodal_v1_content_sha256,
           llm_moderation_content_sha256,
           data_point_vertical, structured_data

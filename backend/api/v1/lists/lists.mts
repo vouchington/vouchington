@@ -1,3 +1,4 @@
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { defineQueryContract, queryInteger, queryString } from '@modules/pagination'
@@ -41,12 +42,13 @@ app
   })
   .post(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/lists')
+    const provenance = getRequestContentProvenance()
     assertNotSuspended(currentUser)
 
     const body = (await ctx.request.json('1mb')) as CreateListBody
     validateRequestContract(ctx, 'POST:/api/v1/lists', { body })
 
-    const list = await createOwnedList(currentUser.id, body)
+    const list = await createOwnedList(currentUser.id, provenance, body)
 
     ctx.setStatus(201)
     ctx.json({ list })

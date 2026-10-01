@@ -4,6 +4,7 @@ import { createRssFeedSource } from '@services/rss-feeds/create-source-helpers'
 import { findExistingFeedByUrlId } from '@services/rss-feeds/find-existing-feed'
 import onError from '@modules/on-error'
 import type { ParsedFeedEntry } from './parse.mts'
+import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 
 export type ProcessFeedEntryResult = {
   topicId: string | null
@@ -32,6 +33,7 @@ export async function processFeedEntry(entry: ParsedFeedEntry): Promise<ProcessF
   const rssFeedUrlId = await createRssFeedUrlId(entry.feedUrl)
 
   const result = await createRssFeedSource({
+    provenance: SYSTEM_PROVENANCE,
     rssFeedUrlId,
     hostnameId,
     topicName: entry.name,

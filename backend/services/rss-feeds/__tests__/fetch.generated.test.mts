@@ -8,6 +8,7 @@ import {
   createTestTopic,
   updateRssFeedTiming,
   updateUrlHostnameBlocked,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { CrawlerHttpClientError } from '@modules/on-error/errors'
 import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
@@ -22,6 +23,7 @@ describe('fetch.generated', () => {
         const topic = await createTestTopic({ hostname: `thepointsguy-${random}.example.com` })
 
         const feed = await createRssFeed({
+          provenance: WEB_PROVENANCE,
           skipRemoteValidation: true,
           rss_feed_url: `https://thepointsguy.com/feed/?test=${random}`,
           topic_id: topic.id,
@@ -71,6 +73,7 @@ describe('fetch.generated', () => {
     const topic = await createTestTopic({ hostname: `disabled-${random}.example.com` })
 
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed-${random}.xml`,
       topic_id: topic.id,
@@ -86,6 +89,7 @@ describe('fetch.generated', () => {
     const topic = await createTestTopic({ hostname: `rate-limit-${random}.example.com` })
 
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://thepointsguy.com/feed/?test-rate-limit-${random}`,
       topic_id: topic.id,
@@ -103,6 +107,7 @@ describe('fetch.generated', () => {
     const topic = await createTestTopic({ hostname })
 
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://${hostname}/feed.xml`,
       topic_id: topic.id,
@@ -122,6 +127,7 @@ describe('fetch.generated', () => {
     const topic = await createTestTopic({ hostname: `future-${random}.example.com` })
 
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://thepointsguy.com/feed/?test-future-${random}`,
       topic_id: topic.id,
@@ -142,6 +148,7 @@ describe('fetch.generated', () => {
         const topic = await createTestTopic({ hostname: `forced-${random}.example.com` })
 
         const feed = await createRssFeed({
+          provenance: WEB_PROVENANCE,
           skipRemoteValidation: true,
           rss_feed_url: `https://thepointsguy.com/feed/?test-forced-${random}`,
           topic_id: topic.id,

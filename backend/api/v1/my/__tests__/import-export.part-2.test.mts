@@ -9,6 +9,7 @@ import {
   getRssFeedImportFollowForTest,
   getTopicImportRequestForTest,
   getTopicImportRequestCountByRecommendationForTest,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 import type { PrivateUser } from '@services/users/types'
@@ -139,6 +140,7 @@ describe('POST /api/v1/my/import/topics', () => {
     await discardRejectedContributionAdmission(claim.reservationId, claim.leaseId)
     const owner = await admitImportedTopicRecommendation(
       administrator,
+      WEB_PROVENANCE,
       input,
       null,
       importAttemptId,

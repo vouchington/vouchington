@@ -37,12 +37,11 @@ import { getAdminUserIdsFromEntities } from '@services/markdown/admin-users'
 import { apiResponse } from '../../response-contract.mts'
 import { classifyFediverseInstance as classifyInstance } from '@services/fediverse-search/adapters/instance-classification'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
-
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 type PublicFediverseInstanceAttributes = Omit<
   FediverseInstanceAttributes,
   'nodeinfo_raw' | 'integration_status'
 >
-
 function toPublicFediverseInstanceAttributes(
   attributes: FediverseInstanceAttributes | null,
 ): PublicFediverseInstanceAttributes | null {
@@ -56,7 +55,6 @@ function toPublicFediverseInstanceAttributes(
     open_registrations: attributes.open_registrations,
   }
 }
-
 const INTEGRATION_STATUSES = ['pending', 'approved', 'blocked'] as const
 
 type CreateFediverseInstanceRequest = { hostname: string }
@@ -177,6 +175,7 @@ app
   })
   .post(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/fediverse/instances')
+    const provenance = getRequestContentProvenance()
     assertNotSuspended(currentUser)
 
     const body = await parseJsonBody<CreateFediverseInstanceRequest>(ctx)
@@ -187,7 +186,12 @@ app
     const membershipPlan = await getUserActivePlan(currentUser.id)
     await assertWithinContributionActionLimit(currentUser, membershipPlan, 'fediverse_instance')
 
-    const result = await createInstanceFromHostname(currentUser, body.hostname, classifyInstance)
+    const result = await createInstanceFromHostname(
+      currentUser,
+      provenance,
+      body.hostname,
+      classifyInstance,
+    )
 
     ctx.setStatus(result.status === 'created' ? 201 : 200)
     ctx.json(result)

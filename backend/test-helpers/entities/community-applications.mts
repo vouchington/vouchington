@@ -17,8 +17,8 @@ export async function insertTestCommunityApplication(
   const { rows } = await write(
     sql`/* insertTestCommunityApplication */
     WITH created AS (
-      INSERT INTO community_applications (community_id, user_id, message)
-      VALUES (${options.communityId}, ${options.userId}, ${options.message ?? null})
+      INSERT INTO community_applications (community_id, user_id, message, created_via)
+      VALUES (${options.communityId}, ${options.userId}, ${options.message ?? null}, 'system')
       RETURNING id, community_id, user_id, message, reviewed_at, reviewed_by_id,
         approved_at, rejected_at, rejection_reason, created_at
     ), inserted AS (

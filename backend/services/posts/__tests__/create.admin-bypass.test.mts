@@ -4,6 +4,7 @@ import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { readClassifierRunDispatcherJobsForTest } from '@voucha/test-helpers/classifier-run-queue-jobs'
 import { getClassifierRunRequestFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
@@ -28,7 +29,7 @@ describe('create.admin-bypass', () => {
     const suffix = createRandomString(8)
     const community = await insertTestCommunity({ createdById: admin.id })
 
-    const post = await createPost(admin, {
+    const post = await createPost(admin, WEB_PROVENANCE, {
       title: `Admin community post ${suffix}`,
       markdown: 'Admin-created post published to a community',
       post_type: 'discussion',
@@ -48,7 +49,7 @@ describe('create.admin-bypass', () => {
     const community = await insertTestCommunity({ createdById: user.id })
     await insertTestCommunityMember({ communityId: community.id, userId: user.id })
 
-    const post = await createPost(user, {
+    const post = await createPost(user, WEB_PROVENANCE, {
       title: `User community post ${suffix}`,
       markdown: 'Regular user post published to a community',
       post_type: 'discussion',

@@ -31,14 +31,16 @@ export async function insertTestCommunity(options: InsertTestCommunityOptions): 
     INSERT INTO communities (
       name, slug, visibility, member_roster_visibility, list_type,
       post_approval_required_at, allow_review_posts, allow_data_point_posts,
-      member_invites_allowed_at, trusted_at, rules_markdown, created_by_id
+      member_invites_allowed_at, trusted_at, rules_markdown, created_by_id,
+      created_via
     )
     VALUES (
       ${name}, ${slug}, ${options.visibility ?? 'public'},
       ${options.member_roster_visibility ?? 'public'}, ${options.list_type ?? null},
       ${options.post_approval_required_at ?? null}, ${options.allow_review_posts ?? false},
       ${options.allow_data_point_posts ?? false}, ${options.member_invites_allowed_at ?? null},
-      ${options.trusted_at ?? null}, ${options.rules_markdown ?? null}, ${options.createdById}
+      ${options.trusted_at ?? null}, ${options.rules_markdown ?? null}, ${options.createdById},
+      'system'
     )
     RETURNING *
     `,
@@ -46,7 +48,6 @@ export async function insertTestCommunity(options: InsertTestCommunityOptions): 
   const community = rows[0] as Community
   return community
 }
-
 export async function hardDeleteTestCommunity(communityId: string): Promise<void> {
   await write(sql`/* hardDeleteTestCommunity */
     DELETE FROM communities WHERE id = ${communityId}::uuid
@@ -136,7 +137,6 @@ export async function insertTestCommunityAgentPrompt(
   )
   return rows[0] as TestCommunityAgentPrompt
 }
-
 export async function setTestCommunityAgentPromptDeletedAt(
   promptId: string,
   deletedAt: Date | null,

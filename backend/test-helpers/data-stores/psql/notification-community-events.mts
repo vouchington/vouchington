@@ -62,8 +62,8 @@ export async function createNotificationCommunity(
   slug: string,
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(
-    `/* createNotificationCommunity */ INSERT INTO communities (name, slug, created_by_id)
-      VALUES ($1, $2, $3) RETURNING id`,
+    `/* createNotificationCommunity */ INSERT INTO communities (name, slug, created_by_id, created_via)
+      VALUES ($1, $2, $3, 'system') RETURNING id`,
     [name, slug, userId],
   )
   return rows[0]!.id

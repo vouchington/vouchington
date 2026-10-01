@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
 import {
+  WEB_PROVENANCE,
   CONTRIBUTING_USER_AGE_MS,
   approveTestPost,
   createTestTopic,
@@ -35,7 +36,7 @@ describe('addPostHashtag admission and persistence', () => {
   it('rejects an invalid hashtag without alias or source writes', async () => {
     const suffix = createRandomString(8).toLowerCase()
     const invalid = `#invalid!${suffix}`
-    const post = await createPost(creator, {
+    const post = await createPost(creator, WEB_PROVENANCE, {
       title: `Invalid hashtag ${suffix}`,
       categories: [{ type: 'hashtag', hashtag: `#retained-${suffix}` }],
     })
@@ -90,7 +91,7 @@ describe('addPostHashtag admission and persistence', () => {
     const author = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const suffix = createRandomString(8).toLowerCase()
     const tag = `suspended-${suffix}`
-    const post = await createPost(author, { title: `Suspended tag ${suffix}` })
+    const post = await createPost(author, WEB_PROVENANCE, { title: `Suspended tag ${suffix}` })
     await suspendTestUser(author.id)
     try {
       const suspended = await getPrivateUserByAny(author.id)
@@ -137,7 +138,7 @@ describe('addPostHashtag admission and persistence', () => {
       post_approval_required_at: new Date(),
     })
     await insertTestCommunityMember({ communityId: community.id, userId: creator.id })
-    const communityPost = await createPost(creator, {
+    const communityPost = await createPost(creator, WEB_PROVENANCE, {
       title: `Unpublished tag ${suffix}`,
       community_id: community.id,
     })

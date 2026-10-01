@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, describe, expect, it } from 'vitest'
 import {
+  insertListWithoutContentProvenance,
   createContentProvenanceListFixture,
   createContentProvenancePostFixture,
   insertContentProvenanceOAuthClient,
@@ -8,7 +9,7 @@ import {
   readConstraintDefinition,
   readContentProvenanceCatalog,
   readViewsReferencingContentProvenance,
-  type ContentProvenance,
+  type ContentProvenanceColumns,
 } from '../../../test-helpers/data-stores/psql/content-provenance.mts'
 import { createTestUser } from '../../../test-helpers/entities/users.mts'
 import { beginTransaction, onGracefulShutdown } from '../index.mts'
@@ -36,6 +37,7 @@ describe('content provenance schema', () => {
     expect(catalog.map(row => row.table_name)).toEqual(CONTENT_TABLES)
     for (const row of catalog) {
       expect(row).toMatchObject({
+        created_via_not_null: true,
         created_via_type: 'content_creation_channels',
         oauth_client_id_type: 'uuid',
         foreign_key:
@@ -65,8 +67,7 @@ describe('content provenance schema', () => {
 
   it('accepts every channel without a client, and an OAuth client only on API or MCP', async () => {
     const fixture = await createContentProvenanceListFixture()
-    const accepted: ContentProvenance[] = [
-      { createdVia: null, oauthClientId: null },
+    const accepted: ContentProvenanceColumns[] = [
       { createdVia: 'web', oauthClientId: null },
       { createdVia: 'swift', oauthClientId: null },
       { createdVia: 'dotnet', oauthClientId: null },
@@ -80,7 +81,7 @@ describe('content provenance schema', () => {
       await expect(fixture.insertList(provenance)).resolves.toEqual(expect.any(String))
     }
 
-    for (const createdVia of [null, 'web', 'swift', 'dotnet', 'system'] as const) {
+    for (const createdVia of ['web', 'swift', 'dotnet', 'system'] as const) {
       await expect(
         fixture.insertList({ createdVia, oauthClientId: fixture.oauthClientId }),
       ).rejects.toMatchObject({ code: '23514' })
@@ -90,13 +91,17 @@ describe('content provenance schema', () => {
     ).rejects.toMatchObject({ code: '23503' })
   })
 
-  it('keeps provenance immutable, including on rows that predate tracking', async () => {
+  it('rejects creation without a channel', async () => {
+    await expect(insertListWithoutContentProvenance()).rejects.toMatchObject({ code: '23502' })
+  })
+
+  it('keeps provenance immutable', async () => {
     const fixture = await createContentProvenanceListFixture()
     const agentListId = await fixture.insertList({
       createdVia: 'mcp',
       oauthClientId: fixture.oauthClientId,
     })
-    const untrackedListId = await fixture.insertList({ createdVia: null, oauthClientId: null })
+    const systemListId = await fixture.insertList({ createdVia: 'system', oauthClientId: null })
 
     await expect(
       fixture.updateProvenance(agentListId, {
@@ -108,7 +113,7 @@ describe('content provenance schema', () => {
       fixture.updateProvenance(agentListId, { createdVia: 'mcp', oauthClientId: null }),
     ).rejects.toThrow('content provenance is immutable')
     await expect(
-      fixture.updateProvenance(untrackedListId, { createdVia: 'web', oauthClientId: null }),
+      fixture.updateProvenance(systemListId, { createdVia: 'web', oauthClientId: null }),
     ).rejects.toThrow('content provenance is immutable')
     await expect(fixture.keepProvenance(agentListId)).resolves.toMatchObject({ rowCount: 1 })
     await expect(fixture.renameList(agentListId)).resolves.toMatchObject({ rowCount: 1 })
@@ -119,7 +124,7 @@ describe('content provenance schema', () => {
     const post = await createContentProvenancePostFixture()
 
     await expect(post.updateProvenance({ createdVia: null, oauthClientId })).rejects.toMatchObject({
-      code: '23514',
+      code: '23502',
     })
     await expect(
       post.updateProvenance({ createdVia: 'mcp', oauthClientId: randomUUID() }),
@@ -128,7 +133,7 @@ describe('content provenance schema', () => {
       'content provenance is immutable',
     )
     await expect(
-      post.updateProvenance({ createdVia: null, oauthClientId: null }),
+      post.updateProvenance({ createdVia: 'system', oauthClientId: null }),
     ).resolves.toMatchObject({ rowCount: 1 })
   })
 

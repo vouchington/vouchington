@@ -1,3 +1,4 @@
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { PrivateUser } from '@services/users/types'
 import type { CreatePostInput } from './types.mts'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
@@ -20,6 +21,7 @@ import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enq
 import { finalizePreparedPost } from './create/finalize.mts'
 export const preparePostWithCommunityReviews = async (
   creator: PrivateUser,
+  provenance: ContentProvenance,
   input: CreatePostInput,
   membershipPlan: ContributionLimitMembershipPlan = null,
   options: { query?: TransactionQuery } = {},
@@ -103,6 +105,7 @@ export const preparePostWithCommunityReviews = async (
     const scope = await resolvePostScope({ creator, defaults, options, updates })
     const insertedPost = await insertPost({
       creator,
+      provenance,
       defaults,
       isAdminCreator,
       options,
