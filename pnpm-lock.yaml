@@ -3262,6 +3262,9 @@ importers:
       '@services/conversations-messages':
         specifier: workspace:^
         version: link:../services/conversations-messages
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../services/copyright-notices
       '@services/crawls':
         specifier: workspace:^
         version: link:../services/crawls
@@ -3292,6 +3295,9 @@ importers:
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../services/jwt-session
+      '@services/media-delivery-safety':
+        specifier: workspace:^
+        version: link:../services/media-delivery-safety
       '@services/memberships':
         specifier: workspace:^
         version: link:../services/memberships
@@ -3382,6 +3388,9 @@ importers:
       '@vouchington/rss-parser':
         specifier: 0.1.0
         version: 0.1.0
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
       uuid:
         specifier: ^14.0.2
         version: 14.0.2
