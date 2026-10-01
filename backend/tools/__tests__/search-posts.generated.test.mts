@@ -5,6 +5,15 @@ import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import { createPost } from '@services/posts'
 import type { PrivateUser } from '@services/users/types'
 
+type SearchArgs = Parameters<ReturnType<typeof searchPostsTool.function>>[0]
+
+// Runs the tool and returns its page of results, failing the test on the Invalid cursor result.
+const searchPage = (user: PrivateUser) => async (args: SearchArgs) => {
+  const result = await searchPostsTool.function(user)(args)
+  if (!result.success) throw new Error(result.error)
+  return result
+}
+
 describe('search-posts tool', () => {
   let testUser: PrivateUser
   let testTopicId: string
@@ -40,7 +49,7 @@ describe('search-posts tool', () => {
     })
   })
   it('should search posts by query', async () => {
-    const tool = searchPostsTool.function(testUser)
+    const tool = searchPage(testUser)
     const result = await tool({ text_search_query: 'credit cards' })
 
     expect(result.success).toBe(true)
@@ -53,21 +62,21 @@ describe('search-posts tool', () => {
   })
 
   it('should respect the limit parameter', async () => {
-    const tool = searchPostsTool.function(testUser)
+    const tool = searchPage(testUser)
     const { results } = await tool({ text_search_query: 'credit cards', limit: 1 })
 
     expect(results.length).toBeLessThanOrEqual(1)
   })
 
-  it('should enforce max limit of 10', async () => {
-    const tool = searchPostsTool.function(testUser)
-    const { results } = await tool({ text_search_query: 'credit', limit: 100 })
+  it('clamps an oversized limit to the REST maximum of 100 instead of refusing it', async () => {
+    const tool = searchPage(testUser)
+    const { results } = await tool({ text_search_query: 'credit', limit: 100_000 })
 
-    expect(results.length).toBeLessThanOrEqual(10)
+    expect(results.length).toBeLessThanOrEqual(100)
   })
 
   it('should work with sort parameter', async () => {
-    const tool = searchPostsTool.function(testUser)
+    const tool = searchPage(testUser)
     const result = await tool({ text_search_query: 'credit cards', sort: 'new' })
 
     expect(result.success).toBe(true)
@@ -75,14 +84,18 @@ describe('search-posts tool', () => {
   })
 
   it('should return empty results when no posts match', async () => {
-    const tool = searchPostsTool.function(testUser)
+    const tool = searchPage(testUser)
     const result = await tool({ text_search_query: 'nonexistentquery12345' })
 
-    expect(result).toEqual({ success: true, results: [] })
+    expect(result).toEqual({
+      success: true,
+      results: [],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    })
   })
 
   it('should work without query parameter', async () => {
-    const tool = searchPostsTool.function(testUser)
+    const tool = searchPage(testUser)
     const result = await tool({ limit: 5 })
 
     expect(result.success).toBe(true)
@@ -90,7 +103,7 @@ describe('search-posts tool', () => {
   })
 
   it('should work with null user', async () => {
-    const tool = searchPostsTool.function(null as never)
+    const tool = searchPage(null as never)
     const result = await tool({ text_search_query: 'credit cards' })
 
     expect(result.success).toBe(true)
@@ -127,7 +140,7 @@ describe('search-posts tool', () => {
       },
     })
 
-    const tool = searchPostsTool.function(testUser)
+    const tool = searchPage(testUser)
 
     // Test filtering by 'discussion'
     const discussionResult = await tool({
@@ -156,7 +169,7 @@ describe('search-posts tool', () => {
       post_type: 'discussion',
     })
 
-    const tool = searchPostsTool.function(testUser)
+    const tool = searchPage(testUser)
     const { results } = await tool({ text_search_query: uniqueMarker })
 
     const match = results.find(r => r.id === maliciousPost.id)
@@ -173,7 +186,7 @@ describe('search-posts tool', () => {
       post_type: 'discussion',
     })
 
-    const tool = searchPostsTool.function(testUser)
+    const tool = searchPage(testUser)
     const { results } = await tool({ text_search_query: 'Sample Post' })
 
     const match = results.find(r => r.id === post.id)

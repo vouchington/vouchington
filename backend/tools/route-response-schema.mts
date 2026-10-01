@@ -72,6 +72,11 @@ export function componentSchema(name: string): JsonSchema {
   return schema
 }
 
+/** One property of a named component, for a tool that keeps only part of an entity. */
+export function componentPropertySchema(name: string, property: string): JsonSchema {
+  return routePropertySchema(componentSchema(name) as ToolOutputSchema, property)
+}
+
 function assertNestable(schema: JsonSchema): void {
   if (schema['$defs']) throw new Error('A recursive response contract cannot be nested.')
 }

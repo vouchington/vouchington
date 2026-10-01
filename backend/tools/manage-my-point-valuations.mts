@@ -62,6 +62,7 @@ export default createManageEntityTool<AddPointValuationArgs, UpdatePointValuatio
       note: args.note as string | undefined,
     }),
   removeFn: (user, id) => deleteIndividualRewardsProgramPointValuationById(user, user, id),
+  entity: 'IndividualRewardsProgramPointValuation',
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
     title: 'Manage My Point Valuations',

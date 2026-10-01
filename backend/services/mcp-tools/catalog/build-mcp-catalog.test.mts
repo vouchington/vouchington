@@ -91,6 +91,21 @@ describe('generated MCP catalog artifacts', () => {
     expect(findApiHintConflicts(ALL_TOOLS)).toEqual([])
   })
 
+  it('gives every tool exposed on an MCP surface an output schema', () => {
+    // A new MCP tool declares `meta.outputSchema` (see backend/tools/route-response-schema.mts)
+    // from the start; there is no list of tools that may skip it.
+    const exposed = ALL_TOOLS.filter(tool =>
+      (tool.meta?.surfaces ?? []).some(surface => surface === 'mcp' || surface === 'admin_mcp'),
+    )
+    const listed = catalog.servers.flatMap(server => server.tools)
+
+    expect(exposed.length).toBeGreaterThan(0)
+    expect(exposed.filter(tool => !tool.meta?.outputSchema).map(tool => tool.schema.name)).toEqual(
+      [],
+    )
+    expect(listed.filter(({ tool }) => !tool.outputSchema).map(({ tool }) => tool.name)).toEqual([])
+  })
+
   it('gives every listed tool a display title', () => {
     const untitled = catalog.servers
       .flatMap(server => server.tools)

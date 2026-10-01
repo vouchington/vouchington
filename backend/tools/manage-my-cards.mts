@@ -59,6 +59,7 @@ export default createManageEntityTool({
       received_sign_up_bonus_on: args.received_sign_up_bonus_on as string | null | undefined,
     }),
   removeFn: (user, id) => deleteIndividualCardById(user, user, id),
+  entity: 'IndividualCard',
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
     title: 'Manage My Cards',

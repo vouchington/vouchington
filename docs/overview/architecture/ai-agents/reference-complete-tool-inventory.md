@@ -12,23 +12,22 @@
 | `search_topics`       | Quick topic ID lookup                                           |
 | `get_my_profile`      | Quick profile/wallet check                                      |
 
-### Research agent ([`research-agent/`](../../../../backend/agents/research-agent/)) — 13 tools
+### Research agent ([`research-agent/`](../../../../backend/agents/research-agent/)) — 12 tools
 
-| Tool                     | Purpose                                                 |
-| ------------------------ | ------------------------------------------------------- |
-| `search_topics`          | Look up topic IDs by name                               |
-| `get_topic_details`      | Card attributes: annual fee, issuer, brand, description |
-| `get_topic_hierarchy`    | Parent/child topics — find all cards from an issuer     |
-| `search_data_points`     | User-reported approval odds, credit limits              |
-| `get_topic_insights`     | Aggregate approval rates, credit score distributions    |
-| `get_topic_metrics`      | Engagement counts (discussions, reviews) and ratings    |
-| `compare_topics`         | Side-by-side card comparison                            |
-| `get_referral_links`     | Referral links when recommending a card                 |
-| `search_posts`           | Community discussions and reviews                       |
-| `search_crawls`          | External web content — editorial reviews                |
-| `search_crawls_semantic` | Semantic web content search                             |
-| `search_rss_feed_items`  | Recent RSS feed articles                                |
-| `get_wikipedia_summary`  | Wikipedia background context                            |
+| Tool                     | Purpose                                                |
+| ------------------------ | ------------------------------------------------------ |
+| `search_topics`          | Look up topic IDs by name                              |
+| `get_topic_details`      | Card attributes; `hierarchy` adds parents and children |
+| `search_data_points`     | User-reported approval odds, credit limits             |
+| `get_topic_insights`     | Aggregate approval rates, credit score distributions   |
+| `get_topic_metrics`      | Engagement counts (discussions, reviews) and ratings   |
+| `compare_topics`         | Side-by-side card comparison                           |
+| `get_referral_links`     | Referral links when recommending a card                |
+| `search_posts`           | Community discussions and reviews                      |
+| `search_crawls`          | External web content — editorial reviews               |
+| `search_crawls_semantic` | Semantic web content search                            |
+| `search_rss_feed_items`  | Recent RSS feed articles                               |
+| `get_wikipedia_summary`  | Wikipedia background context                           |
 
 ### Discovery agent ([`discovery-agent/`](../../../../backend/agents/discovery-agent/)) — 5 tools
 

@@ -24,7 +24,6 @@ const PUBLIC_READER_SCOPES = [
   'backend/services/posts/metrics.mts',
   'backend/services/posts/metrics-batch.mts',
   'backend/services/posts/public-ids.mts',
-  'backend/services/posts/tools/',
   'backend/services/platform-stats/',
   'backend/services/stories/get-post-stories.mts',
   'backend/services/prioritized-referral-links/',

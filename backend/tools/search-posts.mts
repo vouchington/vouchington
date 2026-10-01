@@ -3,47 +3,82 @@ import type { PostSearchSort } from '@services/posts/search/types'
 import type { Tool } from './types.mts'
 import { getPostIds } from '@services/posts/search/get-ids'
 import { getPostByAnyCachedBatch } from '@services/entity-fetch'
+import { preparePostsSearchParams, resolvePostsSearchParams } from '@services/search-params'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import { VALID_FILTERABLE_POST_TYPES, type FilterablePostType } from '@ts-shared/feed-capabilities'
 import {
-  buildSearchToolSchemaProperties,
-  normalizeSearchToolArgs,
-  type SearchSystemArgs,
-} from './search-system.mts'
+  EMPTY_PAGE_INFO,
+  findPageOrNull,
+  INVALID_CURSOR_RESULT,
+  type InvalidCursorResult,
+  pagedSearchQuery,
+  pagedSearchSchemaProperties,
+  type PagedSearchArgs,
+  type SearchPageInfo,
+} from './paged-search.mts'
+import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'
+import { componentSchema } from './route-response-schema.mts'
 
-type ToolArgs = SearchSystemArgs & {
-  limit?: number
-  sort?: PostSearchSort
+// The sorts GET /api/v1/posts accepts.
+const POST_SORTS = [
+  'new',
+  'best',
+  'hot',
+  'relevance',
+  'following_new',
+] as const satisfies readonly PostSearchSort[]
+
+type ToolArgs = PagedSearchArgs & {
+  sort?: (typeof POST_SORTS)[number]
   post_type?: FilterablePostType
 }
 
-type ToolResult = {
-  success: true
-  results: Array<{
-    id: string
-    title: string
-    markdown: string
-    post_type: string
-  }>
-}
+type ToolResult =
+  | {
+      success: true
+      results: Array<{
+        id: string
+        title: string
+        markdown: string
+        post_type: string
+      }>
+      page_info: SearchPageInfo
+    }
+  | InvalidCursorResult
+
+// The REST twin returns post ids plus hydration maps; this tool returns the sanitized post text
+// instead, so it owns the schema. The test pins `id`, `post_type` and `page_info` to the OpenAPI
+// document. A malformed or foreign cursor is the one failure variant.
+const OUTPUT_SCHEMA = outcomeSchema('success', {
+  results: {
+    type: 'array',
+    items: objectSchema({
+      id: { type: 'string' },
+      title: { type: 'string' },
+      markdown: { type: 'string' },
+      post_type: { type: 'string' },
+    }),
+  },
+  page_info: componentSchema('PageInfo'),
+})
 
 const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
     name: 'search_posts',
     type: 'function',
     description:
-      'Search for posts using text, semantic, and similar-item signals. Use search for hybrid text+semantic search.',
+      'Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page. A malformed or foreign cursor returns { success: false, error: "Invalid cursor" }.',
     parameters: {
       type: 'object',
       properties: {
-        ...buildSearchToolSchemaProperties({
-          limitDescription: 'Maximum number of results to return (default: 5, max: 10)',
-        }),
+        ...pagedSearchSchemaProperties(
+          'Keyword search. Same as GET /api/v1/posts q: matches post text and #hashtags.',
+        ),
         sort: {
           type: 'string',
-          enum: ['new', 'best', 'ranking'],
+          enum: [...POST_SORTS],
           description:
-            'Sort order: new (most recent), best (highest voted), ranking (search relevance)',
+            'Sort order: new (most recent), best (highest voted), hot, relevance (search relevance; the default when searching), following_new',
         },
         post_type: {
           type: 'string',
@@ -61,47 +96,36 @@ const tool: Tool<ToolArgs, ToolResult> = {
     requiredScopes: { mcp: ['posts:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/posts' }],
+    outputSchema: OUTPUT_SCHEMA,
   },
   function:
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
-      const normalizedArgs = normalizeSearchToolArgs(args, { defaultLimit: 5, maxLimit: 10 })
-      const { sort, post_type } = normalizedArgs
+      const page = await findPageOrNull(args.after, async () => {
+        const prepared = preparePostsSearchParams({
+          ...pagedSearchQuery(args),
+          ...(args.sort && { sort: args.sort }),
+          ...(args.post_type && { post_types: args.post_type }),
+        })
+        const { shouldReturnEmpty, searchOptions } = await resolvePostsSearchParams(prepared)
+        if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
 
-      const searchOptions = {
-        exclude_for_user_id: currentUser?.id,
-        limit: normalizedArgs.limit,
-        sort,
-        ...(normalizedArgs.text_search_query && {
-          text_search_query: normalizedArgs.text_search_query,
-        }),
-        ...(normalizedArgs.semantic_search_query && {
-          semantic_search_query: normalizedArgs.semantic_search_query,
-        }),
-        ...(normalizedArgs.similar_post_id && { similar_post_id: normalizedArgs.similar_post_id }),
-        ...(normalizedArgs.similar_topic_id && {
-          similar_topic_id: normalizedArgs.similar_topic_id,
-        }),
-        ...(normalizedArgs.similar_rss_feed_item_id && {
-          similar_rss_feed_item_id: normalizedArgs.similar_rss_feed_item_id,
-        }),
-        ...(post_type && { post_types: [post_type] }),
-      }
+        // Muted and blocked users, topics and hostnames stay out of the caller's results.
+        return getPostIds(currentUser, {
+          ...searchOptions,
+          omitLimit: false,
+          exclude_for_user_id: currentUser?.id,
+        })
+      })
+      if (!page) return INVALID_CURSOR_RESULT
+      const { results, page_info } = page
+      const posts = await getPostByAnyCachedBatch(results.map(result => result.id))
+      const visiblePosts = posts.filter((post): post is NonNullable<typeof post> => post !== null)
 
-      const { results } = await getPostIds(currentUser, searchOptions)
-      const postIds = results.map(r => r.id)
-
-      if (postIds.length === 0) {
-        return { success: true, results: [] }
-      }
-
-      const posts = await getPostByAnyCachedBatch(postIds)
-
-      const filteredPosts = posts.filter((post): post is NonNullable<typeof post> => post !== null)
       return {
         success: true,
         results: await Promise.all(
-          filteredPosts.map(async post => ({
+          visiblePosts.map(async post => ({
             id: post.id,
             title: await sanitizePromptInjection(post.title, { isTitle: true }),
             markdown: wrapExternalContent(await sanitizePromptInjection(post.markdown), {
@@ -111,6 +135,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
             post_type: post.post_type,
           })),
         ),
+        page_info,
       }
     },
 }

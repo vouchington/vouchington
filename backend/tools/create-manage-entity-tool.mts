@@ -1,6 +1,8 @@
 import type { BasicUser, PrivateUser } from '@services/users/types'
 import type { Tool, ToolMeta } from './types.mts'
 import { requirePrivateToolUser } from './private-user.mts'
+import { objectSchema, successSchema } from './output-schema-shapes.mts'
+import { componentSchema } from './route-response-schema.mts'
 import createHttpError from 'http-errors'
 
 type AddArgs<TAdd extends Record<string, unknown>> = { action: 'add' } & TAdd
@@ -27,7 +29,10 @@ type ManageEntityToolConfig<
   addFn: (user: PrivateUser, args: AddArgs<TAdd>) => Promise<unknown>
   updateFn: (user: PrivateUser, args: UpdateArgs<TUpdate>) => Promise<unknown>
   removeFn: (user: PrivateUser, id: string) => Promise<unknown>
-  meta?: ToolMeta
+  // The generated contract component that `addFn` and `updateFn` return, which the output schema is
+  // derived from. Required with `meta`.
+  entity?: string
+  meta?: Omit<ToolMeta, 'outputSchema'>
 }
 
 // NOTE: Tools created via this factory are not inspected by the tool-conventions
@@ -64,7 +69,14 @@ export function createManageEntityTool<
       },
       strict: null,
     },
-    ...(config.meta ? { meta: config.meta } : {}),
+    ...(config.meta
+      ? {
+          meta: {
+            ...config.meta,
+            outputSchema: deriveOutputSchema(config.toolName, config.entity),
+          },
+        }
+      : {}),
     function:
       (currentUser: BasicUser) =>
       async (args: ManageEntityArgs<TAdd, TUpdate>): Promise<ManageEntityResult> => {
@@ -82,14 +94,24 @@ export function createManageEntityTool<
           }
           case 'remove': {
             if (!args.id) throw createHttpError(422, 'id is required for remove')
-            const result = await config.removeFn(user, args.id)
-            return { success: true, result }
+            await config.removeFn(user, args.id)
+            // The service returns the deleted storage row. Only its identity is a stable result.
+            return { success: true, result: { id: args.id } }
           }
           default:
             throw unsupportedAction(args)
         }
       },
   }
+}
+
+// The results above and their schema live side by side, so they change together. Add and update
+// return the entity view, remove returns the id it deleted.
+function deriveOutputSchema(toolName: string, entity: string | undefined) {
+  if (!entity) throw new Error(`${toolName} must name the contract entity its results return`)
+  return successSchema({
+    result: { oneOf: [componentSchema(entity), objectSchema({ id: { type: 'string' } })] },
+  })
 }
 
 function unsupportedAction(args: never): Error {

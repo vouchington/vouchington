@@ -26,10 +26,6 @@ Shared SQL query-building utilities for search across posts, topics, comments, a
 
 - `buildSemanticRankingScore(embeddingColumn, signals)` — builds a geometric-mean semantic ranking SQL expression
 
-### Filtered vector scan
-
-- `applyFilteredVectorScan(query)` — sets `hnsw.iterative_scan = strict_order` once per transaction before a filtered HNSW query so small `LIMIT` windows still refill after `WHERE` filters. Use this for unbounded ANN search (posts semantic tools). Do not add a production candidate-ID filter to those queries; dirty-DB fixture isolation belongs in `queryPostSemanticFixturesScopedToIds`.
-
 ### Pagination
 
 - `buildCountQuery(baseQuery)` — wraps a SQL query in `COUNT(*)` for total count fetches

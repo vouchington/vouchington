@@ -76,7 +76,7 @@ describe('dev-tools Vitest config', () => {
         'web/storybook/__tests__/component-story-coverage.test.ts',
       ],
       ['backend-data-stores', 'backend/test-helpers/entities/bluesky-link-authorizations.test.mts'],
-      ['backend-test-helpers', 'backend/test-helpers/entities/posts-semantic.test.mts'],
+      ['backend-test-helpers', 'backend/test-helpers/sql-template-strings.test.mts'],
       [
         'backend-no-data-mocks',
         'backend/services/bedrock-embeddings-batch/orchestrator/results.no-data.mock.test.mts',

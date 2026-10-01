@@ -1,6 +1,12 @@
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from './types.mts'
 import { getTopicMetricsByAny } from '@services/topics/metrics'
+import { outcomeSchema } from './output-schema-shapes.mts'
+import {
+  CONTENT_COUNT_PROPERTIES,
+  FOLLOWERS_SCHEMA,
+  RATINGS_COUNT_SCHEMA,
+} from './topic-output-schema-parts.mts'
 
 type ToolArgs = {
   topic_id: string
@@ -52,6 +58,12 @@ const tool: Tool<ToolArgs, ToolResult> = {
     requiredScopes: { mcp: ['topics:read'] },
     annotations: { readOnlyHint: true },
     api: null,
+    outputSchema: outcomeSchema('success', {
+      topic_id: { type: 'string' },
+      ...CONTENT_COUNT_PROPERTIES,
+      followers: FOLLOWERS_SCHEMA,
+      ratings: RATINGS_COUNT_SCHEMA,
+    }),
   },
   function:
     (_currentUser: BasicUser) =>

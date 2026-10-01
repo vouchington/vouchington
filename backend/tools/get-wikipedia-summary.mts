@@ -1,6 +1,7 @@
 import { getWikipediaSummary } from '@modules/wikipedia-api'
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from './types.mts'
+import { nullable, outcomeSchema } from './output-schema-shapes.mts'
 
 type ToolArgs = {
   title: string
@@ -45,6 +46,15 @@ const tool: Tool<ToolArgs, ToolResult> = {
     requiredScopes: { mcp: ['wikipedia:read'] },
     annotations: { readOnlyHint: true, openWorldHint: true },
     api: null,
+    // A missing article is a normal `found: false` result, not an error.
+    outputSchema: outcomeSchema('found', {
+      pageid: { type: 'integer' },
+      title: { type: 'string' },
+      url: { type: 'string' },
+      description: nullable({ type: 'string' }),
+      extract: nullable({ type: 'string' }),
+      thumbnail_url: nullable({ type: 'string' }),
+    }),
   },
   function:
     (_currentUser: BasicUser) =>

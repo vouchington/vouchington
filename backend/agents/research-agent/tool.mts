@@ -14,7 +14,6 @@ import getReferralLinksTool from '@voucha/tools/get-referral-links'
 import searchTopicsTool from '@voucha/tools/search-topics'
 import getWikipediaSummaryTool from '@voucha/tools/get-wikipedia-summary'
 import getTopicDetailsTool from '@voucha/tools/get-topic-details'
-import getTopicHierarchyTool from '@voucha/tools/get-topic-hierarchy'
 import getTopicMetricsTool from '@voucha/tools/get-topic-metrics'
 import { RESEARCH_SYSTEM_PROMPT } from './build-system-prompt.mts'
 
@@ -57,7 +56,6 @@ const researchAgentTool = createSubagentTool<ResearchAgentArgs>({
     searchTopicsTool,
     getWikipediaSummaryTool,
     getTopicDetailsTool,
-    getTopicHierarchyTool,
     getTopicMetricsTool,
   ],
   serviceTier: 'flex',
