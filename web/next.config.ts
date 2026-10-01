@@ -4,8 +4,8 @@ import os from 'node:os'
 import path from 'node:path'
 import sharp from 'sharp'
 
+import { withBuildMembershipBenefitCatalog } from './with-build-membership-benefit-catalog'
 import { nextBuildPageDataWorkerCount } from './next-build-page-data-worker-count'
-
 const isTestBuild = process.env.NEXT_TEST_BUILD === '1'
 
 export function assertSecureSharpVersion(version: string): void {
@@ -14,7 +14,6 @@ export function assertSecureSharpVersion(version: string): void {
     throw new Error(`The web build requires sharp >=0.35.0; found ${version}`)
   }
 }
-
 assertSecureSharpVersion(sharp.versions.sharp)
 
 // In local dev, pages load from the CF Worker. Without mkcert, assetPrefix points to Next.js
@@ -179,21 +178,23 @@ if (process.env.SENTRY_SOURCE_MAP_UPLOAD === '1' && !/^[0-9a-f]{40}$/u.test(sent
   throw new Error('SENTRY_RELEASE must be an immutable 40-character Git SHA')
 }
 
-export default withSentryConfig(nextConfig, {
-  org: 'vouchington',
-  project: 'vouchington-web',
-  release: sentryRelease
-    ? {
-        name: sentryRelease,
-        create: true,
-        finalize: true,
-        setCommits: {
-          repo: 'vouchington/vouchington',
-          commit: sentryRelease,
-          ignoreMissing: true,
-          ignoreEmpty: true,
-        },
-      }
-    : undefined,
-  sourcemaps: { disable: process.env.SENTRY_SOURCE_MAP_UPLOAD !== '1' },
-})
+export default withBuildMembershipBenefitCatalog(
+  withSentryConfig(nextConfig, {
+    org: 'vouchington',
+    project: 'vouchington-web',
+    release: sentryRelease
+      ? {
+          name: sentryRelease,
+          create: true,
+          finalize: true,
+          setCommits: {
+            repo: 'vouchington/vouchington',
+            commit: sentryRelease,
+            ignoreMissing: true,
+            ignoreEmpty: true,
+          },
+        }
+      : undefined,
+    sourcemaps: { disable: process.env.SENTRY_SOURCE_MAP_UPLOAD !== '1' },
+  }),
+)

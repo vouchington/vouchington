@@ -49,8 +49,11 @@ vi.mock(
     }) as unknown as typeof import('@sentry/nextjs/config'),
 )
 
-import config, { assertSecureSharpVersion } from '../next.config'
+import loadConfig, { assertSecureSharpVersion } from '../next.config'
 import { nextBuildPageDataWorkerCount } from '../next-build-page-data-worker-count'
+import { PHASE_PRODUCTION_SERVER } from 'next/constants'
+
+const config = loadConfig(PHASE_PRODUCTION_SERVER)
 
 describe('next.config', () => {
   afterAll(() => {
