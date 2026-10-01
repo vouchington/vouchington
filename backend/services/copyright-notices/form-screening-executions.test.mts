@@ -19,6 +19,7 @@ import {
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
+  enforceCopyrightAssessment,
 } from './index.mts'
 import {
   appendCopyrightFormScreening,
@@ -30,7 +31,6 @@ import {
   completeCopyrightFormScreening,
   failCopyrightFormScreening,
 } from './form-screening-executions.mts'
-import { claimCopyrightEnforcementRequest } from './enforcement-request-claim.mts'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
@@ -130,7 +130,10 @@ describe('current copyright form screening execution', () => {
         countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
       ).resolves.toBe(0)
     }
-    await expect(claimCopyrightEnforcementRequest(assessment.id)).resolves.toBe('completed')
+    await enforceCopyrightAssessment(assessment.id)
+    await expect(
+      countCopyrightActiveRestrictionsForNotice(notice.intake.copyright_notice_id),
+    ).resolves.toBe(0)
   })
 
   it('fences duplicate completion and stale success/failure without caching identical input', async () => {

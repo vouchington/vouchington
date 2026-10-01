@@ -50,18 +50,6 @@ export async function readTestCopyrightFormReviewActor(intakeId: string): Promis
   return rows[0].reviewed_by_id
 }
 
-/** Reads an owned automated enforcement request after reconciliation. */
-export async function readTestCopyrightEnforcementRequestState(
-  assessmentId: string,
-): Promise<string | null> {
-  const { rows } = await write<{ state: string }>(sql`
-    /* readTestCopyrightEnforcementRequestState */
-    SELECT state FROM copyright_notice_enforcement_requests
-    WHERE copyright_notice_submission_assessment_id = ${assessmentId}
-  `)
-  return rows[0]?.state ?? null
-}
-
 /** Marks an already-authorized restriction lifted to exercise durable reconciliation guards. */
 export async function liftTestCopyrightRestriction(restrictionId: string): Promise<void> {
   await write(sql`/* liftTestCopyrightRestriction */

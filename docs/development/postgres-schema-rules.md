@@ -280,8 +280,7 @@ examples describe the review baseline, rather than the current generated snapsho
     `expired_at`, `stale_at`). A time-based state (`expires_at < now()`) can't be generated,
     because generation expressions must be immutable, so the sweeper writes `expired_at`.
     - Final: `copyright_notice_delivery_intents` (which also holds the one reply to each declined
-      email intake), `copyright_notice_enforcement_requests`, `notification_push_intents`,
-      `notification_push_intent_subscription_receipts`.
+      email intake), `notification_push_intents`, `notification_push_intent_subscription_receipts`.
     - Final, with a retry loop: `copyright_notice_action_intents` (`blocked`/`failed` → `pending`),
       `oauth_authorizations` (`exchanging` → `callback_received`), `post_admission_reservations`
       (`retryable_failed` → `in_progress`). The final outcomes become timestamps and a generated

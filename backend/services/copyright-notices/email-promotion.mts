@@ -15,7 +15,7 @@ import {
   assertStatutoryEmailFields,
   type PromoteCopyrightEmailIntakeInput,
 } from './email-promotion-input.mts'
-import { processCopyrightEnforcementRequest } from './enforcement-requests.mts'
+import { enforceCopyrightAssessment } from './enforce-assessment.mts'
 
 export type { PromoteCopyrightEmailIntakeInput } from './email-promotion-input.mts'
 
@@ -35,7 +35,7 @@ async function assessAndEnforceCopyrightEmailIntake(
   admitted: { noticeId: string; submissionId: string },
 ): Promise<void> {
   const assessment = await getOrCreateEmailAssessment(input.currentUser, admitted)
-  await processCopyrightEnforcementRequest(assessment.id)
+  await enforceCopyrightAssessment(assessment.id)
 }
 
 async function admitCopyrightEmailIntake(

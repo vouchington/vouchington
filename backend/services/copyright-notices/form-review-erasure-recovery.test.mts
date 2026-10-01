@@ -7,7 +7,6 @@ import {
 } from '@voucha/test-helpers'
 import {
   createTestCopyrightFormRejectionByErasedModerator,
-  readTestCopyrightEnforcementRequestState,
   readTestCopyrightFormReviewActor,
 } from '@voucha/test-helpers/data-stores/psql/copyright-form-reviews'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
@@ -15,7 +14,8 @@ import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
   createCopyrightFormIntake,
-  processCopyrightEnforcementRequest,
+  enforceCopyrightAssessment,
+  searchPendingCopyrightEnforcementAssessmentIds,
   recoverRejectedCopyrightFormReviewEffect,
   searchRecoverableCopyrightFormReviewIntakeIds,
 } from './index.mts'
@@ -112,14 +112,23 @@ describe('copyright rejected form-review recovery after actor erasure', () => {
     )
   })
 
-  it('completes a pending automated request after the durable erased rejection', async () => {
+  it('never enforces a pending automated assessment after the durable erased rejection', async () => {
     const { assessment, notice } = await createAutomatedCopyrightForm()
+    await expect(
+      readTestOwnedCopyrightSweepIds(searchPendingCopyrightEnforcementAssessmentIds, assessment.id),
+    ).resolves.toEqual([assessment.id])
     await rejectWithErasedModerator(notice.intake.id)
 
-    await recoverListedFormReview(notice.intake.id)
-
-    await expect(readTestCopyrightEnforcementRequestState(assessment.id)).resolves.toBe('completed')
-    await expect(processCopyrightEnforcementRequest(assessment.id)).resolves.toBe('not_claimed')
+    await expect(
+      readTestOwnedCopyrightSweepIds(searchPendingCopyrightEnforcementAssessmentIds, assessment.id),
+    ).resolves.toEqual([])
+    await expect(
+      readTestOwnedCopyrightSweepIds(
+        searchRecoverableCopyrightFormReviewIntakeIds,
+        notice.intake.id,
+      ),
+    ).resolves.toEqual([])
+    await enforceCopyrightAssessment(assessment.id)
     const recovered = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
     expect(recovered?.restrictions).toEqual([])
   })

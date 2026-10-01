@@ -73,11 +73,9 @@ export {
   searchRecoverableCopyrightActionIntentIds,
 } from './action-delivery.mts'
 export { currentUserCanReviewCopyrightNotices } from './authorization.mts'
-export { processCopyrightEnforcementRequest } from './enforcement-requests.mts'
-export {
-  createMissingCopyrightEnforcementRequests,
-  searchReconcilableCopyrightEnforcementRequestIds,
-} from './enforcement-request-reconciliation.mts'
+export { enforceCopyrightAssessment } from './enforce-assessment.mts'
+export { recoverMissingDecisionAssessments } from './enforcement-recovery.mts'
+export { searchPendingCopyrightEnforcementAssessmentIds } from './enforcement-pending.mts'
 export {
   recoverRejectedCopyrightFormReviewEffect,
   searchRecoverableCopyrightFormReviewIntakeIds,

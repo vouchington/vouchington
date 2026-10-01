@@ -135,15 +135,6 @@ export async function appendCopyrightSubmissionAssessmentInTransaction(
   `)
   const assessment = rows[0] as CopyrightNoticeSubmissionAssessmentRecord | undefined
   assert(assessment, 500, 'Failed to append copyright submission assessment')
-  if (submissionRows[0].kind === 'notice' && input.substantiallyCompliant) {
-    await transaction(sql`/* appendCopyrightSubmissionAssessment:enforcementRequest */
-      INSERT INTO copyright_notice_enforcement_requests (
-        copyright_notice_submission_assessment_id, copyright_notice_id, imposed_by_id
-      ) VALUES (
-        ${assessment.id}, ${submissionRows[0].copyright_notice_id}, ${input.currentUser?.id ?? null}
-      )
-    `)
-  }
   if (input.targetIds) {
     const { rows: scopedTargets } = await transaction<{ id: string }>(
       sql`/* appendCopyrightSubmissionAssessment:scopeCounterNoticeTargets */

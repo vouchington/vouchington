@@ -152,7 +152,6 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_notice_counter_notice_reviews`, `copyright_notice_deadlines`,
   `copyright_notice_delivery_intents`, `copyright_notice_delivery_recipients`,
   `copyright_notice_email_correspondence_reviews`, `copyright_notice_email_intake_attachments`,
-  `copyright_notice_enforcement_requests`,
   `copyright_notice_email_intake_notice_links`,
   `copyright_notice_email_intake_parses`,
   `copyright_notice_email_intake_recommendations`,

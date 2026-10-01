@@ -1,6 +1,10 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
+/**
+ * Recreates the compliant assessment of a durable accepted form or email review that a post-commit
+ * interruption lost, so the enforcement sweep sees every durable compliant notice decision.
+ */
 export async function recoverMissingDecisionAssessments(): Promise<void> {
   await write(sql`/* recoverMissingCopyrightDecisionAssessments */
     WITH candidates AS (
@@ -37,16 +41,6 @@ export async function recoverMissingDecisionAssessments(): Promise<void> {
       SELECT submission_id, CURRENT_TIMESTAMP, assessed_by_id, true, screening_id
       FROM candidates
       RETURNING id, copyright_notice_submission_id, assessed_by_id
-    ), requests AS (
-      INSERT INTO copyright_notice_enforcement_requests (
-        copyright_notice_submission_assessment_id, copyright_notice_id, imposed_by_id
-      )
-      SELECT inserted.id, submission.copyright_notice_id, inserted.assessed_by_id
-      FROM inserted
-      JOIN copyright_notice_submissions submission
-        ON submission.id = inserted.copyright_notice_submission_id
-      ORDER BY inserted.id ASC NULLS LAST
-      ON CONFLICT (copyright_notice_submission_assessment_id) DO NOTHING
     )
     INSERT INTO copyright_notice_lifecycle_events (
       copyright_notice_id, event_type, actor_user_id,

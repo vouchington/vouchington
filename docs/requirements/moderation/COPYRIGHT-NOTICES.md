@@ -41,8 +41,8 @@ a counter-notice is compliant or that a hold is qualifying.
 
 ## Work claim ownership
 
-Action intents, delivery intents (case deliveries and replies to declined email intakes alike),
-enforcement requests, and form screening executions rotate a UUID `lease_token` on each claim or reclaim. Workers carry that token through
+Action intents, delivery intents (case deliveries and replies to declined email intakes alike), and
+form screening executions rotate a UUID `lease_token` on each claim or reclaim. Workers carry that token through
 completion and failure; a worker whose claim was reclaimed cannot change the newer owner's state.
 Action delivery also checks ownership under its row lock before placement mutations and again after
 external projection. A per-intent advisory lock prevents reclaim during compensation; action
@@ -63,7 +63,7 @@ results; only completion of the current token supplies idempotency.
 Automatic authority requires a current completed clear result for the same intake, an exact
 associated current compliant assessment, complete signed-in statutory fields, and no rejected form
 review. The [canonical predicate](../../../backend/data-stores/psql/migrations/0641-00-00-copyright-delivery-transport.sql)
-is checked again under the form fence at enforcement claim and final admission. Pending/failed
+is checked again under the form fence when a restriction is imposed. Pending/failed
 staff projections expose their state with null recommendation, rationale, and guidance; stale
 private rationale never appears as current. A staff approval during either state creates human
 authority.
@@ -182,7 +182,8 @@ Reversing or lifting one does not override another copyright case, a safety rest
 replacement, or a court order affecting the same placement. Erasing a staff account may null its
 foreign key, but cannot erase the decision timestamp, outcome, or lifecycle record.
 If erasure happens after a form rejection but before its effects finish, recovery uses the durable
-rejection to reverse provisional restrictions and close pending automated enforcement requests.
+rejection to reverse provisional restrictions; an automated assessment on a rejected form owes no
+restriction.
 
 Lifecycle events hold one typed source reference per event (except the case-level initial receipt),
 with a concrete foreign key and database-checked same-case ownership. Action events point to the
@@ -356,9 +357,10 @@ members. All mutation routes remain server-authorized even when an authenticated
 appeal or counter-notice form.
 
 The staff queue lists a case while it has any open item: an unreviewed form intake, restriction,
-appeal, counter-notice, or qualifying court or CCB filing; a failed action or delivery; an
-incomplete enforcement request; or an open restoration deadline at or past `escalation_at`. An open
-deadline before escalation does not queue a case by itself. Each case carries its distinct
+appeal, counter-notice, or qualifying court or CCB filing; a failed action or delivery; a compliant
+assessment with a target it has not yet restricted (`enforcement_pending`); or an open restoration
+deadline at or past `escalation_at`. An open deadline before escalation does not queue a case by
+itself. Each case carries its distinct
 `reasons`, the `waiting_since` time of its oldest open item, and its earliest open deadline. The
 queue orders cases by urgency: a missed restoration deadline first, then a deadline past escalation,
 then all other work, each oldest wait first. Urgency depends on the clock, so a case can move to an
@@ -380,8 +382,9 @@ off:
   intake waits in the staff queue like a guest form;
 - a moderator's acceptance of that intake records a human assessment and withholds its targets, and
   a rejection closes it;
-- an automated enforcement request that already exists stays pending and in the staff queue, and
-  enforces nothing, until a moderator decides the intake; and
+- an automated assessment that already exists and has not yet restricted its targets stays in the
+  staff queue as `enforcement_pending`, and restricts nothing, until a moderator decides the intake;
+  and
 - restrictions that already exist are unchanged and still need their own human decision.
 
 Keep the switch off until both prerequisites ship:
