@@ -20,14 +20,7 @@ export async function cleanupSoftDeletedUser(
   lowerBoundDate?: Date,
 ): Promise<number> {
   await using query = await beginTransaction()
-  // DELETE SET NULL can update another purge's user (including reciprocal deleted_by_id).
-  // Serialize final purges before taking any target/publication/row lock, across all callers.
-  await query(sql`/* cleanupSoftDeletedUserBatch:serializeFinalPurges */
-    SELECT pg_advisory_xact_lock(hashtextextended(${FINAL_USER_PURGE_LOCK_KEY}, 0))
-  `)
-  await query(sql`/* cleanupSoftDeletedUserBatch:lockUser */
-    SELECT pg_advisory_xact_lock(hashtextextended(${targetId}, 0))
-  `)
+  await lockFinalUserPurge(query, targetId)
   await lockAuthorPublicationLifecycle(query, targetId)
   if (
     !(await lockEligibleSoftDeletedUserForFinalPurge(query, targetId, cutoffDate, lowerBoundDate))
@@ -59,6 +52,17 @@ export async function cleanupSoftDeletedUser(
   await detachProviderMembershipSources(query, targetId)
   await query.commit()
   return rowCount ?? 0
+}
+
+async function lockFinalUserPurge(query: QueryExecutor, targetId: string): Promise<void> {
+  // DELETE SET NULL can update another purge's user (including reciprocal deleted_by_id).
+  // Serialize final purges before taking any target/publication/row lock, across all callers.
+  await query(sql`/* cleanupSoftDeletedUserBatch:serializeFinalPurges */
+    SELECT pg_advisory_xact_lock(hashtextextended(${FINAL_USER_PURGE_LOCK_KEY}, 0))
+  `)
+  await query(sql`/* cleanupSoftDeletedUserBatch:lockUser */
+    SELECT pg_advisory_xact_lock(hashtextextended(${targetId}, 0))
+  `)
 }
 
 export async function lockEligibleSoftDeletedUserForFinalPurge(
