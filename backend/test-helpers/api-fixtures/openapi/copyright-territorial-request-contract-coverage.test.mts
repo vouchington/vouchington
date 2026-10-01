@@ -38,7 +38,7 @@ describe('copyright territorial request contracts', () => {
     const schema = resolve(carriersOf(operation).body)
     expect(schema.type).toBe('object')
     expect(schema.additionalProperties).toBe(false)
-    expect([...(schema.required as string[])].sort()).toEqual(required)
+    expect((schema.required as string[]).toSorted()).toEqual(required)
     const properties = schema.properties as Record<string, Schema>
     const stringKeys = required.filter(key => key !== ENUMS[operation]?.field)
     expect(stringKeys.map(key => properties[key])).toEqual(
@@ -50,7 +50,7 @@ describe('copyright territorial request contracts', () => {
     '%s limits its enumerated field',
     (operation, { field, values }) => {
       const properties = resolve(carriersOf(operation).body).properties as Record<string, Schema>
-      expect([...(properties[field]!.enum as string[])].sort()).toEqual(values)
+      expect((properties[field]!.enum as string[]).toSorted()).toEqual(values)
     },
   )
 
