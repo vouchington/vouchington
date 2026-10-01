@@ -29,6 +29,6 @@
     "@glidemq/speedkey": "^0.3.0",
     "@modules/on-error": "workspace:^",
     "glide-mq": "^0.15.5",
-    "valkyries": "^0.8.0"
+    "valkyries": "^0.8.1"
   }
 }

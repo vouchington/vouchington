@@ -27,6 +27,6 @@
     "@data-stores/analytics": "workspace:^",
     "@data-stores/graceful-shutdown": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "valkyries": "^0.8.0"
+    "valkyries": "^0.8.1"
   }
 }
