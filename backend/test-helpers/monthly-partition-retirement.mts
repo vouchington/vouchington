@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, write } from '../data-stores/psql/setup.mts'
-import { retireExpiredMonthlyPartitions } from '../data-stores/psql/migration-runner/retire-monthly-partitions.mts'
-import type { ExpiredMonthlyPartition } from '../data-stores/psql/migration-runner/monthly-partitions.mts'
+import {
+  retireExpiredMonthlyPartitions,
+  type ExpiredMonthlyPartition,
+} from '../data-stores/psql/migration-runner/retire-monthly-partitions.mts'
 import { MONTHLY_RETIREMENT_SCHEMA } from './monthly-partition-retirement-schema.mts'
 
 export async function createMonthlyPartitionRetirementFixture() {

@@ -13,19 +13,12 @@ import type { QueryExecutor } from '../types.mts'
 import {
   assertSafeSqlIdentifier,
   retireExpiredMonthlyPartitions,
+  type ExpiredMonthlyPartition,
 } from './retire-monthly-partitions.mts'
 
 type ExistingMonthlyPartitionRow = {
   parent_table: string
   partition_table: string
-}
-
-export type ExpiredMonthlyPartition = {
-  table: string
-  partitionName: string
-  dropPriority: number
-  year: number
-  month: number
 }
 
 const RSS_FEED_CRAWLS_DEFAULT_PARTITION = 'rss_feed_crawls__default'

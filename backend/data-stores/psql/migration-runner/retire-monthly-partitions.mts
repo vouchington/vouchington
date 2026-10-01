@@ -1,7 +1,14 @@
 import onError from '@modules/on-error'
 import { beginTransaction } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
-import type { ExpiredMonthlyPartition } from './monthly-partitions.mts'
+
+export type ExpiredMonthlyPartition = {
+  table: string
+  partitionName: string
+  dropPriority: number
+  year: number
+  month: number
+}
 
 export function assertSafeSqlIdentifier(identifier: string): string {
   if (!/^[a-z0-9_]+$/u.test(identifier)) {
