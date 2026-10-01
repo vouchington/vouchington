@@ -12997,6 +12997,9 @@ importers:
       '@vouchington/html-utils':
         specifier: ^0.1.1
         version: 0.1.1
+      '@vouchington/memberships':
+        specifier: ^0.2.0
+        version: 0.2.0
       '@vouchington/phone-validation':
         specifier: ^0.0.0
         version: 0.0.0

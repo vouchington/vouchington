@@ -97,8 +97,8 @@ and Sharp transformation. Vouchington retains upload orchestration, PostgreSQL t
 states, buckets and signing policy, queue/retry behavior, cache keys and headers, HTTP errors, full
 metadata shape, and moderation policy.
 
-Vouchington declares `@vouchington/memberships` in its direct consumers:
-`@services/memberships` and `@services/stripe`. The package owns benefit-catalog validation,
+Vouchington declares `@vouchington/memberships` in its direct consumers: `@services/memberships`,
+`@services/stripe`, and `@ts-shared/utils`. The package owns benefit-catalog validation,
 SKU grouping, terminal-status detection, and membership-change classification utilities; Vouchington retains
 its product catalog data, SQL lifecycle projection, Stripe calls, refunds, portal, authorization, and
 side effects.
