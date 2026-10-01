@@ -13,6 +13,19 @@ This table is generated from every `entityRelationMetadatum` row where `subject_
 `is_bookmark === true` (`backend/services/entity-relations/metadata.mts`) — 11 predicates across 26
 `subject × predicate × object` relation tables total.
 
+## Mutation Authorization
+
+Bookmark `PUT` requires an active, non-suspended user and checks that the target is visible to that
+user through the same read authorization as the target entity's detail route. This includes post
+privacy and removal state, community visibility, and blocked URL/hostname visibility. Missing or
+invisible targets return `404 Entity not found` so the route does not reveal whether a hidden target
+exists.
+
+Bookmark `DELETE` also rejects suspended users, but deliberately does not require the target to
+remain visible. A user can remove their own bookmark after the target becomes private, hidden, or
+removed; deleting an absent bookmark remains idempotent. The write is scoped to the authenticated
+user's relation.
+
 | Action                     | Applicable Entity Types             | Purpose                                                                                        |
 | -------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `follow`                   | post, topic, user, rss_feed         | Follow for feed inclusion; following a `user` also auto-casts a Like (+1) trust signal (#7257) |
@@ -31,13 +44,8 @@ This table is generated from every `entityRelationMetadatum` row where `subject_
 
 When a user mutes or blocks an entity, the system automatically removes any active follow on that same entity. This keeps feed intent congruent: if you mute or block something, it should not appear in your feed.
 
-| Action       | Entity      | Also removes   |
-| ------------ | ----------- | -------------- |
-| `mute`       | `topic`     | `follow`       |
-| `mute`       | `rss_feed`  | `follow`       |
-| `block`      | `topic`     | `follow`       |
-| `block`      | `user`      | `follow`       |
-| `proxy_mute` | `community` | `proxy_follow` |
+Muting a topic or RSS feed also removes its `follow`; blocking a topic or user also removes its
+`follow`; muting a community also removes its `proxy_follow`.
 
 Muting a **user** does not remove the follow. Users may want to stay connected (e.g. appear in each other's follower counts) while suppressing notifications.
 
