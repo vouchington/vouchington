@@ -55,7 +55,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
     id: 'ses-inbound-reconciliation',
     queue_name: 'ses_inbound',
     job_name: SES_INBOUND_RECONCILE_JOB_NAME,
-    description: 'Re-enqueue raw inbound support emails still present in S3',
+    description: 'Re-enqueue raw inbound copyright emails still present in S3',
     source_table: 'external:ses-inbound-s3',
     trigger: createBackfillTrigger(enqueueSesInboundReconcile),
   },

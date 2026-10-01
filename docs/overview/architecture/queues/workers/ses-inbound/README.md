@@ -20,6 +20,14 @@ pins the source version and ETag and uses a content-addressed evidence key. Conf
 access, and an approved retention policy before enabling intake. Malformed MIME remains preserved
 as a failed parse for staff review.
 
+The worker rejects every job whose `intakeKind` is not `copyright` as its first step, before any S3
+read, copy, intake write, parse, or enqueue. Support intake is retired (#375), so an `incoming/`
+object is never copied to evidence or parsed. The rejection is a terminal `UnrecoverableError` and
+the object is neither moved to `failed/` nor deleted, because the move deletes the original and
+`failed/` expires after 30 days. It stays at `incoming/` (which has no lifecycle expiry) and the
+reconciler never lists it. The upstream producer still enqueues a job for each `incoming/` object,
+so each one fails terminally once.
+
 `COPYRIGHT_INTAKE_ENABLED` does not gate ingest. While it is false, the worker and the reconciler
 still copy, parse, thread-link, and delete each source object, so every email (a new notice or a
 reply on a case) becomes an intake row in the staff email intake queue. The evidence bucket is still
