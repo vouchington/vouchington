@@ -66,9 +66,6 @@ describe('no-mistakes config freshness', () => {
   })
 
   it('keeps integration markers on analyzer-limited LLM seams', () => {
-    expect(readRepoFile('backend/agents/_shared/run-tool-loop-streaming.mts')).toContain(
-      '/* no-mistakes: integration=openai */\nexport async function* runToolLoopStreaming',
-    )
     expect(readRepoFile('backend/agents/story-post/agent.mts')).toContain(
       '/* no-mistakes: integration=openrouter */\nexport async function callStoryPostAgent',
     )

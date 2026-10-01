@@ -1,9 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  createOpenAIResponse,
-  streamOpenAIResponse,
-  OpenAIResponseNotCompletedError,
-} from './create-response.mts'
+import { createOpenAIResponse, OpenAIResponseNotCompletedError } from './create-response.mts'
 import { runWithBackgroundResponseHooks } from './background-response-context.mts'
 import { runWithOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
 import {
@@ -231,48 +227,6 @@ describe('OpenAI response integration boundary', () => {
       await expect(
         createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
       ).resolves.toMatchObject({ id: response.id })
-    })
-  })
-
-  describe('streamOpenAIResponse', () => {
-    it('creates in the foreground, deferring SDK stream creation until iteration', async () => {
-      const params = { model: 'gpt-4.1-mini', input: 'hello' } as Parameters<
-        typeof streamOpenAIResponse
-      >[0]
-      const options = { timeout: 1000 } as Parameters<typeof streamOpenAIResponse>[1]
-      const response = makeSdkTextResponse('hello')
-      openAIMocks.create.mockResolvedValueOnce(
-        makeResponseStream([
-          makeStreamEvent({
-            type: 'response.in_progress',
-            sequence_number: 1,
-            response: makeSdkResponse({ status: 'in_progress' }),
-          }),
-          makeStreamEvent({
-            type: 'response.output_text.delta',
-            content_index: 0,
-            delta: 'hello',
-            item_id: 'msg-test',
-            logprobs: [],
-            output_index: 0,
-            sequence_number: 2,
-          }),
-          makeStreamEvent({ type: 'response.completed', sequence_number: 3, response }),
-        ]),
-      )
-
-      const gen = streamOpenAIResponse(params, options)
-      expect(openAIMocks.create).not.toHaveBeenCalled()
-      await expect(gen.next()).resolves.toEqual({ done: false, value: { delta: 'hello' } })
-      await expect(gen.next()).resolves.toEqual({
-        done: true,
-        value: expect.objectContaining({ id: response.id, status: 'completed' }),
-      })
-      expect(openAIMocks.create).toHaveBeenCalledWith(
-        { ...params, stream: true, background: false },
-        { ...options, maxRetries: 0 },
-      )
-      expect(openAIMocks.cancel).not.toHaveBeenCalled()
     })
   })
 })

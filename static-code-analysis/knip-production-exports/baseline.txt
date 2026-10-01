@@ -1,6 +1,5 @@
 exports backend/agents/_shared/create-response.mts getBackgroundResponseHooks
 exports backend/agents/_shared/create-response.mts getOpenAIResponseAttemptHooks
-exports backend/agents/chat/stream.mts streamChatResponse
 exports backend/agents/classifiers/execute-single-call.mts executeSingleCallClassifierDecision
 exports backend/agents/classifiers/execute.mts executeClassifierDecision
 exports backend/agents/classifiers/safe-content.mts classifierChoiceKey
@@ -139,9 +138,16 @@ exports backend/services/conversations-messages/agentic-runs.mts getLatestConver
 exports backend/services/conversations-messages/agentic-runs.mts hasRunningAgenticRunByConversationId
 exports backend/services/conversations-messages/conversations.mts getConversationByCreatedByAndTitle
 exports backend/services/conversations-messages/conversations.mts updateConversationLastResponseId
+exports backend/services/conversations-messages/create.mts claimChatConversationMessageAgenticRun
 exports backend/services/conversations-messages/create.mts createConversationMessage
+exports backend/services/conversations-messages/create.mts createConversationMessageAgenticRun
+exports backend/services/conversations-messages/run-event-writer.mts createRunEventWriter
 exports backend/services/conversations-messages/update-message.mts updateConversationMessageContent
 exports backend/services/conversations-messages/update.mts failChatEnqueue
+exports backend/services/conversations-messages/update.mts finalizeChatAgenticRun
+exports backend/services/conversations-messages/update.mts releaseChatConversationMessageAgenticRunClaim
+exports backend/services/conversations-messages/update.mts updateConversationMessageAgenticRunError
+exports backend/services/conversations-messages/update.mts updateConversationMessageAgenticRunOutput
 exports backend/services/copyright-notices/appeal-recommendations.mts copyrightAppealRecommendations
 exports backend/services/copyright-notices/email-intake-parses.mts getCopyrightEmailIntakeForAgent
 exports backend/services/copyright-notices/email-intake-test-fixtures.mts createParsedCopyrightEmailIntake
@@ -385,7 +391,6 @@ exports backend/workers/sitemaps/processors.mts backfillDispatcherDependencies
 exports backend/workers/sitemaps/processors.mts updatePostDaySitemapDependencies
 exports backend/workers/sitemaps/processors.mts updateSitemapIndexDependencies
 exports backend/workers/story-post-related-url-projections/processors.mts processReconcileStoryPostRelatedUrlProjections
-types backend/agents/chat/stream.mts ChatStreamEvent
 types backend/services/ap-inbox-activities/durable-delivery-transition-contract.mts ActivityPubInboxDeliveryTransitionDimensions
 types backend/services/copyright-notices/index.mts CopyrightAgentDispatchPage
 types backend/services/copyright-notices/index.mts CopyrightReviewTargetBreaches

@@ -211,9 +211,6 @@ importers:
       '@modules/openrouter-utils':
         specifier: workspace:^
         version: link:../../modules/openrouter-utils
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
@@ -331,64 +328,6 @@ importers:
       undici:
         specifier: ^8.11.2
         version: 8.11.2
-
-  backend/agents/chat:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@agents/discovery-agent':
-        specifier: workspace:^
-        version: link:../discovery-agent
-      '@agents/profile-agent':
-        specifier: workspace:^
-        version: link:../profile-agent
-      '@agents/research-agent':
-        specifier: workspace:^
-        version: link:../research-agent
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
-      '@modules/sse-lifecycle':
-        specifier: workspace:^
-        version: link:../../modules/sse-lifecycle
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@services/agents':
-        specifier: workspace:^
-        version: link:../../services/agents
-      '@services/ai-usage':
-        specifier: workspace:^
-        version: link:../../services/ai-usage
-      '@services/conversations-messages':
-        specifier: workspace:^
-        version: link:../../services/conversations-messages
-      '@services/openai-agents':
-        specifier: workspace:^
-        version: link:../../services/openai-agents
-      '@services/openai-moderation':
-        specifier: workspace:^
-        version: link:../../services/openai-moderation
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-      undici:
-        specifier: ^8.11.2
-        version: 8.11.2
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/agents/classifier-runs:
     dependencies:
@@ -551,22 +490,6 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/agents/discovery-agent:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-    devDependencies:
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
-
   backend/agents/dispute-resolution:
     dependencies:
       '@agents/_shared':
@@ -672,22 +595,6 @@ importers:
         specifier: ^8.11.2
         version: 8.11.2
 
-  backend/agents/profile-agent:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-    devDependencies:
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
-
   backend/agents/report-judgement:
     dependencies:
       '@agents/_shared':
@@ -718,31 +625,6 @@ importers:
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
-
-  backend/agents/research-agent:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-    devDependencies:
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
-      '@services/conversations-messages':
-        specifier: workspace:^
-        version: link:../../services/conversations-messages
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/agents/story-clustering:
     dependencies:
@@ -4780,9 +4662,6 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
-      '@services/ai-usage':
-        specifier: workspace:^
-        version: link:../ai-usage
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers

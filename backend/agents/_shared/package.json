@@ -27,7 +27,6 @@
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@modules/openrouter-utils": "workspace:^",
-    "@modules/queue-config": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/conversations-messages": "workspace:^",

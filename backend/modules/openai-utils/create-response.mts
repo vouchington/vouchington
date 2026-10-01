@@ -1,7 +1,6 @@
 import type {
   ResponseCreateParamsStreaming,
   ResponseInput,
-  ResponseInputItem,
   ResponseStreamEvent,
 } from 'openai/resources/responses/responses'
 import onError from '@modules/on-error'
@@ -10,7 +9,7 @@ import {
   type BackgroundResponseLease,
 } from './background-response-context.mts'
 import { cancelOpenAIResponse } from './background-response-teardown.mts'
-import { streamWithOpenAIFlexFallback, withOpenAIFlexFallback } from './flex-fallback.mts'
+import { withOpenAIFlexFallback } from './flex-fallback.mts'
 import { getOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
 import {
   OpenAIResponseNotCompletedError,
@@ -33,13 +32,9 @@ export type { ResponseStreamEvent }
 export type ResponseStreamLike = AsyncIterable<ResponseStreamEvent>
 
 export type OpenAIResponseInput = string | ResponseInput
-export type OpenAIResponseInputItem = ResponseInputItem
-// `background` is deliberately not part of the caller-visible params (#8836): streamOpenAIResponse
-// always creates in the foreground (chat's TTFT budget can't absorb the ~4.5s background queueing
-// delay measured in the background-mode spike, written up in the private
-// vouchington/vouchington-docs repository) and createOpenAIResponse always creates in the
-// background (durability against worker crashes/redeploys). Which one runs where is a two-call-site
-// fact baked into this file, not a per-caller choice that could silently drift.
+// `background` is deliberately not part of the caller-visible params (#8836): createOpenAIResponse
+// always creates in the background (durability against worker crashes/redeploys), so it is baked
+// into this file rather than being a per-caller choice that could silently drift.
 export type CreateResponseParams = Omit<RawCreateParams, 'input' | 'background'> & {
   input: OpenAIResponseInput
 }
@@ -50,50 +45,14 @@ export async function createOpenAIResponse(
   options?: RawCreateOptions,
 ): Promise<OpenAIResponse> {
   return withOpenAIFlexFallback(params, 'openai', async (attemptParams, priorAttempts) => {
-    const response = await createOpenAIResponseStream(attemptParams, true, options, priorAttempts)
+    const streamParams: ResponseCreateParamsStreaming = {
+      ...attemptParams,
+      stream: true,
+      background: true,
+    }
+    const response = await createOpenAIResponseWithRetries(streamParams, options, priorAttempts)
     return drainBackgroundOpenAIResponse(response.stream, response.requestStartedAt)
   })
-}
-
-/* no-mistakes: integration=openai */
-export function streamOpenAIResponse(
-  params: CreateResponseParams,
-  options?: RawCreateOptions,
-): AsyncGenerator<{ delta: string }, OpenAIResponse> {
-  return streamWithOpenAIFlexFallback(params, 'openai', (attemptParams, priorAttempts) =>
-    streamOpenAIResponseAttempt(attemptParams, options, priorAttempts),
-  )
-}
-
-/* no-mistakes: integration=openai */
-async function* streamOpenAIResponseAttempt(
-  params: CreateResponseParams,
-  options: RawCreateOptions,
-  priorAttempts: number,
-): AsyncGenerator<{ delta: string }, OpenAIResponse> {
-  const response = await createOpenAIResponseStream(params, false, options, priorAttempts)
-  try {
-    return yield* streamOpenAIResponseEvents(response.stream)
-  } catch (error) {
-    if (shouldLatchUnknownBilledOpenAIAttempt(error)) {
-      await getOpenAIResponseAttemptHooks()?.onUnknownBilledAttempt({
-        requestStartedAt: response.requestStartedAt,
-        error,
-      })
-    }
-    throw error
-  }
-}
-
-/* no-mistakes: integration=openai */
-async function createOpenAIResponseStream(
-  params: CreateResponseParams,
-  background: boolean,
-  options: RawCreateOptions,
-  priorAttempts: number,
-): Promise<{ stream: ResponseStreamLike; requestStartedAt: Date }> {
-  const streamParams: ResponseCreateParamsStreaming = { ...params, stream: true, background }
-  return createOpenAIResponseWithRetries(streamParams, options, priorAttempts)
 }
 
 export async function* streamOpenAIResponseEvents(

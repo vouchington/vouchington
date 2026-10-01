@@ -154,7 +154,6 @@ playwright-credentialed:
   - 'backend/api/v1/images/**'
   - 'backend/services/images/**'
   - 'backend/modules/aws/**'
-  - 'backend/agents/chat/**'
   - 'backend/agents/conversation-title/**'
   - 'backend/agents/_shared/**'
   - 'backend/modules/openai-utils/**'

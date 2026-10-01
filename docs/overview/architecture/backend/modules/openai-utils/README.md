@@ -36,9 +36,8 @@ OpenAI API utilities — rate limit handling for glide-mq workers and response t
 ### Response text
 
 - `extractTextFromOpenAIResponse(response): string` — extracts the text content from a Responses API output, handling both array and simple output formats
-- `streamOpenAIResponse(params, options?)` — streams text deltas from the Responses API and falls back to the final response text when the provider completes without text-delta events
-- `createOpenAIResponse` and `streamOpenAIResponse` accept either string input or the SDK's native
-  `ResponseInput` array, including typed conversation messages and function-call outputs
+- `createOpenAIResponse` accepts either string input or the SDK's native `ResponseInput` array,
+  including typed conversation messages and function-call outputs
 - `runWithOpenAIResponseAttemptHooks(hooks, callback)` / `OpenAIResponseAttemptHooks` — scopes
   accounting hooks around physical Responses API attempts. The boundary disables SDK retries and
   retries only unbilled flex `resource_unavailable` errors. Ambiguous create or pre-terminal stream
@@ -48,10 +47,9 @@ OpenAI API utilities — rate limit handling for glide-mq workers and response t
   responses that carry usage do not latch. Other stream errors without usage still latch because
   the stream event has no HTTP status. Flex retry delays from `retry-after-ms` / `Retry-After`
   are clamped to 8s, and the abort signal is rechecked after `beforeAttempt`.
-- `withOpenAIFlexFallback` / `streamWithOpenAIFlexFallback` (`flex-fallback.mts`) — the one-shot
-  default-tier resend shared by `createOpenAIResponse`, `streamOpenAIResponse` and
-  `createOpenRouterResponse`. A `service_tier: 'flex'` request that hits flex capacity exhaustion is
-  resent **once** with `service_tier: 'default'`, either after the 429 `resource_unavailable` outlasted
+- `withOpenAIFlexFallback` (`flex-fallback.mts`) — the one-shot default-tier resend shared by
+  `createOpenAIResponse` and `createOpenRouterResponse`. A `service_tier: 'flex'` request that hits
+  flex capacity exhaustion is resent **once** with `service_tier: 'default'`, either after the 429 `resource_unavailable` outlasted
   the free retry budget or immediately on a streamed `response.failed` whose `server_error` message is
   "Flex processing is temporarily unavailable" and that carries no usage
   (`isOpenAIFlexCapacityFailedResponseError`, `response-errors.mts`). Both are positively unbilled, so
@@ -59,25 +57,21 @@ OpenAI API utilities — rate limit handling for glide-mq workers and response t
   with `attempt > 1` so the spend cap is checked again before a call billed at the standard price
   (about twice flex). The resend is outside the `maxRetries` budget, makes at most one extra physical
   request, and a failed resend is rethrown unchanged; non-flex requests and every other error are
-  untouched. A foreground stream that already yielded a delta is rethrown instead of resent. The
-  fallback is reported through `recordOpenAiFlexFallback` (`@modules/on-error`), and the usage ledger
-  prices the resend from the served `default` tier.
+  untouched. The fallback is reported through `recordOpenAiFlexFallback` (`@modules/on-error`), and
+  the usage ledger prices the resend from the served `default` tier.
 
 ### Background mode (#8836)
 
-`background` is deliberately not part of `CreateResponseParams` — which call site gets which mode
-is a two-function fact baked into this file, not a per-caller choice:
+`background` is deliberately not part of `CreateResponseParams` — `createOpenAIResponse` always
+creates in the background, which is baked into this file rather than being a per-caller choice:
 
 - `createOpenAIResponse(params, options?)` — always creates with `background: true` internally and
   drains the stream to a finished `OpenAIResponse`, discarding deltas. It makes one physical request
   unless an unbilled flex `resource_unavailable` result consumes the explicit app retry budget or
   flex capacity triggers the single default-tier resend above; callers and their test doubles are
   otherwise unaffected by the internal background/drain change.
-  This is what gives every non-chat agent call durability against a worker crash, OOM-kill, or
+  This is what gives every agent call durability against a worker crash, OOM-kill, or
   ECS rolling-deploy replacement mid-call.
-- `streamOpenAIResponse(params, options?)` — always creates in the **foreground** (`background`
-  omitted). Chat's time-to-first-token budget can't absorb the background queueing delay measured
-  in the #8836 spike (~4.2-4.8s on `gpt-5.4-nano`/flex).
 - `cancelOpenAIResponse(responseId)` / `retrieveOpenAIResponse(responseId)`
   (`background-response-teardown.mts`) — the only two ways to touch an in-flight or terminal
   background response after creation, both `maxRetries: 0` with a short timeout since they run on
