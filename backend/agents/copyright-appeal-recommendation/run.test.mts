@@ -5,15 +5,12 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import {
-  createCopyrightAppeal,
-  createCopyrightFormIntake,
-  getCopyrightNoticePrivateAggregate,
-} from '@services/copyright-notices'
+import { createCopyrightAppeal, createCopyrightFormIntake } from '@services/copyright-notices'
 import {
   parseCopyrightAppealRecommendationOutput,
   runCopyrightAppealRecommendationAgent,
 } from './run.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright appeal recommendation output', () => {
   it('accepts bounded advice without an action', () => {

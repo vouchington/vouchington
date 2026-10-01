@@ -10,7 +10,6 @@ import {
   admitCopyrightEmailCorrespondence,
   createCopyrightEmailIntake,
   createCopyrightFormIntake,
-  getCopyrightNoticePrivateAggregate,
   prepareCopyrightEmailDelivery,
   recordCopyrightEmailParse,
   reviewCopyrightAppeal,
@@ -22,6 +21,7 @@ import {
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('email appeal review', () => {
   useAutomaticProvisionalWithholding()

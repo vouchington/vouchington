@@ -8,13 +8,13 @@ import {
 import {
   createCopyrightDeliveryIntent,
   createCopyrightEmailIntake,
-  createCopyrightNoticeAggregate,
   createOutboundCopyrightCorrespondence,
   claimCopyrightDeliveryIntent,
   markCopyrightDeliveryIntentSent,
   recordCopyrightEmailParse,
   rejectCopyrightEmailIntake,
 } from './index.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 
 describe('copyright email threading', () => {
   it('links a reply to a sent outbound copyright email to its case for human review', async () => {

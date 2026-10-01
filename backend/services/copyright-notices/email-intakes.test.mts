@@ -11,7 +11,6 @@ import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/se
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
   createCopyrightEmailIntake,
-  createCopyrightNoticeAggregate,
   prepareCopyrightEmailIntakeResponseDelivery,
   promoteCopyrightEmailIntake,
   recordCopyrightEmailParse,
@@ -22,6 +21,7 @@ import { appendCopyrightEmailIntakeRecommendation } from './email-recommendation
 import { getCopyrightEmailIntakeForAgent } from './email-intake-parses.mts'
 import { createParsedCopyrightEmailIntake } from './email-intake-test-fixtures.mts'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 
 function readRecoverableResponseIds(responseId: string) {
   return readTestOwnedCopyrightSweepIds(

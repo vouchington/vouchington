@@ -7,7 +7,6 @@ import {
 } from '@voucha/test-helpers'
 import { readCopyrightEmailIntakeReview } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import {
-  getCopyrightNoticePrivateAggregate,
   markCopyrightEmailIntakeResponseBouncedBySesMessageId,
   markCopyrightEmailIntakeResponseFailed,
   markCopyrightEmailIntakeResponseSent,
@@ -16,6 +15,7 @@ import {
   rejectCopyrightEmailIntake,
 } from './index.mts'
 import { createParsedCopyrightEmailIntake } from './email-intake-test-fixtures.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright email promotion', () => {
   it('requires a moderator to promote an email intake before imposing its restrictions', async () => {

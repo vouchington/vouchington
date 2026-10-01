@@ -1,7 +1,3 @@
-/* oxlint-disable max-lines -- Copyright domain records stay together as the aggregate's canonical contract. */
-import type { CopyrightDeliveryIntentRecord } from './delivery-types.mts'
-export type { CopyrightDeliveryIntentRecord } from './delivery-types.mts'
-
 export type CopyrightJurisdiction = 'us_dmca' | 'eu_dsa' | 'uk' | 'other'
 export type CopyrightHumanReviewAction = 'confirm' | 'reverse'
 type CopyrightFormSubmissionKind = 'notice' | 'appeal' | 'counter_notice' | 'withdrawal'
@@ -59,15 +55,6 @@ export type CopyrightNoticeRecord = {
   policy_version: string
 }
 
-export type CopyrightNoticeTargetRecord = {
-  id: string
-  copyright_notice_id: string
-  placement_id: string
-  placement_revision: number
-  image_id: string
-  hosted_use_url: string
-}
-
 export type CopyrightRestrictionRecord = {
   id: string
   copyright_notice_target_id: string
@@ -100,29 +87,6 @@ export type CopyrightNoticeSubmissionAssessmentRecord = {
   substantially_compliant: boolean
   copyright_notice_form_screening_id: string | null
   supersedes_assessment_id: string | null
-}
-
-export type CopyrightAppealRecommendationRecord = {
-  id: string
-  copyright_notice_submission_id: string
-  input_sha256: Buffer
-  prompt_version: string
-  model: string
-  recommendation: 'confirm' | 'modify' | 'reverse' | 'uncertain'
-  rationale_ciphertext: string
-  created_at: Date
-  updated_at: Date
-}
-
-export type CopyrightNoticeDeadlineRecord = {
-  id: string
-  copyright_notice_id: string
-  qualifying_counter_notice_assessment_id: string
-  earliest_restoration_at: Date
-  escalation_at: Date
-  restoration_deadline_at: Date
-  resolved_at: Date | null
-  cancelled_at: Date | null
 }
 
 export type CopyrightLegalHoldAssessmentRecord = {
@@ -164,41 +128,6 @@ export type CopyrightCorrespondenceRecord = {
   sent_at: Date | null
 }
 
-export type CopyrightLifecycleEventRecord = {
-  id: string
-  copyright_notice_id: string
-  event_type: string
-  actor_user_id: string | null
-  copyright_notice_submission_id: string | null
-  copyright_notice_submission_assessment_id: string | null
-  copyright_notice_evidence_artifact_id: string | null
-  copyright_notice_correspondence_id: string | null
-  copyright_notice_legal_hold_assessment_id: string | null
-  copyright_notice_legal_hold_resolution_id: string | null
-  copyright_notice_deadline_id: string | null
-  copyright_restriction_id: string | null
-  copyright_notice_action_intent_id: string | null
-  copyright_notice_email_intake_id: string | null
-  copyright_notice_delivery_intent_id: string | null
-  media_delivery_registry_key: string | null
-  copyright_notice_guest_capability_id: string | null
-  review_action: CopyrightHumanReviewAction | null
-  review_rationale_ciphertext: string | null
-  counter_notice_accepted: boolean | null
-  recovery_source: 'durable_review' | 'durable_decision' | null
-  replay_reason: 'operator_replay' | null
-  created_at: Date
-}
-
-export type CopyrightEvidenceArtifactRecord = {
-  id: string
-  copyright_notice_submission_id: string
-  storage_key: string
-  sha256: Buffer
-  mime_type: string
-  byte_size: number
-}
-
 export type CopyrightActionIntentRecord = {
   id: string
   copyright_restriction_id: string
@@ -212,57 +141,4 @@ export type CopyrightActionIntentRecord = {
   completed_at_reason: 'completed' | 'stale' | 'blocked' | 'failed' | null
   failure_message: string | null
   next_attempt_at: Date | null
-}
-
-export type CopyrightAppealReviewRecord = {
-  id: string
-  copyright_notice_submission_id: string
-  copyright_restriction_id: string
-  copyright_notice_appeal_recommendation_id: string | null
-  reviewed_at: Date
-  reviewed_by_id: string | null
-  action: CopyrightHumanReviewAction
-  rationale_ciphertext: string
-  manual_fallback_reason_ciphertext: string | null
-}
-
-export type CopyrightCounterNoticeReviewRecord = {
-  id: string
-  copyright_notice_submission_id: string
-  copyright_notice_submission_assessment_id: string
-  copyright_notice_deadline_id: string | null
-  reviewed_at: Date
-  reviewed_by_id: string | null
-  accepted: boolean
-  rationale_ciphertext: string
-}
-
-export type CopyrightEmailCorrespondenceReviewRecord = {
-  id: string
-  copyright_notice_email_intake_id: string
-  copyright_notice_id: string
-  action: 'pending' | 'admitted' | 'rejected'
-  kind: 'supplement' | 'appeal' | 'counter_notice' | 'withdrawal' | 'court_or_ccb_hold' | null
-  reviewed_at: Date | null
-  reviewed_by_id: string | null
-}
-
-export type CopyrightNoticePrivateAggregate = {
-  notice: CopyrightNoticeRecord
-  targets: CopyrightNoticeTargetRecord[]
-  restrictions: CopyrightRestrictionRecord[]
-  submissions: CopyrightNoticeSubmissionRecord[]
-  appealRecommendations: CopyrightAppealRecommendationRecord[]
-  appealReviews: CopyrightAppealReviewRecord[]
-  counterNoticeReviews: CopyrightCounterNoticeReviewRecord[]
-  emailCorrespondenceReviews: CopyrightEmailCorrespondenceReviewRecord[]
-  assessments: CopyrightNoticeSubmissionAssessmentRecord[]
-  deadlines: CopyrightNoticeDeadlineRecord[]
-  holdAssessments: CopyrightLegalHoldAssessmentRecord[]
-  holdResolutions: CopyrightLegalHoldResolutionRecord[]
-  evidenceArtifacts: CopyrightEvidenceArtifactRecord[]
-  correspondence: CopyrightCorrespondenceRecord[]
-  lifecycleEvents: CopyrightLifecycleEventRecord[]
-  actionIntents: CopyrightActionIntentRecord[]
-  deliveryIntents: CopyrightDeliveryIntentRecord[]
 }

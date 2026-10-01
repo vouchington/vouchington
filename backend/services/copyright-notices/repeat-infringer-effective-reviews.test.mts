@@ -16,14 +16,14 @@ import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
   createCopyrightAppeal,
-  createCopyrightNoticeAggregate,
-  getCopyrightNoticePrivateAggregate,
   reviewCopyrightAppeal,
   completeCopyrightMandatoryHumanReview,
   getCopyrightRepeatInfringerAccount,
   recordCopyrightRepeatInfringerDisposition,
   recordCopyrightRepeatInfringerReviewOutcome,
 } from './index.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 async function createActors() {
   const [poster, otherPoster, moderatorRecord] = await Promise.all([

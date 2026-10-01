@@ -136,8 +136,10 @@ export function hasWebStackBuildFailureSignal(log: string): boolean {
       '✘ [ERROR]',
       'Error: Build failed',
       'Build failed with',
+      // Next logs this line when evaluating next.config.ts throws, which also covers its top-level
+      // guards (the sharp floor assertion). Match that wrapper, not a guard's own versioned
+      // message, so a dependency bump never needs an edit here.
       'Failed to load next.config',
-      'The web build requires sharp >=0.35.0',
       // setup-web-integration.mts's post-build artifact checks and asset-copy phase, which can
       // precede a shutdown race.
       'Missing Cloudflare Worker build artifact',

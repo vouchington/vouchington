@@ -1,13 +1,13 @@
 import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
 import { createOutboundCopyrightCorrespondence } from '../services/copyright-notices/correspondence.mts'
-import { createCopyrightNoticeAggregate } from '../services/copyright-notices/create.mts'
 import { createCopyrightDeliveryIntent } from '../services/copyright-notices/delivery-intents.mts'
-import { getCopyrightNoticePrivateAggregate } from '../services/copyright-notices/get.mts'
 import { insertTestImage } from './entities/images-insert.mts'
 import { insertTestPostImage } from './entities/images.mts'
 import { getTestPostImagePlacement } from './entities/post-images.mts'
 import { insertTestPost } from './entities/posts.mts'
 import { createTestUserDirect } from './entities/users-direct.mts'
+import { createCopyrightNoticeAggregate } from './services/copyright-notices/create-notice-aggregate.mts'
+import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices/private-aggregate.mts'
 
 export type AssessedUsDmcaCopyrightNoticeFixtureInput = {
   postTitlePrefix: string

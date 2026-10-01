@@ -2,13 +2,13 @@ import type { Job } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CopyrightFormScreeningJobData } from '@queues/ai-agents/types'
 import * as openaiProvider from '@modules/openai-utils/create-response'
-import { getCopyrightNoticePrivateAggregate } from '@services/copyright-notices'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { readTestCopyrightStaffScreening } from '@voucha/test-helpers/data-stores/psql/copyright-screening-executions'
 import { enableAutomaticProvisionalWithholdingForTest } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { processCopyrightFormScreening } from './process-copyright-form-screening.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 vi.mock(import('@modules/openai-utils/create-response'), async importOriginal => ({
   ...(await importOriginal()),

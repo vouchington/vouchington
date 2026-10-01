@@ -16,10 +16,10 @@ import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/co
 import {
   appendCopyrightSubmissionAssessment,
   applyNonSpamSignedInCopyrightFormScreening,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightEnforcementRequest,
   searchReconcilableCopyrightEnforcementRequestIds,
 } from '@services/copyright-notices'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 type StaffRequest = ReturnType<typeof createRequest>
 

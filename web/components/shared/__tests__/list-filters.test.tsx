@@ -1,73 +1,22 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  listFiltersNav,
+  resetListFiltersNav,
+  restoreListFiltersNav,
+} from '@/test-helpers/components/shared/list-filters.mock-support'
 
 import { fireEvent, render, screen } from '@testing-library/react'
-
-import type { ReactNode } from 'react'
-
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
-
-import { ListFilters } from '../list-filters'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
-
-vi.mock(
-  import('next/navigation'),
-  () => navMockModule as unknown as typeof import('next/navigation'),
-)
-
-const mockNav = createNavMock()
-
-vi.mock(
-  import('@/components/ui/select'),
-  () =>
-    ({
-      Select: ({
-        children,
-        value,
-        onValueChange,
-      }: {
-        children: ReactNode
-        value: string
-        onValueChange: (value: string) => void
-      }) => (
-        <select
-          aria-label='Sort list'
-          value={value}
-          onChange={event => onValueChange(event.target.value)}
-        >
-          {children}
-        </select>
-      ),
-      SelectContent: ({ children }: { children: ReactNode }) => children,
-      SelectItem: ({
-        children,
-        title,
-        value,
-      }: {
-        children: ReactNode
-        title?: string
-        value: string
-      }) => (
-        <option
-          title={title}
-          value={value}
-        >
-          {children}
-        </option>
-      ),
-      SelectTrigger: ({ children }: { children: ReactNode }) => children,
-      SelectValue: () => null,
-    }) as unknown as typeof import('@/components/ui/select'),
-)
+import { ListFilters } from '../list-filters'
 
 describe('ListFilters', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockNav.reset()
+    resetListFiltersNav()
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    restoreListFiltersNav()
   })
 
   it('does not apply invalid searchDefaultSort to URL when submitting a search', () => {
@@ -93,7 +42,7 @@ describe('ListFilters', () => {
     expect(consoleError).toHaveBeenCalledWith(
       'ListFilters: searchDefaultSort "invalid-sort" must be present in searchOnlySortOptions',
     )
-    expect(mockNav.push).toHaveBeenCalledWith('?q=hello', { scroll: false })
+    expect(listFiltersNav.push).toHaveBeenCalledWith('?q=hello', { scroll: false })
   })
 
   it('marks the search input as the primary route focus target', () => {
@@ -152,7 +101,7 @@ describe('ListFilters', () => {
     fireEvent.change(input, { target: { value: 'hello' } })
     fireEvent.submit(input.closest('form')!)
 
-    expect(mockNav.push).toHaveBeenCalledWith('?q=hello&sort=relevance', { scroll: false })
+    expect(listFiltersNav.push).toHaveBeenCalledWith('?q=hello&sort=relevance', { scroll: false })
   })
 
   it('auto-applies searchDefaultSort when submitting search via form submit', () => {
@@ -173,7 +122,7 @@ describe('ListFilters', () => {
     fireEvent.change(input, { target: { value: 'hello' } })
     fireEvent.submit(input.closest('form')!)
 
-    expect(mockNav.push).toHaveBeenCalledWith('?q=hello&sort=relevance', { scroll: false })
+    expect(listFiltersNav.push).toHaveBeenCalledWith('?q=hello&sort=relevance', { scroll: false })
   })
 
   it('submits the list search via Enter on the input through the Next router', () => {
@@ -192,8 +141,8 @@ describe('ListFilters', () => {
     input.focus()
     fireEvent.change(input, { target: { value: 'keyboard' } })
 
-    void expectInputEnterSubmits({ input, onSubmit: mockNav.push })
-    expect(mockNav.push).toHaveBeenCalledWith('?q=keyboard', { scroll: false })
+    void expectInputEnterSubmits({ input, onSubmit: listFiltersNav.push })
+    expect(listFiltersNav.push).toHaveBeenCalledWith('?q=keyboard', { scroll: false })
     expect(document.activeElement).toBe(input)
   })
 
@@ -239,7 +188,7 @@ describe('ListFilters', () => {
     fireEvent.change(input, { target: { value: 'keyboard' } })
     fireEvent.submit(input.closest('form')!)
 
-    mockNav.setSearchParams('q=keyboard')
+    listFiltersNav.setSearchParams('q=keyboard')
     rerender(
       <ListFilters
         placeholder='Search topics...'

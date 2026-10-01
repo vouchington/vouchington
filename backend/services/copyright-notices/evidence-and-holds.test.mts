@@ -6,20 +6,20 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
+import { insertCopyrightEvidenceArtifact } from '@voucha/test-helpers/data-stores/psql/copyright-evidence-artifacts'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
-  appendCopyrightEvidenceArtifact,
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
   appendCopyrightSubmissionAssessment,
   createCopyrightDeliveryIntent,
-  createCopyrightNoticeAggregate,
   createOutboundCopyrightCorrespondence,
   createEligibleCopyrightRestoreIntent,
-  getCopyrightNoticePrivateAggregate,
   resolveCopyrightLegalHold,
 } from './index.mts'
 import { createCompliantCounterNoticeDeadline } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 async function createTwoTargetFixture() {
   const [claimant, moderatorRecord] = await Promise.all([
@@ -92,7 +92,7 @@ describe('copyright notice evidence and holds', () => {
     const { aggregate, claimant, moderator, notice, noticeAssessment } =
       await createTwoTargetFixture()
     const [heldTarget, otherTarget] = aggregate.targets
-    const artifact = await appendCopyrightEvidenceArtifact({
+    const artifactId = await insertCopyrightEvidenceArtifact({
       submissionId: aggregate.submissions[0].id,
       storageKey: `copyright-inbound/${crypto.randomUUID()}.eml`,
       sha256: Buffer.alloc(32, 7),
@@ -115,7 +115,6 @@ describe('copyright notice evidence and holds', () => {
       noticeId: notice.id,
       moderator,
       targetIds: [heldTarget.id, otherTarget.id],
-      assessedAt: new Date('2026-07-01T12:00:00.000Z'),
     })
     const restorationNow = new Date(deadline.earliest_restoration_at.getTime() + 86_400_000)
     const holdSubmission = await appendCopyrightNoticeSubmission({
@@ -179,7 +178,7 @@ describe('copyright notice evidence and holds', () => {
     expect(resolution.copyright_notice_legal_hold_assessment_id).toBe(hold.id)
     expect(hold.target_ids).toEqual([heldTarget.id])
     expect(refreshed?.evidenceArtifacts).toContainEqual(
-      expect.objectContaining({ id: artifact.id, byte_size: 42 }),
+      expect.objectContaining({ id: artifactId, byte_size: 42 }),
     )
     expect(refreshed?.holdAssessments).toContainEqual(
       expect.objectContaining({ id: hold.id, target_ids: [heldTarget.id] }),

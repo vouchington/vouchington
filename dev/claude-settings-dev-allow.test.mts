@@ -3,6 +3,9 @@ import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
+import { PLAIN_FORCE_PUSH_REASON } from './codex-hooks/policy/blocked-command-patterns.mts'
+import { plainForcePushReason } from './plain-force-push.mts'
+
 // Claude Code matches a Bash rule against the whole command text, with `*` standing in for any
 // text; a trailing ` *` that is the rule's only wildcard also matches the bare command. The
 // blanket dev/ allow rules skip review for every checked-in dev/ entrypoint; each dev/ command
@@ -72,5 +75,47 @@ describe('Claude review-skip for dev/ commands', () => {
   ])('denies the dev/ path escape %s', command => {
     expect(isAllowed(command)).toBe(true)
     expect(isDenied(command)).toBe(true)
+  })
+})
+
+// The documented rebase lifecycle (.agents/skills/agent-workflow/git-and-prs.md) skips review only
+// as bare commands; starting a rebase stays on ./dev/rebase-onto-main. Raw force pushes are left
+// to the PreToolUse hook and .husky/pre-push. Rationale:
+// docs/development/agent-sandbox.md#claude-review-skip-for-the-rebase-lifecycle.
+describe('Claude review-skip for the rebase lifecycle', () => {
+  const sha = 'a'.repeat(40)
+
+  it.each([
+    'GIT_EDITOR=true git rebase --continue',
+    'git rebase --skip',
+    'git rebase --abort',
+    `git push --force-with-lease=fix/example:${sha}`,
+    `git push --force-with-lease=fix/example:${sha} origin fix/example`,
+  ])('allows %s without review', command => {
+    expect(isAllowed(command)).toBe(true)
+    expect(isDenied(command)).toBe(false)
+    expect(plainForcePushReason(command)).toBeNull()
+  })
+
+  it.each([
+    'git rebase origin/main',
+    'git rebase -i HEAD~3',
+    'git rebase --onto origin/main HEAD~2',
+    'GIT_EDITOR=vim git rebase --continue',
+    'git push --force-with-lease',
+    'git -C ../other rebase --skip',
+    `git -C ../other push --force-with-lease=fix/example:${sha}`,
+    'cd ../other && git rebase --skip',
+  ])('keeps %s on review', command => {
+    expect(isAllowed(command)).toBe(false)
+  })
+
+  it.each([
+    `git push --force-with-lease=fix/example:${sha} --force origin fix/example`,
+    `git push --force-with-lease=fix/example:${sha} -f origin fix/example`,
+    `git push --force-with-lease=fix/example:${sha} origin +HEAD:main`,
+  ])('leaves the raw force in %s to the push hooks', command => {
+    expect(isAllowed(command)).toBe(true)
+    expect(plainForcePushReason(command)).toBe(PLAIN_FORCE_PUSH_REASON)
   })
 })
