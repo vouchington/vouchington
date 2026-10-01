@@ -1,12 +1,12 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { CopyrightDeliveryIntentRecord } from '../../../services/copyright-notices/delivery-types.mts'
+import type { CopyrightActionIntentRecord } from '../../../services/copyright-notices/types.mts'
 import type {
-  CopyrightActionIntentRecord,
   CopyrightAppealReviewRecord,
   CopyrightCounterNoticeReviewRecord,
   CopyrightEmailCorrespondenceReviewRecord,
-} from '../../../services/copyright-notices/types.mts'
+} from './private-aggregate-types.mts'
 
 export async function selectCopyrightActionIntents(
   noticeId: string,

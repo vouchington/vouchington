@@ -1,14 +1,16 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type {
-  CopyrightAppealRecommendationRecord,
-  CopyrightEvidenceArtifactRecord,
   CopyrightLegalHoldAssessmentRecord,
   CopyrightLegalHoldResolutionRecord,
   CopyrightNoticeSubmissionAssessmentRecord,
-  CopyrightNoticeTargetRecord,
   CopyrightRestrictionRecord,
 } from '../../../services/copyright-notices/types.mts'
+import type {
+  CopyrightAppealRecommendationRecord,
+  CopyrightEvidenceArtifactRecord,
+  CopyrightNoticeTargetRecord,
+} from './private-aggregate-types.mts'
 
 export async function selectAppealRecommendations(
   noticeId: string,

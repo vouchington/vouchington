@@ -3,22 +3,24 @@ import sql from 'sql-template-strings'
 import type { CopyrightDeliveryIntentRecord } from '../../../services/copyright-notices/delivery-types.mts'
 import type {
   CopyrightActionIntentRecord,
-  CopyrightAppealRecommendationRecord,
-  CopyrightAppealReviewRecord,
   CopyrightCorrespondenceRecord,
-  CopyrightCounterNoticeReviewRecord,
-  CopyrightEmailCorrespondenceReviewRecord,
-  CopyrightEvidenceArtifactRecord,
   CopyrightLegalHoldAssessmentRecord,
   CopyrightLegalHoldResolutionRecord,
-  CopyrightLifecycleEventRecord,
-  CopyrightNoticeDeadlineRecord,
   CopyrightNoticeRecord,
   CopyrightNoticeSubmissionAssessmentRecord,
   CopyrightNoticeSubmissionRecord,
-  CopyrightNoticeTargetRecord,
   CopyrightRestrictionRecord,
 } from '../../../services/copyright-notices/types.mts'
+import type {
+  CopyrightAppealRecommendationRecord,
+  CopyrightAppealReviewRecord,
+  CopyrightCounterNoticeReviewRecord,
+  CopyrightEmailCorrespondenceReviewRecord,
+  CopyrightEvidenceArtifactRecord,
+  CopyrightLifecycleEventRecord,
+  CopyrightNoticeDeadlineRecord,
+  CopyrightNoticeTargetRecord,
+} from './private-aggregate-types.mts'
 import {
   selectAppealRecommendations,
   selectAssessments,
