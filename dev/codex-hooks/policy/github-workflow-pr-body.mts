@@ -1,6 +1,7 @@
 import { hasClosingIssueReference } from '../../pr-description/closing-refs.mts'
 import { findEscapeCommentClosingKeywordLeaks } from '../../pr-description/escape-comment-leaks.mts'
 import { isDirectUserRequestNoSourceBody } from '../../pr-description/direct-user-request.mts'
+import { extractPartialBatchSourceRef } from '../../pr-description/partial-batch.mts'
 import {
   isFixMainInterimClassifierNoClosingRefBody,
   isScheduledPromptNoSourceBody,
@@ -76,11 +77,12 @@ export function githubPrBodyDecision(input: {
     !hasClosingIssueReference(body) &&
     !directUserRequest &&
     !isScheduledPromptNoSourceBody(body) &&
-    !isFixMainInterimClassifierNoClosingRefBody(body)
+    !isFixMainInterimClassifierNoClosingRefBody(body) &&
+    extractPartialBatchSourceRef(body) === undefined
   ) {
     return {
       reason:
-        'PR bodies must include at least one GitHub closing keyword such as "Closes #123" for resolved issues, or the exact interactive direct-user-request no-source representation, or the exact scheduled-prompt no-source representation, or the exact Fix Main interim-classifier no-closing-ref representation alongside a Refs entry.',
+        'PR bodies must include at least one GitHub closing keyword such as "Closes #123" for resolved issues, or the exact interactive direct-user-request no-source representation, scheduled no-source representation, Fix Main interim-classifier representation, or partial-batch representation alongside a standalone Refs entry.',
     }
   }
   const escapeCommentLeaks = findEscapeCommentClosingKeywordLeaks(body)

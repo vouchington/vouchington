@@ -5,7 +5,7 @@
 `node dev/pr-description.mts <subcommand>` validates and manages PR bodies; prefer it over raw `gh pr create/edit --body-file`.
 Diff-consuming commands reduce each unified-diff file block as it arrives, so large PRs do not require a whole-patch buffer.
 
-- `validate [<pr>] [--body-file <path>]` — validates required PR sections, closing references, and the scheduled no-source exception. Body source: `--body-file` > stdin > `gh pr view <pr>`.
+- `validate [<pr>] [--body-file <path>]` — validates required PR sections, issue references, and supported non-closing representations. Body source: `--body-file` > stdin > `gh pr view <pr>`.
 - `create --title <title> [--body-file <path>]` — validates and creates a draft PR; prints referenced issue state and related-issue hints. Body source: `--body-file` or stdin.
 - `update <pr> [--body-file <path>]` — validates and replaces a PR body; prints referenced issue state. Body source: `--body-file` > stdin > `gh pr view`.
 
@@ -24,6 +24,23 @@ sections, and malformed details containers fail validation. Existing issue-refer
 rules still apply. Closing and non-closing references and the scheduled/Fix Main exceptions use
 the same Related issues section boundaries; supporting headings cannot truncate any of those paths.
 Updates preserve the canonical Shepherd Journal exactly.
+
+An incomplete batch of a larger source issue uses a standalone reference followed by this exact
+declaration in `## Related issues`:
+
+```markdown
+Refs #123
+Partial batch; source issue remains open for remaining work.
+<!-- related-issues-validation: partial-batch -->
+```
+
+Explain the completed batch and remaining work in the body. The helper resolves the referenced
+source as an existing open issue, rejects pull requests, and permits its unfinished tasks because
+the batch does not claim completion. It does not treat that reference as an issue closed by the
+PR; all other closing references retain their existing checks. Historical validation of an already
+merged batch permits the source issue to have closed later. The hook shares the declaration parser
+and checks its shape without making network requests. Required sections, provenance, and draft-first
+creation still apply. The completing batch uses a truthful closing reference instead.
 
 The helper enforces structure, not the truth of impact claims or the usefulness of diagrams.
 Follow the [PR-description skill](../../../.agents/skills/pr-description/SKILL.md) for before/after,

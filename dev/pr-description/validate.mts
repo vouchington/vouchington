@@ -19,6 +19,7 @@ import {
   extractFixMainInterimClassifierRootCauseRef,
   validateFixMainRootCauseRef,
 } from './scheduled-no-source.mts'
+import { extractPartialBatchSourceRef, validatePartialBatchSourceRef } from './partial-batch.mts'
 
 export type IssueReferenceResolver = (ref: ClosingIssueReference) => Promise<IssueReferenceLookup>
 
@@ -76,6 +77,27 @@ export async function validatePrBodyWithIssueReferences(
 
   const target = options.targetPullRequest
   const targetIsMerged = target?.state.toUpperCase() === 'MERGED'
+
+  const partialSourceRef = extractPartialBatchSourceRef(body)
+  const partialSourceLookup =
+    partialSourceRef === undefined ? undefined : await resolveIssueReference(partialSourceRef)
+  result.errors.push(
+    ...validatePartialBatchSourceRef(partialSourceRef, partialSourceLookup, targetIsMerged),
+  )
+  if (
+    partialSourceRef !== undefined &&
+    refs.some(ref => {
+      if (ref.key === partialSourceRef.key) return true
+      const lookup = lookups.get(ref.key)
+      return (
+        lookup?.ok === true &&
+        partialSourceLookup?.ok === true &&
+        lookup.issue.url.toLowerCase() === partialSourceLookup.issue.url.toLowerCase()
+      )
+    })
+  ) {
+    result.errors.push('A partial batch must not also close its source issue.')
+  }
 
   const rootCauseRef = extractFixMainInterimClassifierRootCauseRef(body)
   const rootCauseLookup =

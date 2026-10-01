@@ -91,7 +91,7 @@ function leadingIndentColumns(line: string): number {
   return column
 }
 
-function parseStandaloneRootCauseRefLine(line: string): ClosingIssueReference | undefined {
+export function parseStandaloneIssueRefLine(line: string): ClosingIssueReference | undefined {
   if (leadingIndentColumns(line) >= 4) return undefined
 
   const match = STANDALONE_ROOT_CAUSE_REF_RE.exec(line.trim())
@@ -126,7 +126,7 @@ function findAdjacentRootCauseRef(relatedIssuesLines: string[]): ClosingIssueRef
   }
   if (refIndex < 0) return undefined
 
-  return parseStandaloneRootCauseRefLine(relatedIssuesLines[refIndex] ?? '')
+  return parseStandaloneIssueRefLine(relatedIssuesLines[refIndex] ?? '')
 }
 
 export function isFixMainInterimClassifierNoClosingRefBody(body: string): boolean {
