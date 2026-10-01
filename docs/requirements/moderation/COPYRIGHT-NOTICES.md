@@ -249,6 +249,25 @@ version and ETag are pinned and copied into the private evidence bucket before p
 failures remain immutable staff-visible intakes with the original evidence; they are not dropped or
 promoted automatically.
 
+Each email intake records the five verdicts Amazon SES reached when it received the message: SPF,
+DKIM, DMARC, spam, and malware. Each is `pass`, `fail`, `gray`, `processing_failed`, or `unknown`,
+and is written once with the intake, so a replay keeps the first values. They come only from the
+headers SES itself prepended above `X-SES-RECEIPT`; a header a sender planted below it is ignored,
+and a verdict SES did not report is `unknown`, never `pass`. That boundary assumes SES always writes
+`X-SES-RECEIPT` on a received message. DKIM `pass` means a signature validated, not that the signing
+domain aligns with the From address. The staff review page shows all five. An SPF, DKIM, or DMARC
+failure (or a spam verdict) is a risk note beside the evidence and never rejects, delays, or
+decides a notice, because a legitimate claimant can fail them through a forwarder or mailing list.
+
+A malware `fail` quarantines the original: the raw `.eml` route refuses with `409` (code
+`COPYRIGHT_EMAIL_QUARANTINED`), the intake response carries `raw_email.download_url: null`, and the
+review page shows a warning instead of the link. Staff review the parsed text only, and the intake can
+still be decided. Any other malware verdict keeps the download available. `gray` means SES
+could not classify the message, `processing_failed` means the scan did not complete, and `unknown`
+means SES reported nothing. The review page warns staff to open the original only in isolation. Blocking
+on `processing_failed` would hand the decision to the sender, because a malformed MIME message can force
+that verdict and so keep a valid notice out of staff view.
+
 Private contact details, signatures, raw text, attachments, staff rationale, agent output, and
 storage keys are never member fields. Accepted cases use an explicit authenticated-member allowlist.
 The claimant link comes from the account's current public profile, not a legal-name or signature

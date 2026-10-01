@@ -69,6 +69,17 @@ reachable after the first page. That includes an email whose parse was never rec
 `parse_status` is `unparsed`, beside `succeeded` and `failed`, and staff review it from the original
 MIME object. A reviewer's decision refreshes the queue from its first page.
 
+The staff intake response, `GET /api/v1/copyright-email-intakes/:id`, carries
+`copyright_email_intake.ses_verdicts`: `{ spf, dkim, dmarc, spam, virus }`, each `pass`, `fail`,
+`gray`, `processing_failed`, or `unknown`. SES reported them in headers it prepended to the message
+when it received it, they are fixed when the intake is created, and `unknown` means SES stated
+nothing; it never means `pass`. DKIM `pass` means a signature validated, not that the signing domain
+aligns with the From address. An SPF, DKIM, or DMARC failure never rejects or changes the status of
+an intake. `raw_email.download_url` is `null` when `virus` is `fail`, and
+`GET /api/v1/copyright-email-intakes/:id/raw` then answers `409` with the code
+`COPYRIGHT_EMAIL_QUARANTINED` before it reads any storage. The other `virus` verdicts keep the
+download available, and the staff page warns staff to open the original only in isolation.
+
 `POST /api/v1/copyright-email-intakes/:id/rejections` rejects an email or, with
 `response_kind: needs_information`, asks the sender for more information. That kind requires a
 `response_message` that is not blank and at most 10,000 characters, which follows the fixed reply

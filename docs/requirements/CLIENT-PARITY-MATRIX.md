@@ -82,7 +82,9 @@ is web-only staff tooling; its fixtures, including `web.copyright.guest-capabili
 only the web consumer. Staff email-intake review is web-only staff tooling too. Its rejection and
 information-request responses (`web.copyright.email-intake-rejection.reply-queued` and `.no-reply`,
 `web.copyright.email-intake-information-request.reply-queued` and `.no-reply`) have only the web
-consumer; native clients have no staff email review action. The
+consumer; native clients have no staff email review action, including the
+`copyright_email_intake.ses_verdicts` verdicts and the null `raw_email.download_url` that quarantines
+an email SES flagged for malware. The
 [request and response contract](api/v1/copyright-notices/README.md) is owned by the API page.
 Table B lists every web copyright surface (policy pages, member cases, notice filing, poster
 responses, guest filing, and the four staff surfaces). Swift and .NET render none of them, and

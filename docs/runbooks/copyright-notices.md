@@ -61,6 +61,29 @@ intake queue shows each message's wait age.
 7. If a signed-in case was provisionally restricted automatically, record a human `confirm`,
    `modify`, or `reverse` decision even when nobody appeals.
 
+### Email authentication and malware verdicts
+
+The email review page lists the SPF, DKIM, DMARC, spam, and malware verdicts Amazon SES recorded
+when it received the message, each shown as Pass, Fail, Inconclusive, Check failed, or Not reported.
+
+- An SPF, DKIM, or DMARC failure, or a spam verdict, adds an Authentication risk note. It is context,
+  not a decision: a real claimant can fail these through a forwarder or mailing list, so weigh the
+  note with the rest of the evidence and decide the intake as usual. Do not reject a notice for it
+  alone. DKIM Pass means a signature validated, not that the signing domain matches the From address.
+- Not reported means SES did not state a verdict, so treat it as unverified, never as Pass.
+
+### Quarantined originals
+
+When SES reports malware in an email (Malware: Fail) the page shows "Original email withheld" in
+place of the download link, and the raw `.eml` route answers `409 COPYRIGHT_EMAIL_QUARANTINED`. Review
+the parsed text and decide the intake normally; do not look for another way to open the original.
+Report a suspected false positive to engineering rather than working around it.
+
+When the malware verdict is Inconclusive, Check failed, or Not reported, the download stays
+available and the page warns you. Download it only if the parsed text is not enough, and open it in
+an isolated environment. Those verdicts do not block the download because a sender can force Check
+failed with a malformed message, and blocking would keep a valid notice from review.
+
 ## Intake activation
 
 Keep `COPYRIGHT_INTAKE_ENABLED=false` until all of the following are verified in the target

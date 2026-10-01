@@ -1,3 +1,4 @@
+import type { CopyrightEmailIntake } from '@/lib/api/client/copyright-email-intakes'
 import type {
   CopyrightEmailIntakeQueueItem,
   CopyrightEmailIntakeQueuePage,
@@ -33,17 +34,27 @@ export function makeCopyrightEmailQueuePage(
   }
 }
 
-export function makeCopyrightEmailIntake(id = copyrightEmailIntakeId) {
+export function makeCopyrightEmailIntake(
+  id = copyrightEmailIntakeId,
+  overrides: Partial<CopyrightEmailIntake> = {},
+): CopyrightEmailIntake {
   return {
     id,
     received_at: '2026-09-19T00:00:00.000Z',
-    review_path: 'initial' as const,
+    review_path: 'initial',
     linked_notice: null,
     raw_email: {
       mime_type: 'message/rfc822',
       byte_size: 1024,
       sha256: 'a'.repeat(64),
       download_url: `/api/v1/copyright-email-intakes/${id}/raw`,
+    },
+    ses_verdicts: {
+      spf: 'pass',
+      dkim: 'pass',
+      dmarc: 'pass',
+      spam: 'pass',
+      virus: 'pass',
     },
     parsed_email: {
       sender_email: 'tests+copyright-claimant@voucha.ai',
@@ -65,6 +76,7 @@ export function makeCopyrightEmailIntake(id = copyrightEmailIntakeId) {
         recommendation: 'potentially_valid',
       },
     },
+    ...overrides,
   }
 }
 
@@ -76,10 +88,10 @@ export function makeMatchedCopyrightEmailQueueItem(): CopyrightEmailIntakeQueueI
   }
 }
 
-export function makeMatchedCopyrightEmailIntake() {
+export function makeMatchedCopyrightEmailIntake(): CopyrightEmailIntake {
   return {
     ...makeCopyrightEmailIntake(),
-    review_path: 'matched_thread' as const,
+    review_path: 'matched_thread',
     linked_notice: {
       id: '019f0000-0000-7000-8000-000000000006',
       targets: [
