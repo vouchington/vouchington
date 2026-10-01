@@ -861,6 +861,9 @@
     "fn_protect_agent_moderation_transparency_projection": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_agent_moderation_transparency_projection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.id IS DISTINCT FROM NEW.id\n    OR OLD.agent_id IS DISTINCT FROM NEW.agent_id\n    OR OLD.prompt_id IS DISTINCT FROM NEW.prompt_id THEN\n    RAISE EXCEPTION 'agent moderation transparency source identity is immutable';\n  END IF;\n  IF OLD.deleted_at IS NOT DISTINCT FROM NEW.deleted_at\n    AND (OLD.moderation_transparency_category IS DISTINCT FROM NEW.moderation_transparency_category\n      OR OLD.moderation_transparency_community_id IS DISTINCT FROM NEW.moderation_transparency_community_id) THEN\n    RAISE EXCEPTION 'agent moderation transparency projection is trigger-maintained';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
+    "fn_protect_classifier_run": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_classifier_run()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.id IS DISTINCT FROM NEW.id\n    OR OLD.classifier_id IS DISTINCT FROM NEW.classifier_id\n    OR OLD.post_id IS DISTINCT FROM NEW.post_id\n    OR OLD.rss_feed_item_id IS DISTINCT FROM NEW.rss_feed_item_id\n    OR OLD.input_sha256 IS DISTINCT FROM NEW.input_sha256\n    OR OLD.configuration_json::text IS DISTINCT FROM NEW.configuration_json::text\n    OR OLD.configuration_sha256 IS DISTINCT FROM NEW.configuration_sha256\n    OR OLD.shared_actor_id IS DISTINCT FROM NEW.shared_actor_id\n    OR OLD.community_identity_id IS DISTINCT FROM NEW.community_identity_id\n    OR OLD.decision_batch_id IS DISTINCT FROM NEW.decision_batch_id THEN\n    RAISE EXCEPTION 'classifier run identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF OLD.provider_attempts_started > NEW.provider_attempts_started\n    OR OLD.sweep_enqueue_count > NEW.sweep_enqueue_count\n    OR (OLD.terminal_failed_at IS NOT NULL AND (\n      OLD.terminal_failed_at IS DISTINCT FROM NEW.terminal_failed_at\n      OR OLD.terminal_failure_kind IS DISTINCT FROM NEW.terminal_failure_kind\n    ))\n    OR (OLD.superseded_at IS NOT NULL AND NEW.superseded_at IS NOT NULL\n      AND OLD.superseded_at IS DISTINCT FROM NEW.superseded_at) THEN\n    RAISE EXCEPTION 'classifier run outcome is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF (OLD.outcomes_persisted_at IS NOT NULL\n      AND OLD.outcomes_persisted_at IS DISTINCT FROM NEW.outcomes_persisted_at)\n    OR (OLD.completed_at IS NOT NULL\n      AND OLD.completed_at IS DISTINCT FROM NEW.completed_at)\n    OR (OLD.superseded_at IS NOT NULL AND (\n      OLD.outcomes_persisted_at IS DISTINCT FROM NEW.outcomes_persisted_at\n      OR OLD.completed_at IS DISTINCT FROM NEW.completed_at\n    )) THEN\n    RAISE EXCEPTION 'classifier run phase is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
     "fn_protect_clearance_transparency_categories": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_clearance_transparency_categories()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.moderation_transparency_categories IS DISTINCT FROM NEW.moderation_transparency_categories THEN\n    RAISE EXCEPTION 'clearance moderation transparency categories are immutable';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
@@ -875,9 +878,6 @@
     },
     "fn_protect_moderator_action_type": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_moderator_action_type()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.action_type IS DISTINCT FROM NEW.action_type THEN\n    RAISE EXCEPTION 'moderator action type is immutable';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
-    },
-    "fn_protect_post_classifier_application": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_post_classifier_application()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.post_id IS DISTINCT FROM NEW.post_id\n    OR OLD.id IS DISTINCT FROM NEW.id\n    OR OLD.input_sha256 IS DISTINCT FROM NEW.input_sha256\n    OR OLD.configuration_json::text IS DISTINCT FROM NEW.configuration_json::text\n    OR OLD.configuration_sha256 IS DISTINCT FROM NEW.configuration_sha256\n    OR OLD.shared_actor_id IS DISTINCT FROM NEW.shared_actor_id\n    OR OLD.community_identity_id IS DISTINCT FROM NEW.community_identity_id\n    OR OLD.detector_package_version IS DISTINCT FROM NEW.detector_package_version\n    OR OLD.local_topic_id IS DISTINCT FROM NEW.local_topic_id\n    OR OLD.decision_batch_id IS DISTINCT FROM NEW.decision_batch_id THEN\n    RAISE EXCEPTION 'post classifier application identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF ((OLD.local_flagged IS NOT NULL OR OLD.outcomes_persisted_at IS NOT NULL) AND (\n      ROW(OLD.local_flagged, OLD.local_reason, OLD.local_confidence_score,\n        OLD.local_confidence_threshold, OLD.local_classification, OLD.local_detector,\n        OLD.local_detector_model_version)\n      IS DISTINCT FROM\n      ROW(NEW.local_flagged, NEW.local_reason, NEW.local_confidence_score,\n        NEW.local_confidence_threshold, NEW.local_classification, NEW.local_detector,\n        NEW.local_detector_model_version)\n    ))\n    OR OLD.provider_attempts_started > NEW.provider_attempts_started\n    OR OLD.sweep_enqueue_count > NEW.sweep_enqueue_count\n    OR (OLD.terminal_remote_failed_at IS NOT NULL AND (\n      OLD.terminal_remote_failed_at IS DISTINCT FROM NEW.terminal_remote_failed_at\n      OR OLD.terminal_remote_failure_kind IS DISTINCT FROM NEW.terminal_remote_failure_kind\n    ))\n    OR (OLD.superseded_at IS NOT NULL AND NEW.superseded_at IS NOT NULL\n      AND OLD.superseded_at IS DISTINCT FROM NEW.superseded_at) THEN\n    RAISE EXCEPTION 'post classifier application outcome is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF (OLD.outcomes_persisted_at IS NOT NULL\n      AND OLD.outcomes_persisted_at IS DISTINCT FROM NEW.outcomes_persisted_at)\n    OR (OLD.votes_applied_at IS NOT NULL\n      AND OLD.votes_applied_at IS DISTINCT FROM NEW.votes_applied_at)\n    OR (OLD.tags_applied_at IS NOT NULL\n      AND OLD.tags_applied_at IS DISTINCT FROM NEW.tags_applied_at)\n    OR (OLD.completed_at IS NOT NULL\n      AND OLD.completed_at IS DISTINCT FROM NEW.completed_at)\n    OR (OLD.superseded_at IS NOT NULL AND (\n      OLD.outcomes_persisted_at IS DISTINCT FROM NEW.outcomes_persisted_at\n      OR OLD.votes_applied_at IS DISTINCT FROM NEW.votes_applied_at\n      OR OLD.tags_applied_at IS DISTINCT FROM NEW.tags_applied_at\n      OR OLD.completed_at IS DISTINCT FROM NEW.completed_at\n    )) THEN\n    RAISE EXCEPTION 'post classifier application phase is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_protect_post_clearance_change_type": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_post_clearance_change_type()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.change_type IS DISTINCT FROM NEW.change_type THEN\n    RAISE EXCEPTION 'post clearance change type is immutable';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -1023,6 +1023,9 @@
     "fn_stamp_agent_moderation_transparency": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_stamp_agent_moderation_transparency()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE v_community_id uuid; v_post_community_id uuid; v_current_community_id uuid; v_agent_deleted_at timestamptz; v_prompt_deleted_at timestamptz; v_cap_deleted_at timestamptz;\nBEGIN\n  -- Lock the FK parents before taking the projection locks. A concurrent hard\n  -- delete already owns the parent row before its row trigger can take an\n  -- advisory lock; reversing this order would form a parent-row/advisory-lock\n  -- cycle with this INSERT.\n  PERFORM 1 FROM agents WHERE id = NEW.agent_id FOR KEY SHARE;\n  PERFORM 1 FROM agent_prompts WHERE id = NEW.prompt_id FOR KEY SHARE;\n  -- Do not lock the post here: community deletion owns the community before\n  -- cascading to posts, so a post-to-community lock would invert that order.\n  -- Snapshot and revalidate instead; an unstable post scope is withheld.\n  SELECT community_id INTO v_post_community_id FROM posts WHERE id = NEW.post_id;\n  SELECT community_id, deleted_at INTO v_community_id, v_cap_deleted_at\n  FROM community_agent_prompts WHERE id = NEW.prompt_id;\n  IF v_community_id IS NOT NULL THEN\n    PERFORM 1 FROM communities WHERE id = v_community_id FOR KEY SHARE;\n    IF NOT FOUND THEN\n      v_community_id := NULL;\n      v_cap_deleted_at := NULL;\n    END IF;\n  END IF;\n  SELECT community_id, deleted_at INTO v_current_community_id, v_cap_deleted_at\n  FROM community_agent_prompts WHERE id = NEW.prompt_id FOR SHARE;\n  IF v_current_community_id IS NULL THEN\n    v_community_id := NULL;\n    v_cap_deleted_at := NULL;\n  ELSIF v_current_community_id IS DISTINCT FROM v_community_id THEN\n    RAISE EXCEPTION 'community prompt changed during moderation projection' USING ERRCODE = '40001';\n  END IF;\n  IF (SELECT community_id FROM posts WHERE id = NEW.post_id)\n      IS DISTINCT FROM v_post_community_id THEN\n    NEW.moderation_transparency_category := NULL;\n    NEW.moderation_transparency_community_id := NULL;\n    RETURN NEW;\n  END IF;\n  -- Every caller then takes agent before prompt, which prevents an event from\n  -- observing a cap assignment half-way through its lifecycle transaction.\n  PERFORM fn_lock_moderation_transparency_projection('agent', NEW.agent_id);\n  PERFORM fn_lock_moderation_transparency_projection('prompt', NEW.prompt_id);\n  SELECT agent.deleted_at, prompt.deleted_at\n    INTO v_agent_deleted_at, v_prompt_deleted_at\n  FROM agents agent JOIN agent_prompts prompt ON prompt.id = NEW.prompt_id\n  WHERE agent.id = NEW.agent_id;\n  v_agent_deleted_at := date_trunc('milliseconds', v_agent_deleted_at);\n  v_prompt_deleted_at := date_trunc('milliseconds', v_prompt_deleted_at);\n  v_cap_deleted_at := date_trunc('milliseconds', v_cap_deleted_at);\n  NEW.moderation_transparency_category := NULL;\n  NEW.moderation_transparency_community_id := NULL;\n  IF NEW.deleted_at IS NOT NULL\n    OR (v_agent_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_agent_deleted_at)\n    OR (v_prompt_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_prompt_deleted_at)\n    OR (v_cap_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_cap_deleted_at) THEN\n    RETURN NEW;\n  END IF;\n  -- A community prompt remains a community-AI event. A platform agent keeps\n  -- its platform category, but its post scope must still exclude it from the\n  -- global projection because raw community analytics can identify the event.\n  NEW.moderation_transparency_category := CASE WHEN v_community_id IS NULL THEN 'agent_moderation' ELSE 'community_ai' END;\n  NEW.moderation_transparency_community_id := COALESCE(v_community_id, v_post_community_id);\n  RETURN NEW;\nEND $function$\n"
     },
+    "fn_stamp_classifier_run_scope": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_stamp_classifier_run_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.post_id IS NULL THEN\n    NEW.community_identity_id := NULL;\n  ELSE\n    SELECT community_id INTO NEW.community_identity_id FROM posts\n    WHERE id = NEW.post_id FOR KEY SHARE;\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
     "fn_stamp_clearance_transparency_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_stamp_clearance_transparency_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  SELECT community_id INTO NEW.moderation_transparency_community_id FROM posts WHERE id = NEW.post_id;\n  RETURN NEW;\nEND $function$\n"
     },
@@ -1034,9 +1037,6 @@
     },
     "fn_stamp_moderator_action_transparency_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_stamp_moderator_action_transparency_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.moderation_transparency_community_id := NEW.community_id;\n  RETURN NEW;\nEND $function$\n"
-    },
-    "fn_stamp_post_classifier_application_scope": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_stamp_post_classifier_application_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  SELECT community_id INTO NEW.community_identity_id FROM posts\n  WHERE id = NEW.post_id FOR KEY SHARE;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_sync_ap_post_likes": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_ap_post_likes()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_delta INT;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    v_delta := 1;\n  ELSIF OLD.deleted_at IS NOT DISTINCT FROM NEW.deleted_at THEN\n    RETURN NEW;\n  ELSIF OLD.deleted_at IS NULL THEN\n    v_delta := -1;\n  ELSE\n    v_delta := 1;\n  END IF;\n\n  INSERT INTO ap_posts (post_id, ap_likes_score, ap_likes_count)\n  VALUES (NEW.post_id, GREATEST(v_delta, 0), GREATEST(v_delta, 0))\n  ON CONFLICT (post_id) DO UPDATE SET\n    ap_likes_score = GREATEST(ap_posts.ap_likes_score + v_delta, 0),\n    ap_likes_count = GREATEST(ap_posts.ap_likes_count + v_delta, 0);\n  RETURN NEW;\nEND;\n$function$\n"
@@ -10109,6 +10109,33 @@
           "unique": true,
           "valid": true
         },
+        "uq_classifier_decision_batches__id__rss_feed_item": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_decision_batches__id__rss_feed_item ON public.classifier_decision_batches USING btree (id, rss_feed_item_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "uq_classifier_decision_batches__id__scope": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -10167,6 +10194,10 @@
         "uq_classifier_decision_batches__id__prompt": {
           "columns": ["id", "prompt_version_id"],
           "definition": "UNIQUE (id, prompt_version_id)"
+        },
+        "uq_classifier_decision_batches__id__rss_feed_item": {
+          "columns": ["id", "rss_feed_item_id"],
+          "definition": "UNIQUE (id, rss_feed_item_id)"
         },
         "uq_classifier_decision_batches__id__scope": {
           "columns": ["id", "scope_category", "scope_community_id"],
@@ -10722,6 +10753,1019 @@
         "uq_classifier_prompt_versions__id__classifier": {
           "columns": ["id", "classifier_id"],
           "definition": "UNIQUE (id, classifier_id)"
+        }
+      }
+    },
+    "classifier_run_requests": {
+      "checkConstraints": {
+        "chk_classifier_run_requests__one_settlement": "CHECK ((num_nonnulls(run_id, no_work_at, stale_at) <= 1))",
+        "chk_classifier_run_requests__one_subject": "CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))",
+        "classifier_run_requests_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))"
+      },
+      "columns": {
+        "classifier_id": {
+          "collation": null,
+          "comment": "Fixed classifier the subject is requested for.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "input_sha256": {
+          "collation": null,
+          "comment": "Subject content digest current when the request was written; a request settles once per content version.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "bytea"
+        },
+        "no_work_at": {
+          "collation": null,
+          "comment": "Time the classifier resolved to no configured work for the subject; a settled request is not swept again until a new approval re-arms it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": "Post subject of the request; deleting the post removes the request. Exactly one subject column is set.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "rss_feed_item_id": {
+          "collation": null,
+          "comment": "RSS feed item subject of the request; deleting the item removes the request. Exactly one subject column is set.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "run_id": {
+          "collation": null,
+          "comment": "Run receipt reserved for the request; NULL while unsettled, and cleared again if the run is deleted so the sweep recovers it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "stale_at": {
+          "collation": null,
+          "comment": "Time the request was superseded by a newer content version of the same subject.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable per-subject request for a classifier run, written in the same transaction as the fact that makes a subject eligible so the sweep can recover a subject that never got a run receipt; independent of classifier configuration.",
+      "foreignKeys": {
+        "classifier_run_requests_classifier_id_fkey": {
+          "columns": ["classifier_id"],
+          "definition": "FOREIGN KEY (classifier_id) REFERENCES classifiers(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifiers",
+          "validated": true
+        },
+        "classifier_run_requests_post_id_fkey": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        },
+        "classifier_run_requests_rss_feed_item_id_fkey": {
+          "columns": ["rss_feed_item_id"],
+          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_feed_items",
+          "validated": true
+        },
+        "classifier_run_requests_run_id_fkey": {
+          "columns": ["run_id"],
+          "definition": "FOREIGN KEY (run_id) REFERENCES classifier_runs(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifier_runs",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_classifier_run_requests__classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_run_requests__classifier ON public.classifier_run_requests USING btree (classifier_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_run_requests__pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_run_requests__pending ON public.classifier_run_requests USING btree (id) WHERE ((run_id IS NULL) AND (no_work_at IS NULL) AND (stale_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((run_id IS NULL) AND (no_work_at IS NULL) AND (stale_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_run_requests__post": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_run_requests__post ON public.classifier_run_requests USING btree (post_id, id) WHERE (post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_run_requests__rss_feed_item": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_run_requests__rss_feed_item ON public.classifier_run_requests USING btree (rss_feed_item_id, id) WHERE (rss_feed_item_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(rss_feed_item_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_run_requests__run": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_run_requests__run ON public.classifier_run_requests USING btree (run_id, id) WHERE (run_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(run_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "pk_classifier_run_requests": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX pk_classifier_run_requests ON public.classifier_run_requests USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_run_requests__identity_post": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_run_requests__identity_post ON public.classifier_run_requests USING btree (classifier_id, post_id, input_sha256) WHERE (post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "input_sha256",
+              "descending": false,
+              "expression": "input_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            }
+          ],
+          "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_run_requests__identity_rss_feed_item": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_run_requests__identity_rss_feed_item ON public.classifier_run_requests USING btree (classifier_id, rss_feed_item_id, input_sha256) WHERE (rss_feed_item_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "input_sha256",
+              "descending": false,
+              "expression": "input_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            }
+          ],
+          "predicate": "(rss_feed_item_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "classifier_run_requests_updated_at": "CREATE TRIGGER classifier_run_requests_updated_at BEFORE UPDATE ON public.classifier_run_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "classifier_runs": {
+      "checkConstraints": {
+        "chk_classifier_runs__community_identity": "CHECK (((community_identity_id IS NULL) OR (post_id IS NOT NULL)))",
+        "chk_classifier_runs__lease": "CHECK ((((lease_token IS NULL) = (leased_at IS NULL)) AND ((lease_token IS NULL) = (lease_expires_at IS NULL)) AND ((leased_at IS NULL) OR (lease_expires_at > leased_at)) AND ((completed_at IS NULL) OR (lease_token IS NULL)) AND ((terminal_failed_at IS NULL) OR (lease_token IS NULL)) AND ((superseded_at IS NULL) OR (lease_token IS NULL))))",
+        "chk_classifier_runs__one_subject": "CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))",
+        "chk_classifier_runs__phases": "CHECK (((completed_at IS NULL) OR ((outcomes_persisted_at IS NOT NULL) AND (outcomes_persisted_at <= completed_at))))",
+        "chk_classifier_runs__terminal_failure": "CHECK ((((terminal_failure_kind IS NULL) = (terminal_failed_at IS NULL)) AND ((terminal_failed_at IS NULL) OR (completed_at IS NULL))))",
+        "classifier_runs_check": "CHECK (((octet_length(configuration_sha256) = 32) AND (configuration_sha256 = digest((configuration_json)::text, 'sha256'::text))))",
+        "classifier_runs_configuration_json_check": "CHECK ((jsonb_typeof(configuration_json) = 'object'::text))",
+        "classifier_runs_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))",
+        "classifier_runs_provider_attempts_started_check": "CHECK ((provider_attempts_started >= 0))",
+        "classifier_runs_sweep_enqueue_count_check": "CHECK ((sweep_enqueue_count >= 0))",
+        "classifier_runs_terminal_failure_kind_check": "CHECK ((terminal_failure_kind = ANY (ARRAY['provider-error'::text, 'invalid-result'::text, 'context-rejected'::text, 'attempts-exhausted'::text, 'client-unavailable'::text, 'sweep-bound-exceeded'::text])))"
+      },
+      "columns": {
+        "classifier_id": {
+          "collation": null,
+          "comment": "Fixed classifier that owns this run; its adapter supplies input building and outcome application only.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "community_identity_id": {
+          "collation": null,
+          "comment": "Concrete retained community provenance identity for post subjects; its live community link may be cleared on deletion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "uuid"
+        },
+        "completed_at": {
+          "collation": null,
+          "comment": "Time all durable effects completed atomically and the exclusive claim was released.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 19,
+          "type": "timestamp with time zone"
+        },
+        "configuration_json": {
+          "collation": null,
+          "comment": "PostgreSQL-canonical JSONB replay envelope preserving question array order; relational facts are materialized in sibling typed columns.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "jsonb"
+        },
+        "configuration_sha256": {
+          "collation": null,
+          "comment": "SHA256 of the PostgreSQL JSONB text representation, identifying the exact replay configuration.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "bytea"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 21,
+          "type": "timestamp with time zone"
+        },
+        "decision_batch_id": {
+          "collation": null,
+          "comment": "Concrete same-subject C3 batch reserved before provider execution; NULL for local-only work.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "input_sha256": {
+          "collation": null,
+          "comment": "Subject content digest used to fence stale classification effects.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "bytea"
+        },
+        "lease_expires_at": {
+          "collation": null,
+          "comment": "Deadline after which another worker may replace the current claim.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 17,
+          "type": "timestamp with time zone"
+        },
+        "lease_token": {
+          "collation": null,
+          "comment": "Opaque fencing token for the current exclusive claimant; rotated on transfer and unrelated to any durable entity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "uuid"
+        },
+        "leased_at": {
+          "collation": null,
+          "comment": "Start of the current exclusive run claim.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16,
+          "type": "timestamp with time zone"
+        },
+        "outcomes_persisted_at": {
+          "collation": null,
+          "comment": "Time the complete configured outcomes became durable and eligible for effect application.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 18,
+          "type": "timestamp with time zone"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": "Post subject whose approved content is classified; deleting the post removes its run receipts. Exactly one subject column is set.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "provider_attempts_started": {
+          "collation": null,
+          "comment": "Physical provider calls started under lease; effect-only retries and committed-result replay do not increment it.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "integer"
+        },
+        "rss_feed_item_id": {
+          "collation": null,
+          "comment": "RSS feed item subject classified by the run; deleting the item removes its run receipts. Exactly one subject column is set.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "shared_actor_id": {
+          "collation": null,
+          "comment": "Shared classifier system user attributing automatic topic votes and tags.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "superseded_at": {
+          "collation": null,
+          "comment": "Current obsolete-run marker; cleared when the exact subject content/configuration identity becomes current again. Outcomes and attempt budget remain immutable.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 20,
+          "type": "timestamp with time zone"
+        },
+        "sweep_enqueue_count": {
+          "collation": null,
+          "comment": "Recovery-sweep enqueues that actually added a job for this run; monotone and bounded, and a run at the bound is made terminal once its last job is gone.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "integer"
+        },
+        "terminal_failed_at": {
+          "collation": null,
+          "comment": "Time the run became terminal for this content and configuration identity; a terminal run is never dispatched again.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        },
+        "terminal_failure_kind": {
+          "collation": null,
+          "comment": "Durable reason the run stopped for good; client-unavailable means the provider client could not be built, sweep-bound-exceeded means the recovery sweep re-enqueued the run its bounded number of times.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 22,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "One classifier/subject/content/configuration run receipt shared by every fixed classifier; C3 and C4 retain remote results and votes.",
+      "foreignKeys": {
+        "classifier_runs_classifier_id_fkey": {
+          "columns": ["classifier_id"],
+          "definition": "FOREIGN KEY (classifier_id) REFERENCES classifiers(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifiers",
+          "validated": true
+        },
+        "classifier_runs_community_identity_id_fkey": {
+          "columns": ["community_identity_id"],
+          "definition": "FOREIGN KEY (community_identity_id) REFERENCES post_publication_community_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_community_identities",
+          "validated": true
+        },
+        "classifier_runs_post_id_fkey": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        },
+        "classifier_runs_rss_feed_item_id_fkey": {
+          "columns": ["rss_feed_item_id"],
+          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_feed_items",
+          "validated": true
+        },
+        "classifier_runs_shared_actor_id_fkey": {
+          "columns": ["shared_actor_id"],
+          "definition": "FOREIGN KEY (shared_actor_id) REFERENCES users(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "fk_classifier_runs__batch_classifier": {
+          "columns": ["decision_batch_id", "classifier_id"],
+          "definition": "FOREIGN KEY (decision_batch_id, classifier_id) REFERENCES classifier_decision_batches(id, classifier_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_classifier_runs__batch_post": {
+          "columns": ["decision_batch_id", "post_id"],
+          "definition": "FOREIGN KEY (decision_batch_id, post_id) REFERENCES classifier_decision_batches(id, post_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "post_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_classifier_runs__batch_rss_feed_item": {
+          "columns": ["decision_batch_id", "rss_feed_item_id"],
+          "definition": "FOREIGN KEY (decision_batch_id, rss_feed_item_id) REFERENCES classifier_decision_batches(id, rss_feed_item_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "rss_feed_item_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_classifier_runs__classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_runs__classifier ON public.classifier_runs USING btree (classifier_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_runs__community_identity": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_runs__community_identity ON public.classifier_runs USING btree (community_identity_id, id) WHERE (community_identity_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_identity_id",
+              "descending": false,
+              "expression": "community_identity_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(community_identity_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_runs__post": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_runs__post ON public.classifier_runs USING btree (post_id, id) WHERE (post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_runs__recoverable": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_runs__recoverable ON public.classifier_runs USING btree (id) WHERE ((completed_at IS NULL) AND (superseded_at IS NULL) AND (terminal_failed_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((completed_at IS NULL) AND (superseded_at IS NULL) AND (terminal_failed_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_runs__rss_feed_item": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_runs__rss_feed_item ON public.classifier_runs USING btree (rss_feed_item_id, id) WHERE (rss_feed_item_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(rss_feed_item_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_runs__shared_actor": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_runs__shared_actor ON public.classifier_runs USING btree (shared_actor_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "shared_actor_id",
+              "descending": false,
+              "expression": "shared_actor_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "pk_classifier_runs": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX pk_classifier_runs ON public.classifier_runs USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_runs__decision_batch": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_runs__decision_batch ON public.classifier_runs USING btree (decision_batch_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "decision_batch_id",
+              "descending": false,
+              "expression": "decision_batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_runs__identity_post": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_runs__identity_post ON public.classifier_runs USING btree (classifier_id, post_id, input_sha256, configuration_sha256) WHERE (post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "input_sha256",
+              "descending": false,
+              "expression": "input_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            },
+            {
+              "column": "configuration_sha256",
+              "descending": false,
+              "expression": "configuration_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            }
+          ],
+          "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_runs__identity_rss_feed_item": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_runs__identity_rss_feed_item ON public.classifier_runs USING btree (classifier_id, rss_feed_item_id, input_sha256, configuration_sha256) WHERE (rss_feed_item_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "input_sha256",
+              "descending": false,
+              "expression": "input_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            },
+            {
+              "column": "configuration_sha256",
+              "descending": false,
+              "expression": "configuration_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            }
+          ],
+          "predicate": "(rss_feed_item_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "classifier_runs_guard": "CREATE TRIGGER classifier_runs_guard BEFORE UPDATE ON public.classifier_runs FOR EACH ROW EXECUTE FUNCTION fn_protect_classifier_run()",
+        "classifier_runs_scope_stamp": "CREATE TRIGGER classifier_runs_scope_stamp BEFORE INSERT ON public.classifier_runs FOR EACH ROW EXECUTE FUNCTION fn_stamp_classifier_run_scope()",
+        "classifier_runs_updated_at": "CREATE TRIGGER classifier_runs_updated_at BEFORE UPDATE ON public.classifier_runs FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "uq_classifier_runs__decision_batch": {
+          "columns": ["decision_batch_id"],
+          "definition": "UNIQUE (decision_batch_id)"
         }
       }
     },
@@ -66536,93 +67580,52 @@
       },
       "uniqueConstraints": {}
     },
-    "post_classifier_applications": {
+    "post_classifier_local_outcomes": {
       "checkConstraints": {
-        "chk_post_classifier_applications__configured_work": "CHECK (((local_topic_id IS NOT NULL) OR (decision_batch_id IS NOT NULL)))",
-        "chk_post_classifier_applications__lease": "CHECK ((((lease_token IS NULL) = (leased_at IS NULL)) AND ((lease_token IS NULL) = (lease_expires_at IS NULL)) AND ((leased_at IS NULL) OR (lease_expires_at > leased_at)) AND ((completed_at IS NULL) OR (lease_token IS NULL))))",
-        "chk_post_classifier_applications__local_outcome": "CHECK (((num_nonnulls(local_flagged, local_reason, local_confidence_score, local_confidence_threshold, local_classification, local_detector, local_detector_model_version) = ANY (ARRAY[0, 7])) AND ((local_confidence_score IS NULL) OR ((local_confidence_score >= (0)::double precision) AND (local_confidence_score <= (1)::double precision))) AND ((local_confidence_threshold IS NULL) OR ((local_confidence_threshold >= (0)::double precision) AND (local_confidence_threshold <= (1)::double precision)))))",
-        "chk_post_classifier_applications__phases": "CHECK ((((votes_applied_at IS NULL) OR ((outcomes_persisted_at IS NOT NULL) AND (outcomes_persisted_at <= votes_applied_at))) AND ((tags_applied_at IS NULL) OR ((votes_applied_at IS NOT NULL) AND (votes_applied_at <= tags_applied_at))) AND ((completed_at IS NULL) OR ((tags_applied_at IS NOT NULL) AND (tags_applied_at <= completed_at))) AND ((outcomes_persisted_at IS NULL) OR ((decision_batch_id IS NOT NULL) OR (local_flagged IS NOT NULL)))))",
-        "chk_post_classifier_applications__remote_failure": "CHECK ((((terminal_remote_failure_kind IS NULL) = (terminal_remote_failed_at IS NULL)) AND ((terminal_remote_failed_at IS NULL) OR ((decision_batch_id IS NOT NULL) AND (outcomes_persisted_at IS NULL)))))",
-        "chk_post_classifier_applications__superseded_lease": "CHECK (((superseded_at IS NULL) OR (lease_token IS NULL)))",
-        "post_classifier_applications_check": "CHECK (((octet_length(configuration_sha256) = 32) AND (configuration_sha256 = digest((configuration_json)::text, 'sha256'::text))))",
-        "post_classifier_applications_configuration_json_check": "CHECK ((jsonb_typeof(configuration_json) = 'object'::text))",
-        "post_classifier_applications_detector_package_version_check": "CHECK ((btrim(detector_package_version) <> ''::text))",
-        "post_classifier_applications_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))",
-        "post_classifier_applications_local_classification_check": "CHECK ((local_classification = ANY (ARRAY['ai'::text, 'human'::text])))",
-        "post_classifier_applications_provider_attempts_started_check": "CHECK ((provider_attempts_started >= 0))",
-        "post_classifier_applications_sweep_enqueue_count_check": "CHECK ((sweep_enqueue_count >= 0))",
-        "post_classifier_applications_terminal_remote_failure_kind_check": "CHECK ((terminal_remote_failure_kind = ANY (ARRAY['provider-error'::text, 'invalid-result'::text, 'context-rejected'::text, 'attempts-exhausted'::text, 'client-unavailable'::text, 'sweep-bound-exceeded'::text])))"
+        "post_classifier_local_outcomes_classification_check": "CHECK ((classification = ANY (ARRAY['ai'::text, 'human'::text])))",
+        "post_classifier_local_outcomes_confidence_score_check": "CHECK (((confidence_score >= (0)::double precision) AND (confidence_score <= (1)::double precision)))",
+        "post_classifier_local_outcomes_confidence_threshold_check": "CHECK (((confidence_threshold >= (0)::double precision) AND (confidence_threshold <= (1)::double precision)))",
+        "post_classifier_local_outcomes_detector_check": "CHECK ((btrim(detector) <> ''::text))",
+        "post_classifier_local_outcomes_detector_model_version_check": "CHECK ((btrim(detector_model_version) <> ''::text))",
+        "post_classifier_local_outcomes_reason_check": "CHECK ((btrim(reason) <> ''::text))"
       },
       "columns": {
-        "community_identity_id": {
+        "classification": {
           "collation": null,
-          "comment": "Concrete retained community provenance identity; its live community link may be cleared on deletion.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "uuid"
-        },
-        "completed_at": {
-          "collation": null,
-          "comment": "Time all durable effects completed atomically and the exclusive claim was released.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 28,
-          "type": "timestamp with time zone"
-        },
-        "configuration_json": {
-          "collation": null,
-          "comment": "PostgreSQL-canonical JSONB replay envelope preserving question array order; relational facts are materialized in sibling typed columns.",
+          "comment": "Local detector classification of the content as AI-generated or human-written.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
-          "type": "jsonb"
+          "ordinalPosition": 7,
+          "type": "text"
         },
-        "configuration_sha256": {
+        "confidence_score": {
           "collation": null,
-          "comment": "SHA256 of the PostgreSQL JSONB text representation, identifying the exact replay configuration.",
+          "comment": "Local detector confidence, bounded to the inclusive zero-to-one interval.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 5,
-          "type": "bytea"
+          "type": "double precision"
         },
-        "created_at": {
+        "confidence_threshold": {
           "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 30,
-          "type": "timestamp with time zone"
-        },
-        "decision_batch_id": {
-          "collation": null,
-          "comment": "Concrete same-post C3 batch reserved before provider execution; NULL for local-only work.",
+          "comment": "Pinned local detector confidence boundary used for this decision.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10,
-          "type": "uuid"
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "double precision"
         },
-        "detector_package_version": {
+        "detector": {
           "collation": null,
-          "comment": "Installed local detector package version pinned for exact replay.",
+          "comment": "Local detector identifier retained with its complete outcome.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -66631,10 +67634,32 @@
           "ordinalPosition": 8,
           "type": "text"
         },
-        "id": {
+        "detector_model_version": {
           "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
+          "comment": "Local detector model version returned with this outcome.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text"
+        },
+        "flagged": {
+          "collation": null,
+          "comment": "Local detector decision retained unchanged for retry-safe topic application.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "boolean"
+        },
+        "local_topic_id": {
+          "collation": null,
+          "comment": "Concrete local detector topic relationship the outcome applies to; the outcome is removed with the topic.",
+          "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
@@ -66642,152 +67667,20 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
-        "input_sha256": {
-          "collation": null,
-          "comment": "Approved post content digest used to fence stale classification effects.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "bytea"
-        },
-        "lease_expires_at": {
-          "collation": null,
-          "comment": "Deadline after which another worker may replace the current claim.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 24,
-          "type": "timestamp with time zone"
-        },
-        "lease_token": {
-          "collation": null,
-          "comment": "Opaque fencing token for the current exclusive claimant; rotated on transfer and unrelated to any durable entity.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 22,
-          "type": "uuid"
-        },
-        "leased_at": {
-          "collation": null,
-          "comment": "Start of the current exclusive application claim.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 23,
-          "type": "timestamp with time zone"
-        },
-        "local_classification": {
-          "collation": null,
-          "comment": "Local detector classification of the content as AI-generated or human-written.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 19,
-          "type": "text"
-        },
-        "local_confidence_score": {
-          "collation": null,
-          "comment": "Local detector confidence, bounded to the inclusive zero-to-one interval.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 17,
-          "type": "double precision"
-        },
-        "local_confidence_threshold": {
-          "collation": null,
-          "comment": "Pinned local detector confidence boundary used for this decision.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 18,
-          "type": "double precision"
-        },
-        "local_detector": {
-          "collation": null,
-          "comment": "Local detector identifier retained with its complete outcome.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 20,
-          "type": "text"
-        },
-        "local_detector_model_version": {
-          "collation": null,
-          "comment": "Local detector model version returned with this outcome.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 21,
-          "type": "text"
-        },
-        "local_flagged": {
-          "collation": null,
-          "comment": "Existing local detector decision retained unchanged for retry-safe topic application.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 15,
-          "type": "boolean"
-        },
-        "local_reason": {
+        "reason": {
           "collation": null,
           "comment": "Explanation returned by the local AI-generated detector.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
-          "ordinalPosition": 16,
+          "nullable": false,
+          "ordinalPosition": 4,
           "type": "text"
         },
-        "local_topic_id": {
+        "run_id": {
           "collation": null,
-          "comment": "Concrete local detector topic relationship when the local classifier is configured.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9,
-          "type": "uuid"
-        },
-        "outcomes_persisted_at": {
-          "collation": null,
-          "comment": "Time the complete configured outcomes became durable and eligible for effect application.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 25,
-          "type": "timestamp with time zone"
-        },
-        "post_id": {
-          "collation": null,
-          "comment": "Post whose approved content is classified; deleting the post removes its application receipts.",
+          "comment": "Run that produced this local detector outcome; the outcome is removed with the run.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -66795,276 +67688,35 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
-        },
-        "provider_attempts_started": {
-          "collation": null,
-          "comment": "Physical provider calls started under lease; effect-only retries and committed-result replay do not increment it.",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 11,
-          "type": "integer"
-        },
-        "shared_actor_id": {
-          "collation": null,
-          "comment": "Shared classifier system user attributing automatic topic votes and tags.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "uuid"
-        },
-        "superseded_at": {
-          "collation": null,
-          "comment": "Current obsolete-receipt marker; cleared when the exact approved content/configuration identity becomes current again. Outcomes and attempt budget remain immutable.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 29,
-          "type": "timestamp with time zone"
-        },
-        "sweep_enqueue_count": {
-          "collation": null,
-          "comment": "Recovery-sweep enqueues that actually added a job for this receipt; monotone and bounded, one past the bound marks a receipt the sweep has stopped recovering.",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 12,
-          "type": "integer"
-        },
-        "tags_applied_at": {
-          "collation": null,
-          "comment": "Monotone marker that classifier tags were applied after topic votes.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 27,
-          "type": "timestamp with time zone"
-        },
-        "terminal_remote_failed_at": {
-          "collation": null,
-          "comment": "Time remote classification became terminal for this content and configuration identity.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 14,
-          "type": "timestamp with time zone"
-        },
-        "terminal_remote_failure_kind": {
-          "collation": null,
-          "comment": "Durable reason remote classification stopped without a complete valid decision; client-unavailable means the provider client could not be built, sweep-bound-exceeded means the recovery sweep re-enqueued the receipt its bounded number of times.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 13,
-          "type": "text"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 31,
-          "type": "timestamp with time zone"
-        },
-        "votes_applied_at": {
-          "collation": null,
-          "comment": "Monotone marker that configured classifier topic votes were applied.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 26,
-          "type": "timestamp with time zone"
         }
       },
-      "comment": "One post/content/configuration fixed-classifier application; C3 and C4 retain remote results and votes.",
+      "comment": "Insert-only C5 local detector outcome retained once per run, including runs that ended terminal before their remote outcomes became durable.",
       "foreignKeys": {
-        "fk_post_classifier_applications__batch_post": {
-          "columns": ["decision_batch_id", "post_id"],
-          "definition": "FOREIGN KEY (decision_batch_id, post_id) REFERENCES classifier_decision_batches(id, post_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id", "post_id"],
-          "referencedTable": "classifier_decision_batches",
-          "validated": true
-        },
-        "post_classifier_applications_community_identity_id_fkey": {
-          "columns": ["community_identity_id"],
-          "definition": "FOREIGN KEY (community_identity_id) REFERENCES post_publication_community_identities(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "post_publication_community_identities",
-          "validated": true
-        },
-        "post_classifier_applications_local_topic_id_fkey": {
+        "post_classifier_local_outcomes_local_topic_id_fkey": {
           "columns": ["local_topic_id"],
-          "definition": "FOREIGN KEY (local_topic_id) REFERENCES topics(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
+          "definition": "FOREIGN KEY (local_topic_id) REFERENCES topics(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "topics",
           "validated": true
         },
-        "post_classifier_applications_post_id_fkey": {
-          "columns": ["post_id"],
-          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE",
+        "post_classifier_local_outcomes_run_id_fkey": {
+          "columns": ["run_id"],
+          "definition": "FOREIGN KEY (run_id) REFERENCES classifier_runs(id) ON DELETE CASCADE",
           "onDelete": "cascade",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "posts",
-          "validated": true
-        },
-        "post_classifier_applications_shared_actor_id_fkey": {
-          "columns": ["shared_actor_id"],
-          "definition": "FOREIGN KEY (shared_actor_id) REFERENCES users(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
+          "referencedTable": "classifier_runs",
           "validated": true
         }
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_post_classifier_applications__community_identity": {
+        "idx_post_classifier_local_outcomes__local_topic": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_classifier_applications__community_identity ON ONLY public.post_classifier_applications USING btree (community_identity_id, post_id) WHERE (community_identity_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "community_identity_id",
-              "descending": false,
-              "expression": "community_identity_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(community_identity_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_post_classifier_applications__decision_batch": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_classifier_applications__decision_batch ON ONLY public.post_classifier_applications USING btree (decision_batch_id, post_id) WHERE (decision_batch_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "decision_batch_id",
-              "descending": false,
-              "expression": "decision_batch_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(decision_batch_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_post_classifier_applications__incomplete": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_classifier_applications__incomplete ON ONLY public.post_classifier_applications USING btree (post_id, id) WHERE (completed_at IS NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(completed_at IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_post_classifier_applications__lease": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_classifier_applications__lease ON ONLY public.post_classifier_applications USING btree (lease_expires_at, post_id, id) WHERE ((lease_token IS NOT NULL) AND (completed_at IS NULL))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "lease_expires_at",
-              "descending": false,
-              "expression": "lease_expires_at",
-              "nullsFirst": false,
-              "opclass": "timestamptz_ops"
-            },
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "((lease_token IS NOT NULL) AND (completed_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_post_classifier_applications__local_topic": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_classifier_applications__local_topic ON ONLY public.post_classifier_applications USING btree (local_topic_id, post_id) WHERE (local_topic_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_post_classifier_local_outcomes__local_topic ON public.post_classifier_local_outcomes USING btree (local_topic_id, run_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -67075,56 +67727,9 @@
               "opclass": "uuid_ops"
             },
             {
-              "column": "post_id",
+              "column": "run_id",
               "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(local_topic_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_post_classifier_applications__recoverable": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_classifier_applications__recoverable ON ONLY public.post_classifier_applications USING btree (post_id, id) WHERE ((completed_at IS NULL) AND (superseded_at IS NULL))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "((completed_at IS NULL) AND (superseded_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_post_classifier_applications__shared_actor": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_classifier_applications__shared_actor ON ONLY public.post_classifier_applications USING btree (shared_actor_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "shared_actor_id",
-              "descending": false,
-              "expression": "shared_actor_id",
+              "expression": "run_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -67135,23 +67740,16 @@
           "unique": false,
           "valid": true
         },
-        "pk_post_classifier_applications": {
+        "pk_post_classifier_local_outcomes": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX pk_post_classifier_applications ON ONLY public.post_classifier_applications USING btree (post_id, id)",
+          "definition": "CREATE UNIQUE INDEX pk_post_classifier_local_outcomes ON public.post_classifier_local_outcomes USING btree (run_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "post_id",
+              "column": "run_id",
               "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
+              "expression": "run_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -67161,100 +67759,19 @@
           "ready": true,
           "unique": true,
           "valid": true
-        },
-        "uq_post_classifier_applications__decision_batch": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_post_classifier_applications__decision_batch ON ONLY public.post_classifier_applications USING btree (post_id, decision_batch_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "decision_batch_id",
-              "descending": false,
-              "expression": "decision_batch_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "uq_post_classifier_applications__input_config": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_post_classifier_applications__input_config ON ONLY public.post_classifier_applications USING btree (post_id, input_sha256, configuration_sha256)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "input_sha256",
-              "descending": false,
-              "expression": "input_sha256",
-              "nullsFirst": false,
-              "opclass": "bytea_ops"
-            },
-            {
-              "column": "configuration_sha256",
-              "descending": false,
-              "expression": "configuration_sha256",
-              "nullsFirst": false,
-              "opclass": "bytea_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
         }
       },
-      "partition": {
-        "accessClass": "target-scoped",
-        "children": "default",
-        "key": "post_id",
-        "retentionOwner": null,
-        "strategy": "RANGE"
-      },
-      "physicalPartition": {
-        "key": "RANGE (post_id)",
-        "strategy": "range"
-      },
+      "partition": null,
+      "physicalPartition": null,
       "primaryKey": {
-        "columns": ["post_id", "id"],
-        "definition": "PRIMARY KEY (post_id, id)"
+        "columns": ["run_id"],
+        "definition": "PRIMARY KEY (run_id)"
       },
-      "relationKind": "partitioned table",
+      "relationKind": "table",
       "triggers": {
-        "post_classifier_applications_guard": "CREATE TRIGGER post_classifier_applications_guard BEFORE UPDATE ON public.post_classifier_applications FOR EACH ROW EXECUTE FUNCTION fn_protect_post_classifier_application()",
-        "post_classifier_applications_scope_stamp": "CREATE TRIGGER post_classifier_applications_scope_stamp BEFORE INSERT ON public.post_classifier_applications FOR EACH ROW EXECUTE FUNCTION fn_stamp_post_classifier_application_scope()",
-        "post_classifier_applications_updated_at": "CREATE TRIGGER post_classifier_applications_updated_at BEFORE UPDATE ON public.post_classifier_applications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "post_classifier_local_outcomes_append_only": "CREATE TRIGGER post_classifier_local_outcomes_append_only BEFORE UPDATE ON public.post_classifier_local_outcomes FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()"
       },
-      "uniqueConstraints": {
-        "uq_post_classifier_applications__decision_batch": {
-          "columns": ["post_id", "decision_batch_id"],
-          "definition": "UNIQUE (post_id, decision_batch_id)"
-        },
-        "uq_post_classifier_applications__input_config": {
-          "columns": ["post_id", "input_sha256", "configuration_sha256"],
-          "definition": "UNIQUE (post_id, input_sha256, configuration_sha256)"
-        }
-      }
+      "uniqueConstraints": {}
     },
     "post_clearance_changes": {
       "checkConstraints": {

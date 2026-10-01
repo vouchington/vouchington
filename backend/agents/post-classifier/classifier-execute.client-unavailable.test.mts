@@ -1,16 +1,18 @@
 import { Response } from 'undici'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createStructuredDecisionClient } from '@modules/structured-decisions'
-import { readPostClassifierOutcomes } from '@services/post-classifier/application-read'
-import { getPostClassifierApplicationFacts } from '@voucha/test-helpers/data-stores/psql/post-classifier/application-service'
+import { readClassifierRunOutcomes } from '@services/classifier-runs'
+import { getClassifierRunFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
+import { getPostClassifierLocalOutcomeFacts } from '@voucha/test-helpers/data-stores/psql/post-classifier/run-facts'
+import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 import {
   createPostClassifierExecutionFixture,
   initializePostClassifierExecutionTests,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import { sentryCaptureMessageMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
-import { executePostClassifierOutcomes } from './classifier-execute.mts'
+import { executePostClassifierRun } from './classifier-execute.mts'
 
-type Dependencies = Parameters<typeof executePostClassifierOutcomes>[1]
+type Dependencies = Parameters<typeof executePostClassifierRun>[1]
 
 function unavailableClient(createClient: Dependencies['createClient']): Dependencies {
   return {
@@ -39,17 +41,21 @@ const failingClient: Dependencies['createClient'] = () => {
   throw new Error('provider client construction failed')
 }
 
-function expectAlarm(applicationId: string, postId: string, error: string) {
-  expect(sentryCaptureMessageMock).toHaveBeenCalledExactlyOnceWith(
-    'post_classifier_receipt_alarm',
-    {
-      level: 'error',
-      fingerprint: ['post_classifier_receipt_alarm', 'client-unavailable'],
-      tags: { reason: 'post_classifier_receipt_alarm', alarm_kind: 'client-unavailable' },
-      extra: { postId, applicationId, error: expect.stringContaining(error) },
+function expectAlarm(runId: string, error: string) {
+  expect(sentryCaptureMessageMock).toHaveBeenCalledExactlyOnceWith('classifier_run_alarm', {
+    level: 'error',
+    fingerprint: ['classifier_run_alarm', 'client-unavailable', POST_CLASSIFIER_SLUG],
+    tags: {
+      reason: 'classifier_run_alarm',
+      alarm_kind: 'client-unavailable',
+      classifier: POST_CLASSIFIER_SLUG,
     },
-  )
+    extra: { classifier: POST_CLASSIFIER_SLUG, runId, error: expect.stringContaining(error) },
+  })
 }
+
+const facts = async (input: { post: { id: string } }) =>
+  (await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]!
 
 describe('post classifier execution when the provider client cannot be built', () => {
   let release: (() => Promise<void>) | undefined
@@ -65,48 +71,47 @@ describe('post classifier execution when the provider client cannot be built', (
     const input = await createPostClassifierExecutionFixture()
     const dependencies = unavailableClient(create)
 
-    await expect(executePostClassifierOutcomes(input, dependencies)).resolves.toBe('terminal')
+    await expect(executePostClassifierRun(input, dependencies)).resolves.toBe('terminal')
 
-    expect((await getPostClassifierApplicationFacts(input.post.id))[0]).toMatchObject({
-      terminal_remote_failure_kind: 'client-unavailable',
-      terminal_remote_failed_at: expect.any(Date),
+    expect(await facts(input)).toMatchObject({
+      terminal_failure_kind: 'client-unavailable',
+      terminal_failed_at: expect.any(Date),
       provider_attempts_started: 0,
       lease_token: null,
       outcomes_persisted_at: null,
       completed_at: null,
-      local_flagged: true,
-      local_classification: 'ai',
-      local_detector: 'test-detector',
-      local_detector_model_version: 'test-model',
     })
-    expectAlarm(input.lease.applicationId, input.post.id, message)
-    await expect(readPostClassifierOutcomes(input.lease)).resolves.toBeNull()
+    expect(await getPostClassifierLocalOutcomeFacts(input.run.runId)).toMatchObject({
+      flagged: true,
+      classification: 'ai',
+      detector: 'test-detector',
+      detector_model_version: 'test-model',
+    })
+    expectAlarm(input.run.runId, message)
+    await expect(readClassifierRunOutcomes(input.adapter, input.lease)).resolves.toBeNull()
   })
 
-  it('ends a remote-only receipt without inventing a local outcome', async () => {
+  it('ends a remote-only run without inventing a local outcome', async () => {
     const input = await createPostClassifierExecutionFixture(true, false)
 
-    await expect(
-      executePostClassifierOutcomes(input, unavailableClient(failingClient)),
-    ).resolves.toBe('terminal')
+    await expect(executePostClassifierRun(input, unavailableClient(failingClient))).resolves.toBe(
+      'terminal',
+    )
 
-    expect((await getPostClassifierApplicationFacts(input.post.id))[0]).toMatchObject({
-      terminal_remote_failure_kind: 'client-unavailable',
-      local_flagged: null,
-      local_detector: null,
-    })
+    expect(await facts(input)).toMatchObject({ terminal_failure_kind: 'client-unavailable' })
+    expect(await getPostClassifierLocalOutcomeFacts(input.run.runId)).toBeNull()
   })
 
-  it('reports a receipt that already ended as stale, without a second alarm or write', async () => {
+  it('reports a run that already ended as stale, without a second alarm or write', async () => {
     const input = await createPostClassifierExecutionFixture()
     const dependencies = unavailableClient(failingClient)
-    await expect(executePostClassifierOutcomes(input, dependencies)).resolves.toBe('terminal')
-    const ended = (await getPostClassifierApplicationFacts(input.post.id))[0]
+    await expect(executePostClassifierRun(input, dependencies)).resolves.toBe('terminal')
+    const ended = await facts(input)
 
-    await expect(executePostClassifierOutcomes(input, dependencies)).resolves.toBe('stale')
+    await expect(executePostClassifierRun(input, dependencies)).resolves.toBe('stale')
 
     expect(sentryCaptureMessageMock).toHaveBeenCalledOnce()
-    expect((await getPostClassifierApplicationFacts(input.post.id))[0]).toEqual(ended)
+    expect(await facts(input)).toEqual(ended)
   })
 
   it('keeps a mismatched local outcome from ending the remote half', async () => {
@@ -118,16 +123,16 @@ describe('post classifier execution when the provider client cannot be built', (
       confidence_threshold: 0,
     })
 
-    await expect(executePostClassifierOutcomes(input, dependencies)).rejects.toThrow(
+    await expect(executePostClassifierRun(input, dependencies)).rejects.toThrow(
       'local outcome does not match',
     )
 
     expect(sentryCaptureMessageMock).not.toHaveBeenCalled()
-    expect((await getPostClassifierApplicationFacts(input.post.id))[0]).toMatchObject({
+    expect(await facts(input)).toMatchObject({
       lease_token: input.lease.leaseToken,
-      terminal_remote_failure_kind: null,
-      terminal_remote_failed_at: null,
-      local_flagged: null,
+      terminal_failure_kind: null,
+      terminal_failed_at: null,
     })
+    expect(await getPostClassifierLocalOutcomeFacts(input.run.runId)).toBeNull()
   })
 })

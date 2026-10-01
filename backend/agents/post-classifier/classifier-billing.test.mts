@@ -16,18 +16,22 @@ import {
   OpenAiSpendCapBreachError,
   openAiSpendCapConfig,
 } from '@services/ai-usage'
-import { claimPostClassifierApplication } from '@services/post-classifier/application-claim'
+import { claimClassifierRun } from '@services/classifier-runs'
 import type { StructuredDecisionFetch } from '@modules/structured-decisions'
-import { getPostClassifierApplicationFacts } from '@voucha/test-helpers/data-stores/psql/post-classifier/application-service'
+import {
+  expireClassifierRunLeaseForTest,
+  getClassifierRunFacts,
+} from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
+import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 import {
   createPostClassifierExecutionFixture,
   initializePostClassifierExecutionTests,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import { createPostClassifierOpenRouterClient } from './classifier-client.mts'
-import { executePostClassifierOutcomes } from './classifier-execute.mts'
+import { executePostClassifierRun } from './classifier-execute.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
-type Dependencies = Parameters<typeof executePostClassifierOutcomes>[1]
+type Dependencies = Parameters<typeof executePostClassifierRun>[1]
 
 function makeBilledOpenRouterResponse(ids: readonly string[], responseId: string) {
   return {
@@ -104,26 +108,26 @@ describe('post classifier billing', () => {
       const fetch = vi.fn<StructuredDecisionFetch>()
 
       await expect(
-        executePostClassifierOutcomes(input, createBillingDependencies(input, fetch)),
+        executePostClassifierRun(input, createBillingDependencies(input, fetch)),
       ).rejects.toBeInstanceOf(OpenAiSpendCapBreachError)
       expect(fetch).not.toHaveBeenCalled()
-      expect((await getPostClassifierApplicationFacts(input.post.id))[0]).toMatchObject({
+      expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject({
         provider_attempts_started: 0,
         lease_token: null,
       })
 
-      const reclaimed = await claimPostClassifierApplication({
-        postId: input.lease.postId,
-        inputSha256: input.lease.inputSha256,
-        resolved: input.lease.resolved,
-        detectorPackageVersion: input.lease.detectorPackageVersion,
+      const reclaimed = await claimClassifierRun(input.adapter, {
+        runId: input.run.runId,
+        subject: input.run.subject,
+        inputSha256: input.run.inputSha256,
+        configurationSha256: input.run.configurationSha256,
         leaseSeconds: 60,
       })
       expect(reclaimed.kind).toBe('claimed')
     })
   })
 
-  it('records attributed billed usage once when the application replays', async () => {
+  it('records attributed billed usage once when the run replays', async () => {
     await withReservedAiUsageDay(1_000_000, async () => {
       const input = await createPostClassifierExecutionFixture(true, false)
       const responseId = `decision-${randomUUID()}`
@@ -135,8 +139,8 @@ describe('post classifier billing', () => {
       })
       const dependencies = createBillingDependencies(input, fetch)
 
-      expect(await executePostClassifierOutcomes(input, dependencies)).toBe('persisted')
-      expect(await executePostClassifierOutcomes(input, dependencies)).toBe('replay')
+      expect(await executePostClassifierRun(input, dependencies)).toBe('persisted')
+      expect(await executePostClassifierRun(input, dependencies)).toBe('replay')
       expect(fetch).toHaveBeenCalledOnce()
       await expect(
         pollUntilNotNull(() => findAiUsageRecordForPost(input.post.id, 'post-classifier')),
@@ -150,6 +154,106 @@ describe('post classifier billing', () => {
     })
   })
 
+  it('never bills again when a reclaimed lease finds the outcomes already durable', async () => {
+    await withReservedAiUsageDay(1_000_000, async () => {
+      const input = await createPostClassifierExecutionFixture(true, false)
+      const responseId = `decision-${randomUUID()}`
+      const fetch = vi.fn<StructuredDecisionFetch>(async (_url, init) => {
+        const body = JSON.parse(stringFromUnknown(init?.body)) as {
+          questions: Record<string, unknown>
+        }
+        return Response.json(makeBilledOpenRouterResponse(Object.keys(body.questions), responseId))
+      })
+      const dependencies = createBillingDependencies(input, fetch)
+      expect(await executePostClassifierRun(input, dependencies)).toBe('persisted')
+
+      await expireClassifierRunLeaseForTest(input.run.runId)
+      const reclaimed = await claimClassifierRun(input.adapter, {
+        runId: input.run.runId,
+        subject: input.run.subject,
+        inputSha256: input.run.inputSha256,
+        configurationSha256: input.run.configurationSha256,
+        leaseSeconds: 60,
+      })
+      if (reclaimed.kind !== 'outcomes_ready') throw new Error(`Unexpected: ${reclaimed.kind}`)
+
+      expect(
+        await executePostClassifierRun({ ...input, lease: reclaimed.lease }, dependencies),
+      ).toBe('replay')
+      expect(fetch).toHaveBeenCalledOnce()
+      expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject({
+        provider_attempts_started: 1,
+      })
+      await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
+    })
+  })
+
+  describe('a signal that aborts after the provider returned', () => {
+    /** `coverage: false` returns the executor a decoded decision that answers no question. */
+    async function runAbortingAfterProvider(coverage: boolean, maxAttempts: number) {
+      const input = await createPostClassifierExecutionFixture(true, false)
+      const responseId = `decision-${randomUUID()}`
+      const fetch = vi.fn<StructuredDecisionFetch>(async (_url, init) => {
+        const body = JSON.parse(stringFromUnknown(init?.body)) as {
+          questions: Record<string, unknown>
+        }
+        return Response.json(makeBilledOpenRouterResponse(Object.keys(body.questions), responseId))
+      })
+      const controller = new AbortController()
+      const dependencies = createBillingDependencies(input, fetch)
+      const createClient = dependencies.createClient
+      dependencies.createClient = hooks => {
+        const client = createClient(hooks)
+        return {
+          decide: async (request, signal) => {
+            const response = await client.decide(request, signal)
+            controller.abort(new Error('worker shutting down'))
+            return coverage ? response : { ...response, answers: [] }
+          },
+        }
+      }
+      const run = executePostClassifierRun(
+        { ...input, maxAttempts, signal: controller.signal },
+        dependencies,
+      )
+      return { input, responseId, fetch, run }
+    }
+
+    it('persists the billed decision with one attempt and one billing call', async () => {
+      await withReservedAiUsageDay(1_000_000, async () => {
+        const { input, responseId, fetch, run } = await runAbortingAfterProvider(true, 3)
+
+        expect(await run).toBe('persisted')
+        expect(fetch).toHaveBeenCalledOnce()
+        await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
+        expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject(
+          {
+            provider_attempts_started: 1,
+            outcomes_persisted_at: expect.any(Date),
+            terminal_failed_at: null,
+          },
+        )
+      })
+    })
+
+    it('records a post-return failure as invalid-result, never as a provider error', async () => {
+      await withReservedAiUsageDay(1_000_000, async () => {
+        const { input, responseId, fetch, run } = await runAbortingAfterProvider(false, 1)
+
+        expect(await run).toBe('terminal')
+        expect(fetch).toHaveBeenCalledOnce()
+        await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
+        expect((await getClassifierRunFacts(input.post.id, POST_CLASSIFIER_SLUG))[0]).toMatchObject(
+          {
+            provider_attempts_started: 1,
+            outcomes_persisted_at: null,
+            terminal_failure_kind: 'invalid-result',
+          },
+        )
+      })
+    })
+  })
+
   it('records a billed response that fails strict decision decoding', async () => {
     await withReservedAiUsageDay(1_000_000, async () => {
       const input = await createPostClassifierExecutionFixture(true, false)
@@ -159,7 +263,7 @@ describe('post classifier billing', () => {
       )
 
       await expect(
-        executePostClassifierOutcomes(input, createBillingDependencies(input, fetch)),
+        executePostClassifierRun(input, createBillingDependencies(input, fetch)),
       ).rejects.toMatchObject({ code: 'invalid-response' })
       await expect(
         pollUntilNotNull(() => findAiUsageRecordForPost(input.post.id, 'post-classifier')),
@@ -174,7 +278,7 @@ describe('post classifier billing', () => {
       const uncertaintyKey = getAccountingUncertaintyKey(day)
       try {
         await expect(
-          executePostClassifierOutcomes(
+          executePostClassifierRun(
             input,
             createBillingDependencies(input, async () => new Response('', { status: 503 })),
           ),

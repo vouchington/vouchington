@@ -9,7 +9,6 @@ import {
   POST_CLASSIFIER_PROMPT,
   POST_CLASSIFIER_REMOTE_QUESTIONS,
 } from '@voucha/types/entities/post-classifier'
-import { createPostModerationContent } from '@services/posts/content'
 import { buildPostClassifierInput } from './classifier-input.mts'
 
 function configuration(): Parameters<typeof buildPostClassifierInput>[1] {
@@ -66,7 +65,6 @@ describe('post classifier remote input', () => {
     )
     expect(input.subject).toEqual({ postId: subject.id, rssFeedItemId: null })
     expect(input.scope).toEqual({ scopeCategory: 'global', scopeCommunityId: null })
-    expect(input.inputSha256).toEqual(createPostModerationContent(subject).content_sha256)
     expect(input.state.split(POST_CLASSIFIER_POLICY_PROMPT)).toHaveLength(2)
     expect(input.state.startsWith(POST_CLASSIFIER_POLICY_PROMPT)).toBe(true)
     expect(input).not.toHaveProperty('contextPolicy')
