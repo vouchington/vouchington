@@ -21,7 +21,7 @@ const VALID_TOPIC_TYPES = new Set(Object.keys(topicTypes))
 const VALID_EXTENSIONS = new Set(['spending_category', 'retailer'])
 
 function readCsv(filename: string): Record<string, string>[] {
-  const content = readFileSync(join(SEED_DIR, filename), 'utf-8')
+  const content = readFileSync(join(SEED_DIR, filename), 'utf8')
   return parseCsvRows(content)
 }
 

@@ -76,7 +76,7 @@ function decodeBase64Json(rawValue: string, envName: string): unknown {
   try {
     const buffer = getBuffer()
     if (buffer) {
-      return JSON.parse(buffer.from(rawValue, 'base64').toString('utf-8')) as unknown
+      return JSON.parse(buffer.from(rawValue, 'base64').toString('utf8')) as unknown
     }
     const atobFn = (globalThis as typeof globalThis & { atob?: (value: string) => string }).atob
     if (!atobFn) {

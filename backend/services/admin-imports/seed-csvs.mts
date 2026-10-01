@@ -36,7 +36,7 @@ export function readSeedCsvRows(): Record<string, string>[] {
 
   const allRows: Record<string, string>[] = []
   for (const file of csvFiles) {
-    const content = readFileSync(join(SEED_DIR, file), 'utf-8')
+    const content = readFileSync(join(SEED_DIR, file), 'utf8')
     allRows.push(...parseCsvRows(content))
   }
   return allRows

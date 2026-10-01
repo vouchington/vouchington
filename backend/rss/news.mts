@@ -45,5 +45,5 @@ app.route('/rss/news').get(async (ctx: Context) => {
   } else {
     ctx.set('Cache-Control', 'public, max-age=300')
   }
-  ctx.response.buffer(Buffer.from(xml, 'utf-8'), 'application/rss+xml; charset=utf-8')
+  ctx.response.buffer(Buffer.from(xml, 'utf8'), 'application/rss+xml; charset=utf-8')
 })

@@ -8,7 +8,7 @@ export async function detectAiGeneratedModeration(
   options?: { confidenceThreshold?: number },
 ): Promise<AiGeneratedModerationResult> {
   const confidenceThreshold = options?.confidenceThreshold ?? getAiGeneratedConfidenceThreshold()
-  const detection = await detectAiGeneratedText(Buffer.from(text, 'utf-8'), confidenceThreshold)
+  const detection = await detectAiGeneratedText(Buffer.from(text, 'utf8'), confidenceThreshold)
 
   return {
     flagged: detection.flagged,

@@ -59,7 +59,7 @@ describe('jwt.mts', () => {
 
       const result = encodeJwkSetForEnv([mockJwk])
 
-      expect(from).toHaveBeenCalledWith(jsonString, 'utf-8')
+      expect(from).toHaveBeenCalledWith(jsonString, 'utf8')
       expect(toString).toHaveBeenCalledWith('base64')
       expect(btoa).not.toHaveBeenCalled()
       expect(result).toBe('buffer-encoded')
@@ -68,7 +68,7 @@ describe('jwt.mts', () => {
     it('uses btoa if Buffer is not available', () => {
       const nodeBuffer = Buffer
       const btoa = vi.fn<(value: string) => string>(value =>
-        nodeBuffer.from(value, 'utf-8').toString('base64'),
+        nodeBuffer.from(value, 'utf8').toString('base64'),
       )
       vi.stubGlobal('Buffer', undefined)
       vi.stubGlobal('btoa', btoa)

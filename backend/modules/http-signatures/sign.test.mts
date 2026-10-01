@@ -109,7 +109,7 @@ describe('HTTP Signature round-trip', () => {
     const method = 'POST'
     const url = 'https://mastodon.social/inbox'
     const bodyString = JSON.stringify({ type: 'Follow', object: 'https://alice.example.com' })
-    const bodyBuffer = Buffer.from(bodyString, 'utf-8')
+    const bodyBuffer = Buffer.from(bodyString, 'utf8')
 
     const signatureHeaders = buildSignatureHeaders(
       method,

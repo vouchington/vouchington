@@ -28,7 +28,7 @@ function createResponse(
 }
 
 function createReadableBody(html: string): MockBody {
-  const bytes = Buffer.from(html, 'utf-8')
+  const bytes = Buffer.from(html, 'utf8')
   let readOnce = false
   const reader = {
     read: vi.fn<() => Promise<IteratorResult<Uint8Array>>>(async () => {

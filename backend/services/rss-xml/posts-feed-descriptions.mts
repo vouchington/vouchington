@@ -62,8 +62,8 @@ function renderPartition(posts: Array<{ markdown: string }>, allowHtml: boolean)
 async function sanitizePostDescriptionHtml(html: string): Promise<string> {
   if (!html) return ''
   try {
-    const result = await sanitizeRssHtml(Buffer.from(html, 'utf-8'))
-    return result.html.toString('utf-8')
+    const result = await sanitizeRssHtml(Buffer.from(html, 'utf8'))
+    return result.html.toString('utf8')
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
     return ''

@@ -37,8 +37,8 @@ async function buildItemDescription(item: ViewRssFeedItem): Promise<string> {
 
 async function sanitizeNewsFeedDescription(raw: string): Promise<string> {
   try {
-    const result = await sanitizeRssHtml(Buffer.from(raw, 'utf-8'))
-    return result.html.toString('utf-8')
+    const result = await sanitizeRssHtml(Buffer.from(raw, 'utf8'))
+    return result.html.toString('utf8')
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
     return ''
