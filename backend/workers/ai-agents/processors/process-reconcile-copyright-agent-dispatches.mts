@@ -14,7 +14,6 @@ export type ReconcileCopyrightAgentDispatchesDeps = {
   enqueueForm: typeof enqueueOrRetryCopyrightFormScreening
   applyFormEffect: typeof applyNonSpamSignedInCopyrightFormScreening
   enqueueAppeal: typeof enqueueOrRetryCopyrightAppealRecommendation
-  isCopyrightIntakeEnabled: typeof isCopyrightIntakeEnabled
 }
 
 const defaultDeps: ReconcileCopyrightAgentDispatchesDeps = {
@@ -23,30 +22,38 @@ const defaultDeps: ReconcileCopyrightAgentDispatchesDeps = {
   enqueueForm: enqueueOrRetryCopyrightFormScreening,
   applyFormEffect: applyNonSpamSignedInCopyrightFormScreening,
   enqueueAppeal: enqueueOrRetryCopyrightAppealRecommendation,
-  isCopyrightIntakeEnabled,
 }
 
 /**
  * Walks every page of pending copyright dispatches. One failed dispatch does not stop the others or
  * later pages; the job fails afterwards with every error so its retry covers what is still pending.
+ *
+ * `COPYRIGHT_INTAKE_ENABLED` closes new intake only. While it is off, the `email` and
+ * `form-screening` dispatches wait so no new submission reaches a model. An `appeal` and a saved
+ * `form-effect` belong to a case already open, so they run in either state.
  */
 export async function processReconcileCopyrightAgentDispatches(
   dependencyOverrides: Partial<ReconcileCopyrightAgentDispatchesDeps> = {},
 ): Promise<void> {
   const deps = { ...defaultDeps, ...dependencyOverrides }
-  if (!deps.isCopyrightIntakeEnabled()) return
+  const intakeEnabled = isCopyrightIntakeEnabled()
   const errors: unknown[] = []
   let cursor: string | undefined
   do {
     // oxlint-disable-next-line no-await-in-loop -- advance only after the page's dispatches settle.
     const page = await deps.getPending(cursor ? { after: cursor } : {})
+    const dispatches = intakeEnabled ? page.results : page.results.filter(isInCaseDispatch)
     // oxlint-disable-next-line no-await-in-loop -- preserves at-least-once delivery before cursor advance.
-    errors.push(...(await dispatchCopyrightAgentPage(page.results, deps)))
+    errors.push(...(await dispatchCopyrightAgentPage(dispatches, deps)))
     cursor = page.page_info.end_cursor ?? undefined
   } while (cursor)
   if (errors.length > 0) {
     throw new AggregateError(errors, 'Copyright agent dispatch reconciliation failed')
   }
+}
+
+function isInCaseDispatch(item: CopyrightAgentDispatch): boolean {
+  return item.kind !== 'email' && item.kind !== 'form-screening'
 }
 
 async function dispatchCopyrightAgentPage(

@@ -81,6 +81,12 @@ automated assessment never re-enter automated enforcement. Failed MIME parses ar
 staff and are not sent to the extraction agent. Appeal recommendations are advisory evidence only;
 no agent processor changes material availability or a restriction.
 
+`COPYRIGHT_INTAKE_ENABLED` gates the dispatches that start work for new intake. While it is off, the
+reconciler still walks every page but skips the `email` and `form-screening` dispatches, which stay
+pending for the first pass after the switch is on. An `appeal` re-enqueue and a saved `form-effect`
+run in either state, since both belong to a case that is already open and the form effect calls no
+model. Automated withholding has its own `copyright.automaticProvisionalWithholding` switch.
+
 ## Background Response Sweeper
 
 Every OpenAI call in this queue that goes through `createOpenAIResponse()`
