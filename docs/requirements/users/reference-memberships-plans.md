@@ -8,7 +8,8 @@ The single catalog producer is `@ts-shared/utils/membership-benefit-catalog`. Be
 production build and development startup, `web/generate-membership-benefit-catalog.ts` validates
 that producer and writes the web JSON artifact; Docker uses the same Next build path. The tracked
 artifact supports fresh checkout tests and type checking, and its consistency test rejects drift.
-Generation errors fail the build rather than reuse stale output. When the plans API fails, `/plans`
+Generation errors, including a malformed existing artifact, fail the build rather than reuse stale
+output. An unchanged validated catalog preserves the artifact's formatting. When the plans API fails, `/plans`
 uses this image-build snapshot to keep benefit explanations visible; it does not offer unavailable
 purchase products or grant entitlements. Runtime web code imports only the generated artifact,
 never backend services. There is no older-response compatibility path.

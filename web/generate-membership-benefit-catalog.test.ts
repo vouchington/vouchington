@@ -27,6 +27,18 @@ describe('membership benefit build artifact', () => {
     expect(() => generateMembershipBenefitCatalog(output, true)).toThrow('ENOENT')
     const missingParent = pathToFileURL(join(directory, 'missing', 'catalog.json'))
     expect(() => generateMembershipBenefitCatalog(missingParent)).toThrow('ENOENT')
+    writeFileSync(output, 'not JSON')
+    expect(() => generateMembershipBenefitCatalog(output)).toThrow(SyntaxError)
+  })
+
+  it('preserves formatted bytes only while their catalog is current', () => {
+    const formatted = `${JSON.stringify(membershipBenefitCatalog)}\n`
+    writeFileSync(output, formatted)
+    generateMembershipBenefitCatalog(output)
+    expect(readFileSync(output, 'utf8')).toBe(formatted)
+    writeFileSync(output, '{}\n')
+    generateMembershipBenefitCatalog(output)
+    expect(JSON.parse(readFileSync(output, 'utf8'))).toEqual(membershipBenefitCatalog)
   })
 
   it('keeps the checkout artifact synchronized with the canonical producer', () => {

@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { membershipBenefitCatalog } from '@ts-shared/utils/membership-benefit-catalog'
 
 const artifactUrl = new URL(
@@ -20,6 +20,14 @@ export function generateMembershipBenefitCatalog(output = artifactUrl, check = f
     }
     return
   }
+  // Type generation also loads Next config. Preserve formatter-owned bytes when
+  // the freshly validated catalog has not changed, while replacing stale data.
+  if (
+    existsSync(output) &&
+    JSON.stringify(JSON.parse(readFileSync(output, 'utf8'))) ===
+      JSON.stringify(membershipBenefitCatalog)
+  )
+    return
   writeFileSync(output, content)
 }
 
