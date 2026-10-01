@@ -392,8 +392,6 @@ exports backend/workers/story-post-related-url-projections/processors.mts proces
 types backend/services/ap-inbox-activities/durable-delivery-transition-contract.mts ActivityPubInboxDeliveryTransitionDimensions
 types backend/services/copyright-notices/index.mts CopyrightAgentDispatchPage
 types backend/services/copyright-notices/index.mts CopyrightReviewTargetBreaches
-types backend/services/moderation-appeals/get.mts ModerationCaseTrace
-types backend/services/moderation-exposure/index.mts ExposureState
 types backend/services/post-publication/capture-keys.mts PostPublicationRetainedKey
 types backend/services/post-publication/shadow-audit.mts ShadowAuditCandidate
 types backend/services/review-disputes/index.mts ReviewDispute
