@@ -25,6 +25,7 @@
     "@modules/queue-errors": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/emails": "workspace:^",
+    "@services/api-keys": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/copyright-notices": "workspace:^",

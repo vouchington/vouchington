@@ -36,6 +36,9 @@ export const CreateRssKey: Story = {
   render: () => (
     <Frame>
       <CreateApiKeyForm
+        isAdministrator={false}
+        lifetimeDays={90}
+        setLifetimeDays={() => {}}
         label='Feed reader'
         selection={selection({})}
         submitting={false}
@@ -51,6 +54,9 @@ export const CreateUserMcpKey: Story = {
   render: () => (
     <Frame>
       <CreateApiKeyForm
+        isAdministrator={false}
+        lifetimeDays={90}
+        setLifetimeDays={() => {}}
         label='Cards agent'
         selection={selection({
           keyType: 'mcp',

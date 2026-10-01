@@ -8,6 +8,25 @@ const grantId = '00000000-0000-7000-8000-000000000711'
 const clientRowId = '00000000-0000-7000-8000-000000000712'
 const clientConsumers = ['web', 'swift-core', 'dotnet-core'] as const
 
+const issuedApiKeyBody = {
+  api_key: {
+    id: apiKeyId,
+    user_id: userId,
+    prefix: 'voucha_mcp_0000',
+    type: 'mcp',
+    label: 'Coding agent',
+    permissions: ['mcp.user:read', 'mcp.user:write'],
+    created_at: timestamp,
+    last_used_at: null,
+    revoked_at: null,
+    expires_at: '2026-11-30T12:00:00.000Z',
+    replaced_by_api_key_id: null,
+    expiry_reminder_sent_at: null,
+    updated_at: timestamp,
+  },
+  raw_key: 'fixture-raw-api-key',
+}
+
 export const oauthManagementApiFixtureCases: ApiFixtureCase[] = [
   {
     id: 'shared.scopes.catalog',
@@ -32,21 +51,7 @@ export const oauthManagementApiFixtureCases: ApiFixtureCase[] = [
       permissions: ['mcp.user:read', 'mcp.user:write'],
     },
     status: 201,
-    body: {
-      api_key: {
-        id: apiKeyId,
-        user_id: userId,
-        prefix: 'voucha_mcp_0000',
-        type: 'mcp',
-        label: 'Coding agent',
-        permissions: ['mcp.user:read', 'mcp.user:write'],
-        created_at: timestamp,
-        last_used_at: null,
-        revoked_at: null,
-        updated_at: timestamp,
-      },
-      raw_key: 'fixture-raw-api-key',
-    },
+    body: issuedApiKeyBody,
     consumers: [...clientConsumers],
     migratedFrom: ['backend/api/v1/my/api-keys.test.mts'],
   },
@@ -95,3 +100,20 @@ export const oauthManagementApiFixtureCases: ApiFixtureCase[] = [
     migratedFrom: ['backend/api/v1/my/oauth-grants.test.mts'],
   },
 ]
+
+const createdApiKeyFixture = oauthManagementApiFixtureCases.find(
+  fixture => fixture.id === 'native.my.api-keys.create',
+)!
+oauthManagementApiFixtureCases.push({
+  ...createdApiKeyFixture,
+  id: 'native.my.api-keys.rotate',
+  path: `/api/v1/my/api-keys/${apiKeyId}/rotate`,
+  route: { routeTemplate: '/api/v1/my/api-keys/:id/rotate', pathParams: { id: apiKeyId } },
+  requestBody: undefined,
+  body: {
+    ...issuedApiKeyBody,
+    api_key: { ...issuedApiKeyBody.api_key, id: '00000000-0000-7000-8000-000000000702' },
+    raw_key: 'fixture-rotated-api-key',
+  },
+  migratedFrom: ['backend/api/v1/my/api-keys-lifecycle.test.mts'],
+})

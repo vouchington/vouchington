@@ -282,6 +282,26 @@
           "created_at": {
             "type": "string"
           },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "expiry_reminder_sent_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
           "id": {
             "type": "string"
           },
@@ -307,6 +327,16 @@
           "prefix": {
             "type": "string"
           },
+          "replaced_by_api_key_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
           "revoked_at": {
             "anyOf": [
               {
@@ -330,11 +360,14 @@
         },
         "required": [
           "created_at",
+          "expires_at",
+          "expiry_reminder_sent_at",
           "id",
           "label",
           "last_used_at",
           "permissions",
           "prefix",
+          "replaced_by_api_key_id",
           "revoked_at",
           "type",
           "updated_at",
@@ -4025,6 +4058,42 @@
           }
         },
         "required": ["hostname"],
+        "type": "object"
+      },
+      "CreateApiKeyBody": {
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "lifetime_days": {
+            "anyOf": [
+              {
+                "const": 30
+              },
+              {
+                "const": 365
+              },
+              {
+                "const": 90
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": {
+            "enum": ["mcp", "rss"],
+            "type": "string"
+          }
+        },
+        "required": ["label", "permissions"],
         "type": "object"
       },
       "CreateCardRequest": {
@@ -55572,7 +55641,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateApiKeyBody"
               }
             }
           }
@@ -55620,6 +55689,46 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/my/api-keys/{id}/rotate": {
+      "post": {
+        "operationId": "post_api_v1_my_api-keys_id_rotate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "api_key": {
+                      "$ref": "#/components/schemas/ApiKey"
+                    },
+                    "raw_key": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["api_key", "raw_key"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
           },
           "default": {
             "$ref": "#/components/responses/Error"

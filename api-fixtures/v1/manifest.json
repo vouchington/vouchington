@@ -24380,7 +24380,7 @@
     },
     "GET:/api/v1/my/api-keys": {
       "bodyKind": "content",
-      "hash": "0a35e421fef52b2045d0d391ade05b90db52463a998c3a2f154b36d06c12a6a5",
+      "hash": "480dc0edc4a4c24b57d0d0b1b579889789101f47da3ec25d826a013f9b336456",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -24394,6 +24394,34 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "expires_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "expiry_reminder_sent_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "id": {
@@ -24435,6 +24463,20 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "replaced_by_api_key_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "revoked_at": {
@@ -73341,7 +73383,7 @@
     },
     "POST:/api/v1/my/api-keys": {
       "bodyKind": "content",
-      "hash": "3cb127ed0ee4eb47c392a6535100bbcb0de6c5d341c3f006d0c94628f9c2a53a",
+      "hash": "1f2adb9ec69e913342538594119509bb269d017064a2144883e48e2976d9e7c2",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -73355,6 +73397,34 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "expires_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "expiry_reminder_sent_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "id": {
@@ -73396,6 +73466,191 @@
                 "required": true,
                 "schema": {
                   "type": "string"
+                }
+              },
+              "replaced_by_api_key_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "revoked_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "type": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "rss"
+                    }
+                  ]
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "user_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "api_key": {
+              "required": true,
+              "schema": {
+                "name": "ApiKey",
+                "type": "ref"
+              }
+            },
+            "raw_key": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/my/api-keys.mts",
+      "statusCodes": [201],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/my/api-keys/:id/rotate": {
+      "bodyKind": "content",
+      "hash": "1f2adb9ec69e913342538594119509bb269d017064a2144883e48e2976d9e7c2",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/my/api-keys/:id/rotate",
+      "schema": {
+        "definitions": {
+          "ApiKey": {
+            "additionalProperties": false,
+            "properties": {
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "expires_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "expiry_reminder_sent_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "label": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "last_used_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "permissions": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "prefix": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "replaced_by_api_key_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "revoked_at": {
@@ -78423,7 +78678,7 @@
         "type": "mcp"
       },
       "responseSchema": {
-        "hash": "bdbe64147a2c7801b0cc7c80c4cf900b8c1b66cd427cdcacefa6b06f9ccea090",
+        "hash": "f4860e98fdc4b0e62a08e044ce05f28e7e8430d75a62b8fbc132a8bd9054d9ea",
         "key": "native.my.api-keys.create"
       },
       "route": {
@@ -78482,6 +78737,30 @@
         "caseFile": "backend/test-helpers/api-fixtures/oauth-management-cases.mts"
       },
       "status": 204
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/my/api-keys/:id/rotate",
+      "bodyFile": "responses/native.my.api-keys.rotate.json",
+      "consumers": ["web", "swift-core", "dotnet-core"],
+      "id": "native.my.api-keys.rotate",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/my/api-keys-lifecycle.test.mts"],
+      "path": "/api/v1/my/api-keys/00000000-0000-7000-8000-000000000701/rotate",
+      "responseSchema": {
+        "hash": "f4860e98fdc4b0e62a08e044ce05f28e7e8430d75a62b8fbc132a8bd9054d9ea",
+        "key": "native.my.api-keys.rotate"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000701"
+        },
+        "routeTemplate": "/api/v1/my/api-keys/:id/rotate"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-management-cases.mts"
+      },
+      "status": 201
     },
     {
       "auth": "fixture-user",
@@ -79641,7 +79920,7 @@
         "limit": "1"
       },
       "responseSchema": {
-        "hash": "6215a0600f43cf36468de822d664bd3783bfb6a5e48b2c7640f2c8e39ad61ec4",
+        "hash": "d584e4a0770c7cbd0db0a57f0bdfe0be0a6a487394d3c3fcca9e21c47be7df77",
         "key": "native.my.api-keys.paginated"
       },
       "route": {

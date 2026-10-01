@@ -69,3 +69,24 @@ The bloom filter stores hex-encoded SHA-256 hashes of active keys. It is:
 - Auth: [../jwt-session/README.md](../jwt-session/README.md)
 - Requirements: [../../../docs/requirements/users/api-keys.md](../../../../requirements/users/api-keys.md)
 - Bloom filters system: [../../queues/bloom-filters/README.md](../../queues/bloom-filters/README.md)
+
+## Expiry reminders
+
+The emails queue owns the hourly `dispatchApiKeyExpiryReminders` schedule and
+`processSendApiKeyExpiryReminder` job. The API-key service scans due keys in 100-row UUID cursor
+pages and owns the typed delivery claim. The worker renders the template and sends through
+`sendClassifiedEmail`; see the [expiry contract](../../../../requirements/users/reference-api-key-lifecycle.md).
+The replacement self-FK uses `ON DELETE SET NULL`; owner deletion still cascades all live keys.
+Expiry and replacement indexes support due scans and foreign-key lookups. Retained key identities
+continue to preserve audit attribution without authorizing deleted keys.
+
+| Failure mode                                       | Detectable state                                          | Recovery                                 | Idempotency                   | Evidence                                    |
+| -------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------- | ----------------------------- | ------------------------------------------- |
+| Dispatch failure                                   | Due row remains unclaimed                                 | Next hourly sweep                        | Durable claim                 | `lifecycle.test.mts` reminder claims        |
+| Provider non-consumption                           | Claim exists after provider rejection                     | No resend; possible lost notice          | Claim blocks retries          | `api-key-expiry.test.mts` uncertain outcome |
+| Provider consumption followed by DB-commit failure | Claim committed before provider call; no post-send commit | No resend                                | Claim precedes send           | `api-key-expiry.test.mts` retries           |
+| Durable commit followed by reply loss              | Claimed row                                               | Retry skips                              | Atomic conditional update     | `api-key-expiry.test.mts` retries           |
+| Retry/reconciliation                               | Unclaimed due row or claimed row                          | Sweep queues only unclaimed rows         | Claim wins once               | `lifecycle.test.mts` concurrent claims      |
+| TTL expiry                                         | Queue dedupe expires                                      | Next sweep can enqueue again             | Database claim persists       | `lifecycle.test.mts` repeated claims        |
+| Orphan cleanup                                     | Revoked/replaced/deleted/expired key                      | Processor skips; owner deletion cascades | Revalidated conditional claim | `api-key-expiry.test.mts` inactive keys     |
+| Normal terminal removal                            | Claimed row; bounded queue history                        | No further work                          | Claim survives queue removal  | `api-key-expiry.test.mts` sequential retry  |

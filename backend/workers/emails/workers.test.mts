@@ -22,7 +22,9 @@ describe('emails worker router', () => {
     const dispatchCommunityModerationSummaryEmails = vi.fn<() => Promise<void>>(() =>
       Promise.resolve(),
     )
+    const dispatchApiKeyExpiryReminders = vi.fn<() => Promise<void>>(() => Promise.resolve())
     const dispatchers = {
+      dispatchApiKeyExpiryReminders,
       dispatchEngagementEmails,
       dispatchCommunityModerationSummaryEmails,
     }
@@ -49,7 +51,11 @@ describe('emails worker router', () => {
           name: 'dispatchEngagementEmails',
           data: { input: { userId: 'user' }, variables: { token: 'secret' } },
         } as Job,
-        { dispatchEngagementEmails, dispatchCommunityModerationSummaryEmails },
+        {
+          dispatchEngagementEmails,
+          dispatchCommunityModerationSummaryEmails,
+          dispatchApiKeyExpiryReminders: vi.fn<() => Promise<void>>(() => Promise.resolve()),
+        },
       ),
     ).rejects.toBeInstanceOf(JobPayloadError)
     expect(dispatchEngagementEmails).not.toHaveBeenCalled()

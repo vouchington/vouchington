@@ -9,6 +9,9 @@ import { ScopePicker } from './scope-picker'
 import type { ApiKeyScopeSelection } from './use-api-key-scope-selection'
 
 interface CreateApiKeyFormProps {
+  isAdministrator: boolean
+  lifetimeDays: 30 | 90 | 365 | null
+  setLifetimeDays: (days: 30 | 90 | 365 | null) => void
   label: string
   selection: ApiKeyScopeSelection
   submitting: boolean
@@ -19,6 +22,9 @@ interface CreateApiKeyFormProps {
 
 export function CreateApiKeyForm({
   label,
+  isAdministrator,
+  lifetimeDays,
+  setLifetimeDays,
   selection,
   submitting,
   onCancel,
@@ -80,6 +86,23 @@ export function CreateApiKeyForm({
           data-pw='api-keys-create-label-input'
         />
       </div>
+      <label className='block space-y-1'>
+        <span>{t('settings.apiKeys.expiry')}</span>
+        <select
+          value={lifetimeDays === null ? 'none' : lifetimeDays}
+          onChange={event =>
+            setLifetimeDays(
+              event.target.value === 'none' ? null : (Number(event.target.value) as 30 | 90 | 365),
+            )
+          }
+          data-pw='api-keys-lifetime'
+        >
+          <option value={30}>{t('settings.apiKeys.days30')}</option>
+          <option value={90}>{t('settings.apiKeys.days90')}</option>
+          {!isAdministrator && <option value={365}>{t('settings.apiKeys.year1')}</option>}
+          {!isAdministrator && <option value='none'>{t('settings.apiKeys.noExpiry')}</option>}
+        </select>
+      </label>
       <div className='flex gap-2'>
         <Button
           type='submit'

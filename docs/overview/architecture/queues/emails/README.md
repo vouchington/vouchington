@@ -29,3 +29,11 @@ All emails should flow through this queue for reliability and for metrics (e.g. 
 - Parent: [../AGENTS.md](../../../../../backend/queues/AGENTS.md)
 - [Notifications Service](../../services/notifications/README.md)
 - [SES Bounce Events Service](../../services/ses-bounce-events/README.md)
+
+## API-key expiry reminders
+
+The hourly `dispatchApiKeyExpiryReminders` job queues bounded pages of
+`processSendApiKeyExpiryReminder` jobs carrying only an API-key id. The service's durable claim
+prevents duplicate sending after queue retries or deduplication expiry. See the
+[API-key lifecycle](../../../../requirements/users/reference-api-key-lifecycle.md) and its
+[durable transition matrix](../../services/api-keys/README.md#expiry-reminders).

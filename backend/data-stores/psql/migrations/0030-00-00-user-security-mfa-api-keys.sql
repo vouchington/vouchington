@@ -55,6 +55,9 @@ CREATE TABLE IF NOT EXISTS api_keys (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   last_used_at TIMESTAMPTZ,
   revoked_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,
+  replaced_by_api_key_id UUID REFERENCES api_keys ON DELETE SET NULL,
+  expiry_reminder_sent_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   CHECK (prefix = TRIM(prefix)),
   CHECK (char_length(prefix) BETWEEN 8 AND 16),
@@ -71,6 +74,8 @@ CREATE OR REPLACE TRIGGER trigger_api_keys_updated_at
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_api_keys__key_hash ON api_keys (key_hash) WHERE revoked_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_api_keys__user_id ON api_keys (user_id, id DESC) WHERE revoked_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_api_keys__replaced_by_api_key_id__fk ON api_keys (replaced_by_api_key_id) WHERE replaced_by_api_key_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_api_keys__expiry_reminder ON api_keys (expires_at, id) WHERE revoked_at IS NULL AND replaced_by_api_key_id IS NULL AND expiry_reminder_sent_at IS NULL;
 
 COMMENT ON TABLE api_keys IS 'User-issued API keys for programmatic access (format: voucha_<type>_<32 hex random>_<16 hex checksum>), stored as SHA-256 hashes.';
 COMMENT ON COLUMN api_keys.user_id IS 'The user who owns this API key.';
@@ -81,6 +86,9 @@ COMMENT ON COLUMN api_keys.label IS 'User-provided label to identify the key''s 
 COMMENT ON COLUMN api_keys.permissions IS 'Canonical scope set granted to this key; validated against the application scope catalogue.';
 COMMENT ON COLUMN api_keys.last_used_at IS 'When this API key was last used for authentication.';
 COMMENT ON COLUMN api_keys.revoked_at IS 'When this API key was revoked; revoked keys cannot authenticate.';
+COMMENT ON COLUMN api_keys.expires_at IS 'Authentication deadline; NULL means no expiry for non-administrator owners.';
+COMMENT ON COLUMN api_keys.replaced_by_api_key_id IS 'Replacement key created by owner rotation; the old key has at most 24 hours of overlap.';
+COMMENT ON COLUMN api_keys.expiry_reminder_sent_at IS 'Durable claim before expiry reminder delivery; retries never send twice.';
 
 -- Current indexes for fresh schema bootstrap.
 CREATE INDEX IF NOT EXISTS idx_api_keys__user_id__fk

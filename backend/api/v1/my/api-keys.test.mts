@@ -54,14 +54,14 @@ describe('POST /api/v1/my/api-keys', () => {
     await request.post('/api/v1/my/api-keys').send('label=test').expect(415)
   })
 
-  it('returns 400 when label is missing', async () => {
+  it('returns 422 when label is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
     await request
       .post('/api/v1/my/api-keys')
       .set('Content-Type', 'application/json')
       .send({ permissions: ['rss:read'] })
-      .expect(400)
+      .expect(422)
   })
 
   it('returns 400 when label is empty string', async () => {
@@ -84,14 +84,14 @@ describe('POST /api/v1/my/api-keys', () => {
       .expect(400)
   })
 
-  it('returns 400 when permissions is missing', async () => {
+  it('returns 422 when permissions is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
     await request
       .post('/api/v1/my/api-keys')
       .set('Content-Type', 'application/json')
       .send({ label: 'Test' })
-      .expect(400)
+      .expect(422)
   })
 
   it('returns 400 when permissions is empty array', async () => {

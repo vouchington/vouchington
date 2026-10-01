@@ -29,6 +29,9 @@ const keys: ApiKey[] = [
     created_at: '2026-05-10T12:00:00.000Z',
     last_used_at: '2026-09-01T15:04:00.000Z',
     revoked_at: null,
+    expires_at: null,
+    replaced_by_api_key_id: null,
+    expiry_reminder_sent_at: null,
     updated_at: '2026-09-01T15:04:00.000Z',
   },
   {
@@ -40,6 +43,9 @@ const keys: ApiKey[] = [
     created_at: '2026-02-02T12:00:00.000Z',
     last_used_at: '2026-04-11T09:00:00.000Z',
     revoked_at: '2026-06-01T12:00:00.000Z',
+    expires_at: null,
+    replaced_by_api_key_id: null,
+    expiry_reminder_sent_at: null,
     updated_at: '2026-06-01T12:00:00.000Z',
   },
 ]

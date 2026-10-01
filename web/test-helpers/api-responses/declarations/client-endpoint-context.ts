@@ -7,7 +7,10 @@ export interface WebFixtureClientEndpointContext {
     typeof import('@/lib/api/client/admin-oauth-clients'),
     'fetchAdminOAuthClients' | 'unverifyOAuthClient' | 'verifyOAuthClient'
   >
-  readonly apiKeys: Pick<typeof import('@/lib/api/client/api-keys'), 'createApiKey' | 'getApiKeys'>
+  readonly apiKeys: Pick<
+    typeof import('@/lib/api/client/api-keys'),
+    'createApiKey' | 'getApiKeys' | 'rotateApiKey'
+  >
   readonly auth: Pick<typeof import('@/lib/api/client/auth'), 'acknowledgeOAuthAuthorization'>
   readonly captchaConfig: Pick<
     typeof import('@/lib/api/client/captcha-config'),

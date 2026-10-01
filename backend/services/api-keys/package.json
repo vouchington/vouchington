@@ -29,9 +29,11 @@
     "@modules/scopes": "workspace:^",
     "@queues/bloom-filters": "workspace:^",
     "@services/bloom-filter-config": "workspace:^",
+    "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
+    "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"
   }
 }

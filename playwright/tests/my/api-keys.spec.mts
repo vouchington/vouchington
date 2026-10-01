@@ -57,6 +57,26 @@ test.describe('My API Keys Page', () => {
     await expect(page.getByTestId('api-keys-create-label-input')).toBeHidden()
   })
 
+  test('selects expiry and rotates while showing the replacement once', async ({ page }) => {
+    const label = `Playwright rotation ${randomUUID()}`
+    await page.getByTestId('api-keys-create-button').click()
+    await page.getByTestId('api-keys-lifetime').selectOption('30')
+    await page.getByTestId('api-keys-create-label-input').pressSequentially(label)
+    await page.getByTestId('api-keys-create-confirm-button').click()
+    const rawInput = page.getByTestId('api-keys-created-raw-key-input')
+    await expect(rawInput).toBeVisible()
+    const original = await rawInput.inputValue()
+    await page.getByTestId('api-keys-dismiss-raw-key-button').click()
+    const row = page.getByTestId('api-key-active-row').filter({ hasText: label })
+    await row.getByTestId('api-key-rotate').click()
+    await expect(rawInput).toBeVisible()
+    await expect(rawInput).not.toHaveValue(original)
+    await expect(row).toHaveCount(2)
+    await expect(row.filter({ hasText: 'Replaced' })).toHaveCount(1)
+    await page.getByTestId('api-keys-dismiss-raw-key-button').click()
+    await expect(rawInput).toBeHidden()
+  })
+
   test('created API key is shown once and can be revoked', async ({ page }) => {
     const label = `Playwright RSS ${randomUUID()}`
 

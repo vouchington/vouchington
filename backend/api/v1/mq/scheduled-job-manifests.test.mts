@@ -50,6 +50,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'crawl_hostnames/crawl_tier2_dispatcher',
   'crawl_hostnames/refresh_hostname_crawler_dispatcher',
   'crawl_referral_links/crawl_referral_links_dispatcher',
+  'emails/dispatchApiKeyExpiryReminders',
   'emails/dispatchCommunityModerationSummaryEmails',
   'emails/dispatchEngagementEmails',
   'entity-listeners/entityListenerReconciliation',
@@ -103,7 +104,7 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 30 manifests and 81 live jobs', () => {
+  it('imports the exact 30 manifests and 82 live jobs', () => {
     expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(30)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>

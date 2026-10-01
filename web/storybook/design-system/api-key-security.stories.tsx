@@ -44,6 +44,9 @@ export const KeyLists: Story = {
   render: () => (
     <div className='w-[min(92vw,720px)] space-y-4'>
       <ActiveApiKeysList
+        isAdministrator={false}
+        rotatingIds={new Set()}
+        onRotate={() => {}}
         confirmingRevokeId={null}
         keys={[
           {
@@ -56,6 +59,9 @@ export const KeyLists: Story = {
             updated_at: '2026-05-25T00:00:00Z',
             last_used_at: null,
             revoked_at: null,
+            expires_at: null,
+            replaced_by_api_key_id: null,
+            expiry_reminder_sent_at: null,
           },
         ]}
         revokingIds={new Set()}
@@ -75,6 +81,9 @@ export const KeyLists: Story = {
             updated_at: '2026-05-24T00:00:00Z',
             last_used_at: '2026-05-22T00:00:00Z',
             revoked_at: '2026-05-24T00:00:00Z',
+            expires_at: null,
+            replaced_by_api_key_id: null,
+            expiry_reminder_sent_at: null,
           },
         ]}
       />

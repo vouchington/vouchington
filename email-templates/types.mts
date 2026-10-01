@@ -17,6 +17,12 @@ export type LocalizedEmailProps = {
   uiLocale?: string | null
 }
 
+export type ApiKeyExpiryEmailProps = LocalizedEmailProps & {
+  label: string
+  expiresAt: string
+  apiKeysUrl: string
+}
+
 export type CommunityInviteEmailProps = LocalizedEmailProps & {
   communityName: string
   inviterName: string

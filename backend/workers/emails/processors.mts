@@ -2,7 +2,10 @@ import type { EmailJobsTemplates, EmailSendJobs, EmailTemplateInput } from '@que
 
 export default function processEmail(
   templates: EmailJobsTemplates,
-  templateName: Exclude<EmailSendJobs, 'processSendCopyrightNoticeEmail'>,
+  templateName: Exclude<
+    EmailSendJobs,
+    'processSendCopyrightNoticeEmail' | 'processSendApiKeyExpiryReminder'
+  >,
   input: EmailTemplateInput,
   variables: Record<string, unknown>,
 ) {

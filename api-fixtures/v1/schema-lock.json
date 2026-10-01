@@ -448,7 +448,7 @@
     },
     "GET:/api/v1/my/api-keys": {
       "fixtureIds": ["native.my.api-keys.paginated"],
-      "hash": "0a35e421fef52b2045d0d391ade05b90db52463a998c3a2f154b36d06c12a6a5"
+      "hash": "480dc0edc4a4c24b57d0d0b1b579889789101f47da3ec25d826a013f9b336456"
     },
     "GET:/api/v1/my/cards": {
       "fixtureIds": ["native.cards.empty", "native.cards.page-1", "native.cards.page-2"],
@@ -1169,7 +1169,11 @@
     },
     "POST:/api/v1/my/api-keys": {
       "fixtureIds": ["native.my.api-keys.create"],
-      "hash": "3cb127ed0ee4eb47c392a6535100bbcb0de6c5d341c3f006d0c94628f9c2a53a"
+      "hash": "1f2adb9ec69e913342538594119509bb269d017064a2144883e48e2976d9e7c2"
+    },
+    "POST:/api/v1/my/api-keys/:id/rotate": {
+      "fixtureIds": ["native.my.api-keys.rotate"],
+      "hash": "1f2adb9ec69e913342538594119509bb269d017064a2144883e48e2976d9e7c2"
     },
     "POST:/api/v1/my/cards": {
       "fixtureIds": ["native.cards.create.default"],
@@ -2115,11 +2119,15 @@
     },
     "native.my.api-keys.create": {
       "fixtureIds": ["native.my.api-keys.create"],
-      "hash": "bdbe64147a2c7801b0cc7c80c4cf900b8c1b66cd427cdcacefa6b06f9ccea090"
+      "hash": "f4860e98fdc4b0e62a08e044ce05f28e7e8430d75a62b8fbc132a8bd9054d9ea"
     },
     "native.my.api-keys.paginated": {
       "fixtureIds": ["native.my.api-keys.paginated"],
-      "hash": "6215a0600f43cf36468de822d664bd3783bfb6a5e48b2c7640f2c8e39ad61ec4"
+      "hash": "d584e4a0770c7cbd0db0a57f0bdfe0be0a6a487394d3c3fcca9e21c47be7df77"
+    },
+    "native.my.api-keys.rotate": {
+      "fixtureIds": ["native.my.api-keys.rotate"],
+      "hash": "f4860e98fdc4b0e62a08e044ce05f28e7e8430d75a62b8fbc132a8bd9054d9ea"
     },
     "native.my.email-addresses.empty": {
       "fixtureIds": ["native.my.email-addresses.empty"],

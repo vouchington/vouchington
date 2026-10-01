@@ -44,6 +44,9 @@ function StatefulForm({
   return (
     <StoryFrame width='max-w-xl'>
       <CreateApiKeyForm
+        isAdministrator={false}
+        lifetimeDays={90}
+        setLifetimeDays={noop}
         label={label}
         selection={selection}
         submitting={submitting}

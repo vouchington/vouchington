@@ -21,6 +21,11 @@ export function ApiKeysManager({
   const t = useTranslations()
   const {
     keys,
+    isAdministrator,
+    lifetimeDays,
+    setLifetimeDays,
+    rotatingIds,
+    handleRotate,
     loading,
     loadError,
     creating,
@@ -87,6 +92,9 @@ export function ApiKeysManager({
             <ActiveApiKeysList
               confirmingRevokeId={confirmingRevokeId}
               keys={activeKeys}
+              isAdministrator={isAdministrator}
+              rotatingIds={rotatingIds}
+              onRotate={handleRotate}
               revokingIds={revokingIds}
               onCancelRevoke={() => setConfirmingRevokeId(null)}
               onConfirmRevoke={handleRevoke}
@@ -109,6 +117,9 @@ export function ApiKeysManager({
           {creating ? (
             <CreateApiKeyForm
               label={newLabel}
+              isAdministrator={isAdministrator}
+              lifetimeDays={lifetimeDays}
+              setLifetimeDays={setLifetimeDays}
               submitting={submitting}
               selection={selection}
               onCancel={() => {

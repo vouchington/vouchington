@@ -27,11 +27,15 @@ import {
 
 export { JobPayloadError }
 
-type TemplateName = Exclude<EmailSendJobs, 'processSendCopyrightNoticeEmail'>
+type TemplateName = Exclude<
+  EmailSendJobs,
+  'processSendCopyrightNoticeEmail' | 'processSendApiKeyExpiryReminder'
+>
 
 export type ParsedEmailJob =
   | { kind: 'dispatcher'; name: EmailDispatcherJobs }
   | { kind: 'copyright'; data: { intentId: string } }
+  | { kind: 'api-key-expiry'; apiKeyId: string }
   | {
       kind: 'template'
       name: TemplateName
@@ -42,6 +46,7 @@ export type ParsedEmailJob =
 const dispatcherJobs = [
   'dispatchEngagementEmails',
   'dispatchCommunityModerationSummaryEmails',
+  'dispatchApiKeyExpiryReminders',
 ] as const satisfies readonly EmailDispatcherJobs[]
 
 const templateParsers = {
@@ -71,6 +76,17 @@ export function parseEmailJob(name: string, data: unknown): ParsedEmailJob {
   }
   if (name === 'processSendCopyrightNoticeEmail') {
     return { kind: 'copyright', data: copyrightPayload(data) }
+  }
+  if (name === 'processSendApiKeyExpiryReminder') {
+    const record = asRecord(data, 'payload')
+    assertExactKeys(record, ['apiKeyId'])
+    if (
+      typeof record.apiKeyId !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(record.apiKeyId)
+    ) {
+      throw new JobPayloadError('apiKeyId must be a UUID')
+    }
+    return { kind: 'api-key-expiry', apiKeyId: record.apiKeyId }
   }
   if (!isTemplate(name)) throw new JobPayloadError(`unknown job ${name}`)
   const record = asRecord(data, 'payload')

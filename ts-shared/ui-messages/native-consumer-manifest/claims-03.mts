@@ -129,7 +129,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_03 = [
   { key: 'native.auth.verified', consumers: ['swift'] },
   { key: 'native.auth.verify', consumers: ['swift'] },
   { key: 'native.auth.verifyCode', consumers: ['swift'] },
-  { key: 'native.common.done', consumers: ['swift'] },
+  { key: 'native.common.done', consumers: ['dotnet', 'swift'] },
   { key: 'native.common.ok', consumers: ['swift'] },
   { key: 'native.common.relatedArticles', consumers: ['dotnet', 'swift'] },
   { key: 'native.common.relatedArticlesMore', consumers: ['dotnet', 'swift'] },

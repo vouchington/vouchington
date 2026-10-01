@@ -1216,6 +1216,39 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Dispatch API key expiry reminders",
+        "id": "dispatchApiKeyExpiryReminders",
+        "kind": "scheduled-jobs",
+        "schedule": "0 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "emails",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 * * * *",
+    },
+    "schedulerId": "dispatchApiKeyExpiryReminders",
+    "template": {
+      "data": {},
+      "name": "dispatchApiKeyExpiryReminders",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Dispatch engagement onboarding emails",
         "id": "dispatchEngagementEmails",
         "kind": "scheduled-jobs",
@@ -2907,6 +2940,14 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
 
 exports[`scheduled job manifest catalog > projects every scheduled API surface 1`] = `
 [
+  {
+    "description": "Dispatch API key expiry reminders",
+    "id": "dispatchApiKeyExpiryReminders",
+    "job_name": "dispatchApiKeyExpiryReminders",
+    "queue_name": "emails",
+    "schedule": "0 * * * *",
+    "triggerName": "enqueueDispatchApiKeyExpiryReminders",
+  },
   {
     "description": "Recover abandoned durable ActivityPub inbox envelopes",
     "id": "activitypub-inbox-recovery",

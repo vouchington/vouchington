@@ -3,6 +3,7 @@ import { getDeployEnvironment } from '@ts-shared/deploy-environment'
 import { SCHEDULED_JOB_MANIFESTS } from './scheduled-job-manifests.mts'
 
 export const SCHEDULED_JOB_API_ORDER = [
+  'dispatchApiKeyExpiryReminders',
   'activitypub-inbox-recovery',
   'activitypub-inbox-cleanup',
   'ses-inbound-reconciliation',

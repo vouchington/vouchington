@@ -1,25 +1,30 @@
 /* oxlint-disable react-you-might-not-need-an-effect/no-event-handler -- legacy client-only callers load their initial page on mount */
 import { useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
-import { createApiKey, getApiKeys, revokeApiKey } from '@/lib/api/client/api-keys'
+import { createApiKey, getApiKeys, revokeApiKey, rotateApiKey } from '@/lib/api/client/api-keys'
 import { ApiError } from '@/lib/api/error'
 import type { ApiKey } from '@/types/api-keys'
 import type { ScopeCatalogEntry } from '@/types/scopes'
 import { useApiKeyScopeSelection } from './use-api-key-scope-selection'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { ListResponse } from '@/types/api-responses'
+import { useOptionalAuth } from '@/lib/auth/context'
+import { rotatedKeyState } from './rotated-key-state'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
-
 const EMPTY_PAGE: ListResponse<ApiKey> = {
   results: [],
   page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
 }
-
 export function useApiKeysManager(
   scopeCatalog: readonly ScopeCatalogEntry[],
   initialData?: ListResponse<ApiKey>,
 ) {
   const t = useTranslations()
+  const auth = useOptionalAuth()
+  const isAdministrator = auth?.currentUser?.roles?.includes('administrator') ?? false
+  const [lifetimeChoice, setLifetimeChoice] = useState<30 | 90 | 365 | null | undefined>()
+  const lifetimeDays = lifetimeChoice === undefined ? (isAdministrator ? 30 : 90) : lifetimeChoice
+  const [rotatingIds, setRotatingIds] = useState(new Set<string>())
   const [clientFirstPage, setClientFirstPage] = useState(EMPTY_PAGE)
   const firstPage = initialData ?? clientFirstPage
   const pagination = usePaginatedList(
@@ -52,7 +57,6 @@ export function useApiKeysManager(
   const [copied, setCopied] = useState(false)
   const [confirmingRevokeId, setConfirmingRevokeId] = useState<string | null>(null)
   const [revokingIds, setRevokingIds] = useState(new Set<string>())
-
   function loadApiKeys() {
     getApiKeys()
       .then(data => setClientFirstPage(data))
@@ -62,12 +66,10 @@ export function useApiKeysManager(
       })
       .finally(() => setLoading(false))
   }
-
   useEffect(() => {
     if (!initialData) loadApiKeys()
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- run once on mount; loadApiKeys reads latest state/t via closure
   }, [])
-
   async function handleCreate() {
     if (!newLabel.trim()) {
       toast.error(t('extracted.my.apiKeysManager.pleaseEnterALabelForThe_629f978b'))
@@ -75,9 +77,12 @@ export function useApiKeysManager(
     }
     setSubmitting(true)
     try {
-      const result = await createApiKey(newLabel.trim(), selection.keyType, [
-        ...selection.permissions,
-      ])
+      const result = await createApiKey(
+        newLabel.trim(),
+        selection.keyType,
+        [...selection.permissions],
+        lifetimeDays,
+      )
       setCreatedKeys(prev => [result.api_key, ...prev.filter(key => key.id !== result.api_key.id)])
       setNewRawKey(result.raw_key)
       setCreating(false)
@@ -94,7 +99,37 @@ export function useApiKeysManager(
       setSubmitting(false)
     }
   }
-
+  async function handleRotate(id: string) {
+    setRotatingIds(prev => new Set(prev).add(id))
+    try {
+      const result = await rotateApiKey(id)
+      setNewRawKey(result.raw_key)
+      setCreatedKeys(prev =>
+        rotatedKeyState(
+          prev,
+          keys.find(key => key.id === id),
+          result.api_key,
+          Date.now(),
+        ),
+      )
+      const page = await getApiKeys().catch(() => {
+        setLoadError(true)
+        return null
+      })
+      if (page) {
+        setCreatedKeys(prev => [
+          result.api_key,
+          ...page.results,
+          ...prev.filter(key => key.id !== id),
+        ])
+        setClientFirstPage(page)
+      }
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : t('settings.apiKeys.rotationFailed'))
+    } finally {
+      setRotatingIds(prev => new Set([...prev].filter(value => value !== id)))
+    }
+  }
   async function handleRevoke(id: string) {
     setRevokingIds(prev => new Set(prev).add(id))
     try {
@@ -118,13 +153,11 @@ export function useApiKeysManager(
       })
     }
   }
-
   useEffect(() => {
     return () => {
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current)
     }
   }, [])
-
   async function handleCopy(text: string) {
     try {
       await navigator.clipboard.writeText(text)
@@ -135,9 +168,13 @@ export function useApiKeysManager(
       toast.error(t('extracted.my.apiKeysManager.failedToCopyToClipboard_978a1dc5'))
     }
   }
-
   return {
     keys,
+    isAdministrator,
+    lifetimeDays,
+    setLifetimeDays: setLifetimeChoice,
+    rotatingIds,
+    handleRotate,
     loading,
     loadError,
     creating,

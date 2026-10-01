@@ -5,8 +5,12 @@ import { Badge } from '@/components/ui/badge'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import type { ApiKey } from '@/types/api-keys'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { useNow } from '@/hooks/use-now'
 
 interface ActiveApiKeysListProps {
+  isAdministrator: boolean
+  rotatingIds: Set<string>
+  onRotate: (id: string) => void
   confirmingRevokeId: string | null
   keys: ApiKey[]
   revokingIds: Set<string>
@@ -17,6 +21,9 @@ interface ActiveApiKeysListProps {
 
 export function ActiveApiKeysList({
   confirmingRevokeId,
+  isAdministrator,
+  rotatingIds,
+  onRotate,
   keys,
   revokingIds,
   onCancelRevoke,
@@ -24,6 +31,7 @@ export function ActiveApiKeysList({
   onStartRevoke,
 }: ActiveApiKeysListProps) {
   const t = useTranslations()
+  const now = useNow()
   if (keys.length === 0) return null
   return (
     <ul className='space-y-3'>
@@ -47,6 +55,21 @@ export function ActiveApiKeysList({
                   {key.prefix}...
                 </code>
               </div>
+              <p className='text-sm'>
+                {key.expires_at
+                  ? t('settings.apiKeys.expiresAt', { date: formatUtcDate(key.expires_at) })
+                  : t('settings.apiKeys.noExpiry')}
+              </p>
+              {key.expires_at && now !== null && new Date(key.expires_at).getTime() <= now && (
+                <Badge>{t('settings.apiKeys.expired')}</Badge>
+              )}
+              {key.replaced_by_api_key_id && <Badge>{t('settings.apiKeys.replaced')}</Badge>}
+              {isAdministrator &&
+                (!key.expires_at ||
+                  new Date(key.expires_at).getTime() - new Date(key.created_at).getTime() >
+                    90 * 86_400_000) && (
+                  <p className='text-sm text-destructive'>{t('settings.apiKeys.rotateOrRevoke')}</p>
+                )}
               <div className='flex flex-wrap gap-1'>
                 {key.permissions.map(p => (
                   <Badge
@@ -71,6 +94,18 @@ export function ActiveApiKeysList({
               </p>
             </div>
             <div className='flex shrink-0 gap-2'>
+              {!key.replaced_by_api_key_id &&
+                (!key.expires_at || (now !== null && new Date(key.expires_at).getTime() > now)) && (
+                  <Button
+                    size='sm'
+                    variant='outline'
+                    onClick={() => onRotate(key.id)}
+                    disabled={rotatingIds.has(key.id)}
+                    data-pw='api-key-rotate'
+                  >
+                    {t('settings.apiKeys.rotate')}
+                  </Button>
+                )}
               {confirmingRevokeId === key.id ? (
                 <>
                   <span className='self-center text-sm text-destructive'>
