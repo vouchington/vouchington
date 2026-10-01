@@ -47,10 +47,8 @@ There is no hosted chat job: `chat` and `reconcile-chat-runtime-generations` wer
 hosted chat transport, and native chat persists through `client-generated-chat`. A `chat` or
 `reconcile-chat-runtime-generations` job still queued at deploy follows the worker's unknown-job
 path (`Unknown AI agent job: <name>`) and fails as an ordinary job failure without crashing the
-worker; the scheduled reconciler's scheduler is pruned when the manifest is upserted. A hosted run
-that was in flight at deploy stays active because no reconciler remains, so native chat for that
-conversation returns 409; prelaunch accepts that loss, and the agentic-run storage is left for the
-agentic-run removal work.
+worker; the scheduled reconciler's scheduler is pruned when the manifest is upserted. The
+agentic-run storage is removed, so no run state remains that could block native chat.
 
 ## Enqueue Files
 

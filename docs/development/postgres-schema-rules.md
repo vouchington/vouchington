@@ -261,8 +261,8 @@ examples describe the review baseline, rather than the current generated snapsho
     table per target (R3, relation votes). State kept per relation is keyed by an enum generated
     from the same metadata as the relation tables.
 - Enum names are plural like tables: only the last word is plural (`invoice_statuses`, not
-  `invoice_status` or `invoices_statuses`). About 22 renames: the 20 singular names and the 2
-  `agentic_runs_*` names. `verified_identity_statuses` is unused and deleted. The two duplicate
+  `invoice_status` or `invoices_statuses`). About 20 renames: the 20 singular names (the two
+  `agentic_runs_*` enums left with the agentic-run storage). `verified_identity_statuses` is unused and deleted. The two duplicate
   pairs (`admin_import_types` = `user_import_request_entity_types`,
   `community_visibility_types` = `privacy_types`) merge when they mean the same thing.
 - **Lifecycle timestamps are the facts; status is never stored beside them.** 10 tables store
@@ -489,9 +489,7 @@ These go away: `_change_logs`, `_history`, `_audit_logs`, mutable `_events`, `_r
 `_events` stays only for append-only inbound or protocol logs that use `occurred_at`:
 `oauth_authorization_server_events`, `stripe_events` (append-only once its processing moves to
 `stripe_event_processing_work_items`) and `amazon_ses_bounce_events` (`ses_timestamp` →
-`occurred_at`). The two mutable `_events` tables are renamed:
-`conversation_message_agentic_runs_events` → `conversation_message_agentic_run_steps` (its output
-is filled in after insert), and `copyright_notice_lifecycle_events` →
+`occurred_at`). The mutable `copyright_notice_lifecycle_events` table is renamed
 `copyright_notice_lifecycle_changes` (the `_changes` shape).
 
 Queue details (decision 16):

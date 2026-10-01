@@ -14,17 +14,6 @@ CREATE TABLE bedrock_embeddings_batch_entities (
   FOREIGN KEY (crawl_id, crawl_order_index) REFERENCES crawl_chunks ON DELETE CASCADE
 );
 CREATE TABLE user_referral_program_links (id uuid PRIMARY KEY, last_crawl_id uuid REFERENCES crawls ON DELETE SET NULL);
-CREATE TABLE conversation_message_agentic_runs (
-  id uuid PRIMARY KEY,
-  parent_agentic_run_id uuid REFERENCES conversation_message_agentic_runs ON DELETE SET NULL
-) PARTITION BY RANGE (id);
-CREATE TABLE conversation_message_agentic_runs__p_2019_01 PARTITION OF conversation_message_agentic_runs FOR VALUES FROM (MINVALUE) TO ('10000000-0000-7000-8000-000000000000');
-CREATE TABLE conversation_message_agentic_runs__p_2026_01 PARTITION OF conversation_message_agentic_runs FOR VALUES FROM ('10000000-0000-7000-8000-000000000000') TO (MAXVALUE);
-CREATE TABLE conversation_message_agentic_runs_events (
-  id uuid PRIMARY KEY,
-  conversation_message_agentic_run_id uuid NOT NULL REFERENCES conversation_message_agentic_runs ON DELETE CASCADE
-) PARTITION BY RANGE (id);
-CREATE TABLE conversation_message_agentic_runs_events__p_2026_01 PARTITION OF conversation_message_agentic_runs_events FOR VALUES FROM (MINVALUE) TO (MAXVALUE);
 CREATE TABLE rss_feed_crawls (id uuid PRIMARY KEY) PARTITION BY RANGE (id);
 CREATE TABLE rss_feed_crawls__p_2019_01 PARTITION OF rss_feed_crawls FOR VALUES FROM (MINVALUE) TO (MAXVALUE);
 INSERT INTO crawls VALUES ('00000000-0000-7000-8000-000000000001');
@@ -32,7 +21,4 @@ INSERT INTO crawl_chunks VALUES ('00000000-0000-7000-8000-000000000001', 0);
 INSERT INTO bedrock_embeddings_batches VALUES ('owned-batch', '00000000-0000-7000-8000-000000000001');
 INSERT INTO bedrock_embeddings_batch_entities VALUES ('owned-batch', '00000000-0000-7000-8000-000000000001', 0);
 INSERT INTO user_referral_program_links VALUES ('10000000-0000-7000-8000-000000000002', '00000000-0000-7000-8000-000000000001');
-INSERT INTO conversation_message_agentic_runs VALUES ('00000000-0000-7000-8000-000000000001', NULL);
-INSERT INTO conversation_message_agentic_runs VALUES ('10000000-0000-7000-8000-000000000002', '00000000-0000-7000-8000-000000000001');
-INSERT INTO conversation_message_agentic_runs_events VALUES ('10000000-0000-7000-8000-000000000003', '00000000-0000-7000-8000-000000000001');
 `

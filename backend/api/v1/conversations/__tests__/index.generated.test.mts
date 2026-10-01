@@ -2,11 +2,7 @@ import { v7 as uuidv7 } from 'uuid'
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
-import {
-  createConversation,
-  createConversationMessage,
-  createConversationMessageAgenticRun,
-} from '@services/conversations-messages/create'
+import { createConversation } from '@services/conversations-messages/create'
 import type { PrivateUser } from '@services/users/types'
 import '../index.mts'
 
@@ -95,55 +91,6 @@ describe('index.generated', () => {
         .set('Content-Type', 'text/plain')
         .send('message=Hello')
         .expect(415)
-    })
-
-    it('should reject client-generated turns while a hosted run is active', async () => {
-      const conversation = await createConversation(user.id, 'Local model')
-      const assistantMessage = await createConversationMessage(conversation.id, user.id, {
-        role: 'assistant',
-        content: null,
-      })
-      await createConversationMessageAgenticRun({
-        conversationId: conversation.id,
-        conversationMessageId: assistantMessage.id,
-        modelName: 'gpt-5.4-nano',
-        modelProvider: 'openai',
-        input: { message: 'Already running' },
-      })
-      const request = createRequest()
-      await request.authenticateAs(user)
-
-      await request
-        .post(`/api/v1/conversations/${conversation.id}/client-generated-chat`)
-        .send({
-          user_message_id: uuidv7(),
-          assistant_message_id: uuidv7(),
-          message: 'Summarize my rewards profile',
-          assistant_content: 'Use transferable points first.',
-          model_provider: 'apple_foundation',
-        })
-        .expect(409)
-    })
-
-    it('should reject client-generated turns while a hosted assistant placeholder is queued', async () => {
-      const conversation = await createConversation(user.id, 'Local model')
-      await createConversationMessage(conversation.id, user.id, {
-        role: 'assistant',
-        content: null,
-      })
-      const request = createRequest()
-      await request.authenticateAs(user)
-
-      await request
-        .post(`/api/v1/conversations/${conversation.id}/client-generated-chat`)
-        .send({
-          user_message_id: uuidv7(),
-          assistant_message_id: uuidv7(),
-          message: 'Summarize my rewards profile',
-          assistant_content: 'Use transferable points first.',
-          model_provider: 'apple_foundation',
-        })
-        .expect(409)
     })
 
     it('should reject client-generated model names that do not match the provider', async () => {

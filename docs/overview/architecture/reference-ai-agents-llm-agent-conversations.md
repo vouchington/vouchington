@@ -4,11 +4,11 @@
 
 ## LLM Agent Conversations
 
-`@services/conversations-messages` persists chat for native local models as client-generated run records. The hosted chat transport (the SSE `POST /api/v1/conversations/:conversationId/chat` route, the `chat` and `reconcile-chat-runtime-generations` queue jobs, and the Valkey token channel) is removed, and that route returns 404. The chat orchestrator and its research, discovery and profile subagents are removed with it, so no server-side agent answers chat messages. Each conversation tracks:
+`@services/conversations-messages` persists chat for native local models as client-generated turns. The hosted chat transport (the SSE `POST /api/v1/conversations/:conversationId/chat` route, the `chat` and `reconcile-chat-runtime-generations` queue jobs, and the Valkey token channel) is removed, and that route returns 404. The chat orchestrator and its research, discovery and profile subagents are removed with it, so no server-side agent answers chat messages. Each conversation tracks:
 
 - `conversations` — top-level thread per user
 - `messages` — individual turns (user + assistant)
-- `agentic-runs` — execution records for a turn. The table, services and partitions remain until the agentic-run storage removal ([A6, #185](https://github.com/vouchington/vouchington/issues/185)); nothing in the running server creates new parent/child runs for chat.
+- Each assistant message records its completion `model_provider` and `model_name` in its JSON content. The agentic-run tables, services and partitions were removed ([A6, #185](https://github.com/vouchington/vouchington/issues/185)); there is no execution-record storage.
 
 The `client-generated-chat` route checks both the user message and the assistant content with
 `checkApiMessageSafety()` before it persists the turn.

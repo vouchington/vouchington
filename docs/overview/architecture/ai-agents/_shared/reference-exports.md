@@ -109,7 +109,6 @@ const { text, iterations, terminationReason, lastResponseId } = await runToolLoo
 | `onCallError`        | `(toolCall, error) => void` (optional)              | Called on any tool execution error (defaults to `onError`)                                                                             |
 | `onBeforeCall`       | `(toolCall) => skip \| undefined` (optional)        | Run before each tool call; return `{ skip: true }` to skip it                                                                          |
 | `onAfterCall`        | `(toolCall, result) => void` (optional)             | Run after each successful tool call                                                                                                    |
-| `writeRunEvent`      | `RunEventWriter` (optional)                         | Write observability events to a conversation agentic run record                                                                        |
 | `onIteration`        | `(ctx) => { stop, reason } \| undefined` (optional) | Called each iteration before tool calls; return `{ stop: true, reason }` to stop early                                                 |
 | `onAfterIteration`   | `(ctx) => { stop, reason } \| undefined` (optional) | Called after tool calls finish each iteration; return `{ stop: true, reason }` to stop early without the `tool_choice:'none'` fallback |
 
