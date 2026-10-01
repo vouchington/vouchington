@@ -6,8 +6,9 @@ import { seedCopyrightMedia } from './copyright-media.mts'
 
 /**
  * Local copyright review data so `/copyright/email-review` and `/copyright/review-queue` are not
- * empty: four email intakes (new notice, thread reply, failed parse, no parse row) and two guest
- * form cases, one waiting on intake review with AI guidance and one with an overdue deadline.
+ * empty: five email intakes (new notice, thread reply, failed parse, no parse row, malware-flagged
+ * original) and two guest form cases, one waiting on intake review with AI guidance and one with
+ * an overdue deadline.
  * Every write is keyed on a stable id, so `db:seed` can run again without adding rows.
  */
 export async function seedCopyright() {
