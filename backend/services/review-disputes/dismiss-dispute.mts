@@ -54,7 +54,7 @@ export async function dismissReviewDispute(
     ),
   ])
   const updated = row
+  await logDisputeResolution(staffUserId, 'dismiss_report', disputeId, updated.post_id, { query })
   await query.commit()
-  await logDisputeResolution(staffUserId, 'dismiss_report', disputeId, updated.post_id)
   return await getReviewDisputeAfterMutation(disputeId)
 }

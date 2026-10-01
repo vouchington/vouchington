@@ -1,5 +1,5 @@
 -- Coalesced pre-launch domain baseline.
--- edited-in-place: pre-launch, never deployed to production
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Merged from: 0225-00-00-vote-integrity.sql
 
 -- ==========================================================================
@@ -24,24 +24,20 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- ============================================================================
--- Vote User Agents
+-- User Agent Strings
 -- ============================================================================
 
-CREATE TABLE IF NOT EXISTS vote_user_agents (
+CREATE TABLE IF NOT EXISTS user_agent_strings (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   user_agent TEXT NOT NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT uq_vote_user_agents__user_agent UNIQUE (user_agent),
+  CONSTRAINT uq_user_agent_strings__user_agent UNIQUE (user_agent),
   CHECK (TRIM(user_agent) = user_agent),
   CHECK (LENGTH(user_agent) <= 1024)
 );
 
-CREATE OR REPLACE TRIGGER trigger_vote_user_agents_updated_at
-  BEFORE UPDATE ON vote_user_agents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-
-COMMENT ON TABLE vote_user_agents IS 'Deduplicated lookup table for browser user agent strings associated with votes.';
-COMMENT ON COLUMN vote_user_agents.user_agent IS 'The full user agent string, unique and trimmed.';
+COMMENT ON TABLE user_agent_strings IS 'Insert-only deduplicated lookup table for browser user-agent strings shared by sessions and votes. Empty string represents an unknown session user agent.';
+COMMENT ON COLUMN user_agent_strings.user_agent IS 'The full user agent string, unique and trimmed.';
 
 -- ============================================================================
 -- Vote Integrity Flags

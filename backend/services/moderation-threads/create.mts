@@ -1,5 +1,11 @@
+import type { QueryOptions } from '@data-stores/psql/types'
 import createError from 'http-errors'
-import { read, beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import {
+  read,
+  beginTransaction,
+  withTransactionOptions,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { ModInternalThread } from './types.mts'
 import { getReportResolutionContext } from '@services/moderation-reports/resolve'
@@ -11,6 +17,7 @@ export async function openModInternalThread(
     reportId?: string | null
     postId?: string | null
   },
+  queryOptions?: QueryOptions,
 ): Promise<ModInternalThread> {
   const { communityId, reportId, postId } = options
   const hasReport = !!reportId
@@ -36,24 +43,13 @@ export async function openModInternalThread(
     if (rows.length === 0) throw createError(404, 'Post not found in this community')
   }
 
-  if (hasReport) {
-    await using transaction = await beginTransaction()
-    const result = await openModInternalThreadForReport(
-      transaction,
-      currentUserId,
-      communityId,
-      reportId!,
-    )
-    await transaction.commit()
-    return result
-  }
+  const run = (query: TransactionQuery) =>
+    hasReport
+      ? openModInternalThreadForReport(query, currentUserId, communityId, reportId!)
+      : openModInternalThreadForPost(query, currentUserId, communityId, postId!)
+  if (queryOptions?.query || queryOptions?.client) return withTransactionOptions(queryOptions, run)
   await using transaction = await beginTransaction()
-  const result = await openModInternalThreadForPost(
-    transaction,
-    currentUserId,
-    communityId,
-    postId!,
-  )
+  const result = await run(transaction)
   await transaction.commit()
   return result
 }
@@ -182,7 +178,7 @@ async function addModParticipants(
     SELECT ${conversationId}::uuid AS conversation_id, user_id, 'admin'
     FROM unnest(${typedModRows.map(row => row.user_id)}::uuid[]) AS input(user_id)
     ORDER BY conversation_id ASC NULLS LAST, user_id ASC NULLS LAST
-    ON CONFLICT (conversation_id, user_id) WHERE user_id IS NOT NULL AND removed_at IS NULL
+    ON CONFLICT (conversation_id, user_id) WHERE (user_id IS NOT NULL) AND (removed_at IS NULL)
     DO NOTHING
   `)
 }

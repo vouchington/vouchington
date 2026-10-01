@@ -1,3 +1,4 @@
+import { expectStaffOperationHistory } from '@voucha/test-helpers/staff-operation-history'
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
@@ -40,6 +41,7 @@ describe('article-syncs', () => {
       const job = await articleSync.getJob(res.body.jobId)
       expect(job?.name).toBe('processArticleSync')
       expect(job?.data).toEqual({ userId: admin.id })
+      await expectStaffOperationHistory(admin.id, 'article_sync_run')
     })
   })
 

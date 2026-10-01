@@ -24,6 +24,11 @@ export async function updateReviewDisputeDraft(
     WITH lifecycle_change_id AS (
       SELECT uuidv7() AS id
     ),
+    previous AS MATERIALIZED (
+      SELECT id, public_response, internal_notes FROM review_disputes
+      WHERE id = ${disputeId} AND sent_at IS NULL AND resolved_at IS NULL
+      FOR UPDATE
+    ),
     updated AS (
       UPDATE review_disputes
       SET public_response = COALESCE(${input.publicResponse ?? null}, public_response),
@@ -34,7 +39,7 @@ export async function updateReviewDisputeDraft(
           approved_by_id = NULL,
           latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id),
           updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${disputeId}
+      WHERE id = (SELECT id FROM previous)
         AND sent_at IS NULL
         AND resolved_at IS NULL
       RETURNING
@@ -74,9 +79,13 @@ export async function updateReviewDisputeDraft(
         updated.sent_at,
         updated.resolved_at,
         updated.resolution_action,
-        '{}'::jsonb
+        jsonb_build_object(
+          'before', jsonb_build_object('public_response', previous.public_response, 'internal_notes', previous.internal_notes),
+          'after', jsonb_build_object('public_response', COALESCE(${input.publicResponse ?? null}, previous.public_response), 'internal_notes', COALESCE(${input.internalNotes ?? null}, previous.internal_notes))
+        )
       FROM updated
       CROSS JOIN lifecycle_change_id
+      JOIN previous ON previous.id = updated.id
     )
     SELECT * FROM updated
   `)

@@ -1,3 +1,4 @@
+import { recordStaffOperation } from '@services/moderator-actions/operation'
 import assert from 'http-assert'
 import { getModerationAppealByIdFromPrimary } from './get.mts'
 
@@ -15,5 +16,9 @@ export async function rerunModerationAppealResolutionDraft(
 
   const { enqueueAppealResolutionAndWait } =
     await import('@queues/ai-agents/enqueues/appeal-resolution')
-  await enqueueAppealResolutionAndWait(appealId, staffUserId)
+  await recordStaffOperation(
+    staffUserId,
+    { actionType: 'appeal_resolution_draft_rerun', moderationAppealId: appealId },
+    () => enqueueAppealResolutionAndWait(appealId, staffUserId),
+  )
 }

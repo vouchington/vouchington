@@ -1,11 +1,11 @@
-import { onceEntityListenerCompleted } from '@workers/entity-listeners/test-support'
+import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, assertValidIsoDateString } from '@voucha/test-helpers'
 // Real, service-calling fixture (not the raw `@voucha/test-helpers` one) — this file waits on
 // `processPostCreated` via `onceEntityListenerCompleted`, which only fires for posts created
 // through the actual `createPost` write path.
-import { createTestPost } from '@services/posts/test-support'
+import { createTestPost } from '@voucha/test-helpers/services/posts/test-support'
 import { deleteNotification } from '@services/notifications/mutations'
 import { reconcileNotificationsForPost } from '@services/notifications/reconcile-post'
 

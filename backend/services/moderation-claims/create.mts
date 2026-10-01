@@ -1,9 +1,10 @@
+import { recordModeratorAction } from '@services/moderator-actions'
 import createError from 'http-errors'
-import { read, write } from '@data-stores/psql'
+import { read, write, beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { CLAIM_EXPIRY_MINUTES } from './config.mts'
 import type { ModerationQueueClaim, ClaimResult } from './types.mts'
-import { getReportResolutionContext } from '@services/moderation-reports/resolve'
+import { assertItemInCommunity } from './scope.mts'
 
 export async function claimModerationQueueItem(
   currentUserId: string,
@@ -27,34 +28,13 @@ export async function claimModerationQueueItem(
   return claimByPost(currentUserId, communityId, postId!)
 }
 
-async function assertItemInCommunity(
-  communityId: string,
-  options: { reportId?: string | null; postId?: string | null },
-): Promise<void> {
-  const { reportId, postId } = options
-  if (postId) {
-    const { rows } = await read(sql`/* assertItemInCommunity:post */
-      SELECT 1 FROM community_post_reviews
-      WHERE post_id = ${postId}
-        AND community_id = ${communityId}
-      LIMIT 1
-    `)
-    if (rows.length === 0) throw createError(404, 'Post not found in this community')
-    return
-  }
-  if (reportId) {
-    const context = await getReportResolutionContext(reportId, communityId)
-    if (!context) throw createError(404, 'Report not found')
-    if (!context.is_in_community_scope) throw createError(403, 'Forbidden')
-  }
-}
-
 async function claimByReport(
   currentUserId: string,
   communityId: string,
   reportId: string,
 ): Promise<ClaimResult> {
-  const { rows } = await write<ModerationQueueClaim>(sql`/* claimModerationQueueItem:report */
+  await using query = await beginTransaction()
+  const { rows } = await query<ModerationQueueClaim>(sql`/* claimModerationQueueItem:report */
     INSERT INTO moderation_queue_claims (community_id, report_id, claimed_by_id, claimed_at)
     VALUES (${communityId}, ${reportId}, ${currentUserId}, now())
     ON CONFLICT (report_id) WHERE report_id IS NOT NULL AND released_at IS NULL
@@ -66,16 +46,28 @@ async function claimByReport(
     RETURNING id, community_id, report_id, post_id, claimed_by_id, claimed_at, released_at
   `)
 
-  if (rows.length > 0) return { claim: rows[0]!, claimed_by_other: false }
-  return fetchHolderForReport(currentUserId, communityId, reportId)
+  const result =
+    rows.length > 0
+      ? { claim: rows[0]!, claimed_by_other: false }
+      : await fetchHolderForReport(currentUserId, communityId, reportId, query)
+  if (!result.claimed_by_other) {
+    await recordModeratorAction(
+      currentUserId,
+      { actionType: 'report_claim', communityId, reportId },
+      { query },
+    )
+  }
+  await query.commit()
+  return result
 }
 
 async function fetchHolderForReport(
   currentUserId: string,
   communityId: string,
   reportId: string,
+  query: TransactionQuery,
 ): Promise<ClaimResult> {
-  const { rows } = await read<ModerationQueueClaim>(sql`/* claimModerationQueueItem:fetch_holder */
+  const { rows } = await query<ModerationQueueClaim>(sql`/* claimModerationQueueItem:fetch_holder */
     SELECT id, community_id, report_id, post_id, claimed_by_id, claimed_at, released_at
     FROM moderation_queue_claims
     WHERE report_id = ${reportId}
@@ -87,7 +79,7 @@ async function fetchHolderForReport(
   if (rows.length > 0) return { claim: rows[0]!, claimed_by_other: true }
   /* v8 ignore start -- race: holder released between INSERT conflict and SELECT */
   const { rows: freshRows } =
-    await write<ModerationQueueClaim>(sql`/* claimModerationQueueItem:fresh_report */
+    await query<ModerationQueueClaim>(sql`/* claimModerationQueueItem:fresh_report */
     INSERT INTO moderation_queue_claims (community_id, report_id, claimed_by_id, claimed_at)
     VALUES (${communityId}, ${reportId}, ${currentUserId}, now())
     ON CONFLICT DO NOTHING
@@ -145,48 +137,4 @@ async function fetchHolderForPost(
   if (freshRows.length === 0) throw createError(409, 'Claim was taken concurrently — please retry')
   return { claim: freshRows[0]!, claimed_by_other: false }
   /* v8 ignore stop */
-}
-
-export async function releaseModerationQueueItem(
-  currentUserId: string,
-  options: {
-    communityId?: string | null
-    reportId?: string | null
-    postId?: string | null
-  },
-): Promise<void> {
-  const { communityId, reportId, postId } = options
-  const hasReport = !!reportId
-  const hasPost = !!postId
-
-  if (hasReport === hasPost) {
-    throw createError(422, 'Exactly one of reportId or postId must be set')
-  }
-
-  if (hasReport) {
-    if (communityId) await assertItemInCommunity(communityId, { reportId })
-    const query = sql`/* releaseModerationQueueItem */
-      UPDATE moderation_queue_claims
-      SET released_at = now()
-      WHERE report_id = ${reportId}
-    `
-    if (communityId) query.append(sql` AND community_id = ${communityId}::uuid`)
-    query.append(sql` AND claimed_by_id = ${currentUserId}
-        AND released_at IS NULL
-    `)
-    await write(query)
-    return
-  }
-
-  if (communityId) await assertItemInCommunity(communityId, { postId })
-  const query = sql`/* releaseModerationQueueItem */
-    UPDATE moderation_queue_claims
-    SET released_at = now()
-    WHERE post_id = ${postId}
-  `
-  if (communityId) query.append(sql` AND community_id = ${communityId}::uuid`)
-  query.append(sql` AND claimed_by_id = ${currentUserId}
-      AND released_at IS NULL
-  `)
-  await write(query)
 }

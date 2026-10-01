@@ -59,8 +59,8 @@ export async function resolveReviewDisputeRemove(
     { query },
   )
   const updated = row
+  await logDisputeResolution(staffUserId, 'resolve_report', disputeId, updated.post_id, { query })
   await query.commit()
-  await logDisputeResolution(staffUserId, 'resolve_report', disputeId, updated.post_id)
   if (updated.post_author_id) {
     import('@services/notifications/create-review-actioned-notification')
       .then(({ createReviewActionedNotification }) =>
@@ -128,8 +128,8 @@ export async function resolveReviewDisputeAnnotate(
     { query },
   )
   const updated = row
+  await logDisputeResolution(staffUserId, 'resolve_report', disputeId, updated.post_id, { query })
   await query.commit()
-  await logDisputeResolution(staffUserId, 'resolve_report', disputeId, updated.post_id)
   if (updated.post_author_id) {
     import('@services/notifications/create-review-actioned-notification')
       .then(({ createReviewActionedNotification }) =>

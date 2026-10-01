@@ -33,7 +33,7 @@ _none_
 **Foreign keys:**
 
 - `rss_feed_item_votes_rss_feed_item_id_fkey`: `FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE`
-- `rss_feed_item_votes_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES vote_user_agents(id) ON DELETE SET NULL`
+- `rss_feed_item_votes_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL`
 - `rss_feed_item_votes_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**

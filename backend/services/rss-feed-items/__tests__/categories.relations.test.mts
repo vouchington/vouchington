@@ -21,7 +21,7 @@ import { v4 as uuid } from 'uuid'
 // Reconstructed locally rather than imported from @services/entity-fetch: entity-fetch already
 // depends on @services/rss-feed-items, so importing entity-fetch's cached getter back into
 // rss-feed-items would create a fresh rss-feed-items<->entity-fetch cycle. Same cache
-// instance/TTL/invalidation-keys as entity-fetch's getRssFeedItemByIdCached.
+// instance/TTL/invalidation-keys as the RSS-feed-item batch cache.
 const getRssFeedItemByIdCached = caches.rss_feed_items.cacheGetByAny(getRssFeedItemById)
 
 import {

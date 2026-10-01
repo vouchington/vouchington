@@ -16,7 +16,7 @@ import type { PrivateUser } from '@services/users/types'
 // Reconstructed locally rather than imported from @services/entity-fetch: entity-fetch already
 // depends on @services/elections-votes, so importing entity-fetch's cached getter back into
 // elections-votes would create a fresh elections-votes<->entity-fetch cycle. Same cache
-// instance/TTL/invalidation-keys as entity-fetch's getAgentModerationElectionByIdCached.
+// instance/TTL/invalidation-keys as the agent-moderation batch cache.
 const getAgentModerationElectionByIdCached = caches.agent_moderation_elections.cacheGetByAny(
   getAgentModerationElectionById,
 )

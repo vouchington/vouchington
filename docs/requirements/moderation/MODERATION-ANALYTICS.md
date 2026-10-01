@@ -4,6 +4,11 @@
 
 Moderation analytics gives site admins and community moderation teams a read-only dashboard for queue health, automod quality, human workload, appeal outcomes, and first-post friction.
 
+Action timelines and moderator workload retain the established moderation action families in
+[the modlog taxonomy](MODLOG.md#action-families), including appeal resolution. The unified staff
+audit covers additional administrative, editorial, and external operations; those rows and their
+requested/finished phases do not count as dashboard moderation work.
+
 Because this capability is intentionally read-only, native rendering and loading of the same
 metrics constitutes full parity. It does not establish action parity for reports, appeals,
 disputes, review queues, or integrity queues; see the

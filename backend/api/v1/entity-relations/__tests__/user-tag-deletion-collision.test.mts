@@ -14,7 +14,7 @@ import { upsertEntityRelationElectionVotes } from '@services/elections-votes/ent
 import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
 import { getEntityRelationElectionByTargetCachedBatch } from '@services/entity-fetch/get'
 import { getEntityRelations } from '@services/entity-relations/query'
-import { deleteUserAndDrainForTest } from '@services/users/delete-test-support'
+import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 // A user/category/topic relation and a post/category/topic relation that share one UUID, both

@@ -305,7 +305,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `user_metrics`, `user_mod_notes`, `user_passkeys`, `user_permissions`, `user_phone_numbers`,
   `user_profile_links`, `user_referral_program_links`, `user_role_permissions`, `user_roles`,
   `user_suspensions`, `user_totp_authenticators`, `user_warnings`, `verified_identities`,
-  `vote_user_agents`, `vote_weight_penalties`, `web_user_agents`, `x_accounts`.
+  `user_agent_strings`, `vote_weight_penalties`, `x_accounts`.
 - Config-generated relationship edges: `relation__community__mute__topic`,
   `relation__community__mute__url_hostname`, `relation__remote_actor__follow__user`,
   `relation__rss_feed_item__category__topic`,

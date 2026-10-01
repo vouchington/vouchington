@@ -2,7 +2,7 @@ import { it, expect, describe } from 'vitest'
 import { getEntityRelations } from './query.mts'
 import { upsertEntityRelation } from './upsert.mts'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
-import { stubUrlGuardsForSuite } from './test-support.mts'
+import { stubUrlGuardsForSuite } from '@voucha/test-helpers/services/entity-relations/test-support'
 import {
   createTestPost,
   createTestTopic,

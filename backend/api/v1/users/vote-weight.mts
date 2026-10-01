@@ -8,7 +8,7 @@ import { enqueueRecalculateUserVoteWeight } from '@queues/vote-weight/enqueues'
 app
   .route('/api/v1/users/:userId/vote-weight')
   .put(async (ctx: Context) => {
-    await requireAuthAndRateLimit(
+    const currentUser = await requireAuthAndRateLimit(
       ctx,
       user => currentUserCanSetVoteWeight(user),
       'PUT:/api/v1/users/:userId/vote-weight',
@@ -23,18 +23,18 @@ app
       'Invalid weight value',
     )
 
-    await adminSetVoteWeight(userId, weight)
+    await adminSetVoteWeight(currentUser.id, userId, weight)
     ctx.setStatus(204)
   })
   .delete(async (ctx: Context) => {
-    await requireAuthAndRateLimit(
+    const currentUser = await requireAuthAndRateLimit(
       ctx,
       user => currentUserCanSetVoteWeight(user),
       'DELETE:/api/v1/users/:userId/vote-weight',
     )
 
     const userId = ctx.params.userId!
-    await adminClearVoteWeight(userId)
+    await adminClearVoteWeight(currentUser.id, userId)
     await enqueueRecalculateUserVoteWeight(userId, true)
     ctx.setStatus(204)
   })

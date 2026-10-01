@@ -5,7 +5,7 @@ import {
   type QueryOptions,
   type TransactionQuery,
 } from '@data-stores/psql'
-import { upsertVoteUserAgent } from '../shared/upsert-vote-user-agent.mts'
+import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
 import type {
   ElectionVoteMutationResult,
   ElectionVoteScore,
@@ -52,7 +52,7 @@ export async function upsertEntityRelationElectionVotes(
     .map(([entityId, score]) => ({ entityId, score }))
     .sort((left, right) => left.entityId.localeCompare(right.entityId))
   const { enqueueVoteStats = true, ...queryOptions } = options
-  const userAgentId = await upsertVoteUserAgent(context.userAgent, queryOptions)
+  const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, queryOptions)
 
   const query = sql`/* upsertEntityRelationElectionVotes */
     WITH input_data AS (

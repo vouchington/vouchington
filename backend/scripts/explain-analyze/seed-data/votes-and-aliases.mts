@@ -45,7 +45,7 @@ export async function seedVotes(postVoteCount = 2000, topicVoteCount = 500): Pro
     await transaction.commit()
   }
   const topicRows = await write<{ id: string }>(
-    `/* seedVotes topics */ SELECT id FROM topics WHERE id::text LIKE $1 LIMIT 2500`,
+    `/* seedVotes topics */ SELECT id FROM topics WHERE id::text LIKE $1 ORDER BY id LIMIT 2500`,
     [`${SEED_PREFIX}-04%`],
   )
   const topicIds = topicRows.rows.map(r => r.id)

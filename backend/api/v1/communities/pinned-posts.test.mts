@@ -7,7 +7,7 @@ import {
   createRandomString,
   setPostVotesScoreUp,
 } from '@voucha/test-helpers'
-import { createCommunityPostFixture } from '@services/posts/test-support'
+import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 import { approvePublication } from '@services/communities/publications/moderate'
 import type { PrivateUser } from '@services/users/types'
 

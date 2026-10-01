@@ -6,7 +6,7 @@ import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { entityRelationMetadatum } from '@services/entity-relations/metadata'
 import type { Topic } from '@services/topics/types'
 import { getPostIds } from '../search/get-ids.mts'
-import { waitForPostMatchingRelatedTopicIds } from '../search/test-support.mts'
+import { waitForPostMatchingRelatedTopicIds } from '@voucha/test-helpers/services/posts/search/test-support'
 
 // Relocated from backend/services/topics/merge-aliases.test.mts: this case asserts posts search
 // (getPostIds) still surfaces the source topic's tagged posts after a merge. @services/topics must

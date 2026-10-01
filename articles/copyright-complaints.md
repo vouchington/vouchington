@@ -86,3 +86,5 @@ Our repeat-infringer policy is at `/copyright/repeat-infringer-policy`.
 - [Copyright and the DMCA on Voucha](./copyright-and-dmca.md)
 - [What Happens When Content Is Removed](./what-happens-when-content-is-removed.md)
 - [Terms of Service](./terms-of-service.md)
+- [Privacy Policy](./privacy-policy.md)
+- [Community Guidelines](./community-guidelines.md)

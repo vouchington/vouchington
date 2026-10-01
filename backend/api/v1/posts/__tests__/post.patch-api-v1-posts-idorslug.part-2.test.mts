@@ -1,5 +1,5 @@
 import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
-import { onceEntityListenerCompleted } from '@workers/entity-listeners/test-support'
+import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
 import { describe, it, expect, beforeAll } from 'vitest'
 
 import type { PrivateUser } from '@services/users/types'

@@ -1,7 +1,8 @@
+import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
 import { describe, expect, it } from 'vitest'
 import { createTestUser, getTestUserSessionById } from '@voucha/test-helpers'
 import { v7 } from 'uuid'
-import { countTestWebUserAgents } from '../../test-helpers/entities/user-sessions.mts'
+import { countTestUserAgentStrings } from '../../test-helpers/entities/user-sessions.mts'
 import { upsertAuthenticatedSession } from './user-sessions.mts'
 import { runTestActionsAcrossUserAgentConflict } from '../../test-helpers/services/jwt-session/concurrent-user-agent.mts'
 
@@ -53,7 +54,24 @@ describe('authenticated session persistence', () => {
       user_id: user.id,
       user_agent: userAgent,
     })
-    await expect(countTestWebUserAgents(userAgent)).resolves.toBe(1)
+    await expect(countTestUserAgentStrings(userAgent)).resolves.toBe(1)
+  })
+
+  it('uses the shared lookup for empty and normalized session agents', async () => {
+    const user = await createTestUser()
+    const userAgent = `shared-agent-${crypto.randomUUID()}`
+    const sharedId = await upsertUserAgentString(userAgent)
+    expect(sharedId).toBeTruthy()
+    for (const agent of [undefined, '   ', `  ${userAgent}  `]) {
+      const session = await upsertAuthenticatedSession(user.id, {
+        sid: v7(),
+        deviceId: v7(),
+        expiresAt: new Date(Date.now() + 60_000),
+        userAgent: agent,
+      })
+      expect(session?.user_agent).toBe(agent?.trim() ?? '')
+    }
+    await expect(countTestUserAgentStrings(userAgent)).resolves.toBe(1)
   })
 
   it('rethrows an immediately rejected action and releases the user-agent holder', async () => {

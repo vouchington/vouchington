@@ -1,4 +1,5 @@
-import { write } from '@data-stores/psql'
+import { recordModeratorAction } from '@services/moderator-actions'
+import { beginTransaction } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import type { VoteIntegrityFlag } from './create-flag.mts'
@@ -10,6 +11,7 @@ export async function resolveVoteIntegrityFlag(
   resolvedById: string,
   resolution: VoteIntegrityResolution,
 ): Promise<VoteIntegrityFlag> {
+  await using transaction = await beginTransaction()
   const query = sql`/* resolveVoteIntegrityFlag */
     UPDATE vote_integrity_flags
     SET
@@ -20,9 +22,19 @@ export async function resolveVoteIntegrityFlag(
       AND resolved_at IS NULL
     RETURNING `
   query.append(VOTE_INTEGRITY_FLAG_PROJECTION)
-  const { rows } = await write(query)
+  const { rows } = await transaction(query)
 
   const flag = rows[0] as VoteIntegrityFlag | undefined
   if (!flag) throw createHttpError(404, 'Flag not found or already resolved')
+  await recordModeratorAction(
+    resolvedById,
+    {
+      actionType: 'vote_integrity_flag_review',
+      voteIntegrityFlagId: flagId,
+      metadata: { before: { resolution: null }, after: { resolution } },
+    },
+    { query: transaction },
+  )
+  await transaction.commit()
   return flag
 }

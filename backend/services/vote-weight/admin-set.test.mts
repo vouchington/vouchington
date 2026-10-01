@@ -11,7 +11,7 @@ describe('adminSetVoteWeight', () => {
     const user = await createTestUserDirect({ username: randomUsername() })
     const userId = user!.id
 
-    await adminSetVoteWeight(userId, 5.5)
+    await adminSetVoteWeight(userId, userId, 5.5)
 
     const factors = await gatherVoteWeightFactors(userId)
     expect(factors?.current_weight).toBe(5.5)
@@ -22,8 +22,8 @@ describe('adminSetVoteWeight', () => {
     const user = await createTestUserDirect({ username: randomUsername() })
     const userId = user!.id
 
-    await adminSetVoteWeight(userId, 3.0)
-    await adminSetVoteWeight(userId, 7.25)
+    await adminSetVoteWeight(userId, userId, 3.0)
+    await adminSetVoteWeight(userId, userId, 7.25)
 
     const factors = await gatherVoteWeightFactors(userId)
     expect(factors?.current_weight).toBe(7.25)
@@ -36,12 +36,12 @@ describe('adminClearVoteWeight', () => {
     const user = await createTestUserDirect({ username: randomUsername() })
     const userId = user!.id
 
-    await adminSetVoteWeight(userId, 5.5)
+    await adminSetVoteWeight(userId, userId, 5.5)
 
     const factorsBefore = await gatherVoteWeightFactors(userId)
     expect(factorsBefore?.vote_weight_admin_set_at).not.toBeNull()
 
-    await adminClearVoteWeight(userId)
+    await adminClearVoteWeight(userId, userId)
 
     const factorsAfter = await gatherVoteWeightFactors(userId)
     expect(factorsAfter?.vote_weight_admin_set_at).toBeNull()
@@ -54,7 +54,7 @@ describe('adminClearVoteWeight', () => {
     const userId = user!.id
 
     // Should not throw
-    await expect(adminClearVoteWeight(userId)).resolves.toBeUndefined()
+    await expect(adminClearVoteWeight(userId, userId)).resolves.toBeUndefined()
 
     const factors = await gatherVoteWeightFactors(userId)
     expect(factors?.vote_weight_admin_set_at).toBeNull()

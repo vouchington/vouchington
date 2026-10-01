@@ -12,7 +12,7 @@ import type { PrivateUser } from '@voucha/types/entities/user'
 import type { EntityRelationEntityType, EntityRelationPredicateType } from './config.mts'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import { getEntityRelations } from './query.mts'
-import { stubUrlGuardsForSuite } from './test-support.mts'
+import { stubUrlGuardsForSuite } from '@voucha/test-helpers/services/entity-relations/test-support'
 import { upsertEntityRelation } from './upsert.mts'
 import {
   ANONYMOUS_ENTITY_RELATION_VIEWER,

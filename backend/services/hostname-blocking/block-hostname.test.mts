@@ -19,7 +19,7 @@ import {
 } from '@voucha/test-helpers'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { entityRelationMetadatum } from '@services/entity-relations/metadata'
-import { stubUrlGuardsForSuite } from '@services/entity-relations/test-support'
+import { stubUrlGuardsForSuite } from '@voucha/test-helpers/services/entity-relations/test-support'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { blockHostname } from './block-hostname.mts'
 import { DEFAULT_PENALTY_MULTIPLIER } from '@services/vote-integrity/config'

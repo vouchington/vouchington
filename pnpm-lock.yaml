@@ -1504,9 +1504,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../test-helpers
-      '@workers/entity-listeners':
-        specifier: workspace:^
-        version: link:../workers/entity-listeners
       node-app-attest:
         specifier: ^1.0.1
         version: 1.0.1
@@ -3663,6 +3660,9 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../moderator-actions
       '@services/referral-program-link-validations':
         specifier: workspace:^
         version: link:../referral-program-link-validations
@@ -5041,6 +5041,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../moderator-actions
       '@services/urls-hostnames':
         specifier: workspace:^
         version: link:../urls-hostnames
@@ -5491,6 +5494,9 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../moderator-actions
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
@@ -6953,6 +6959,9 @@ importers:
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../moderation-reports
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../moderator-actions
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -7061,6 +7070,9 @@ importers:
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../moderation-reports
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../moderator-actions
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -7114,6 +7126,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
@@ -7453,6 +7468,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../moderator-actions
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
@@ -8513,6 +8531,9 @@ importers:
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../jwt-session
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../moderator-actions
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -8678,6 +8699,9 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../moderator-actions
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
@@ -9293,6 +9317,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../moderator-actions
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -10315,6 +10342,9 @@ importers:
       '@queues/vote-weight':
         specifier: workspace:^
         version: link:../../queues/vote-weight
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../moderator-actions
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -10358,6 +10388,9 @@ importers:
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
+      '@services/moderator-actions':
+        specifier: workspace:^
+        version: link:../moderator-actions
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
@@ -10490,6 +10523,9 @@ importers:
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../modules/http-signatures
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../modules/on-error
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../modules/openai-utils
@@ -10508,6 +10544,21 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
+      '@queues/entity-listeners':
+        specifier: workspace:^
+        version: link:../queues/entity-listeners
+      '@queues/notifications':
+        specifier: workspace:^
+        version: link:../queues/notifications
+      '@queues/post-publication':
+        specifier: workspace:^
+        version: link:../queues/post-publication
+      '@queues/psql':
+        specifier: workspace:^
+        version: link:../queues/psql
+      '@queues/sitemaps':
+        specifier: workspace:^
+        version: link:../queues/sitemaps
       '@sentry/node':
         specifier: 11.0.0
         version: 11.0.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))
@@ -10529,6 +10580,9 @@ importers:
       '@vouchington/localization-compiler':
         specifier: 0.2.2
         version: 0.2.2
+      glide-mq:
+        specifier: ^0.15.5
+        version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       jose:
         specifier: ^6.2.12
         version: 6.2.12
@@ -11015,9 +11069,6 @@ importers:
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
-      '@services/moderation-appeals':
-        specifier: workspace:^
-        version: link:../../services/moderation-appeals
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds

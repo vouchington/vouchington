@@ -45,6 +45,9 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         '**/node_modules/**',
         '**/.git/**',
         'backend/test-helpers/election-vote-stats.test.mts',
+        'backend/test-helpers/services/posts/test-support.test.mts',
+        'backend/test-helpers/services/users/test-support.test.mts',
+        'backend/test-helpers/workers/entity-listeners/test-support.test.mts',
         'backend/test-helpers/entities/bluesky-link-authorizations.test.mts',
         // Moved to the dedicated backend-contract-program project below: these four files build the
         // real backend contract ts.Program, and sharing this fork with the rest of this project's

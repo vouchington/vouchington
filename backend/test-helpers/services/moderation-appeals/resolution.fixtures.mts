@@ -1,6 +1,6 @@
-import { approveModerationAppeal } from './approve-appeal.mts'
-import { sendApprovedModerationAppealResolution } from './send-appeal-resolution.mts'
-import { updateModerationAppealDraft } from './update-appeal-draft.mts'
+import { approveModerationAppeal } from '../../../services/moderation-appeals/approve-appeal.mts'
+import { sendApprovedModerationAppealResolution } from '../../../services/moderation-appeals/send-appeal-resolution.mts'
+import { updateModerationAppealDraft } from '../../../services/moderation-appeals/update-appeal-draft.mts'
 
 export async function deliverModerationAppealForTest(
   staffUserId: string,

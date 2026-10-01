@@ -6,7 +6,7 @@ import {
   connectTestOAuthAccount,
   getTestOAuthAccountRaw,
 } from '@voucha/test-helpers'
-import { deleteUserAndDrainForTest } from './delete-test-support.mts'
+import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 
 describe('sanitizeOAuthAccountPii (via deleteUser)', () => {
   it('completes successfully when user has no connected OAuth accounts', async () => {

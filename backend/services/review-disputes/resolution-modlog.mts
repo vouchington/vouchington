@@ -7,14 +7,19 @@ export async function logDisputeResolution(
   actionType: 'resolve_report' | 'dismiss_report',
   disputeId: string,
   postId: string,
+  options: QueryOptions,
 ): Promise<void> {
-  const communityId = await getPostCommunityId(postId)
-  await recordModeratorAction(staffUserId, {
-    actionType,
-    reviewDisputeId: disputeId,
-    postId,
-    communityId,
-  })
+  const communityId = await getPostCommunityId(postId, options)
+  await recordModeratorAction(
+    staffUserId,
+    {
+      actionType,
+      reviewDisputeId: disputeId,
+      postId,
+      communityId,
+    },
+    options,
+  )
 }
 
 async function getPostCommunityId(postId: string, options?: QueryOptions): Promise<string | null> {

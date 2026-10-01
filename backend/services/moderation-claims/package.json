@@ -22,6 +22,7 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@services/moderation-reports": "workspace:^",
+    "@services/moderator-actions": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
     "http-errors": "^2.0.1",

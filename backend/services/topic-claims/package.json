@@ -24,6 +24,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/moderator-actions": "workspace:^",
     "@services/users": "workspace:^",
     "@vouchington/domain-verification": "0.0.0",
     "http-assert": "^1.5.0",

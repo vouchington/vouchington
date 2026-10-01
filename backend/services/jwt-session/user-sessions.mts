@@ -1,3 +1,4 @@
+import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
 import { beginTransaction, write } from '@data-stores/psql'
 import { sessionExpirySecondsFor } from '@ts-shared/session-jwt'
 import sql from 'sql-template-strings'
@@ -28,20 +29,14 @@ export async function upsertAuthenticatedSession(
     const userAgent = normalizeText(options.userAgent, 1024)
     const ipAddress = normalizeIpAddress(options.ipAddress)
     const refreshMetadata = options.refreshMetadata !== false
-    await query(sql`/* upsertAuthenticatedSession.userAgent */
-      INSERT INTO web_user_agents (user_agent)
-      VALUES (${userAgent})
-      ON CONFLICT (user_agent) DO NOTHING
-    `)
+    const userAgentId = await upsertUserAgentString(userAgent, { query })
     const { rows } = await query(sql`/* upsertAuthenticatedSession */
       INSERT INTO user_sessions (
         id, user_id, device_id, device_name, user_agent_id, ip_address, expires_at, last_seen_at
       )
       SELECT ${options.sid}, ${currentUserId}, ${options.deviceId},
-        ${deviceName}, user_agent.id, ${ipAddress}, ${options.expiresAt}, CURRENT_TIMESTAMP
-      FROM web_user_agents user_agent
-      WHERE user_agent.user_agent = ${userAgent}
-        AND EXISTS (SELECT 1 FROM users WHERE id = ${currentUserId} AND deleted_at IS NULL)
+        ${deviceName}, ${userAgentId}, ${ipAddress}, ${options.expiresAt}, CURRENT_TIMESTAMP
+      WHERE EXISTS (SELECT 1 FROM users WHERE id = ${currentUserId} AND deleted_at IS NULL)
       ON CONFLICT (id) DO UPDATE SET
         user_id = EXCLUDED.user_id,
         device_id = EXCLUDED.device_id,
@@ -57,7 +52,7 @@ export async function upsertAuthenticatedSession(
         last_seen_at = CURRENT_TIMESTAMP
       WHERE user_sessions.revoked_at IS NULL
       RETURNING id, user_id, device_id, device_name,
-        (SELECT user_agent FROM web_user_agents
+        (SELECT user_agent FROM user_agent_strings
           WHERE id = user_sessions.user_agent_id) AS user_agent,
         ip_address, created_at, last_seen_at, expires_at, revoked_at
     `)
@@ -120,7 +115,7 @@ export async function listActiveUserSessions(
       s.last_seen_at, s.expires_at,
       to_char(s.last_seen_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS last_seen_cursor
     FROM user_sessions s
-    JOIN web_user_agents ua ON ua.id = s.user_agent_id
+    JOIN user_agent_strings ua ON ua.id = s.user_agent_id
     WHERE s.user_id = ${currentUserId}
       AND s.revoked_at IS NULL
       AND s.expires_at > CURRENT_TIMESTAMP

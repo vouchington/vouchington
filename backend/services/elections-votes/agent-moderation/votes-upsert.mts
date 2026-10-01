@@ -1,3 +1,4 @@
+import { recordModeratorAction } from '@services/moderator-actions'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueBulkUpdateAgentModerationElectionVoteStats } from '@queues/elections/enqueues'
@@ -6,7 +7,7 @@ import type {
   ElectionVoteScore,
   VoteEventContext,
 } from '../shared/index.mts'
-import { upsertVoteUserAgent } from '../shared/upsert-vote-user-agent.mts'
+import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
 
 const NULL_VOTE_CONTEXT: VoteEventContext = {
   ipAddress: null,
@@ -58,7 +59,7 @@ export async function upsertAgentModerationElectionVotes(
   values.sort((a, b) => a.agentModerationId.localeCompare(b.agentModerationId))
 
   // Upsert user agent into lookup table if provided (counts as the 1st of 2 allowed DB calls)
-  const userAgentId = await upsertVoteUserAgent(context.userAgent)
+  const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null)
 
   await using query = await beginTransaction()
   await lockAgentModerationVoteMutation(
@@ -66,6 +67,17 @@ export async function upsertAgentModerationElectionVotes(
     userId,
     values.map(vote => vote.agentModerationId),
   )
+  const { rows: previousVotes } = await query<{
+    agent_moderation_id: string
+    score: ElectionVoteScore
+  }>(sql`/* upsertAgentModerationElectionVotes:previous */
+    SELECT DISTINCT ON (agent_moderation_id) agent_moderation_id, score
+    FROM agent_moderation_votes
+    WHERE user_id = ${userId}
+      AND agent_moderation_id = ANY(${values.map(vote => vote.agentModerationId)}::uuid[])
+    ORDER BY agent_moderation_id, id DESC
+  `)
+  const previousScores = new Map(previousVotes.map(vote => [vote.agent_moderation_id, vote.score]))
   const result = await query(sql`/* upsertAgentModerationElectionVotes */
   WITH input_votes AS (
     SELECT *
@@ -89,13 +101,32 @@ export async function upsertAgentModerationElectionVotes(
   LEFT JOIN previous_votes ON previous_votes.agent_moderation_id = input_votes.agent_moderation_id
   WHERE input_votes.score IS DISTINCT FROM previous_votes.score
   ORDER BY input_votes.agent_moderation_id
-  RETURNING agent_moderation_id AS entity_id, user_id, score, created_at
+  RETURNING agent_moderation_id AS entity_id, post_id, user_id, score, created_at
   `)
-  const inserted = result.rows as ElectionVoteMutationResult[]
+  const inserted = result.rows as (ElectionVoteMutationResult & { post_id: string })[]
   if (onVote) {
     await Promise.all(inserted.map(vote => onVote(vote, query)))
   }
-  const rows = inserted
+  await Promise.all(
+    inserted.map(vote =>
+      recordModeratorAction(
+        userId,
+        {
+          actionType:
+            vote.score === null ? 'agent_moderation_vote_delete' : 'agent_moderation_vote_set',
+          agentModerationId: vote.entity_id,
+          agentModerationPostId: vote.post_id,
+          postId: vote.post_id,
+          metadata: {
+            before: { score: previousScores.get(vote.entity_id) ?? null },
+            after: { score: vote.score },
+          },
+        },
+        { query },
+      ),
+    ),
+  )
+  const rows = inserted.map(({ post_id: _postId, ...vote }) => vote)
 
   await query.commit()
 

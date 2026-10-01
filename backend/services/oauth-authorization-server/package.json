@@ -28,6 +28,7 @@
     "@modules/scopes": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/moderator-actions": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "ssrf-guard": "^1.0.0",
     "uuid": "^14.0.2"

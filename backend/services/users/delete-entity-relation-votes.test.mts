@@ -20,7 +20,10 @@ import { createUserDeletionRequest } from '../user-deletions/create.mts'
 import { deleteUserEntityRelationVotesBatch } from './delete-entity-relation-votes-batches.mts'
 import { recomputeEntityRelationVoteStats } from './delete-entity-relation-votes.mts'
 import { deleteUser } from './delete.mts'
-import { deleteUserAndDrainForTest, drainUserDeletionForTest } from './delete-test-support.mts'
+import {
+  deleteUserAndDrainForTest,
+  drainUserDeletionForTest,
+} from '@voucha/test-helpers/services/users/delete-test-support'
 
 describe('deleteUser entity-relation vote cleanup', () => {
   it('isolates recomputation for two concrete tables sharing a subject and relation ID', async () => {

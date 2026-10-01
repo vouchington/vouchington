@@ -6,7 +6,7 @@ import { v7 } from 'uuid'
 import * as jose from 'jose'
 import { flush } from '@data-stores/analytics/backend-local'
 import { createTestUser } from '@voucha/test-helpers'
-import { countTestWebUserAgents } from '../../test-helpers/entities/user-sessions.mts'
+import { countTestUserAgentStrings } from '../../test-helpers/entities/user-sessions.mts'
 import { createDeviceAndSessionTokens, createSessionToken } from './create.mts'
 import { revokeUserSessionsBefore } from './session-revocation-keys.mts'
 import { upsertAuthenticatedSession } from './user-sessions.mts'
@@ -161,7 +161,7 @@ describe('create', () => {
         userAgent,
       })
 
-      await expect(countTestWebUserAgents(userAgent)).resolves.toBe(1)
+      await expect(countTestUserAgentStrings(userAgent)).resolves.toBe(1)
     })
   })
 })

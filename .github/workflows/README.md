@@ -29,6 +29,7 @@ keep each topic within one further link hop.
 - [Extracted shell scripts](../../docs/development/ci/workflows/reference-extracted-shell-scripts.md)
 - [Fixed-branch automation PRs](../../docs/development/ci/workflows/reference-fixed-branch-automation-prs.md)
 - [Maintenance, security, and utilities](../../docs/development/ci/workflows/reference-maintenance-security-and-utilities.md)
+- [Merge queue run cancellation](../../docs/development/ci/workflows/reference-merge-queue-run-cancellation.md)
 - [Non-critical steps](../../docs/development/ci/workflows/reference-non-critical-steps.md)
 - [Parallel workspace installs](../../docs/development/ci/workflows/reference-parallel-workspace-installs.md)
 - [Playwright and Storybook](../../docs/development/ci/workflows/reference-playwright-and-storybook.md)

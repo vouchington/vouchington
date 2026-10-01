@@ -92,16 +92,15 @@ export async function finalizeDeliveredModerationAppeal(
       { query },
     ),
   ])
+  await logAppealResolution(
+    staffUserId,
+    resolution.modlogAction,
+    appealId,
+    row.appellant_id,
+    row.community_id,
+    { query },
+  )
   await query.commit()
-  await Promise.all([
-    logAppealResolution(
-      staffUserId,
-      resolution.modlogAction,
-      appealId,
-      row.appellant_id,
-      row.community_id,
-    ),
-    maybeResolveCase(row.case_id, staffUserId),
-  ])
+  await maybeResolveCase(row.case_id, staffUserId)
   return await getModerationAppealAfterMutation(appealId)
 }

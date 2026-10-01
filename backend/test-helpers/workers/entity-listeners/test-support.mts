@@ -1,4 +1,4 @@
-import { entitiesListeners as entitiesListenersWorker } from './workers.mts'
+import { entitiesListeners as entitiesListenersWorker } from '../../../workers/entity-listeners/workers.mts'
 import { entitiesListeners as entitiesListenersQueue } from '@queues/entity-listeners/queues'
 import onError from '@modules/on-error'
 

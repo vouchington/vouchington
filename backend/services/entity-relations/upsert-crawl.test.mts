@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { upsertEntityRelation } from './upsert.mts'
 import { softDeleteEntityRelation } from './delete.mts'
 import { entityRelationMetadatum, type EntityRelationMetadata } from './metadata.mts'
-import { stubUrlGuardsForSuite } from './test-support.mts'
+import { stubUrlGuardsForSuite } from '@voucha/test-helpers/services/entity-relations/test-support'
 import {
   createTestPost,
   createTestUser,

@@ -72,7 +72,7 @@ describe('entity-relations guard registries', () => {
       import('./blocked-hostname-guard-registry.mts'),
       import('./post-related-urls-guard-registry.mts'),
       import('./referral-link-guard-registry.mts'),
-      import('./test-support.mts'),
+      import('@voucha/test-helpers/services/entity-relations/test-support'),
     ])
 
     const restoreUrlGuards = stubUrlGuardsForTest()
@@ -108,7 +108,7 @@ describe('entity-relations guard registries', () => {
       import('./blocked-hostname-guard-registry.mts'),
       import('./post-related-urls-guard-registry.mts'),
       import('./referral-link-guard-registry.mts'),
-      import('./test-support.mts'),
+      import('@voucha/test-helpers/services/entity-relations/test-support'),
     ])
     const blockedHostnameGuard = vi.fn<BlockedHostnameGuard>()
     const postRelatedUrlsGuard = vi.fn<PostRelatedUrlsGuard>()

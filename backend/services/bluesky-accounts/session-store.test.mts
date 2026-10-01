@@ -16,7 +16,7 @@ import {
 } from './session-lifecycle-context.mts'
 import { BlueskySessionLifecycleConflictError } from './session-generation.mts'
 import { deleteUser } from '../users/delete.mts'
-import { drainUserDeletionForTest } from '../users/delete-test-support.mts'
+import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 
 function fakeDid(): string {
   return `did:plc:${createRandomString(24)}`

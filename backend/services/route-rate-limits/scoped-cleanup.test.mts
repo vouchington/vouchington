@@ -2,7 +2,10 @@ import { randomUUID } from 'node:crypto'
 import { afterEach, describe, it, expect } from 'vitest'
 import { routeRateLimiters } from './check.mts'
 import { buildRateLimitKeys } from './identity.mts'
-import { createRouteRateLimitKeyCleanup, deleteRouteRateLimitKeys } from './test-support.mts'
+import {
+  createRouteRateLimitKeyCleanup,
+  deleteRouteRateLimitKeys,
+} from '@voucha/test-helpers/services/route-rate-limits/test-support'
 import type { RateLimitIdentities } from './types.mts'
 
 describe('deleteRouteRateLimitKeys', () => {

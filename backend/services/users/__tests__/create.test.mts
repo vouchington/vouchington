@@ -10,7 +10,7 @@ import {
 import { it, expect, describe } from 'vitest'
 import { upsertUser } from '../create.mts'
 import { PRIVACY_POLICY_VERSION, TERMS_OF_SERVICE_VERSION } from '../create-helpers.mts'
-import { deleteUserAndDrainForTest } from '../delete-test-support.mts'
+import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { getPrivateUserByAny } from '../get.mts'
 import { upsertOAuthAccount } from '@services/oauth-accounts'
 import { grantConsent } from '@services/user-consents/create'
@@ -143,7 +143,7 @@ describe('create', () => {
     })
     // `processAutoFollowReferrer` (backend/workers/entity-listeners) is what creates this follow
     // relation; poll the observable relation row instead of importing
-    // `@workers/entity-listeners/test-support` — this package must never depend on the worker
+    // `@voucha/test-helpers/workers/entity-listeners/test-support` — this package must never depend on the worker
     // package (workers/AGENTS.md: workers depend on services, never the reverse).
     await expect.poll(() => getFollowExists(newUser.id, referrer.id)).toBe(true)
   })
