@@ -120,10 +120,7 @@ app
     try {
       modelProvider = parseClientGeneratedChatModelProvider(body.model_provider)
     } catch (err) {
-      ctx.throw(
-        400,
-        err instanceof Error ? err.message : 'Invalid client-generated chat provider',
-      )
+      ctx.throw(400, err instanceof Error ? err.message : 'Invalid client-generated chat provider')
     }
 
     let modelName: string
