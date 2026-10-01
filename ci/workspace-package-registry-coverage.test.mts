@@ -26,13 +26,12 @@ function readYaml<T>(relativePath: string): T {
   return parseYaml(readFileSync(`${repoRoot}/${relativePath}`, 'utf8')) as T
 }
 
-const allTrackedFiles = execFileSync('git', ['ls-files'], { cwd: repoRoot, encoding: 'utf8' })
+const trackedManifests = execFileSync('git', ['ls-files', '--', 'package.json', '*/package.json'], {
+  cwd: repoRoot,
+  encoding: 'utf8',
+})
   .split('\n')
   .filter(Boolean)
-
-const trackedManifests = allTrackedFiles.filter(
-  file => file === 'package.json' || file.endsWith('/package.json'),
-)
 
 const syncpack = readYaml<{ source?: string[] }>('.syncpackrc.json')
 const workspacePackages = readYaml<{ packages?: string[] }>('pnpm-workspace.yaml').packages ?? []
