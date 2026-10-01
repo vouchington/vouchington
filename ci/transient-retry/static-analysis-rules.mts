@@ -60,7 +60,7 @@ export const staticAnalysisOxlintTsgolintRuntimeFaultRule: TransientRetryRule = 
     'The failure is a Go runtime fault inside tsgolint before lint diagnostics; the same oxlint type-aware command passed locally on representative failing commits after a clean pnpm install.',
   // Both runs below predate #8754 (2026-07-29), which wrapped this step in ci/with-heavy-slot.sh —
   // the marker rot that made this rule dead for two months (see PR #10604). Neither run reflects the
-  // current step header or the oxlint-tsgolint@7.0.2001 traceback shape; replace with a post-drift
+  // current step header or the current oxlint-tsgolint traceback shape; replace with a post-drift
   // run the next time this rule actually fires.
   exampleRunIds: ['27465605823', '27951094888'],
   maxAttempts: 1,

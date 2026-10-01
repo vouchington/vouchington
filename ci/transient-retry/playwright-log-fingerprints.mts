@@ -16,8 +16,8 @@ export function hasPlaywrightSetupAptLockFailure(log: string): boolean {
   const isPlaywrightSetup = log.includes('Run ./.github/actions/setup-playwright')
   const isProcessExit1 = log.includes('##[error]Process completed with exit code 1.')
   // The legacy browser-install prefix was captured in run 27805129632. The
-  // dependency-repair prefix comes from the pinned Playwright 1.61.1
-  // install-deps handler and is covered by the companion rule fixture.
+  // dependency-repair prefix comes from the pinned Playwright's install-deps handler and is
+  // covered by the companion rule fixture.
   const isPlaywrightInstallFailure = [
     'Failed to install browsers',
     'Failed to install browser dependencies',
