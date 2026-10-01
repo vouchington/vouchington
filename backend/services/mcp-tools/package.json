@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@data-stores/valkey-core": "workspace:^",
+    "@modules/pagination": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@queues/article-sync": "workspace:^",
     "@services/communities": "workspace:^",

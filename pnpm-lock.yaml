@@ -6517,6 +6517,9 @@ importers:
       '@data-stores/valkey-core':
         specifier: workspace:^
         version: link:../../data-stores/valkey-core
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
