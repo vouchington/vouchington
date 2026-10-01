@@ -62,6 +62,17 @@ Contract names covered by wildcard rows or prose are listed here for exact-name 
 | Runtime public web config      | Public OAuth client IDs, captcha site keys, GTM ID, `NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY`, browser-side feature-flag cookie limit                                                                                                                                    | Public config, not credentials. New work should read these from runtime public config, not Docker build args.                                                                                                                                                                                              |
 | Test/CI controls               | `SKIP_CAPTCHA_VERIFICATION`, `NEXT_TEST_BUILD`, `PLAYWRIGHT_*`, `CI`, `GITHUB_*`, `LOCALIZATION_SSR_REVISION_DIAGNOSTIC`                                                                                                                                         | Do not put these in normal `~/voucha.env`. Opt-in Next-origin SSR catalog-revision check: [Translation Catalog and Locale Checks](reference-tests-translation-catalog-and-locale-checks.md).                                                                                                               |
 
+## Reading `.env`
+
+`./dev/initialize` single-quotes the secrets, credentials, `DATABASE_URL`, and `WORKTREE_DIR` in
+`.env`, so `source .env` and `node --env-file=.env` read the same string. A value with a single quote
+is double-quoted instead. One that also has `"`, `$`, a backtick, or `\` has no spelling both readers
+agree on, so init stops and names the key (never the value).
+
+`node --env-file` is a dotenv parser, not a shell. It skips the `~/voucha.env` include and the
+`NODE_OPTIONS` guard at the top of `.env` and never overrides variables already in your environment.
+Use `source .env` for `~/voucha.env` values.
+
 ## Turnstile
 
 Normal local dev does not need Turnstile env vars. The web and backend default to Cloudflare's

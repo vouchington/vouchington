@@ -9,6 +9,8 @@ source "$REPO_ROOT/dev/lib/schema-drift-detectors.sh"
 source "$REPO_ROOT/dev/lib/db-target.sh"
 # shellcheck source=dev/lib/worktree-resource-env.sh
 source "$REPO_ROOT/dev/lib/worktree-resource-env.sh"
+# shellcheck source=dev/lib/env-file-quote.sh
+source "$REPO_ROOT/dev/lib/env-file-quote.sh"
 
 # Colors for output
 RED='\033[0;31m'
@@ -624,7 +626,7 @@ append_env_var_if_set() {
     local key=$1
 
     if has_non_empty_env_var "$key"; then
-        printf 'export %s=%q\n' "$key" "${!key}"
+        env_file_export_line "$key" "${!key}" || return 1
     fi
 }
 
@@ -637,7 +639,7 @@ append_env_var_value() {
     local value=$2
 
     if [ -n "$value" ]; then
-        printf 'export %s=%q\n' "$key" "$value"
+        env_file_export_line "$key" "$value" || return 1
     fi
 }
 
@@ -741,11 +743,10 @@ write_worktree_env() {
     echo "$VALKEY_PORT" > .valkey-port
     echo -e "${GREEN}✓ Wrote .valkey-port ($VALKEY_PORT)${NC}\n"
 
-    # Shell-quote WORKTREE_DIR so paths containing spaces or shell
-    # metacharacters survive the source-back from .env. printf %q is
-    # available on bash 3.2+ (macOS default).
+    # Quote WORKTREE_DIR so paths containing spaces or shell metacharacters survive both
+    # `source .env` and `node --env-file=.env` (see dev/lib/env-file-quote.sh).
     local worktree_dir_quoted
-    worktree_dir_quoted=$(printf '%q' "${WORKTREE_DIR:-}")
+    worktree_dir_quoted=$(env_file_quote_value WORKTREE_DIR "${WORKTREE_DIR:-}") || return 1
 
     local effective_database_url database_url_quoted existing_worktree_dir candidate_database_url candidate_db_name
     existing_worktree_dir=$(read_existing_env_var WORKTREE_DIR)
@@ -768,7 +769,7 @@ write_worktree_env() {
     if [ -z "$effective_database_url" ]; then
         effective_database_url="$(dev_db_target_default_database_url "$DB_NAME")"
     fi
-    database_url_quoted=$(printf '%q' "$effective_database_url")
+    database_url_quoted=$(env_file_quote_value DATABASE_URL "$effective_database_url") || return 1
 
     # Resolve values whose configurers are gated to web mode (configure_cf_worker_secret,
     # configure_web_push_keys, configure_turnstile_keys) before .env is truncated below.
@@ -864,26 +865,26 @@ EOF
         # entirely (via append_env_var_value) rather than write an empty export when this
         # run never configured them and no prior run left one to preserve — e.g. a truly
         # fresh backend-only worktree.
-        append_env_var_value CF_WORKER_SECRET "$CF_WORKER_SECRET"
-        printf 'export API_KEY_CHECKSUM_SECRET=%q\n' "$API_KEY_CHECKSUM_SECRET"
-        printf 'export VOUCHA_OTP_TOKEN_HASH_SECRET=%q\n' "$VOUCHA_OTP_TOKEN_HASH_SECRET"
-        printf 'export VOUCHA_STORED_SECRET_ENCRYPTION_KEYS=%q\n' "$VOUCHA_STORED_SECRET_ENCRYPTION_KEYS"
-        append_s3_credentials_to_env
-        append_env_var_value WEB_PUSH_PUBLIC_KEY "$FINAL_WEB_PUSH_PUBLIC_KEY"
-        append_env_var_value WEB_PUSH_PRIVATE_KEY "$FINAL_WEB_PUSH_PRIVATE_KEY"
-        append_env_var_value WEB_PUSH_SUBJECT "$FINAL_WEB_PUSH_SUBJECT"
-        printf 'export NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY=%q\n' "$FINAL_WEB_PUSH_PUBLIC_KEY"
+        append_env_var_value CF_WORKER_SECRET "$CF_WORKER_SECRET" || return 1
+        env_file_export_line API_KEY_CHECKSUM_SECRET "$API_KEY_CHECKSUM_SECRET" || return 1
+        env_file_export_line VOUCHA_OTP_TOKEN_HASH_SECRET "$VOUCHA_OTP_TOKEN_HASH_SECRET" || return 1
+        env_file_export_line VOUCHA_STORED_SECRET_ENCRYPTION_KEYS "$VOUCHA_STORED_SECRET_ENCRYPTION_KEYS" || return 1
+        append_s3_credentials_to_env || return 1
+        append_env_var_value WEB_PUSH_PUBLIC_KEY "$FINAL_WEB_PUSH_PUBLIC_KEY" || return 1
+        append_env_var_value WEB_PUSH_PRIVATE_KEY "$FINAL_WEB_PUSH_PRIVATE_KEY" || return 1
+        append_env_var_value WEB_PUSH_SUBJECT "$FINAL_WEB_PUSH_SUBJECT" || return 1
+        env_file_export_line NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY "$FINAL_WEB_PUSH_PUBLIC_KEY" || return 1
         # Web mode never resolves NODE_EXTRA_CA_CERTS above (see comment there), so it is
         # left entirely to the later mkcert block, which appends it after deriving CAROOT.
         if [ "$MODE" != web ]; then
-            append_env_var_value NODE_EXTRA_CA_CERTS "$NODE_EXTRA_CA_CERTS"
+            append_env_var_value NODE_EXTRA_CA_CERTS "$NODE_EXTRA_CA_CERTS" || return 1
         fi
         # Turnstile: only write a real pair when both env vars are set in the shared shell.
         # When unset, code-level defaults in web/lib/turnstile-config.ts and
         # backend/services/captcha/verify.mts use Cloudflare's public always-pass test keys.
         if [ -n "${EFFECTIVE_TURNSTILE_SITE_KEY:-}" ] && [ -n "${EFFECTIVE_TURNSTILE_SECRET_KEY:-}" ]; then
-            printf 'export CLOUDFLARE_TURNSTILE_SECRET_KEY=%q\n' "$EFFECTIVE_TURNSTILE_SECRET_KEY"
-            printf 'export NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY=%q\n' "$EFFECTIVE_TURNSTILE_SITE_KEY"
+            env_file_export_line CLOUDFLARE_TURNSTILE_SECRET_KEY "$EFFECTIVE_TURNSTILE_SECRET_KEY" || return 1
+            env_file_export_line NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY "$EFFECTIVE_TURNSTILE_SITE_KEY" || return 1
         fi
     } >> .env
 
@@ -1615,7 +1616,7 @@ main() {
             local mkcert_ca_root
             mkcert_ca_root="$(mkcert -CAROOT)"
             if [ -f "$mkcert_ca_root/rootCA.pem" ] && ! grep -q '^export NODE_EXTRA_CA_CERTS=' .env 2>/dev/null; then
-                printf 'export NODE_EXTRA_CA_CERTS=%q\n' "$mkcert_ca_root/rootCA.pem" >> .env
+                env_file_export_line NODE_EXTRA_CA_CERTS "$mkcert_ca_root/rootCA.pem" >> .env
                 echo -e "${GREEN}✓ Added NODE_EXTRA_CA_CERTS to .env (mkcert root CA)${NC}"
             fi
         fi

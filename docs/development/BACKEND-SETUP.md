@@ -87,4 +87,7 @@ For API key checksums and token storage, `./dev/initialize backend` (or `web`) r
 source .env
 ```
 
+`node --env-file=.env` reads the values init wrote identically, but not the `~/voucha.env` include;
+see [Reading `.env`](local-env-vars.md#reading-env).
+
 See [development/tests.md](tests.md) for the full command matrix.
