@@ -49,7 +49,7 @@ export function appendPostSearchSelectAndJoins(
       ) posts
     `)
   } else {
-    query.append(sql`FROM posts\n`)
+    query.append(sql`\n    FROM posts\n`)
   }
   appendSearchJoins(query, { hasSemanticSearch, hasTextSearch, options })
   if (sort === 'following_new' && currentUser) appendFollowingJoin(query, currentUser.id)
