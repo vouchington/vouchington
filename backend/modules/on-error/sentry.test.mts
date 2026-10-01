@@ -7,6 +7,7 @@ import {
   type SentryMockRegistry,
 } from './sentry.mts'
 import { scrubSentrySpan } from './sentry-scrub.mts'
+import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 function makeEvent(eventId: string): Parameters<typeof filterSentryEvent>[0] {
@@ -147,13 +148,21 @@ describe('createSentryInitOptions', () => {
     expect(createSentryInitOptions({}).environment).toBe('development')
   })
 
-  it('turns off HTTP body capture and gen-AI input and output recording', () => {
-    const expected: ReturnType<typeof createSentryInitOptions>['dataCollection'] = {
-      httpBodies: [],
-      genAI: { inputs: false, outputs: false },
-    }
+  it('applies the shared least-data collection policy', () => {
+    const expected: ReturnType<typeof createSentryInitOptions>['dataCollection'] =
+      createSentryDataCollection()
+    const dataCollection = createSentryInitOptions({ ENVIRONMENT: 'production' }).dataCollection
 
-    expect(createSentryInitOptions({ ENVIRONMENT: 'production' }).dataCollection).toEqual(expected)
+    expect(dataCollection).toEqual(expected)
+    expect(dataCollection).toMatchObject({
+      userInfo: false,
+      cookies: false,
+      urlQueryParams: false,
+      databaseQueryData: false,
+      stackFrameVariables: false,
+      queues: false,
+      graphQL: { document: false, variables: false },
+    })
   })
 
   it('stays disabled during tests and CI', () => {

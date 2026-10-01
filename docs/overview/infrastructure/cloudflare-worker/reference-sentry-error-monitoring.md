@@ -15,4 +15,7 @@ Sentry is initialized via [`src/sentry.mts`](../../../../cloudflare-worker/src/s
 - **Error capture:** origin fetch failures (502s) via `captureWorkerException()` in the origin `fetch()` catch block, and `/infra/cache-purge` RPC throws or `success: false` rejections. Purge reports include the validated cache-tag batch and, for a rejection, the provider error code and message. Expected edge responses (geo-blocks=403, rate limits=429, WebSocket errors=400, and cache-purge auth or validation failures) return via `edgeErrorResponse()` and are not captured.
 - **Request-metadata scrubbing:** `beforeSend` and `beforeSendSpan` remove
   URL query strings/fragments and redact credential headers and cookies before transmission.
+- **Data collection:** `createSentryOptions()` passes the shared least-data policy, so the client IP,
+  cookies, query strings and request bodies never reach Sentry. See
+  [Data collection](../../../requirements/security/reference-security-observability-scrubbing.md#data-collection-the-least-data-policy).
 - **Tunnel:** the `POST /monitoring` Sentry tunnel ([`src/sentry-tunnel.mts`](../../../../cloudflare-worker/src/sentry-tunnel.mts)) trusts only normalized configured web and Worker DSNs. It returns `403` for a mismatch and `503` when neither configured DSN is valid.
