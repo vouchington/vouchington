@@ -16,6 +16,7 @@ import {
   type CopyrightEmailCorrespondenceDraft,
 } from './copyright-email-correspondence-model'
 import { CopyrightEmailLegalProcessAction } from './copyright-email-legal-process-action'
+import { CopyrightEmailReplyRetry } from './copyright-email-reply-retry'
 import { CopyrightEmailReviewDetail } from './copyright-email-review-detail'
 import {
   listCopyrightEmailIntakes,
@@ -138,6 +139,15 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
                           : 'Reply to the sender could not be sent'}
                         , waiting <TimeAgo date={item.waiting_since} />
                       </p>
+                    )}
+                    {item.waiting_reason === 'reply_failed' && (
+                      <CopyrightEmailReplyRetry
+                        intakeId={item.id}
+                        disabled={loading}
+                        resetQueue={page => resetToFirstPage?.(page)}
+                        setError={setError}
+                        setSuccess={setSuccess}
+                      />
                     )}
                     {item.parse_status !== 'succeeded' && (
                       <p className='text-xs text-destructive'>

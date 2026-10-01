@@ -54,8 +54,13 @@ intake queue shows each message's wait age.
    worth answering; the server refuses an address for an email that has a parsed sender. The
    staff page then reports "A reply was queued." or "No reply sent."; the API returns
    `reply_queued`. If the queued reply later fails or bounces, the intake returns to the email-review
-   queue with a `reply_failed` or `reply_bounced` reason and the time since the failure. The reply
-   has no replay control yet (tracked in #1657), so contact the sender by another channel.
+   queue with a `reply_failed` or `reply_bounced` reason and the time since the failure.
+   - **Retry reply** appears only beside a `reply_failed` item. After you confirm, the same stored
+     reply is sent again to the same sender, word for word; the retry is recorded under your name
+     as a `delivery_intent_replayed` audit event that belongs to the reply, not to a case. It runs
+     once: a second click, or a retry by another reviewer at the same moment, finds nothing failed
+     and reports that the reply was no longer waiting. A `reply_bounced` item has no retry, because
+     a bounce means the address does not accept mail, so contact the sender by another channel.
    - **Reject email intake** closes the intake without opening a case. It needs the review
      rationale, plus the manual-fallback reason when there is no recommendation.
    - **Request information** closes the intake the same way and sends your message to the sender.

@@ -25,6 +25,7 @@ export {
 export { promoteCopyrightEmailIntake } from './email-promotion.mts'
 export { rejectCopyrightEmailIntake } from './email-rejection.mts'
 export { recordCopyrightEmailIntakeLegalProcess } from './email-legal-process.mts'
+export { replayFailedCopyrightEmailIntakeReply } from './email-intake-reply-replay.mts'
 export {
   getCopyrightStaffEmailIntake,
   getCopyrightParticipantNoticeDetail,

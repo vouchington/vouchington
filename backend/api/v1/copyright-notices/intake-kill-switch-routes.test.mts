@@ -31,6 +31,7 @@ const routeClasses = {
     'POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections',
     'POST:/api/v1/copyright-email-intakes/:id/legal-process',
     'POST:/api/v1/copyright-email-intakes/:id/rejections',
+    'POST:/api/v1/copyright-email-intakes/:id/reply/replays',
     'POST:/api/v1/copyright-eu-notices/:id/acknowledgment-failures',
     'POST:/api/v1/copyright-eu-notices/:id/redress-requests/:redressId/decisions',
     'POST:/api/v1/copyright-eu-notices/:id/statements-of-reasons',
