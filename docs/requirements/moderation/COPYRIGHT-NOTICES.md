@@ -247,13 +247,15 @@ HMAC-derived guest network digest rather than the source address.
 Hosted-use selection accepts canonical post URLs, including `/story/:id`, and verifies their images
 through the post API. Query strings, fragments, and foreign hosts are rejected.
 
-A claimant form resolves a target only if the claimant can view that post at submission: a
-signed-in-only post for any signed-in user, a followers-only post for a follower, a private-community
-post for a member, and a draft for its author. Archived posts and posts by suspended authors remain
-viewable. A post awaiting community review is hidden from everyone but staff. Any other target gets
-the same 422 as a target that does not exist (same status, message, and body, with nothing stored),
-so the form cannot be used to learn whether a post or image the claimant cannot see exists. A replay
-of an already accepted notice is answered before this check.
+A claimant form resolves a target only if the claimant could open that post directly at submission,
+the same check as the post API rather than anonymous discovery. A signed-in-only post resolves for
+any signed-in claimant, a followers-only post for a follower, a private-community post for a member,
+and an unapproved post for its author. Archived posts and posts by suspended authors remain
+viewable. A post awaiting community review is hidden from everyone but staff, including its author,
+and staff claimants pass for any post that is not deleted. Any other target gets the same 422 as a
+target that does not exist (same status, message, and body, with nothing stored), so the form
+cannot be used to learn whether a post or image the claimant cannot see exists. A replay of an
+already accepted notice is answered before this check.
 
 Email admission trusts the SES receipt-rule classification and the configured
 `copyright-incoming/` object prefix, never recipient headers inside untrusted MIME. The original S3
