@@ -46,7 +46,7 @@ describe('ast-grep Tsx languageGlobs contract', () => {
     expect(packFiles.filter(file => local.has(file))).toEqual([])
   })
 
-  it('local rules are Tsx YAML without -tsx companions', () => {
+  it('local script rules are Tsx and the manifest rule is Json without -tsx companions', () => {
     const files = yamlFiles(LOCAL_RULES)
     expect(files.length).toBeGreaterThan(0)
     expect(files.filter(file => /-tsx\.ya?ml$/u.test(file))).toEqual([])
@@ -54,7 +54,8 @@ describe('ast-grep Tsx languageGlobs contract', () => {
       const rule = yamlLoad(readFileSync(resolve(LOCAL_RULES, file), 'utf8')) as {
         language?: string
       }
-      expect({ file, language: rule.language }).toEqual({ file, language: 'Tsx' })
+      const language = file === 'backend-knip-test-export-exclusions.yml' ? 'Json' : 'Tsx'
+      expect({ file, language: rule.language }).toEqual({ file, language })
     }
   })
 })

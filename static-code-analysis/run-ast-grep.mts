@@ -7,6 +7,10 @@ import { runAstGrepExamples } from 'vouchington-tooling/ast-grep-examples'
 import { astGrepPackPaths } from 'vouchington-tooling/ast-grep-pack'
 import { parse as yamlParse, stringify as yamlStringify } from 'yaml'
 import { withPackRuleDir } from './ast-grep-pack-config.mts'
+import {
+  backendManifestRuleId,
+  scanTrackedBackendPackageManifests,
+} from './ast-grep-backend-manifests.mts'
 
 const pack = astGrepPackPaths()
 const config = yamlParse(readFileSync('sgconfig.yml', 'utf8')) as { ruleDirs: string[] }
@@ -18,11 +22,16 @@ const resolved = {
 }
 
 writeFileSync(configPath, yamlStringify(withPackRuleDir(resolved, pack.rules)))
-const scan = spawnSync('ast-grep', ['scan', '--no-ignore', 'hidden', '--config', configPath], {
-  stdio: 'inherit',
-})
+const scan = spawnSync(
+  'ast-grep',
+  ['scan', '--no-ignore', 'hidden', '--config', configPath, `--off=${backendManifestRuleId}`],
+  {
+    stdio: 'inherit',
+  },
+)
 const statuses = [
   scan.status ?? 1,
+  scanTrackedBackendPackageManifests(),
   runAstGrepExamples(pack),
   runAstGrepExamples({ rules: 'ast-grep-rules', config: 'sgconfig.yml' }),
 ]
