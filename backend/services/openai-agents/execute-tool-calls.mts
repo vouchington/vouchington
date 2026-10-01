@@ -4,7 +4,6 @@ import {
   type OpenAIFunctionCall,
   type OpenAIFunctionCallOutput,
 } from './tool-calls.mts'
-import type { RunEventWriter } from '@services/conversations-messages'
 import { validateAgentToolArguments } from './validate-tool-arguments.mts'
 
 export type AgentTool<TArgs = never, TResult = never> = {
@@ -17,7 +16,6 @@ export type AgentTool<TArgs = never, TResult = never> = {
 export type ExecuteToolCallsParams = {
   toolCalls: OpenAIFunctionCall[]
   tools: AgentTool[]
-  writeRunEvent?: RunEventWriter
   onBeforeCall?: (toolCall: OpenAIFunctionCall) => { skip: true; skipResult?: unknown } | undefined
   onAfterCall?: (toolCall: OpenAIFunctionCall, result: unknown) => void
   // Called for every tool call failure: unknown tool, JSON parse error, or executor throw.
@@ -62,12 +60,11 @@ export async function* dispatchOneToolCall(
   toolCall: OpenAIFunctionCall,
   params: DispatchOneToolCallParams,
 ): AsyncGenerator<unknown, OpenAIFunctionCallOutput> {
-  const { tools, writeRunEvent, onBeforeCall, onAfterCall, onCallError } = params
+  const { tools, onBeforeCall, onAfterCall, onCallError } = params
 
   const beforeResult = onBeforeCall?.(toolCall)
   if (beforeResult?.skip) {
     const skipResult = beforeResult.skipResult ?? { skipped: true }
-    await writeRunEvent?.('function_call', toolCall, skipResult)
     return formatToolResult(toolCall.call_id, skipResult)
   }
 
@@ -75,7 +72,6 @@ export async function* dispatchOneToolCall(
   if (!toolEntry) {
     const err = new Error(`Unknown tool: ${toolCall.name}`)
     const errorResult = { error: err.message }
-    await writeRunEvent?.('function_call', toolCall, errorResult)
     onCallError?.(toolCall, err)
     return formatToolResult(toolCall.call_id, errorResult)
   }
@@ -86,7 +82,6 @@ export async function* dispatchOneToolCall(
   } catch {
     const err = createHttpError(422, `Invalid JSON arguments for tool ${toolCall.name}`)
     const parseError = { error: err.message }
-    await writeRunEvent?.('function_call', toolCall, parseError)
     onCallError?.(toolCall, err)
     return formatToolResult(toolCall.call_id, parseError)
   }
@@ -98,7 +93,6 @@ export async function* dispatchOneToolCall(
       `Invalid arguments for tool ${toolCall.name}: ${validationError}`,
     )
     const invalidArguments = { error: err.message }
-    await writeRunEvent?.('function_call', toolCall, invalidArguments)
     onCallError?.(toolCall, err)
     return formatToolResult(toolCall.call_id, invalidArguments)
   }
@@ -124,7 +118,6 @@ export async function* dispatchOneToolCall(
     onCallError?.(toolCall, err)
   }
 
-  await writeRunEvent?.('function_call', toolCall, result)
   // Skip onAfterCall on executor failure — callers should not track failure results
   // (e.g. incrementing "duplicates_skipped" for what was actually a thrown error)
   if (!executorFailed) onAfterCall?.(toolCall, result)

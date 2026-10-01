@@ -11,7 +11,6 @@ import type {
   executeToolCalls,
   getFunctionCallsFromOutput,
 } from '@services/openai-agents'
-import type { RunEventWriter } from '@services/conversations-messages'
 import type { agentToolsToSchemas } from '../build-agent-tools.mts'
 import type {
   assertOpenAiSpendCapNotBreached,
@@ -62,7 +61,6 @@ export interface RunToolLoopConfig {
   onCallError?: (toolCall: OpenAIFunctionCall, error: Error) => void
   onBeforeCall?: (toolCall: OpenAIFunctionCall) => { skip: true; skipResult?: unknown } | undefined
   onAfterCall?: (toolCall: OpenAIFunctionCall, result: unknown) => void
-  writeRunEvent?: RunEventWriter
   onIteration?: (context: {
     iterations: number
     response: OpenAIResponse

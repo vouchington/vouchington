@@ -1,6 +1,5 @@
 import { it, expect, vi, beforeEach, describe } from 'vitest'
 import { runToolLoop, type RunToolLoopConfig } from '../run-tool-loop.mts'
-import type { RunEventWriter } from '@services/conversations-messages'
 import type { AgentTool } from '@services/openai-agents'
 import {
   makeTextResponse,
@@ -113,29 +112,6 @@ describe('run-tool-loop core', () => {
 
     expect(result.terminationReason).toBe('max_recommendations')
     expect(executeToolCalls).not.toHaveBeenCalled()
-  })
-
-  it('passes writeRunEvent through to executeToolCalls', async () => {
-    const createOpenAIResponse = vi
-      .fn<VitestLooseMock>()
-      .mockResolvedValueOnce(makeToolCallResponse())
-      .mockResolvedValueOnce(makeTextResponse('done'))
-    const getFunctionCallsFromOutput = vi
-      .fn<VitestLooseMock>()
-      .mockReturnValueOnce([makeToolCall()])
-      .mockReturnValueOnce([])
-    const executeToolCalls = vi.fn<VitestLooseMock>().mockResolvedValueOnce({ toolResults: [] })
-
-    const writeRunEvent = vi.fn<RunEventWriter>()
-
-    await runToolLoop({
-      ...baseConfig,
-      writeRunEvent,
-      deps: { createOpenAIResponse, getFunctionCallsFromOutput, executeToolCalls },
-    })
-
-    const executeCallArgs = executeToolCalls.mock.calls[0][0]
-    expect(executeCallArgs.writeRunEvent).toBe(writeRunEvent)
   })
 
   it('passes maxRetries through to createOpenAIResponse options on the main loop call', async () => {

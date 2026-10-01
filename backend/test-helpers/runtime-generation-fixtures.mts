@@ -1,18 +1,6 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-type PostgreSQLTimestamp = Date | string
-
-export async function setChatAgenticRunStartedAt(
-  agenticRunId: string,
-  startedAt: PostgreSQLTimestamp,
-): Promise<void> {
-  await write(sql`/* setChatAgenticRunStartedAt */
-    UPDATE conversation_message_agentic_runs SET started_at = ${startedAt}
-    WHERE id = ${agenticRunId}
-  `)
-}
-
 export async function softDeleteTestConversationMessage(
   conversationMessageId: string,
   deletedById: string,

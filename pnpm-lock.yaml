@@ -217,9 +217,6 @@ importers:
       '@services/ai-usage':
         specifier: workspace:^
         version: link:../../services/ai-usage
-      '@services/conversations-messages':
-        specifier: workspace:^
-        version: link:../../services/conversations-messages
       '@services/openai-agents':
         specifier: workspace:^
         version: link:../../services/openai-agents
@@ -4667,9 +4664,6 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -7627,9 +7621,6 @@ importers:
 
   backend/services/openai-agents:
     dependencies:
-      '@services/conversations-messages':
-        specifier: workspace:^
-        version: link:../conversations-messages
       ajv:
         specifier: ^8.20.0
         version: 8.20.0

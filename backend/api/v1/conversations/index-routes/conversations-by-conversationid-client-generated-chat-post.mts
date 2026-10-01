@@ -1,4 +1,3 @@
-import { hasActiveChatTurnByConversationId } from '@services/conversations-messages/agentic-runs'
 import { apiResponse } from '../../../response-contract.mts'
 import {
   getErrorStatus,
@@ -11,7 +10,6 @@ import {
   parseClientGeneratedChatModelProvider,
 } from '@services/agents/model-providers'
 import { currentUserCanUpdateConversation } from '@services/conversations-messages/authorization'
-import { ChatTurnConflictError } from '@services/conversations-messages/chat-turns'
 import { getConversationByIdForMutation } from '@services/conversations-messages/conversations'
 import {
   createClientGeneratedChatTurn,
@@ -162,16 +160,11 @@ app
       if (replay) {
         result = replay
       } else {
-        const isRunning = await hasActiveChatTurnByConversationId(conversationId)
-        ctx.assert(!isRunning, 409, 'A message is already being processed')
         await checkTurnSafety(message, assistantContent)
         result = await createClientGeneratedChatTurn(params)
       }
     } catch (error) {
-      if (
-        error instanceof ChatTurnConflictError ||
-        error instanceof ClientGeneratedTurnIdentityConflictError
-      ) {
+      if (error instanceof ClientGeneratedTurnIdentityConflictError) {
         ctx.setStatus(409)
         ctx.json(
           apiResponse('POST:/api/v1/conversations/:conversationId/client-generated-chat#conflict', {

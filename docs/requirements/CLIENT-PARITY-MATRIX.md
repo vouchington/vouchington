@@ -164,6 +164,13 @@ server change does not wait on client migrations, so a native build that still c
 route must delete that path in its own client PR. This repository does not edit
 `vouchington-clients`; track any such removal there alongside clients#149 and clients#150.
 
+A6 (#185) drops the agentic-run storage. No response shape changes: `client-generated-chat` never
+exposed run or active-turn state. The 409 for a message-identity conflict stays and now also covers
+a retry that changes `model_provider` or `model_name`, because the completion model is persisted on
+the assistant message. The earlier 409 for a conversation that held an active hosted turn is gone
+with the guard; a new turn is accepted beside an incomplete assistant placeholder. Native clients
+need no change, but must not rely on a model switch under reused message IDs: generate fresh IDs.
+
 ## Orphan tool removal handoff
 
 #1566 removes `search_wikipedia` and `get_wikipedia_summary` from the generated native tool

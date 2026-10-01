@@ -8,7 +8,6 @@ import {
   spyWith,
   streamingExecuteToolCalls,
   tool,
-  writeEventSpy,
 } from '../../../test-helpers/services/openai-agents/execute-tool-calls-fixtures.mts'
 
 import { describe, expect, it } from 'vitest'
@@ -173,6 +172,5 @@ describe('streamingExecuteToolCalls', () => {
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof spy)
   void (0 as unknown as typeof spyWith)
-  void (0 as unknown as typeof writeEventSpy)
   void (0 as unknown as typeof VARIANTS)
 })

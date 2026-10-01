@@ -24,15 +24,7 @@ export async function retireMonthlyPartition(
 ): Promise<void> {
   const table = assertSafeSqlIdentifier(partition.table)
   const partitionName = assertSafeSqlIdentifier(partition.partitionName)
-  if (table === 'conversation_message_agentic_runs') {
-    // Parent pointers and events intentionally span months; these are cross-partition writes.
-    await query(`/* retireMonthlyPartition:clearRunParents */
-      UPDATE conversation_message_agentic_runs SET parent_agentic_run_id = NULL
-      WHERE parent_agentic_run_id IN (SELECT id FROM ${partitionName})`)
-    await query(`/* retireMonthlyPartition:deleteRunEvents */
-      DELETE FROM conversation_message_agentic_runs_events
-      WHERE conversation_message_agentic_run_id IN (SELECT id FROM ${partitionName})`)
-  } else if (table === 'crawl_chunks') {
+  if (table === 'crawl_chunks') {
     await query(`/* retireMonthlyPartition:deleteChunkBatchEntities */
       DELETE FROM bedrock_embeddings_batch_entities AS entity
       USING ${partitionName} AS chunk

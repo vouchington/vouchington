@@ -2,7 +2,6 @@ import { it, expect, vi, beforeEach, describe } from 'vitest'
 
 import { runToolLoop, type RunToolLoopConfig } from '../run-tool-loop.mts'
 
-import type { RunEventWriter } from '@services/conversations-messages'
 import type { AgentTool } from '@services/openai-agents'
 import {
   makeTextResponse,
@@ -266,8 +265,6 @@ describe('run-tool-loop core', () => {
     expect(result.lastResponseId).toBe('resp-final')
   })
   // keep generated shard bindings live for typecheck
-  const keepRunEventWriter: RunEventWriter | null = null
-  void (0 as unknown as typeof keepRunEventWriter)
   const keepOnIteration: OnIteration | null = null
   void (0 as unknown as typeof keepOnIteration)
 })

@@ -6,20 +6,17 @@ their configured endpoint, then persist completed turns through the transcript A
 
 ## Data Model
 
-| Table                                      | Partitioning                                                            | Description                                                       |
-| ------------------------------------------ | ----------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `conversations`                            | Not partitioned                                                         | Chat sessions with title, creator, optional post/RSS item context |
-| `conversation_messages`                    | RANGE by UUIDv7 `conversation_id`                                       | User and assistant messages with JSON content                     |
-| `conversation_message_agentic_runs`        | RANGE by `id` (monthly partition drop)                                  | LLM execution runs tracking model, lifecycle timestamps, I/O      |
-| `conversation_message_agentic_runs_events` | RANGE by `conversation_message_agentic_run_id` (monthly partition drop) | Individual tool calls and model responses within a run            |
+| Table                   | Partitioning                      | Description                                                       |
+| ----------------------- | --------------------------------- | ----------------------------------------------------------------- |
+| `conversations`         | Not partitioned                   | Chat sessions with title, creator, optional post/RSS item context |
+| `conversation_messages` | RANGE by UUIDv7 `conversation_id` | User and assistant messages with JSON content                     |
 
 ### Retention
 
-Agentic runs and their events use monthly RANGE partitions. `cleanupPartitions` drops whole expired
-partitions rather than row-deleting them, avoiding write amplification. The configured 30-day
-retention therefore yields an approximate 30–61-day effective window rather than an exact per-row
-cutoff; see the canonical [PostgreSQL Partitioning Strategy](partitioning-strategy.md). Conversations
-and messages are retained indefinitely.
+Conversations and messages are retained indefinitely and have no monthly retention partitions; see
+the canonical [PostgreSQL Partitioning Strategy](partitioning-strategy.md). There is no separate
+execution-run storage: a persisted assistant message carries its completion model as JSON
+(`model_provider`, `model_name`) beside the opaque turn fingerprint.
 
 ## Native Client Flow
 
@@ -37,10 +34,12 @@ response chaining, execution identities and stored error diagnostics. A submitte
 `user_message_id` and `assistant_message_id`, scoped to its conversation, as its identity. Clients persist both IDs before sending
 and reuse them with identical text on retries. The existing message primary key and a conversation
 row lock make duplicate submissions return the original pair atomically; changed content or partial
-identity reuse returns 409. Both stored message JSON values carry an opaque SHA-256 fingerprint
-of the ordered ID pair, so recombining messages from separate turns also conflicts. The fingerprint
-is omitted from public DTOs and does not join execution records. Generation provider details remain internal run metadata and do not
-appear in transcript responses. Incomplete stored assistant placeholders remain readable in history.
+identity reuse returns 409, as does a retry that names a different `model_provider` or
+`model_name`. Both stored message JSON values carry an opaque SHA-256 fingerprint of the ordered ID
+pair, so recombining messages from separate turns also conflicts. The stored assistant JSON also
+records the completion `model_provider` and `model_name`. The fingerprint and model metadata are
+omitted from public DTOs. A turn is never rejected because the conversation holds an incomplete
+assistant placeholder; incomplete placeholders remain readable in history.
 
 The shared decode examples are generated under `api-fixtures/v1/responses/native.chat.*.json` for
 Swift, Android, .NET and web; clients adopt them through clients#149 and clients#150 independently.
@@ -48,8 +47,8 @@ Swift, Android, .NET and web; clients adopt them through clients#149 and clients
 The hosted streaming route, its `chat` and `reconcile-chat-runtime-generations` queue jobs, the
 Valkey token channel, and the stale-run reconciler are removed
 ([A6a, #1542](https://github.com/vouchington/vouchington/issues/1542)), so
-`POST /api/v1/conversations/:conversationId/chat` returns 404. The agentic-run records and their
-services remain until [A6 (#185)](https://github.com/vouchington/vouchington/issues/185) removes them.
+`POST /api/v1/conversations/:conversationId/chat` returns 404. The agentic-run tables and their
+services are removed ([A6, #185](https://github.com/vouchington/vouchington/issues/185)).
 The chat orchestrator, its research, discovery and profile subagents, and the streaming tool loop are
 removed ([A4b, #183](https://github.com/vouchington/vouchington/issues/183)). Under decision D1,
 server removal proceeds without waiting on native client migrations; clients adopt independently.
@@ -70,6 +69,6 @@ Conversations can be linked to entities for contextual lookup:
 - [Backend rules](../../../backend/AGENTS.md) — service and data conventions
 - [Web rules](../../../web/AGENTS.md) — UI and routing conventions
 
-- [docs/overview/architecture/services/conversations-messages/README.md](services/conversations-messages/README.md) -- CRUD, agentic run queries
+- [docs/overview/architecture/services/conversations-messages/README.md](services/conversations-messages/README.md) -- conversation and message CRUD, client-generated turns
 - [docs/requirements/api/v1/conversations/README.md](../../requirements/api/v1/conversations/README.md) -- API endpoints
 - [docs/overview/architecture/queues/psql/README.md](queues/psql/README.md) -- partition cleanup jobs

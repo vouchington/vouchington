@@ -4,7 +4,7 @@
  * This is the single source of truth for which tables need time-based partitions.
  * Used by both:
  * - Config-driven migrations (initial partition creation)
- * - Monthly scheduled job (ongoing partition creation for conversation tables)
+ * - Monthly scheduled job (ongoing partition creation for crawl and RSS history tables)
  */
 
 export type MonthlyPartitionTableConfig = {
@@ -49,21 +49,6 @@ export const CLASSIFIER_RESULT_PARTITION_TABLES: string[] = [
   'topic_classifier_results',
   'story_classifier_results',
   'community_prompt_classifier_results',
-]
-
-/**
- * Conversation tables - partitioned by UUIDv7 timestamp
- * Monthly partitions for 30-day retention via partition drop
- */
-export const CONVERSATION_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
-  monthlyPartitionTable('conversation_message_agentic_runs', {
-    retentionDays: 30,
-    dropPriority: 1,
-  }),
-  monthlyPartitionTable('conversation_message_agentic_runs_events', {
-    retentionDays: 30,
-    dropPriority: 0,
-  }),
 ]
 
 /**
@@ -141,10 +126,9 @@ export const CRAWL_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
 ]
 
 /**
- * All tables that require monthly RANGE partitions (conversation tables with retention)
+ * All tables that require monthly RANGE partitions (crawl and RSS history with retention)
  */
 export const ALL_MONTHLY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
-  ...CONVERSATION_PARTITION_TABLES,
   ...CRAWL_PARTITION_TABLES,
   ...RSS_PARTITION_TABLES,
 ]

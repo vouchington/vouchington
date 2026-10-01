@@ -21,31 +21,31 @@ describe('generateMonthlyPartitions', () => {
       baseDate: new Date('2026-03-15T00:00:00.000Z'),
       tables: [
         {
-          table: 'conversation_message_agentic_runs',
+          table: 'rss_feed_crawls',
           pastMonths: 1,
           futureMonths: 1,
         },
       ],
     })
 
-    expect(sql).toContain('conversation_message_agentic_runs__p_2026_02')
-    expect(sql).toContain('conversation_message_agentic_runs__p_2026_03')
-    expect(sql).toContain('conversation_message_agentic_runs__p_2026_04')
+    expect(sql).toContain('rss_feed_crawls__p_2026_02')
+    expect(sql).toContain('rss_feed_crawls__p_2026_03')
+    expect(sql).toContain('rss_feed_crawls__p_2026_04')
     expect(sql).not.toContain('__p_default')
   })
 })
 
 describe('parseMonthlyPartitionName', () => {
   it('parses managed monthly partition names', () => {
-    expect(parseMonthlyPartitionName('conversation_message_agentic_runs__p_2026_03')).toEqual({
-      table: 'conversation_message_agentic_runs',
+    expect(parseMonthlyPartitionName('rss_feed_crawls__p_2026_03')).toEqual({
+      table: 'rss_feed_crawls',
       year: 2026,
       month: 3,
     })
   })
 
   it('returns null for non-monthly partition names', () => {
-    expect(parseMonthlyPartitionName('conversation_message_agentic_runs__p_default')).toBeNull()
+    expect(parseMonthlyPartitionName('rss_feed_crawls__p_default')).toBeNull()
   })
 })
 
