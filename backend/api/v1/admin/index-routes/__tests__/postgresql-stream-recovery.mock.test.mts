@@ -41,27 +41,7 @@ describe('PostgreSQL SSE stream recovery', () => {
     const originalClearInterval = globalThis.clearInterval
     let tickerHandle: ReturnType<typeof setInterval> | undefined
     let tickerCallback: (() => void) | undefined
-    let tickerStopped: (() => void) | undefined
-    const tickerStoppedPromise = new Promise<void>(resolve => {
-      tickerStopped = resolve
-    })
-    async function waitForTickerToStop(): Promise<void> {
-      let timeout: ReturnType<typeof setTimeout> | undefined
-      try {
-        await Promise.race([
-          tickerStoppedPromise,
-          new Promise<never>((_resolve, reject) => {
-            timeout = setTimeout(() => {
-              reject(
-                new Error('The PostgreSQL snapshot ticker did not stop after client disconnect'),
-              )
-            }, 10_000)
-          }),
-        ])
-      } finally {
-        if (timeout) clearTimeout(timeout)
-      }
-    }
+    let tickerStopped = false
     const setIntervalSpy = vi.spyOn(globalThis, 'setInterval').mockImplementation((...args) => {
       const handle = originalSetInterval(...args)
       if (args[1] === TICKER_INTERVAL_MS) {
@@ -72,7 +52,7 @@ describe('PostgreSQL SSE stream recovery', () => {
     })
     const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval').mockImplementation(handle => {
       originalClearInterval(handle)
-      if (handle === tickerHandle) tickerStopped?.()
+      if (handle === tickerHandle) tickerStopped = true
     })
     const chunks: string[] = []
     let contentType = ''
@@ -130,11 +110,17 @@ describe('PostgreSQL SSE stream recovery', () => {
       expect(chunks.join('').match(/event: snapshot\n/g)).toHaveLength(2)
       expect(chunks.join('')).toContain('Migration directory read failed')
       if (!tickerHandle) throw new Error('The PostgreSQL snapshot ticker was not registered')
-      await waitForTickerToStop()
     } finally {
       try {
         responseToDestroy?.destroy()
-        if (tickerHandle) await waitForTickerToStop()
+        if (tickerHandle) {
+          await vi.waitFor(
+            () => {
+              if (!tickerStopped) throw new Error('The PostgreSQL snapshot ticker did not stop')
+            },
+            { timeout: 10_000 },
+          )
+        }
       } finally {
         readdirSpy.mockRestore()
         setIntervalSpy.mockRestore()
