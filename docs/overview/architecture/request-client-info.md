@@ -110,7 +110,9 @@ request arrived:
 - MCP routes are exempt from the listener. `dispatchMcpRequest`
   ([`mcp-helpers.mts`](../../../backend/api/mcp-helpers.mts)) authenticates the bearer, then runs
   the rest of the request, including tool handlers, in an `mcp` origin with the `oauth` or
-  `api_key` credential.
+  `api_key` credential. The validated OAuth principal supplies `oauth_client_id`, the internal
+  row UUID, for provenance. MCP authentication keeps the public `client_id` separately for its
+  credential audit; it is never written into a provenance foreign key.
 - No REST route accepts an API key or OAuth token for writes yet, so a `rest` origin with either
   credential has no producer.
 

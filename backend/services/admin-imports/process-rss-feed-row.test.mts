@@ -58,8 +58,8 @@ describe('processRssFeedRow', () => {
 
     expect(result).toBe('entity-abc-123')
     expect(importSingleRssFeed).toHaveBeenCalledWith(
-      SYSTEM_PROVENANCE,
       user,
+      SYSTEM_PROVENANCE,
       'https://example.com/feed.xml',
       {
         follow: false,
@@ -127,8 +127,8 @@ describe('processRssFeedRow', () => {
     await processRow(user, row)
 
     expect(importSingleRssFeed).toHaveBeenCalledWith(
-      SYSTEM_PROVENANCE,
       user,
+      SYSTEM_PROVENANCE,
       'https://example.com/feed.xml',
       {
         follow: false,

@@ -38,7 +38,7 @@ export async function dispatchMcpRequest(ctx: Context, config: McpServerConfig):
           interface: 'mcp',
           credential: 'oauth',
           client: null,
-          oauthClientId: authentication.oauthClientId,
+          oauthClientId: authentication.oauthClientRowId,
         }
       : { interface: 'mcp', credential: 'api_key', client: null, oauthClientId: null },
     async () => {

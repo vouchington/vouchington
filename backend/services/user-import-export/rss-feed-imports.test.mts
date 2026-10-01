@@ -136,8 +136,8 @@ describe('RSS feed import batches', () => {
     })
 
     expect(createSourceFromUrlImpl).toHaveBeenCalledWith(
-      SYSTEM_PROVENANCE,
       expect.objectContaining({ id: user.id }),
+      SYSTEM_PROVENANCE,
       rssFeedUrl,
       expect.any(Object),
     )

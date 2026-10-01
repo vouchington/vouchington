@@ -59,8 +59,8 @@ describe('importSingleRssFeed', () => {
 
     expect(result).toMatchObject({ input: youtubeUrl, status: 'source_created' })
     expect(createSourceFromUrlImpl).toHaveBeenCalledWith(
-      WEB_PROVENANCE,
       expect.objectContaining({ id: user.id }),
+      WEB_PROVENANCE,
       youtubeUrl,
       expect.any(Object),
     )

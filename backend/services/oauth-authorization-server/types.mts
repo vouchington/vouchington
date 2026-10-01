@@ -63,6 +63,7 @@ export type OAuthTokenResponse = {
 }
 
 export type OAuthAccessPrincipal = {
+  oauth_client_id: string
   client_id: string
   expires_at: Date
   /** The oauth_grants row id the token was issued under, never a credential. */
