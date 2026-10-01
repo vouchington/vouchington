@@ -35,7 +35,7 @@ Supported ranges are `today`, `7d`, `30d`, `90d`, and `all`. Missing or invalid 
 - Rule violation trends: report reasons ranked by volume and grouped over time.
 - Automod performance: agent moderation, OpenAI omni, spam detection, community prompt sources, auto-removes, reviewed count, false positives, false-positive rate, and confidence distribution.
 - Moderator workload: top moderators by action count with per-action breakdowns.
-- Appeal success rate: closed appeals, accepted/reduced/denied/dismissed counts, and success rate.
+- Appeal success rate: closed appeals, accepted, reduced, and denied counts, and success rate.
 - New-user friction: first posts in the selected scope, rejected first posts, and rejection rate.
 
 ## Implementation

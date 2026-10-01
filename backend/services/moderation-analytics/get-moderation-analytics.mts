@@ -440,8 +440,7 @@ async function getAppeals(
       COUNT(*) FILTER (WHERE resolved_at IS NOT NULL)::INT AS total_closed,
       COUNT(*) FILTER (WHERE resolved_at IS NOT NULL AND resolution_action = 'accept')::INT AS accepted,
       COUNT(*) FILTER (WHERE resolved_at IS NOT NULL AND resolution_action = 'reduce')::INT AS reduced,
-      COUNT(*) FILTER (WHERE resolution_action = 'deny')::INT AS denied,
-      0::INT AS dismissed
+      COUNT(*) FILTER (WHERE resolution_action = 'deny')::INT AS denied
     FROM moderation_appeals
     WHERE resolved_at >= ${periodStart}
       AND (${communityId}::uuid IS NULL OR community_id = ${communityId}::uuid)
@@ -457,7 +456,6 @@ async function getAppeals(
     accepted,
     reduced,
     denied: (row.denied as number) ?? 0,
-    dismissed: (row.dismissed as number) ?? 0,
     success_rate: totalClosed > 0 ? (accepted + reduced) / totalClosed : null,
   }
 }

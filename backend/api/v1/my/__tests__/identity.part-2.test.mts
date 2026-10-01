@@ -136,7 +136,8 @@ describe('GET /api/v1/users/:id - display_account visibility based on use_displa
     const response = await request.get(`/api/v1/users/${user.id}`).expect(200)
 
     expect(response.body.user.display_account).not.toBeNull()
-    expect(response.body.user.display_account.id).toBe('')
+    expect(response.body.user.display_account).not.toHaveProperty('id')
+    expect(response.body.user.display_account.name).toBeNull()
     expect(response.body.user).not.toHaveProperty('individual_id')
     expect(response.body.user.roles).toEqual([])
     expect(response.body.user).not.toHaveProperty('is_agent')

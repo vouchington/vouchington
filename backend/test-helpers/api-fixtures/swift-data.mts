@@ -70,7 +70,7 @@ export const friendUser = {
   __entity_type: 'user',
   id: 'friend-1',
   username: 'friend',
-  display_account: { id: 'friend-account-1', name: 'Friendly User' },
+  display_account: { name: 'Friendly User' },
   roles: [],
   profile_image_id: null,
   markdown: null,
