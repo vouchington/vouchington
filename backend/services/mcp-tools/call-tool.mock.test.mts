@@ -3,7 +3,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import { ALL_TOOLS } from '@voucha/tools/registry/index'
 import type { ToolInvocationContext } from '@voucha/tools/types'
 import type { PrivateUser } from '@services/users/types'
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { McpToolOutputMismatchError } from './build-tool-result.mts'
 import {
@@ -25,6 +25,25 @@ function stubToolFunction(
   vi.spyOn(tool, 'function').mockReturnValue(run)
 }
 
+// Every MCP tool declares an output schema, so the text-only path is reached by removing the schema
+// from one tool for the length of a test; `restoreOutputSchemas` puts it back.
+const restoreSchemaCallbacks: Array<() => void> = []
+
+function makeTextOnly(toolName = TOOL_NAME) {
+  const tool = ALL_TOOLS.find(candidate => candidate.schema.name === toolName)
+  if (!tool) throw new Error(`Expected ${toolName} tool`)
+  const original = tool.meta
+  if (!original?.outputSchema) return
+  tool.meta = { ...original, outputSchema: undefined }
+  restoreSchemaCallbacks.push(() => {
+    tool.meta = original
+  })
+}
+
+function restoreOutputSchemas() {
+  for (const restore of restoreSchemaCallbacks.splice(0)) restore()
+}
+
 describe('callMcpTool result errors', () => {
   let user: PrivateUser & { membership_plan: null }
 
@@ -32,8 +51,13 @@ describe('callMcpTool result errors', () => {
     user = { ...(await createTestUser()), membership_plan: null }
   })
 
+  beforeEach(() => {
+    makeTextOnly()
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
+    restoreOutputSchemas()
   })
 
   const call = () => callMcpTool(TOOL_NAME, {}, user, ['topics:read'], USER_MCP_SERVER_CONFIG)
@@ -95,7 +119,7 @@ describe('callMcpTool result errors', () => {
   })
 })
 
-// get_my_cards declares an output schema; get_trending_topics does not.
+// get_my_cards keeps its output schema; get_trending_topics is made text-only where a test needs one.
 describe('callMcpTool structured output', () => {
   const STRUCTURED_TOOL = 'get_my_cards'
   const GENERIC_FAILURE = 'Tool execution failed. Please try again.'
@@ -107,6 +131,7 @@ describe('callMcpTool structured output', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    restoreOutputSchemas()
   })
 
   const page = (pageInfo: Record<string, unknown> = {}) => ({
@@ -118,7 +143,10 @@ describe('callMcpTool structured output', () => {
   })
   const callStructured = () =>
     callMcpTool(STRUCTURED_TOOL, {}, user, ['cards:read'], USER_MCP_SERVER_CONFIG)
-  const callPlain = () => callMcpTool(TOOL_NAME, {}, user, ['topics:read'], USER_MCP_SERVER_CONFIG)
+  const callPlain = () => {
+    makeTextOnly()
+    return callMcpTool(TOOL_NAME, {}, user, ['topics:read'], USER_MCP_SERVER_CONFIG)
+  }
 
   it('returns structured content equal to the JSON in the text block', async () => {
     stubToolFunction(() => Promise.resolve(page({ end_cursor: 'abc' })), STRUCTURED_TOOL)

@@ -21,6 +21,22 @@ export function clampToolLimit(
   return Math.min(Math.max(1, Math.floor(value ?? defaultLimit)), maxLimit)
 }
 
+/** `search` is shorthand for setting both the text and the semantic query to the same value. */
+export function expandHybridSearchArgs(args: SearchSystemArgs): {
+  text_search_query?: string
+  semantic_search_query?: string
+} {
+  let text_search_query = args.text_search_query
+  let semantic_search_query = args.semantic_search_query
+
+  if (typeof args.search === 'string' && args.search.length > 0) {
+    text_search_query ??= args.search
+    semantic_search_query ??= args.search
+  }
+
+  return { text_search_query, semantic_search_query }
+}
+
 export function normalizeSearchToolArgs<T extends SearchSystemArgs>(
   args: T,
   options: NormalizeSearchToolArgsOptions,
@@ -31,19 +47,10 @@ export function normalizeSearchToolArgs<T extends SearchSystemArgs>(
 } {
   const safeLimit = clampToolLimit(args.limit, options.defaultLimit, options.maxLimit)
 
-  let text_search_query = args.text_search_query
-  let semantic_search_query = args.semantic_search_query
-
-  if (typeof args.search === 'string' && args.search.length > 0) {
-    text_search_query ??= args.search
-    semantic_search_query ??= args.search
-  }
-
   return {
     ...args,
     limit: safeLimit,
-    text_search_query,
-    semantic_search_query,
+    ...expandHybridSearchArgs(args),
   }
 }
 

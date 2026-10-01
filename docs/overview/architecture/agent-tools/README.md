@@ -49,7 +49,7 @@ or `idempotentHint` differs from whether every named operation is a `PUT` or `DE
 Each MCP server also sends `instructions` on `initialize`
 ([`instructions.mts`](../../../../backend/services/mcp-tools/instructions.mts)) so agents learn how the tools fit together before calling them. A result over the MCP response limit returns a tool error that asks the caller to narrow the query or lower the limit.
 
-A tool may set `meta.outputSchema` (JSON Schema, `object` root) so `tools/call` also returns validated `structuredContent`; see [Structured tool results](../services/mcp-tools/README.md#structured-tool-results). New MCP tools declare one; [`output-schema-ratchet.mts`](../../../../backend/services/mcp-tools/catalog/output-schema-ratchet.mts) lists those that do not yet.
+A tool may set `meta.outputSchema` (JSON Schema, `object` root) so `tools/call` also returns validated `structuredContent`; see [Structured tool results](../services/mcp-tools/README.md#structured-tool-results). Every tool exposed on `mcp` or `admin_mcp` declares one, and [`build-mcp-catalog.test.mts`](../../../../backend/services/mcp-tools/catalog/build-mcp-catalog.test.mts) fails for any that does not.
 
 ---
 
@@ -81,8 +81,7 @@ Every mutating tool currently exposed on the user `mcp` surface (`manage_my_card
 
 ## Generated Artifacts
 
-[`build-mcp-catalog.test.mts`](../../../../backend/services/mcp-tools/catalog/build-mcp-catalog.test.mts)
-builds every registry-derived artifact and fails when a committed copy is stale. Run
+[`build-mcp-catalog.test.mts`](../../../../backend/services/mcp-tools/catalog/build-mcp-catalog.test.mts) builds every registry-derived artifact and fails when a committed copy is stale. Run
 `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate
 them:
 
@@ -110,8 +109,9 @@ reference.
   `similar_topic_id` is a similarity-search seed and takes a UUID, and write-tool fields that
   mirror a REST request body (such as `manage_my_cards.card_id`) take what that body takes.
 - **Search queries** — a tool with a REST equivalent names its query after the REST parameter
-  (`text_search_query`, `semantic_search_query`). `query` remains only on tools without one, such
-  as `search_wikipedia`.
+  (`q`, `text_search_query`, `semantic_search_query`) and pages like it (`after`, `limit`,
+  `page_info`; see [Paged results](../../../requirements/api/v1/mcp/README.md#paged-results)).
+  `query` remains only on tools without one, such as `search_wikipedia`.
 - **Post types** — a `post_type` enum accepts the same values as its REST equivalent:
   `VALID_FILTERABLE_POST_TYPES` for `GET /api/v1/posts` and `VALID_TRENDING_POST_TYPES` for
   `GET /api/v1/trending-posts` (both in `ts-shared/feed-capabilities`).

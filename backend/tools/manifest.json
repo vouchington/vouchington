@@ -110,19 +110,7 @@
     },
     {
       "name": "get_topic_details",
-      "description": "Get detailed information about a topic (card, bank account, rewards program, etc.). For cards, returns the annual fee, issuing bank, and card brand. For rewards programs, returns the parent company. Always includes the full description and aliases.",
-      "parameters": null,
-      "api": [
-        {
-          "method": "GET",
-          "path": "/api/v1/topics/:idOrSlug"
-        }
-      ],
-      "requiredScopes": ["topics:read"]
-    },
-    {
-      "name": "get_topic_hierarchy",
-      "description": "Get the parent and/or child topics for a given topic. Useful for finding all cards issued by a bank (children of the bank topic), all tiers in a rewards program (children of the program topic), or discovering what organization issues a card (parents of the card topic).",
+      "description": "Get detailed information about a topic (card, bank account, rewards program, etc.). For cards, returns the annual fee, issuing bank, and card brand. For rewards programs, returns the parent company. Always includes the full description and aliases. Set hierarchy to also get parent topics (the organization that issues a card) and/or child topics (all cards a bank issues, all tiers in a rewards program); children come one page at a time, so pass children_page_info.end_cursor as children_after for the next page.",
       "parameters": null,
       "api": [
         {
@@ -134,7 +122,7 @@
     },
     {
       "name": "get_trending_posts",
-      "description": "Get posts that are trending based on time-decay voting. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic.",
+      "description": "Get posts that are trending based on time-decay voting. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic. Returns page_info.end_cursor; pass it as after to get the next page.",
       "parameters": null,
       "api": [
         {
@@ -146,7 +134,7 @@
     },
     {
       "name": "get_trending_topics",
-      "description": "Get topics (cards, bank accounts, rewards programs, etc.) that are trending based on recent post and news activity. Useful for answering \"what credit cards are popular right now?\" or \"what topics are being discussed?\". Returns topic IDs with trending scores — use get_topic_details to get full card information.",
+      "description": "Get topics (cards, bank accounts, rewards programs, etc.) that are trending based on recent post and news activity. Useful for answering \"what credit cards are popular right now?\" or \"what topics are being discussed?\". Returns topic IDs with trending scores — use get_topic_details to get full card information. Returns page_info.end_cursor; pass it as after to get the next page.",
       "parameters": null,
       "api": [
         {
@@ -245,7 +233,7 @@
     },
     {
       "name": "search_posts",
-      "description": "Search for posts using text, semantic, and similar-item signals. Use search for hybrid text+semantic search.",
+      "description": "Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page.",
       "parameters": null,
       "api": [
         {
@@ -257,7 +245,7 @@
     },
     {
       "name": "search_topics",
-      "description": "Search topics using text, semantic, and similar-item signals. Use search for hybrid text+semantic search.",
+      "description": "Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page.",
       "parameters": null,
       "api": [
         {

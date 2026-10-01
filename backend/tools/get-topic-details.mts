@@ -8,6 +8,14 @@ import type { Money } from '@ts-shared/money'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import { nullable, outcomeSchema } from './output-schema-shapes.mts'
 import { componentPropertySchema, componentSchema } from './route-response-schema.mts'
+import {
+  getTopicHierarchyResult,
+  HIERARCHY_ARGUMENT_PROPERTIES,
+  HIERARCHY_OUTPUT_FIELDS,
+  HIERARCHY_OUTPUT_PROPERTIES,
+  type TopicHierarchyArgs,
+  type TopicHierarchyResult,
+} from './topic-hierarchy-result.mts'
 
 // The REST twin streams an untyped body, so the tool owns this schema. The fields it shares with
 // the documented topic come from that component; the attribute fields appear per topic type.
@@ -25,16 +33,17 @@ const OUTPUT_SCHEMA = outcomeSchema(
     bank_name: nullableName,
     brand_name: nullableName,
     rewards_program_company: nullableName,
+    ...HIERARCHY_OUTPUT_PROPERTIES,
   },
-  ['annual_fee', 'bank_name', 'brand_name', 'rewards_program_company'],
+  ['annual_fee', 'bank_name', 'brand_name', 'rewards_program_company', ...HIERARCHY_OUTPUT_FIELDS],
 )
 
-type ToolArgs = {
+type ToolArgs = TopicHierarchyArgs & {
   topic_id: string
 }
 
 type ToolResult =
-  | {
+  | ({
       success: true
       id: string
       name: string
@@ -46,7 +55,7 @@ type ToolResult =
       bank_name?: string | null
       brand_name?: string | null
       rewards_program_company?: string | null
-    }
+    } & TopicHierarchyResult)
   | {
       success: false
       error: string
@@ -57,7 +66,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'get_topic_details',
     type: 'function',
     description:
-      'Get detailed information about a topic (card, bank account, rewards program, etc.). For cards, returns the annual fee, issuing bank, and card brand. For rewards programs, returns the parent company. Always includes the full description and aliases.',
+      'Get detailed information about a topic (card, bank account, rewards program, etc.). For cards, returns the annual fee, issuing bank, and card brand. For rewards programs, returns the parent company. Always includes the full description and aliases. Set hierarchy to also get parent topics (the organization that issues a card) and/or child topics (all cards a bank issues, all tiers in a rewards program); children come one page at a time, so pass children_page_info.end_cursor as children_after for the next page.',
     parameters: {
       type: 'object',
       properties: {
@@ -65,6 +74,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
           type: 'string',
           description: 'The topic UUID or slug to retrieve details for',
         },
+        ...HIERARCHY_ARGUMENT_PROPERTIES,
       },
       required: ['topic_id'],
     },
@@ -98,6 +108,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
           contentType: 'topic',
         }),
         aliases: topic.aliases,
+        ...(await getTopicHierarchyResult(topic.id, args)),
       }
 
       if (topic.topic_type === 'card') {

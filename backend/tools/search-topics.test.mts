@@ -26,7 +26,7 @@ describe('search-topics', () => {
     )
   })
 
-  it('clamps limit to max 25', async () => {
+  it('defaults to 25 results and clamps an oversized limit instead of refusing it', async () => {
     const marker = `Agent Limit Topic ${crypto.randomUUID()}`
     const user = await createTestUser()
     if (!user) throw new Error('Failed to create test user')
@@ -34,8 +34,12 @@ describe('search-topics', () => {
       await createTestTopic({ user, name: `${marker} ${index.toString().padStart(2, '0')}` })
     }
     const execute = searchTopicsTool.function(null as never)
-    const result = await execute({ text_search_query: marker, limit: 100 })
+    const defaulted = await execute({ text_search_query: marker })
+    const oversized = await execute({ text_search_query: marker, limit: 100_000 })
 
-    expect(result.topics).toHaveLength(25)
+    expect(defaulted.topics).toHaveLength(25)
+    expect(defaulted.page_info.has_next_page).toBe(true)
+    expect(oversized.topics).toHaveLength(30)
+    expect(oversized.page_info.has_next_page).toBe(false)
   })
 })

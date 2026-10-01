@@ -124,10 +124,6 @@
       "classification": "public-sql"
     },
     {
-      "path": "backend/services/posts/tools/semantic.mts",
-      "classification": "mixed-discovery-sql"
-    },
-    {
       "path": "backend/services/feeds/rss-feed-items/query-utils.mts",
       "classification": "mixed-discovery-sql"
     },

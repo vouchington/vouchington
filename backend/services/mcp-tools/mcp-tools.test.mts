@@ -28,7 +28,7 @@ describe('listMcpToolsForUser', () => {
 
   it('hides tools whose explicit resource scope is absent', () => {
     const tools = listMcpToolsForUser(user, ['topics:read'], USER_MCP_SERVER_CONFIG)
-    expect(tools.map(tool => tool.name)).toContain('search_topics_text')
+    expect(tools.map(tool => tool.name)).toContain('search_topics')
     expect(tools.map(tool => tool.name)).not.toContain('search_posts')
   })
 
@@ -204,13 +204,13 @@ describe('callMcpTool', () => {
   })
 
   it('rejects invalid registered tool arguments before invoking the tool', async () => {
-    const tool = ALL_TOOLS.find(candidate => candidate.schema.name === 'search_topics_text')
-    if (!tool) throw new Error('Expected search_topics_text tool')
+    const tool = ALL_TOOLS.find(candidate => candidate.schema.name === 'search_topics')
+    if (!tool) throw new Error('Expected search_topics tool')
     const invoke = vi.spyOn(tool, 'function')
 
     try {
       await expect(
-        callMcpTool('search_topics_text', {}, user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG),
+        callMcpTool('search_topics', { limit: 0 }, user, ['mcp.user:read'], USER_MCP_SERVER_CONFIG),
       ).rejects.toMatchObject({
         code: ErrorCode.InvalidParams,
         message: expect.stringContaining('Invalid tool arguments'),
@@ -248,9 +248,9 @@ describe('callMcpTool', () => {
   })
 
   it('returns CallToolResult on successful tool call', async () => {
-    // search_topics_text is a read-only MCP tool
+    // search_topics is a read-only MCP tool
     const result = await callMcpTool(
-      'search_topics_text',
+      'search_topics',
       { text_search_query: 'test' },
       user,
       ['mcp.user:read'],

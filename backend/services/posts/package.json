@@ -24,7 +24,6 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
-    "@jongleberry/vurst-prompt": "^0.4.3",
     "@modules/aws": "workspace:^",
     "@modules/feed-query-builders": "workspace:^",
     "@modules/on-error": "workspace:^",
@@ -76,7 +75,6 @@
     "@data-stores/valkey": "workspace:^",
     "@services/comments": "workspace:^",
     "@types/http-errors": "^2.0.5",
-    "@types/pg": "^8.23.1",
     "@voucha/test-helpers": "workspace:^",
     "vitest": "^5.0.2"
   }

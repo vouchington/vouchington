@@ -157,7 +157,6 @@ describe('PostgreSQL row type contracts', () => {
     ['backend/data-stores/psql/runtime.mts', 'query'],
     ['backend/data-stores/psql/runtime.mts', 'read'],
     ['backend/data-stores/psql/runtime.mts', 'write'],
-    ['backend/services/posts/tools/semantic.mts', 'queryPostsSemantic'],
   ])('%s %s defaults to a row that cannot masquerade as a complete Post', (path, name) => {
     const defaultRow = defaultRowType(path, name)
     const post = declarationType('backend/types/entities/post.mts', 'Post')

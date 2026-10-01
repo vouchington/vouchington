@@ -72,7 +72,6 @@ backend-credentialed:
   - 'backend/agents/autotagger/**'
   - 'backend/services/openai-moderation/**'
   - 'backend/services/bedrock-embeddings/**'
-  - 'backend/services/posts/tools/**'
   - 'backend/services/topics/tools/**'
   - 'backend/services/stripe/**'
 web:

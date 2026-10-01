@@ -4,6 +4,7 @@ import {
 } from '@voucha/test-helpers/openapi-documented-response'
 import { describe, expect, it } from 'vitest'
 import getReferralLinksTool from './get-referral-links.mts'
+import getTopicDetailsTool from './get-topic-details.mts'
 import manageMyCardsTool from './manage-my-cards.mts'
 import manageMyPointValuationsTool from './manage-my-point-valuations.mts'
 import manageMyRewardsStatusesTool from './manage-my-rewards-statuses.mts'
@@ -68,6 +69,18 @@ describe('tool-owned output schemas stay pinned to the documented REST twins', (
     for (const [field, schema] of Object.entries(properties(profile))) {
       expect(schema).toEqual(documented[field])
     }
+  })
+
+  it('takes children_page_info from the PageInfo the documented posts route returns', () => {
+    const schema = getTopicDetailsTool.meta?.outputSchema as unknown as { oneOf: JsonSchema[] }
+    const documented = documentedResponseProperty('get', '/api/v1/posts', '200', 'page_info') as {
+      anyOf: JsonSchema[]
+    }
+
+    expect(properties(schema.oneOf[0])['children_page_info']).toEqual(documented.anyOf[0])
+    expect(schema.oneOf[0]).toMatchObject({
+      required: expect.not.arrayContaining(['parents', 'children', 'children_page_info']),
+    })
   })
 
   it('takes the shared link fields from the prioritized referral link the REST twin documents', () => {
