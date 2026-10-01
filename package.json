@@ -136,7 +136,7 @@
     "@vitest/coverage-v8": "^5.0.2",
     "@vouchington/localization": "0.2.0",
     "@vouchington/localization-compiler": "0.2.2",
-    "agent-blackboard": "0.6.0",
+    "agent-blackboard": "0.6.1",
     "csv-parse": "7.0.3",
     "dependency-cruiser": "^18.4.0",
     "eslint-plugin-no-mistakes": "^0.68.0",
@@ -159,7 +159,7 @@
     "picomatch": "^4.0.4",
     "playwright": "1.63.0",
     "playwright-core": "1.63.0",
-    "pr-shepherd": "^0.55.2",
+    "pr-shepherd": "^0.56.1",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "squawk-cli": "2.66.0",
@@ -167,7 +167,7 @@
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "unified": "^11.0.5",
     "vitest": "^5.0.2",
-    "vouchington-tooling": "^0.26.0",
+    "vouchington-tooling": "^0.27.0",
     "yaml": "^2.9.1"
   },
   "engines": {
