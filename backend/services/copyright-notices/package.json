@@ -20,7 +20,7 @@
     "./*/__tests__/*": null
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1141.0",
+    "@aws-sdk/client-s3": "^3.1142.0",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@jongleberry/api-server": "^2.1.0",
