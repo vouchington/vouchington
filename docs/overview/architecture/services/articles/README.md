@@ -10,6 +10,7 @@ Parses article Markdown with `gray-matter` frontmatter extraction from the asset
 - `extractTitleFromMarkdown(body: string): string` — extracts the first H1 heading from Markdown as the title
 - `listArticleMarkdownFiles(): Promise<ArticleMarkdownFile[]>` — lists `articles/*.md` objects from the assets bucket, excluding `README.md`
 - `getArticleMarkdown(article): Promise<string>` — reads a bounded Markdown object from S3 with an in-process cache keyed by object metadata
+- `rewriteRelativeArticleLinks(markdown: string): string` — rewrites authored `./slug.md` and `slug.md` link destinations to `/article/slug`, skipping code. Sync applies it before the title, content hash, and stored Markdown, so every consumer of article Markdown (rendered HTML, API, MCP, RSS, the `.md` alias) links to the article page and an unchanged re-sync stays `skipped`
 - `syncArticles(currentUser): Promise<ArticleSyncResult>` — syncs all Markdown objects from S3 as posts, creating or updating as needed
 - `syncLocalArticles(currentUser, articlesDir?): Promise<ArticleSyncResult>` — syncs the committed local `articles/` directory for local/test database seeding only
 

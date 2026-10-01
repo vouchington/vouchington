@@ -90,6 +90,44 @@ describe('syncArticles', () => {
     }
   })
 
+  describe('relative article links', () => {
+    let slug = ''
+    const articleWith = (body: string) => `---\ntitle: Relative Links\nslug: ${slug}\n---\n${body}`
+
+    beforeEach(() => {
+      slug = `relative-links-${randomUUID()}`
+    })
+
+    function syncOnly(content: string) {
+      listArticleMarkdownFiles.mockResolvedValue([
+        { file: 'relative.md', key: 'articles/relative.md', cacheToken: 'relative:v1' },
+      ])
+      getArticleMarkdown.mockResolvedValue(content)
+      return syncFixtureArticles()
+    }
+
+    it('stores ./slug.md links as /article/slug and skips the unchanged re-sync', async () => {
+      const authored = articleWith(
+        'See [DMCA](./copyright-and-dmca.md#notice) and [guide](guide.md).',
+      )
+
+      expect((await syncOnly(authored)).results[0]?.action).toBe('created')
+      expect((await getPostByAny(slug))?.markdown).toBe(
+        'See [DMCA](/article/copyright-and-dmca#notice) and [guide](/article/guide).',
+      )
+      expect((await syncOnly(authored)).results[0]?.action).toBe('skipped')
+    })
+
+    it('rewrites links when an existing article is updated', async () => {
+      await syncOnly(articleWith('No links yet.'))
+
+      const result = await syncOnly(articleWith('Now [linked](./cookie-policy.md).'))
+
+      expect(result.results[0]?.action).toBe('updated')
+      expect((await getPostByAny(slug))?.markdown).toBe('Now [linked](/article/cookie-policy).')
+    })
+  })
+
   it('creates the about article with correct title', async () => {
     await syncFixtureArticles()
 
