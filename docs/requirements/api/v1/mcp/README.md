@@ -87,8 +87,9 @@ Every tool on this server declares an output schema; the catalog test fails for 
 A tool without one would return only the `text` block, unvalidated. See
 [MCP Tools service](../../../../overview/architecture/services/mcp-tools/README.md#structured-tool-results).
 
-The post and story read tools (`get_post`, `get_post_ancestors`, `get_post_descendants`,
-`get_story`, each requiring the `posts:read` scope) return an object that is either
+The [post and story read tools](../../../../overview/architecture/services/mcp-tools/read-tools.md)
+(`get_post`, `get_post_ancestors`, `get_post_descendants`, `get_story`, each requiring the
+`posts:read` scope) return an object that is either
 `{ success: true, ... }` or `{ success: false, error }`. They read as the credential owner minus
 private data: a post or story that is deleted, missing, or visible to the owner only through private
 visibility (private audience, private community, or their own unapproved post) is answered as

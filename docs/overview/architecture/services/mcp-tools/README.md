@@ -72,9 +72,6 @@ tool without an `outputSchema`, with no list of exceptions.
 and limits match REST, and return `PageInfo` as `page_info`. OpenAPI documents no
 trending query parameters, so contract tests pin `after` and `limit`.
 
-The post and story read tools own their schemas and their privacy rule; see
-[Post and story read tools](read-tools.md).
-
 ## Authorization
 
 Each `tools/call` request re-enforces the same checks as `tools/list`:
