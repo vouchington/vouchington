@@ -36,9 +36,11 @@ category relation on the post or feed item that was classified, voted under the 
 writes that actor's global topic election vote.
 
 No LLM tool-call loop is involved: candidate search, classifier dispatch, and vote application are
-plain function calls, not tools an agent invokes. A dispatch error propagates uncaught to the
-worker, which turns it into a queue job failure and retry; a stuck or expired lease is cheap and
-safe to retry from scratch.
+plain function calls, not tools an agent invokes. A provider failure is classified once, in the shared
+[classifier run executor](../classifier-runs/README.md): a transient one releases the lease and
+propagates to the worker for a retry on the minutes-scale `classifier-run` backoff, and a permanent
+one ends the run terminal without a retry. Any other dispatch error propagates uncaught to the
+worker as a queue job failure; a stuck or expired lease is cheap and safe to retry from scratch.
 
 ### Triggers
 

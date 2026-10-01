@@ -24,9 +24,35 @@ second lists each classifier's pending requests, including subjects that never g
 dispatches them. A spend-cap breach (`evaluateOpenAiSpendCapBreach`) ends the sweep before either
 phase enqueues anything. The sweep alarms through `recordClassifierRunAlarm` (`@modules/on-error`,
 message `classifier_run_alarm`, grouped by `alarm_kind` and `classifier`) when a run is given up,
-when the provider client cannot be built, when the oldest in-flight run is older than 26 hours
+when the provider client cannot be built, when the provider permanently rejects a run (kind
+`provider-rejected`: a rejected key, exhausted credits, a malformed request or a guardrail block),
+when the oldest in-flight run is older than 26 hours
 (past the longest spend-cap parking window; throttled to once per hour), and when the oldest
 pending request is that old. C12 (#225) owns run-health alarms going forward.
+
+## Classifier-run backoff
+
+Every other `ai_agents` job keeps `AI_AGENTS_DEFAULTS` (3 attempts, about 3 seconds of exponential
+backoff), which cannot ride out a provider outage. A `classifier-run` job is enqueued with its own
+options from `@queues/ai-agents/config`:
+
+| Setting                                 | Value                         | Why                                                                      |
+| --------------------------------------- | ----------------------------- | ------------------------------------------------------------------------ |
+| `CLASSIFIER_RUN_ATTEMPTS`               | 8                             | Also the receipt's `maxAttempts`, so a retry never reserves a spare one. |
+| `CLASSIFIER_RUN_BACKOFF`                | `classifier-run-outage`, 30 s | The worker registers the strategy by this name (`backoffStrategies`).    |
+| `CLASSIFIER_RUN_RETRY_AFTER_CEILING_MS` | 10 minutes                    | The longest provider `Retry-After` the backoff will honour.              |
+
+`classifierRunBackoffMs` waits `30 s * 2^(n-1)` before the nth retry, so the seven waits are 30 s,
+1 m, 2 m, 4 m, 8 m, 16 m and 32 m: about 63.5 minutes, plus up to 25% jitter. When the failure is a
+transient `StructuredDecisionError` that carries a `Retry-After` (a 429, a 503, or the OpenRouter
+in-flight budget 402), the wait is the longer of the exponential delay and that header, capped at the
+ceiling. A permanent failure never reaches the backoff: the run ends terminal and the job completes.
+A classifier-run job still has `AI_AGENT_JOB_PRODUCES_SPEND` false; the structured-decision client's
+`beforeAttempt` hook makes the authoritative pre-call spend-cap check on every attempt.
+
+An outage longer than the budget ends the run terminal `provider-error`, so a 403 guardrail block
+that carries no `patterns` (a data-policy, ZDR, allowlist or region block looks identical to an
+outage) is retried for about an hour before it ends the same way.
 
 ## Exports
 

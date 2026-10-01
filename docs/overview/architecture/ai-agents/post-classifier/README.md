@@ -23,6 +23,13 @@ persists the local detector outcome in the same write, and raises one `classifie
 message instead of throwing into the queue retry loop; the recovery sweep then leaves the run
 alone. Remote-side alarms and run-health alarms are owned going forward by C12 (#225).
 
+A provider failure after a reserved attempt is classified by the shared executor, not here. A
+transient outage (a 429, a 5xx, a connection error, or an OpenRouter 403 with no moderation or
+guardrail metadata) releases the lease and retries on the `classifier-run` backoff, about 63.5
+minutes across 8 attempts; a permanent rejection (400, 401, 402, or a moderation or guardrail 403)
+ends the run terminal at once. See the
+[executor](../classifier-runs/README.md#what-the-executor-guarantees).
+
 ```mermaid
 flowchart LR
   post[Approved post] --> request[Durable run request]

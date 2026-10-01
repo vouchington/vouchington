@@ -588,9 +588,6 @@ importers:
         specifier: workspace:^
         version: link:../../types
     devDependencies:
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -10961,6 +10958,9 @@ importers:
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
+      '@modules/structured-decisions':
+        specifier: workspace:^
+        version: link:../../modules/structured-decisions
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
@@ -11040,9 +11040,6 @@ importers:
         specifier: ^7.0.8
         version: 7.0.8
     devDependencies:
-      '@modules/structured-decisions':
-        specifier: workspace:^
-        version: link:../../modules/structured-decisions
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds
