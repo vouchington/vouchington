@@ -10,6 +10,7 @@ import type {
   loadSesInboundObjectVersion,
 } from './s3.mts'
 import { SesInboundTerminalError, type ParsedSesInboundEmail } from './mime.mts'
+import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { processSesInboundEmail, reconcileSesInboundEmails } from '../processors.mts'
 
@@ -68,6 +69,13 @@ describe('SES copyright inbound routing while intake is switched off', () => {
       objectKey: 'copyright-incoming/ses-copyright-message',
       intakeKind: 'copyright' as const,
     }
+    const sesVerdicts = {
+      spf: 'fail',
+      dkim: 'pass',
+      dmarc: 'gray',
+      spam: 'unknown',
+      virus: 'processing_failed',
+    } as const
     const deleteObject = vi.fn<(objectKey: string) => Promise<void>>().mockResolvedValue(undefined)
     const createIntake = vi.fn<typeof createCopyrightEmailIntake>().mockResolvedValue({
       intake: {
@@ -106,7 +114,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
       parseSesInboundMime: vi.fn<() => Promise<ParsedSesInboundEmail>>().mockResolvedValue(parsed),
       loadSesInboundObjectAndHash: vi.fn<typeof loadSesInboundObjectAndHash>().mockResolvedValue({
         rawMime: Readable.from([Buffer.from('raw')]),
-        digest: Promise.resolve({ sha256: Buffer.alloc(32, 7), byteSize: 3 }),
+        digest: Promise.resolve({ sha256: Buffer.alloc(32, 7), byteSize: 3, sesVerdicts }),
         receivedAt: new Date('2026-07-01T12:00:00.000Z'),
         sourceIdentity: { eTag: '"etag-1"', versionId: 'version-1' },
       }),
@@ -130,6 +138,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
         rawStorageKey: `email/ses-copyright-message/${Buffer.alloc(32, 7).toString('hex')}.eml`,
         rawSha256: Buffer.alloc(32, 7),
         receivedAt: new Date('2026-07-01T12:00:00.000Z'),
+        sesVerdicts,
       }),
     )
     expect(enqueue).toHaveBeenCalledWith('intake-id')
@@ -154,7 +163,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
       parseSesInboundMime: vi.fn<() => Promise<ParsedSesInboundEmail>>().mockResolvedValue(parsed),
       loadSesInboundObjectAndHash: vi.fn<typeof loadSesInboundObjectAndHash>().mockResolvedValue({
         rawMime: Readable.from([Buffer.from('raw')]),
-        digest: Promise.resolve({ sha256: Buffer.alloc(32, 7), byteSize: 3 }),
+        digest: Promise.resolve({ sha256: Buffer.alloc(32, 7), byteSize: 3, sesVerdicts }),
         receivedAt: new Date('2026-07-01T12:00:00.000Z'),
         sourceIdentity: { eTag: '"etag-1"', versionId: 'version-1' },
       }),
@@ -194,7 +203,11 @@ describe('SES copyright inbound routing while intake is switched off', () => {
     await processSesInboundEmail(data, {
       loadSesInboundObjectAndHash: vi.fn<typeof loadSesInboundObjectAndHash>().mockResolvedValue({
         rawMime: Readable.from([Buffer.from('raw')]),
-        digest: Promise.resolve({ sha256: Buffer.alloc(32, 8), byteSize: 3 }),
+        digest: Promise.resolve({
+          sha256: Buffer.alloc(32, 8),
+          byteSize: 3,
+          sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+        }),
         receivedAt: new Date('2026-07-01T12:00:00.000Z'),
         sourceIdentity: { eTag: '"etag-2"' },
       }),

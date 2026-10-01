@@ -2,9 +2,12 @@ import { createHash } from 'node:crypto'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { beginTransaction } from '@data-stores/psql'
 import { S3ImagesClient } from '@modules/aws'
+import { createCodedError } from '@modules/on-error/create-coded-error'
+import { COPYRIGHT_EMAIL_QUARANTINED } from '@modules/on-error/error-codes'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import type { CopyrightEmailSesVerdict } from './email-ses-verdicts.mts'
 
 export type CopyrightEmailRawEvidence = {
   bytes: Buffer
@@ -17,6 +20,7 @@ type RawEvidenceRecord = {
   raw_mime_type: string
   raw_byte_size: number
   raw_sha256: Buffer
+  virus_verdict: CopyrightEmailSesVerdict
 }
 
 export async function loadCopyrightEmailRawEvidence(
@@ -26,6 +30,15 @@ export async function loadCopyrightEmailRawEvidence(
   if (!currentUserCanReviewCopyrightNotices(currentUser)) return null
   const record = await getRawEvidenceRecord(intakeId)
   if (!record) return null
+  // The stored object is the sender's unmodified message. Refuse before any read once SES has
+  // flagged it, so malware never leaves the private evidence bucket; other verdicts still allow it.
+  if (record.virus_verdict === 'fail') {
+    throw createCodedError(
+      409,
+      'The original email is quarantined: SES reported malware in it. Review the parsed text only.',
+      COPYRIGHT_EMAIL_QUARANTINED,
+    )
+  }
   const bucket = process.env.S3_BUCKET_COPYRIGHT_EVIDENCE?.trim()
   if (!bucket) throw new Error('S3_BUCKET_COPYRIGHT_EVIDENCE is required')
   const response = await S3ImagesClient.send(
@@ -49,7 +62,7 @@ export async function loadCopyrightEmailRawEvidence(
 async function getRawEvidenceRecord(intakeId: string): Promise<RawEvidenceRecord | null> {
   await using transaction = await beginTransaction()
   const { rows } = await transaction<RawEvidenceRecord>(sql`/* getCopyrightEmailRawEvidence */
-    SELECT raw_storage_key, raw_mime_type, raw_byte_size, raw_sha256
+    SELECT raw_storage_key, raw_mime_type, raw_byte_size, raw_sha256, virus_verdict
     FROM copyright_notice_email_intakes
     WHERE id = ${intakeId}
   `)

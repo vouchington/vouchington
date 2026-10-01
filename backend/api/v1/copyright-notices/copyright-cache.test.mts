@@ -1,3 +1,4 @@
+import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { S3Client } from '@aws-sdk/client-s3'
 import { createHash } from 'node:crypto'
@@ -43,6 +44,7 @@ describe('copyright API cache policy', () => {
       rawSha256: createHash('sha256').update(bytes).digest(),
       rawMimeType: 'message/rfc822',
       rawByteSize: bytes.byteLength,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
     })
     vi.spyOn(S3Client.prototype, 'send').mockResolvedValue({
       Body: Readable.from([bytes]),

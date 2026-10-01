@@ -25,6 +25,7 @@
     "@data-stores/valkey": "workspace:^",
     "@jongleberry/api-server": "^2.1.0",
     "@modules/aws": "workspace:^",
+    "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",

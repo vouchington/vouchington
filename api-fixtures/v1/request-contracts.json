@@ -2575,6 +2575,32 @@
       "required": ["copyright_email_intakes", "page_info"],
       "type": "object"
     },
+    "CopyrightEmailSesVerdict": {
+      "enum": ["fail", "gray", "pass", "processing_failed", "unknown"],
+      "type": "string"
+    },
+    "CopyrightEmailSesVerdicts": {
+      "additionalProperties": false,
+      "properties": {
+        "dkim": {
+          "$ref": "#/components/schemas/CopyrightEmailSesVerdict"
+        },
+        "dmarc": {
+          "$ref": "#/components/schemas/CopyrightEmailSesVerdict"
+        },
+        "spam": {
+          "$ref": "#/components/schemas/CopyrightEmailSesVerdict"
+        },
+        "spf": {
+          "$ref": "#/components/schemas/CopyrightEmailSesVerdict"
+        },
+        "virus": {
+          "$ref": "#/components/schemas/CopyrightEmailSesVerdict"
+        }
+      },
+      "required": ["dkim", "dmarc", "spam", "spf", "virus"],
+      "type": "object"
+    },
     "CopyrightFormGuidance": {
       "additionalProperties": false,
       "properties": {
@@ -3059,7 +3085,14 @@
               "type": "number"
             },
             "download_url": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
             },
             "mime_type": {
               "type": "string"
@@ -3097,6 +3130,9 @@
         "review_path": {
           "enum": ["initial", "matched_thread", "unresolved_thread"],
           "type": "string"
+        },
+        "ses_verdicts": {
+          "$ref": "#/components/schemas/CopyrightEmailSesVerdicts"
         }
       },
       "required": [
@@ -3107,7 +3143,8 @@
         "raw_email",
         "received_at",
         "recommendation",
-        "review_path"
+        "review_path",
+        "ses_verdicts"
       ],
       "type": "object"
     },
