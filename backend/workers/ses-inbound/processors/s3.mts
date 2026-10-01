@@ -5,13 +5,13 @@ import {
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3'
 import { S3ImagesClient } from '@modules/aws'
-import { Readable, Transform } from 'node:stream'
-import { createHash } from 'node:crypto'
+import type { Readable } from 'node:stream'
 import {
   SES_INBOUND_FAILED_PREFIX,
   SES_INBOUND_COPYRIGHT_PREFIX,
 } from '@ts-shared/ses-inbound-contract'
 import { SesInboundTerminalError } from './mime.mts'
+import { createRawMimeDigest, type SesInboundRawDigest } from './raw-mime-digest.mts'
 import { boundedBodyStream, rejectOversizedRawEmail } from './s3-streams.mts'
 
 export type SesInboundObjectPage = {
@@ -102,7 +102,7 @@ export async function copySesInboundObjectToCopyrightEvidence(
 
 export async function loadSesInboundObjectAndHash(objectKey: string): Promise<{
   rawMime: Readable
-  digest: Promise<{ sha256: Buffer; byteSize: number }>
+  digest: Promise<SesInboundRawDigest>
   receivedAt: Date
   sourceIdentity: SesInboundSourceIdentity
 }> {
@@ -111,26 +111,10 @@ export async function loadSesInboundObjectAndHash(objectKey: string): Promise<{
     receivedAt,
     sourceIdentity,
   } = await loadSesInboundObjectWithMetadata(objectKey)
-  const hash = createHash('sha256')
-  let byteSize = 0
-  let resolveDigest!: (value: { sha256: Buffer; byteSize: number }) => void
-  let rejectDigest!: (reason: unknown) => void
-  const digest = new Promise<{ sha256: Buffer; byteSize: number }>((resolve, reject) => {
-    resolveDigest = resolve
-    rejectDigest = reject
-  })
-  const counter = new Transform({
-    transform(chunk: Buffer, _encoding, callback) {
-      hash.update(chunk)
-      byteSize += chunk.byteLength
-      callback(null, chunk)
-    },
-  })
-  source.once('error', error => counter.destroy(error))
-  counter.once('error', rejectDigest)
-  counter.once('end', () => resolveDigest({ sha256: hash.digest(), byteSize }))
-  source.pipe(counter)
-  return { rawMime: counter, digest, receivedAt, sourceIdentity }
+  const { stream: rawMime, digest } = createRawMimeDigest()
+  source.once('error', error => rawMime.destroy(error))
+  source.pipe(rawMime)
+  return { rawMime, digest, receivedAt, sourceIdentity }
 }
 
 /* no-mistakes: integration=aws */

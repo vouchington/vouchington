@@ -17,6 +17,7 @@ export { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mt
 export { reviewCopyrightFormIntake } from './form-reviews.mts'
 export { createCopyrightAppeal, createCopyrightCounterNotice } from './submissions.mts'
 export { createCopyrightEmailIntake } from './email-intakes.mts'
+export type { CopyrightEmailSesVerdict, CopyrightEmailSesVerdicts } from './email-ses-verdicts.mts'
 export { loadCopyrightEmailRawEvidence } from './email-raw-evidence.mts'
 export { recordCopyrightEmailParse } from './email-intake-parses.mts'
 export {

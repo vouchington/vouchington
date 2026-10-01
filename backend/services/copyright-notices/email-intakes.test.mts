@@ -1,3 +1,4 @@
+import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -40,6 +41,7 @@ describe('copyright email intake persistence', () => {
       rawSha256: Buffer.alloc(32, 1),
       rawMimeType: 'message/rfc822',
       rawByteSize: 123,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
       fromEmail: `claimant-${crypto.randomUUID()}@example.test`,
       subject: 'Copyright complaint',
       bodyText: 'This is a copyright complaint.',
@@ -110,6 +112,7 @@ describe('copyright email intake persistence', () => {
       rawSha256: Buffer.alloc(32, 5),
       rawMimeType: 'message/rfc822',
       rawByteSize: 7,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
     })
     await recordCopyrightEmailParse(intake, { status: 'failed', error: 'Malformed MIME' })
 
@@ -206,6 +209,7 @@ describe('copyright email intake persistence', () => {
       rawSha256: Buffer.alloc(32, 6),
       rawMimeType: 'message/rfc822',
       rawByteSize: 12,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
     })
     await linkCopyrightEmailIntakeToNotice({
       intakeId: intake.id,

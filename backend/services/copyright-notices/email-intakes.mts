@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import type { CopyrightEmailSesVerdicts } from './email-ses-verdicts.mts'
 
 export type CopyrightEmailAttachmentInput = {
   filename: string | null
@@ -35,6 +36,7 @@ export async function createCopyrightEmailIntake(input: {
   rawSha256: Buffer
   rawMimeType: string
   rawByteSize: number
+  sesVerdicts: CopyrightEmailSesVerdicts
 }): Promise<{ intake: CopyrightEmailIntake; isNew: boolean }> {
   assert(input.rawSha256.length === 32, 422, 'Raw email SHA-256 must be 32 bytes')
   assert(
@@ -43,12 +45,16 @@ export async function createCopyrightEmailIntake(input: {
     'Invalid raw email size',
   )
   await using transaction = await beginTransaction()
+  const { sesVerdicts } = input
   const { rows } = await transaction<CopyrightEmailIntake>(sql`/* createCopyrightEmailIntake */
     INSERT INTO copyright_notice_email_intakes (
-      ses_message_id, received_at, raw_storage_key, raw_sha256, raw_mime_type, raw_byte_size
+      ses_message_id, received_at, raw_storage_key, raw_sha256, raw_mime_type, raw_byte_size,
+      spf_verdict, dkim_verdict, dmarc_verdict, spam_verdict, virus_verdict
     ) VALUES (
       ${input.sesMessageId}, ${input.receivedAt}, ${input.rawStorageKey}, ${input.rawSha256},
-      ${input.rawMimeType}, ${input.rawByteSize}
+      ${input.rawMimeType}, ${input.rawByteSize},
+      ${sesVerdicts.spf}, ${sesVerdicts.dkim}, ${sesVerdicts.dmarc}, ${sesVerdicts.spam},
+      ${sesVerdicts.virus}
     ) ON CONFLICT (ses_message_id) DO NOTHING
     RETURNING id, ses_message_id, received_at, raw_storage_key, raw_sha256, raw_mime_type, raw_byte_size
   `)

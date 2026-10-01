@@ -17,6 +17,29 @@ export async function readCopyrightEmailIntakeReview(intakeId: string): Promise<
   return rows
 }
 
+export async function readCopyrightEmailIntakeSesVerdicts(intakeId: string): Promise<{
+  spf: string
+  dkim: string
+  dmarc: string
+  spam: string
+  virus: string
+}> {
+  const { rows } = await read<{
+    spf: string
+    dkim: string
+    dmarc: string
+    spam: string
+    virus: string
+  }>(sql`/* readCopyrightEmailIntakeSesVerdicts */
+    SELECT spf_verdict AS spf, dkim_verdict AS dkim, dmarc_verdict AS dmarc,
+      spam_verdict AS spam, virus_verdict AS virus
+    FROM copyright_notice_email_intakes
+    WHERE id = ${intakeId}`)
+  const verdicts = rows[0]
+  if (!verdicts) throw new Error(`Copyright email intake ${intakeId} was not found`)
+  return verdicts
+}
+
 export async function readCopyrightEmailIntakeResponses(intakeId: string): Promise<
   {
     id: string

@@ -20,6 +20,31 @@ pins the source version and ETag and uses a content-addressed evidence key. Conf
 access, and an approved retention policy before enabling intake. Malformed MIME remains preserved
 as a failed parse for staff review.
 
+## SES verdicts
+
+The SQS payload carries only the bucket and key, so SES's SPF, DKIM, DMARC, spam, and virus
+verdicts are read from the headers SES prepends to the raw MIME; the receipt rule's
+`scan_enabled = true` is what makes SES write the spam and virus verdicts. The worker captures the
+header block while it hashes the object for the evidence copy and writes `spf`, `dkim`, `dmarc`,
+`spam`, and `virus` as typed columns on the immutable intake. Each is `pass`, `fail`, `gray`,
+`processing_failed`, or `unknown`.
+
+SES prepends every header it writes above the headers the sender supplied, so the trust boundary is
+the topmost `X-SES-RECEIPT`: only fields above it are read, and a sender can forge anything below
+it. This assumes SES always writes `X-SES-RECEIPT` on a received message; a message without one
+gets `unknown` for every check. `X-SES-Spam-Verdict` and `X-SES-Virus-Verdict` come from the topmost
+instance. SPF, DKIM, and DMARC come from the first `Authentication-Results` field whose authserv-id
+is exactly `amazonses.com`, and `Received-SPF` is never read. When a method is reported more than
+once the least favourable result wins. A header that is absent, oversized, unparseable, or
+unrecognised is `unknown`, never `pass`. DKIM `pass` means a signature validated; it does not show
+the signing domain aligns with the From address.
+
+Verdicts are written once with the intake. A replay of the same object keeps the first verdicts,
+and the replay mismatch check still compares only the object key, size, and SHA-256. Staff see the
+verdicts on the email review page; an authentication failure is a risk note and never rejects a
+notice. A virus `fail` quarantines the original: see
+[Quarantined originals](../../../../../runbooks/copyright-notices.md#quarantined-originals).
+
 The worker rejects every job whose `intakeKind` is not `copyright` as its first step, before any S3
 read, copy, intake write, parse, or enqueue. Support intake is retired (#375), so an `incoming/`
 object is never copied to evidence or parsed. The rejection is a terminal `UnrecoverableError` and
