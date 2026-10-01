@@ -38,11 +38,11 @@ describe('Web Tests workflow', () => {
     expect(prep).toContain('shard-total: ${{ steps.shards.outputs.total }}')
   })
 
-  it('runs dynamically sized Vitest shards on ubuntu-latest with the web-owned four-worker policy', () => {
+  it('runs dynamically sized Vitest shards on native ARM64 with the web-owned four-worker policy', () => {
     const tests = jobSection('web-tests')
 
     expect(tests).toContain('needs: [prep]')
-    expect(tests).toContain('runs-on: ubuntu-latest')
+    expect(tests).toContain('runs-on: ubuntu-24.04-arm')
     expect(tests).toContain('fail-fast: false')
     expect(tests).toContain('shard: ${{ fromJSON(needs.prep.outputs.shard-matrix) }}')
     expect(tests).toContain("VITEST_MAX_WORKERS: '4'")

@@ -138,7 +138,7 @@ describe('workflow runner policy (real workflows)', () => {
     }
   })
 
-  it('restricts the ARM runner to the native ARM64 image builds', () => {
+  it('restricts the ARM runner to the native ARM64 image builds and the web Vitest shards', () => {
     const armLabels: readonly string[] = ALLOWED_LABELS.filter(label => label.endsWith('-arm'))
     expect(armLabels).toHaveLength(1)
     const armJobs = allJobEntries()
@@ -146,7 +146,11 @@ describe('workflow runner policy (real workflows)', () => {
       .map(({ file, jobName }) => `${file}#${jobName}`)
       .sort()
 
-    expect(armJobs).toEqual(['publish-backend-images.yml#build', 'publish-web-images.yml#build'])
+    expect(armJobs).toEqual([
+      'publish-backend-images.yml#build',
+      'publish-web-images.yml#build',
+      'tests-web.yml#web-tests',
+    ])
   })
 
   it('restricts macos-latest to the gated portability-macos job', () => {
