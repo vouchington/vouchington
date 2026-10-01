@@ -14,7 +14,6 @@ import { entityRelationElectionTables } from './target.mts'
 import { lockEntityRelationVoteStatsPostPublicationScopes } from './vote-stats-batch-publication-locks.mts'
 import { chunkRelationIds } from './vote-target-ids.mts'
 
-export { PRIMARY_REFRESH_BATCH_SIZE } from './vote-target-ids.mts'
 const topHashtagRelationTables = new Set([
   'relation__post__category__topic_alias',
   'relation__rss_feed_item__category__topic_alias',

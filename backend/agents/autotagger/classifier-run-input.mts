@@ -19,7 +19,8 @@ export async function buildAutotaggerRunInput(
   state: ClassifierSafeText,
 ): Promise<ClassifierRunRemoteInput | null> {
   const { remote, configuration } = lease.resolved
-  if (!remote?.capturedCandidates) throw new Error('tagging run must capture its own candidates')
+  if (remote?.candidateKind !== 'topic' || !remote.capturedCandidates)
+    throw new Error('tagging run must capture its own candidates')
   if (lease.capturedTopicIds.length === 0) return null
   const topics = await readAutotaggerCandidateTopics(lease.capturedTopicIds)
   const bindings = await buildAutotaggerBindings(configuration.prompt, topics)
@@ -27,7 +28,7 @@ export async function buildAutotaggerRunInput(
     classifierId: remote.classifierId,
     promptVersionId: remote.promptVersionId,
     subject: lease.subject,
-    scope: { scopeCategory: 'global', scopeCommunityId: null },
+    scope: remote.scope,
     state,
     bindings,
   }

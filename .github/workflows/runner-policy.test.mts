@@ -138,7 +138,7 @@ describe('workflow runner policy (real workflows)', () => {
     }
   })
 
-  it('restricts the ARM runner to the native ARM64 image builds and the web Vitest shards', () => {
+  it('restricts the ARM runner to the image builds, web Vitest shards, and shared web build jobs', () => {
     const armLabels: readonly string[] = ALLOWED_LABELS.filter(label => label.endsWith('-arm'))
     expect(armLabels).toHaveLength(1)
     const armJobs = allJobEntries()
@@ -147,8 +147,16 @@ describe('workflow runner policy (real workflows)', () => {
       .sort()
 
     expect(armJobs).toEqual([
+      'checks-static.yml#static-web',
       'publish-backend-images.yml#build',
       'publish-web-images.yml#build',
+      'tests-playwright-credentialed.yml#playwright-credentialed-tests',
+      'tests-playwright.yml#playwright-tests',
+      'tests-playwright.yml#shards',
+      'tests-web-api.yml#prep',
+      'tests-web-api.yml#web-api-tests',
+      'tests-web-integration.yml#prep',
+      'tests-web-integration.yml#web-integration-tests',
       'tests-web.yml#web-tests',
     ])
   })

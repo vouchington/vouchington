@@ -7,7 +7,7 @@ import sql from 'sql-template-strings'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
-import { createCopyrightEmailIntakeResponseInTransaction } from './email-intake-responses.mts'
+import { createCopyrightEmailIntakeResponseInTransaction } from './email-intake-reply.mts'
 
 /**
  * Records a staff rejection or needs-information decision and queues the sender's reply.
@@ -80,7 +80,7 @@ export async function rejectCopyrightEmailIntake(input: {
     sql`/* rejectCopyrightEmailIntake:existing */
       SELECT review.accepted, response.id AS response_id
       FROM copyright_notice_email_intake_reviews review
-      LEFT JOIN copyright_notice_email_intake_responses response
+      LEFT JOIN copyright_notice_delivery_intents response
         ON response.copyright_notice_email_intake_id = review.copyright_notice_email_intake_id
       WHERE review.copyright_notice_email_intake_id = ${input.intakeId}`,
   )
@@ -129,7 +129,7 @@ export async function rejectCopyrightEmailIntake(input: {
       )
     : null
   await transaction.commit()
-  return { responseId: response?.id ?? null, replyQueued: response !== null }
+  return { responseId: response, replyQueued: response !== null }
 }
 
 async function assertNoInitialIntakeThreadBarrier(

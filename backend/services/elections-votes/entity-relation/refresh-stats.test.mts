@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  refreshEntityRelationVoteStatsWithDependencies,
-  refreshEntityRelationVoteStatsBatchWithDependencies,
-} from './refresh-stats.mts'
+import { refreshEntityRelationVoteStatsWithDependencies } from './refresh-stats.mts'
 import { createEntityRelationElectionTarget } from './target.mts'
 
 describe('refreshEntityRelationVoteStatsFromPrimaryWithFallback', () => {
@@ -76,79 +73,6 @@ describe('refreshEntityRelationVoteStatsFromPrimaryWithFallback', () => {
         enqueueReconciliation: async () => Promise.reject(new Error('queue unavailable')),
       }),
     ).rejects.toThrow('Primary entity-relation vote refresh failed (primary unavailable)')
-  })
-})
-
-describe('batch primary refresh fallback', () => {
-  const targets = [
-    createEntityRelationElectionTarget('relation-first', 'relation__post__category__topic'),
-    createEntityRelationElectionTarget('relation-second', 'relation__post__category__topic'),
-  ]
-  it('enqueues the complete target set after partial primary success', async () => {
-    const completed: typeof targets = []
-    const enqueued: (typeof targets)[] = []
-    const result = await refreshEntityRelationVoteStatsBatchWithDependencies(targets, {
-      refreshFromPrimary: async batch => {
-        completed.push(batch[0]!)
-        throw new Error('next chunk failed')
-      },
-      enqueueReconciliation: async batch => {
-        enqueued.push(batch)
-      },
-    })
-    expect(completed).toEqual([targets[0]])
-    expect(enqueued).toEqual([targets])
-    expect(result).toBeUndefined()
-  })
-  it('preserves both primary and enqueue failures', async () => {
-    const enqueueError = new Error('queue unavailable')
-    await expect(
-      refreshEntityRelationVoteStatsBatchWithDependencies(targets, {
-        refreshFromPrimary: async () => {
-          throw new Error('primary unavailable')
-        },
-        enqueueReconciliation: async () => {
-          throw enqueueError
-        },
-      }),
-    ).rejects.toMatchObject({
-      cause: enqueueError,
-      message: expect.stringContaining('primary unavailable'),
-    })
-  })
-  it('does not enqueue successful or empty batches', async () => {
-    const calls: string[] = []
-    const dependencies = {
-      refreshFromPrimary: async () => {
-        calls.push('primary')
-        return []
-      },
-      enqueueReconciliation: async () => {
-        calls.push('enqueue')
-      },
-    }
-    await refreshEntityRelationVoteStatsBatchWithDependencies([], dependencies)
-    await refreshEntityRelationVoteStatsBatchWithDependencies(targets, dependencies)
-    expect(calls).toEqual(['primary'])
-  })
-  it('returns only successful primary changes for post-commit notification dispatch', async () => {
-    const changed = [targets[0]!]
-    await expect(
-      refreshEntityRelationVoteStatsBatchWithDependencies(targets, {
-        refreshFromPrimary: async () => changed,
-        enqueueReconciliation: async () => {
-          throw new Error('Unexpected fallback')
-        },
-      }),
-    ).resolves.toEqual(changed)
-    await expect(
-      refreshEntityRelationVoteStatsBatchWithDependencies(targets, {
-        refreshFromPrimary: async () => [],
-        enqueueReconciliation: async () => {
-          throw new Error('Unexpected fallback')
-        },
-      }),
-    ).resolves.toEqual([])
   })
 })
 

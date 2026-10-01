@@ -1,16 +1,18 @@
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
-import { isUUID } from '@modules/utils/ids'
 import { upsertTopicElectionVotes } from '@services/elections-votes/topic'
-import sql from 'sql-template-strings'
 import { readCompleteClassifierDecision } from './read-complete-decision.mts'
+import {
+  assertApplicationInput,
+  assertSharedSystemActor,
+  validateTopicDecision,
+  type ExpectedTopicClassifierBinding,
+  type PersistedTopicDecisionResult,
+} from './topic-decision-validation.mts'
 import { mapClassifierProbabilityToTopicVoteScore } from './topic-vote-mapper.mts'
 import { recordTopicVoteApplication } from './topic-vote-receipt.mts'
-import type { PersistedClassifierDecision, PersistedClassifierDecisionResult } from './types.mts'
+import type { PersistedClassifierDecision } from './types.mts'
 
-export type ExpectedTopicClassifierBinding = {
-  topicId: string
-  storedCandidateId: string | null
-}
+export type { ExpectedTopicClassifierBinding }
 export type ApplyTopicClassifierDecisionVotesInput = {
   batchId: string
   sharedActorId: string
@@ -41,86 +43,6 @@ async function applyTopicClassifierDecisionVotesWithQuery(
   await assertSharedSystemActor(query, input.sharedActorId)
   const appliedTopicIds = await applyTopicResults(query, input.sharedActorId, decision, results)
   return { appliedTopicIds }
-}
-
-async function assertSharedSystemActor(
-  query: OwnedTransaction,
-  sharedActorId: string,
-): Promise<void> {
-  await query(sql`/* lockClassifierTopicVoteActor */
-    SELECT fn_lock_active_user_for_mutation(${sharedActorId}::uuid)
-  `)
-  const { rows } = await query<{ is_system: boolean }>(sql`/* readClassifierTopicVoteActor */
-    SELECT is_system FROM users WHERE id = ${sharedActorId}::uuid
-  `)
-  if (!rows[0]?.is_system) {
-    throw new Error('Classifier topic votes require a system actor')
-  }
-}
-
-function assertApplicationInput(input: ApplyTopicClassifierDecisionVotesInput): void {
-  if (!isUUID(input.batchId) || !isUUID(input.sharedActorId)) {
-    throw new Error('Classifier topic vote application requires UUID batch and shared actor IDs')
-  }
-  if (input.expectedBindings.length === 0) {
-    throw new Error('Classifier topic vote application requires expected bindings')
-  }
-  const keys = new Set<string>()
-  for (const binding of input.expectedBindings) {
-    if (
-      !isUUID(binding.topicId) ||
-      (binding.storedCandidateId && !isUUID(binding.storedCandidateId))
-    ) {
-      throw new Error('Classifier topic vote application binding IDs must be UUIDs')
-    }
-    const key = bindingKey(binding)
-    if (keys.has(key))
-      throw new Error('Classifier topic vote application cannot duplicate bindings')
-    keys.add(key)
-  }
-}
-
-type PersistedTopicDecisionResult = Extract<
-  PersistedClassifierDecisionResult,
-  { candidateKind: 'topic' }
->
-
-function validateTopicDecision(
-  decision: PersistedClassifierDecision,
-  expectedBindings: readonly ExpectedTopicClassifierBinding[],
-): readonly PersistedTopicDecisionResult[] {
-  const callIds = new Set(decision.calls.map(call => call.id))
-  const expected = new Set(expectedBindings.map(bindingKey))
-  const results = decision.results
-  if (
-    results.length !== expected.size ||
-    results.some(result => result.candidateKind !== 'topic')
-  ) {
-    throw new Error('Classifier topic vote application requires a complete topic-only decision')
-  }
-  const topicResults = results as readonly PersistedTopicDecisionResult[]
-  const seen = new Set<string>()
-  for (const result of topicResults) {
-    const key = bindingKey(result)
-    if (
-      result.batchId !== decision.batchId ||
-      result.classifierId !== decision.classifierId ||
-      result.promptVersionId !== decision.promptVersionId ||
-      !callIds.has(result.decisionCallId) ||
-      !expected.has(key) ||
-      seen.has(key)
-    ) {
-      throw new Error(
-        'Classifier topic vote application decision lineage is incomplete or inconsistent',
-      )
-    }
-    seen.add(key)
-  }
-  return topicResults
-}
-
-function bindingKey(binding: ExpectedTopicClassifierBinding): string {
-  return `${binding.topicId}:${binding.storedCandidateId ?? 'runtime'}`
 }
 
 async function applyTopicResults(

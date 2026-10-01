@@ -4,9 +4,6 @@ type ElectionVote = Deps.ElectionVote
 type PageInfo = Deps.PageInfo
 type PaginatedResult = Deps.PaginatedResult
 
-// TypeScript 7 workaround for PageInfo resolution
-export type { PageInfo }
-
 /**
  * Base paginated response structure shared by all API endpoints
  */

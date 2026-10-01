@@ -1,9 +1,11 @@
+import type { ClassifierCandidateKind } from '@voucha/types'
 import type {
   ClassifierDecisionInputResult,
   PersistClassifierDecisionCall,
   PersistClassifierDecisionInput,
 } from './types.mts'
 import { isUUID } from '@modules/utils/ids'
+import { serializeClassifierRawResponse } from './raw-response.mts'
 
 export type NormalizedClassifierDecisionInput = PersistClassifierDecisionInput & {
   calls: readonly (PersistClassifierDecisionCall & {
@@ -24,7 +26,7 @@ export function normalizeClassifierDecisionInput(
   assertClassifierDecisionBatchIdentity(input)
   const resultIds = input.calls.flatMap(call =>
     call.results.flatMap(result => [
-      result.candidateKind === 'topic' ? result.topicId : result.storyId,
+      classifierDecisionEntityId(result),
       ...(result.storedCandidateId ? [result.storedCandidateId] : []),
     ]),
   )
@@ -75,7 +77,7 @@ export function assertClassifierDecisionStoredCandidateIds(
 
 export function classifierDecisionCandidateKind(
   input: Pick<NormalizedClassifierDecisionInput, 'calls'>,
-): 'topic' | 'story' {
+): ClassifierCandidateKind {
   const firstResult = input.calls[0]?.results[0]
   if (!firstResult) throw new Error('Classifier decision requires a candidate result')
   return firstResult.candidateKind
@@ -87,18 +89,26 @@ export function flattenClassifierDecisionResults(
   return input.calls.flatMap(call => call.results)
 }
 
-export function classifierDecisionResultKey(result: ClassifierDecisionInputResult): string {
-  return result.candidateKind === 'topic' ? `topic:${result.topicId}` : `story:${result.storyId}`
+/** The topic, story or community prompt a result scores. */
+export function classifierDecisionEntityId(result: ClassifierDecisionInputResult): string {
+  switch (result.candidateKind) {
+    case 'topic':
+      return result.topicId
+    case 'story':
+      return result.storyId
+    case 'community_prompt':
+      return result.communityPromptId
+  }
 }
 
-export function serializeClassifierRawResponse(value: unknown): string {
-  return JSON.stringify(normalizeJsonValue(value))
+export function classifierDecisionResultKey(result: ClassifierDecisionInputResult): string {
+  return `${result.candidateKind}:${classifierDecisionEntityId(result)}`
 }
 
 function assertDecisionCalls(calls: readonly PersistClassifierDecisionCall[]): void {
   const resultKeys = new Set<string>()
   const storedCandidateIds = new Set<string>()
-  let candidateKind: 'topic' | 'story' | undefined
+  let candidateKind: ClassifierCandidateKind | undefined
   for (const [index, call] of calls.entries()) {
     if (call.shardOrdinal !== index || call.results.length === 0) {
       throw new Error('Classifier decision calls must have consecutive non-empty shard ordinals')
@@ -107,7 +117,7 @@ function assertDecisionCalls(calls: readonly PersistClassifierDecisionCall[]): v
       assertDecisionResult(result)
       candidateKind ??= result.candidateKind
       if (candidateKind !== result.candidateKind) {
-        throw new Error('Classifier decision cannot mix topic and story candidates')
+        throw new Error('Classifier decision cannot mix candidate kinds')
       }
       const key = classifierDecisionResultKey(result)
       if (resultKeys.has(key)) {
@@ -127,22 +137,4 @@ function assertDecisionResult(result: ClassifierDecisionInputResult): void {
     throw new Error('Classifier result probability must be between zero and one')
   }
   serializeClassifierRawResponse(result.rawResponse)
-}
-
-function normalizeJsonValue(value: unknown): unknown {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') return value
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value))
-      throw new Error('Classifier raw response must be JSON serializable')
-    return value
-  }
-  if (Array.isArray(value)) return value.map(normalizeJsonValue)
-  if (typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, child]) => [key, normalizeJsonValue(child)]),
-    )
-  }
-  throw new Error('Classifier raw response must be JSON serializable')
 }

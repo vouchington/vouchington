@@ -35,8 +35,8 @@
     "@services/bookmarks": "workspace:^",
     "@services/comments": "workspace:^",
     "@services/communities": "workspace:^",
-    "@services/contribution-gating": "workspace:^",
     "@services/conversations-messages": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
     "@services/crawls": "workspace:^",
     "@services/data-points": "workspace:^",
     "@services/elections-votes": "workspace:^",
@@ -47,6 +47,7 @@
     "@services/friend-recommendations": "workspace:^",
     "@services/individuals-households": "workspace:^",
     "@services/jwt-session": "workspace:^",
+    "@services/media-delivery-safety": "workspace:^",
     "@services/memberships": "workspace:^",
     "@services/messaging": "workspace:^",
     "@services/modmail": "workspace:^",
@@ -77,6 +78,7 @@
     "@voucha/test-helpers": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/rss-parser": "^0.1.0",
+    "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.2"
   },
   "devDependencies": {

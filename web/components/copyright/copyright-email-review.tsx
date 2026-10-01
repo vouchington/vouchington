@@ -130,6 +130,14 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
                     <p className='text-xs text-muted-foreground'>
                       Received <TimeAgo date={item.received_at} />
                     </p>
+                    {item.waiting_reason !== 'awaiting_review' && (
+                      <p className='text-xs text-destructive'>
+                        {item.waiting_reason === 'reply_bounced'
+                          ? 'Reply to the sender bounced'
+                          : 'Reply to the sender could not be sent'}
+                        , waiting <TimeAgo date={item.waiting_since} />
+                      </p>
+                    )}
                     {item.parse_status !== 'succeeded' && (
                       <p className='text-xs text-destructive'>
                         {item.parse_status === 'failed' ? 'Parse failed' : 'No parse recorded'}

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config'
 import { backendAliases } from './vitest-config/aliases.mts'
+import { IsolatedDatabaseCaseReporter } from './vitest-isolated-database-case-reporter.mts'
 import {
   getIsolatedDatabaseChildCase,
   isolatedTestNamePattern,
@@ -20,6 +21,7 @@ export default defineConfig({
     teardownTimeout: 20_000,
     include: [isolatedCase.file],
     testNamePattern: isolatedTestNamePattern(caseId),
+    reporters: ['default', new IsolatedDatabaseCaseReporter()],
     setupFiles: [
       './backend/test-helpers/vitest.setup.sentry-mock.mts',
       './backend/test-helpers/vitest.setup.aws-mocks.mts',

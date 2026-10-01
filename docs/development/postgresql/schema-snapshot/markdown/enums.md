@@ -62,6 +62,7 @@
 
 - `topic`
 - `story`
+- `community_prompt`
 
 ## `classifier_model_provider`
 

@@ -44,3 +44,5 @@ behavior.
   decisions for that family.
 - [Staff, admin, and operations routes](reference-staff-operations-request-validation.md) record
   their status changes, carrier skips, and specialized ingress.
+- [Copyright notice, appeal, and counter-notice routes](reference-copyright-submission-request-validation.md)
+  record their handler order, kept statuses, and cross-client verification.

@@ -17,6 +17,7 @@ import { streamBookmarks } from './stream-bookmarks.mts'
 import { streamConsents, streamReferralAttributions } from './stream-consents.mts'
 import { streamFollowedRssFeeds } from './stream-followed-rss-feeds.mts'
 import { streamFollowedTopics } from './stream-followed-topics.mts'
+import { streamCopyrightExports } from './stream-copyright.mts'
 import { mergeCsvFiles } from './export-merge.mts'
 export { mergeCsvFiles } from './export-merge.mts'
 export { writeLineWithBackpressure } from './export-utils.mts'
@@ -56,8 +57,16 @@ export async function writeExportFiles(userId: string, exportDir: string): Promi
     streamFollowedRssFeeds(userId),
   )
   await writeCsvFromGenerator(join(exportDir, 'followed-topics.csv'), streamFollowedTopics(userId))
+  await writeCopyrightCsvs(exportDir, userId)
   await writeBookmarksCsv(exportDir, userId)
   await writeEntityRelationsCsv(exportDir, userId)
+}
+
+async function writeCopyrightCsvs(dir: string, userId: string): Promise<void> {
+  for (const stream of streamCopyrightExports(userId)) {
+    // oxlint-disable-next-line no-await-in-loop -- serial cursor drains release each PostgreSQL client before the next starts
+    await writeCsvFromGenerator(join(dir, stream.file), stream.rows)
+  }
 }
 
 async function writeEntityRelationsCsv(dir: string, userId: string): Promise<void> {

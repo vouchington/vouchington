@@ -8,6 +8,7 @@ export const ALLOWED_OPAQUE_JSON = new Set([
   'apple_accounts.apple_user_data',
   'classifier_runs.configuration_json',
   'communities.lingua_rs_results',
+  'community_prompt_classifier_results.raw_response',
   'conversation_message_agentic_runs.input',
   'conversation_message_agentic_runs.output',
   'conversation_message_agentic_runs.error',

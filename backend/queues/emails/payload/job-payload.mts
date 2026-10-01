@@ -31,7 +31,7 @@ type TemplateName = Exclude<EmailSendJobs, 'processSendCopyrightNoticeEmail'>
 
 export type ParsedEmailJob =
   | { kind: 'dispatcher'; name: EmailDispatcherJobs }
-  | { kind: 'copyright'; data: { intentId: string } | { intakeResponseId: string } }
+  | { kind: 'copyright'; data: { intentId: string } }
   | {
       kind: 'template'
       name: TemplateName
@@ -109,14 +109,12 @@ function emptyPayload(data: unknown): void {
   assertExactKeys(record, [])
 }
 
-function copyrightPayload(data: unknown): { intentId: string } | { intakeResponseId: string } {
+function copyrightPayload(data: unknown): { intentId: string } {
   const record = asRecord(data, 'payload')
-  assertExactKeys(record, ['intentId', 'intakeResponseId'])
+  assertExactKeys(record, ['intentId'])
   const intentId = record.intentId
-  const intakeResponseId = record.intakeResponseId
-  if (typeof intentId === 'string' && intakeResponseId === undefined) return { intentId }
-  if (typeof intakeResponseId === 'string' && intentId === undefined) return { intakeResponseId }
-  throw new JobPayloadError('copyright payload must set intentId or intakeResponseId')
+  if (typeof intentId !== 'string') throw new JobPayloadError('copyright payload must set intentId')
+  return { intentId }
 }
 
 function emailInput(data: unknown): EmailJobInput {

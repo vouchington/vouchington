@@ -9,7 +9,7 @@
   "scripts": {},
   "dependencies": {
     "@libpg-query/parser": "^18.0.0",
-    "@typescript-eslint/parser": "^8.70.1",
+    "@typescript-eslint/parser": "^8.71.0",
     "@vouchington/localization": "^0.2.0",
     "@vouchington/localization-compiler": "^0.2.2",
     "@vouchington/postgres": "^0.0.12",
@@ -17,7 +17,7 @@
     "no-mistakes": "^0.68.0",
     "oxfmt": "^0.71.0",
     "smol-toml": "^1.9.0",
-    "vouchington-tooling": "^0.26.0",
+    "vouchington-tooling": "^0.27.0",
     "yaml": "^2.9.1"
   },
   "devDependencies": {

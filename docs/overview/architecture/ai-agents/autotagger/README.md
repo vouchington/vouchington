@@ -27,11 +27,13 @@ supplies only input building:
   (posts by the moderation content hash, feed items by the embedding content hash) and returns
   `stale` otherwise.
 
-The classifier itself (its active prompt, model and thresholds, and vote persistence via
-`applyTopicClassifierDecisionVotes`) lives in `@services/classifiers`, keyed by the `tagging`
+The classifier itself (its active prompt, model and thresholds, and relation persistence via
+`applyTopicClassifierDecisionRelations`) lives in `@services/classifiers`, keyed by the `tagging`
 prompt slug; candidate capture, configuration, readiness and effects live in `@services/autotagger`
-(see [its README](../../services/autotagger/README.md)). Topic votes are written under the shared
-`getAutotaggerClassifierSystemUserId()` actor, not the legacy `autotagger` system user.
+(see [its README](../../services/autotagger/README.md)). Each applied result becomes a topic
+category relation on the post or feed item that was classified, voted under the shared
+`getAutotaggerClassifierSystemUserId()` actor, not the legacy `autotagger` system user; it never
+writes that actor's global topic election vote.
 
 No LLM tool-call loop is involved: candidate search, classifier dispatch, and vote application are
 plain function calls, not tools an agent invokes. A dispatch error propagates uncaught to the
@@ -76,6 +78,6 @@ safe to retry from scratch.
   `(classifier, subject, input hash, configuration hash)`. The candidate topic set is captured with
   the receipt and is not part of that identity, so a changed candidate set cannot mint a second
   receipt. Persisted outcomes short-circuit any replay, so re-dispatching or a lease expiry
-  idempotently replays the prior decision's votes instead of re-calling the classifier. Provider
+  idempotently replays the prior decision's relations instead of re-calling the classifier. Provider
   spend per run is capped at `maxAttempts` reserved attempts; a crash or lease loss between the
   provider returning and the outcomes being persisted can still spend again, within that cap.

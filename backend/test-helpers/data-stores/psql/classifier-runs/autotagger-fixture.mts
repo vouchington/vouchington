@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
 import sql from 'sql-template-strings'
@@ -170,26 +170,23 @@ export function requestAutotaggerFeedItems(itemIds: readonly string[]) {
   return requestRssFeedItemClassifierRuns(write, itemIds, [TAGGING_CLASSIFIER_SLUG])
 }
 
-/** Moves a feed item to new content, as a re-upsert of a changed item does; returns the new digest. */
+/**
+ * Moves a feed item to new content, as a re-upsert of a changed item does: the stored item and its
+ * content digest both change, so a run keyed on the new digest can really execute. Returns the new
+ * digest.
+ */
 export async function reviseAutotaggerFeedItem(itemId: string): Promise<Buffer> {
-  const inputSha256 = randomBytes(32)
+  const itemData = {
+    link: 'https://example.com',
+    guid: `autotagger-revision-${randomUUID()}`,
+    title: `Autotagger revision ${randomUUID()}`,
+  }
+  const inputSha256 = createRssFeedItemEmbeddingContent(itemData).content_sha256
   await write(sql`/* reviseAutotaggerFeedItem */
-    UPDATE rss_feed_items SET bedrock_nova_multimodal_v1_content_sha256 = ${inputSha256}
+    UPDATE rss_feed_items
+    SET data = data || ${JSON.stringify({ title: itemData.title })}::jsonb,
+        bedrock_nova_multimodal_v1_content_sha256 = ${inputSha256}
     WHERE id = ${itemId}
   `)
   return inputSha256
-}
-
-/** Topics a run voted on, from the durable vote-application receipts of its subject. */
-export async function readAutotaggerVotedTopicIds(subject: {
-  postId: string | null
-  rssFeedItemId: string | null
-}): Promise<string[]> {
-  const { rows } = await write<{ topic_id: string }>(sql`/* readAutotaggerVotedTopicIds */
-    SELECT topic_id FROM classifier_topic_vote_applications
-    WHERE post_id IS NOT DISTINCT FROM ${subject.postId}::uuid
-      AND rss_feed_item_id IS NOT DISTINCT FROM ${subject.rssFeedItemId}::uuid
-    ORDER BY topic_id
-  `)
-  return rows.map(row => row.topic_id)
 }

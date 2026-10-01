@@ -15,6 +15,7 @@ export async function findOutboundCopyrightEmailThreadMatch(references: string[]
       trim(BOTH '<>' FROM ses_message_id) AS "matchedReference"
     FROM copyright_notice_delivery_intents
     WHERE channel = 'email' AND state = 'sent' AND ses_message_id IS NOT NULL
+      AND copyright_notice_id IS NOT NULL
       AND trim(BOTH '<>' FROM ses_message_id) = ANY(${references})
     GROUP BY copyright_notice_id, trim(BOTH '<>' FROM ses_message_id)
     ORDER BY copyright_notice_id, "matchedReference"

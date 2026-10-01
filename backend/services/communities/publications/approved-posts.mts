@@ -111,8 +111,13 @@ export async function searchCommunityPosts(
     query.append(sql` AND posts.post_type = ANY(${options.post_types}::text[])`)
   }
   if (options?.text_search_query?.trim()) {
+    // view_posts does not project search_vector, so match against the post's own table row.
     query.append(
-      sql` AND posts.search_vector @@ websearch_to_tsquery('voucha_english', ${options.text_search_query.trim()})`,
+      sql` AND EXISTS (
+        SELECT 1 FROM posts text_match
+        WHERE text_match.id = posts.id
+          AND text_match.search_vector @@ websearch_to_tsquery('voucha_english', ${options.text_search_query.trim()})
+      )`,
     )
   }
   if (options?.universal_topic_ids?.length) {

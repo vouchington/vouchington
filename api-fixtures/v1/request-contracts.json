@@ -2596,6 +2596,79 @@
       ],
       "type": "object"
     },
+    "CopyrightAppealRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "cf_turnstile_response": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "target_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": ["reason", "target_ids"],
+      "type": "object"
+    },
+    "CopyrightCounterNoticeRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "cf_turnstile_response": {
+          "type": "string"
+        },
+        "consent_to_federal_jurisdiction": {
+          "const": true
+        },
+        "consent_to_service_of_process": {
+          "const": true
+        },
+        "electronic_signature": {
+          "type": "string"
+        },
+        "good_faith_misidentification_under_penalty_of_perjury": {
+          "const": true
+        },
+        "name": {
+          "type": "string"
+        },
+        "target_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "telephone": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "address",
+        "consent_to_federal_jurisdiction",
+        "consent_to_service_of_process",
+        "electronic_signature",
+        "good_faith_misidentification_under_penalty_of_perjury",
+        "name",
+        "target_ids",
+        "telephone"
+      ],
+      "type": "object"
+    },
     "CopyrightEmailIntakeQueueResponse": {
       "additionalProperties": false,
       "properties": {
@@ -2846,6 +2919,84 @@
         "resolved_at",
         "resolved_by_id"
       ],
+      "type": "object"
+    },
+    "CopyrightNoticeFormRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "accuracy_authority_under_penalty_of_perjury": {
+          "const": true
+        },
+        "cf_turnstile_response": {
+          "type": "string"
+        },
+        "claimant_contact": {
+          "type": "string"
+        },
+        "claimant_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "claimant_email": {
+          "type": "string"
+        },
+        "electronic_signature": {
+          "type": "string"
+        },
+        "good_faith_belief": {
+          "const": true
+        },
+        "jurisdiction": {
+          "const": "us_dmca"
+        },
+        "targets": {
+          "items": {
+            "$ref": "#/components/schemas/CopyrightNoticeTargetRequest"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": false
+        },
+        "work_description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "accuracy_authority_under_penalty_of_perjury",
+        "claimant_contact",
+        "claimant_display_name",
+        "claimant_email",
+        "electronic_signature",
+        "good_faith_belief",
+        "jurisdiction",
+        "targets",
+        "work_description"
+      ],
+      "type": "object"
+    },
+    "CopyrightNoticeTargetRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "image_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "post_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "target_url": {
+          "type": "string"
+        }
+      },
+      "required": ["image_id", "post_id", "target_url"],
       "type": "object"
     },
     "CopyrightPublicNotice": {
@@ -3211,6 +3362,13 @@
         "review_path": {
           "enum": ["initial", "matched_thread", "unresolved_thread"],
           "type": "string"
+        },
+        "waiting_reason": {
+          "enum": ["awaiting_review", "reply_bounced", "reply_failed"],
+          "type": "string"
+        },
+        "waiting_since": {
+          "type": "string"
         }
       },
       "required": [
@@ -3219,7 +3377,9 @@
         "parse_status",
         "received_at",
         "recommendation_id",
-        "review_path"
+        "review_path",
+        "waiting_reason",
+        "waiting_since"
       ],
       "type": "object"
     },
@@ -30209,7 +30369,7 @@
     },
     "POST:/api/v1/copyright-notices": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightNoticeFormRequest"
       }
     },
     "POST:/api/v1/copyright-notices/:id/action-intents/:intentId/replays": {
@@ -30228,7 +30388,7 @@
     },
     "POST:/api/v1/copyright-notices/:id/appeals": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightAppealRequest"
       },
       "path": {
         "properties": {
@@ -30242,7 +30402,7 @@
     },
     "POST:/api/v1/copyright-notices/:id/counter-notices": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightCounterNoticeRequest"
       },
       "path": {
         "properties": {

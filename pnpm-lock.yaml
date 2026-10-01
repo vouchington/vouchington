@@ -77,8 +77,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2
       agent-blackboard:
-        specifier: ^0.6.0
-        version: 0.6.0(supports-color@10.2.2)(zod@4.6.5)
+        specifier: ^0.6.1
+        version: 0.6.1(supports-color@10.2.2)(zod@4.6.5)
       csv-parse:
         specifier: ^7.0.3
         version: 7.0.3
@@ -146,8 +146,8 @@ importers:
         specifier: ^1.63.0
         version: 1.63.0
       pr-shepherd:
-        specifier: ^0.55.2
-        version: 0.55.2(supports-color@10.2.2)
+        specifier: ^0.56.1
+        version: 0.56.1(supports-color@10.2.2)
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1(supports-color@10.2.2)
@@ -170,8 +170,8 @@ importers:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
-        specifier: ^0.26.0
-        version: 0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
+        specifier: ^0.27.0
+        version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -211,9 +211,6 @@ importers:
       '@modules/openrouter-utils':
         specifier: workspace:^
         version: link:../../modules/openrouter-utils
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
@@ -331,64 +328,6 @@ importers:
       undici:
         specifier: ^8.11.2
         version: 8.11.2
-
-  backend/agents/chat:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@agents/discovery-agent':
-        specifier: workspace:^
-        version: link:../discovery-agent
-      '@agents/profile-agent':
-        specifier: workspace:^
-        version: link:../profile-agent
-      '@agents/research-agent':
-        specifier: workspace:^
-        version: link:../research-agent
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
-      '@modules/sse-lifecycle':
-        specifier: workspace:^
-        version: link:../../modules/sse-lifecycle
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
-      '@services/agents':
-        specifier: workspace:^
-        version: link:../../services/agents
-      '@services/ai-usage':
-        specifier: workspace:^
-        version: link:../../services/ai-usage
-      '@services/conversations-messages':
-        specifier: workspace:^
-        version: link:../../services/conversations-messages
-      '@services/openai-agents':
-        specifier: workspace:^
-        version: link:../../services/openai-agents
-      '@services/openai-moderation':
-        specifier: workspace:^
-        version: link:../../services/openai-moderation
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-      undici:
-        specifier: ^8.11.2
-        version: 8.11.2
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/agents/classifier-runs:
     dependencies:
@@ -551,22 +490,6 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/agents/discovery-agent:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-    devDependencies:
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
-
   backend/agents/dispute-resolution:
     dependencies:
       '@agents/_shared':
@@ -672,22 +595,6 @@ importers:
         specifier: ^8.11.2
         version: 8.11.2
 
-  backend/agents/profile-agent:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-    devDependencies:
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
-
   backend/agents/report-judgement:
     dependencies:
       '@agents/_shared':
@@ -718,31 +625,6 @@ importers:
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
-
-  backend/agents/research-agent:
-    dependencies:
-      '@agents/_shared':
-        specifier: workspace:^
-        version: link:../_shared
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
-    devDependencies:
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
-      '@services/conversations-messages':
-        specifier: workspace:^
-        version: link:../../services/conversations-messages
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/agents/story-clustering:
     dependencies:
@@ -1500,14 +1382,14 @@ importers:
         version: 14.0.2
     devDependencies:
       '@aws-sdk/client-cloudfront':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-dynamodb':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@services/ap-post-likes':
         specifier: workspace:^
         version: link:../services/ap-post-likes
@@ -1613,8 +1495,8 @@ importers:
         specifier: npm:@typescript/typescript6@^6.0.2
         version: '@typescript/typescript6@6.0.2'
       vouchington-tooling:
-        specifier: ^0.26.0
-        version: 0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
+        specifier: ^0.27.0
+        version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
 
   backend/data-stores/valkey:
     dependencies:
@@ -2202,35 +2084,35 @@ importers:
   backend/modules/aws:
     dependencies:
       '@aws-sdk/client-bedrock':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-bedrock-runtime':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-cloudfront':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-cloudwatch':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-dynamodb':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-firehose':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-ses':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-sqs':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
@@ -3377,12 +3259,12 @@ importers:
       '@services/communities':
         specifier: workspace:^
         version: link:../services/communities
-      '@services/contribution-gating':
-        specifier: workspace:^
-        version: link:../services/contribution-gating
       '@services/conversations-messages':
         specifier: workspace:^
         version: link:../services/conversations-messages
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../services/copyright-notices
       '@services/crawls':
         specifier: workspace:^
         version: link:../services/crawls
@@ -3413,6 +3295,9 @@ importers:
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../services/jwt-session
+      '@services/media-delivery-safety':
+        specifier: workspace:^
+        version: link:../services/media-delivery-safety
       '@services/memberships':
         specifier: workspace:^
         version: link:../services/memberships
@@ -3503,6 +3388,9 @@ importers:
       '@vouchington/rss-parser':
         specifier: ^0.1.0
         version: 0.1.0
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
       uuid:
         specifier: ^14.0.2
         version: 14.0.2
@@ -3548,17 +3436,20 @@ importers:
   backend/services/account-data-requests:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
+      '@modules/token-secrets':
+        specifier: workspace:^
+        version: link:../../modules/token-secrets
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
@@ -3944,8 +3835,8 @@ importers:
   backend/services/articles:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -4089,8 +3980,8 @@ importers:
   backend/services/bedrock-embeddings:
     dependencies:
       '@aws-sdk/client-bedrock-runtime':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -4141,11 +4032,11 @@ importers:
   backend/services/bedrock-embeddings-batch:
     dependencies:
       '@aws-sdk/client-bedrock':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -4487,6 +4378,9 @@ importers:
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
+      '@services/entity-relations':
+        specifier: workspace:^
+        version: link:../entity-relations
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -4609,6 +4503,9 @@ importers:
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
+      '@services/search-params':
+        specifier: workspace:^
+        version: link:../search-params
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -4783,9 +4680,6 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
-      '@services/ai-usage':
-        specifier: workspace:^
-        version: link:../ai-usage
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -4793,8 +4687,8 @@ importers:
   backend/services/copyright-notices:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -5114,8 +5008,8 @@ importers:
   backend/services/crawls:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -6321,11 +6215,11 @@ importers:
   backend/services/images:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -6656,6 +6550,9 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1(ajv@8.20.0)
     devDependencies:
+      '@services/communities':
+        specifier: workspace:^
+        version: link:../communities
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -8160,9 +8057,6 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds
-      '@services/session-advisory-lock':
-        specifier: workspace:^
-        version: link:../session-advisory-lock
       '@services/tag-limits':
         specifier: workspace:^
         version: link:../tag-limits
@@ -8172,6 +8066,9 @@ importers:
       '@services/urls':
         specifier: workspace:^
         version: link:../urls
+      '@services/user-deletions':
+        specifier: workspace:^
+        version: link:../user-deletions
       '@services/user-rate-limits':
         specifier: workspace:^
         version: link:../user-rate-limits
@@ -9102,8 +8999,8 @@ importers:
   backend/services/sitemaps:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -10541,8 +10438,8 @@ importers:
   backend/test-helpers:
     dependencies:
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/analytics':
         specifier: workspace:^
         version: link:../data-stores/analytics
@@ -10658,8 +10555,8 @@ importers:
         specifier: ^14.0.2
         version: 14.0.2
       vouchington-tooling:
-        specifier: ^0.26.0
-        version: 0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
+        specifier: ^0.27.0
+        version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -10697,6 +10594,9 @@ importers:
       '@services/comments':
         specifier: workspace:^
         version: link:../services/comments
+      '@services/communities':
+        specifier: workspace:^
+        version: link:../services/communities
       '@services/data-points':
         specifier: workspace:^
         version: link:../services/data-points
@@ -10792,8 +10692,8 @@ importers:
   backend/worker-runtime:
     dependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../data-stores/graceful-shutdown
@@ -11212,8 +11112,8 @@ importers:
         version: link:../../services/bedrock-embeddings
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -12342,8 +12242,8 @@ importers:
         version: 1.5.0
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -12354,8 +12254,8 @@ importers:
   backend/workers/ses-inbound:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
@@ -12416,8 +12316,8 @@ importers:
         version: 1.5.0
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -12511,8 +12411,8 @@ importers:
         version: link:../../services/stripe
     devDependencies:
       '@aws-sdk/client-sqs':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -12718,6 +12618,9 @@ importers:
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
+      playwright:
+        specifier: ^1.63.0
+        version: 1.63.0
       rehype-stringify:
         specifier: ^10.0.1
         version: 10.0.1
@@ -12734,8 +12637,8 @@ importers:
         specifier: ^11.0.5
         version: 11.0.5
       vouchington-tooling:
-        specifier: ^0.26.0
-        version: 0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
+        specifier: ^0.27.0
+        version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -12863,8 +12766,8 @@ importers:
   lambdas/image-resize:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@fontsource/inter':
         specifier: ^5.3.0
         version: 5.3.0
@@ -12912,8 +12815,8 @@ importers:
   lambdas/shared:
     dependencies:
       '@aws-sdk/client-ssm':
-        specifier: ^3.1141.0
-        version: 3.1141.0
+        specifier: ^3.1142.0
+        version: 3.1142.0
       '@sentry/aws-serverless':
         specifier: ^11.0.0
         version: 11.0.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))
@@ -12952,8 +12855,8 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
       '@typescript-eslint/parser':
-        specifier: ^8.70.1
-        version: 8.70.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
+        specifier: ^8.71.0
+        version: 8.71.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
       '@vouchington/localization':
         specifier: ^0.2.0
         version: 0.2.0
@@ -12976,8 +12879,8 @@ importers:
         specifier: ^1.9.0
         version: 1.9.0
       vouchington-tooling:
-        specifier: ^0.26.0
-        version: 0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
+        specifier: ^0.27.0
+        version: 0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -13495,48 +13398,48 @@ packages:
     resolution: {integrity: sha512-x12Q17KYlJAd3nKf8LV5LV0vt8sh8/6YfQLGPtrGnQf/tW4jqxPGq5GPpuVitpQYM3eUR4XB7CbxZf751NMbLw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-bedrock-runtime@3.1141.0':
-    resolution: {integrity: sha512-AoA3qW7HcFDa2MoZu9hozh68mBYI5KyvhHxN8Cbi5UtSTDDfq0JXW2fXGg7UzVNKVPRyRq2lrOQRzKPB1UEDxQ==}
+  '@aws-sdk/client-bedrock-runtime@3.1142.0':
+    resolution: {integrity: sha512-b8ITozQBv7jeOAWZcxTfhzK/nXrVvvqOvfL7PePZtZm9AnOB5rEd/pIZZl0eBcRd56Nnd4zrtptvUhpN0336fA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-bedrock@3.1141.0':
-    resolution: {integrity: sha512-cZWUoWPzDxtn/V6rHkSyRo0xUfT1WhI68SqUaeriYYHfk3arX+c+fMkuhLB+wwFykaMlduM5Qe1Nhyiq1aWicw==}
+  '@aws-sdk/client-bedrock@3.1142.0':
+    resolution: {integrity: sha512-6pUhepBJO7N9xV9tMbKl1eC/15et+Y3Nq6o9sNkF75VMpwEeTPIVrtBOfmq/JbKhpIKqhxc8l75ByEtJVaufYw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-cloudfront@3.1141.0':
-    resolution: {integrity: sha512-OTjl/BYPxjzR78/NUT2looGwh+CSzT08F27FvUlfMgDNaWGMwTJaSBhz478D2rq5k3Bd6flFkZmLl3pCReRymw==}
+  '@aws-sdk/client-cloudfront@3.1142.0':
+    resolution: {integrity: sha512-wjTi3Ozl1Pa9cAN3CXraGua6KML68qIQIAOQfKuprLGcPyA9QUMxsucnhl8HpL3b9LThEBqlbnzomYfRGPV/ng==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-cloudwatch@3.1141.0':
-    resolution: {integrity: sha512-udD2i0AI4Tp6FnspqZdjex9EnIVi8b0fzhdwdl17RxxSlEMfnOC3oVOuBErKVQH4Hf5cOPGaR4QCd4YCjVDP6A==}
+  '@aws-sdk/client-cloudwatch@3.1142.0':
+    resolution: {integrity: sha512-JAJ4pT5i1VpoY+XTwvYJSaLiXp8369mNBuWCgoKvncphDCf/Gu3P3qQaEA3TUOn7goZSqL5q8/klxSgoOAMiCg==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-dynamodb@3.1141.0':
-    resolution: {integrity: sha512-R36EN5Ti01NtoJrgR5ryM+3msAmxob4s+xHKsJRbTwQUO5xQf1Hs8lKQ/QEuiQOG445UCwZbTjBUhekSmk1cyg==}
+  '@aws-sdk/client-dynamodb@3.1142.0':
+    resolution: {integrity: sha512-/p+qS8o18FMVlGQmA85zeUtG+vw1vN1TjfOoQzvD1VvZXWgicp2D771mlvuMdQ/QBVPcjwHbYD3e2TBefw6FSw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-firehose@3.1141.0':
-    resolution: {integrity: sha512-f65FL76vFBR02nt88loDYi6E+i4GO+OXqwyu1vDIQsoGhQu8QvP/jFvKOsg7f3xoKlK2I8DavjIDAf4A9ID5mQ==}
+  '@aws-sdk/client-firehose@3.1142.0':
+    resolution: {integrity: sha512-6guuJ4989BocJEyudUgK7nqVGnj/cK3VjjaRYo2AY0HHbcnwyFti4YHQP0tF+oVX25hBYO0sCMmI5NcoO7zsmA==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/client-s3@3.1121.0':
     resolution: {integrity: sha512-hBnoqaVBeWdkgXcJElMXA2yUZWkBCBntu2qmN+tfqmzC+j4LzJC3ox8qIgS2WdMS1cb8UwyBogUVrkRXybNm0A==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-s3@3.1141.0':
-    resolution: {integrity: sha512-uOVH37xGLenAdJkCPCin/JJG2PgWrFcSsDnQ9+C9Zq8N9Oalo5ol4xmn5fG28iWAlA/b/9boQZgHbMh+UsIhcg==}
+  '@aws-sdk/client-s3@3.1142.0':
+    resolution: {integrity: sha512-OC9AcGMFOsBc95YSPWH3O7DE6RUTy7jqeOpVvzO2Dv3rw3w4vQRK+YdLXIbO2yXfmx3N59Y55yAJdDRJFMQK3Q==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-ses@3.1141.0':
-    resolution: {integrity: sha512-qBedTSL6KISayoQvkNndjlHAGC3+S0ojmmDao8nWIkAEqO6LeeuduS9G7kqmpF0LXRyMvvISaR5JpgY+VHlf1A==}
+  '@aws-sdk/client-ses@3.1142.0':
+    resolution: {integrity: sha512-jDcUkAVsLjBTRBVNHR4OYPuv5nmYporoDbXG9MxWEjoxlhxwPK4gGT1pvIid2rdkhrhtXo+sSinQ1uBO3v7F3w==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-sqs@3.1141.0':
-    resolution: {integrity: sha512-97MRJvJi3H5BFXc673JvlNekbogdPPbaAFo4JH16wQcnrIEibsCAeMqk3A4rej0Ufv6p9SgQjbiCZHB7sUYZzA==}
+  '@aws-sdk/client-sqs@3.1142.0':
+    resolution: {integrity: sha512-NPuhwE5gd9I7DhK0TXxsakWwBBgzYxcB3XJ7ZopXunT2FaI5njCg/viydDsWwlZxhdsCCYZJbFpHHZqMDWksZQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-ssm@3.1141.0':
-    resolution: {integrity: sha512-zMGUGocXCtUYThen14djmU0c4BjHEpSeQIm/dhzZPN4Zr7ipogSTnpmZOlMv5zvOcmDwSlEGwCWbYjqZUhUEuw==}
+  '@aws-sdk/client-ssm@3.1142.0':
+    resolution: {integrity: sha512-Z1OHRppaMMVVqLsg2+fzCTw7WtEWcusvUh1RKnHfFWjazMC8VBqbJmewtGFXO14w5oq7ruaygWcFHRltCkZhLQ==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/core@3.978.1':
@@ -13611,8 +13514,8 @@ packages:
     resolution: {integrity: sha512-oRxtBcka/JGHGs9l9p9IVajGoTP8vTPmoAzdHGy4Qcy9P5vPnDf6nhIeM/COQNY9k/OahImTRaLkHftoXvfcmQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/s3-request-presigner@3.1141.0':
-    resolution: {integrity: sha512-HHHcP3gvLqeY9GPptpxLvA6VwDu+MWKCoaGGm0UtSUBh1hC7xJ9nNHoybgFfstC4lrj+k8oD6a1rWbGBWKYdag==}
+  '@aws-sdk/s3-request-presigner@3.1142.0':
+    resolution: {integrity: sha512-8SXEcjAo7l2b0WNwQcf7a40AxjcArcRkgSF7LqeMR9rxXrladWPuWGV+uv9FjxBIMbhxOPuY1Ny1h4yPNlXTNg==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/signature-v4-multi-region@3.996.47':
@@ -13623,8 +13526,8 @@ packages:
     resolution: {integrity: sha512-GpyAr0DD63YOEmYFM6Df+gJuIgC92MMTiBK4FTKfxii5MJ9ge20epR7LyroulscYlG89J+ZB2ivFDPjvfQhzdw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/token-providers@3.1141.0':
-    resolution: {integrity: sha512-ErZTCJEjGO9RLFxREEZ07HgDe2SunXkwdG+ZvMoIElVXDGG2krhGs+rEhbVjK6DlxzhQ6/YHMjoYmBxPnqWMsA==}
+  '@aws-sdk/token-providers@3.1142.0':
+    resolution: {integrity: sha512-jtJUURbLkqjeRQgP6al2cEe8M7nuywW9GqUx+nse+qMXwQvMdICCzXA2eGGdtNineNIq24GZXh22EsDkh/fQbA==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/types@3.974.6':
@@ -18138,25 +18041,25 @@ packages:
   '@types/yazl@3.3.1':
     resolution: {integrity: sha512-DIWfCKpsTp6hE5BDBHV3+fIL/bLUF9Bv13iDrWnMlmhQpH67buNvI291ZauQ1xcccxK3FqQ9honnXpq4R8NMuQ==}
 
-  '@typescript-eslint/parser@8.70.1':
-    resolution: {integrity: sha512-nO974WLllwhSFWQXnMLj6nDGa8f0khKEz1JzpPJ1u7Vm/4X1X6ZHajpoknU4bb41vJyMB0HHVyS2GqdhWfIXZw==}
+  '@typescript-eslint/parser@8.71.0':
+    resolution: {integrity: sha512-CG4nPk1f2zc8yw4pALqHsFYH2hdo+h1T9daSp21+Hnxi9LOE3GT9hAfTKJCBXVNM2GmYs1eMEP615wPoeOgk3A==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
       eslint: ^8.57.0 || ^9.0.0 || ^10.0.0
       typescript: '>=4.8.4 <6.1.0'
 
-  '@typescript-eslint/project-service@8.70.1':
-    resolution: {integrity: sha512-62xOgboPfwc3/IgPSX/W6oQR3ZbF04194FPGUGH8HL8iLFHbt/456/8Ph1wLNUgVF+s94FlHoipBsz+v7+LMnA==}
+  '@typescript-eslint/project-service@8.71.0':
+    resolution: {integrity: sha512-aABjw5rjBacYONVPaPiWOCjJu0vEF4a25iQuodlmQYL1trtLZ0X/y+2Vzl3BKI1odM4LnwLE1oUDXYp1wzx1TQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
       typescript: '>=4.8.4 <6.1.0'
 
-  '@typescript-eslint/scope-manager@8.70.1':
-    resolution: {integrity: sha512-Pa0EeSeAusQc1WbjQMac+YfenewYTBu0KjgYvkUKwhXaHUKbFog23Dm/rp0DX/6tyYOQ3Xl1a+3EcFNZynGHCw==}
+  '@typescript-eslint/scope-manager@8.71.0':
+    resolution: {integrity: sha512-gWF0BhUcnjZxSpLE8ngS/59n2SB0J3YqRxvX1+2aoRJk9hNtHSLOV+TcarFiOr5ipXm3yc1QrI4c9YZc8zyCxw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@typescript-eslint/tsconfig-utils@8.70.1':
-    resolution: {integrity: sha512-jumze1fPI+sDOaM2TWGQdn39PDxTr7TZGeuyLkAbNyx2vtMT3uRnVKChN0hfht5V2TugphJzF6bYXvBcE09qqg==}
+  '@typescript-eslint/tsconfig-utils@8.71.0':
+    resolution: {integrity: sha512-Z1UlWHADEK2Mlb9NpWfDeSjqoZ5EyrOv4R3eQpbkzqn/EwaIdOpXXupEA1+0ZIOSJSZZDBHG0BrQyN8zUG6Pwg==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
       typescript: '>=4.8.4 <6.1.0'
@@ -18165,14 +18068,18 @@ packages:
     resolution: {integrity: sha512-Dm1ypdhhrGCTyyehxElhgJ6kgk8MVCv5qXdoOVqPr1uqk42jX8KjrZqhROvdShczA8qrDoYiOWn1ykWlx2k81Q==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@typescript-eslint/typescript-estree@8.70.1':
-    resolution: {integrity: sha512-TU8PwyGN0PQJUcE96mw8eCQ44SmxGdQlJmlWakHaHQ15eIuuvye5yNtmh/i6oS88jzXVQB71xdNkbkB/fMwL0g==}
+  '@typescript-eslint/types@8.71.0':
+    resolution: {integrity: sha512-cJ4OoxPGWvFnBTnSZyaU+qJzGTqPTGJY+gDchj6cRyLRdmIdt4rcsE4twj+zPfrNiWuVi38wijHzShL++Z9atQ==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@typescript-eslint/typescript-estree@8.71.0':
+    resolution: {integrity: sha512-PEEF4G5sLLWAS5BpPrUvms4ySZkiBQQZM4z+3ReI46axK5Vqr/vXBQatJQIZZOYdGyPUAKTtsrWzpqKuU+3DEw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
       typescript: '>=4.8.4 <6.1.0'
 
-  '@typescript-eslint/visitor-keys@8.70.1':
-    resolution: {integrity: sha512-Vwj9lUIW5Xq3wQ9w6gv3R86g1hMK8f2zNOdGTAgeXUMMXFK78G9ruCjjqutHMNJc0+CH7LYRnHeUB9IT8wFmcw==}
+  '@typescript-eslint/visitor-keys@8.71.0':
+    resolution: {integrity: sha512-8eQ9R218XORK+KLosnf4bu/QsUXvUyVwTbArg7/0NMB1Pu87OJKvj4nhFblkYE8gQV73mW1dx1ptlPCkwRGa7A==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   '@typescript/typescript-aix-ppc64@7.0.2':
@@ -18643,18 +18550,13 @@ packages:
     resolution: {integrity: sha512-TQf59BsZnytt8GdJKLPfUZ54g/iaUL2OWDSFCCvMOhsHduDQxO8xC4PNeyIkVcA5KwL2phPSv0douC0fgWzmnA==}
     engines: {node: '>= 20'}
 
-  agent-blackboard@0.6.0:
-    resolution: {integrity: sha512-WhwgBJVLHjwS4K4T3FZGbAS90pXNy/tQqep86q1WrLlzMseGGfI90n0Jb3ukd7ovsAhkSXQ2rJhAB5Xsn1HSDw==}
+  agent-blackboard@0.6.1:
+    resolution: {integrity: sha512-3faF/qWRsUjeVQtnYkSV+MpAqFxbnXj3SPvZDuN0ucVI+IkbjjJ8VtY32lsj8U9u0pGUbwoNj/k5+L/mtPHJPw==}
     engines: {node: '>=24.0.0'}
     hasBin: true
 
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
-    peerDependencies:
-      ajv: ^8.0.0
-    peerDependenciesMeta:
-      ajv:
-        optional: true
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -21198,8 +21100,8 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-  pr-shepherd@0.55.2:
-    resolution: {integrity: sha512-zajjaDXanYE9cTplHp765U9lJUaeB4Pq1q/3kVyTQaeZB6QkyxWkdoj0cFtKHRuI4ezBV/reyhRGLuhMEnmjLQ==}
+  pr-shepherd@0.56.1:
+    resolution: {integrity: sha512-vTvylDmKYBXILTvxiVqbrCzuxumJQTHWKGVPPXQ59cGB5B5CNEoyDL5wG/dGeIyFMEm+oWAdrK8vqgXga4DfwA==}
     engines: {node: '>=22.18.0'}
     hasBin: true
 
@@ -22301,8 +22203,8 @@ packages:
       jsdom:
         optional: true
 
-  vouchington-tooling@0.26.0:
-    resolution: {integrity: sha512-jDlwSnm1/4Mr50DXdxZYa+qYLk2EK2tONj4UoBzMhsFYM/SJydWeBvLfjZxI9Z60G3ARuQKs4k/xnKSZpgroWw==}
+  vouchington-tooling@0.27.0:
+    resolution: {integrity: sha512-hTLI2+jaxjH5fBqZRdrGu9+yt230zKuqekowcyT1A+VW0r6Z7u5RaLr5eyo1GevhO8RYp0+kZvSyRiaZJnd3dQ==}
     engines: {node: '>=24.0.0'}
     hasBin: true
     peerDependencies:
@@ -22775,14 +22677,14 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-bedrock-runtime@3.1141.0':
+  '@aws-sdk/client-bedrock-runtime@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
       '@aws-sdk/eventstream-handler-node': 3.972.35
       '@aws-sdk/middleware-eventstream': 3.972.30
       '@aws-sdk/middleware-websocket': 3.972.54
-      '@aws-sdk/token-providers': 3.1141.0
+      '@aws-sdk/token-providers': 3.1142.0
       '@aws-sdk/types': 3.974.6
       '@smithy/core': 3.35.0
       '@smithy/fetch-http-handler': 5.8.0
@@ -22790,11 +22692,11 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-bedrock@3.1141.0':
+  '@aws-sdk/client-bedrock@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
-      '@aws-sdk/token-providers': 3.1141.0
+      '@aws-sdk/token-providers': 3.1142.0
       '@aws-sdk/types': 3.974.6
       '@smithy/core': 3.35.0
       '@smithy/fetch-http-handler': 5.8.0
@@ -22802,7 +22704,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-cloudfront@3.1141.0':
+  '@aws-sdk/client-cloudfront@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
@@ -22813,7 +22715,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-cloudwatch@3.1141.0':
+  '@aws-sdk/client-cloudwatch@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
@@ -22825,7 +22727,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-dynamodb@3.1141.0':
+  '@aws-sdk/client-dynamodb@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
@@ -22838,7 +22740,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-firehose@3.1141.0':
+  '@aws-sdk/client-firehose@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
@@ -22863,7 +22765,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-s3@3.1141.0':
+  '@aws-sdk/client-s3@3.1142.0':
     dependencies:
       '@aws-sdk/checksums': 3.1001.1
       '@aws-sdk/core': 3.978.1
@@ -22877,7 +22779,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-ses@3.1141.0':
+  '@aws-sdk/client-ses@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
@@ -22888,7 +22790,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-sqs@3.1141.0':
+  '@aws-sdk/client-sqs@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
@@ -22900,7 +22802,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-ssm@3.1141.0':
+  '@aws-sdk/client-ssm@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/credential-provider-node': 3.972.84
@@ -23077,7 +22979,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/s3-request-presigner@3.1141.0':
+  '@aws-sdk/s3-request-presigner@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/signature-v4-multi-region': 3.996.47
@@ -23102,7 +23004,7 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/token-providers@3.1141.0':
+  '@aws-sdk/token-providers@3.1142.0':
     dependencies:
       '@aws-sdk/core': 3.978.1
       '@aws-sdk/nested-clients': 3.997.46
@@ -27173,44 +27075,46 @@ snapshots:
     dependencies:
       '@types/node': 26.6.3
 
-  '@typescript-eslint/parser@8.70.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)':
+  '@typescript-eslint/parser@8.71.0(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)':
     dependencies:
-      '@typescript-eslint/scope-manager': 8.70.1
-      '@typescript-eslint/types': 8.70.1
-      '@typescript-eslint/typescript-estree': 8.70.1(@typescript/typescript6@6.0.2)(supports-color@10.2.2)
-      '@typescript-eslint/visitor-keys': 8.70.1
+      '@typescript-eslint/scope-manager': 8.71.0
+      '@typescript-eslint/types': 8.71.0
+      '@typescript-eslint/typescript-estree': 8.71.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)
+      '@typescript-eslint/visitor-keys': 8.71.0
       debug: 4.4.3(supports-color@10.2.2)
       eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
       typescript: '@typescript/typescript6@6.0.2'
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/project-service@8.70.1(@typescript/typescript6@6.0.2)(supports-color@10.2.2)':
+  '@typescript-eslint/project-service@8.71.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.70.1(@typescript/typescript6@6.0.2)
-      '@typescript-eslint/types': 8.70.1
+      '@typescript-eslint/tsconfig-utils': 8.71.0(@typescript/typescript6@6.0.2)
+      '@typescript-eslint/types': 8.71.0
       debug: 4.4.3(supports-color@10.2.2)
       typescript: '@typescript/typescript6@6.0.2'
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/scope-manager@8.70.1':
+  '@typescript-eslint/scope-manager@8.71.0':
     dependencies:
-      '@typescript-eslint/types': 8.70.1
-      '@typescript-eslint/visitor-keys': 8.70.1
+      '@typescript-eslint/types': 8.71.0
+      '@typescript-eslint/visitor-keys': 8.71.0
 
-  '@typescript-eslint/tsconfig-utils@8.70.1(@typescript/typescript6@6.0.2)':
+  '@typescript-eslint/tsconfig-utils@8.71.0(@typescript/typescript6@6.0.2)':
     dependencies:
       typescript: '@typescript/typescript6@6.0.2'
 
   '@typescript-eslint/types@8.70.1': {}
 
-  '@typescript-eslint/typescript-estree@8.70.1(@typescript/typescript6@6.0.2)(supports-color@10.2.2)':
+  '@typescript-eslint/types@8.71.0': {}
+
+  '@typescript-eslint/typescript-estree@8.71.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)':
     dependencies:
-      '@typescript-eslint/project-service': 8.70.1(@typescript/typescript6@6.0.2)(supports-color@10.2.2)
-      '@typescript-eslint/tsconfig-utils': 8.70.1(@typescript/typescript6@6.0.2)
-      '@typescript-eslint/types': 8.70.1
-      '@typescript-eslint/visitor-keys': 8.70.1
+      '@typescript-eslint/project-service': 8.71.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)
+      '@typescript-eslint/tsconfig-utils': 8.71.0(@typescript/typescript6@6.0.2)
+      '@typescript-eslint/types': 8.71.0
+      '@typescript-eslint/visitor-keys': 8.71.0
       debug: 4.4.3(supports-color@10.2.2)
       minimatch: 10.2.6
       semver: 7.8.5
@@ -27220,9 +27124,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/visitor-keys@8.70.1':
+  '@typescript-eslint/visitor-keys@8.71.0':
     dependencies:
-      '@typescript-eslint/types': 8.70.1
+      '@typescript-eslint/types': 8.71.0
       eslint-visitor-keys: 5.0.1
 
   '@typescript/typescript-aix-ppc64@7.0.2':
@@ -27497,8 +27401,8 @@ snapshots:
 
   '@vouchington/media@0.2.0':
     dependencies:
-      '@aws-sdk/client-s3': 3.1141.0
-      '@aws-sdk/s3-request-presigner': 3.1141.0
+      '@aws-sdk/client-s3': 3.1142.0
+      '@aws-sdk/s3-request-presigner': 3.1142.0
 
   '@vouchington/memberships@0.2.0': {}
 
@@ -27702,7 +27606,7 @@ snapshots:
 
   agent-base@9.0.0: {}
 
-  agent-blackboard@0.6.0(supports-color@10.2.2)(zod@4.6.5):
+  agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5):
     dependencies:
       '@modelcontextprotocol/sdk': 1.30.1(supports-color@10.2.2)(zod@4.6.5)
     transitivePeerDependencies:
@@ -27710,8 +27614,8 @@ snapshots:
       - supports-color
       - zod
 
-  ajv-formats@2.1.1(ajv@8.20.0):
-    optionalDependencies:
+  ajv-formats@2.1.1:
+    dependencies:
       ajv: 8.20.0
     optional: true
 
@@ -30487,7 +30391,7 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  pr-shepherd@0.55.2(supports-color@10.2.2):
+  pr-shepherd@0.56.1(supports-color@10.2.2):
     dependencies:
       '@modelcontextprotocol/sdk': 1.30.1(supports-color@10.2.2)(zod@4.6.5)
       picomatch: 4.0.7
@@ -30919,7 +30823,7 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
       ajv: 8.20.0
-      ajv-formats: 2.1.1(ajv@8.20.0)
+      ajv-formats: 2.1.1
       ajv-keywords: 5.1.0(ajv@8.20.0)
     optional: true
 
@@ -31717,7 +31621,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@0.26.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2):
+  vouchington-tooling@0.27.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)(vitest@5.0.2):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3

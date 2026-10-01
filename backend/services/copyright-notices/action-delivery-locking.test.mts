@@ -7,10 +7,7 @@ import {
   createTestRejectedCopyrightResponse,
   expireTestCopyrightEnforcementClaim,
 } from '@voucha/test-helpers/copyright-lease-fencing'
-import {
-  expireTestCopyrightDeliveryIntentClaim,
-  expireTestCopyrightEmailIntakeResponseClaim,
-} from '@voucha/test-helpers/data-stores/psql/copyright-delivery-claims'
+import { expireTestCopyrightDeliveryIntentClaim } from '@voucha/test-helpers/data-stores/psql/copyright-delivery-claims'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import {
@@ -23,9 +20,7 @@ import {
   createCopyrightDeliveryIntent,
   markCopyrightDeliveryIntentSent,
   markCopyrightDeliveryIntentFailed,
-  markCopyrightEmailIntakeResponseSent,
-  markCopyrightEmailIntakeResponseFailed,
-  prepareCopyrightEmailIntakeResponseDelivery,
+  prepareCopyrightEmailDelivery,
   processCopyrightEnforcementRequest,
 } from './index.mts'
 import { claimCopyrightActionIntent, failCopyrightActionIntent } from './action-delivery-state.mts'
@@ -80,48 +75,48 @@ describe('copyright queue lease fencing', () => {
     ).toBe(false)
   })
 
-  it('rejects the reclaimed intake response owner completion and failure', async () => {
-    const responseId = await createTestRejectedCopyrightResponse()
-    const old = await prepareCopyrightEmailIntakeResponseDelivery(responseId)
-    await expireTestCopyrightEmailIntakeResponseClaim(responseId, 1)
-    const current = await prepareCopyrightEmailIntakeResponseDelivery(responseId)
+  it('rejects the reclaimed intake reply owner completion and failure', async () => {
+    const intentId = await createTestRejectedCopyrightResponse()
+    const old = await prepareCopyrightEmailDelivery(intentId)
+    await expireTestCopyrightDeliveryIntentClaim(intentId, 1)
+    const current = await prepareCopyrightEmailDelivery(intentId)
     expect(current.leaseToken).not.toBe(old.leaseToken)
     expect(
-      await markCopyrightEmailIntakeResponseFailed({
-        responseId,
+      await markCopyrightDeliveryIntentFailed({
+        intentId,
         leaseToken: old.leaseToken,
         error: 'late',
       }),
     ).toBe(false)
     expect(
-      await markCopyrightEmailIntakeResponseSent({
-        responseId,
+      await markCopyrightDeliveryIntentSent({
+        intentId,
         leaseToken: old.leaseToken,
         sesMessageId: 'late',
       }),
     ).toBe(false)
     expect(
-      await markCopyrightEmailIntakeResponseSent({
-        responseId,
+      await markCopyrightDeliveryIntentSent({
+        intentId,
         leaseToken: current.leaseToken,
         sesMessageId: crypto.randomUUID(),
       }),
     ).toBe(true)
     expect(
-      await markCopyrightEmailIntakeResponseFailed({
-        responseId,
+      await markCopyrightDeliveryIntentFailed({
+        intentId,
         leaseToken: old.leaseToken,
         error: 'late',
       }),
     ).toBe(false)
   })
 
-  it('records an owned retry failure when intake response preparation cannot decrypt', async () => {
-    const responseId = await createTestUnreadableCopyrightResponse()
-    await expect(prepareCopyrightEmailIntakeResponseDelivery(responseId)).rejects.toThrow(
+  it('records an owned retry failure when intake reply preparation cannot decrypt', async () => {
+    const intentId = await createTestUnreadableCopyrightResponse()
+    await expect(prepareCopyrightEmailDelivery(intentId)).rejects.toThrow(
       'Invalid encrypted secret format',
     )
-    expect(await readTestCopyrightResponseFailure(responseId)).toEqual({
+    expect(await readTestCopyrightResponseFailure(intentId)).toEqual({
       state: 'pending',
       leaseToken: expect.any(String),
       claimedAt: null,
@@ -129,8 +124,8 @@ describe('copyright queue lease fencing', () => {
       nextAttemptAt: expect.any(Date),
       failure: 'Invalid encrypted secret format',
     })
-    await expect(prepareCopyrightEmailIntakeResponseDelivery(responseId)).rejects.toThrow(
-      'Copyright email intake response is not available to send',
+    await expect(prepareCopyrightEmailDelivery(intentId)).rejects.toThrow(
+      'Copyright delivery intent is not available to send',
     )
   })
 

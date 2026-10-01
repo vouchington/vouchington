@@ -36,6 +36,7 @@ API keys use a permission-based access control system. Each key has a `permissio
 | `rss:read`                           | Access RSS feed endpoints (`/rss/posts`, `/rss/news`) |
 | `topics:read`                        | Read topic and recommendation MCP tools               |
 | `posts:read`                         | Read post MCP tools                                   |
+| `communities:read`                   | Read public community MCP tools                       |
 | `cards:read/write`                   | Read or manage cards; write requires read             |
 | `entity-relations:read/write`        | Read or add relations; write requires read            |
 | `post-relations.owned-private:write` | Add relations or tags to owned private posts only     |

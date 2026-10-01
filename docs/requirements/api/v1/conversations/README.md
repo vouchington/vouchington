@@ -130,5 +130,4 @@ Soft-deletes a conversation. The conversation is hidden from list endpoints but 
 ## Related
 
 - Service: [../../services/conversations-messages/](../../../../overview/architecture/services/conversations-messages/README.md)
-- Chat agent: [../../agents/chat/README.md](../../../../overview/architecture/ai-agents/chat/README.md)
 - Parent: [../AGENTS.md](../../../../../backend/api/AGENTS.md)

@@ -1,6 +1,5 @@
 import { statSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 
 export function findRepoRoot(startDir: string, stopAt?: string): string | null {
   let dir = startDir
@@ -36,7 +35,7 @@ export function databaseNameFromConnectionString(connectionString: string): stri
 }
 
 function defaultModuleDir(): string {
-  return dirname(fileURLToPath(import.meta.url))
+  return import.meta.dirname
 }
 
 export function assertNotCrossWorktreeConnection(

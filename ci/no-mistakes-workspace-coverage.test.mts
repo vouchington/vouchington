@@ -12,14 +12,14 @@ type NoMistakesConfig = {
 }
 
 describe('package-json-workspace-coverage config', () => {
-  it('keeps packageRoots complete and unnamed strays visible', () => {
+  it('keeps packageRoots complete and requires every manifest to be named', () => {
     const config = parseYaml(
       readFileSync(`${repoRoot}/.no-mistakes.yml`, 'utf8'),
     ) as NoMistakesConfig
     const coverage = config.rules?.find(rule => rule.rule === 'package-json-workspace-coverage')
     const packageRoots = coverage?.options?.packageRoots
     expect(Array.isArray(packageRoots)).toBe(true)
-    expect(coverage?.options?.requireNamedPackage).not.toBe(true)
+    expect(coverage?.options?.requireNamedPackage).toBe(true)
 
     const roots = new Set(
       (packageRoots as string[]).map(root => root.replaceAll('\\', '/').replace(/^\.\//, '')),

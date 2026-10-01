@@ -277,6 +277,20 @@ test. Pass `{ enabled: false }` to keep that configuration but turn the switch o
 the switch alone closed intake. The helper does not mock AWS; add `installTestMediaDeliveryEdge()`
 when the test publishes delivery changes.
 
+## REST Usage Metering
+
+REST usage-quota suites share `@voucha/test-helpers/rest-usage-meter`.
+`registerRestUsageRoutes(base)` registers the read, 404, 500, IP-only, repeated-boundary, and 202
+write routes a suite calls, all under its own `base` so two suites on one app never collide. Call
+`useRestUsageMetering(analyticsPrefix)` inside a `describe`: route rate limiting is off under test,
+so it switches the kill switch on for each test, restores the config afterward, and starts a local
+analytics directory. `waitForUsageRows(userId, count)` and `waitForAnonymousUsageRows(count)` wait
+for the `api_usage` rows, which land just after the response closes, and `usageQuotaKeys()` lists
+every usage-quota Valkey key so a test can prove no IP, device, or session id reached one. Valkey
+and the analytics directory are shared across forks, so assert on a user's own bucket and rows;
+anonymous rows have no owner, so count them relative to a prior read. The row readers live in
+`@voucha/test-helpers/api-usage-analytics`.
+
 ## Surviving a Dirty Database
 
 The DB accumulates rows from every test run and is never cleaned. These patterns prevent flaky tests.
@@ -298,9 +312,13 @@ leaked GlideMQ workers. The catalog is intentionally finite, not a SQL-wide inte
 new global-head or sweep services require an explicit catalog and bound-scope review. See the
 [parallel-safety reference](../../reference-tests-parallel-safety-and-test-root-hygiene.md#catalogued-shared-db-scan-guard).
 Intentionally global cases run through `test-helpers/vitest-isolated-database-case.mts` against a
-fresh, disposable local database. The registered cases are the copyright media-replay HTTP route
-and the ActivityPub inbox expiry batch. Their real route/audit and lease-aware deletion assertions
-run without scanning or mutating another test's shared fixtures.
+fresh, disposable local database. The registry in `test-helpers/vitest-isolated-database-cases.mts`
+names each case's file and test. Their real assertions run without scanning or mutating another
+test's shared fixtures. Register a test's `fullName` in the form `suite > test`, the form Vitest
+matches `testNamePattern` against and reports; the registry type rejects any other separator. A
+child that exits 0 after skipping the test or running no test would otherwise pass silently, so the
+child config's reporter lists every collected test and the parent fails unless exactly one test
+with the registered name passed and none failed.
 `VITEST_ISOLATED_DATABASE_CASE` and `VITEST_ISOLATED_DATABASE_CHILD` are harness-owned, validated
 child markers, not settings for test authors to supply.
 
@@ -346,11 +364,16 @@ reconcile page function that returns a `CopyrightSweepIdPage`; wrap a page funct
 or `channel` as `options => searchPage({ ...options, now })`.
 
 Delivery claims compare their 15-minute lease with the database's `CURRENT_TIMESTAMP`, so a test
-cannot advance the clock past it. `expireTestCopyrightDeliveryIntentClaim(id, attempts)` and
-`expireTestCopyrightEmailIntakeResponseClaim(id, attempts)` from
-`@voucha/test-helpers/data-stores/psql/copyright-delivery-claims` age one owned claimed row's lease
-and set its attempt count, so a test can assert the sweep lists it and the next claim reclaims or
-fails it.
+cannot advance the clock past it. `expireTestCopyrightDeliveryIntentClaim(id, attempts)` from
+`@voucha/test-helpers/data-stores/psql/copyright-delivery-claims` ages one owned claimed row's lease
+and sets its attempt count, so a test can assert the sweep lists it and the next claim reclaims or
+fails it. It covers case deliveries and replies to declined email intakes alike, because both are
+rows of `copyright_notice_delivery_intents`.
+
+`declineTestCopyrightEmailIntake()` and `bounceTestCopyrightEmailIntakeReply(intentId)` from
+`@voucha/test-helpers/services/copyright-notices/declined-email-intake` create a parsed intake and
+decline it through the real service, and send then bounce its reply. They return the intake and
+intent ids that a test of the reply outbox needs.
 
 ### Embedding collisions
 
@@ -434,7 +457,8 @@ The staff email intake queue (`GET /api/v1/copyright-email-intakes/review-queue`
 keyset ordering, but its global query cannot prove fixture ownership from an `after` cursor alone.
 Its exact global pagination cases run against fresh disposable databases through
 `test-helpers/vitest-isolated-database-case.mts`; shared-DB calls to this cataloged operation are
-rejected by the test guard. For notification push intent recovery, pass the test's owned
+rejected by the test guard. The reply-failure listing runs in the isolated
+`copyright-staff-email-intake-reply-failures` case for the same reason. For notification push intent recovery, pass the test's owned
 `notificationIds` on every page, including pages with an `after` cursor. A cursor only advances
 ordering; it does not exclude another fixture's eligible row.
 

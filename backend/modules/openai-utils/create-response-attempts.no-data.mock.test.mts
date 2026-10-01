@@ -1,6 +1,6 @@
 import { APIError, APIUserAbortError } from 'openai'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { streamOpenAIResponse } from './create-response.mts'
+import { createOpenAIResponse } from './create-response.mts'
 import { runWithOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
 import {
   makeResponseStream,
@@ -9,8 +9,8 @@ import {
 } from '../../test-helpers/modules/openai-utils/responses.mts'
 
 type CreateMock = (
-  params: Parameters<typeof streamOpenAIResponse>[0],
-  options: Parameters<typeof streamOpenAIResponse>[1],
+  params: Parameters<typeof createOpenAIResponse>[0],
+  options: Parameters<typeof createOpenAIResponse>[1],
 ) => Promise<unknown>
 
 const openAIMocks = vi.hoisted(() => ({ create: vi.fn<CreateMock>() }))
@@ -34,9 +34,9 @@ describe('OpenAI response attempt accounting boundary', () => {
 
   it('uses the caller retry budget for free flex retries while forcing SDK retries to zero', async () => {
     const params = { model: 'gpt-4.1-mini', input: 'hello' } as Parameters<
-      typeof streamOpenAIResponse
+      typeof createOpenAIResponse
     >[0]
-    const options = { maxRetries: 1 } as Parameters<typeof streamOpenAIResponse>[1]
+    const options = { maxRetries: 1 } as Parameters<typeof createOpenAIResponse>[1]
     const flexUnavailable = new APIError(
       429,
       { code: 'resource_unavailable', message: 'Resource Unavailable' },
@@ -60,18 +60,16 @@ describe('OpenAI response attempt accounting boundary', () => {
     const result = runWithOpenAIResponseAttemptHooks(
       { beforeAttempt, onUnknownBilledAttempt: () => Promise.resolve() },
       async () => {
-        const generator = streamOpenAIResponse(params, options)
-        const first = generator.next()
+        const pending = createOpenAIResponse(params, options)
         await vi.runAllTimersAsync()
-        await first
-        return generator.next()
+        return pending
       },
     )
 
-    await expect(result).resolves.toMatchObject({ done: true })
+    await expect(result).resolves.toMatchObject({ status: 'completed' })
     expect(openAIMocks.create).toHaveBeenCalledTimes(2)
     expect(openAIMocks.create).toHaveBeenLastCalledWith(
-      { ...params, stream: true, background: false },
+      { ...params, stream: true, background: true },
       { maxRetries: 0 },
     )
     expect(beforeAttempt).toHaveBeenNthCalledWith(1, expect.objectContaining({ attempt: 1 }))
@@ -93,7 +91,7 @@ describe('OpenAI response attempt accounting boundary', () => {
     await expect(
       runWithOpenAIResponseAttemptHooks(
         { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
+        async () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
       ),
     ).rejects.toBe(error)
 
@@ -118,7 +116,7 @@ describe('OpenAI response attempt accounting boundary', () => {
 
     const result = runWithOpenAIResponseAttemptHooks(
       { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-      async () => streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
+      async () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
     )
     const resultRejection = result.catch((error: unknown) => error)
     await vi.runAllTimersAsync()
@@ -138,7 +136,7 @@ describe('OpenAI response attempt accounting boundary', () => {
     await expect(
       runWithOpenAIResponseAttemptHooks(
         { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
+        async () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
       ),
     ).rejects.toBe(error)
 
@@ -156,7 +154,7 @@ describe('OpenAI response attempt accounting boundary', () => {
     await expect(
       runWithOpenAIResponseAttemptHooks(
         { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
+        async () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
       ),
     ).rejects.toBe(error)
 
@@ -175,53 +173,14 @@ describe('OpenAI response attempt accounting boundary', () => {
       runWithOpenAIResponseAttemptHooks(
         { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
         async () =>
-          streamOpenAIResponse(
+          createOpenAIResponse(
             { model: 'gpt-4.1-mini', input: 'hello' },
             { signal: controller.signal },
-          ).next(),
+          ),
       ),
     ).rejects.toThrow('This operation was aborted')
 
     expect(openAIMocks.create).not.toHaveBeenCalled()
     expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
-  })
-
-  it('latches a foreground stream interruption without replaying already-yielded output', async () => {
-    const cause = new Error('socket closed')
-    const stream: AsyncIterable<ReturnType<typeof makeStreamEvent>> = {
-      async *[Symbol.asyncIterator]() {
-        yield makeStreamEvent({
-          type: 'response.output_text.delta',
-          content_index: 0,
-          delta: 'partial',
-          item_id: 'msg-test',
-          logprobs: [],
-          output_index: 0,
-          sequence_number: 1,
-        })
-        throw cause
-      },
-    }
-    openAIMocks.create.mockResolvedValueOnce(stream)
-    const onUnknownBilledAttempt = vi.fn<
-      (value: { requestStartedAt: Date; error: unknown }) => Promise<void>
-    >(() => Promise.resolve())
-
-    await runWithOpenAIResponseAttemptHooks(
-      { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-      async () => {
-        const generator = streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' })
-        await expect(generator.next()).resolves.toEqual({
-          done: false,
-          value: { delta: 'partial' },
-        })
-        await expect(generator.next()).rejects.toMatchObject({ cause })
-      },
-    )
-
-    expect(openAIMocks.create).toHaveBeenCalledTimes(1)
-    expect(onUnknownBilledAttempt).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ error: expect.objectContaining({ cause }) }),
-    )
   })
 })

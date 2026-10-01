@@ -18,13 +18,13 @@ examples:
     file: 'backend/modules/other/handler.mts'
   - code: 'openai.responses.retrieve(responseId)'
     isValid: false
-    file: 'backend/agents/chat/run.mts'
+    file: 'backend/agents/_shared/run-tool-loop.mts'
   - code: 'cancelOpenAIResponse(responseId)'
     isValid: true
-    file: 'backend/agents/chat/run.mts'
+    file: 'backend/agents/_shared/run-tool-loop.mts'
   - code: 'retrieveOpenAIResponse(responseId)'
     isValid: true
-    file: 'backend/agents/chat/run.mts'
+    file: 'backend/agents/_shared/run-tool-loop.mts'
   - code: 'openai.responses.cancel(responseId)'
     isValid: true
     file: 'backend/modules/openai-utils/background-response-teardown.mts'

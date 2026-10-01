@@ -7,7 +7,6 @@ import {
   createTestUser,
   createTestUserWithAge,
   getPostHashtagSourcesForTest,
-  getTestPostCategoryFinalization,
   getTestPostgresBackendProcessId,
   getTopicAliasIdForTest,
   insertTestPost,
@@ -74,7 +73,7 @@ describe('addPostHashtag', () => {
     )
   })
 
-  it('reuses an existing canonical alias and finalizes before delivering the update event', async () => {
+  it('reuses an existing canonical alias and applies its vote before returning', async () => {
     const suffix = createRandomString(8).toLowerCase()
     const tag = `existing-${suffix}`
     const alias = await createUnlinkedTopicAlias(`#${tag}`)
@@ -82,7 +81,6 @@ describe('addPostHashtag', () => {
     const updated = onceEntityListenerCompleted('processPostUpdated', post.id)
 
     const first = await addPostHashtag(creator, post.id, `#${tag}`, firstParty)
-    expect(await getTestPostCategoryFinalization(post.id)).toBeUndefined()
     expect((await getPostByAny(post.id, { readOnly: false }))?.post_hashtags).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: alias.id, key: tag })]),
     )

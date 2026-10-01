@@ -25,6 +25,7 @@
     "@modules/scopes": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/comments": "workspace:^",
+    "@services/communities": "workspace:^",
     "@services/data-points": "workspace:^",
     "@services/entity-fetch": "workspace:^",
     "@services/entity-relation-actions": "workspace:^",
