@@ -24,10 +24,12 @@ const validReply: ReplyRow = {
 export async function createCopyrightEmailIntakeRow(): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createCopyrightEmailIntakeRow */
     INSERT INTO copyright_notice_email_intakes (
-      ses_message_id, received_at, raw_storage_key, raw_sha256, raw_mime_type, raw_byte_size
+      ses_message_id, received_at, raw_storage_key, raw_sha256, raw_mime_type, raw_byte_size,
+      spf_verdict, dkim_verdict, dmarc_verdict, spam_verdict, virus_verdict
     ) VALUES (
       ${`ses-${randomUUID()}`}, CURRENT_TIMESTAMP, ${`email/${randomUUID()}.eml`},
-      ${Buffer.alloc(32, 1)}, 'message/rfc822', 1
+      ${Buffer.alloc(32, 1)}, 'message/rfc822', 1,
+      'pass', 'pass', 'pass', 'pass', 'pass'
     ) RETURNING id`)
   return rows[0]!.id
 }
