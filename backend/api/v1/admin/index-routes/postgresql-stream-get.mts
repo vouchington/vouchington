@@ -24,6 +24,7 @@ async function loadPostgresqlInitialValue(): Promise<unknown> {
     return await getMigrationStatus()
   } catch (err) /* v8 ignore next 2 -- exercising recovery requires a forbidden internal service failure mock */ {
     onError(err instanceof Error ? err : new Error(String(err)))
+    return undefined
   }
 }
 
