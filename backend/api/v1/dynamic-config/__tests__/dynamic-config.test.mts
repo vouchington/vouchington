@@ -35,7 +35,7 @@ describe('PATCH /api/v1/dynamic-config/namespaces/:namespace audit failure', () 
     dynamicConfigRegistry.push(entry)
     try {
       await config.waitForInitialization()
-      await config.setFields({ enabled: false })
+      expect(config.getFields()).toEqual({ enabled: false })
       const beforeCount = await countDynamicConfigAuditRows(namespace)
       const { result: response, error } = await withPostgresPoolQueryFailureForTest(
         '/* recordDynamicConfigChange */',
