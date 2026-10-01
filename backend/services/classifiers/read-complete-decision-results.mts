@@ -2,6 +2,7 @@ import type { QueryExecutor } from '@data-stores/psql'
 import type { ClassifierCandidateKind } from '@voucha/types'
 import sql from 'sql-template-strings'
 import type {
+  ClassifierDecisionInputResult,
   ClassifierDecisionScope,
   PersistedClassifierDecision,
   PersistedClassifierDecisionResult,
@@ -60,18 +61,26 @@ async function readStoryResults(
   query: QueryExecutor,
   batchId: string,
 ): Promise<PersistedClassifierDecision['results']> {
-  const { rows } = await query<ResultRow & { entity_id: string }>(sql`
+  const { rows } = await query<
+    ResultRow & { story_id: string | null; rss_feed_item_id: string | null }
+  >(sql`
     /* readCompleteStoryClassifierDecisionResults */
     SELECT id, batch_id, decision_call_id, classifier_id, candidate_id, threshold_id,
       prompt_version_id, probability::float8 AS probability,
       effective_lower_threshold::float8 AS effective_lower_threshold,
       effective_upper_threshold::float8 AS effective_upper_threshold, raw_response,
-      scope_category, scope_community_id, story_id AS entity_id
+      scope_category, scope_community_id, story_id, rss_feed_item_id
     FROM story_classifier_results
     WHERE batch_id = ${batchId}
-    ORDER BY story_id
+    ORDER BY story_id NULLS LAST, rss_feed_item_id
   `)
-  return rows.map(row => toPersistedResult(row, 'story'))
+  return rows.map(row => {
+    if (row.story_id) return toPersistedResult({ ...row, entity_id: row.story_id }, 'story')
+    return toPersistedResult(
+      { ...row, entity_id: row.rss_feed_item_id ?? undefined },
+      'rss_feed_item',
+    )
+  })
 }
 
 async function readCommunityPromptResults(
@@ -94,7 +103,7 @@ async function readCommunityPromptResults(
 
 function toPersistedResult(
   row: ResultRow & { entity_id?: string },
-  candidateKind: ClassifierCandidateKind,
+  candidateKind: ClassifierDecisionInputResult['candidateKind'],
 ): PersistedClassifierDecisionResult {
   const entityId = row.entity_id
   if (!entityId) throw new Error('Classifier result did not return its concrete candidate entity')
@@ -119,6 +128,11 @@ function toPersistedResult(
       return { ...shared, candidateKind, topicId: entityId }
     case 'story':
       return { ...shared, candidateKind, storyId: entityId }
+    case 'rss_feed_item': {
+      if (row.candidate_id !== null)
+        throw new Error('Classifier RSS item result cannot carry a stored candidate')
+      return { ...shared, candidateKind, storedCandidateId: null, rssFeedItemId: entityId }
+    }
     case 'community_prompt':
       return {
         ...shared,

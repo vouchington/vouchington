@@ -25,24 +25,38 @@ export function remoteCandidateKind<C>(lease: ClassifierRunLease<C>): RemotePlan
 
 /**
  * A run that captures its own candidates and has none left asks no question. The captured rows
- * cascade with their topic, so this means every topic the receipt captured has since been deleted:
- * there is nothing to ask and nothing to apply, so no provider call and no decision are needed.
+ * cascade with their topic, story or item, so this means every candidate the receipt captured has
+ * since been deleted: there is nothing to ask and nothing to apply, so no provider call and no
+ * decision are needed.
  */
 export function hasNoCapturedCandidates<C>(lease: ClassifierRunLease<C>): boolean {
-  return capturesCandidates(lease.resolved.remote) && lease.capturedTopicIds.length === 0
+  const remote = lease.resolved.remote
+  if (remote?.candidateKind === 'story') return lease.capturedStoryCandidates.length === 0
+  return capturesCandidates(remote) && lease.capturedTopicIds.length === 0
 }
 
 type ExpectedCandidate = { thresholdId: string | null; lower: number; upper: number } | null
 
 /**
  * The exact candidates a run may ask about, keyed by kind, entity and stored candidate. Pinned
- * topics carry the thresholds the configuration froze. Captured topics and community prompts carry
- * none: they have no stored candidate and are judged by the thresholds the decision recorded.
+ * topics carry the thresholds the configuration froze. Captured topics, stories, standalone items
+ * and community prompts carry none: they have no stored candidate and are judged by the thresholds
+ * the decision itself recorded.
  */
 function expectedCandidates<C>(lease: ClassifierRunLease<C>): Map<string, ExpectedCandidate> {
   const remote = remotePlan(lease)
   if (remote.candidateKind === 'community_prompt') {
     return new Map(remote.promptIds.map(promptId => [`community_prompt:${promptId}`, null]))
+  }
+  if (remote.candidateKind === 'story') {
+    return new Map(
+      lease.capturedStoryCandidates.map(candidate => [
+        candidate.kind === 'story'
+          ? `story:${candidate.storyId}`
+          : `rss_feed_item:${candidate.rssFeedItemId}`,
+        null,
+      ]),
+    )
   }
   if (remote.capturedCandidates) {
     return new Map(lease.capturedTopicIds.map(topicId => [`topic:${topicId}:`, null]))
@@ -63,6 +77,8 @@ function resultKey(
       return `topic:${result.topicId}:${result.storedCandidateId ?? ''}`
     case 'story':
       return `story:${result.storyId}`
+    case 'rss_feed_item':
+      return `rss_feed_item:${result.rssFeedItemId}`
     case 'community_prompt':
       return `community_prompt:${result.communityPromptId}`
   }

@@ -24,6 +24,7 @@ import assert from 'http-assert'
 import { chunkArray, RSS_FEED_ITEM_SQL_BATCH_SIZE } from './processing-limits.mts'
 import { requestRssFeedItemClassifierRuns } from '@services/classifier-runs'
 import { recordPostPublicationChange } from '@services/post-publication'
+import { STORY_CLUSTERING_CLASSIFIER_SLUG } from '@voucha/types/entities/story-clustering-classifier'
 import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
 import { buildRssFeedItemSourceInputs } from './upsert-sources.mts'
 import {
@@ -117,9 +118,12 @@ export async function upsertRssFeedItems(
     // eslint-disable-next-line no-await-in-loop -- sequential content chunks retain the transaction's canonical key order.
     rows.push(...(await upsertRssFeedItemContent(txQuery, identityRows, chunk)))
   }
-  // The durable request is what the classifier sweep recovers from, so tagging never depends on a
-  // dispatcher enqueue or on the tagging classifier's configuration resolving here.
-  await requestRssFeedItemClassifierRuns(txQuery, rssFeedItemIdsOf(rows), [TAGGING_CLASSIFIER_SLUG])
+  // The durable request is what the classifier sweep recovers from, so tagging and story clustering
+  // never depend on a dispatcher enqueue or on a classifier's configuration resolving here.
+  await requestRssFeedItemClassifierRuns(txQuery, rssFeedItemIdsOf(rows), [
+    TAGGING_CLASSIFIER_SLUG,
+    STORY_CLUSTERING_CLASSIFIER_SLUG,
+  ])
   const changedSourceRows = buildRssFeedItemSourceInputs(rows, feedItemsByGuid)
   // ast-grep-ignore: no-three-sequential-awaits -- source rows, projection restart, and category snapshots share one transaction.
   const insertedSourceRows = await upsertRssFeedItemSources(txQuery, rssFeedId, [

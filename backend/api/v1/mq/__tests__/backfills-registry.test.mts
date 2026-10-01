@@ -40,13 +40,12 @@ describe('BACKFILL_REGISTRY', () => {
     )
     if (!entry) throw new Error('Embedding reconciliation backfill missing')
     const enqueued = await entry.trigger()
-    if (!Array.isArray(enqueued)) throw new Error('Expected all five root enqueues')
+    if (!Array.isArray(enqueued)) throw new Error('Expected all four root enqueues')
     const expected = [
       { name: 'reconcile_existing', data: { entityType: 'topics' } },
       { name: 'reconcile_existing', data: { entityType: 'posts' } },
       { name: 'reconcile_existing', data: { entityType: 'rss_feed_items' } },
       { name: 'post_trigger_recovery', data: {} },
-      { name: 'rss_story_trigger_recovery', data: {} },
     ]
     expect(enqueued).toHaveLength(expected.length)
     expect(

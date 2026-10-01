@@ -9,6 +9,7 @@ import {
   AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME,
   MODERATION_SYSTEM_USERNAME,
   RSS_FEED_AUTO_UPDATER_USERNAME,
+  STORY_CLUSTERING_CLASSIFIER_SYSTEM_USERNAME,
 } from './constants.mts'
 
 type SystemUserRow = {
@@ -150,5 +151,12 @@ export async function getModerationSystemUserId(): Promise<string> {
 export async function getAutotaggerClassifierSystemUserId(): Promise<string> {
   const user = await getSystemUserByUsername(AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME)
   if (!user) throw new Error(`System user ${AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME} not found`)
+  return user.id
+}
+
+/** The shared actor recorded on the story-clustering classifier's run receipts. */
+export async function getStoryClusteringClassifierSystemUserId(): Promise<string> {
+  const user = await getSystemUserByUsername(STORY_CLUSTERING_CLASSIFIER_SYSTEM_USERNAME)
+  if (!user) throw new Error(`System user ${STORY_CLUSTERING_CLASSIFIER_SYSTEM_USERNAME} not found`)
   return user.id
 }

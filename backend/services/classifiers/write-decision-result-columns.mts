@@ -1,6 +1,9 @@
+import type { ClassifierDecisionInputResult } from './types.mts'
+
 export type PersistedInputRow = {
   candidateId: string | null
   decisionCallId: string | undefined
+  entityKind: ClassifierDecisionInputResult['candidateKind']
   entityId: string
   probability: number
   rawResponse: string

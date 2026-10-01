@@ -109,7 +109,7 @@ describe('bedrock embeddings single worker', () => {
     ).resolves.toBeNull()
   })
 
-  it('enqueues story clustering after processing an RSS feed item with a current embedding', async () => {
+  it('dispatches the story-clustering classifier run after processing an RSS feed item with a current embedding', async () => {
     const rssFeed = await createTestRssFeed({})
     const urlId = await createTestUrlWithHostname()
     const itemData = {
@@ -141,8 +141,10 @@ describe('bedrock embeddings single worker', () => {
     expect(
       waiting.some(
         job =>
-          job.name === 'story-clustering' &&
-          (job.data as { rss_feed_item_id?: string }).rss_feed_item_id === rssFeedItemId,
+          job.name === 'classifier-run-dispatcher' &&
+          (job.data as { classifier?: string; rssFeedItemId?: string }).classifier ===
+            'story-clustering-classifier' &&
+          (job.data as { rssFeedItemId?: string }).rssFeedItemId === rssFeedItemId,
       ),
     ).toBe(true)
   })

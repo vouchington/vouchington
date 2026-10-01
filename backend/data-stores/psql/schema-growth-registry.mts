@@ -76,7 +76,7 @@ const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
   ['agent_moderations', defaultRange('post_id')],
   ['classifier_decision_batch_candidates', defaultRange('batch_id')],
   ['topic_classifier_results', defaultRange('topic_id')],
-  ['story_classifier_results', defaultRange('story_id')],
+  ['story_classifier_results', defaultRange('batch_id')],
   ['community_prompt_classifier_results', defaultRange('batch_id')],
   ['rss_feed_crawls', monthlyRange('id')],
   ['post_publication_projection_receipts', defaultRange('post_identity_id')],

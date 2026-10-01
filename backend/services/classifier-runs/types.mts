@@ -44,7 +44,18 @@ export type CommunityPromptRemotePlan = RemotePlanBase & {
   promptIds: readonly string[]
 }
 
-export type RemotePlan = TopicRemotePlan | CommunityPromptRemotePlan
+/** One story-clustering candidate: an existing story, or a standalone RSS item. */
+export type StoryRunCandidate =
+  | { kind: 'story'; storyId: string }
+  | { kind: 'rss_feed_item'; rssFeedItemId: string }
+
+/**
+ * Story-clustering candidates, always captured when the receipt is reserved. They have no stored
+ * candidate or threshold revision: every result carries the prompt version's default thresholds.
+ */
+export type StoryRemotePlan = RemotePlanBase & { candidateKind: 'story' }
+
+export type RemotePlan = TopicRemotePlan | CommunityPromptRemotePlan | StoryRemotePlan
 
 /** The replay snapshot of one classifier's configuration for a subject, produced by its adapter. */
 export type ResolvedClassifierRun<C> = {
@@ -75,6 +86,8 @@ export type ClassifierRunLease<C> = {
   decisionBatchId: string | null
   /** The candidate topics the run captured at reservation, in order; empty for pinned candidates. */
   capturedTopicIds: readonly string[]
+  /** The story candidates the run captured at reservation, in order; empty for a topic run. */
+  capturedStoryCandidates: readonly StoryRunCandidate[]
 }
 
 /**
@@ -106,6 +119,12 @@ export type ClassifierRunAdapter<C, L = never, E = void> = {
     subject: ClassifierRunSubject,
     current: CurrentClassifierRunInput,
   ): Promise<readonly string[] | null>
+  /** The story-clustering counterpart of `captureCandidates`: stories and standalone items. */
+  captureStoryCandidates?(
+    query: OwnedTransaction,
+    subject: ClassifierRunSubject,
+    current: CurrentClassifierRunInput,
+  ): Promise<readonly StoryRunCandidate[] | null>
   /** Reservation-time prerequisite (for example an embedding); false leaves the request unsettled. */
   ready?(query: OwnedTransaction, subject: ClassifierRunSubject): Promise<boolean>
   /** SQL over `request` (classifier_run_requests) selecting only requests the sweep may dispatch. */

@@ -23,7 +23,6 @@
   },
   "scripts": {},
   "dependencies": {
-    "@agents/story-clustering": "workspace:^",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@modules/feed-query-builders": "workspace:^",
@@ -36,6 +35,8 @@
     "@queues/notifications": "workspace:^",
     "@queues/story-post-related-url-projections": "workspace:^",
     "@services/bookmarks": "workspace:^",
+    "@services/classifier-runs": "workspace:^",
+    "@services/classifiers": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/entity-fetch": "workspace:^",

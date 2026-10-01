@@ -33,7 +33,7 @@
     "backend/services/rss-feeds/fetch-redirect.mts",
     "backend/services/rss-feed-items/upsert.mts",
     "backend/services/stories/assign.mts",
-    "backend/services/stories/cluster.mts",
+    "backend/services/stories/clustering/membership.mts",
     "backend/services/stories/story-post-create.mts",
     "backend/services/stories/story-post-related-url-projection-reconcile.mts",
     "backend/services/stories/story-post-related-url-projection-relations.mts",
@@ -184,10 +184,6 @@
     {
       "path": "backend/services/stories/create.mts",
       "reason": "new story has no story-post projection until the separately captured story-post writer runs"
-    },
-    {
-      "path": "backend/services/stories/embedding-trigger.mts",
-      "reason": "records exact embedding-input story-clustering queue acceptance only; it does not change story assignment or publication eligibility"
     },
     {
       "path": "backend/services/topic-recommendations/create-topic-recommendation.mts",

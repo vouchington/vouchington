@@ -30,11 +30,6 @@ export type ReconcileClassifierRunsJobData = {
   after?: string | null
 }
 
-export type StoryClusteringJobData = {
-  rss_feed_item_id: string
-  embedding_retries?: number
-}
-
 export type StoryPostJobData = {
   post_id: string
   /** When true, re-summarize even if ai_summary_markdown is already set (used by story refresh). */
@@ -94,7 +89,6 @@ export type AIAgentJobData = (
   | CopyrightEmailIntakeJobData
   | CopyrightFormScreeningJobData
   | CopyrightAppealRecommendationJobData
-  | StoryClusteringJobData
   | StoryPostJobData
   | BackfillReportJudgementsJobData
   | ReconcileClassifierRunsJobData

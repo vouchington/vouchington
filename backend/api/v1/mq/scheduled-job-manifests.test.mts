@@ -31,7 +31,6 @@ const EXPECTED_SCHEDULED_JOBS = [
   'bedrock-embeddings-batch/reconcile_existing_posts',
   'bedrock-embeddings-batch/reconcile_existing_rss_feed_items',
   'bedrock-embeddings-batch/post_trigger_recovery',
-  'bedrock-embeddings-batch/rss_story_trigger_recovery',
   'bloom-filters/backfillEntityCacheBloomFilter_communities',
   'bloom-filters/backfillEntityCacheBloomFilter_posts',
   'bloom-filters/backfillEntityCacheBloomFilter_rss_feed_items',

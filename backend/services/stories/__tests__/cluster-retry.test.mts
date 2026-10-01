@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { clusterRssFeedItem } from '../cluster.mts'
+import { replayClusteredStory } from '../cluster-retry.mts'
+import { completeStoryClusteringRun } from '../clustering/completion.mts'
 import { createStoryPost } from '../story-posts.mts'
 import type { StoryPostRefreshResult } from '../refresh-story-post.mts'
 import {
@@ -54,9 +55,9 @@ describe('story clustering retry', () => {
     await upsertSystemAdministrator('story-teller')
   })
 
-  it('replays post-commit completion when a committed assignment is retried', async () => {
+  it('replays post-commit completion when a story refresh is retried', async () => {
     const story = await insertTestStory()
-    const itemId = await makeAssignedItem(story.id)
+    await makeAssignedItem(story.id)
     let refreshAttempts = 0
     let completionAttempts = 0
     const refreshStoryPostForStory = async () => {
@@ -73,16 +74,16 @@ describe('story clustering retry', () => {
     }
 
     await expect(
-      clusterRssFeedItem(itemId, { refreshStoryPostForStory, completeClusteredStory }),
+      replayClusteredStory(story.id, refreshStoryPostForStory, completeClusteredStory),
     ).rejects.toThrow('post-commit effect failed')
     await expect(
-      clusterRssFeedItem(itemId, { refreshStoryPostForStory, completeClusteredStory }),
-    ).resolves.toEqual({ storyId: story.id, created: false })
+      replayClusteredStory(story.id, refreshStoryPostForStory, completeClusteredStory),
+    ).resolves.toBeUndefined()
     expect(refreshAttempts).toBe(2)
     expect(completionAttempts).toBe(2)
   })
 
-  it('captures prior and current topics when an existing assignment is replayed', async () => {
+  it('captures prior and current topics when a completed run is replayed after commit', async () => {
     const user = await createTestUserDirect()
     const story = await insertTestStory()
     const priorItemId = await makeAssignedItem(story.id)
@@ -104,10 +105,9 @@ describe('story clustering retry', () => {
       setTestItemStoryId(priorItemId, null),
       addCategoryToRssFeedItem(currentItemId, currentTopic.id),
     ])
-    await expect(clusterRssFeedItem(currentItemId)).resolves.toEqual({
-      storyId: story.id,
-      created: false,
-    })
+    await expect(
+      completeStoryClusteringRun({ postId: null, rssFeedItemId: currentItemId }),
+    ).resolves.toBeUndefined()
 
     const topicIds = await getPostCategoryTopicIds(post.id)
     expect(topicIds).toContain(currentTopic.id)

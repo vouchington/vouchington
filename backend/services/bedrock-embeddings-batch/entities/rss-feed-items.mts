@@ -14,7 +14,7 @@ import {
   streamPendingEntities,
   type PendingEntity,
 } from './shared.mts'
-import { triggerStoryClusteringForCurrentEmbeddings } from '@services/stories/embedding-trigger'
+import { dispatchStoryClusteringForEmbeddedItems } from '@services/stories/clustering/dispatch'
 
 type PendingRssFeedItem = PendingEntity
 
@@ -22,7 +22,7 @@ export async function copyExistingRssFeedItemEmbeddings(
   options: EmbeddingReconciliationOptions = {},
 ): Promise<EmbeddingReconciliationPage> {
   const page = await copyExistingEmbeddings('rss_feed_items', options)
-  await triggerStoryClusteringForCurrentEmbeddings(page.updatedIds)
+  await dispatchStoryClusteringForEmbeddedItems(page.updatedIds)
   return page
 }
 
@@ -51,5 +51,5 @@ export async function* streamPendingRssFeedItems(): AsyncGenerator<
 
 export async function applyRssFeedItemBatchUpdates(items: BatchUpdateItem[]): Promise<void> {
   const updatedIds = await applyBatchUpdates('rss_feed_items', items)
-  await triggerStoryClusteringForCurrentEmbeddings(updatedIds)
+  await dispatchStoryClusteringForEmbeddedItems(updatedIds)
 }

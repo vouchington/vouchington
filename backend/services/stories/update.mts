@@ -34,39 +34,6 @@ export async function updateStoryTitle(
 }
 
 /**
- * Set the official item for a story. Skips if official_locked_at is set (admin lock).
- */
-export async function setStoryOfficialItem(
-  storyId: string,
-  officialItemId: string,
-  options: QueryOptions = {},
-): Promise<Story | null> {
-  const { rows } = await write(
-    sql`/* setStoryOfficialItem */
-    UPDATE stories
-    SET official_rss_feed_item_id = ${officialItemId}, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ${storyId}
-      AND deleted_at IS NULL
-      AND official_locked_at IS NULL
-    RETURNING
-      id,
-      title,
-      cluster_reason,
-      published_at,
-      official_rss_feed_item_id,
-      official_locked_at,
-      uuid_extract_timestamp(id) AS created_at,
-      updated_at,
-      deleted_at
-  `,
-    options,
-  )
-  const story = (rows[0] as Story) ?? null
-  if (story) await invalidateStories(story.id)
-  return story
-}
-
-/**
  * Admin-only: set official item and lock it to prevent agent override.
  */
 export async function adminSetStoryOfficialItem(

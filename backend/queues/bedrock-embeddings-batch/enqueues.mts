@@ -31,7 +31,6 @@ export {
   reconciliationJobOptions,
   enqueueReconcileExistingEmbeddings,
   enqueuePostEmbeddingTriggerRecovery,
-  enqueueRssStoryTriggerRecovery,
   enqueueAllEmbeddingReconciliationRoots,
 } from './enqueues/reconciliation.mts'
 

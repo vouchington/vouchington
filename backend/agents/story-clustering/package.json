@@ -24,22 +24,18 @@
   "scripts": {},
   "dependencies": {
     "@agents/_shared": "workspace:^",
-    "@jongleberry/vurst-prompt": "^0.4.3",
-    "@modules/on-error": "workspace:^",
-    "@modules/openai-utils": "workspace:^",
+    "@agents/classifier-runs": "workspace:^",
+    "@agents/classifiers": "workspace:^",
+    "@modules/structured-decisions": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/classifier-runs": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
-    "@services/users": "workspace:^",
-    "@voucha/config": "workspace:^",
-    "@voucha/types": "workspace:^",
-    "openai": "^7.23.0",
-    "p-map": "^7.0.8"
+    "@services/stories": "workspace:^",
+    "@voucha/types": "workspace:^"
   },
   "devDependencies": {
     "@services/rss-feeds": "workspace:^",
-    "@services/topics": "workspace:^",
     "@services/urls": "workspace:^",
-    "@services/urls-hostnames": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

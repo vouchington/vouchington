@@ -631,49 +631,37 @@ importers:
       '@agents/_shared':
         specifier: workspace:^
         version: link:../_shared
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@modules/on-error':
+      '@agents/classifier-runs':
         specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/openai-utils':
+        version: link:../classifier-runs
+      '@agents/classifiers':
         specifier: workspace:^
-        version: link:../../modules/openai-utils
+        version: link:../classifiers
+      '@modules/structured-decisions':
+        specifier: workspace:^
+        version: link:../../modules/structured-decisions
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/classifier-runs':
+        specifier: workspace:^
+        version: link:../../services/classifier-runs
       '@services/rss-feed-items':
         specifier: workspace:^
         version: link:../../services/rss-feed-items
-      '@services/users':
+      '@services/stories':
         specifier: workspace:^
-        version: link:../../services/users
-      '@voucha/config':
-        specifier: workspace:^
-        version: link:../../config
+        version: link:../../services/stories
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      openai:
-        specifier: ^7.23.0
-        version: 7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
-      p-map:
-        specifier: ^7.0.8
-        version: 7.0.8
     devDependencies:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../../services/topics
       '@services/urls':
         specifier: workspace:^
         version: link:../../services/urls
-      '@services/urls-hostnames':
-        specifier: workspace:^
-        version: link:../../services/urls-hostnames
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -9074,9 +9062,6 @@ importers:
 
   backend/services/stories:
     dependencies:
-      '@agents/story-clustering':
-        specifier: workspace:^
-        version: link:../../agents/story-clustering
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
@@ -9113,6 +9098,12 @@ importers:
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../bookmarks
+      '@services/classifier-runs':
+        specifier: workspace:^
+        version: link:../classifier-runs
+      '@services/classifiers':
+        specifier: workspace:^
+        version: link:../classifiers
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
@@ -10949,6 +10940,9 @@ importers:
       '@agents/report-judgement':
         specifier: workspace:^
         version: link:../../agents/report-judgement
+      '@agents/story-clustering':
+        specifier: workspace:^
+        version: link:../../agents/story-clustering
       '@agents/story-post':
         specifier: workspace:^
         version: link:../../agents/story-post
@@ -10985,9 +10979,6 @@ importers:
       '@services/autotagger':
         specifier: workspace:^
         version: link:../../services/autotagger
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings
       '@services/classifier-runs':
         specifier: workspace:^
         version: link:../../services/classifier-runs

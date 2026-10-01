@@ -5,6 +5,7 @@ import type {
   PersistClassifierDecisionInput,
 } from './types.mts'
 import { isUUID } from '@modules/utils/ids'
+import { classifierCandidateKindFamily } from './candidate-family.mts'
 import { serializeClassifierRawResponse } from './raw-response.mts'
 
 export type NormalizedClassifierDecisionInput = PersistClassifierDecisionInput & {
@@ -80,7 +81,7 @@ export function classifierDecisionCandidateKind(
 ): ClassifierCandidateKind {
   const firstResult = input.calls[0]?.results[0]
   if (!firstResult) throw new Error('Classifier decision requires a candidate result')
-  return firstResult.candidateKind
+  return classifierCandidateKindFamily(firstResult.candidateKind)
 }
 
 export function flattenClassifierDecisionResults(
@@ -89,13 +90,15 @@ export function flattenClassifierDecisionResults(
   return input.calls.flatMap(call => call.results)
 }
 
-/** The topic, story or community prompt a result scores. */
+/** The topic, story, standalone RSS feed item or community prompt a result scores. */
 export function classifierDecisionEntityId(result: ClassifierDecisionInputResult): string {
   switch (result.candidateKind) {
     case 'topic':
       return result.topicId
     case 'story':
       return result.storyId
+    case 'rss_feed_item':
+      return result.rssFeedItemId
     case 'community_prompt':
       return result.communityPromptId
   }
@@ -115,8 +118,8 @@ function assertDecisionCalls(calls: readonly PersistClassifierDecisionCall[]): v
     }
     for (const result of call.results) {
       assertDecisionResult(result)
-      candidateKind ??= result.candidateKind
-      if (candidateKind !== result.candidateKind) {
+      candidateKind ??= classifierCandidateKindFamily(result.candidateKind)
+      if (candidateKind !== classifierCandidateKindFamily(result.candidateKind)) {
         throw new Error('Classifier decision cannot mix candidate kinds')
       }
       const key = classifierDecisionResultKey(result)

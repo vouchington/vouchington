@@ -26,6 +26,16 @@ export type StoryClassifierCandidate = {
   storedCandidateId: string | null
 }
 
+/**
+ * A standalone RSS feed item scored as a story-clustering candidate. It shares the `story`
+ * candidate family (the classifier's persisted `candidateKind`) with `StoryClassifierCandidate`.
+ */
+export type RssFeedItemClassifierCandidate = {
+  candidateKind: 'rss_feed_item'
+  rssFeedItemId: string
+  storedCandidateId: null
+}
+
 /** One community moderation prompt; it has no stored candidate or threshold revision. */
 export type CommunityPromptClassifierCandidate = {
   candidateKind: 'community_prompt'
@@ -36,6 +46,7 @@ export type CommunityPromptClassifierCandidate = {
 export type ClassifierDecisionCandidate =
   | TopicClassifierCandidate
   | StoryClassifierCandidate
+  | RssFeedItemClassifierCandidate
   | CommunityPromptClassifierCandidate
 
 export type NoulClassifierBinding = {

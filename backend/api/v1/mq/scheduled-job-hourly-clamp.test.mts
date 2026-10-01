@@ -19,7 +19,6 @@ const NON_PRODUCTION_CLAMP_JOBS = [
   'bedrock-embeddings-batch/reconcile_existing_posts',
   'bedrock-embeddings-batch/reconcile_existing_rss_feed_items',
   'bedrock-embeddings-batch/post_trigger_recovery',
-  'bedrock-embeddings-batch/rss_story_trigger_recovery',
   'emails/dispatchCommunityModerationSummaryEmails',
   'memberships/appleNotificationRecovery',
   'memberships/googlePlayNotificationRecovery',

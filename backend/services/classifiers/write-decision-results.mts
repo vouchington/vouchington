@@ -53,6 +53,7 @@ function toPersistedInputRow(
   return {
     candidateId: result.storedCandidateId,
     decisionCallId,
+    entityKind: result.candidateKind,
     entityId: classifierDecisionEntityId(result),
     probability: result.probability,
     rawResponse: serializeClassifierRawResponse(result.rawResponse),
@@ -110,23 +111,26 @@ function buildStoryInsert(
   rows: readonly PersistedInputRow[],
 ) {
   const values = buildColumnArrays(rows)
+  const storyIds = rows.map(row => (row.entityKind === 'story' ? row.entityId : null))
+  const rssFeedItemIds = rows.map(row => (row.entityKind === 'rss_feed_item' ? row.entityId : null))
   return sql`/* insertStoryClassifierDecisionResults */
     INSERT INTO story_classifier_results (
-      story_id, batch_id, decision_call_id, classifier_id, candidate_id, threshold_id,
-      prompt_version_id, probability, effective_lower_threshold, effective_upper_threshold,
-      raw_response, scope_category, scope_community_id
+      story_id, rss_feed_item_id, batch_id, decision_call_id, classifier_id, candidate_id,
+      threshold_id, prompt_version_id, probability, effective_lower_threshold,
+      effective_upper_threshold, raw_response, scope_category, scope_community_id
     )
-    SELECT story_id, ${input.batchId}, decision_call_id, ${input.classifierId}, candidate_id,
-      threshold_id, ${input.promptVersionId}, probability, lower_threshold, upper_threshold,
-      raw_response::jsonb, ${input.scope.scopeCategory}, ${input.scope.scopeCommunityId}
+    SELECT story_id, rss_feed_item_id, ${input.batchId}, decision_call_id, ${input.classifierId},
+      candidate_id, threshold_id, ${input.promptVersionId}, probability, lower_threshold,
+      upper_threshold, raw_response::jsonb, ${input.scope.scopeCategory},
+      ${input.scope.scopeCommunityId}
     FROM unnest(
-      ${values.entityIds}::uuid[], ${values.callIds}::uuid[], ${values.candidateIds}::uuid[],
-      ${values.thresholdIds}::uuid[], ${values.probabilities}::numeric[],
-      ${values.lowerThresholds}::numeric[], ${values.upperThresholds}::numeric[],
-      ${values.rawResponses}::text[]
+      ${storyIds}::uuid[], ${rssFeedItemIds}::uuid[], ${values.callIds}::uuid[],
+      ${values.candidateIds}::uuid[], ${values.thresholdIds}::uuid[],
+      ${values.probabilities}::numeric[], ${values.lowerThresholds}::numeric[],
+      ${values.upperThresholds}::numeric[], ${values.rawResponses}::text[]
     ) AS values(
-      story_id, decision_call_id, candidate_id, threshold_id, probability, lower_threshold,
-      upper_threshold, raw_response
+      story_id, rss_feed_item_id, decision_call_id, candidate_id, threshold_id, probability,
+      lower_threshold, upper_threshold, raw_response
     )`
 }
 
