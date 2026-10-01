@@ -70,9 +70,6 @@
     "community_member_roster_visibility_types": {
       "values": ["public", "users", "members", "moderators"]
     },
-    "community_prompt_on_flag_action": {
-      "values": ["none", "unpublish"]
-    },
     "community_restriction_types": {
       "values": [
         "require_post_approval",
@@ -12094,7 +12091,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "archived_by_id": {
@@ -12105,8 +12102,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "uuid"
+        },
+        "automod_action": {
+          "collation": null,
+          "comment": "What the community moderation classifier does when a post trips one of the community's active prompts: record_only (the default, only the per-prompt agent_moderations projection), review_queue (the post stays published and enters the moderator review queue) or unpublish. Read when the classifier run completes, so changing it never re-runs a classification.",
+          "defaultExpression": "'record_only'::community_automod_action",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 13,
+          "type": "community_automod_action"
         },
         "banner_image_id": {
           "collation": null,
@@ -12116,7 +12124,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "uuid"
         },
         "created_at": {
@@ -12127,7 +12135,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -12138,7 +12146,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "uuid"
         },
         "created_via": {
@@ -12171,7 +12179,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 26,
           "type": "text"
         },
         "deleted_at": {
@@ -12182,7 +12190,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -12193,7 +12201,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "uuid"
         },
         "id": {
@@ -12215,7 +12223,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 28,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -12226,7 +12234,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -12237,7 +12245,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 27,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -12248,7 +12256,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 29,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -12259,7 +12267,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 30,
           "type": "jsonb"
         },
         "list_type": {
@@ -12270,7 +12278,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "community_list_types"
         },
         "markdown": {
@@ -12336,7 +12344,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "uuid"
         },
         "rules_markdown": {
@@ -12347,7 +12355,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 32,
           "type": "text"
         },
         "search_vector": {
@@ -12358,7 +12366,7 @@
           "generatedExpression": "((setweight(to_tsvector('voucha_english'::regconfig, COALESCE(name, ''::text)), 'A'::\"char\") || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(slug, ''::text)), 'A'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(markdown, ''::text)), 'B'::\"char\"))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "tsvector"
         },
         "slug": {
@@ -12380,7 +12388,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -12391,7 +12399,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "visibility": {
@@ -13135,7 +13143,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -13146,7 +13154,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "uuid"
         },
         "id": {
@@ -13159,17 +13167,6 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
-        },
-        "on_flag_action": {
-          "collation": null,
-          "comment": "Action taken when this community prompt flags content: none or unpublish.",
-          "defaultExpression": "'none'::community_prompt_on_flag_action",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "community_prompt_on_flag_action"
         },
         "slot_allocated": {
           "collation": null,
