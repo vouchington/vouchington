@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { randomUUID } from 'node:crypto'
 import type { ProcessVoteIntegrityCheckData } from '@queues/vote-integrity/types'
-import { processVoteIntegrityCheck } from './processors.mts'
+import { processVoteIntegrityCheck } from '../processors.mts'
 
 describe('vote integrity worker failures', () => {
   it('reports and rethrows the same database error so the queue can retry', async () => {
