@@ -157,6 +157,7 @@ describe('workflow runner policy (real workflows)', () => {
       'tests-web-api.yml#web-api-tests',
       'tests-web-integration.yml#prep',
       'tests-web-integration.yml#web-integration-tests',
+      'tests-web.yml#prep',
       'tests-web.yml#web-tests',
     ])
   })
