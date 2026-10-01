@@ -4,6 +4,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestSku,
   createTestUser,
+  getTestMembershipGrant,
   setTestMembershipGrantRemainingMilliseconds,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
@@ -98,5 +99,26 @@ describe('DELETE /api/v1/membership-grants/:grantId', () => {
       .delete(`/api/v1/membership-grants/${completed.grantId}`)
       .send({ reason: 'Too late' })
       .expect(409)
+  })
+
+  it('preserves an active grant when PostgreSQL rejects the revocation reason', async () => {
+    const member = await createTestUser()
+    const sku = await createTestSku({ plan: 'plus' })
+    const grant = await grantMembership(admin.id, member.id, 'plus', sku.id, 30)
+    const before = await getTestMembershipGrant(grant.grantId)
+    expect(before).toMatchObject({ revoked_at: null, revocation_reason: null })
+    const request = createRequest()
+    await request.authenticateAs(admin)
+
+    const response = await request
+      .delete(`/api/v1/membership-grants/${grant.grantId}`)
+      .send({ reason: 'Invalid\u0000reason' })
+      .expect(500)
+
+    expect(response.body).toMatchObject({ code: '22021' })
+    await expect(getTestMembershipGrant(grant.grantId)).resolves.toEqual(before)
+    await expect(getLatestMembershipByUserId(member.id)).resolves.toMatchObject({
+      status: 'active',
+    })
   })
 })

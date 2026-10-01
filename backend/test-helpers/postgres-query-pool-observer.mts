@@ -2,6 +2,7 @@ import type pg from 'pg'
 import { AsyncLocalStorage } from 'node:async_hooks'
 
 import { readPool, writePool } from '@data-stores/psql'
+import { runPoolObservationExclusively } from './postgres-pool-observation-queue.mts'
 
 export type ObservedPostgresQueryPool = 'read' | 'write'
 
@@ -12,7 +13,6 @@ interface PoolObservationContext {
 }
 
 const poolObservationContext = new AsyncLocalStorage<PoolObservationContext>()
-let poolObservationQueue = Promise.resolve()
 
 export async function observeTestPostgresQueryPools<Result>(
   queryMarker: string,
@@ -42,22 +42,6 @@ export async function observeTestPostgresQueryPools<Result>(
       }
     })
   })
-}
-
-async function runPoolObservationExclusively<Result>(
-  operation: () => Promise<Result>,
-): Promise<Result> {
-  const previousObservation = poolObservationQueue
-  let releaseObservation!: () => void
-  poolObservationQueue = new Promise(resolve => {
-    releaseObservation = resolve
-  })
-  await previousObservation
-  try {
-    return await operation()
-  } finally {
-    releaseObservation()
-  }
 }
 
 async function observePoolQueries<Result>(
