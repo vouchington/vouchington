@@ -1134,6 +1134,9 @@
               }
             ]
           },
+          "automod_action": {
+            "$ref": "#/components/schemas/CommunityAutomodAction"
+          },
           "banner_image_id": {
             "anyOf": [
               {
@@ -1308,6 +1311,7 @@
           "allow_review_posts",
           "archived_at",
           "archived_by_id",
+          "automod_action",
           "banner_image_id",
           "created_at",
           "created_by_id",
@@ -1418,9 +1422,6 @@
           "model_provider": {
             "type": "string"
           },
-          "on_flag_action": {
-            "$ref": "#/components/schemas/CommunityPromptOnFlagAction"
-          },
           "prompt": {
             "type": "string"
           },
@@ -1443,7 +1444,6 @@
           "id",
           "model_name",
           "model_provider",
-          "on_flag_action",
           "prompt",
           "slot_allocated",
           "updated_at"
@@ -1858,6 +1858,10 @@
           "system_username"
         ],
         "type": "object"
+      },
+      "CommunityAutomodAction": {
+        "enum": ["record_only", "review_queue", "unpublish"],
+        "type": "string"
       },
       "CommunityBanEvasionContext": {
         "additionalProperties": false,
@@ -2309,10 +2313,6 @@
           "post_id"
         ],
         "type": "object"
-      },
-      "CommunityPromptOnFlagAction": {
-        "enum": ["none", "unpublish"],
-        "type": "string"
       },
       "CommunitySavedReply": {
         "additionalProperties": false,
@@ -20057,6 +20057,16 @@
         },
         "type": "object"
       },
+      "UpdateCommunityAutomodSettingsInput": {
+        "additionalProperties": false,
+        "properties": {
+          "automod_action": {
+            "$ref": "#/components/schemas/CommunityAutomodAction"
+          }
+        },
+        "required": ["automod_action"],
+        "type": "object"
+      },
       "UpdateCommunityPostTypeSettingsInput": {
         "additionalProperties": false,
         "properties": {
@@ -31079,6 +31089,9 @@
                             }
                           ]
                         },
+                        "automod_action": {
+                          "$ref": "#/components/schemas/CommunityAutomodAction"
+                        },
                         "banner_image_id": {
                           "anyOf": [
                             {
@@ -31253,6 +31266,7 @@
                         "allow_review_posts",
                         "archived_at",
                         "archived_by_id",
+                        "automod_action",
                         "banner_image_id",
                         "created_at",
                         "created_by_id",
@@ -31404,6 +31418,9 @@
                             }
                           ]
                         },
+                        "automod_action": {
+                          "$ref": "#/components/schemas/CommunityAutomodAction"
+                        },
                         "banner_image_id": {
                           "anyOf": [
                             {
@@ -31578,6 +31595,7 @@
                         "allow_review_posts",
                         "archived_at",
                         "archived_by_id",
+                        "automod_action",
                         "banner_image_id",
                         "created_at",
                         "created_by_id",
@@ -31705,6 +31723,9 @@
                             }
                           ]
                         },
+                        "automod_action": {
+                          "$ref": "#/components/schemas/CommunityAutomodAction"
+                        },
                         "banner_image_id": {
                           "anyOf": [
                             {
@@ -31879,6 +31900,7 @@
                         "allow_review_posts",
                         "archived_at",
                         "archived_by_id",
+                        "automod_action",
                         "banner_image_id",
                         "created_at",
                         "created_by_id",
@@ -32703,6 +32725,280 @@
         }
       }
     },
+    "/api/v1/communities/{idOrSlug}/automod-settings": {
+      "patch": {
+        "operationId": "patch_api_v1_communities_idOrSlug_automod-settings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "idOrSlug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCommunityAutomodSettingsInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "community": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "__entity_type": {
+                          "const": "community"
+                        },
+                        "allow_data_point_posts": {
+                          "type": "boolean"
+                        },
+                        "allow_review_posts": {
+                          "type": "boolean"
+                        },
+                        "archived_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "archived_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "automod_action": {
+                          "$ref": "#/components/schemas/CommunityAutomodAction"
+                        },
+                        "banner_image_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "banner_image_placement": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/ImagePlacementTuple"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "created_by_id": {
+                          "type": "string"
+                        },
+                        "default_language": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "deleted_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "deleted_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "lingua_rs_detected_language": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "list_type": {
+                          "anyOf": [
+                            {
+                              "const": "follow"
+                            },
+                            {
+                              "const": "mute"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "markdown": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "member_invites_allowed_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "member_roster_visibility": {
+                          "$ref": "#/components/schemas/CommunityMemberRosterVisibility"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "post_approval_required_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "profile_image_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "profile_image_placement": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/ImagePlacementTuple"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "rules_markdown": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "trusted_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        },
+                        "visibility": {
+                          "$ref": "#/components/schemas/CommunityVisibility"
+                        }
+                      },
+                      "required": [
+                        "__entity_type",
+                        "allow_data_point_posts",
+                        "allow_review_posts",
+                        "archived_at",
+                        "archived_by_id",
+                        "automod_action",
+                        "banner_image_id",
+                        "created_at",
+                        "created_by_id",
+                        "deleted_at",
+                        "deleted_by_id",
+                        "id",
+                        "list_type",
+                        "markdown",
+                        "member_invites_allowed_at",
+                        "member_roster_visibility",
+                        "name",
+                        "post_approval_required_at",
+                        "profile_image_id",
+                        "rules_markdown",
+                        "slug",
+                        "trusted_at",
+                        "updated_at",
+                        "visibility"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["community"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/communities/{idOrSlug}/automod/recent-actions": {
       "get": {
         "operationId": "get_api_v1_communities_idOrSlug_automod_recent-actions",
@@ -33102,9 +33398,6 @@
                           },
                           "title": {
                             "type": "string"
-                          },
-                          "would_unpublish": {
-                            "type": "boolean"
                           }
                         },
                         "required": [
@@ -33116,8 +33409,7 @@
                           "post_id",
                           "post_type",
                           "reason",
-                          "title",
-                          "would_unpublish"
+                          "title"
                         ],
                         "type": "object"
                       },
@@ -33126,6 +33418,9 @@
                     "simulation": {
                       "additionalProperties": false,
                       "properties": {
+                        "community_automod_action": {
+                          "$ref": "#/components/schemas/CommunityAutomodAction"
+                        },
                         "false_positive_estimate": {
                           "anyOf": [
                             {
@@ -33148,18 +33443,15 @@
                         },
                         "would_flag_count": {
                           "type": "number"
-                        },
-                        "would_unpublish_count": {
-                          "type": "number"
                         }
                       },
                       "required": [
+                        "community_automod_action",
                         "false_positive_estimate",
                         "prompt_id",
                         "sample_count",
                         "time_window_hours",
-                        "would_flag_count",
-                        "would_unpublish_count"
+                        "would_flag_count"
                       ],
                       "type": "object"
                     }
@@ -35911,6 +36203,9 @@
                             }
                           ]
                         },
+                        "automod_action": {
+                          "$ref": "#/components/schemas/CommunityAutomodAction"
+                        },
                         "banner_image_id": {
                           "anyOf": [
                             {
@@ -36085,6 +36380,7 @@
                         "allow_review_posts",
                         "archived_at",
                         "archived_by_id",
+                        "automod_action",
                         "banner_image_id",
                         "created_at",
                         "created_by_id",
@@ -74206,6 +74502,9 @@
                               }
                             ]
                           },
+                          "automod_action": {
+                            "$ref": "#/components/schemas/CommunityAutomodAction"
+                          },
                           "banner_image_id": {
                             "anyOf": [
                               {
@@ -74390,6 +74689,7 @@
                           "allow_review_posts",
                           "archived_at",
                           "archived_by_id",
+                          "automod_action",
                           "banner_image_id",
                           "created_at",
                           "created_by_id",

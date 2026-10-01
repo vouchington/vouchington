@@ -124,11 +124,6 @@
 - `members`
 - `moderators`
 
-## `community_prompt_on_flag_action`
-
-- `none`
-- `unpublish`
-
 ## `community_restriction_types`
 
 - `require_post_approval`

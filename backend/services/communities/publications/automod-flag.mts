@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write, type TransactionQuery } from '@data-stores/psql'
 import createError from 'http-errors'
 import sql from 'sql-template-strings'
 
@@ -41,4 +41,34 @@ export async function dismissCommunityAutomodFlag(options: {
     SELECT count(*)::integer AS flag_count FROM current_flag
   `)
   if (!rows[0]?.flag_count) throw createError(404, 'Automod flag not found')
+}
+
+/**
+ * Records the classifier's review-queue flag for the content it ran on, in the caller's
+ * transaction (the classifier run's completion transaction). The post stays published; only a post
+ * that is still approved, unrejected, published and not under platform override is flagged, so a
+ * race with an unpublish or override leaves it alone. A new flag clears any earlier dismissal.
+ */
+export async function flagPostForAutomodReview(
+  query: TransactionQuery,
+  input: { communityId: string; postId: string; contentSha256: Buffer },
+): Promise<boolean> {
+  const { rowCount } = await write(
+    sql`/* flagPostForAutomodReview */
+    UPDATE community_post_reviews
+    SET automod_action = 'review_queue',
+        automod_flagged_at = CURRENT_TIMESTAMP,
+        automod_flagged_content_sha256 = ${input.contentSha256},
+        automod_dismissed_at = NULL,
+        automod_dismissed_by_id = NULL
+    WHERE community_id = ${input.communityId}
+      AND post_id = ${input.postId}
+      AND approved_at IS NOT NULL
+      AND rejected_at IS NULL
+      AND unpublished_at IS NULL
+      AND platform_override_at IS NULL
+    `,
+    { query },
+  )
+  return (rowCount ?? 0) > 0
 }

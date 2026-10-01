@@ -2,8 +2,10 @@
 
 import { clientApi } from './instance'
 import type {
+  CommunityAutomodActionSetting,
   CommunityAutomodFeedbackInput,
   CommunityAutomodFeedbackResponseBody,
+  CommunityAutomodSettingsResponseBody,
 } from '@/types/api-responses'
 
 export function recordCommunityAutomodFeedback(
@@ -21,5 +23,16 @@ export function recordCommunityAutomodFeedback(
 export function dismissCommunityAutomodFlag(idOrSlug: string, postId: string): Promise<void> {
   return clientApi.post<void>(
     `/api/v1/communities/${encodeURIComponent(idOrSlug)}/posts/${encodeURIComponent(postId)}/automod-flag/dismissal`,
+  )
+}
+
+/** Sets what a community prompt's flag does to a published post (moderators and site staff). */
+export function updateCommunityAutomodSettings(
+  idOrSlug: string,
+  input: { automod_action: CommunityAutomodActionSetting },
+): Promise<CommunityAutomodSettingsResponseBody> {
+  return clientApi.patch<CommunityAutomodSettingsResponseBody>(
+    `/api/v1/communities/${encodeURIComponent(idOrSlug)}/automod-settings`,
+    input,
   )
 }

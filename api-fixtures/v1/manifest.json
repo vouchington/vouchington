@@ -4164,13 +4164,30 @@
     },
     "GET:/api/v1/communities/:communitySlug": {
       "bodyKind": "content",
-      "hash": "bd2cf7793d9ac84d576fee29d93d44251df8fbbe0cde272a8cf9333c713bcbca",
+      "hash": "e49b574e92afc6b0032bc3abcfa07622b5cd6814ac3bf2854df09cee6e4d89ba",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
       "routeTemplate": "/api/v1/communities/:idOrSlug",
       "schema": {
         "definitions": {
+          "CommunityAutomodAction": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "record_only"
+              },
+              {
+                "type": "literal",
+                "value": "review_queue"
+              },
+              {
+                "type": "literal",
+                "value": "unpublish"
+              }
+            ]
+          },
           "CommunityMember": {
             "additionalProperties": false,
             "properties": {
@@ -4473,6 +4490,13 @@
                           "type": "string"
                         }
                       ]
+                    }
+                  },
+                  "automod_action": {
+                    "required": true,
+                    "schema": {
+                      "name": "CommunityAutomodAction",
+                      "type": "ref"
                     }
                   },
                   "banner_image_id": {
@@ -4792,7 +4816,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/agent-prompts": {
       "bodyKind": "content",
-      "hash": "06f16953e930e659ade2bbc72b8064bfbe461a9de8cb808ef4066b91ca228a02",
+      "hash": "602675510e7846f462969e1b7671fca0584f6c8ca61f13bcdb486e32ef26d7f4",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -4900,13 +4924,6 @@
                   "type": "string"
                 }
               },
-              "on_flag_action": {
-                "required": true,
-                "schema": {
-                  "name": "CommunityPromptOnFlagAction",
-                  "type": "ref"
-                }
-              },
               "prompt": {
                 "required": true,
                 "schema": {
@@ -4927,19 +4944,6 @@
               }
             },
             "type": "object"
-          },
-          "CommunityPromptOnFlagAction": {
-            "type": "union",
-            "variants": [
-              {
-                "type": "literal",
-                "value": "none"
-              },
-              {
-                "type": "literal",
-                "value": "unpublish"
-              }
-            ]
           },
           "Record<MembershipPlanSlug,number>": {
             "additionalProperties": false,
@@ -52045,7 +52049,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/communities/:listType": {
       "bodyKind": "content",
-      "hash": "99fc07491b161cb13e177ccc8bd03e06b194cc897b0d3cc59ff9132015fd8f8d",
+      "hash": "fb2196130686e0fd1345aadab250870c4d19dad8545de0938ec23b033fdcf27d",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -52100,6 +52104,13 @@
                       "type": "string"
                     }
                   ]
+                }
+              },
+              "automod_action": {
+                "required": true,
+                "schema": {
+                  "name": "CommunityAutomodAction",
+                  "type": "ref"
                 }
               },
               "banner_image_id": {
@@ -52357,6 +52368,23 @@
               }
             },
             "type": "object"
+          },
+          "CommunityAutomodAction": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "record_only"
+              },
+              {
+                "type": "literal",
+                "value": "review_queue"
+              },
+              {
+                "type": "literal",
+                "value": "unpublish"
+              }
+            ]
           },
           "CommunityMemberRosterVisibility": {
             "type": "union",
@@ -60426,13 +60454,30 @@
     },
     "PATCH:/api/v1/communities/:communitySlug": {
       "bodyKind": "content",
-      "hash": "6d218c219f37f28f861d520865f8c5997aed4c80a8cf798d7634ab1c2bdfdf72",
+      "hash": "23dfea8d27a24a756bbdbdb803b9938b8730b063ad722664d75d148c876e9082",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
       "routeTemplate": "/api/v1/communities/:idOrSlug",
       "schema": {
         "definitions": {
+          "CommunityAutomodAction": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "record_only"
+              },
+              {
+                "type": "literal",
+                "value": "review_queue"
+              },
+              {
+                "type": "literal",
+                "value": "unpublish"
+              }
+            ]
+          },
           "CommunityMemberRosterVisibility": {
             "type": "union",
             "variants": [
@@ -60545,6 +60590,13 @@
                           "type": "string"
                         }
                       ]
+                    }
+                  },
+                  "automod_action": {
+                    "required": true,
+                    "schema": {
+                      "name": "CommunityAutomodAction",
+                      "type": "ref"
                     }
                   },
                   "banner_image_id": {
@@ -60811,15 +60863,32 @@
       "source": "backend/api/v1/communities/community.mts",
       "statusKnowledge": "default"
     },
-    "PATCH:/api/v1/communities/:communitySlug/post-type-settings": {
+    "PATCH:/api/v1/communities/:communitySlug/automod-settings": {
       "bodyKind": "content",
-      "hash": "6d218c219f37f28f861d520865f8c5997aed4c80a8cf798d7634ab1c2bdfdf72",
+      "hash": "23dfea8d27a24a756bbdbdb803b9938b8730b063ad722664d75d148c876e9082",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
-      "routeTemplate": "/api/v1/communities/:idOrSlug/post-type-settings",
+      "routeTemplate": "/api/v1/communities/:idOrSlug/automod-settings",
       "schema": {
         "definitions": {
+          "CommunityAutomodAction": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "record_only"
+              },
+              {
+                "type": "literal",
+                "value": "review_queue"
+              },
+              {
+                "type": "literal",
+                "value": "unpublish"
+              }
+            ]
+          },
           "CommunityMemberRosterVisibility": {
             "type": "union",
             "variants": [
@@ -60932,6 +61001,424 @@
                           "type": "string"
                         }
                       ]
+                    }
+                  },
+                  "automod_action": {
+                    "required": true,
+                    "schema": {
+                      "name": "CommunityAutomodAction",
+                      "type": "ref"
+                    }
+                  },
+                  "banner_image_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "banner_image_placement": {
+                    "required": false,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "ImagePlacementTuple",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "created_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "created_by_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "default_language": {
+                    "required": false,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "deleted_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "deleted_by_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "lingua_rs_detected_language": {
+                    "required": false,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "list_type": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "literal",
+                          "value": "follow"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "mute"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "markdown": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "member_invites_allowed_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "member_roster_visibility": {
+                    "required": true,
+                    "schema": {
+                      "name": "CommunityMemberRosterVisibility",
+                      "type": "ref"
+                    }
+                  },
+                  "name": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "post_approval_required_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "profile_image_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "profile_image_placement": {
+                    "required": false,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "ImagePlacementTuple",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "rules_markdown": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "slug": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "trusted_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "updated_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "visibility": {
+                    "required": true,
+                    "schema": {
+                      "name": "CommunityVisibility",
+                      "type": "ref"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/communities/automod-settings.mts",
+      "statusKnowledge": "default"
+    },
+    "PATCH:/api/v1/communities/:communitySlug/post-type-settings": {
+      "bodyKind": "content",
+      "hash": "23dfea8d27a24a756bbdbdb803b9938b8730b063ad722664d75d148c876e9082",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "PATCH",
+      "routeTemplate": "/api/v1/communities/:idOrSlug/post-type-settings",
+      "schema": {
+        "definitions": {
+          "CommunityAutomodAction": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "record_only"
+              },
+              {
+                "type": "literal",
+                "value": "review_queue"
+              },
+              {
+                "type": "literal",
+                "value": "unpublish"
+              }
+            ]
+          },
+          "CommunityMemberRosterVisibility": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "members"
+              },
+              {
+                "type": "literal",
+                "value": "moderators"
+              },
+              {
+                "type": "literal",
+                "value": "public"
+              },
+              {
+                "type": "literal",
+                "value": "users"
+              }
+            ]
+          },
+          "CommunityVisibility": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "private"
+              },
+              {
+                "type": "literal",
+                "value": "public"
+              }
+            ]
+          },
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "community": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "__entity_type": {
+                    "required": true,
+                    "schema": {
+                      "type": "literal",
+                      "value": "community"
+                    }
+                  },
+                  "allow_data_point_posts": {
+                    "required": true,
+                    "schema": {
+                      "type": "boolean"
+                    }
+                  },
+                  "allow_review_posts": {
+                    "required": true,
+                    "schema": {
+                      "type": "boolean"
+                    }
+                  },
+                  "archived_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "archived_by_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "automod_action": {
+                    "required": true,
+                    "schema": {
+                      "name": "CommunityAutomodAction",
+                      "type": "ref"
                     }
                   },
                   "banner_image_id": {
@@ -65944,7 +66431,7 @@
     },
     "POST:/api/v1/communities/:communitySlug/automod/simulate": {
       "bodyKind": "content",
-      "hash": "689fde9fe4933a3e640f13d06d3b6d18f3ece0dac24647e442ba677011c6e299",
+      "hash": "964adff43735ee03063ae9c4813baa8873559b980cb057bb0d73e86bd28b8fab",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -65982,6 +66469,23 @@
               }
             },
             "type": "object"
+          },
+          "CommunityAutomodAction": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "record_only"
+              },
+              {
+                "type": "literal",
+                "value": "review_queue"
+              },
+              {
+                "type": "literal",
+                "value": "unpublish"
+              }
+            ]
           }
         },
         "root": {
@@ -66062,12 +66566,6 @@
                       "schema": {
                         "type": "string"
                       }
-                    },
-                    "would_unpublish": {
-                      "required": true,
-                      "schema": {
-                        "type": "boolean"
-                      }
                     }
                   },
                   "type": "object"
@@ -66080,6 +66578,13 @@
               "schema": {
                 "additionalProperties": false,
                 "properties": {
+                  "community_automod_action": {
+                    "required": true,
+                    "schema": {
+                      "name": "CommunityAutomodAction",
+                      "type": "ref"
+                    }
+                  },
                   "false_positive_estimate": {
                     "required": true,
                     "schema": {
@@ -66128,12 +66633,6 @@
                     }
                   },
                   "would_flag_count": {
-                    "required": true,
-                    "schema": {
-                      "type": "number"
-                    }
-                  },
-                  "would_unpublish_count": {
                     "required": true,
                     "schema": {
                       "type": "number"
@@ -77049,7 +77548,7 @@
         "q": "test"
       },
       "responseSchema": {
-        "hash": "3a5625e2f0c2b0fb46fde609a76e0adc6e9299d358c553d96200a53adbfb6a13",
+        "hash": "a73dad45419616b8ba1b313899ada95cb2fb5ad3e5576d321465908d22b3a50b",
         "key": "web.communities.search.default"
       },
       "route": {
@@ -77070,7 +77569,7 @@
       "migratedFrom": ["web/test-helpers/api-responses/communities.ts"],
       "path": "/api/v1/communities/test-community",
       "responseSchema": {
-        "hash": "6ad5dc421391d481a8306aa7e216b59d7377611cb9c4f303cf8e0bce297cd1cf",
+        "hash": "5c3290a9a3162c498fdb6cbd557f2d533e05619b02d10e134f65cfe0f0f94e42",
         "key": "web.communities.show.default"
       },
       "route": {
@@ -77122,7 +77621,7 @@
         "archive": true
       },
       "responseSchema": {
-        "hash": "37066b857c5d42a650fbf7b4311154fa5479dbd1784376b05f03952b5200eec3",
+        "hash": "66c2ff0cb5b7dca2a9d96ac18a74831c1a3b804102b9c031390ad4bcaff04c24",
         "key": "web.communities.archive.default"
       },
       "route": {
@@ -77872,7 +78371,7 @@
       "migratedFrom": ["backend/api/v1/communities/agent-prompts.mts"],
       "path": "/api/v1/communities/test-community/agent-prompts",
       "responseSchema": {
-        "hash": "9f29219f18b0bf68123d7e31ab206e65de4140cb790708b5707f37687de4dbea",
+        "hash": "352088a70eeb68f120c3c3daeec92ab0c2ffc12c0c478b234b2f1bd037fc5228",
         "key": "web.communities.agent-prompts.default"
       },
       "route": {
@@ -77923,7 +78422,7 @@
         "prompt_id": "prompt-1"
       },
       "responseSchema": {
-        "hash": "ebf265d6e2247461df83a123e15d2ef94afb4aff568fcad4fdc6c7f3ee1d6ef5",
+        "hash": "78bb9e95aea6c5b15d576a7ed4711f0383e3288214fea6e4e064328f8f2ede5c",
         "key": "web.communities.automod-simulate.default"
       },
       "route": {
@@ -77931,6 +78430,33 @@
           "communitySlug": "test-community"
         },
         "routeTemplate": "/api/v1/communities/:communitySlug/automod/simulate"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "PATCH:/api/v1/communities/:communitySlug/automod-settings",
+      "bodyFile": "responses/web.communities.automod-settings.update.default.json",
+      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
+      "id": "web.communities.automod-settings.update.default",
+      "method": "PATCH",
+      "migratedFrom": ["backend/api/v1/communities/automod-settings.mts"],
+      "path": "/api/v1/communities/test-community/automod-settings",
+      "requestBody": {
+        "automod_action": "review_queue"
+      },
+      "responseSchema": {
+        "hash": "f55eeb805f2a61482d84d7baf6f381bdf23601f8739ca17a71415e5f2c76774c",
+        "key": "web.communities.automod-settings.update.default"
+      },
+      "route": {
+        "pathParams": {
+          "communitySlug": "test-community"
+        },
+        "routeTemplate": "/api/v1/communities/:communitySlug/automod-settings"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
@@ -78066,7 +78592,7 @@
         "allow_review_posts": true
       },
       "responseSchema": {
-        "hash": "9ad5d9241cfc0d421443ac65852ad887afcc477b5745371db5904df4ca57bbf5",
+        "hash": "f55eeb805f2a61482d84d7baf6f381bdf23601f8739ca17a71415e5f2c76774c",
         "key": "web.communities.post-type-settings.update.default"
       },
       "route": {
@@ -79055,7 +79581,7 @@
         "limit": "25"
       },
       "responseSchema": {
-        "hash": "7c5bddc8ac56cb85ca09ab9dcde55bbe4f834480cbfe0bb28e2cc2c59b9ba4ee",
+        "hash": "bdc0ed53d4f0703e5d089386bab566bd61f317c211e95644bed3e1f0171509ad",
         "key": "native.bookmarks.communities.proxy-following.default"
       },
       "route": {
@@ -79501,7 +80027,7 @@
         "sort": "hot"
       },
       "responseSchema": {
-        "hash": "e0098b7566ae434483e8df24391f2240d68a21d088b168e2180745d9b3afaa70",
+        "hash": "63de56f8fb20d08a6262ab40ee2fbbf74b4d152b98a7ee399c870707302d5078",
         "key": "swift.posts.feed.default"
       },
       "route": {
@@ -83475,7 +84001,7 @@
         "limit": "25"
       },
       "responseSchema": {
-        "hash": "bb3c10ceb566f001079f5e597cfd1ac4f1d5d77b8ed3ed1eade430986afb807c",
+        "hash": "d5f4968646b8bfb5e84897fe961bd82e59eacad256e4d37b72f9a862018884e9",
         "key": "native.users.profile.communities-member.first-page"
       },
       "route": {

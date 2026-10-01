@@ -66,6 +66,10 @@ export interface CommunityPostTypeSettingsResponseBody {
   community: Community
 }
 
+export interface CommunityAutomodSettingsResponseBody {
+  community: Community
+}
+
 export interface CommunityMembersResponseBody {
   results: Array<{ __entity_type: 'community_member'; id: string }>
   page_info: PageInfo
@@ -130,7 +134,6 @@ export interface CommunityAgentPrompt {
   model_name: string
   model_provider: string
   slot_allocated: boolean
-  on_flag_action: 'none' | 'unpublish'
   activated_at: string | null
   deactivated_at: string | null
   created_at: string

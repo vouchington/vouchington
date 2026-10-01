@@ -248,6 +248,13 @@
       "owner_classification": "mixed-discovery-sql"
     },
     {
+      "path": "backend/services/communities/publications/moderation-run.mts",
+      "classification": "mutation",
+      "reason": "Community moderation run request locks a still-published post and records durable classifier work; it never serializes post rows.",
+      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
       "path": "backend/services/rss-feed-items/story-publication-change.mts",
       "classification": "mutation",
       "reason": "Mutation-boundary scope resolver that records durable story publication work and never serializes post rows.",

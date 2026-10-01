@@ -113,7 +113,6 @@ export function communityAgentPrompt(body: unknown): unknown {
       model_name: 'gpt-4.1-mini',
       model_provider: 'openai',
       slot_allocated: false,
-      on_flag_action: 'none',
       activated_at: null,
       deactivated_at: null,
       created_at: storyMutationAt,
@@ -170,7 +169,7 @@ export function automodSimulation(body: unknown): unknown {
       time_window_hours: 24,
       sample_count: 1,
       would_flag_count: 1,
-      would_unpublish_count: 0,
+      community_automod_action: 'record_only',
       false_positive_estimate: null,
     },
     results: [
@@ -184,7 +183,6 @@ export function automodSimulation(body: unknown): unknown {
         content_excerpt: 'Referral link without a personal data point',
         flagged: true,
         reason: 'Referral',
-        would_unpublish: false,
       },
     ],
   }

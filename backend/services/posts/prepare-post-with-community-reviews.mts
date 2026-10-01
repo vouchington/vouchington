@@ -159,7 +159,6 @@ export const preparePostWithCommunityReviews = async (
     return finalizePreparedPost({
       communityReviews,
       creator,
-      isAdminCreator,
       post: post!,
       postType: defaults.postType,
       resolvedUrlHostnameId,

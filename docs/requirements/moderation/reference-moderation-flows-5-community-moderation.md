@@ -32,10 +32,20 @@ Community owners/moderators can create custom LLM prompts. Prompts run on every 
 | Premium | 3     |
 | Pro     | 10    |
 
-**on_flag_action:** `unpublish` — agent-driven unpublish without human moderator check
+**Automod action:** one community-level setting, `communities.automod_action`, decides what a
+flagged post does for every prompt in the community. Owners and moderators set it (route below).
+
+| Value                   | Effect on a flagged post                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------ |
+| `record_only` (default) | Stores the per-prompt result in `agent_moderations` and does nothing else                  |
+| `review_queue`          | Leaves the post published and flags its review row for moderators, who can dismiss it      |
+| `unpublish`             | Unpublishes the post without a human moderator check, unless `platform_override_at` is set |
 
 Agent-driven unpublish records `community_post_reviews.unpublished_by_id = automod` and writes a `moderator_actions.remove` row.
 
-**API routes:** `GET/POST /api/v1/communities/:slug/agent-prompts`, allocate/deallocate/test sub-routes
+**API routes:** `GET/POST /api/v1/communities/:slug/agent-prompts`, allocate/deallocate/test sub-routes; `PATCH /api/v1/communities/:idOrSlug/automod-settings` (owner or moderator) sets the automod action
 
-**Service:** `backend/agents/community-moderation/run.mts`, `backend/services/community-agent-prompts/`
+**Service:** `backend/agents/community-moderation/classifier-run.mts`, `backend/services/community-agent-prompts/`
+
+Native clients: parity for the automod action control is tracked in
+[vouchington-clients#199](https://github.com/vouchington/vouchington-clients/issues/199).

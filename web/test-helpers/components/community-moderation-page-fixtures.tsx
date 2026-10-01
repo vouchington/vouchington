@@ -141,6 +141,9 @@ vi.mock(import('@/components/communities/community-bans-panel'), () => ({
 vi.mock(import('@/components/communities/community-raid-mode-panel'), () => ({
   CommunityRaidModePanel: () => <div>raid-mode-panel</div>,
 }))
+vi.mock(import('@/components/communities/community-automod-action-form'), () => ({
+  CommunityAutomodActionForm: () => <div>automod-action-form</div>,
+}))
 vi.mock(import('@/components/communities/community-post-type-settings-form'), () => ({
   CommunityPostTypeSettingsForm: () => <div>post-type-settings</div>,
 }))
@@ -167,6 +170,7 @@ export function makeCommunityData(
       name: 'Test Community',
       allow_review_posts: false,
       allow_data_point_posts: false,
+      automod_action: 'record_only',
     },
     membership: role ? { role, removed_at: removedAt } : null,
   }

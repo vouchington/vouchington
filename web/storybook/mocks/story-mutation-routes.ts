@@ -19,6 +19,9 @@ export function storyMutationPatch(endpoint: string, body: unknown): unknown | u
       community: { archived_at: storyField(body, 'archive') === true ? storyMutationAt : null },
     }
   }
+  if (/^\/api\/v1\/communities\/[^/]+\/automod-settings$/.test(endpoint)) {
+    return { community: { automod_action: storyText(body, 'automod_action') || 'record_only' } }
+  }
   if (/^\/api\/v1\/communities\/[^/]+\/posts\/[^/]+$/.test(endpoint)) return {}
   if (/^\/api\/v1\/my\/messages\/[^/]+$/.test(endpoint)) {
     return { participant_add_policy: storyText(body, 'participant_add_policy') || 'owner_only' }

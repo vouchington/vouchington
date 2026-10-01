@@ -1,5 +1,5 @@
-import { read, beginTransaction, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { read, beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { getModerationSystemUserId } from '@services/users/system-users'
 import type { CommunityPostReview } from '../types.mts'
@@ -15,7 +15,7 @@ export type AgentRemovalResult = 'removed' | 'already-removed' | 'not-applicable
 
 /**
  * Agent-driven unpublish: bypasses human moderator access check.
- * Used by community moderation agents when on_flag_action='unpublish'.
+ * Used by the AI report-judgement agent.
  */
 export async function unpublishPostAsAgent(
   communityId: string,
@@ -29,13 +29,49 @@ export async function unpublishPostAsAgent(
 
   const moderationSystemUserId = await getModerationSystemUserId()
   await using query = await beginTransaction()
+  const result = await unpublishInTransaction(query, {
+    communityId,
+    postId,
+    moderationSystemUserId,
+  })
+  await query.commit()
+  return result
+}
 
+/**
+ * The community moderation classifier's unpublish, run inside the caller's transaction (the
+ * classifier run's completion transaction), which owns the commit and every post-commit effect.
+ * It also records the flag on the review row, for the digest the classifier ran on, so the
+ * unpublish stays attributable to automod. A post under platform override is never touched.
+ */
+export async function unpublishPostForAutomodFlag(
+  query: TransactionQuery,
+  input: {
+    communityId: string
+    postId: string
+    contentSha256: Buffer
+    moderationSystemUserId: string
+  },
+): Promise<Exclude<AgentRemovalResult, 'not-applicable'>> {
+  const flagAssignments = automodFlagAssignments(input.contentSha256)
+  return unpublishInTransaction(query, input, flagAssignments)
+}
+
+async function unpublishInTransaction(
+  query: TransactionQuery,
+  input: { communityId: string; postId: string; moderationSystemUserId: string },
+  flagAssignments: SQLStatement = sql``,
+): Promise<Exclude<AgentRemovalResult, 'not-applicable'>> {
+  const { communityId, postId, moderationSystemUserId } = input
   await lockPostPublication(query, postId)
   const { rowCount } = await write(
     sql`/* unpublishPostAsAgent */
       UPDATE community_post_reviews
       SET unpublished_at = CURRENT_TIMESTAMP,
-          unpublished_by_id = ${moderationSystemUserId}
+          unpublished_by_id = ${moderationSystemUserId}`
+      .append(flagAssignments)
+      .append(
+        sql`
       WHERE community_id = ${communityId}
         AND post_id = ${postId}
         AND approved_at IS NOT NULL
@@ -43,12 +79,10 @@ export async function unpublishPostAsAgent(
         AND unpublished_at IS NULL
         AND platform_override_at IS NULL
       `,
+      ),
     { query },
   )
-  if ((rowCount ?? 0) === 0) {
-    await query.commit()
-    return 'already-removed'
-  }
+  if ((rowCount ?? 0) === 0) return 'already-removed'
   // ast-grep-ignore: no-three-sequential-awaits -- review history, publication capture, and moderator audit must commit in causal order
   await write(
     sql`/* recordAgentPublicationReviewChange */
@@ -70,8 +104,17 @@ export async function unpublishPostAsAgent(
     { actionType: 'remove', communityId, postId },
     { query },
   )
-  await query.commit()
   return 'removed'
+}
+
+/** The flag shares the statement's timestamp with `unpublished_at`; a new flag clears any dismissal. */
+function automodFlagAssignments(contentSha256: Buffer): SQLStatement {
+  return sql`,
+          automod_action = 'unpublish',
+          automod_flagged_at = CURRENT_TIMESTAMP,
+          automod_flagged_content_sha256 = ${contentSha256},
+          automod_dismissed_at = NULL,
+          automod_dismissed_by_id = NULL`
 }
 
 async function getReview(communityId: string, postId: string): Promise<CommunityPostReview | null> {

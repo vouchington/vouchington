@@ -66,9 +66,24 @@ authorization and the prompt write.
 | `delete.mts`              | `deleteCommunityAgentPrompt` (soft-delete)                               |
 | `allocate.mts`            | `allocateCommunityAgentPromptSlot`, `deallocateCommunityAgentPromptSlot` |
 | `deactivate-for-user.mts` | `deactivateCommunityPromptsForUser` — slot reclaim on moderator removal  |
-| `get-active-prompts.mts`  | `getActiveCommunityAgentPrompts` — dispatcher query                      |
+| `get-active-prompts.mts`  | `getActiveCommunityAgentPrompts` — the prompts a run pins                |
+| `moderation-run-*.mts`    | `community-moderation` classifier adapter, configuration and effects     |
+| `moderations.mts`         | `agent_moderations` result reads for the moderation views                |
 | `simulations.mts`         | approved-post sampling and historical false-positive estimate helpers    |
 | `index.mts`               | Barrel export                                                            |
+
+## Classifier run
+
+The `community-moderation` classifier is registered on the shared classifier-run lifecycle.
+`moderation-run-configuration.mts` pins the community's active prompts (at most 30 questions and
+40,000 rule characters) with the classifier prompt, model and actor, and `moderation-run-adapter.mts`
+locks the post's current content and resolves that configuration. `moderation-run-effects.mts`
+completes a run in one transaction: it writes the `agent_moderations` projection, then applies the
+community's `communities.automod_action` to a flagged post (`record_only` stores the result only,
+`review_queue` flags the review row, `unpublish` removes the post as automod unless
+`platform_override_at` is set). The action is read when effects are applied and is not part of the
+run's identity, so changing it never re-bills. A completed run is replayed, never re-applied, so
+one content digest never repeats its action.
 
 ## Simulation
 
@@ -81,7 +96,7 @@ owns sampling and persisted moderation history queries.
 
 - Queue: [docs/overview/architecture/queues/ai-agents/README.md](../../queues/ai-agents/README.md)
 - Communities: [../communities/README.md](../communities/README.md)
-- Agent: [`backend/agents/community-moderation/run.mts`](../../../../../backend/agents/community-moderation/run.mts)
+- Agent: [`backend/agents/community-moderation/classifier-run.mts`](../../../../../backend/agents/community-moderation/classifier-run.mts)
 - Moderation results: [`backend/services/community-agent-prompts/moderations.mts`](../../../../../backend/services/community-agent-prompts/moderations.mts)
 - API routes: [`backend/api/v1/communities/agent-prompts.mts`](../../../../../backend/api/v1/communities/agent-prompts.mts)
 - Full spec: [docs/requirements/moderation/community-moderation.md](../../../../requirements/moderation/community-moderation.md)

@@ -11,7 +11,6 @@ const prompt = {
   model_name: 'gpt-5.4-nano',
   model_provider: 'openai',
   slot_allocated: true,
-  on_flag_action: 'unpublish',
   activated_at: null,
   deactivated_at: null,
   created_at: '2026-06-01T10:00:00.000Z',

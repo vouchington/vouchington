@@ -12,7 +12,6 @@
       "id": "prompt-1",
       "model_name": "gpt-5.4-nano",
       "model_provider": "openai",
-      "on_flag_action": "none",
       "prompt": "Welcome new members.",
       "slot_allocated": true,
       "updated_at": "2026-01-01T00:00:00Z"

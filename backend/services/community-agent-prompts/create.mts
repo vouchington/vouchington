@@ -61,7 +61,7 @@ export async function createCommunityAgentPrompt(
   const { rows: capRows } = await query(sql`/* createCommunityAgentPrompt */
     INSERT INTO community_agent_prompts (id, community_id, created_by_id)
     VALUES (${promptId}, ${communityId}, ${currentUserId})
-    RETURNING id, community_id, created_by_id, slot_allocated, on_flag_action, activated_at, deactivated_at, deleted_at, deleted_by_id
+    RETURNING id, community_id, created_by_id, slot_allocated, activated_at, deactivated_at, deleted_at, deleted_by_id
   `)
 
   const ap = apRows[0]
@@ -73,7 +73,6 @@ export async function createCommunityAgentPrompt(
     community_id: cap.community_id,
     created_by_id: cap.created_by_id,
     slot_allocated: cap.slot_allocated,
-    on_flag_action: cap.on_flag_action,
     activated_at: cap.activated_at,
     deactivated_at: cap.deactivated_at,
     deleted_at: cap.deleted_at,
