@@ -20,9 +20,8 @@ import {
 const root = resolve(import.meta.dirname, '../..')
 
 function allTrackedFiles(): string[] {
-  return execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
-    .split('\0')
-    .filter(Boolean)
+  const options = { cwd: root, encoding: 'utf8', maxBuffer: 2 ** 25 } as const
+  return execFileSync('git', ['ls-files', '-z'], options).split('\0').filter(Boolean)
 }
 
 describe('gh api shell-quoting guard', () => {
