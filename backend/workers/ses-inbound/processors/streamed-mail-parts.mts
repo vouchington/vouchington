@@ -2,7 +2,7 @@ import { MailParser, type AttachmentStream, type HeaderValue } from 'mailparser'
 import { createHash } from 'node:crypto'
 import type { Readable } from 'node:stream'
 
-export const MAX_MIME_TEXT_BYTES = 2 * 1024 * 1024
+const MAX_MIME_TEXT_BYTES = 2 * 1024 * 1024
 const MAX_MIME_NODES = 1000
 
 type MailParserChunk = {

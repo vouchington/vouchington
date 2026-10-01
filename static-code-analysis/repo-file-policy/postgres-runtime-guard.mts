@@ -26,6 +26,8 @@ const DEVELOPMENT_RUNTIME_TEST_HELPERS = new Set([
 ])
 const QUERY_EXECUTORS = new Set(['query', 'read', 'write'])
 const TRANSACTION_COMMAND_RE = /^\s*(?:\/\*[^]*?\*\/\s*)?(?:BEGIN|COMMIT|ROLLBACK)\b/i
+// Retained after #1586 parity: no-mistakes misses function-scoped var SQL
+// initialized inside a conditional block; the existing fixture covers this gap.
 const SQL_ANNOTATION_RE = /^\s*\/\*\s*\S[^]*?\*\//
 
 function postgresExecutorBindings(ast: Node): Set<string> {

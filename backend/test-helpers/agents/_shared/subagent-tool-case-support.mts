@@ -7,8 +7,7 @@ import {
   type OpenAIResponse,
 } from '../../../modules/openai-utils/create-response.mts'
 import type {
-  SubagentResult,
-  SubagentStepEvent,
+  createSubagentTool,
   SubagentToolCurryArgs,
 } from '../../../agents/_shared/subagent-tool.mts'
 import type { BasicUser } from '../../../services/users/types.mts'
@@ -16,6 +15,12 @@ import {
   createMockTextResponse,
   drainSubagentExecutor,
 } from '@voucha/test-helpers/subagent-test-utils'
+
+type SubagentExecution = ReturnType<ReturnType<ReturnType<typeof createSubagentTool>['function']>>
+type SubagentStepEvent =
+  SubagentExecution extends AsyncGenerator<infer Event, unknown> ? Event : never
+type SubagentResult =
+  SubagentExecution extends AsyncGenerator<unknown, infer Result> ? Result : never
 
 export type AgentTool = {
   schema: { name: string; type: string; parameters: unknown }

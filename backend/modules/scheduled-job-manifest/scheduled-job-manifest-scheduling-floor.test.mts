@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { defineScheduledJobManifest, upsertScheduledJobManifest } from './index.mts'
-import type { ScheduledJobDefinition, ScheduledJobQueue } from './types.mts'
+import type { ScheduledJobDefinition } from './types.mts'
 
 function makeQueue(upsertJobScheduler: ScheduledJobQueue['upsertJobScheduler']): ScheduledJobQueue {
   return {
@@ -19,6 +19,8 @@ function job(overrides: Partial<ScheduledJobDefinition> = {}): ScheduledJobDefin
     ...overrides,
   }
 }
+
+type ScheduledJobQueue = Parameters<typeof upsertScheduledJobManifest>[0]
 
 describe('scheduled job repeat: 1-minute scheduling floor', () => {
   it('rejects a sub-minute every without justification', () => {

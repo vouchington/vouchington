@@ -16,3 +16,9 @@ stateDiagram-v2
 Topic edits use the current set for later routing; stored archive evidence never changes. A manual
 action terminalizes only its acted-on predecessor epoch, so reconciliation never guesses across it.
 See the [historical audit runbook](../../operations/review-succession-history-audit.md).
+
+Every automatic archive and restore also writes an `update` row to `post_revisions` in the same
+statement, with NULL `revised_by_id` and the exact archive epoch timestamp in the `archived_at`
+before/after change. Only posts that actually change state gain a revision; replay adds none.
+Manual overrides retain the existing manual revision path. The entity-listener reconciliation
+sweep emits `post_updated` with `contentChanged: false` for automatic lifecycle revisions.

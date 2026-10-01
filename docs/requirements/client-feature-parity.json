@@ -2867,6 +2867,7 @@
             "web/components/copyright/copyright-email-review-detail.tsx",
             "web/components/copyright/copyright-email-approval-fields.tsx",
             "web/components/copyright/copyright-email-correspondence-fields.tsx",
+            "web/components/copyright/copyright-email-information-request-field.tsx",
             "web/components/copyright/copyright-email-reply-address-field.tsx"
           ],
           "behaviorTests": [
@@ -2874,6 +2875,7 @@
             "web/components/copyright/__tests__/copyright-email-review.pagination.mock.test.tsx",
             "web/components/copyright/__tests__/copyright-email-review.parse-state.mock.test.tsx",
             "web/components/copyright/__tests__/copyright-email-review.reply-address.mock.test.tsx",
+            "web/components/copyright/__tests__/copyright-email-review.needs-information.mock.test.tsx",
             "web/components/copyright/copyright-email-approval-fields.test.tsx",
             "web/components/copyright/copyright-email-correspondence-fields.test.tsx"
           ]
@@ -2890,7 +2892,7 @@
         }
       },
       "gap": {
-        "summary": "Swift and .NET render no copyright email-intake queue, approval, rejection, or correspondence form. Email-intake review remains web-only staff tooling, and its rejection response fixtures have only the web consumer.",
+        "summary": "Swift and .NET render no copyright email-intake queue, approval, rejection, information-request, or correspondence form. Email-intake review remains web-only staff tooling, and its rejection and information-request response fixtures have only the web consumer.",
         "trackingIssue": "https://github.com/vouchington/vouchington/issues/1229"
       }
     },

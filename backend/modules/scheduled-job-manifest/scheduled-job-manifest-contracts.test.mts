@@ -4,7 +4,7 @@ import {
   projectScheduledJobs,
   upsertScheduledJobManifest,
 } from './index.mts'
-import type { ScheduledJobDefinition, ScheduledJobQueue } from './types.mts'
+import type { ScheduledJobDefinition } from './types.mts'
 
 function makeQueue(upsertJobScheduler: ScheduledJobQueue['upsertJobScheduler']): ScheduledJobQueue {
   return {
@@ -30,6 +30,8 @@ function scheduledJob(id: string): ScheduledJobDefinition {
     ],
   }
 }
+
+type ScheduledJobQueue = Parameters<typeof upsertScheduledJobManifest>[0]
 
 describe('scheduled job manifest catalog contracts', () => {
   it('rejects an incomplete or duplicate projection order', () => {

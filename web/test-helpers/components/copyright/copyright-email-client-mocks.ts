@@ -6,6 +6,7 @@ import type {
   listCopyrightEmailIntakes,
   rejectCopyrightEmailCorrespondence,
   rejectCopyrightEmailIntake,
+  requestCopyrightEmailIntakeInformation,
 } from '@/lib/api/client/copyright-email-intakes'
 import type { resolveCopyrightNoticeTargets } from '@/lib/api/client/copyright-notice-targets'
 
@@ -18,6 +19,7 @@ export const copyrightEmailIntakesClientMock = {
   listCopyrightEmailIntakes: vi.fn<typeof listCopyrightEmailIntakes>(),
   rejectCopyrightEmailIntake: vi.fn<typeof rejectCopyrightEmailIntake>(),
   rejectCopyrightEmailCorrespondence: vi.fn<typeof rejectCopyrightEmailCorrespondence>(),
+  requestCopyrightEmailIntakeInformation: vi.fn<typeof requestCopyrightEmailIntakeInformation>(),
 }
 
 export const copyrightNoticeTargetsClientMock = {

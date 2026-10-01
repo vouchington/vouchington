@@ -2,7 +2,11 @@ import { recordStaffOperation } from '@services/moderator-actions/operation'
 import type { Context } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import { apiResponse } from '../../response-contract.mts'
-import { requireAuthAndRateLimit, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  requireAuthAndRateLimit,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import {
   currentUserCanResolveReviewDispute,
   getReviewDisputeByIdFromPrimary,
@@ -15,6 +19,9 @@ app.route('/api/v1/disputes/:id/resolution-drafts').post(async (ctx: Context) =>
     'POST:/api/v1/disputes/:id/resolution-drafts',
   )
   const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'POST:/api/v1/disputes/:id/resolution-drafts', {
+    path: ctx.params,
+  })
 
   const dispute = await getReviewDisputeByIdFromPrimary(id)
   ctx.assert(dispute, 404, 'Dispute not found')

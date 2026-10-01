@@ -44,13 +44,22 @@ intake queue shows each message's wait age.
    substantially compliant notice for failing to match Voucha's form wording.
 5. To reject an email or ask the sender for more information, check who will receive the reply. An
    email with a parsed sender replies to that sender. An email with no parsed sender (a `failed`
-   or `unparsed` parse) has nobody to reply to, so the reply field appears and a rejection queues no
+   or `unparsed` parse) has nobody to reply to, so the reply field appears and a decision queues no
    reply unless you type an address there. Type one only when the original MIME shows a sender
    worth answering; the server refuses an address for an email that has a parsed sender. The
    staff page then reports "A reply was queued." or "No reply sent."; the API returns
-   `reply_queued`. Asking for more information (`response_kind: needs_information`) is API-only
-   today and takes the same optional `reply_email`. A parse that lands after the decision sends nothing, and a repeated decision
-   reports the original outcome.
+   `reply_queued`.
+   - **Reject email intake** closes the intake without opening a case. It needs the review
+     rationale, plus the manual-fallback reason when there is no recommendation.
+   - **Request information** closes the intake the same way and sends your message to the sender.
+     It also needs the rationale, and it stays disabled until the message is not blank and is at
+     most 10,000 characters; the count beside the field shows how close you are. The message follows
+     the fixed reply text, so write only what the sender must supply, such as the work and each
+     allegedly infringing URL.
+
+   A parse that lands after the decision sends nothing, and a repeated decision reports the original
+   outcome.
+
 6. While automatic provisional withholding is off, a clear-screened signed-in form waits here like
    a guest form. Accept it to withhold its targets, or reject it. The screen is advisory only.
 7. If a signed-in case was provisionally restricted automatically, record a human `confirm`,

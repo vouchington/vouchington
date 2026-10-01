@@ -18,6 +18,8 @@ const parser = createPaginationParser({
 app.route('/api/v1/posts/review-queue').get(async (ctx: Context) => {
   await requireAuthAndRateLimit(ctx, isModerationStaff, 'GET:/api/v1/posts/review-queue')
 
+  // Intentional carrier skip: no registered response contract and an integer `limit`; the shared
+  // pagination parser owns the range and cursor checks.
   const { limit, after } = parser.parse(ctx.query)
 
   ctx.json(await searchPostsForAdminReview({ limit, after }))

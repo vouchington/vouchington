@@ -1040,6 +1040,8 @@
     },
     "POST:/api/v1/copyright-email-intakes/:id/rejections": {
       "fixtureIds": [
+        "web.copyright.email-intake-information-request.no-reply",
+        "web.copyright.email-intake-information-request.reply-queued",
         "web.copyright.email-intake-rejection.no-reply",
         "web.copyright.email-intake-rejection.reply-queued"
       ],
@@ -1255,7 +1257,7 @@
     },
     "POST:/api/v1/valkey/bloom-filters/rebuild": {
       "fixtureIds": ["web.admin.valkey.bloom-filters.rebuild.default"],
-      "hash": "a1d0377e1e3d7bc16a196eda470d7517ee7e4fd9984efcfe796a942d0f205f50"
+      "hash": "c42b3c17ae1a041da05b764e23e5cc50b13f4da86bae75288759ac08824787ec"
     },
     "POST:/api/v1/valkey/caches/clear": {
       "fixtureIds": ["web.admin.valkey.caches.clear.default"],
@@ -2694,6 +2696,14 @@
     "web.communities.warning.create.default": {
       "fixtureIds": ["web.communities.warning.create.default"],
       "hash": "b038a2f206ce0215d4d59994436070776411fd7e26ec212e912a03af1ee89ef9"
+    },
+    "web.copyright.email-intake-information-request.no-reply": {
+      "fixtureIds": ["web.copyright.email-intake-information-request.no-reply"],
+      "hash": "b1d883f88b6afb685bde0e61dde5a6d4f86437e8d587d34d77f59216e18d1386"
+    },
+    "web.copyright.email-intake-information-request.reply-queued": {
+      "fixtureIds": ["web.copyright.email-intake-information-request.reply-queued"],
+      "hash": "b1d883f88b6afb685bde0e61dde5a6d4f86437e8d587d34d77f59216e18d1386"
     },
     "web.copyright.email-intake-queue.default": {
       "fixtureIds": ["web.copyright.email-intake-queue.default"],

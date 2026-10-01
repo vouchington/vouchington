@@ -202,6 +202,11 @@ but cannot create a restriction, correspondence, or legal case. A moderator must
 and agent output, then explicitly accept or reject it before a valid email submission can enter the
 case lifecycle, even when the recommendation is `potentially_valid`.
 
+On the staff email review page a moderator decides an initial intake with **Approve structured
+intake**, **Request information**, or **Reject email intake**. A request for information carries a
+required message (not blank, at most 10,000 characters) that follows the fixed reply text, and like
+a rejection it closes the intake without opening a case. Reply wording is owned by counsel.
+
 A rejection, or a request for more information, replies to the sender only when there is one. With
 a succeeded parse the reply goes to the parsed sender. With no parse row or a failed parse the
 moderator may type a reply address, validated like the claimant email on approval; without one no

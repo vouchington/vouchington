@@ -41,8 +41,8 @@ Unknown columns cause a 422 error (prevents silent typos).
   ```json
   { "valid": true, "batch": { "id": "...", "import_type": "topic", "total_rows": 2 } }
   ```
-- `400` — Empty body, header-only CSV, malformed CSV, or exceeds 1000 rows
-- `422` — Unknown columns or invalid rows:
+- `400` — Blank CSV, header-only CSV, malformed CSV, or exceeds 1000 rows
+- `422` — `csv` missing or not a string (request contract), unknown columns, or invalid rows:
   ```json
   { "valid": false, "error": "Unknown CSV columns: typo_field" }
   ```

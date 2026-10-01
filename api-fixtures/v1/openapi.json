@@ -70,6 +70,16 @@
         "required": ["user_id"],
         "type": "object"
       },
+      "AdminImportTopicsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "csv": {
+            "type": "string"
+          }
+        },
+        "required": ["csv"],
+        "type": "object"
+      },
       "AdminOAuthClientView": {
         "additionalProperties": false,
         "properties": {
@@ -493,9 +503,15 @@
       "AssignmentBody": {
         "additionalProperties": false,
         "properties": {
-          "category_text": {},
-          "topic_id": {}
+          "category_text": {
+            "type": "string"
+          },
+          "topic_id": {
+            "format": "uuid",
+            "type": "string"
+          }
         },
+        "required": ["category_text", "topic_id"],
         "type": "object"
       },
       "AttributionReferrerBody": {
@@ -846,6 +862,23 @@
         "required": ["__entity_type", "id", "roles"],
         "type": "object"
       },
+      "BatchDisputeAnnotationsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "post_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 0,
+            "type": "array",
+            "uniqueItems": false
+          }
+        },
+        "required": ["post_ids"],
+        "type": "object"
+      },
       "BatchProgress": {
         "additionalProperties": false,
         "properties": {
@@ -916,6 +949,16 @@
         "required": ["expires_at", "flow_id", "redirect_url"],
         "type": "object"
       },
+      "BillingPortalSessionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "return_url": {
+            "type": "string"
+          }
+        },
+        "required": ["return_url"],
+        "type": "object"
+      },
       "BlockHostnameResult": {
         "additionalProperties": false,
         "properties": {
@@ -934,6 +977,17 @@
           "penalized_user_count",
           "soft_deleted_relation_count"
         ],
+        "type": "object"
+      },
+      "BloomFilterRebuildRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "filter": {
+            "enum": ["api-keys", "email-blocklist", "embedding", "entity-cache", "url-blocklist"],
+            "type": "string"
+          }
+        },
+        "required": ["filter"],
         "type": "object"
       },
       "BlueskyAccountInfo": {
@@ -1016,6 +1070,16 @@
             ]
           }
         },
+        "type": "object"
+      },
+      "ClearCacheRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "group": {
+            "type": "string"
+          }
+        },
+        "required": ["group"],
         "type": "object"
       },
       "ClearanceMutationBody": {
@@ -4215,6 +4279,19 @@
         "properties": {},
         "type": "object"
       },
+      "CreateImageUploadUrlRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "content_length": {
+            "type": "number"
+          },
+          "content_type": {
+            "type": "string"
+          }
+        },
+        "required": ["content_length", "content_type"],
+        "type": "object"
+      },
       "CreateInstanceResult": {
         "additionalProperties": false,
         "properties": {
@@ -4289,6 +4366,70 @@
           }
         },
         "required": ["name"],
+        "type": "object"
+      },
+      "CreateModerationAppealRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "appeal_reason": {
+            "type": "string"
+          },
+          "cf_turnstile_response": {
+            "type": "string"
+          },
+          "post_removal_kind": {
+            "enum": ["community", "platform"],
+            "type": "string"
+          },
+          "target_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "target_type": {
+            "enum": ["ban", "removal", "suspension", "warning"],
+            "type": "string"
+          }
+        },
+        "required": ["appeal_reason", "target_type"],
+        "type": "object"
+      },
+      "CreateModerationReportRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "cf_turnstile_response": {
+            "type": "string"
+          },
+          "entityId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "entityType": {
+            "enum": ["comment", "post", "rss_feed_item", "url_hostname", "user"],
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "reason": {
+            "enum": [
+              "harassment",
+              "illegal_content",
+              "misinformation",
+              "other",
+              "spam",
+              "vote_manipulation"
+            ],
+            "type": "string"
+          }
+        },
+        "required": ["entityId", "entityType", "reason"],
         "type": "object"
       },
       "CreateOAuthAppRequest": {
@@ -4686,6 +4827,37 @@
           }
         },
         "required": ["slug"],
+        "type": "object"
+      },
+      "CreateReviewDisputeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "cf_turnstile_response": {
+            "type": "string"
+          },
+          "claim_text": {
+            "type": "string"
+          },
+          "post_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "defamatory",
+              "factually_inaccurate",
+              "impersonation",
+              "other",
+              "privacy_violation"
+            ],
+            "type": "string"
+          },
+          "topic_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["claim_text", "post_id", "reason"],
         "type": "object"
       },
       "CreateRewardsProgramStatusRequest": {
@@ -6557,6 +6729,28 @@
         "required": ["exact_topic", "pending_recommendations", "similar_topics"],
         "type": "object"
       },
+      "FlushRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "concern": {
+            "enum": [
+              "blooms",
+              "caches",
+              "dynamic-config",
+              "queues",
+              "rate-limiter",
+              "recently-viewed",
+              "sessions"
+            ],
+            "type": "string"
+          },
+          "force": {
+            "type": "boolean"
+          }
+        },
+        "required": ["concern"],
+        "type": "object"
+      },
       "FlushResult": {
         "additionalProperties": false,
         "properties": {
@@ -6933,6 +7127,28 @@
           }
         },
         "required": ["consent_type", "version"],
+        "type": "object"
+      },
+      "GrantMembershipRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "duration_days": {
+            "type": "number"
+          },
+          "plan": {
+            "enum": ["plus", "pro"],
+            "type": "string"
+          },
+          "sku_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["duration_days", "plan", "sku_id", "user_id"],
         "type": "object"
       },
       "GrowthMetrics": {
@@ -7670,6 +7886,55 @@
           "crawler_success_rate",
           "queue_throughput"
         ],
+        "type": "object"
+      },
+      "IssueUserWarningRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "communityId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "publicMessage": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "reportId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolveReport": {
+            "type": "boolean"
+          },
+          "userId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["reason", "userId"],
         "type": "object"
       },
       "IssuedOAuthApp": {
@@ -8928,9 +9193,11 @@
         "additionalProperties": false,
         "properties": {
           "idempotency_key": {
+            "format": "uuid",
             "type": "string"
           },
           "product_id": {
+            "format": "uuid",
             "type": "string"
           },
           "provider": {
@@ -9060,6 +9327,7 @@
             ]
           },
           "idempotency_key": {
+            "format": "uuid",
             "type": "string"
           },
           "invoice_id": {
@@ -9089,6 +9357,7 @@
             "$ref": "#/components/schemas/MembershipRefundReason"
           },
           "user_id": {
+            "format": "uuid",
             "type": "string"
           }
         },
@@ -9170,12 +9439,14 @@
         "properties": {
           "evidence": {},
           "idempotency_key": {
+            "format": "uuid",
             "type": "string"
           },
           "provider": {
             "$ref": "#/components/schemas/MembershipVerificationProvider"
           },
           "purchase_intent_id": {
+            "format": "uuid",
             "type": "string"
           }
         },
@@ -14603,6 +14874,23 @@
         ],
         "type": "string"
       },
+      "PsqlJobRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "cleanupPartitions",
+              "createPartitions",
+              "runConfigDriven",
+              "runMigrations",
+              "runViews"
+            ],
+            "type": "string"
+          }
+        },
+        "required": ["type"],
+        "type": "object"
+      },
       "PublicDisplayAccount": {
         "additionalProperties": false,
         "properties": {
@@ -16448,11 +16736,35 @@
         ],
         "type": "object"
       },
+      "RejectTopicClaimRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "rejection_reason": {
+            "type": "string"
+          }
+        },
+        "required": ["rejection_reason"],
+        "type": "object"
+      },
       "RejectionBody": {
         "additionalProperties": false,
         "properties": {
-          "category_text": {}
+          "category_text": {
+            "type": "string"
+          }
         },
+        "required": ["category_text"],
+        "type": "object"
+      },
+      "RemoveDisputeAnnotationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "annotation_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["annotation_id"],
         "type": "object"
       },
       "ReorderProfileLinksRequest": {
@@ -16667,6 +16979,42 @@
           "resolved_by_id",
           "rss_feed_item_id"
         ],
+        "type": "object"
+      },
+      "ResolveAppealRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": ["accept", "deny", "reduce"],
+            "type": "string"
+          }
+        },
+        "required": ["action"],
+        "type": "object"
+      },
+      "ResolveDisputeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": ["annotate", "dismiss", "remove"],
+            "type": "string"
+          },
+          "body_text": {
+            "type": "string"
+          }
+        },
+        "required": ["action"],
+        "type": "object"
+      },
+      "ResolveModerationReportRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "enum": ["dismissed", "reviewed"],
+            "type": "string"
+          }
+        },
+        "required": ["status"],
         "type": "object"
       },
       "ResolvedEmbed": {
@@ -17333,6 +17681,16 @@
         ],
         "type": "object"
       },
+      "RevokeMembershipGrantRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": ["reason"],
+        "type": "object"
+      },
       "RevokeReportAbusePenaltyResult": {
         "additionalProperties": false,
         "properties": {
@@ -17347,6 +17705,16 @@
           }
         },
         "required": ["penalty", "penaltyId", "userId"],
+        "type": "object"
+      },
+      "RevokeTopicClaimRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "revocation_reason": {
+            "type": "string"
+          }
+        },
+        "required": ["revocation_reason"],
         "type": "object"
       },
       "RewardsProgramAttributes": {
@@ -18026,6 +18394,17 @@
       "SetIntegrationStatusResult": {
         "enum": ["noop", "updated"],
         "type": "string"
+      },
+      "SetOfficialStoryItemRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "rss_feed_item_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["rss_feed_item_id"],
+        "type": "object"
       },
       "SetPrimaryEmailAddressRequest": {
         "additionalProperties": false,
@@ -19275,6 +19654,18 @@
         "required": ["category_text", "item_count", "rejected"],
         "type": "object"
       },
+      "UpdateAppealDraftRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "internal_notes": {
+            "type": "string"
+          },
+          "public_response": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "UpdateCardRequest": {
         "additionalProperties": false,
         "properties": {
@@ -19428,6 +19819,18 @@
           },
           "verified_badge_visible": {
             "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateDisputeDraftRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "internal_notes": {
+            "type": "string"
+          },
+          "public_response": {
+            "type": "string"
           }
         },
         "type": "object"
@@ -19888,6 +20291,16 @@
         },
         "type": "object"
       },
+      "UpdateStoryTitleRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["title"],
+        "type": "object"
+      },
       "UpdateUserOptions": {
         "additionalProperties": false,
         "properties": {
@@ -20045,6 +20458,37 @@
           }
         },
         "required": ["position_seconds"],
+        "type": "object"
+      },
+      "UpsertReferralProgramCrawlerRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "content_selectors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "crawler_type": {
+            "enum": ["automation", "fetch"],
+            "type": "string"
+          },
+          "css_selectors_to_remove": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "hostname_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "referral_program_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["hostname_id", "referral_program_id"],
         "type": "object"
       },
       "UrlCrawlHistory": {
@@ -23867,11 +24311,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "rejection_reason": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/RejectTopicClaimRequest"
               }
             }
           }
@@ -23917,11 +24357,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "revocation_reason": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/RevokeTopicClaimRequest"
               }
             }
           }
@@ -24157,7 +24593,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/IssueUserWarningRequest"
               }
             }
           }
@@ -25447,7 +25883,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateModerationAppealRequest"
               }
             }
           }
@@ -26709,12 +27145,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "internal_notes": {},
-                  "public_response": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/UpdateAppealDraftRequest"
               }
             }
           }
@@ -26834,11 +27265,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "action": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/ResolveAppealRequest"
               }
             }
           }
@@ -40671,21 +41098,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "content_selectors": {},
-                  "crawler_type": {
-                    "type": "string"
-                  },
-                  "css_selectors_to_remove": {},
-                  "hostname_id": {
-                    "type": "string"
-                  },
-                  "referral_program_id": {
-                    "type": "string"
-                  }
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/UpsertReferralProgramCrawlerRequest"
               }
             }
           }
@@ -41918,7 +42331,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateReviewDisputeRequest"
               }
             }
           }
@@ -42775,12 +43188,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "internal_notes": {},
-                  "public_response": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/UpdateDisputeDraftRequest"
               }
             }
           }
@@ -43208,11 +43616,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "annotation_id": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/RemoveDisputeAnnotationRequest"
               }
             }
           }
@@ -44082,12 +44486,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "action": {},
-                  "body_text": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/ResolveDisputeRequest"
               }
             }
           }
@@ -47689,7 +48088,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateImageUploadUrlRequest"
               }
             }
           }
@@ -47826,11 +48225,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "csv": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/AdminImportTopicsRequest"
               }
             }
           }
@@ -48711,23 +49106,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "duration_days": {
-                    "type": "number"
-                  },
-                  "plan": {
-                    "type": "string"
-                  },
-                  "sku_id": {
-                    "type": "string"
-                  },
-                  "user_id": {
-                    "type": "string"
-                  }
-                },
-                "required": ["duration_days", "plan", "sku_id", "user_id"],
-                "type": "object"
+                "$ref": "#/components/schemas/GrantMembershipRequest"
               }
             }
           }
@@ -48820,14 +49199,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "reason": {
-                    "type": "string"
-                  }
-                },
-                "required": ["reason"],
-                "type": "object"
+                "$ref": "#/components/schemas/RevokeMembershipGrantRequest"
               }
             }
           }
@@ -49217,13 +49589,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "return_url": {
-                    "type": "string"
-                  }
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/BillingPortalSessionRequest"
               }
             }
           }
@@ -57313,11 +57679,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "post_ids": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/BatchDisputeAnnotationsRequest"
               }
             }
           }
@@ -58715,7 +59077,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/PsqlJobRequest"
               }
             }
           }
@@ -60526,7 +60888,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateModerationReportRequest"
               }
             }
           }
@@ -60773,11 +61135,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "status": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/ResolveModerationReportRequest"
               }
             }
           }
@@ -62483,7 +62841,7 @@
         }
       },
       "patch": {
-        "operationId": "patch_api_v1_stories_storyId",
+        "operationId": "patch_api_v1_stories_id",
         "parameters": [
           {
             "in": "path",
@@ -62498,13 +62856,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "title": {
-                    "type": "string"
-                  }
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/UpdateStoryTitleRequest"
               }
             }
           }
@@ -62699,13 +63051,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "rss_feed_item_id": {
-                    "type": "string"
-                  }
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/SetOfficialStoryItemRequest"
               }
             }
           }
@@ -76042,7 +76388,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/BloomFilterRebuildRequest"
               }
             }
           }
@@ -76055,6 +76401,13 @@
                   "additionalProperties": false,
                   "properties": {
                     "filter": {
+                      "enum": [
+                        "api-keys",
+                        "email-blocklist",
+                        "embedding",
+                        "entity-cache",
+                        "url-blocklist"
+                      ],
                       "type": "string"
                     },
                     "success": {
@@ -76111,7 +76464,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/ClearCacheRequest"
               }
             }
           }
@@ -76150,7 +76503,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/FlushRequest"
               }
             }
           }

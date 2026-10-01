@@ -18,6 +18,8 @@ function parseRange(raw: unknown): ModerationAnalyticsRange {
 app.route('/api/v1/admin/moderation-analytics').get(async (ctx: Context) => {
   await requireAuthAndRateLimit(ctx, isAdminUser, 'GET:/api/v1/admin/moderation-analytics')
 
+  // Intentional carrier skip: this route has no registered response contract, so `apiQuery` (and
+  // `validateRequestContract`) cannot describe its query. `parseRange` documents the fallback.
   const range = parseRange(ctx.query.range)
   const metrics = await getModerationAnalytics(range, { type: 'global' })
 

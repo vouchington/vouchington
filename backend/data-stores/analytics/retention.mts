@@ -19,6 +19,7 @@ const WHOLE_FILE_RETENTION_DAYS = {
   web_click: 365,
   auth_sessions: 365,
   contribution_admission: 90,
+  api_usage: 90,
   pg_query_timing: 90,
   pg_pool_stats: 90,
   pg_vote_drift: 90,

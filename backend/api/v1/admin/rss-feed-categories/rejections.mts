@@ -5,9 +5,13 @@ import {
   unrejectRssFeedItemCategory,
   currentUserCanManageRssFeedCategories,
 } from '@services/rss-feed-items'
-import { requireAuthAndRateLimit, parseJsonBody } from '../../../response-helpers.mts'
+import {
+  requireAuthAndRateLimit,
+  parseJsonBody,
+  validateRequestContract,
+} from '../../../response-helpers.mts'
 
-type RejectionBody = { category_text?: unknown }
+type RejectionBody = { category_text: string }
 
 /**
  * POST /api/v1/rss-feed-categories/rejections
@@ -20,12 +24,9 @@ app.route('/api/v1/rss-feed-categories/rejections').post(async (ctx: Context) =>
     'POST:/api/v1/rss-feed-categories/rejections',
   )
   const body = await parseJsonBody<RejectionBody>(ctx)
-  ctx.assert(
-    typeof body.category_text === 'string' && body.category_text.trim(),
-    422,
-    'category_text is required',
-  )
-  await rejectRssFeedItemCategory(currentUser, body.category_text as string)
+  validateRequestContract(ctx, 'POST:/api/v1/rss-feed-categories/rejections', { body })
+  ctx.assert(body.category_text.trim(), 422, 'category_text is required')
+  await rejectRssFeedItemCategory(currentUser, body.category_text)
   ctx.setStatus(201)
   ctx.json({ ok: true })
 })
@@ -41,11 +42,8 @@ app.route('/api/v1/rss-feed-categories/rejections').delete(async (ctx: Context) 
     'DELETE:/api/v1/rss-feed-categories/rejections',
   )
   const body = await parseJsonBody<RejectionBody>(ctx)
-  ctx.assert(
-    typeof body.category_text === 'string' && body.category_text.trim(),
-    422,
-    'category_text is required',
-  )
-  await unrejectRssFeedItemCategory(currentUser, body.category_text as string)
+  validateRequestContract(ctx, 'DELETE:/api/v1/rss-feed-categories/rejections', { body })
+  ctx.assert(body.category_text.trim(), 422, 'category_text is required')
+  await unrejectRssFeedItemCategory(currentUser, body.category_text)
   ctx.setStatus(204)
 })

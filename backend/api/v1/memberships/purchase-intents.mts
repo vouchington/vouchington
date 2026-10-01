@@ -1,6 +1,5 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { isUUID } from '@modules/utils'
 import {
   createMembershipPurchaseIntent,
   getMembershipManagementDestination,
@@ -9,40 +8,20 @@ import {
 } from '@services/memberships'
 import { assertNotSuspended } from '@services/users'
 import { apiResponse } from '../../response-contract.mts'
-import { parseJsonBody, requireAuth } from '../../response-helpers.mts'
-
-const PROVIDERS = new Set<MembershipPurchaseProvider>([
-  'stripe',
-  'apple_app_store',
-  'google_play',
-  'microsoft_store',
-])
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import type { ApiUuidContract } from '../../request-contract-types.mts'
 
 type MembershipPurchaseIntentRequestBody = {
   provider: MembershipPurchaseProvider
-  product_id: string
-  idempotency_key: string
+  product_id: ApiUuidContract
+  idempotency_key: ApiUuidContract
 }
 
 app.route('/api/v1/membership-purchase-intents').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/membership-purchase-intents')
   assertNotSuspended(currentUser)
   const body = await parseJsonBody<MembershipPurchaseIntentRequestBody>(ctx)
-  ctx.assert(
-    typeof body.provider === 'string' && PROVIDERS.has(body.provider),
-    422,
-    'Invalid provider',
-  )
-  ctx.assert(
-    typeof body.product_id === 'string' && isUUID(body.product_id),
-    422,
-    'Invalid product_id',
-  )
-  ctx.assert(
-    typeof body.idempotency_key === 'string' && isUUID(body.idempotency_key),
-    422,
-    'Invalid idempotency_key',
-  )
+  validateRequestContract(ctx, 'POST:/api/v1/membership-purchase-intents', { body })
   let intent: Awaited<ReturnType<typeof createMembershipPurchaseIntent>>
   try {
     intent = await createMembershipPurchaseIntent({

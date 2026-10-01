@@ -19,7 +19,7 @@ Application bucket types × environment:
 | `crawls`                    | HTML/RSS crawl snapshots                                            |
 | `sitemaps`                  | XML sitemaps for search engines (private S3, read via CloudFront)   |
 | `user-exports`              | User data exports (GDPR); 7-day download TTL                        |
-| `ses-inbound`               | Durable raw support email pending worker processing                 |
+| `ses-inbound`               | Durable raw inbound email: copyright MIME pending worker processing |
 
 For full lifecycle, encryption, and retention details see [S3 Buckets × Lifecycle Matrix](s3-buckets.md).
 
@@ -29,7 +29,7 @@ For full lifecycle, encryption, and retention details see [S3 Buckets × Lifecyc
 - Environment stacks own SES configuration sets and bounce/complaint routing
 - Used for transactional email only (login OTP, notifications)
 - Bounce handling: SNS → SQS → backend worker consumer (see [event-ingress.md](../architecture/event-ingress.md))
-- Inbound support mail: Google Workspace routes `support@voucha.ai` to the SES-only `support@inbound.voucha.ai` address; SES stores raw MIME under private S3 `incoming/`, S3 delivers the event via SQS to a worker consumer, which enqueues only the object pointer to GlideMQ (`vouchington-infra/opentofu/sqs-event-ingress.tf`, `backend/workers/ses-inbound-sqs`). The backend worker owns MIME parsing and database writes. Successful objects are deleted; terminal failures move to `failed/` for 30 days.
+- Inbound support mail: Google Workspace routes `support@voucha.ai` to the SES-only `support@inbound.voucha.ai` address; SES stores raw MIME under private S3 `incoming/`, S3 delivers the event via SQS to a worker consumer, which enqueues only the object pointer to GlideMQ (`vouchington-infra/opentofu/sqs-event-ingress.tf`, `backend/workers/ses-inbound-sqs`). The backend worker processes only `copyright-incoming/` objects (MIME parsing and database writes); support intake is retired, so it rejects an `incoming/` job terminally without reading, moving, or deleting the object. Successful copyright objects are deleted; terminal copyright failures move to `failed/` for 30 days.
 - `enable_ses_inbound` defaults false and activates the production-only receipt rule set, S3 notification, and inbound-subdomain MX only after both independently deployed consumers are ready. The apex MX remains Google Workspace.
 - Starts in sandbox mode — production access must be requested separately
 
