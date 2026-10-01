@@ -19,3 +19,7 @@
 | R5: helpers        | [Generic trigger functions, composite parent FKs, shared tables, and exclusive arcs](../postgres-schema-rules.md#r5--helpers-not-copies)                                             |
 | R6: queries        | [Partition bounds, actor-keyed rate limits, explicit columns, and keyset pagination](../postgres-schema-rules.md#r6--query-shape)                                                    |
 | R7: comments       | [Table, column, generated-table, and privacy-boundary view comments](../postgres-schema-rules.md#r7--every-table-column-and-view-has-a-comment)                                      |
+
+Session and vote user agents share the insert-only `user_agent_strings` lookup. Each normalized
+string has one row and no source discriminator or `updated_at`; see
+[shared lookup rules](../postgres-schema-rules.md#shared-lookup-tables).

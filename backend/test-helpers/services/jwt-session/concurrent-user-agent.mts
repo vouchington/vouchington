@@ -42,7 +42,8 @@ async function waitForUserAgentInsertLock(
         WHERE ${holderProcessId} = ANY(pg_blocking_pids(pid))
           AND state = 'active'
           AND wait_event_type = 'Lock'
-          AND query LIKE '%upsertAuthenticatedSession%'
+          AND (query LIKE '%upsertAuthenticatedSession%'
+            OR query LIKE '%upsertUserAgentString%')
       ) AS blocked`,
     )
     if (rows[0]?.blocked) return

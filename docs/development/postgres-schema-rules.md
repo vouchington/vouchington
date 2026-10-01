@@ -607,8 +607,8 @@ t (parent_id, id)`, with a `UNIQUE (parent_id, id)` on the referenced table. The
   pk is the base row's id (supertype/subtype, "Class Table Inheritance"). A row with one of
   several sources uses an exclusive arc: one nullable FK per source plus
   `CHECK (num_nonnulls(…) = 1)`, never a type/id pair.
-  - `web_user_agents` + `vote_user_agents` → `user_agent_strings` (a value lookup: no
-    discriminator, because the same string is the same row)
+  - `user_agent_strings` is the shared session/vote value lookup: no discriminator, because
+    the same string is the same row; see [shared lookup tables](#shared-lookup-tables)
   - `rss_feed_discoverability_changes` + `rss_feed_enablement_changes` → `rss_feed_setting_changes`
   - `moderation_appeal_lifecycle_changes` and `review_dispute_lifecycle_changes` keep separate
     tables but take the R4 `_changes` shape
@@ -773,3 +773,12 @@ Tracked by #7359.
 - [backend/data-stores/psql/AGENTS.md](../../backend/data-stores/psql/AGENTS.md) — authoritative schema rules
 - [Partitioning strategy](../overview/architecture/partitioning-strategy.md)
 - [Schema Checks](reference-tests-schema-checks.md) — CI enforcement for the schema snapshot
+
+## Shared lookup tables
+
+Share a lookup when its columns describe the same value across sources. `user_agent_strings`
+stores each trimmed browser user-agent string once, capped at 1024 characters, with no source
+discriminator or `updated_at`. Sessions preserve an empty string for unknown agents and reference
+the lookup with `ON DELETE RESTRICT`; votes omit unknown agents and use `ON DELETE SET NULL`.
+`upsertUserAgentString` inserts without updating existing rows, then reads in a separate statement
+so concurrent first-use inserts are visible after the uniqueness conflict resolves.
