@@ -1,6 +1,9 @@
 import { getCapturedQueries, extractQueryName } from '@data-stores/psql'
 import { caches } from '@services/entity-cache/caches'
-import type { StoryMemberPage, StoryMemberRequest } from '@services/stories/story-member-pages'
+import type {
+  StoryMemberPage,
+  StoryMemberRequest,
+} from '@services/feeds/rss-feed-items/story-member-pages'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { STORY_POST_RELATED_URL_PROJECTION_SEED } from '../seed-data/story-post-related-url-projection.mts'
 import { heavyFollowUser, runAndCapture } from '../run-support.mts'

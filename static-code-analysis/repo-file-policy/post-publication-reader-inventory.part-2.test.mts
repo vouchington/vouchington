@@ -17,7 +17,23 @@ const cases = [
     title: 'requires the descendants route to call the candidate-filtering boundary',
     classification: 'descendants-boundary',
     direct: "import { canViewPost } from '@services/posts'\ncanViewPost()",
-    expected: 'must compose getVisibleCommentDescendantIdsPage',
+    expected: 'must compose getCommentDescendantsPage, getVisibleCommentDescendantIdsPage',
+  },
+  {
+    title: 'accepts a descendants route that awaits the shared descendants page',
+    classification: 'descendants-boundary',
+    direct: `import { getCommentDescendantsPage } from '@services/comments'
+const { ids } = await getCommentDescendantsPage(user, post, { limit: 10 })
+respond(ids)`,
+    expected: null,
+  },
+  {
+    title: 'accepts a descendants page that awaits the visible-ids reader',
+    classification: 'descendants-boundary',
+    direct: `import { getVisibleCommentDescendantIdsPage } from './descendant-ids.mts'
+const { results } = await getVisibleCommentDescendantIdsPage(user, rootId, postId, { limit: 10 })
+respond(results)`,
+    expected: null,
   },
   {
     title: 'rejects a public-view reader that only names the view in a comment',

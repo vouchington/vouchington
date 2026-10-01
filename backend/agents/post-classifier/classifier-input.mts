@@ -18,7 +18,7 @@ type Configuration = NonNullable<
   Awaited<ReturnType<typeof resolvePostClassifierConfiguration>>
 >['configuration']
 
-export type PostClassifierInput = { inputSha256: Buffer } & Omit<
+export type PostClassifierInput = Omit<
   ExecuteSingleCallClassifierDecisionInput,
   'batchId' | 'client' | 'signal'
 >
@@ -83,7 +83,6 @@ export async function buildPostClassifierInput(
     },
   }))
   return {
-    inputSha256: content.content_sha256,
     classifierId: remote.classifierId,
     promptVersionId: remote.promptVersionId,
     subject: { postId: post.id, rssFeedItemId: null },

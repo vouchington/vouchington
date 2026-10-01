@@ -79,7 +79,8 @@ export function createSentryInitOptions(
     enabled,
     release: envVars.GIT_COMMIT || undefined,
 
-    // No request/response bodies or gen-AI prompts and completions (see sentry-data-collection.mts).
+    // Least-data policy: no client IP, cookies, query strings, bodies, DB values, stack locals
+    // or gen-AI content (see sentry-data-collection.mts).
     dataCollection: createSentryDataCollection(),
 
     // Mirror the onError filtering: drop 4xx errors and known noisy connection codes.

@@ -18,15 +18,15 @@ import { processCopyrightEmailIntake } from './processors/process-copyright-emai
 import { processCopyrightFormScreening } from './processors/process-copyright-form-screening.mts'
 import { processCopyrightAppealRecommendation } from './processors/process-copyright-appeal-recommendation.mts'
 import {
-  processPostClassifier,
-  processPostClassifierDispatcher,
-} from './processors/process-post-classifier.mts'
+  processClassifierRun,
+  processClassifierRunDispatcher,
+} from './processors/process-classifier-run.mts'
 import { processBackfillReportJudgements } from './processors/process-backfill-report-judgements.mts'
 import { processAutoDispatchJudgement } from './processors/process-auto-dispatch-judgement.mts'
 import { processReconcileAutoDispatchJudgements } from './processors/process-reconcile-auto-dispatch-judgements.mts'
 import { processReconcileBackgroundResponses } from './processors/process-reconcile-background-responses.mts'
 import { processReconcileCopyrightAgentDispatches } from './processors/process-reconcile-copyright-agent-dispatches.mts'
-import { processReconcilePostClassifierApplications } from './processors/process-reconcile-post-classifier-applications.mts'
+import { processReconcileClassifierRuns } from './processors/process-reconcile-classifier-runs.mts'
 
 export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
   const name = job.name as AIAgentJobName
@@ -40,16 +40,18 @@ export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
       return processAutotaggerRssFeedItem(
         job as Job<import('@queues/ai-agents/types').AutotaggerRssFeedItemJobData>,
       )
-    case 'post-classifier-dispatcher':
-      return processPostClassifierDispatcher(
-        job as Job<import('@queues/ai-agents/types').PostClassifierDispatcherJobData>,
+    case 'classifier-run-dispatcher':
+      return processClassifierRunDispatcher(
+        job as Job<import('@queues/ai-agents/types').ClassifierRunDispatcherJobData>,
       )
-    case 'post-classifier':
-      return processPostClassifier(
-        job as Job<import('@queues/ai-agents/types').PostClassifierJobData>,
+    case 'classifier-run':
+      return processClassifierRun(
+        job as Job<import('@queues/ai-agents/types').ClassifierRunJobData>,
       )
-    case 'reconcile-post-classifier-applications':
-      return processReconcilePostClassifierApplications()
+    case 'reconcile-classifier-runs':
+      return processReconcileClassifierRuns(
+        job.data as import('@queues/ai-agents/types').ReconcileClassifierRunsJobData,
+      )
     case 'community-moderation-dispatcher':
       return processCommunityModerationDispatcher(
         job as Job<import('@queues/ai-agents/types').CommunityModerationDispatcherJobData>,

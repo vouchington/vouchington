@@ -6,8 +6,12 @@ import getMyPointValuationsTool from '../get-my-point-valuations.mts'
 import getMyProfileTool from '../get-my-profile.mts'
 import getMyRewardsStatusesTool from '../get-my-rewards-statuses.mts'
 import getMySpendingTool from '../get-my-spending.mts'
+import getPostAncestorsTool from '../get-post-ancestors.mts'
+import getPostDescendantsTool from '../get-post-descendants.mts'
+import getPostTool from '../get-post.mts'
 import getRecommendedTopicsTool from '../get-recommended-topics.mts'
 import getReferralLinksTool from '../get-referral-links.mts'
+import getStoryTool from '../get-story.mts'
 import getTopicDetailsTool from '../get-topic-details.mts'
 import getTopicInsightsTool from '../get-topic-insights.mts'
 import getTopicMetricsTool from '../get-topic-metrics.mts'
@@ -33,8 +37,12 @@ export const ALL_TOOLS: readonly Tool[] = [
   getMyProfileTool,
   getMyRewardsStatusesTool,
   getMySpendingTool,
+  getPostAncestorsTool,
+  getPostDescendantsTool,
+  getPostTool,
   getRecommendedTopicsTool,
   getReferralLinksTool,
+  getStoryTool,
   getTopicDetailsTool,
   getTopicInsightsTool,
   getTopicMetricsTool,

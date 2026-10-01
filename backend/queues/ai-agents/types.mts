@@ -7,14 +7,32 @@ export type AutotaggerRssFeedItemJobData = {
   embedding_retries?: number
 }
 
-export type PostClassifierDispatcherJobData = { postId: string }
+/** Reserves the run of one requested subject, then enqueues it. Exactly one subject id is set. */
+export type ClassifierRunDispatcherJobData = {
+  classifier: string
+  postId: string | null
+  rssFeedItemId: string | null
+}
 
-export type PostClassifierJobData = {
-  applicationId: string
-  postId: string
+/** Runs one reserved receipt; hashes are hex so the payload stays JSON-safe. */
+export type ClassifierRunJobData = {
+  classifier: string
+  runId: string
+  postId: string | null
+  rssFeedItemId: string | null
   inputSha256: string
   configurationSha256: string
-  detectorPackageVersion: string
+}
+
+/**
+ * One page of the recovery sweep. A scheduled tick carries no data and starts the incomplete-run
+ * phase; each full page chains the next with its cursor, and the last incomplete page starts the
+ * request phase for every classifier.
+ */
+export type ReconcileClassifierRunsJobData = {
+  phase?: 'incomplete' | 'requests'
+  classifier?: string
+  after?: string | null
 }
 
 export type CommunityModerationDispatcherJobData = {
@@ -64,7 +82,6 @@ export type CopyrightFormScreeningJobData = { submission_id: string }
 export type CopyrightAppealRecommendationJobData = { submission_id: string }
 
 export type BackfillReportJudgementsJobData = Record<string, never>
-export type ReconcilePostClassifierApplicationsJobData = Record<string, never>
 
 export type AutoDispatchJudgementJobData = {
   judgement_id: string
@@ -86,8 +103,8 @@ export type OpenAiSpendCapRecheckJobData = {
 export type AIAgentJobData = (
   | AutotaggerPostJobData
   | AutotaggerRssFeedItemJobData
-  | PostClassifierDispatcherJobData
-  | PostClassifierJobData
+  | ClassifierRunDispatcherJobData
+  | ClassifierRunJobData
   | CommunityModerationDispatcherJobData
   | CommunityModerationPromptJobData
   | ReportJudgementJobData
@@ -99,7 +116,7 @@ export type AIAgentJobData = (
   | StoryClusteringJobData
   | StoryPostJobData
   | BackfillReportJudgementsJobData
-  | ReconcilePostClassifierApplicationsJobData
+  | ReconcileClassifierRunsJobData
   | AutoDispatchJudgementJobData
 ) &
   OpenAiSpendCapDelayedData

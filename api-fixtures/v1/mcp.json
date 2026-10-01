@@ -1874,6 +1874,505 @@
         },
         {
           "tool": {
+            "name": "get_post_ancestors",
+            "title": "Get Post Ancestors",
+            "description": "Get the parent chain of a comment by its UUID or slug, ordered from the thread root down to its direct parent and not including the comment itself. A root post has no ancestors. A deleted comment in the chain is left out, so a parent_id can name a comment that is not listed. A comment whose thread is not fully public, or that is deleted or missing, returns { success: false, error: \"Post not found\" }.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "post_id": {
+                  "type": "string",
+                  "description": "Post UUID or slug of the comment"
+                }
+              },
+              "required": ["post_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "ancestors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "post_type": {
+                            "enum": [
+                              "article",
+                              "blog_post",
+                              "comment",
+                              "data_point",
+                              "discussion",
+                              "link",
+                              "review",
+                              "story",
+                              "topic_recommendation"
+                            ],
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "markdown": {
+                            "type": "string"
+                          },
+                          "parent_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "root_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "created_by_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "is_anonymous": {
+                            "type": "boolean"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "slug",
+                          "post_type",
+                          "title",
+                          "markdown",
+                          "parent_id",
+                          "root_id",
+                          "created_by_id",
+                          "is_anonymous",
+                          "created_at",
+                          "updated_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["success", "ancestors"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["posts:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/posts/:idOrSlug/ancestors"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_post_descendants",
+            "title": "Get Post Descendants",
+            "description": "Get the replies below a post by its UUID or slug, in id order, one cursor page at a time. Pass page_info.end_cursor as after to read the next page while page_info.has_next_page is true. A reply the public cannot see hides its whole subtree. A deleted reply is left out but the replies below it still appear, so a parent_id can name a reply that is not listed. A post that is not fully public, or that is deleted or missing, returns { success: false, error: \"Post not found\" }. A malformed or foreign cursor returns { success: false, error: \"Invalid cursor\" }. A page too large to return is refused, so lower the limit and try again.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "post_id": {
+                  "type": "string",
+                  "description": "Post UUID or slug"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 200,
+                  "description": "Replies per page, from 1 to 200 (default: 100)"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous page"
+                }
+              },
+              "required": ["post_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "descendants": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "post_type": {
+                            "enum": [
+                              "article",
+                              "blog_post",
+                              "comment",
+                              "data_point",
+                              "discussion",
+                              "link",
+                              "review",
+                              "story",
+                              "topic_recommendation"
+                            ],
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "markdown": {
+                            "type": "string"
+                          },
+                          "parent_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "root_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "created_by_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "is_anonymous": {
+                            "type": "boolean"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "slug",
+                          "post_type",
+                          "title",
+                          "markdown",
+                          "parent_id",
+                          "root_id",
+                          "created_by_id",
+                          "is_anonymous",
+                          "created_at",
+                          "updated_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "descendants", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["posts:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/posts/:idOrSlug/descendants"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_post",
+            "title": "Get Post",
+            "description": "Get one post, comment or story post by its UUID or slug. Only public content is readable: a private, pending, deleted, missing or otherwise hidden post returns { success: false, error: \"Post not found\" }. A comment is readable only when its whole thread is. Use get_post_ancestors to walk up a thread and get_post_descendants to read its replies.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "post_id": {
+                  "type": "string",
+                  "description": "Post UUID or slug"
+                }
+              },
+              "required": ["post_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "post": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "post_type": {
+                          "enum": [
+                            "article",
+                            "blog_post",
+                            "comment",
+                            "data_point",
+                            "discussion",
+                            "link",
+                            "review",
+                            "story",
+                            "topic_recommendation"
+                          ],
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "markdown": {
+                          "type": "string"
+                        },
+                        "parent_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "root_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "created_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "is_anonymous": {
+                          "type": "boolean"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "slug",
+                        "post_type",
+                        "title",
+                        "markdown",
+                        "parent_id",
+                        "root_id",
+                        "created_by_id",
+                        "is_anonymous",
+                        "created_at",
+                        "updated_at"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "post"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["posts:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/posts/:idOrSlug"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "get_recommended_topics",
             "title": "Get Recommended Topics",
             "description": "Get personalized topic recommendations based on the current user's activity, including positive post choices, followed feeds, and views. Use this for questions like 'what cards should I look into?' or 'what topics might interest me?'. Returns topic IDs with recommendation scores. Use get_topic_details for full card information.",
@@ -2042,6 +2541,217 @@
             {
               "method": "GET",
               "path": "/api/v1/topics/:id/prioritized-referral-links"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_story",
+            "title": "Get Story",
+            "description": "Get one news story by its UUID: its title, why its articles were grouped, and one cursor page of the articles that belong to it, newest first. Pass page_info.end_cursor as after to read the next page while page_info.has_next_page is true. A deleted or missing story returns { success: false, error: \"Story not found\" }. A malformed cursor returns { success: false, error: \"Invalid cursor\" }.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "story_id": {
+                  "type": "string",
+                  "description": "Story UUID"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25,
+                  "description": "Articles per page, from 1 to 25 (default: 25)"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous page"
+                },
+                "exclude_item_id": {
+                  "type": "string",
+                  "description": "UUID of an article to leave out, such as the one being read"
+                }
+              },
+              "required": ["story_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "story": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "cluster_reason": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "published_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "official_rss_feed_item_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "title",
+                        "cluster_reason",
+                        "published_at",
+                        "official_rss_feed_item_id",
+                        "created_at",
+                        "updated_at"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "markdown": {
+                            "type": "string"
+                          },
+                          "url": {
+                            "type": "string"
+                          },
+                          "guid": {
+                            "type": "string"
+                          },
+                          "published_at": {
+                            "type": "string"
+                          },
+                          "rss_feed_id": {
+                            "type": "string"
+                          },
+                          "rss_feed_title": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "markdown",
+                          "url",
+                          "guid",
+                          "published_at",
+                          "rss_feed_id",
+                          "rss_feed_title"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "story", "items", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["posts:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/stories/:id"
             }
           ]
         },

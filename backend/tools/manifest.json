@@ -85,6 +85,42 @@
       "requiredScopes": ["spending:read"]
     },
     {
+      "name": "get_post_ancestors",
+      "description": "Get the parent chain of a comment by its UUID or slug, ordered from the thread root down to its direct parent and not including the comment itself. A root post has no ancestors. A deleted comment in the chain is left out, so a parent_id can name a comment that is not listed. A comment whose thread is not fully public, or that is deleted or missing, returns { success: false, error: \"Post not found\" }.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/posts/:idOrSlug/ancestors"
+        }
+      ],
+      "requiredScopes": ["posts:read"]
+    },
+    {
+      "name": "get_post_descendants",
+      "description": "Get the replies below a post by its UUID or slug, in id order, one cursor page at a time. Pass page_info.end_cursor as after to read the next page while page_info.has_next_page is true. A reply the public cannot see hides its whole subtree. A deleted reply is left out but the replies below it still appear, so a parent_id can name a reply that is not listed. A post that is not fully public, or that is deleted or missing, returns { success: false, error: \"Post not found\" }. A malformed or foreign cursor returns { success: false, error: \"Invalid cursor\" }. A page too large to return is refused, so lower the limit and try again.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/posts/:idOrSlug/descendants"
+        }
+      ],
+      "requiredScopes": ["posts:read"]
+    },
+    {
+      "name": "get_post",
+      "description": "Get one post, comment or story post by its UUID or slug. Only public content is readable: a private, pending, deleted, missing or otherwise hidden post returns { success: false, error: \"Post not found\" }. A comment is readable only when its whole thread is. Use get_post_ancestors to walk up a thread and get_post_descendants to read its replies.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/posts/:idOrSlug"
+        }
+      ],
+      "requiredScopes": ["posts:read"]
+    },
+    {
       "name": "get_recommended_topics",
       "description": "Get personalized topic recommendations based on the current user's activity, including positive post choices, followed feeds, and views. Use this for questions like 'what cards should I look into?' or 'what topics might interest me?'. Returns topic IDs with recommendation scores. Use get_topic_details for full card information.",
       "parameters": null,
@@ -107,6 +143,18 @@
         }
       ],
       "requiredScopes": ["referral-links:read"]
+    },
+    {
+      "name": "get_story",
+      "description": "Get one news story by its UUID: its title, why its articles were grouped, and one cursor page of the articles that belong to it, newest first. Pass page_info.end_cursor as after to read the next page while page_info.has_next_page is true. A deleted or missing story returns { success: false, error: \"Story not found\" }. A malformed cursor returns { success: false, error: \"Invalid cursor\" }.",
+      "parameters": null,
+      "api": [
+        {
+          "method": "GET",
+          "path": "/api/v1/stories/:id"
+        }
+      ],
+      "requiredScopes": ["posts:read"]
     },
     {
       "name": "get_topic_details",

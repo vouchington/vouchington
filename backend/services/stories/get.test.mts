@@ -1,7 +1,7 @@
 import { randomUUID, createHash } from 'node:crypto'
 import { it, expect, beforeAll, describe } from 'vitest'
+import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
 import {
-  getStoryById,
   getStoryWithItemCount,
   getStoryItemIds,
   getStoriesByIdBatch,

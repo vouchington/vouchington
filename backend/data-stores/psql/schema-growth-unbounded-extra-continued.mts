@@ -11,6 +11,7 @@ export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
   'post_publication_identity_snapshots',
   'post_publication_identity_snapshot_keys',
   'post_autotagger_result_topics',
+  'post_classifier_local_outcomes',
   'post_dispute_annotations',
   'post_locks',
   'post_moderation_attempts',

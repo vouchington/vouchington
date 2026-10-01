@@ -51,7 +51,9 @@ then prepare post bridges in global native-ID order before alias bridges. Staged
 are ephemeral input tokens, never joined to live tables; bounded token pages enter the normal
 bridge helper, whose nullable live FK preserves a preimage when deletion races preparation.
 The separate bridge sweep rotates seven families, examines at most 100 raw candidates per call,
-checks every work/key/snapshot/receipt reference, and revisits skipped identities after wrapping.
+checks every work/key/snapshot/receipt reference (a community identity that a
+[classifier run](../classifier-runs/README.md) stamped also keeps it), and revisits skipped
+identities after wrapping.
 
 The exact set is [`identity-source.mts`](../../../../../backend/services/post-publication/identity-source.mts): authored and relation topics, positive
 relation-only alias membership, distinct author UUID/username keys, candidate and root communities,

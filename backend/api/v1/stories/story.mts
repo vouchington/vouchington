@@ -4,11 +4,14 @@ import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../resp
 import { apiQuery, apiResponse } from '../../response-contract.mts'
 import { createPaginationParser, defineQueryContract, queryUuid } from '@modules/pagination'
 import { isUUID } from '@modules/utils'
-import { getStoryById, getStoryMemberPagesBatch } from '@services/stories'
+import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
+import {
+  getStoryMemberPagesBatch,
+  type StoryMemberPage,
+} from '@services/feeds/rss-feed-items/story-member-pages'
 import { hydrateStoryMemberPage } from '@services/stories/story-page-hydration'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import type { Story } from '@services/stories/types'
-import type { StoryMemberPage } from '@services/stories/story-member-pages'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const storyMembersParser = createPaginationParser({

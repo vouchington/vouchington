@@ -22,7 +22,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'ai_agents/reconcileAutoDispatchJudgements',
   'ai_agents/reconcileBackgroundResponses',
   'ai_agents/reconcileCopyrightAgentDispatches',
-  'ai_agents/reconcilePostClassifierApplications',
+  'ai_agents/reconcileClassifierRuns',
   'bedrock-embeddings-batch/backlog_dispatcher',
   'bedrock-embeddings-batch/creation_dispatcher',
   'bedrock-embeddings-batch/poll_dispatcher',
@@ -168,9 +168,9 @@ describe('scheduled job manifest catalog', () => {
     })
     expect(SCHEDULED_JOBS_REGISTRY).toContainEqual(
       expect.objectContaining({
-        id: 'reconcilePostClassifierApplications',
+        id: 'reconcileClassifierRuns',
         queue_name: 'ai_agents',
-        job_name: 'reconcile-post-classifier-applications',
+        job_name: 'reconcile-classifier-runs',
         schedule: '*/5 * * * *',
         trigger: expect.any(Function),
       }),

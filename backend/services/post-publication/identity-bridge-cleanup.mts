@@ -36,6 +36,9 @@ export async function cleanupPostPublicationIdentityBridges(limit = 100): Promis
     ...(workColumn === null
       ? []
       : [`NOT EXISTS (SELECT 1 FROM post_publication_dirty_work WHERE ${workColumn} = locked.id)`]),
+    ...(family === 'community'
+      ? ['NOT EXISTS (SELECT 1 FROM classifier_runs WHERE community_identity_id = locked.id)']
+      : []),
     ...(family === 'post'
       ? [
           'NOT EXISTS (SELECT 1 FROM post_publication_projection_receipts WHERE post_identity_id = locked.id)',

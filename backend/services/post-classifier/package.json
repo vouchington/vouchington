@@ -24,6 +24,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@services/classifier-runs": "workspace:^",
     "@services/classifiers": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-relations": "workspace:^",
@@ -34,7 +35,6 @@
   },
   "devDependencies": {
     "@queues/notifications": "workspace:^",
-    "@services/posts": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

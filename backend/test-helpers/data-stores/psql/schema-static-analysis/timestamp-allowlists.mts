@@ -1,6 +1,10 @@
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 import * as postPublication from './post-publication-allowlists.mts'
 import * as postModeration from './moderation-ledger-allowlists.mts'
+import {
+  CLASSIFIER_RUN_TABLES_WITHOUT_CREATED_AT,
+  CLASSIFIER_RUN_TABLES_WITHOUT_UPDATED_AT,
+} from './classifier-run-allowlists.mts'
 import { ALLOWED_MEMBERSHIP_MISSING_UPDATED_AT } from './membership-timestamp-allowlists.mts'
 import { SOCIAL_GRAPH_TABLES_WITHOUT_CREATED_AT } from './social-graph-timestamp-allowlists.mts'
 import { AUTHORIZATION_TABLES_WITHOUT_CREATED_AT } from './oauth-authorization-allowlists.mts'
@@ -29,6 +33,7 @@ export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
     'Composite-PK read-state table; read_at serves as the single lifecycle timestamp.',
   ],
   ...postModeration.POST_MODERATION_TABLES_WITHOUT_CREATED_AT,
+  ...CLASSIFIER_RUN_TABLES_WITHOUT_CREATED_AT,
   ['boilerplate_removal_urls', 'Pure join table keyed by boilerplate removal and URL.'],
   ['categories__related_categories', 'Pure relation table; relation timing is not queried.'],
   ['categories__related_topics', 'Pure relation table; relation timing is not queried.'],
@@ -182,10 +187,7 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
     'moderation_queue_claims',
     'Claim lifecycle uses claimed_at / released_at; the only mutation is releasing a claim (writing released_at), so a generic updated_at is redundant.',
   ],
-  [
-    'autotagger_receipt_attempts',
-    'Append-only attempt ledger: the only mutation writes exactly one of completed_at/failed_at, enforced by chk_autotagger_receipt_attempts__terminal_exclusive, so a generic updated_at is redundant.',
-  ],
+  ...CLASSIFIER_RUN_TABLES_WITHOUT_UPDATED_AT,
   [
     'ap_inbox_activities',
     'Append-only replay-dedup ledger; rows are inserted once by the inbox receiver and never updated.',

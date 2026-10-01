@@ -11,7 +11,7 @@ import {
 } from '@services/posts/content'
 import { insertStoryPostRecord } from '@services/posts/create-story-post'
 import type { BasicUser, PrivateUser } from '@services/users/types'
-import { getStoryById } from './get.mts'
+import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
 import { getPostStoryByStoryId } from './get-post-stories.mts'
 import { createPostStory } from './update.mts'
 import type { PostStory, Story } from './types.mts'
