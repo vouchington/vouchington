@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { withRejectedStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
 import { createTestUser } from '@voucha/test-helpers'
+import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { recordStaffOperation } from './operation.mts'
 import { searchModeratorActions } from './search.mts'
 
@@ -85,8 +86,52 @@ describe('staff external-operation history', () => {
           ),
         'finished',
       ),
-    ).rejects.toThrow('staff history rejected')
+    ).resolves.toBeUndefined()
     expect(execute).toHaveBeenCalledTimes(1)
+    const { results } = await searchModeratorActions({ actorId: actor.id })
+    expect(results).toHaveLength(1)
+    expect(results[0]!.metadata).toEqual({ phase: 'requested' })
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Staff operation outcome could not be recorded' }),
+      expect.anything(),
+    )
+  })
+
+  it('preserves the execution failure when its outcome cannot be persisted', async () => {
+    const actor = await createTestUser()
+    const failure = new Error('original execution failure')
+    await expect(
+      withRejectedStaffActionHistory(
+        actor.id,
+        () =>
+          recordStaffOperation(actor.id, { actionType: 'queue_pause' }, () =>
+            Promise.reject(failure),
+          ),
+        'finished',
+      ),
+    ).rejects.toBe(failure)
+    expect(sentryCaptureExceptionMock).toHaveBeenCalledOnce()
+    const { results } = await searchModeratorActions({ actorId: actor.id })
+    expect(results).toHaveLength(1)
+    expect(results[0]!.metadata).toEqual({ phase: 'requested' })
+  })
+
+  it('returns the successful result even when outcome summarization or reporting fails', async () => {
+    const actor = await createTestUser()
+    const result = { accepted: true }
+    sentryCaptureExceptionMock.mockImplementationOnce(() => {
+      throw new Error('telemetry failure')
+    })
+    await expect(
+      recordStaffOperation(
+        actor.id,
+        { actionType: 'queue_resume' },
+        async () => result,
+        () => {
+          throw new Error('summary failure')
+        },
+      ),
+    ).resolves.toBe(result)
     const { results } = await searchModeratorActions({ actorId: actor.id })
     expect(results).toHaveLength(1)
     expect(results[0]!.metadata).toEqual({ phase: 'requested' })

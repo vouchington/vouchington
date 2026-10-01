@@ -234,7 +234,7 @@ describe('moderation staff history transactions', () => {
     },
   )
 
-  it('atomically deletes a mod note and retains its body', async () => {
+  it('atomically deletes a mod note without retaining its body in history', async () => {
     expect.hasAssertions()
     const actor = await createTestUser({ administrator: true })
     const user = await createTestUserDirect()
@@ -249,8 +249,9 @@ describe('moderation staff history transactions', () => {
       () => deleteUserModNote(actor, noteId, user.id),
       () => readStaffActionTarget('note', noteId),
     )
-    expect((await readStaffActionHistory(actor.id))[0]!.metadata).toMatchObject({
-      before: { body: 'Synthetic prior note' },
+    expect((await readStaffActionHistory(actor.id))[0]!.metadata).toEqual({
+      before: { deleted: false },
+      after: { deleted: true },
     })
   })
 

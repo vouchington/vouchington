@@ -13,14 +13,14 @@ export async function deleteUserModNote(
 ): Promise<void> {
   await using query = await beginTransaction()
   const { rows } = await query(sql`/* deleteUserModNote */
-    SELECT id, target_user_id, author_user_id, community_id, body
+    SELECT id, target_user_id, author_user_id, community_id
     FROM user_mod_notes
     WHERE id = ${noteId}
       AND deleted_at IS NULL
     FOR UPDATE
   `)
   const note = rows[0] as
-    | Pick<UserModNote, 'id' | 'target_user_id' | 'author_user_id' | 'community_id' | 'body'>
+    | Pick<UserModNote, 'id' | 'target_user_id' | 'author_user_id' | 'community_id'>
     | undefined
   assert(note, 404, 'Note not found')
   assert(note.target_user_id === targetUserId, 404, 'Note not found')
@@ -49,7 +49,7 @@ export async function deleteUserModNote(
       userModNoteId: noteId,
       targetUserId,
       communityId: note.community_id,
-      metadata: { before: { body: note.body, deleted: false }, after: { deleted: true } },
+      metadata: { before: { deleted: false }, after: { deleted: true } },
     },
     { query },
   )

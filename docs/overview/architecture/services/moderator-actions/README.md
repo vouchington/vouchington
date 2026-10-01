@@ -83,6 +83,12 @@ visible without an outcome; it does not claim success or automatically retry a p
 operation. PostgreSQL cannot roll back Valkey. This exception applies to admin queue controls,
 scheduled/backfill runs, article sync and queued moderation reruns, not ordinary queue processing.
 
+Intent persistence must succeed before execution. Once execution settles, outcome persistence and
+summary failures are reported through the error logger without replacing the operation's return
+value or original error. The durable request remains unresolved when no outcome was saved, so an
+audit outage does not turn an already completed external action into a retry-inducing error.
+Deleted moderator-note bodies are not copied into history.
+
 All these rows are available through the staff global modlog (`GET /api/v1/admin/modlog`).
 Community-scoped moderation continues to appear in that community's modlog. Request-channel
 provenance remains owned by #237/#611; this audit records the authenticated acting user and does
