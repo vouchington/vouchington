@@ -152,7 +152,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `tests-web-api.yml`                    | `web-api-tests`                 | matrix | `ubuntu-24.04-arm`                    | 27            |
 | `tests-web-integration.yml`            | `prep`                          | job    | `ubuntu-24.04-arm`                    | 20            |
 | `tests-web-integration.yml`            | `web-integration-tests`         | matrix | `ubuntu-24.04-arm`                    | 26            |
-| `tests-web.yml`                        | `prep`                          | job    | `ubuntu-latest`                       | 8             |
+| `tests-web.yml`                        | `prep`                          | job    | `ubuntu-24.04-arm`                    | 8             |
 | `tests-web.yml`                        | `web-tests`                     | matrix | `ubuntu-24.04-arm`                    | 32            |
 | `tooling.yml`                          | `changes`                       | job    | → `ci-detect-changes.yml`             | 360           |
 | `tooling.yml`                          | `codecov`                       | job    | → `ci-upload-codecov.yml`             | 360           |

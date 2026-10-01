@@ -29,10 +29,11 @@ describe('Web Tests workflow', () => {
     })
   })
 
-  it('prepares a configurable web test shard matrix on ubuntu-latest', () => {
+  it('prepares a configurable web test shard matrix on the same ARM64 runner as the shards', () => {
     const prep = jobSection('prep')
 
-    expect(prep).toContain('runs-on: ubuntu-latest')
+    expect(armLabel).toBeDefined()
+    expect(prep).toContain(`runs-on: ${armLabel}\n`)
     expect(prep).toContain('uses: ./.github/actions/make-shard-matrix')
     expect(prep).toContain('node ci/vitest/shard-total.mts test-web')
     expect(prep).toContain('FILES_PER_SHARD_OVERRIDE: ${{ vars.TEST_WEB_FILES_PER_SHARD }}')
