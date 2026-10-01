@@ -1,65 +1,10 @@
-import { mockLucideReact } from '@/test-helpers/lucide-icons'
+import '@/test-helpers/components/podcast.mock-support'
 import { render, screen } from '@testing-library/react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { PodcastShowMetadataAside } from '../podcast-show-metadata-aside'
 import type { ViewRssFeed } from '@/types/rss-feeds'
-
-vi.mock(import('next/image'), () => {
-  const Img = 'img' as const
-
-  return {
-    default: ({
-      src,
-      alt,
-      ...props
-    }: {
-      src: string
-      alt: string
-      width: number
-      height: number
-      className?: string
-      'data-pw'?: string
-    }) => (
-      <Img
-        src={src}
-        alt={alt}
-        {...props}
-      />
-    ),
-  } as unknown as typeof import('next/image')
-})
-
-vi.mock(
-  import('next/link'),
-  () =>
-    ({
-      default: ({
-        href,
-        children,
-        ...props
-      }: {
-        href: string
-        children: React.ReactNode
-        prefetch?: boolean
-      }) => (
-        <a
-          href={href}
-          {...props}
-        >
-          {children}
-        </a>
-      ),
-    }) as unknown as typeof import('next/link'),
-)
-
-vi.mock(import('lucide-react'), () =>
-  mockLucideReact({
-    Mic: () => <svg data-testid='mic-icon' />,
-    Lock: () => <svg data-testid='lock-icon' />,
-  }),
-)
 
 vi.mock(import('@/components/asides/aside-accordion'), () => ({
   AsideAccordion: ({
