@@ -32,3 +32,12 @@ export async function softDeleteRssFeedItemForTest(itemId: string): Promise<void
   await write(sql`/* softDeleteRssFeedItemForTest */
     UPDATE rss_feed_items SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${itemId}`)
 }
+
+/** Starts the story at the given time, which anchors the window its candidates are measured from. */
+export async function setStoryPublishedAtForTest(
+  storyId: string,
+  publishedAt: Date,
+): Promise<void> {
+  await write(sql`/* setStoryPublishedAtForTest */
+    UPDATE stories SET published_at = ${publishedAt} WHERE id = ${storyId}`)
+}

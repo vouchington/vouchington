@@ -1,13 +1,14 @@
-import { write } from '@data-stores/psql'
 import type { StoryRunCandidate } from '@services/classifier-runs'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import { deleteTestStory, insertTestStory, setTestItemStoryId } from '@voucha/test-helpers'
-import { softDeleteRssFeedItemForTest } from '@voucha/test-helpers/data-stores/psql/classifier-runs/story-clustering-edits'
+import {
+  setStoryPublishedAtForTest,
+  softDeleteRssFeedItemForTest,
+} from '@voucha/test-helpers/data-stores/psql/classifier-runs/story-clustering-edits'
 import {
   createStoryClusteringItem,
   makeStoryClusteringVectors,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/story-clustering-fixture'
-import sql from 'sql-template-strings'
 import { describe, expect, it } from 'vitest'
 import { readStoryClusteringRepresentatives } from './representatives.mts'
 
@@ -18,8 +19,7 @@ async function setup() {
   const feed = await createTestRssFeed({})
   const incoming = await createStoryClusteringItem({ feedId: feed.id, embedding: unit })
   const story = await insertTestStory()
-  await write(sql`/* setStoryPublishedAtForTest */
-    UPDATE stories SET published_at = ${PUBLISHED} WHERE id = ${story.id}`)
+  await setStoryPublishedAtForTest(story.id, PUBLISHED)
   const member = (similarity: number) =>
     createStoryClusteringItem({ feedId: feed.id, embedding: at(similarity) }).then(async item => {
       await setTestItemStoryId(item.itemId, story.id)

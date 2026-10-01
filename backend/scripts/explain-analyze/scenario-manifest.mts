@@ -73,7 +73,6 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'review-succession-candidates',
   'remote-follower-inbox-late-cursor',
   'rss-feed-item-feed',
-  'rss-story-embedding-pending-late-page',
   'rss-feed-item-feed-after',
   'rss-feed-item-feed-sparse-source-filter',
   'rss-feed-item-feed-sparse-source-filter-after',

@@ -81,6 +81,16 @@ export async function joinExistingStory(
   return { kind: 'joined', storyId }
 }
 
+/** A new story with its lifecycle lock held, so no other transaction can touch it before the members land. */
+async function createLockedStory(
+  query: OwnedTransaction,
+  metadata: ReturnType<typeof deriveNewStoryMetadata>,
+) {
+  const story = await createStory(metadata, { query })
+  await lockStoryLifecycles(query, [story.id])
+  return story
+}
+
 /** Founds a story from two locked, clusterable items; both must land in it or neither does. */
 export async function createStoryFromPair(
   query: OwnedTransaction,
@@ -91,8 +101,7 @@ export async function createStoryFromPair(
     incomingPublishedAt: incoming.published_at,
     selectedItem: selected,
   })
-  const story = await createStory(metadata, { query })
-  await lockStoryLifecycles(query, [story.id])
+  const story = await createLockedStory(query, metadata)
   const assigned = await assignItemsToStory(query, story.id, [incoming.id, selected.id])
   if (assigned !== 2) throw new Error('Story clustering could not assign both founding members')
   await refreshClusteredStory(query, story.id)

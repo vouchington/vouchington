@@ -1,4 +1,3 @@
-import { write } from '@data-stores/psql'
 import { reserveClassifierRun } from '@services/classifier-runs'
 import { updateRssFeedById } from '@services/rss-feeds'
 import { evaluateRssFeedDiscoverability } from '@services/rss-feeds/evaluate-discoverability'
@@ -12,6 +11,7 @@ import {
   setTestItemStoryId,
   setTestItemStoryLocked,
 } from '@voucha/test-helpers'
+import { setStoryPublishedAtForTest } from '@voucha/test-helpers/data-stores/psql/classifier-runs/story-clustering-edits'
 import {
   createStoryClusteringItem,
   makeStoryClusteringVectors,
@@ -19,7 +19,6 @@ import {
   requestStoryClusteringRun,
   type StoryClusteringItem,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/story-clustering-fixture'
-import sql from 'sql-template-strings'
 import { describe, expect, it } from 'vitest'
 import { createStoryClusteringRunAdapter } from './adapter.mts'
 
@@ -116,8 +115,7 @@ describe('story clustering candidate capture (real PG)', () => {
     const feed = await createTestRssFeed({})
     const now = new Date()
     const story = await insertTestStory()
-    await write(sql`/* setStoryPublishedAtForTest */
-      UPDATE stories SET published_at = ${new Date(now.getTime() - 40 * DAY_MS)} WHERE id = ${story.id}`)
+    await setStoryPublishedAtForTest(story.id, new Date(now.getTime() - 40 * DAY_MS))
     const member = await createStoryClusteringItem({
       feedId: feed.id,
       embedding: at(0.95),
