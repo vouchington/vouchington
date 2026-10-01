@@ -9,9 +9,9 @@ import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
   completeCopyrightMandatoryHumanReview,
-  createCopyrightNoticeAggregate,
-  getCopyrightNoticePrivateAggregate,
 } from '../../../services/copyright-notices/index.mts'
+import { createCopyrightNoticeAggregate } from './create-notice-aggregate.mts'
+import { getCopyrightNoticePrivateAggregate } from './private-aggregate.mts'
 
 export async function confirmTestRepeatInfringerNotice(
   posterId: string,

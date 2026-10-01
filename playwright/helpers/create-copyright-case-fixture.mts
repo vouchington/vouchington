@@ -3,13 +3,11 @@ import { insertTestPost } from '../../backend/test-helpers/entities/posts.mts'
 import { insertTestImage } from '../../backend/test-helpers/entities/images-insert.mts'
 import { insertTestPostImage } from '../../backend/test-helpers/entities/images.mts'
 import { createCopyrightFormIntake } from '../../backend/services/copyright-notices/form-intakes.mts'
-import {
-  appendCopyrightSubmissionAssessment,
-  getCopyrightNoticePrivateAggregate,
-} from '../../backend/services/copyright-notices/index.mts'
+import { appendCopyrightSubmissionAssessment } from '../../backend/services/copyright-notices/index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../../backend/services/copyright-notices/restrictions.mts'
 import { requireTestValue } from './assertions.mts'
 import { randomSuffix } from './random-id.mts'
+import { getCopyrightNoticePrivateAggregate } from '../../backend/test-helpers/services/copyright-notices/private-aggregate.mts'
 
 export async function createCopyrightCaseFixture() {
   const suffix = randomSuffix()

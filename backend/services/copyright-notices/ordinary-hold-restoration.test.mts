@@ -8,7 +8,6 @@ import {
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
   appendCopyrightSubmissionAssessment,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
   resolveCopyrightLegalHold,
 } from './index.mts'
@@ -16,6 +15,7 @@ import {
   openHeldCounterNoticeRestore,
   recordOrdinaryCopyrightHold as recordHold,
 } from './restoration-hold-scene.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('ordinary copyright hold restoration', () => {
   it('reopens the original statutory restore only after both ordinary holds resolve', async () => {

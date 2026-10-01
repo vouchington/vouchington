@@ -10,13 +10,13 @@ import {
   appendCopyrightSubmissionAssessment,
   createCopyrightCounterNotice,
   createCopyrightDeliveryIntent,
-  createCopyrightNoticeAggregate,
-  createCounterNoticeDeadline,
   createEligibleCopyrightRestoreIntent,
   createOutboundCopyrightCorrespondence,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
+  reviewCopyrightCounterNotice,
 } from './index.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 export async function createCopyrightRestorationHoldFixture(targetCount = 1) {
   const [claimant, moderatorRecord] = await Promise.all([
@@ -111,12 +111,29 @@ export async function deliverInitialCopyrightWithhold(
   )
 }
 
+/** Accepts a counter-notice through the production moderator review and returns its deadline row. */
+export async function acceptCounterNoticeForRestoration(input: {
+  noticeId: string
+  submissionId: string
+  moderator: Parameters<typeof reviewCopyrightCounterNotice>[0]['currentUser']
+}) {
+  const { assessmentId, deadlineId } = await reviewCopyrightCounterNotice({
+    submissionId: input.submissionId,
+    currentUser: input.moderator,
+    accepted: true,
+    rationale: 'The structured counter-notice is formally complete.',
+  })
+  const aggregate = await getCopyrightNoticePrivateAggregate(input.noticeId)
+  const deadline = aggregate?.deadlines.find(row => row.id === deadlineId)
+  if (!deadline) throw new Error('accepted counter-notice deadline disappeared')
+  return { assessmentId, deadline }
+}
+
 export async function createCompliantCounterNoticeDeadline(input: {
   claimant: Parameters<typeof createCopyrightCounterNotice>[0]
   noticeId: string
-  moderator: Parameters<typeof appendCopyrightSubmissionAssessment>[0]['currentUser']
+  moderator: Parameters<typeof reviewCopyrightCounterNotice>[0]['currentUser']
   targetIds: string[]
-  assessedAt?: Date
 }) {
   const counterNotice = await createCopyrightCounterNotice(
     input.claimant,
@@ -133,20 +150,18 @@ export async function createCompliantCounterNoticeDeadline(input: {
       targetIds: input.targetIds,
     },
   )
-  const counterAssessment = await appendCopyrightSubmissionAssessment({
+  const { deadline } = await acceptCounterNoticeForRestoration({
+    noticeId: input.noticeId,
     submissionId: counterNotice.submission.id,
-    assessedAt: input.assessedAt ?? new Date('2026-07-02T12:00:00.000Z'),
-    currentUser: input.moderator,
-    substantiallyCompliant: true,
-    targetIds: input.targetIds,
+    moderator: input.moderator,
   })
-  return createCounterNoticeDeadline({ assessmentId: counterAssessment.id })
+  return deadline
 }
 
 export async function createCounterNoticeRestoreIntent(input: {
   claimant: Parameters<typeof createCopyrightCounterNotice>[0]
   noticeId: string
-  moderator: Parameters<typeof appendCopyrightSubmissionAssessment>[0]['currentUser']
+  moderator: Parameters<typeof reviewCopyrightCounterNotice>[0]['currentUser']
   targetId: string
   restrictionId: string
   placementRevision: number

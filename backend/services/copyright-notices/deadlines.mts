@@ -1,9 +1,3 @@
-import { beginTransaction } from '@data-stores/psql'
-import assert from 'http-assert'
-import sql from 'sql-template-strings'
-import type { CopyrightNoticeDeadlineRecord } from './types.mts'
-import { createCounterNoticeForwardingInTransaction } from './counter-notice-forwarding.mts'
-
 const NEW_YORK = 'America/New_York'
 const NEW_YORK_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
   timeZone: NEW_YORK,
@@ -120,72 +114,4 @@ export function calculateUsCounterNoticeRestorationWindow(receivedAt: Date): {
     escalation_at: escalationAt,
     restoration_deadline_at: nextNewYorkMidnight(escalationAt),
   }
-}
-
-export async function createCounterNoticeDeadline(input: {
-  assessmentId: string
-}): Promise<CopyrightNoticeDeadlineRecord> {
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<{
-    copyright_notice_id: string
-    received_at: Date
-    kind: string
-    substantially_compliant: boolean
-    jurisdiction: string
-  }>(sql`/* createCounterNoticeDeadline:lockAssessment */
-    SELECT s.copyright_notice_id, s.received_at, s.kind, a.substantially_compliant, n.jurisdiction
-    FROM copyright_notice_submission_assessments a
-    JOIN copyright_notice_submissions s ON s.id = a.copyright_notice_submission_id
-    JOIN copyright_notices n ON n.id = s.copyright_notice_id
-    WHERE a.id = ${input.assessmentId}
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_submission_assessments newer
-        WHERE newer.supersedes_assessment_id = a.id
-      )
-      AND EXISTS (
-        SELECT 1
-        FROM copyright_notice_counter_notice_assessment_targets target
-        WHERE target.copyright_notice_submission_assessment_id = a.id
-      )
-    FOR UPDATE OF n, a, s
-  `)
-  const qualifying = rows[0]
-  assert(qualifying, 404, 'Copyright submission assessment not found')
-  assert(
-    qualifying.jurisdiction === 'us_dmca',
-    422,
-    'Only US DMCA counter-notices use this restoration clock',
-  )
-  assert(
-    qualifying.kind === 'counter_notice',
-    422,
-    'Only a counter-notice can start restoration timing',
-  )
-  assert(qualifying.substantially_compliant, 422, 'Counter-notice is not substantially compliant')
-  const window = calculateUsCounterNoticeRestorationWindow(qualifying.received_at)
-  const result =
-    await transaction<CopyrightNoticeDeadlineRecord>(sql`/* createCounterNoticeDeadline */
-    INSERT INTO copyright_notice_deadlines (
-      copyright_notice_id, qualifying_counter_notice_assessment_id, earliest_restoration_at,
-      escalation_at, restoration_deadline_at
-    ) VALUES (
-      ${qualifying.copyright_notice_id}, ${input.assessmentId}, ${window.earliest_restoration_at},
-      ${window.escalation_at}, ${window.restoration_deadline_at}
-    )
-    ON CONFLICT (qualifying_counter_notice_assessment_id) DO NOTHING
-    RETURNING id, copyright_notice_id, qualifying_counter_notice_assessment_id,
-      earliest_restoration_at, escalation_at, restoration_deadline_at, resolved_at, cancelled_at
-  `)
-  const deadline = result.rows[0]
-  assert(deadline, 409, 'A restoration deadline already exists for this counter-notice')
-  await createCounterNoticeForwardingInTransaction(
-    { assessmentId: input.assessmentId, earliestRestorationAt: deadline.earliest_restoration_at },
-    transaction,
-  )
-  await transaction(sql`/* createCounterNoticeDeadline:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_deadline_id)
-    VALUES (${qualifying.copyright_notice_id}, 'counter_notice_deadline_started', ${deadline.id})
-  `)
-  await transaction.commit()
-  return deadline
 }

@@ -26,7 +26,11 @@ function readYaml<T>(relativePath: string): T {
   return parseYaml(readFileSync(`${repoRoot}/${relativePath}`, 'utf8')) as T
 }
 
-const allTrackedFiles = execFileSync('git', ['ls-files'], { cwd: repoRoot, encoding: 'utf8' })
+const allTrackedFiles = execFileSync('git', ['ls-files'], {
+  cwd: repoRoot,
+  encoding: 'utf8',
+  maxBuffer: 10 * 1024 * 1024,
+})
   .split('\n')
   .filter(Boolean)
 

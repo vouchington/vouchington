@@ -5,11 +5,11 @@ import {
   appendCopyrightSubmissionAssessment,
   completeCopyrightMandatoryHumanReview,
   createCopyrightCounterNotice,
-  createCounterNoticeDeadline,
   createEligibleCopyrightRestoreIntent,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightEnforcementRequest,
 } from './index.mts'
+import { acceptCounterNoticeForRestoration } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 async function createFixture() {
   return createAssessedUsDmcaCopyrightNoticeFixture({
@@ -67,14 +67,11 @@ describe('copyright notice persistence', () => {
         targetIds: [aggregate.targets[0].id],
       },
     )
-    const assessment = await appendCopyrightSubmissionAssessment({
+    const { deadline } = await acceptCounterNoticeForRestoration({
+      noticeId: notice.id,
       submissionId: submission.submission.id,
-      assessedAt: new Date('2026-07-04T16:00:00.000Z'),
-      currentUser: moderator,
-      substantiallyCompliant: true,
-      targetIds: [aggregate.targets[0].id],
+      moderator,
     })
-    const deadline = await createCounterNoticeDeadline({ assessmentId: assessment.id })
 
     expect(deadline.earliest_restoration_at.getTime()).toBeGreaterThan(
       submission.submission.received_at.getTime(),
@@ -111,14 +108,11 @@ describe('copyright notice persistence', () => {
         targetIds: [target.id],
       },
     )
-    const assessment = await appendCopyrightSubmissionAssessment({
+    const { deadline } = await acceptCounterNoticeForRestoration({
+      noticeId: notice.id,
       submissionId: submission.submission.id,
-      assessedAt: new Date('2026-07-01T12:00:00.000Z'),
-      currentUser: moderator,
-      substantiallyCompliant: true,
-      targetIds: [target.id],
+      moderator,
     })
-    const deadline = await createCounterNoticeDeadline({ assessmentId: assessment.id })
 
     await expect(
       createEligibleCopyrightRestoreIntent({
@@ -148,7 +142,7 @@ describe('copyright notice persistence', () => {
     })
     expect(intent.action).toBe('restore')
   })
-  it('cancels every prior deadline when a compliance assessment is corrected', async () => {
+  it('cancels the qualifying deadline when a compliance assessment is corrected', async () => {
     const { aggregate, claimant, moderator, notice, noticeAssessment } = await createFixture()
     const target = aggregate.targets[0]
     const restriction = await acceptCopyrightNoticeAndImposeRestriction({
@@ -173,63 +167,44 @@ describe('copyright notice persistence', () => {
         targetIds: [target.id],
       },
     )
-    const firstAssessment = await appendCopyrightSubmissionAssessment({
+    const { assessmentId, deadline } = await acceptCounterNoticeForRestoration({
+      noticeId: notice.id,
       submissionId: submission.submission.id,
-      assessedAt: new Date('2026-07-01T12:00:00.000Z'),
-      currentUser: moderator,
-      substantiallyCompliant: true,
-      targetIds: [target.id],
+      moderator,
     })
-    const staleDeadline = await createCounterNoticeDeadline({ assessmentId: firstAssessment.id })
     const correction = await appendCopyrightSubmissionAssessment({
       submissionId: submission.submission.id,
-      assessedAt: new Date('2026-07-02T12:00:00.000Z'),
+      assessedAt: new Date(),
       currentUser: moderator,
-      substantiallyCompliant: true,
-      targetIds: [target.id],
-      supersedesAssessmentId: firstAssessment.id,
+      substantiallyCompliant: false,
+      supersedesAssessmentId: assessmentId,
     })
 
     await expect(
       appendCopyrightSubmissionAssessment({
         submissionId: submission.submission.id,
-        assessedAt: new Date('2026-07-03T12:00:00.000Z'),
+        assessedAt: new Date(),
         currentUser: moderator,
         substantiallyCompliant: false,
-        targetIds: [target.id],
-        supersedesAssessmentId: firstAssessment.id,
+        supersedesAssessmentId: assessmentId,
       }),
     ).rejects.toThrow('Assessment must extend the current assessment tip')
-    const replacementDeadline = await createCounterNoticeDeadline({ assessmentId: correction.id })
-    const finalCorrection = await appendCopyrightSubmissionAssessment({
-      submissionId: submission.submission.id,
-      assessedAt: new Date('2026-07-04T12:00:00.000Z'),
-      currentUser: moderator,
-      substantiallyCompliant: false,
-      supersedesAssessmentId: correction.id,
-    })
-    await expect(createCounterNoticeDeadline({ assessmentId: correction.id })).rejects.toThrow(
-      'Copyright submission assessment not found',
-    )
     await expect(
       createEligibleCopyrightRestoreIntent({
         noticeId: notice.id,
         targetId: target.id,
         restrictionId: restriction.id,
-        deadlineId: replacementDeadline.id,
+        deadlineId: deadline.id,
         expectedPlacementRevision: target.placement_revision,
-        now: new Date('2026-07-16T12:00:00.000Z'),
+        now: new Date(deadline.earliest_restoration_at.getTime() + 86_400_000),
       }),
     ).rejects.toThrow('Copyright notice restoration record not found')
     const refreshedAggregate = await getCopyrightNoticePrivateAggregate(notice.id)
-    expect(refreshedAggregate?.deadlines).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: staleDeadline.id, cancelled_at: expect.any(Date) }),
-        expect.objectContaining({ id: replacementDeadline.id, cancelled_at: expect.any(Date) }),
-      ]),
-    )
+    expect(refreshedAggregate?.deadlines).toEqual([
+      expect.objectContaining({ id: deadline.id, cancelled_at: expect.any(Date) }),
+    ])
     expect(refreshedAggregate?.assessments).toContainEqual(
-      expect.objectContaining({ id: finalCorrection.id, substantially_compliant: false }),
+      expect.objectContaining({ id: correction.id, substantially_compliant: false }),
     )
   })
 })

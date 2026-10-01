@@ -6,13 +6,13 @@ import { createAssessedUsDmcaCopyrightNoticeFixture } from '@voucha/test-helpers
 import { describe, expect, it } from 'vitest'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
 } from './index.mts'
 import {
   createCounterNoticeRestoreIntent,
   deliverInitialCopyrightWithhold,
 } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 async function createFixture() {
   return createAssessedUsDmcaCopyrightNoticeFixture({

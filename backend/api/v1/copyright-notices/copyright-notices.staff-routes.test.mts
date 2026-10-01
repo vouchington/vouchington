@@ -14,11 +14,11 @@ import {
   appendCopyrightNoticeSubmission,
   appendCopyrightSubmissionAssessment,
   createCopyrightDeliveryIntent,
-  createCopyrightNoticeAggregate,
   createOutboundCopyrightCorrespondence,
-  getCopyrightNoticePrivateAggregate,
 } from '@services/copyright-notices'
 import { failTestCopyrightDeliveryIntent } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright staff and participant routes', () => {
   beforeEach(() => {

@@ -10,10 +10,10 @@ import { getImagePlacementDeliveryKey } from '@services/media-delivery-safety'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
-  createCopyrightNoticeAggregate,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
 } from '@services/copyright-notices'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 export async function createFailedMediaDeliveryReplayFixture() {
   const fixture = await createCopyrightReplayFixture()

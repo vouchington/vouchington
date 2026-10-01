@@ -5,11 +5,11 @@ import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
 } from './index.mts'
 import type { createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
 import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('late legal-hold edge publication', () => {
   it('rolls back every late-hold record when the edge provider rejects the denial', async () => {
