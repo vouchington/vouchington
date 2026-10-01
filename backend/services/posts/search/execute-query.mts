@@ -1,10 +1,9 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { beginTransaction, read, readPool } from '@data-stores/psql'
-import { SEMANTIC_POST_CANDIDATE_LIMIT } from './query-builder/semantic-candidates.mts'
 
 export const SEMANTIC_POST_SEARCH_SETTINGS = {
   'hnsw.iterative_scan': 'strict_order',
-  'hnsw.ef_search': String(SEMANTIC_POST_CANDIDATE_LIMIT),
+  'hnsw.ef_search': '100',
   'hnsw.max_scan_tuples': '20000',
 } as const
 

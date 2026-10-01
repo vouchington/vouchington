@@ -57,6 +57,9 @@ first selects a materialized window ordered by raw cosine distance, with privacy
 text and other search filters applied before the window. The HNSW scan uses strict iterative
 ordering and finite search limits; its settings and a forced custom plan are scoped to the
 read transaction and do not leak into pooled connections.
+Initial HNSW exploration is independent of the candidate cap. Strict iterative scans refill
+the window within the finite scan budget; a smaller initial exploration reduces index startup
+cost but does not make recall exact. The EXPLAIN gate verifies index use on the seeded corpus.
 The parameter-only embedding CTE is not materialized, so the custom planner sees the same
 constant embedding in eligibility filters and distance ordering even with repeated references.
 The parameter-only text query is also inlined so hybrid planning sees its real selectivity.
@@ -156,3 +159,8 @@ Response:
   "total_count": <Number>
 }
 ```
+
+The seeded CI measurement motivating this setting observed candidate startup costs of
+5,633.14 for an index plan and 13,418.39 for a sequential scan, with total query times
+of 168.942 ms and 169.499 ms respectively. These were different seeded runs and do
+not establish a latency improvement; the index plan remains an EXPLAIN gate.
