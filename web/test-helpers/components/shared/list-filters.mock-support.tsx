@@ -22,6 +22,7 @@ vi.mock(
         value: string
         onValueChange: (value: string) => void
       }) => (
+        // ast-grep-ignore: web-no-raw-form-elements -- test double replaces Select with a native select the list filter tests change
         <select
           aria-label='Sort list'
           value={value}
