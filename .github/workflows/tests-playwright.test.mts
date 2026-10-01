@@ -1,6 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { FETCH_FORBIDDEN_PORTS } from '@ts-shared/utils/fetch-ports'
+import { ALLOWED_LABELS } from './runner-policy-classify.mts'
+
+// The runner allowlist owns the versioned ARM label; read it instead of pinning a second literal.
+const armLabel = ALLOWED_LABELS.find(label => label.endsWith('-arm'))
 
 // Run-step shell behavior (runPlaywrightPnpmArgs et al.) lives in the co-located
 // tests-playwright.part-2.test.mts, split out to stay under the oxlint max-lines cap.
@@ -20,9 +24,10 @@ function workflowJobSection(body: string, jobName: string): string {
 describe('tests-playwright.yml', () => {
   afterEach(() => vi.unstubAllEnvs())
 
-  it('runs the shard planner and Playwright shards on ubuntu-latest', () => {
-    expect(workflowJobSection(workflow, 'shards')).toContain('runs-on: ubuntu-latest\n')
-    expect(workflowJobSection(workflow, 'playwright-tests')).toContain('runs-on: ubuntu-latest')
+  it('runs the shard planner and Playwright shards on native ARM64 like the shared web build', () => {
+    expect(armLabel).toBeDefined()
+    expect(workflowJobSection(workflow, 'shards')).toContain(`runs-on: ${armLabel}\n`)
+    expect(workflowJobSection(workflow, 'playwright-tests')).toContain(`runs-on: ${armLabel}\n`)
   })
 
   it('computes the shard matrix from the repository variable override or the spec count', () => {
