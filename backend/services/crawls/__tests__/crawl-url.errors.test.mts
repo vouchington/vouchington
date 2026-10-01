@@ -1,3 +1,4 @@
+import { setDomainRateLimitedBackground } from '@voucha/test-helpers/services/crawls/domain-rate-limit'
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 
 import { crawlUrl } from '../crawl-url.mts'
@@ -38,7 +39,6 @@ function crawlUrlForTest(...args: Parameters<typeof crawlUrl>) {
 import {
   getDomainRateLimitRemainingMs,
   IMMEDIATE_RETRY_RATE_LIMIT_MS,
-  setDomainRateLimitedBackground,
 } from '../domain-rate-limit.mts'
 
 import {

@@ -1,3 +1,4 @@
+import { setDomainRateLimitedBackground } from '@voucha/test-helpers/services/crawls/domain-rate-limit'
 import { describe, expect, it } from 'vitest'
 import {
   getDomainRateLimitRemainingMs,
@@ -5,7 +6,6 @@ import {
   normalizeDomainRateLimitMs,
   normalizeDomainRateLimitScriptResult,
   setDomainRateLimited,
-  setDomainRateLimitedBackground,
 } from './domain-rate-limit.mts'
 import { pollUntilNotNull } from '@voucha/test-helpers/polling'
 

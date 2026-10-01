@@ -5,10 +5,10 @@ import {
   getTestIneligiblePurchaseReversal,
 } from '@voucha/test-helpers'
 import { createMembership } from './index.mts'
-import {
-  reverseIneligibleStripePurchase,
-  type IneligibleStripePurchaseOperations,
-} from './reverse-ineligible-stripe-purchase.mts'
+import { reverseIneligibleStripePurchase } from './reverse-ineligible-stripe-purchase.mts'
+type IneligibleStripePurchaseOperations = NonNullable<
+  Parameters<typeof reverseIneligibleStripePurchase>[0]['operations']
+>
 
 describe('reverseIneligibleStripePurchase', () => {
   it('records a completed zero refund for a fully externally satisfied payment target', async () => {
