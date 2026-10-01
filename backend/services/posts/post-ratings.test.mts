@@ -10,7 +10,7 @@ import {
   insertTestTopic,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { onceEntityListenerCompleted } from '../../workers/entity-listeners/test-support.mts'
+import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
 
 const VALID_REVIEW_MARKDOWN =
   'This review gives detailed context from repeated personal use, including the strongest benefits, the weakest tradeoffs, and how the product performed over time. It explains why the rating is justified with concrete observations that another consumer could compare against their own needs. I would use these details to make the same decision again.'

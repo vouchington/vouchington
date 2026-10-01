@@ -9,12 +9,12 @@ import type {
   releasePostPublicationDirtyWorkLease,
   renewPostPublicationDirtyWorkLease,
   updatePostPublicationDirtyWorkCursors,
-} from '@services/post-publication'
+} from '../../../../services/post-publication/index.mts'
 import type {
   PublicationSitemapTarget,
   ReconciliationPost,
-} from '@services/post-publication/reconcile'
-import type { invalidatePostStrict } from '@services/entity-cache/invalidate-strict'
+} from '../../../../services/post-publication/reconcile.mts'
+import type { invalidatePostStrict } from '../../../../services/entity-cache/invalidate-strict.mts'
 import type { enqueueContinuePostPublicationReconciliation } from '@queues/post-publication/enqueues'
 import type { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import type { enqueueUpdatePostDaySitemapForReconciliation } from '@queues/sitemaps/enqueues'
@@ -22,13 +22,13 @@ import type {
   enqueueBulkReconcilePostNotifications,
   enqueueBulkReconcileRssFeedItemNotifications,
 } from '@queues/notifications/enqueues'
-import type { enqueueBulkRefreshPostMetricsById } from '@queues/entity-metrics-cache-refresh/enqueues'
+import type { enqueueBulkRefreshPostMetricsById } from '../../../../queues/entity-metrics-cache-refresh/enqueues.mts'
 import type {
   invalidatePostPublicationTopicsStrict,
   invalidatePostPublicSurfacesStrict,
-} from '@services/posts/public-surfaces'
-import type { updateTopicRatingStats } from '@services/topics/ratings'
-import type { reconcileReviewSuccessionsForPostIds } from '@services/posts/review-successions/index'
+} from '../../../../services/posts/public-surfaces.mts'
+import type { updateTopicRatingStats } from '../../../../services/topics/ratings.mts'
+import type { reconcileReviewSuccessionsForPostIds } from '../../../../services/posts/review-successions/index.mts'
 import { vi } from 'vitest'
 
 export const work: ClaimedPostPublicationDirtyWork = {
@@ -85,7 +85,7 @@ export function makeResult(
     orphanReceiptPostIds: options.orphanReceiptPostIds ?? [],
     missingPostIds: options.missingPostIds ?? [],
     hasMoreOrphanReceipts: options.hasMoreOrphanReceipts ?? false,
-    cursorPostId: options.cursorPostId ?? post.id,
+    cursorPostId: options.cursorPostId === undefined ? post.id : options.cursorPostId,
     topicIds: options.topicIds ?? ['00000000-0000-7000-8000-000000000006'],
     hasMoreTopics: options.hasMoreTopics ?? false,
     sitemapTargets: [
@@ -100,7 +100,7 @@ export function makeResult(
     ],
     rssFeedItemIds: options.rssFeedItemIds ?? [],
     hasMoreIdentityKeys: options.hasMoreIdentityKeys ?? false,
-    cursorKeyId: options.cursorKeyId ?? null,
+    cursorKeyId: options.cursorKeyId === undefined ? null : options.cursorKeyId,
     hasIncompleteSnapshots: false,
   }
 }

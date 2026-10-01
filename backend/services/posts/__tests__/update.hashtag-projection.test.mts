@@ -15,7 +15,7 @@ import { getPostByAnyCached } from '../../entity-fetch/get.mts'
 import {
   onceEntityListenerActive,
   onceEntityListenerCompleted,
-} from '../../../workers/entity-listeners/test-support.mts'
+} from '@voucha/test-helpers/workers/entity-listeners/test-support'
 import { createPost } from '../create.mts'
 import { getPostByAny } from '../get.mts'
 import { getOrderedHashtagAliasClaims } from '../hashtags.mts'

@@ -1,4 +1,4 @@
-import { onceEntityListenerCompleted } from '@workers/entity-listeners/test-support'
+import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { createRequest } from '@voucha/test-helpers/api/server'

@@ -1504,9 +1504,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../test-helpers
-      '@workers/entity-listeners':
-        specifier: workspace:^
-        version: link:../workers/entity-listeners
       node-app-attest:
         specifier: ^1.0.1
         version: 1.0.1
@@ -10490,6 +10487,9 @@ importers:
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../modules/http-signatures
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../modules/on-error
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../modules/openai-utils
@@ -10508,6 +10508,21 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
+      '@queues/entity-listeners':
+        specifier: workspace:^
+        version: link:../queues/entity-listeners
+      '@queues/notifications':
+        specifier: workspace:^
+        version: link:../queues/notifications
+      '@queues/post-publication':
+        specifier: workspace:^
+        version: link:../queues/post-publication
+      '@queues/psql':
+        specifier: workspace:^
+        version: link:../queues/psql
+      '@queues/sitemaps':
+        specifier: workspace:^
+        version: link:../queues/sitemaps
       '@sentry/node':
         specifier: 11.0.0
         version: 11.0.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))
@@ -10529,6 +10544,9 @@ importers:
       '@vouchington/localization-compiler':
         specifier: 0.2.2
         version: 0.2.2
+      glide-mq:
+        specifier: ^0.15.5
+        version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       jose:
         specifier: ^6.2.12
         version: 6.2.12
@@ -11015,9 +11033,6 @@ importers:
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
-      '@services/moderation-appeals':
-        specifier: workspace:^
-        version: link:../../services/moderation-appeals
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds

@@ -143,7 +143,7 @@ describe('create', () => {
     })
     // `processAutoFollowReferrer` (backend/workers/entity-listeners) is what creates this follow
     // relation; poll the observable relation row instead of importing
-    // `@workers/entity-listeners/test-support` — this package must never depend on the worker
+    // `@voucha/test-helpers/workers/entity-listeners/test-support` — this package must never depend on the worker
     // package (workers/AGENTS.md: workers depend on services, never the reverse).
     await expect.poll(() => getFollowExists(newUser.id, referrer.id)).toBe(true)
   })
