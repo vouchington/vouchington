@@ -60,7 +60,9 @@ BEGIN
     'scheduled_job_run',
     'backfill_run',
     'article_sync_run',
-    'import_batch_create'
+    'import_batch_create',
+    'preservation_hold_place',
+    'preservation_hold_release'
   );
 EXCEPTION
   WHEN duplicate_object THEN NULL;

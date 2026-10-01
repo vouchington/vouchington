@@ -260,9 +260,10 @@ as usual.
    the user admin panel after the reinstatement row exists. The decision, any new suspension,
    moderator action, and publication invalidation work commit together after the account lifecycle
    lock; a failed decision leaves the review open for retry.
-4. Account deletion returns 409 while an operative incident remains, or while an unresolved
-   qualifying legal hold covers a placement that account owns. An open review alone does not refuse
-   deletion.
+4. Account deletion returns 409 while an operative incident remains, while an unresolved
+   qualifying legal hold covers a placement that account owns, or while an administrator has an
+   open [preservation hold](#dmca-512h-subpoenas) on the account. An open review alone does not
+   refuse deletion.
 5. Retention durations are still an approved-policy gate. Do not invent a clock in the product.
 
 ## Recovery scans
@@ -435,21 +436,36 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
 4. **User notice.** The product has no channel for notice of legal process. If counsel approves
    notice and no court order or law forbids it, send it from the operator mailbox before any
    production, so the user can respond. Record the date it was sent in the matter file.
-5. **Preservation.** The product has no preservation hold for a subpoena. The legal holds in
-   `copyright_notice_legal_hold_assessments` record only §512(g)(2)(C) court and CCB filings, and
-   they change restoration. Never record a subpoena as a court or CCB filing, or as a submission
-   of kind `court_or_ccb_hold`.
+5. **Preservation.** If counsel directs that the account's records be preserved, an administrator
+   places a **preservation hold** on the account. The legal holds in
+   `copyright_notice_legal_hold_assessments` are a different record: they capture only §512(g)(2)(C)
+   court and CCB filings and change restoration. Never record a subpoena as a court or CCB filing,
+   or as a submission of kind `court_or_ccb_hold`.
+   - **Place and release.** Use the "Legal preservation hold" card in the user admin panel
+     (`/user/<id>/admin`, administrators only; moderators and reviewers cannot see or call it).
+     Enter a short matter reference of up to 500 characters, such as a matter id. Do not put the
+     requester's name, the subpoena text, or the account holder's data in it. It is stored
+     encrypted, shown only to administrators, and never logged. The hold has no duration or scope:
+     counsel decides when it ends, and an administrator releases it from the same card. Only one
+     hold is open per account at a time.
+   - **Effect.** While a hold is open, deletion of the account by the user or by an administrator
+     returns the same `409` as for an operative incident or a court or CCB hold. The message does
+     not say which, so it does not reveal that legal process exists. A hold does not copy or freeze
+     any other record. It only stops the account being deleted.
+   - **Audit.** Placing and releasing each write a moderator action (`preservation_hold_place`,
+     `preservation_hold_release`), visible to administrators in the admin modlog and to no
+     community. The hold row records who placed it and when, and who released it and when. Rows are
+     never deleted, so this history outlives the account and its eventual hard delete (see
+     [account deletion](../requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md#deletion-refusals)).
+   - **Already deleted.** A hold cannot be placed on an account that is already deleted. If the
+     subpoena arrives after deletion, tell counsel the same day: the account's personal data was
+     scrubbed at deletion, and the soft-deleted row is purged 90 days after it.
    - Copyright case records are append-only, and nothing in the product destroys case evidence.
      Retention deletion is not built yet, so nothing is deleted today; a switched-off deletion sweep
      is tracked in [#1101](https://github.com/vouchington/vouchington/issues/1101) (see
      [evidence retention](../requirements/moderation/COPYRIGHT-NOTICES.md#evidence-retention)).
-   - Account records are not protected. The user or an administrator can delete the account at any
-     time. [Account deletion](../requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md) scrubs direct
-     personal data immediately and reattributes the account's posts to `[deleted]`, so the case no
-     longer links to the account. Only an operative repeat-infringer incident or an unresolved
-     qualifying court or CCB hold blocks deletion; a subpoena does not.
 
-   If counsel directs preservation, an administrator requests an
+   If counsel also directs a copy of the data, an administrator requests an
    [account data export](../requirements/users/ACCOUNT-DATA-EXPORT.md) for the account and saves
    the download to the matter file before its link expires. The export omits session IP
    addresses, so capture any that counsel needs from `user_sessions`. The account holder cannot see

@@ -384,7 +384,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/url/[id]/crawls/[crawlId]", selectorId: "web.route.f53e7d9eae7bef4b.f0994664e15edac0", hasMembership: true },
   { pattern: "/urls", selectorId: "web.route.4c1fcd9f8b90ab34.e01745123e3b4e06", hasMembership: true },
   { pattern: "/user/[idOrUsername]", selectorId: "web.route.ad97ddb50886f73a.97612fcce96aaa26", hasMembership: true },
-  { pattern: "/user/[idOrUsername]/admin", selectorId: "web.route.4e2a263347cebdfe.9d8f92fa009b64b1", hasMembership: true },
+  { pattern: "/user/[idOrUsername]/admin", selectorId: "web.route.4e2a263347cebdfe.b904d0531a9548c9", hasMembership: true },
   { pattern: "/user/[idOrUsername]/comments", selectorId: "web.route.5f7c27794eb63671.0f54bf5bdaf0ffeb", hasMembership: true },
   { pattern: "/user/[idOrUsername]/communities/member", selectorId: "web.route.d23ac6f13150ca97.c44bb71ad649953f", hasMembership: true },
   { pattern: "/user/[idOrUsername]/communities/proxy-following", selectorId: "web.route.fc55d34def06bc65.6c0d4a140dd139c5", hasMembership: true },

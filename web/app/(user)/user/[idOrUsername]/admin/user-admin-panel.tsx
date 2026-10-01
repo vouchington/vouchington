@@ -13,6 +13,7 @@ import { suspendUser, unsuspendUser } from '@/lib/api/client/users'
 import { getFormText } from '@/lib/form-data'
 import { IdentityVerificationAttemptGrant } from './identity-verification-attempt-grant'
 import { UserAdminWarningsCard } from './user-admin-warnings-card'
+import { UserPreservationHoldCard } from './user-preservation-hold-card'
 import type { User } from '@/types/user'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
@@ -192,6 +193,7 @@ export function UserAdminPanel({ user }: UserAdminPanelProps) {
       </Card>
       <IdentityVerificationAttemptGrant userId={user.id} />
       <UserAdminWarningsCard userId={user.id} />
+      <UserPreservationHoldCard userId={user.id} />
     </div>
   )
 }

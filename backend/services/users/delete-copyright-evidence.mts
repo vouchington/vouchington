@@ -2,6 +2,11 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { TransactionQuery } from '@data-stores/psql'
 
+/**
+ * Refuses (409) while an operative repeat-infringer incident, an unresolved qualifying court/CCB
+ * hold, or an open staff-placed legal-process preservation hold covers the account. The message is
+ * deliberately generic: naming a preservation hold would tip off the account holder.
+ */
 export async function assertCopyrightEvidenceAllowsDeletion(
   query: TransactionQuery,
   userId: string,
@@ -12,6 +17,10 @@ export async function assertCopyrightEvidenceAllowsDeletion(
       EXISTS (
         SELECT 1 FROM copyright_repeat_infringer_incidents
         WHERE account_user_id = ${userId} AND operative
+      )
+      OR EXISTS (
+        SELECT 1 FROM user_legal_preservation_holds
+        WHERE account_user_id = ${userId} AND released_at IS NULL
       )
       OR EXISTS (
         SELECT 1

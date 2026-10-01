@@ -170,6 +170,7 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
   ],
   ['user_import_requests', 'Import request lifecycle uses explicit state timestamps.'],
   ['user_warnings', 'Append-only warning records; no fields change after issuance.'],
+  ['user_legal_preservation_holds', 'Only release mutates a row; released_at records it.'],
   [
     'user_aside_preferences',
     'dismissed_at is the meaningful timestamp; upsert-on-conflict refreshes dismissed_at, so a generic updated_at would be redundant.',

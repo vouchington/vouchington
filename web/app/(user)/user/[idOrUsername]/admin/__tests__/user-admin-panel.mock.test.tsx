@@ -58,6 +58,15 @@ vi.mock(import('../user-admin-warnings'), () => ({
   ),
 }))
 
+vi.mock(import('../user-preservation-hold-card'), () => ({
+  UserPreservationHoldCard: ({ userId }: { userId: string }) => (
+    <div
+      data-pw='user-admin-preservation-hold-card'
+      data-userid={userId}
+    />
+  ),
+}))
+
 const activeUser: User = {
   id: 'user-1',
   username: 'alice',
@@ -119,6 +128,14 @@ describe('UserAdminPanel', () => {
 
     expect(screen.getByRole('button', { name: 'Issue Warning' })).toBeInTheDocument()
     expect(container.querySelector('[data-pw="user-admin-warnings"]')).not.toBeNull()
+  })
+
+  it('renders the preservation hold card for the user', () => {
+    const { container } = render(<UserAdminPanel user={activeUser} />)
+
+    expect(
+      container.querySelector('[data-pw="user-admin-preservation-hold-card"]'),
+    ).toHaveAttribute('data-userid', 'user-1')
   })
 
   it('re-mounts UserAdminWarnings when IssueWarningDialog calls onIssued', async () => {

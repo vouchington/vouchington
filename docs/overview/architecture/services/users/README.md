@@ -22,6 +22,7 @@ Core user service — authentication flows, authorization, profile management, s
 | `display-name`                                     | Display name validation and formatting                                                |
 | `suspension`                                       | Admin user suspension                                                                 |
 | `delete`                                           | Immediate account privacy fence and durable deletion request                          |
+| `preservation-holds`                               | Admin legal-process hold that blocks account deletion; the reference is encrypted     |
 | `delete-row-locks`                                 | Ascending-id `users` row locks for a deletion target and its requesting actor         |
 | `delete-oauth-pii`                                 | GDPR erasure: scrub OAuth PII on deletion                                             |
 

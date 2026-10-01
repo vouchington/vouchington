@@ -1062,6 +1062,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_oauth_authorization_server_event_mut
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_user_legal_preservation_hold_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_user_legal_preservation_hold_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_release_moderation_transparency_daily_rollup(p_day date, p_community_id uuid, p_metric text, p_category text, p_cutoff timestamp with time zone)`
 
 ```sql

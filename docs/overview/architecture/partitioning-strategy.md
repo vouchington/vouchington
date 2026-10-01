@@ -194,7 +194,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `review_disputes`, `ses_bounce_events`, `stripe_events`, `user_data_request_attempts`,
   `user_data_requests`, `user_deletion_audit_logs`, `user_deletion_external_works`,
   `user_deletion_relation_impacts`, `user_deletion_requests`, `user_engagement_email_sends`,
-  `user_import_requests`, `user_moderation_email_sends`, `user_rss_feed_import_batches`,
+  `user_import_requests`, `user_legal_preservation_holds`, `user_moderation_email_sends`, `user_rss_feed_import_batches`,
   `user_rss_feed_import_rows`, `vote_integrity_flags`.
 - Post moderation ledger: `post_moderation_attempts`, `post_moderation_dispositions`,
   `post_moderation_versions`, and `post_moderation_work_items`. Rows follow the retained post and
