@@ -35,6 +35,10 @@
       "path": "backend/services/comments/descendant-ids.mts",
       "classification": "direct-sql"
     },
+    {
+      "path": "backend/services/comments/descendant-page.mts",
+      "classification": "descendants-boundary"
+    },
     { "path": "backend/md/posts.mts", "classification": "public-boundary" },
     { "path": "backend/services/rss-xml/posts-feed.mts", "classification": "public-boundary" },
     { "path": "backend/services/posts/public-ids.mts", "classification": "public-sql" },

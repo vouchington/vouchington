@@ -1,7 +1,7 @@
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { indexById } from '@modules/utils'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
-import { getVisibleCommentDescendantIdsPage } from '@services/comments'
+import { COMMENT_DESCENDANTS_LIMIT, getCommentDescendantsPage } from '@services/comments'
 import { getPostElectionVotesByUser } from '@services/elections-votes/post'
 import { maybeSanitizeElections } from '@services/elections-votes/shared/sanitize-election'
 import {
@@ -35,15 +35,11 @@ import {
   mergeElectionVotesWithAgentModerations,
 } from '../admin-moderation-data.mts'
 import { getRouteAccessPost } from '../get-route-access-post.mts'
-import {
-  createPaginationParser,
-  decodeScopedUuidCursor,
-  encodeScopedUuidCursor,
-} from '@modules/pagination'
+import { createPaginationParser } from '@modules/pagination'
 
 const descendantsParser = createPaginationParser({
   cursor: { type: 'simple' },
-  limit: { min: 1, max: 200, default: 100 },
+  limit: COMMENT_DESCENDANTS_LIMIT,
 })
 
 app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
@@ -60,7 +56,6 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
   ctx.assert(rootPost, 404, 'Post not found')
   ctx.assert(await canViewPost(currentUser, rootPost), 404, 'Post not found')
 
-  const actualRootId = post.root_id ?? post.id
   const pagination = descendantsParser.parse(ctx.query)
   const { after: _rawAfter, ...queryWithoutAfter } = ctx.query
   const validationQuery = prepareQueryForValidation(
@@ -74,16 +69,10 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
     path: ctx.params,
     query: validationQuery,
   })
-  const cursorScope = `comment-descendants:${actualRootId}:${post.id}`
-  const afterId = pagination.after
-    ? decodeScopedUuidCursor(pagination.after, cursorScope, 'Invalid cursor format').id
-    : undefined
-  const { results: commentIds, hasNextPage } = await getVisibleCommentDescendantIdsPage(
-    currentUser,
-    actualRootId,
-    post.id,
-    { limit: pagination.limit, afterId },
-  )
+  const { ids: commentIds, pageInfo } = await getCommentDescendantsPage(currentUser, post, {
+    limit: pagination.limit,
+    after: pagination.after,
+  })
   const results = commentIds.map(id => ({
     id,
     __entity_type: 'post' as const,
@@ -106,14 +95,7 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
   )
   const output: Record<string, unknown> = {
     results,
-    page_info: {
-      has_next_page: hasNextPage,
-      end_cursor:
-        hasNextPage && commentIds.at(-1)
-          ? encodeScopedUuidCursor(commentIds.at(-1)!, cursorScope)
-          : null,
-      start_cursor: commentIds[0] ? encodeScopedUuidCursor(commentIds[0], cursorScope) : null,
-    },
+    page_info: pageInfo,
     posts: postsPromise.then(posts => {
       const byId = indexById(posts)
       if (!currentUser) return byId
