@@ -41,7 +41,6 @@ test.beforeAll(async () => {
     communityId: community.id,
     createdById: owner.id,
     slotAllocated: true,
-    onFlagAction: 'unpublish',
   })
 
   const postId = await insertTestPost({
@@ -121,7 +120,6 @@ test.describe('Community automod review panel', () => {
       communityId: community.id,
       createdById: owner.id,
       slotAllocated: true,
-      onFlagAction: 'unpublish',
     })
 
     const postId = await insertTestPost({
