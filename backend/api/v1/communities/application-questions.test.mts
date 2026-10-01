@@ -21,6 +21,7 @@ describe('Community Application Questions Routes', () => {
         for (const role of [
           'anonymous',
           'applicant',
+          'removed-applicant',
           'member',
           'moderator',
           'administrator',
@@ -43,6 +44,14 @@ describe('Community Application Questions Routes', () => {
           if (caller && (role === 'member' || role === 'moderator')) {
             await insertTestCommunityMember({ communityId: community.id, userId: caller.id, role })
           }
+          if (caller && role === 'removed-applicant') {
+            await insertTestCommunityMember({
+              communityId: community.id,
+              userId: caller.id,
+              role: 'member',
+            })
+            await removeTestCommunityMember(community.id, caller.id)
+          }
           const questions = await setApplicationQuestions(owner.id, community.id, [
             { question: 'Applicant content', field_type: 'long_text', required: false },
           ])
@@ -53,7 +62,7 @@ describe('Community Application Questions Routes', () => {
             .get(`/api/v1/communities/${community.slug}/application-questions`)
             .expect(allowed ? 200 : 404)
           expect(response.body.questions?.[0]?.id).toBe(allowed ? questions[0]!.id : undefined)
-          if (visibility === 'private' && role === 'applicant') {
+          if (visibility === 'private' && (role === 'applicant' || role === 'removed-applicant')) {
             await request
               .post(`/api/v1/communities/${community.slug}/applications`)
               .send({ answers: {} })
@@ -113,7 +122,7 @@ describe('Community Application Questions Routes', () => {
       },
     )
 
-    it.each(['archived', 'banned', 'removed'] as const)(
+    it.each(['archived', 'banned'] as const)(
       'conceals questions from an ineligible %s prospective applicant',
       async reason => {
         const owner = await createTestUser()
@@ -133,19 +142,12 @@ describe('Community Application Questions Routes', () => {
         ])
         if (reason === 'archived') {
           await archiveTestCommunity({ communityId: community.id, archivedById: owner.id })
-        } else if (reason === 'banned') {
+        } else {
           await insertTestCommunityBan({
             communityId: community.id,
             userId: caller.id,
             bannedById: owner.id,
           })
-        } else {
-          await insertTestCommunityMember({
-            communityId: community.id,
-            userId: caller.id,
-            role: 'member',
-          })
-          await removeTestCommunityMember(community.id, caller.id)
         }
         const request = createRequest()
         await request.authenticateAs(caller)

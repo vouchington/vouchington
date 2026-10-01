@@ -77,9 +77,9 @@
 `GET /api/v1/communities/:idOrSlug/application-questions` permits ordinary community viewers
 and pending applicants, matching the community detail read.
 For private communities it also permits authenticated prospective applicants whose community is
-not archived, who have no membership row (including a removed membership), no active ban, and
+not archived, who have no active membership, no active ban, and
 no pending application. These are the eligibility gates used when submitting an application;
-answer validation applies when submitting the answers. A caller who satisfies neither path receives
+answer validation applies when submitting the answers. Removed former members may reapply. A caller who satisfies neither path receives
 `404 Community not found`, without questions. Pending applicants retain detail and question visibility even if their submission eligibility changes.
 Only anonymous reads of public communities receive public cache headers. Authenticated responses
 and rejected private reads do not receive public cache headers.
