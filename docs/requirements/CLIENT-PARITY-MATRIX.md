@@ -163,6 +163,7 @@ and manifest shapes are unchanged. The native client source audit found no hardc
 scope consumers to migrate; clients consume the reduced generated catalog. Topic Wikipedia IDs
 and URLs remain content fields and are unaffected. Hosted research/discovery package deletion
 remains owned by #1546; this change only removes their references to retired tools.
+
 ## Staff action history handoff
 
 Issue #635 extends the shared moderator-action catalog and transcript of staff actions with typed
