@@ -59,3 +59,5 @@ Under 17 U.S.C. § 512(f), anyone who knowingly makes a material misrepresentati
 - [How Copyright Complaints Work](./copyright-complaints.md)
 - [What Happens When Content Is Removed](./what-happens-when-content-is-removed.md)
 - [Terms of Service](./terms-of-service.md)
+- [Privacy Policy](./privacy-policy.md)
+- [Community Guidelines](./community-guidelines.md)
