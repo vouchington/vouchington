@@ -57,6 +57,8 @@ first selects a materialized window ordered by raw cosine distance, with privacy
 text and other search filters applied before the window. The HNSW scan uses strict iterative
 ordering and finite search limits; its settings and a forced custom plan are scoped to the
 read transaction and do not leak into pooled connections.
+The parameter-only embedding CTE is not materialized, so the custom planner sees the same
+constant embedding in eligibility filters and distance ordering even with repeated references.
 
 Approximate recall and a capped result window are intentional ([#1549](https://github.com/vouchington/vouchington/issues/1549)).
 The candidate cap is defined by `SEMANTIC_POST_CANDIDATE_LIMIT` in the query builder. Ranking

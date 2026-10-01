@@ -21,6 +21,8 @@ describe('semantic candidate window', () => {
     expect(candidateSql).toContain('deleted_at IS NULL')
     expect(candidateSql).toContain('ORDER BY posts.bedrock_nova_multimodal_v1_embedding <=>')
     expect(candidateSql).not.toContain(', posts.id DESC')
+    expect(query.sql).toContain('semantic_search_embedding AS NOT MATERIALIZED')
+    expect(candidateSql).toContain('semantic_search_embedding.embedding\n    LIMIT')
     expect(candidateSql).not.toContain('posts.id) <')
     expect(query.sql.slice(outerStart)).toContain('posts.id) <')
     expect(query.values).toContain(SEMANTIC_POST_CANDIDATE_LIMIT)
