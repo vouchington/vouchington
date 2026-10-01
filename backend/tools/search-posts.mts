@@ -8,12 +8,15 @@ import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst
 import { VALID_FILTERABLE_POST_TYPES, type FilterablePostType } from '@ts-shared/feed-capabilities'
 import {
   EMPTY_PAGE_INFO,
+  findPageOrNull,
+  INVALID_CURSOR_RESULT,
+  type InvalidCursorResult,
   pagedSearchQuery,
   pagedSearchSchemaProperties,
   type PagedSearchArgs,
   type SearchPageInfo,
 } from './paged-search.mts'
-import { objectSchema, successSchema } from './output-schema-shapes.mts'
+import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'
 import { componentSchema } from './route-response-schema.mts'
 
 // The sorts GET /api/v1/posts accepts.
@@ -30,21 +33,23 @@ type ToolArgs = PagedSearchArgs & {
   post_type?: FilterablePostType
 }
 
-type ToolResult = {
-  success: true
-  results: Array<{
-    id: string
-    title: string
-    markdown: string
-    post_type: string
-  }>
-  page_info: SearchPageInfo
-}
+type ToolResult =
+  | {
+      success: true
+      results: Array<{
+        id: string
+        title: string
+        markdown: string
+        post_type: string
+      }>
+      page_info: SearchPageInfo
+    }
+  | InvalidCursorResult
 
 // The REST twin returns post ids plus hydration maps; this tool returns the sanitized post text
 // instead, so it owns the schema. The test pins `id`, `post_type` and `page_info` to the OpenAPI
-// document.
-const OUTPUT_SCHEMA = successSchema({
+// document. A malformed or foreign cursor is the one failure variant.
+const OUTPUT_SCHEMA = outcomeSchema('success', {
   results: {
     type: 'array',
     items: objectSchema({
@@ -62,7 +67,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'search_posts',
     type: 'function',
     description:
-      'Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page.',
+      'Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page. A malformed or foreign cursor returns { success: false, error: "Invalid cursor" }.',
     parameters: {
       type: 'object',
       properties: {
@@ -96,20 +101,24 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
-      const prepared = preparePostsSearchParams({
-        ...pagedSearchQuery(args),
-        ...(args.sort && { sort: args.sort }),
-        ...(args.post_type && { post_types: args.post_type }),
-      })
-      const { shouldReturnEmpty, searchOptions } = await resolvePostsSearchParams(prepared)
-      if (shouldReturnEmpty) return { success: true, results: [], page_info: EMPTY_PAGE_INFO }
+      const page = await findPageOrNull(args.after, async () => {
+        const prepared = preparePostsSearchParams({
+          ...pagedSearchQuery(args),
+          ...(args.sort && { sort: args.sort }),
+          ...(args.post_type && { post_types: args.post_type }),
+        })
+        const { shouldReturnEmpty, searchOptions } = await resolvePostsSearchParams(prepared)
+        if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
 
-      // Muted and blocked users, topics and hostnames stay out of the caller's results.
-      const { results, page_info } = await getPostIds(currentUser, {
-        ...searchOptions,
-        omitLimit: false,
-        exclude_for_user_id: currentUser?.id,
+        // Muted and blocked users, topics and hostnames stay out of the caller's results.
+        return getPostIds(currentUser, {
+          ...searchOptions,
+          omitLimit: false,
+          exclude_for_user_id: currentUser?.id,
+        })
       })
+      if (!page) return INVALID_CURSOR_RESULT
+      const { results, page_info } = page
       const posts = await getPostByAnyCachedBatch(results.map(result => result.id))
       const visiblePosts = posts.filter((post): post is NonNullable<typeof post> => post !== null)
 

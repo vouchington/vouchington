@@ -167,8 +167,26 @@ describe('MCP output schema contract for search_posts — real DB', () => {
     await expect(
       callRejectedMcpTool(caller, 'search_posts', { sort: 'ranking' }, SCOPES),
     ).resolves.toContain('/sort must be equal to one of the allowed values')
-    await expect(
-      callRejectedMcpTool(caller, 'search_posts', { after: 'not-a-cursor' }, SCOPES),
-    ).resolves.toContain('Tool execution failed')
+  })
+
+  it('reports a malformed or foreign cursor as a normal Invalid cursor result', async () => {
+    const newest = await search({ text_search_query: token, sort: 'new', limit: 2 })
+
+    const malformed = await callStructuredMcpTool(
+      caller,
+      'search_posts',
+      { text_search_query: token, after: 'not-a-cursor' },
+      SCOPES,
+    )
+    // A sort=new cursor holds only an id, so another sort refuses it.
+    const foreign = await callStructuredMcpTool(
+      caller,
+      'search_posts',
+      { text_search_query: token, sort: 'best', after: newest.page_info.end_cursor },
+      SCOPES,
+    )
+
+    expect(malformed).toEqual({ success: false, error: 'Invalid cursor' })
+    expect(foreign).toEqual({ success: false, error: 'Invalid cursor' })
   })
 })

@@ -32,7 +32,12 @@ describe('MCP output schema contract for the other read tools — real DB', () =
 
   it('returns get_domain_ratings for a hostname', async () => {
     const hostname = `contract-trust-${suffix}.example.com`
-    await setUrlHostnameVotes(await insertTestUrlHostname({ hostname }), 7, 2)
+    // The scores are weighted, so the net score is fractional while the counts stay whole numbers.
+    // The fractions are exact in binary, so the net score compares equal.
+    await setUrlHostnameVotes(await insertTestUrlHostname({ hostname }), 7, 2, {
+      up: 6.75,
+      down: 2.25,
+    })
 
     const result = await callStructuredMcpTool(caller, 'get_domain_ratings', { hostname }, [
       'domain-ratings:read',
@@ -41,7 +46,7 @@ describe('MCP output schema contract for the other read tools — real DB', () =
     expect(result).toMatchObject({
       success: true,
       hostname,
-      domain_trust: { votes_score_net: 5, votes_count_up: 7, votes_count_down: 2 },
+      domain_trust: { votes_score_net: 4.5, votes_count_up: 7, votes_count_down: 2 },
     })
     expect(result).not.toHaveProperty('source_topic')
   })

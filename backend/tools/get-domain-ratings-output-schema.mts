@@ -5,7 +5,9 @@ import {
   RATINGS_COUNT_SCHEMA,
 } from './topic-output-schema-parts.mts'
 
-const votes = { type: 'integer' }
+// `votes_score_net` is the difference of two weighted DOUBLE PRECISION scores, so it is fractional
+// in general. The two counts are INT columns.
+const voteCount = { type: 'integer' }
 
 // The tool has no REST twin, so it owns this schema. The source topic and RSS feed appear only when
 // the URL maps to an RSS source.
@@ -15,9 +17,9 @@ export const GET_DOMAIN_RATINGS_OUTPUT_SCHEMA = outcomeSchema(
     hostname: { type: 'string' },
     hostname_id: { type: 'string' },
     domain_trust: objectSchema({
-      votes_score_net: votes,
-      votes_count_up: votes,
-      votes_count_down: votes,
+      votes_score_net: { type: 'number' },
+      votes_count_up: voteCount,
+      votes_count_down: voteCount,
     }),
     source_topic: objectSchema({
       topic_id: { type: 'string' },

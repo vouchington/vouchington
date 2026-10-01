@@ -1,3 +1,4 @@
+import createHttpError from 'http-errors'
 import {
   buildSearchToolSchemaProperties,
   expandHybridSearchArgs,
@@ -5,6 +6,34 @@ import {
 } from './search-system.mts'
 
 export type PagedSearchArgs = SearchSystemArgs & { q?: string; after?: string }
+
+export type InvalidCursorResult = { success: false; error: 'Invalid cursor' }
+
+/** What a paged search tool returns for a malformed or foreign `after` cursor. */
+export const INVALID_CURSOR_RESULT: Readonly<InvalidCursorResult> = Object.freeze({
+  success: false,
+  error: 'Invalid cursor',
+})
+
+/**
+ * Looks up one page. The REST pagination code refuses a malformed or foreign `after` cursor with a
+ * 400, from the query parser or from the keyset decoder inside the search itself. When the call
+ * passed an `after`, that 400 becomes `null` so the tool can report it. Without an `after` no cursor
+ * can have failed, so a 400 there is a different fault and propagates like every other error.
+ */
+export async function findPageOrNull<TPage>(
+  after: string | undefined,
+  find: () => Promise<TPage>,
+): Promise<TPage | null> {
+  try {
+    return await find()
+  } catch (error: unknown) {
+    if (after !== undefined && createHttpError.isHttpError(error) && error.status === 400) {
+      return null
+    }
+    throw error
+  }
+}
 
 export type SearchPageInfo = {
   has_next_page: boolean

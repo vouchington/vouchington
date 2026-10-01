@@ -92,9 +92,11 @@ A tool without one would return only the `text` block, unvalidated. See
 `search_posts`, `search_topics`, `get_trending_posts` and `get_trending_topics` take the `after` and
 `limit` of their REST routes and return `page_info` (`has_next_page`, `start_cursor`,
 `end_cursor`). `after` is an opaque cursor: pass the previous result's `page_info.end_cursor` to get
-the next page. An oversized `limit` is clamped to 100 as on REST; `0` and a malformed or foreign
-cursor are refused. `get_topic_details` pages only its children, with `children_after`,
-`children_limit` and `children_page_info`, when `hierarchy` asks for them.
+the next page. An oversized `limit` is clamped to 100 as on REST, and `0` is refused. A malformed or
+foreign cursor makes `search_posts` and `search_topics` return
+`{ success: false, error: "Invalid cursor" }`; the trending tools refuse it. `get_topic_details`
+pages only its children, with `children_after`, `children_limit` and `children_page_info`, when
+`hierarchy` asks for them.
 
 ## Performance
 

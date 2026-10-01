@@ -4,29 +4,35 @@ import { getTopicIds } from '@services/topics/search/get-ids'
 import { prepareTopicsSearchParams, resolveTopicsSearchParams } from '@services/search-params'
 import {
   EMPTY_PAGE_INFO,
+  findPageOrNull,
+  INVALID_CURSOR_RESULT,
+  type InvalidCursorResult,
   pagedSearchQuery,
   pagedSearchSchemaProperties,
   type PagedSearchArgs,
   type SearchPageInfo,
 } from './paged-search.mts'
-import { objectSchema, successSchema } from './output-schema-shapes.mts'
+import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'
 import { componentSchema } from './route-response-schema.mts'
 
 type ToolArgs = PagedSearchArgs
 
-type ToolResult = {
-  success: true
-  topics: Array<{
-    id: string
-    name: string
-    slug: string
-  }>
-  page_info: SearchPageInfo
-}
+type ToolResult =
+  | {
+      success: true
+      topics: Array<{
+        id: string
+        name: string
+        slug: string
+      }>
+      page_info: SearchPageInfo
+    }
+  | InvalidCursorResult
 
 // The REST twin documents no response body for this route, so the tool owns the schema. `page_info`
-// is the generated PageInfo component, the same one GET /api/v1/posts documents.
-const OUTPUT_SCHEMA = successSchema({
+// is the generated PageInfo component, the same one GET /api/v1/posts documents. A malformed or
+// foreign cursor is the one failure variant.
+const OUTPUT_SCHEMA = outcomeSchema('success', {
   topics: {
     type: 'array',
     items: objectSchema({
@@ -43,7 +49,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'search_topics',
     type: 'function',
     description:
-      'Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page.',
+      'Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page. A malformed or foreign cursor returns { success: false, error: "Invalid cursor" }.',
     parameters: {
       type: 'object',
       properties: pagedSearchSchemaProperties(
@@ -64,11 +70,15 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
-      const prepared = prepareTopicsSearchParams(pagedSearchQuery(args))
-      const { shouldReturnEmpty, searchOptions } = await resolveTopicsSearchParams(prepared)
-      if (shouldReturnEmpty) return { success: true, topics: [], page_info: EMPTY_PAGE_INFO }
+      const page = await findPageOrNull(args.after, async () => {
+        const prepared = prepareTopicsSearchParams(pagedSearchQuery(args))
+        const { shouldReturnEmpty, searchOptions } = await resolveTopicsSearchParams(prepared)
+        if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
 
-      const { results, page_info } = await getTopicIds({ ...searchOptions, omitLimit: false })
+        return getTopicIds({ ...searchOptions, omitLimit: false })
+      })
+      if (!page) return INVALID_CURSOR_RESULT
+      const { results, page_info } = page
 
       return {
         success: true,

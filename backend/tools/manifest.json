@@ -233,7 +233,7 @@
     },
     {
       "name": "search_posts",
-      "description": "Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page.",
+      "description": "Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page. A malformed or foreign cursor returns { success: false, error: \"Invalid cursor\" }.",
       "parameters": null,
       "api": [
         {
@@ -245,7 +245,7 @@
     },
     {
       "name": "search_topics",
-      "description": "Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page.",
+      "description": "Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page. A malformed or foreign cursor returns { success: false, error: \"Invalid cursor\" }.",
       "parameters": null,
       "api": [
         {

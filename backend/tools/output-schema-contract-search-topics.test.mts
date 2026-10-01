@@ -112,8 +112,26 @@ describe('MCP output schema contract for search_topics — real DB', () => {
     await expect(
       callRejectedMcpTool(caller, 'search_topics', { limit: 0 }, SCOPES),
     ).resolves.toContain('/limit must be >= 1')
-    await expect(
-      callRejectedMcpTool(caller, 'search_topics', { after: 'not-a-cursor' }, SCOPES),
-    ).resolves.toContain('Tool execution failed')
+  })
+
+  it('reports a malformed or foreign cursor as a normal Invalid cursor result', async () => {
+    const textPage = await search({ text_search_query: token, limit: 2 })
+
+    const malformed = await callStructuredMcpTool(
+      caller,
+      'search_topics',
+      { text_search_query: token, after: 'not-a-cursor' },
+      SCOPES,
+    )
+    // A keyword-search cursor holds a relevance tier, which a search without keywords refuses.
+    const foreign = await callStructuredMcpTool(
+      caller,
+      'search_topics',
+      { after: textPage.page_info.end_cursor },
+      SCOPES,
+    )
+
+    expect(malformed).toEqual({ success: false, error: 'Invalid cursor' })
+    expect(foreign).toEqual({ success: false, error: 'Invalid cursor' })
   })
 })

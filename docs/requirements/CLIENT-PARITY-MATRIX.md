@@ -89,9 +89,15 @@ parents and one bounded page of children through its optional `hierarchy`, `chil
 `get_trending_topics` keep their names and gain optional `after` and `limit` arguments plus
 `page_info` in their results. The absorbed `search_posts_semantic`, `search_topics_semantic` and
 `search_topics_text` were MCP-only and never in the manifest. A `vouchington-clients` follow-up
-regenerates its copy of the manifest and drops any dispatch of `get_topic_hierarchy`; no other
-native change is required because no existing argument was renamed. `search_posts` now defaults to
-25 results, not 5, and no longer accepts the `ranking` sort value, which had no effect.
+regenerates its copy of the manifest and drops any dispatch of `get_topic_hierarchy`.
+
+The paged search arguments are a deliberate breaking change with no compatibility path, accepted by
+the plan owner because native clients do not call these tools. `search_posts` no longer accepts
+`sort: 'ranking'`, which had no effect; its sorts are `new`, `best`, `hot`, `relevance` and
+`following_new`. `limit` on both search tools is now an integer of at least 1 (values over 100 are
+clamped to 100). The default rose from 5 to 25 for `search_posts` and from 10 to 25 for
+`search_topics`. A malformed or foreign `after` cursor returns
+`{ success: false, error: "Invalid cursor" }` instead of throwing.
 
 ### Media placement contract handoff
 

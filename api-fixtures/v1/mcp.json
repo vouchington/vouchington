@@ -400,7 +400,7 @@
                       "type": "object",
                       "properties": {
                         "votes_score_net": {
-                          "type": "integer"
+                          "type": "number"
                         },
                         "votes_count_up": {
                           "type": "integer"
@@ -3806,7 +3806,7 @@
           "tool": {
             "name": "search_posts",
             "title": "Search Posts",
-            "description": "Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page.",
+            "description": "Search for posts using keyword (text_search_query or q), semantic (semantic_search_query), and similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page. A malformed or foreign cursor returns { success: false, error: \"Invalid cursor\" }.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -3871,65 +3871,83 @@
             },
             "outputSchema": {
               "type": "object",
-              "properties": {
-                "success": {
-                  "const": true
-                },
-                "results": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "title": {
-                        "type": "string"
-                      },
-                      "markdown": {
-                        "type": "string"
-                      },
-                      "post_type": {
-                        "type": "string"
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "markdown": {
+                            "type": "string"
+                          },
+                          "post_type": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "title", "markdown", "post_type"],
+                        "additionalProperties": false
                       }
                     },
-                    "required": ["id", "title", "markdown", "post_type"],
-                    "additionalProperties": false
-                  }
-                },
-                "page_info": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "end_cursor": {
-                      "anyOf": [
-                        {
-                          "type": "null"
+                    "page_info": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "has_next_page": {
-                      "type": "boolean"
-                    },
-                    "start_cursor": {
-                      "anyOf": [
-                        {
-                          "type": "null"
+                        "has_next_page": {
+                          "type": "boolean"
                         },
-                        {
-                          "type": "string"
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         }
-                      ]
+                      },
+                      "required": ["end_cursor", "has_next_page", "start_cursor"],
+                      "type": "object"
                     }
                   },
-                  "required": ["end_cursor", "has_next_page", "start_cursor"],
-                  "type": "object"
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
                 }
-              },
-              "required": ["success", "results", "page_info"],
-              "additionalProperties": false
+              ]
             },
             "annotations": {
               "readOnlyHint": true,
@@ -3952,7 +3970,7 @@
           "tool": {
             "name": "search_topics",
             "title": "Search Topics",
-            "description": "Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page.",
+            "description": "Search topics by name or slug (text_search_query or q), by meaning (semantic_search_query), and by similar-item signals. Use search for hybrid text+semantic search. Returns page_info.end_cursor; pass it as after to get the next page. A malformed or foreign cursor returns { success: false, error: \"Invalid cursor\" }.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -3998,62 +4016,80 @@
             },
             "outputSchema": {
               "type": "object",
-              "properties": {
-                "success": {
-                  "const": true
-                },
-                "topics": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "name": {
-                        "type": "string"
-                      },
-                      "slug": {
-                        "type": "string"
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "topics": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "name", "slug"],
+                        "additionalProperties": false
                       }
                     },
-                    "required": ["id", "name", "slug"],
-                    "additionalProperties": false
-                  }
-                },
-                "page_info": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "end_cursor": {
-                      "anyOf": [
-                        {
-                          "type": "null"
+                    "page_info": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "has_next_page": {
-                      "type": "boolean"
-                    },
-                    "start_cursor": {
-                      "anyOf": [
-                        {
-                          "type": "null"
+                        "has_next_page": {
+                          "type": "boolean"
                         },
-                        {
-                          "type": "string"
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         }
-                      ]
+                      },
+                      "required": ["end_cursor", "has_next_page", "start_cursor"],
+                      "type": "object"
                     }
                   },
-                  "required": ["end_cursor", "has_next_page", "start_cursor"],
-                  "type": "object"
+                  "required": ["success", "topics", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
                 }
-              },
-              "required": ["success", "topics", "page_info"],
-              "additionalProperties": false
+              ]
             },
             "annotations": {
               "readOnlyHint": true,

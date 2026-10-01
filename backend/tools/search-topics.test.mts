@@ -2,6 +2,15 @@ import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import { expect, it, describe } from 'vitest'
 import searchTopicsTool from './search-topics.mts'
 
+type SearchArgs = Parameters<ReturnType<typeof searchTopicsTool.function>>[0]
+
+// Runs the tool and returns its page of results, failing the test on the Invalid cursor result.
+const searchPage = async (args: SearchArgs) => {
+  const result = await searchTopicsTool.function(null as never)(args)
+  if (!result.success) throw new Error(result.error)
+  return result
+}
+
 describe('search-topics', () => {
   it('searchTopicsTool schema exposes hybrid and split search fields', () => {
     const properties = (
@@ -17,7 +26,7 @@ describe('search-topics', () => {
   it('searchTopicsTool returns real text search results', async () => {
     const name = `Agent Search Topic ${crypto.randomUUID()}`
     const topic = await createTestTopic({ name })
-    const execute = searchTopicsTool.function(null as never)
+    const execute = searchPage
     const result = await execute({ text_search_query: name, limit: 100 })
 
     expect(result.success).toBe(true)
@@ -33,7 +42,7 @@ describe('search-topics', () => {
     for (const index of Array.from({ length: 30 }, (_, value) => value)) {
       await createTestTopic({ user, name: `${marker} ${index.toString().padStart(2, '0')}` })
     }
-    const execute = searchTopicsTool.function(null as never)
+    const execute = searchPage
     const defaulted = await execute({ text_search_query: marker })
     const oversized = await execute({ text_search_query: marker, limit: 100_000 })
 
