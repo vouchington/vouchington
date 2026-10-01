@@ -20,6 +20,7 @@ const ADAPTERS = {
   'playwright-authoring': 'vouchington-testing',
   'postgres-node-performance-tuning': 'vouchington-database',
   'postgres-partitioning-uuid-v7': 'vouchington-database',
+  'postgres-schema-design': 'vouchington-database',
   'pr-description': 'vouchington-workflow',
   retrospective: 'vouchington-workflow',
   'retrospective-distill': 'vouchington-workflow',
