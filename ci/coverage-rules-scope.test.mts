@@ -1,5 +1,3 @@
-import { execFileSync } from 'node:child_process'
-
 import {
   coverageDisposition,
   findMissingCoverage,
@@ -11,13 +9,12 @@ import { matchRule } from 'coverage-check/src/rules.mts'
 import { describe, expect, it } from 'vitest'
 
 import { coverageConfigForScope } from '../test-helpers/vitest-config/coverage-config.mts'
+import { trackedFiles } from './test-helpers/tracked-files.mts'
 
 const RULES_PATH = '.coverage-rules.yml'
 
 function repoFiles(): string[] {
-  return execFileSync('git', ['ls-files'], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 })
-    .split('\n')
-    .filter(Boolean)
+  return trackedFiles(process.cwd())
 }
 
 function reachableFiles(): string[] {

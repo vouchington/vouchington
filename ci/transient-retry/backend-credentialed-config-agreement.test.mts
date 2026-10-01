@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -6,6 +5,7 @@ import picomatch from 'picomatch'
 import { parse as parseYaml } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
+import { trackedFiles } from '../test-helpers/tracked-files.mts'
 import { buildBackendCredentialedFailureLog } from './backend-credentialed-fixtures.mts'
 import { backendCredentialedProjects } from '../../test-helpers/vitest-config/backend-credentialed-project-info.mts'
 import { backendCredentialedVitestCommandMarkers } from './backend-credentialed-log-fingerprints.mts'
@@ -23,11 +23,7 @@ const repoRoot = resolve(import.meta.dirname, '../..')
 // guard (see static-code-analysis/AGENTS.md's "validate tracked repository state" invariant and its
 // git-ls-files precedent in repo-file-policy/agent-blackboard-mcp-config.test.mts).
 function trackedPaths(paths: readonly string[]): Set<string> {
-  return new Set(
-    execFileSync('git', ['ls-files', '-z', '--', ...paths], { cwd: repoRoot, encoding: 'utf8' })
-      .split('\0')
-      .filter(Boolean),
-  )
+  return new Set(trackedFiles(repoRoot, paths))
 }
 
 function readTracked(path: string): string {
@@ -78,12 +74,7 @@ describe('backend-credentialed config agreement', () => {
     // credentialed project's own `include` glob must be recognized as transient by the
     // project-derived matcher — a new probe test fails this test the day it is added, instead of
     // silently escalating the way search-posts-semantic.bedrock.test.mts did.
-    const trackedBackendFiles = execFileSync('git', ['ls-files', '-z', '--', 'backend'], {
-      cwd: repoRoot,
-      encoding: 'utf8',
-    })
-      .split('\0')
-      .filter(Boolean)
+    const trackedBackendFiles = trackedFiles(repoRoot, ['backend'])
 
     for (const { project, include } of backendCredentialedProjects) {
       const isIncluded = picomatch([...include])

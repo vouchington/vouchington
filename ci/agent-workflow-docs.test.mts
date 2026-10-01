@@ -1,4 +1,4 @@
-import { execFile, execFileSync } from 'node:child_process'
+import { execFile } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 import { describe, expect, it } from 'vitest'
+
+import { trackedFiles } from './test-helpers/tracked-files.mts'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const execFileAsync = promisify(execFile)
@@ -102,13 +104,7 @@ describe('agent workflow documentation', () => {
   })
 
   it('never caps a documented pr-shepherd invocation with a session-hour deadline', () => {
-    const paths = execFileSync('git', ['ls-files', '-z', '--', '*.md'], {
-      cwd: repoRoot,
-      encoding: 'utf8',
-    })
-      .split('\0')
-      .filter(Boolean)
-      .filter(path => existsSync(join(repoRoot, path)))
+    const paths = trackedFiles(repoRoot, ['*.md']).filter(path => existsSync(join(repoRoot, path)))
 
     const deadlineRegressions: string[] = []
     for (const path of paths) {
@@ -164,13 +160,7 @@ describe('agent workflow documentation', () => {
   })
 
   it('does not document a pnpm separator for screenshot CLI arguments', () => {
-    const paths = execFileSync('git', ['ls-files', '-z', '--', '*.md'], {
-      cwd: repoRoot,
-      encoding: 'utf8',
-    })
-      .split('\0')
-      .filter(Boolean)
-      .filter(path => existsSync(join(repoRoot, path)))
+    const paths = trackedFiles(repoRoot, ['*.md']).filter(path => existsSync(join(repoRoot, path)))
 
     expect(paths).toContain('web/AGENTS.md')
     for (const path of paths) {
