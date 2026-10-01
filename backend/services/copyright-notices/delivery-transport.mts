@@ -123,6 +123,7 @@ function copyrightEmailSubject(kind: CopyrightDeliveryKind): string {
     case 'email_intake_rejected':
       return 'We could not accept your copyright notice'
     case 'email_intake_needs_information':
+    case 'staff_information_request':
       return 'More information is needed for your copyright notice'
     case 'claimant_receipt':
       return 'We received your copyright notice'

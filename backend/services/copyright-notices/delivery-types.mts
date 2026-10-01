@@ -7,6 +7,7 @@ export type CopyrightNoticeDeliveryKind =
   | 'status_update'
   | 'poster_restriction_notice'
   | 'counter_notice_forwarding'
+  | 'staff_information_request'
 
 export type CopyrightDeliveryKind = CopyrightNoticeDeliveryKind | CopyrightEmailIntakeDeliveryKind
 

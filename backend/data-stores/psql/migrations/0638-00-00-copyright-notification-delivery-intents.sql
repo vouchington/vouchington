@@ -20,7 +20,7 @@ CREATE TABLE copyright_notice_delivery_intents (
   recipient_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   recipient_user_erased_at timestamptz,
   recipient_role text NOT NULL CHECK (recipient_role IN ('claimant', 'poster', 'correspondent')),
-  delivery_kind text NOT NULL CHECK (delivery_kind IN ('claimant_receipt', 'status_update', 'poster_restriction_notice', 'counter_notice_forwarding', 'email_intake_rejected', 'email_intake_needs_information')),
+  delivery_kind text NOT NULL CHECK (delivery_kind IN ('claimant_receipt', 'status_update', 'poster_restriction_notice', 'counter_notice_forwarding', 'staff_information_request', 'email_intake_rejected', 'email_intake_needs_information')),
   channel text NOT NULL CHECK (channel IN ('in_app', 'email')),
   state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'sent', 'failed', 'bounced')),
   delivery_attempt_count integer NOT NULL DEFAULT 0 CHECK (delivery_attempt_count BETWEEN 0 AND 5),
@@ -56,6 +56,8 @@ CREATE TABLE copyright_notice_delivery_intents (
     OR (state <> 'pending' AND next_attempt_at IS NULL)),
   CHECK (ses_message_id IS NULL OR channel = 'email'),
   CHECK (num_nonnulls(copyright_notice_id, copyright_notice_email_intake_id) = 1),
+  CHECK (delivery_kind <> 'staff_information_request' OR (recipient_role = 'claimant' AND channel = 'email'
+    AND recipient_user_id IS NULL AND copyright_notice_correspondence_message_id IS NOT NULL)),
   CHECK ((copyright_notice_email_intake_id IS NOT NULL) = (delivery_kind IN ('email_intake_rejected', 'email_intake_needs_information'))),
   CHECK ((copyright_notice_email_intake_id IS NOT NULL) = (body_ciphertext IS NOT NULL)),
   CHECK (copyright_notice_email_intake_id IS NULL OR (recipient_role = 'correspondent' AND channel = 'email'
@@ -131,7 +133,7 @@ COMMENT ON COLUMN copyright_notice_delivery_intents.copyright_notice_corresponde
 COMMENT ON COLUMN copyright_notice_delivery_intents.recipient_user_id IS 'Voucha user receiving the notice when the recipient has an account.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.recipient_user_erased_at IS 'Time account erasure removed a poster recipient reference while retaining the legal delivery record.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.recipient_role IS 'Legal role of the recipient: claimant, affected poster, or external email correspondent.';
-COMMENT ON COLUMN copyright_notice_delivery_intents.delivery_kind IS 'Legal event communicated by this delivery.';
+COMMENT ON COLUMN copyright_notice_delivery_intents.delivery_kind IS 'Legal event communicated by this delivery. staff_information_request emails the notice claimant a staff request for more information and always references its immutable correspondence message.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.channel IS 'Transport channel used for the delivery.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.state IS 'Durable transport lifecycle state.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.delivery_attempt_count IS 'Number of claimed transport attempts, capped to prevent an unhealthy obligation starving other delivery work.';

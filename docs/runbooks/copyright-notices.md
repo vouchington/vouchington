@@ -37,7 +37,12 @@ intake queue shows each message's wait age.
    recommendation exists, use the explicit manual-fallback reason; never silently bypass the agent.
 3. Confirm the target is an exact Voucha-hosted placement and preserve its captured revision.
 4. Record missing elements as an assessment and request information. Do not silently reject a
-   substantially compliant notice for failing to match Voucha's form wording.
+   substantially compliant notice for failing to match Voucha's form wording. For a form-filed
+   case, send the request from the case's Guest access section (issue access, then Request
+   information). It is emailed to the claimant address on the notice, with no need to contact the
+   claimant another way. Its state (Queued, Sent, Failed, or Bounced) shows under Information
+   request delivery. Retry a failed one under Delivery failures, and verify the address after a
+   bounce. A case with no retained claimant email refuses the request with 422.
 5. To reject an email or ask the sender for more information, check who will receive the reply. An
    email with a parsed sender replies to that sender. An email with no parsed sender (a `failed`
    or `unparsed` parse) has nobody to reply to, so the reply field appears and a decision queues no

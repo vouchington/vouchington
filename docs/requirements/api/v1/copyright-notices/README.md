@@ -103,8 +103,11 @@ The expiry must be no more than 30 days after issue, and the token is returned o
 response. `GET /api/v1/copyright-notices/:id/guest-capabilities` lists the case's capabilities
 newest first with issuer, expiry, and revocation state, using the bounded `after` and `limit`
 (1–100; default 25) contract with a case-scoped cursor; it never returns a token. Staff revoke one
-with `POST .../guest-capabilities/:capabilityId/revocation` and record a request for more
-information with `POST .../guest-capabilities/:capabilityId/information-requests`. A guest files
+with `POST .../guest-capabilities/:capabilityId/revocation` and request more information with
+`POST .../guest-capabilities/:capabilityId/information-requests`. That request records the
+correspondence and, in the same transaction, one email delivery to the claimant email retained from
+the case's receipt (guest or signed-in); it returns 422 when the case has none. Issuing a capability
+emails nothing. A guest files
 with `POST /api/v1/copyright-notices/:id/guest-filings` and the `Copyright-Guest-Capability`
 header. A capability files at most one court or CCB hold (409 on a repeat), and a received
 withdrawal revokes every live capability on the case.
