@@ -118,6 +118,21 @@ describe('search-posts tool', () => {
     expect(result.success).toBe(true)
   })
 
+  it('answers a similar_post_id seed with an empty page, not a crash, when there is no user', async () => {
+    const seed = await publishPost({
+      title: 'Seed for a signed-out similar search',
+      markdown: 'A readable post that still cannot seed a search without a caller.',
+      post_type: 'discussion',
+    })
+    const result = await searchPage(null as never)({ similar_post_id: seed.id })
+
+    expect(result).toEqual({
+      success: true,
+      results: [],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    })
+  })
+
   it('should filter by post_type when provided', { timeout: 60_000 }, async () => {
     // Create posts of different types
     await publishPost({

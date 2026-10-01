@@ -112,9 +112,13 @@ const tool: Tool<ToolArgs, ToolResult> = {
         if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
 
         // A similar-post seed the caller cannot read through get_post answers like a seed that does
-        // not exist: its embedding must not rank anything for them.
+        // not exist: its embedding must not rank anything for them. A tool call always has a user,
+        // so a missing one gets an empty page rather than a crash.
         const { similar_post_id } = searchOptions
-        if (similar_post_id && !(await resolveReadableThread(currentUser, similar_post_id))) {
+        if (
+          similar_post_id &&
+          !(currentUser && (await resolveReadableThread(currentUser, similar_post_id)))
+        ) {
           return { results: [], page_info: EMPTY_PAGE_INFO }
         }
 
