@@ -14,8 +14,6 @@ import type {
   CopyrightStaffQueueReason,
 } from './read-models-staff-types.mts'
 
-export type { CopyrightStaffQueueCase } from './read-models-staff-types.mts'
-
 // Names the `(urgency, waiting_since, id)` ascending keyset below; cursors encoded under another
 // scope are rejected, so a cursor from a different list or ordering can never seek into this one.
 export const copyrightStaffQueueCursorScope =

@@ -33,8 +33,6 @@ export {
   listAcceptedCopyrightNotices,
   copyrightAcceptedNoticeCursorScope,
 } from './read-models.mts'
-export { copyrightStaffQueueCursorScope, listCopyrightStaffQueue } from './read-models-staff.mts'
-export type { CopyrightStaffQueueCase, CopyrightStaffQueueCursor } from './read-models-staff.mts'
 export {
   copyrightStaffEmailIntakeQueueCursorScope,
   searchCopyrightStaffEmailIntakes,
