@@ -146,7 +146,6 @@ exports backend/services/copyright-notices/appeal-recommendations.mts copyrightA
 exports backend/services/copyright-notices/email-intake-parses.mts getCopyrightEmailIntakeForAgent
 exports backend/services/copyright-notices/email-intake-test-fixtures.mts createParsedCopyrightEmailIntake
 exports backend/services/copyright-notices/eu-notice-receipt.mts receiveEuCopyrightNoticeInTransaction
-exports backend/services/copyright-notices/form-screening-executions.mts claimCopyrightFormScreening
 exports backend/services/copyright-notices/form-screening-executions.mts failCopyrightFormScreening
 exports backend/services/copyright-notices/guest-capabilities.mts authorizeCopyrightGuestCapability
 exports backend/services/copyright-notices/index.mts authorizeCopyrightGuestCapability

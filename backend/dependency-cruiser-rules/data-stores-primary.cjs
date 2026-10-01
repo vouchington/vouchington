@@ -21,6 +21,7 @@ module.exports = [
         '^backend/rss/',
         '^backend/entrypoints/api/',
         '^backend/scripts/explain-analyze/',
+        '^backend/scripts/seed/',
         '^backend/scripts/seeds/',
       ],
     },
