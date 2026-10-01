@@ -9,8 +9,17 @@ import {
 import { buildAutotaggerRunInput } from './classifier-run-input.mts'
 import { buildPostClassifierState } from './content.mts'
 
+type AutotaggerLease = Parameters<typeof buildAutotaggerRunInput>[0]
+
 /** The subject state is opaque to input building; it is passed through untouched. */
 const STATE = 'the subject state' as ClassifierSafeText
+
+/** Builds the run input for a lease that still has captured topics, so it is never null. */
+async function buildInput(lease: AutotaggerLease, state: ClassifierSafeText) {
+  const input = await buildAutotaggerRunInput(lease, state)
+  if (!input) throw new Error('Expected a run input for a lease with captured topics')
+  return input
+}
 
 describe('buildAutotaggerRunInput (real PG)', () => {
   it('asks one question per captured topic, in captured order, keyed by the topic id', async () => {
@@ -18,7 +27,7 @@ describe('buildAutotaggerRunInput (real PG)', () => {
     const lease = await claimAutotaggerLease(fixture)
     const { remote } = lease.resolved
 
-    const input = await buildAutotaggerRunInput(lease, await buildPostClassifierState(fixture.post))
+    const input = await buildInput(lease, await buildPostClassifierState(fixture.post))
 
     expect(lease.capturedTopicIds.length).toBeGreaterThan(0)
     expect(input.bindings.map(binding => binding.questionId)).toEqual(lease.capturedTopicIds)
@@ -43,7 +52,7 @@ describe('buildAutotaggerRunInput (real PG)', () => {
     const fixture = await createAutotaggerFeedItemFixture()
     const lease = await claimAutotaggerLease(fixture)
 
-    const input = await buildAutotaggerRunInput(lease, STATE)
+    const input = await buildInput(lease, STATE)
 
     expect(input.subject).toEqual(fixture.subject)
     expect(input.bindings.map(binding => binding.questionId)).toEqual(lease.capturedTopicIds)
@@ -52,10 +61,10 @@ describe('buildAutotaggerRunInput (real PG)', () => {
   it('keeps asking the captured question set after a closer topic appears, so a replay never differs', async () => {
     const fixture = await createAutotaggerPostFixture()
     const lease = await claimAutotaggerLease(fixture)
-    const before = await buildAutotaggerRunInput(lease, STATE)
+    const before = await buildInput(lease, STATE)
 
     const closer = await createNearbyTopic(fixture.embedding, 0)
-    const after = await buildAutotaggerRunInput(lease, STATE)
+    const after = await buildInput(lease, STATE)
 
     expect(after.bindings).toEqual(before.bindings)
     expect(after.bindings.map(binding => binding.questionId)).not.toContain(closer.id)

@@ -325,6 +325,9 @@ importers:
       '@services/ai-usage':
         specifier: workspace:^
         version: link:../../services/ai-usage
+      '@services/classifiers':
+        specifier: workspace:^
+        version: link:../../services/classifiers
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../../services/elections-votes

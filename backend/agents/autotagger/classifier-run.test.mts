@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { ClassifierRunProviderHooks } from '@agents/classifier-runs'
-import { beginTransaction } from '@data-stores/psql'
 import type {
   StructuredDecisionClient,
   StructuredDecisionFetch,
@@ -13,6 +12,7 @@ import {
   persistClassifierRunOutcomes,
 } from '@services/classifier-runs'
 import { createFakeStructuredDecisionClient } from '@voucha/test-helpers/agents/autotagger/fake-structured-decision-client'
+import { applyAutotaggerEffectsWithoutDecisionForTest } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-effects'
 import {
   claimAutotaggerLease,
   createAutotaggerFeedItemFixture,
@@ -200,11 +200,10 @@ describe('executeAutotaggerRun (real PG)', () => {
 
     it('refuses to apply effects without a remote decision', async () => {
       const lease = await claimAutotaggerLease(await createAutotaggerPostFixture())
-      await using query = await beginTransaction()
 
-      await expect(
-        adapter.applyEffects(query, lease, { local: null, remoteDecision: null }),
-      ).rejects.toThrow('no remote decision to apply')
+      await expect(applyAutotaggerEffectsWithoutDecisionForTest(lease)).rejects.toThrow(
+        'no remote decision to apply',
+      )
     })
   })
 })

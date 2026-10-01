@@ -38,6 +38,7 @@
   },
   "devDependencies": {
     "@services/ai-usage": "workspace:^",
+    "@services/classifiers": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
