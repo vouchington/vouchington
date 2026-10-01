@@ -10882,7 +10882,7 @@
           "type": "string"
         },
         "counts": {
-          "$ref": "#/components/schemas/Partial_Record__remove_____warn_____reject_____queue_retry_failed_____approve_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create__number"
+          "$ref": "#/components/schemas/Partial_Record__remove_____warn_____reject_____queue_retry_failed_____approve_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create_____preservation_hold_place_____preservation_hold_release__number"
         },
         "total": {
           "type": "number"
@@ -13318,7 +13318,7 @@
       },
       "type": "object"
     },
-    "Partial_Record__remove_____warn_____reject_____queue_retry_failed_____approve_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create__number": {
+    "Partial_Record__remove_____warn_____reject_____queue_retry_failed_____approve_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create_____preservation_hold_place_____preservation_hold_release__number": {
       "additionalProperties": false,
       "properties": {
         "activate_restriction": {
@@ -13388,6 +13388,12 @@
           "type": "number"
         },
         "pin": {
+          "type": "number"
+        },
+        "preservation_hold_place": {
+          "type": "number"
+        },
+        "preservation_hold_release": {
           "type": "number"
         },
         "queue_pause": {
@@ -13751,6 +13757,16 @@
         }
       },
       "required": ["post_id", "topic_slug", "topic_title"],
+      "type": "object"
+    },
+    "PlacePreservationHoldRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "reference": {
+          "type": "string"
+        }
+      },
+      "required": ["reference"],
       "type": "object"
     },
     "PlatformModerationContext": {
@@ -21798,6 +21814,56 @@
       ],
       "type": "object"
     },
+    "UserPreservationHold": {
+      "additionalProperties": false,
+      "properties": {
+        "account_user_id": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "placed_at": {
+          "type": "string"
+        },
+        "placed_by_id": {
+          "type": "string"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "released_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "released_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "account_user_id",
+        "id",
+        "placed_at",
+        "placed_by_id",
+        "reference",
+        "released_at",
+        "released_by_id"
+      ],
+      "type": "object"
+    },
     "UserPrivacyAudience": {
       "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
       "type": "string"
@@ -24738,6 +24804,17 @@
         "type": "object"
       }
     },
+    "DELETE:/api/v1/users/:userId/preservation-hold": {
+      "path": {
+        "properties": {
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": ["userId"],
+        "type": "object"
+      }
+    },
     "DELETE:/api/v1/users/:userId/suspension": {
       "path": {
         "properties": {
@@ -24882,7 +24959,9 @@
               "scheduled_job_run",
               "backfill_run",
               "article_sync_run",
-              "import_batch_create"
+              "import_batch_create",
+              "preservation_hold_place",
+              "preservation_hold_release"
             ],
             "type": "string"
           },
@@ -28306,6 +28385,17 @@
       }
     },
     "GET:/api/v1/users/:userId/moderation-context": {
+      "path": {
+        "properties": {
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": ["userId"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/users/:userId/preservation-hold": {
       "path": {
         "properties": {
           "userId": {
@@ -32375,6 +32465,20 @@
           }
         },
         "required": ["id"],
+        "type": "object"
+      }
+    },
+    "PUT:/api/v1/users/:userId/preservation-hold": {
+      "body": {
+        "$ref": "#/components/schemas/PlacePreservationHoldRequest"
+      },
+      "path": {
+        "properties": {
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": ["userId"],
         "type": "object"
       }
     },

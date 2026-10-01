@@ -122,6 +122,7 @@ describe('moderation catalogs', () => {
       'article_sync_run',
       'import_batch_create',
     ]
+    const legalProcessActions = ['preservation_hold_place', 'preservation_hold_release']
 
     expect(MODERATOR_ACTION_TYPES).toEqual([
       ...contentAndMembershipActions,
@@ -133,6 +134,7 @@ describe('moderation catalogs', () => {
       ...oauthClientAndCrawlerActions,
       ...rssCategoryActions,
       ...queueAndMaintenanceActions,
+      ...legalProcessActions,
     ])
   })
 })

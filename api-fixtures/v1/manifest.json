@@ -7936,7 +7936,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/moderator-stats": {
       "bodyKind": "content",
-      "hash": "7bfd85c72ee5b271377a6c93db7d035bd3290ee682b50f2b418190af12e567f8",
+      "hash": "36acf3dec39318651096bd27f06f93a419ec6723c450dac756db4a5d92f4e15a",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -7955,7 +7955,7 @@
               "counts": {
                 "required": true,
                 "schema": {
-                  "name": "Partial<Record<\"remove\" | \"warn\" | \"reject\" | \"approve\" | \"ban\" | \"lift_ban\" | \"activate_restriction\" | \"lift_restriction\" | \"lock\" | \"unlock\" | \"pin\" | \"unpin\" | \"tag\" | \"suspend\" | \"unsuspend\" | \"remove_member\" | \"change_role\" | \"resolve_report\" | \"dismiss_report\" | \"resolve_appeal\" | \"dismiss_appeal\" | \"topic_claim_verify\" | \"topic_claim_reject\" | \"topic_claim_revoke\" | \"report_claim\" | \"report_unclaim\" | \"report_escalate\" | \"report_deescalate\" | \"report_integrity_flag_review\" | \"report_integrity_penalty_apply\" | \"report_integrity_penalty_revoke\" | \"vote_integrity_flag_review\" | \"vote_integrity_penalty_apply\" | \"vote_integrity_penalty_revoke\" | \"vote_weight_set\" | \"vote_weight_reset\" | \"agent_moderation_vote_set\" | \"agent_moderation_vote_delete\" | \"mod_note_delete\" | \"report_judgement_rerun\" | \"appeal_resolution_draft_rerun\" | \"dispute_resolution_draft_rerun\" | \"oauth_client_verify\" | \"oauth_client_unverify\" | \"crawler_create\" | \"crawler_update\" | \"crawler_delete\" | \"rss_category_assign\" | \"rss_category_reject\" | \"rss_category_unreject\" | \"queue_pause\" | \"queue_resume\" | \"queue_retry_failed\" | \"scheduled_job_run\" | \"backfill_run\" | \"article_sync_run\" | \"import_batch_create\",number>>",
+                  "name": "Partial<Record<\"remove\" | \"warn\" | \"reject\" | \"approve\" | \"ban\" | \"lift_ban\" | \"activate_restriction\" | \"lift_restriction\" | \"lock\" | \"unlock\" | \"pin\" | \"unpin\" | \"tag\" | \"suspend\" | \"unsuspend\" | \"remove_member\" | \"change_role\" | \"resolve_report\" | \"dismiss_report\" | \"resolve_appeal\" | \"dismiss_appeal\" | \"topic_claim_verify\" | \"topic_claim_reject\" | \"topic_claim_revoke\" | \"report_claim\" | \"report_unclaim\" | \"report_escalate\" | \"report_deescalate\" | \"report_integrity_flag_review\" | \"report_integrity_penalty_apply\" | \"report_integrity_penalty_revoke\" | \"vote_integrity_flag_review\" | \"vote_integrity_penalty_apply\" | \"vote_integrity_penalty_revoke\" | \"vote_weight_set\" | \"vote_weight_reset\" | \"agent_moderation_vote_set\" | \"agent_moderation_vote_delete\" | \"mod_note_delete\" | \"report_judgement_rerun\" | \"appeal_resolution_draft_rerun\" | \"dispute_resolution_draft_rerun\" | \"oauth_client_verify\" | \"oauth_client_unverify\" | \"crawler_create\" | \"crawler_update\" | \"crawler_delete\" | \"rss_category_assign\" | \"rss_category_reject\" | \"rss_category_unreject\" | \"queue_pause\" | \"queue_resume\" | \"queue_retry_failed\" | \"scheduled_job_run\" | \"backfill_run\" | \"article_sync_run\" | \"import_batch_create\" | \"preservation_hold_place\" | \"preservation_hold_release\",number>>",
                   "type": "ref"
                 }
               },
@@ -7968,7 +7968,7 @@
             },
             "type": "object"
           },
-          "Partial<Record<\"remove\" | \"warn\" | \"reject\" | \"approve\" | \"ban\" | \"lift_ban\" | \"activate_restriction\" | \"lift_restriction\" | \"lock\" | \"unlock\" | \"pin\" | \"unpin\" | \"tag\" | \"suspend\" | \"unsuspend\" | \"remove_member\" | \"change_role\" | \"resolve_report\" | \"dismiss_report\" | \"resolve_appeal\" | \"dismiss_appeal\" | \"topic_claim_verify\" | \"topic_claim_reject\" | \"topic_claim_revoke\" | \"report_claim\" | \"report_unclaim\" | \"report_escalate\" | \"report_deescalate\" | \"report_integrity_flag_review\" | \"report_integrity_penalty_apply\" | \"report_integrity_penalty_revoke\" | \"vote_integrity_flag_review\" | \"vote_integrity_penalty_apply\" | \"vote_integrity_penalty_revoke\" | \"vote_weight_set\" | \"vote_weight_reset\" | \"agent_moderation_vote_set\" | \"agent_moderation_vote_delete\" | \"mod_note_delete\" | \"report_judgement_rerun\" | \"appeal_resolution_draft_rerun\" | \"dispute_resolution_draft_rerun\" | \"oauth_client_verify\" | \"oauth_client_unverify\" | \"crawler_create\" | \"crawler_update\" | \"crawler_delete\" | \"rss_category_assign\" | \"rss_category_reject\" | \"rss_category_unreject\" | \"queue_pause\" | \"queue_resume\" | \"queue_retry_failed\" | \"scheduled_job_run\" | \"backfill_run\" | \"article_sync_run\" | \"import_batch_create\",number>>": {
+          "Partial<Record<\"remove\" | \"warn\" | \"reject\" | \"approve\" | \"ban\" | \"lift_ban\" | \"activate_restriction\" | \"lift_restriction\" | \"lock\" | \"unlock\" | \"pin\" | \"unpin\" | \"tag\" | \"suspend\" | \"unsuspend\" | \"remove_member\" | \"change_role\" | \"resolve_report\" | \"dismiss_report\" | \"resolve_appeal\" | \"dismiss_appeal\" | \"topic_claim_verify\" | \"topic_claim_reject\" | \"topic_claim_revoke\" | \"report_claim\" | \"report_unclaim\" | \"report_escalate\" | \"report_deescalate\" | \"report_integrity_flag_review\" | \"report_integrity_penalty_apply\" | \"report_integrity_penalty_revoke\" | \"vote_integrity_flag_review\" | \"vote_integrity_penalty_apply\" | \"vote_integrity_penalty_revoke\" | \"vote_weight_set\" | \"vote_weight_reset\" | \"agent_moderation_vote_set\" | \"agent_moderation_vote_delete\" | \"mod_note_delete\" | \"report_judgement_rerun\" | \"appeal_resolution_draft_rerun\" | \"dispute_resolution_draft_rerun\" | \"oauth_client_verify\" | \"oauth_client_unverify\" | \"crawler_create\" | \"crawler_update\" | \"crawler_delete\" | \"rss_category_assign\" | \"rss_category_reject\" | \"rss_category_unreject\" | \"queue_pause\" | \"queue_resume\" | \"queue_retry_failed\" | \"scheduled_job_run\" | \"backfill_run\" | \"article_sync_run\" | \"import_batch_create\" | \"preservation_hold_place\" | \"preservation_hold_release\",number>>": {
             "additionalProperties": false,
             "properties": {
               "activate_restriction": {
@@ -8104,6 +8104,18 @@
                 }
               },
               "pin": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "preservation_hold_place": {
+                "required": false,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "preservation_hold_release": {
                 "required": false,
                 "schema": {
                   "type": "number"
