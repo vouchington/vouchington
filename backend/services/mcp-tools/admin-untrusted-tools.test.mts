@@ -13,6 +13,8 @@ const scopes = Object.keys(SCOPE_DEFINITIONS).filter(
 // Authored fields required by the accepted admin-tool contract, independently of its wrapper.
 const authoredFields = new Set([
   'reason',
+  'input_data',
+  'error_message',
   'note',
   'reporter_username',
   'username',

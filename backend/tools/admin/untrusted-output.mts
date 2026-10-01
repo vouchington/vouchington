@@ -2,6 +2,8 @@ import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst
 
 const UNTRUSTED_FIELDS = new Set([
   'reason',
+  'input_data',
+  'error_message',
   'note',
   'reporter_username',
   'username',
