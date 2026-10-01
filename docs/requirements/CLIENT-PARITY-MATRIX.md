@@ -154,3 +154,12 @@ a hosted fallback; that endpoint still rejects hosted providers with 400. Under 
 server change does not wait on client migrations, so a native build that still calls the hosted
 route must delete that path in its own client PR. This repository does not edit
 `vouchington-clients`; track any such removal there alongside clients#149 and clients#150.
+
+## Orphan tool removal handoff
+
+#1566 removes `search_wikipedia` and `get_wikipedia_summary` from the generated native tool
+manifest and MCP catalog, and removes `wikipedia:read` from the shared scope catalog. The fixture
+and manifest shapes are unchanged. The native client source audit found no hardcoded calls or
+scope consumers to migrate; clients consume the reduced generated catalog. Topic Wikipedia IDs
+and URLs remain content fields and are unaffected. Hosted research/discovery package deletion
+remains owned by #1546; this change only removes their references to retired tools.
