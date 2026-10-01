@@ -47,7 +47,6 @@ describe('schema growth classification', () => {
   it('publishes the bounded and non-default identity exceptions', () => {
     expect(STATIC_IDENTITY_EXCEPTIONS.get('countries')).toContain('ISO country')
     expect(EXPLICIT_BOUNDED_TABLES.get('migrations')).toContain('checked-in migration')
-    expect(EXPLICIT_BOUNDED_TABLES.get('post_category_finalizations')).toContain('per post')
     expect(EXPLICIT_BOUNDED_TABLES.has('notification_push_intents')).toBe(false)
     expect(EXPLICIT_BOUNDED_TABLES.has('notification_push_intent_subscription_receipts')).toBe(
       false,

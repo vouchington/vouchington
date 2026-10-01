@@ -1324,48 +1324,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Drain durable post category finalizations",
-        "id": "reconcilePostCategoryFinalizations",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "entity-listeners",
-    "registration": "sequential",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "reconcilePostCategoryFinalizations",
-    "template": {
-      "data": {},
-      "name": "processReconcilePostCategoryFinalizations",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "deduplication": {
-          "id": "entity-listeners:reconcile-post-category-finalizations",
-          "mode": "throttle",
-          "ttl": 60000,
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "post-category-finalization-reconciliation",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "backfillId": "entity-listener-reconciliation",
         "kind": "backfill",
       },
@@ -3102,14 +3060,6 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "emails",
     "schedule": "* * * * *",
     "triggerName": "enqueueDispatchCommunityModerationSummaryEmails",
-  },
-  {
-    "description": "Drain durable post category finalizations",
-    "id": "reconcilePostCategoryFinalizations",
-    "job_name": "processReconcilePostCategoryFinalizations",
-    "queue_name": "entity-listeners",
-    "schedule": "every 5m",
-    "triggerName": "enqueueReconcilePostCategoryFinalizations",
   },
   {
     "description": "Clean up expired data export files",

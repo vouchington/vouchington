@@ -13,9 +13,6 @@ Worker package for entity-created, updated, deleted, and related listener jobs.
   enqueue leaves the durable reconciliation checkpoint retryable. Raw-link crawl recovery reads
   immutable creation provenance from `posts`; an elected related-URL row is not creation provenance.
   A link post without a source URL still recovers its canonical URL.
-- `processReconcilePostCategoryFinalizations` drains 25 durable post-category rows per page and
-  queues one serialized continuation after a full success; the five-minute schedule recovers lost
-  continuation dispatches.
 
 ## Related
 

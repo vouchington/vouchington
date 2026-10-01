@@ -62,7 +62,6 @@ export type EntityJobs =
   | 'processPostCreated'
   | 'processPostUpdated'
   | 'processPostDeleted'
-  | 'processReconcilePostCategoryFinalizations'
   | 'processTopicCreated'
   | 'processTopicUpdated'
   | 'processTopicDeleted'
@@ -90,7 +89,6 @@ type EntityJobPayloads = {
   processPostCreated: EntityIdData
   processPostUpdated: { id: string; contentChanged?: boolean }
   processPostDeleted: EntityIdData
-  processReconcilePostCategoryFinalizations: EmptyEntityJobData
   processTopicCreated: EntityIdData
   processTopicUpdated: { id: string; updated_by_id?: string }
   processTopicDeleted: { id: string; updates: CreateTopicUpdates }

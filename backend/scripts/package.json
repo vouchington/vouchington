@@ -35,7 +35,6 @@
     "@services/bookmarks": "workspace:^",
     "@services/comments": "workspace:^",
     "@services/communities": "workspace:^",
-    "@services/contribution-gating": "workspace:^",
     "@services/conversations-messages": "workspace:^",
     "@services/crawls": "workspace:^",
     "@services/data-points": "workspace:^",

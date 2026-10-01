@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { upsertEntityRelation } from '@services/entity-relations'
 import {
@@ -6,174 +6,172 @@ import {
   type EntityRelationMetadata,
 } from '@services/entity-relations/metadata'
 import type { PrivateUser } from '@services/users/types'
-import { refreshPostCategoryVoteStats } from './category-vote-stats.mts'
 import { upsertEntityRelationElectionVotes } from '@services/elections-votes/entity-relation/votes-upsert'
 import { getEntityRelationVoteTableName } from '@voucha/types/entities/entity-relations-metadata'
+import { refreshPostCategoryVoteStatsInTransaction } from './category-vote-stats.mts'
 import { getRemovedPositivePostHashtagRelations } from './hashtag-vote-removals.mts'
 
-export async function finalizePostHashtagCategoryVotes(
-  creator: PrivateUser,
+/** Casts the post author's current category votes and updates score rows in the caller's tx. */
+export async function castPostCategoryVotesInTransaction(
+  query: TransactionQuery,
+  actor: PrivateUser,
   postId: string,
-  topicCategoryOwnerId?: string,
+  topicCategoryOwnerId: string | null,
 ): Promise<void> {
+  const relationIdsByTable = new Map<string, Set<string>>()
   const aliasRelation = getEntityRelationMetadataOrThrow({
     subjectType: 'post',
     objectType: 'topic_alias',
     predicate: 'category',
   })
-  await voteAndRefreshPostHashtagRelations(creator, aliasRelation, postId)
-  if (!topicCategoryOwnerId) return
-  return finalizePostTopicCategoryVotes(
-    creator,
+  // ast-grep-ignore: no-three-sequential-awaits -- category reads and writes are ordered on one transaction to preserve deterministic vote replacement
+  const activeAliasIds = await getActivePostHashtagRelationObjectIds(
+    query,
+    aliasRelation.table_name,
     postId,
-    topicCategoryOwnerId,
-    await getPersistedPostTopicIds(postId),
+    actor.id,
   )
-}
+  const removedAliasRelations = await getRemovedPositivePostHashtagRelations(
+    actor.id,
+    aliasRelation,
+    postId,
+    { query },
+  )
+  await writeVotes(query, actor.id, aliasRelation, removedAliasRelations, 0)
+  const activeAliasRelations = await upsertEntityRelation(
+    actor,
+    aliasRelation,
+    { id: postId },
+    activeAliasIds.map(id => ({ id })),
+    { query, enqueueVoteStats: false, vote: false, suppressNotificationReconcile: true },
+  )
+  await writeVotes(query, actor.id, aliasRelation, activeAliasRelations, 1)
+  collectRelationIds(relationIdsByTable, aliasRelation.table_name, [
+    ...removedAliasRelations,
+    ...activeAliasRelations,
+  ])
 
-async function finalizePostTopicCategoryVotes(
-  creator: PrivateUser,
-  postId: string,
-  topicCategoryOwnerId: string,
-  topicIds: string[],
-): Promise<void> {
   const topicRelation = getEntityRelationMetadataOrThrow({
     subjectType: 'post',
     objectType: 'topic',
     predicate: 'category',
   })
-  // ast-grep-ignore: no-three-sequential-awaits -- relation creation, stale-vote removal, and primary score refresh are ordered
-  const retainedRelations = await upsertEntityRelation(
-    creator,
+  const topicIds = await getPersistedPostTopicIds(query, postId)
+  const retainedTopicRelations = await upsertEntityRelation(
+    actor,
     topicRelation,
     { id: postId },
     topicIds.map(id => ({ id })),
-    { vote: false },
+    { query, enqueueVoteStats: false, vote: false, suppressNotificationReconcile: true },
   )
-  const removedRelations = await getRemovedPositiveTopicRelations(
-    topicCategoryOwnerId,
-    topicRelation,
+  collectRelationIds(relationIdsByTable, topicRelation.table_name, retainedTopicRelations)
+
+  if (topicCategoryOwnerId && (await isActiveUser(query, topicCategoryOwnerId))) {
+    // ast-grep-ignore: no-three-sequential-awaits -- removed and retained topic votes are ordered within the transaction
+    const removedTopicRelations = await getRemovedPositiveTopicRelations(
+      query,
+      topicCategoryOwnerId,
+      topicRelation,
+      postId,
+      topicIds,
+    )
+    await writeVotes(query, topicCategoryOwnerId, topicRelation, removedTopicRelations, 0)
+    await writeVotes(query, topicCategoryOwnerId, topicRelation, retainedTopicRelations, 1)
+    collectRelationIds(relationIdsByTable, topicRelation.table_name, removedTopicRelations)
+  }
+
+  await refreshPostCategoryVoteStatsInTransaction(
+    query,
     postId,
-    topicIds,
-  )
-  await writeAndRefreshPostRelationVotes(
-    topicCategoryOwnerId,
-    topicRelation,
-    removedRelations,
-    0,
-    postId,
-  )
-  return writeAndRefreshPostRelationVotes(
-    topicCategoryOwnerId,
-    topicRelation,
-    retainedRelations,
-    1,
-    postId,
+    new Map([...relationIdsByTable].map(([table, ids]) => [table, [...ids]])),
   )
 }
 
-async function getPersistedPostTopicIds(postId: string): Promise<string[]> {
+async function isActiveUser(query: TransactionQuery, userId: string): Promise<boolean> {
+  const { rows } = await query<{ id: string }>(sql`/* postCategoryVotes.activeOwner */
+    SELECT id FROM users WHERE id = ${userId} AND deleted_at IS NULL`)
+  return rows.length > 0
+}
+
+async function getPersistedPostTopicIds(
+  query: TransactionQuery,
+  postId: string,
+): Promise<string[]> {
   const { rows } = await write<{ topic_id: string }>(
     `/* getPersistedPostTopicIds */
-      SELECT topic_id
-      FROM post_explicit_topic_categories
-      WHERE post_id = $1
+      SELECT topic_id FROM post_explicit_topic_categories WHERE post_id = $1
       UNION
-      SELECT topic_id
-      FROM post_data_point_topics
-      WHERE post_id = $1`,
+      SELECT topic_id FROM post_data_point_topics WHERE post_id = $1`,
     [postId],
+    { query },
   )
   return rows.map(row => row.topic_id)
 }
 
-async function voteAndRefreshPostHashtagRelations(
-  creator: PrivateUser,
-  relation: EntityRelationMetadata,
-  postId: string,
-): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- relation lookup, vote write, and primary score refresh are ordered
-  const activeObjectIds = await getActivePostHashtagRelationObjectIds(
-    relation.table_name,
-    postId,
-    creator.id,
-  )
-  const removedRelations = await getRemovedPositivePostHashtagRelations(
-    creator.id,
-    relation,
-    postId,
-  )
-  const relations = await upsertEntityRelation(
-    creator,
-    relation,
-    { id: postId },
-    activeObjectIds.map(id => ({ id })),
-    { enqueueVoteStats: false, vote: true },
-  )
-  await writeAndRefreshPostRelationVotes(creator.id, relation, removedRelations, 0, postId)
-  await refreshPostCategoryVoteStats(postId, relation.table_name, relations)
-}
-
 async function getActivePostHashtagRelationObjectIds(
+  query: TransactionQuery,
   tableName: string,
   postId: string,
   contributorId: string,
 ): Promise<string[]> {
-  const query = sql`/* finalizePostHashtagCategoryVotes */ SELECT DISTINCT relation.object_id FROM `
-  query.append(tableName)
-  query.append(sql` relation
+  const statement = sql`/* castPostCategoryVotesInTransaction.aliases */ SELECT DISTINCT relation.object_id FROM `
+  statement.append(tableName)
+  statement.append(sql` relation
     JOIN post_topic_alias_sources source
       ON source.post_id = relation.subject_id
       AND source.topic_alias_id = relation.object_id
     WHERE relation.subject_id = ${postId}
       AND relation.deleted_at IS NULL
       AND source.contributor_id = ${contributorId}`)
-  const { rows } = await write<{ object_id: string }>(query)
+  const { rows } = await write<{ object_id: string }>(statement, { query })
   return rows.map(row => row.object_id)
 }
 
 async function getRemovedPositiveTopicRelations(
-  creatorId: string,
+  query: TransactionQuery,
+  voterId: string,
   relation: EntityRelationMetadata,
   postId: string,
   retainedTopicIds: string[],
 ): Promise<Array<{ id: string }>> {
-  const query = sql`/* getRemovedPositiveTopicRelations */
-    SELECT relation.id
-    FROM `
-  query.append(relation.table_name)
-  query.append(sql` relation
+  const statement = sql`/* getRemovedPositiveTopicRelations */
+    SELECT relation.id FROM `
+  statement.append(relation.table_name)
+  statement.append(sql` relation
     JOIN LATERAL (
-      SELECT score
-      FROM `)
-  query.append(getEntityRelationVoteTableName(relation))
-  query.append(sql` vote
-      WHERE vote.entity_relation_id = relation.id
-        AND vote.user_id = ${creatorId}
-      ORDER BY vote.id DESC
-      LIMIT 1
+      SELECT score FROM `)
+  statement.append(getEntityRelationVoteTableName(relation))
+  statement.append(sql` vote
+      WHERE vote.entity_relation_id = relation.id AND vote.user_id = ${voterId}
+      ORDER BY vote.id DESC LIMIT 1
     ) current_vote ON current_vote.score > 0
     WHERE relation.subject_id = ${postId}
-      AND relation.deleted_at IS NULL
-      AND NOT relation.object_id = ANY(${retainedTopicIds}::uuid[])
-  `)
-  const { rows } = await write<{ id: string }>(query)
+      AND NOT relation.object_id = ANY(${retainedTopicIds}::uuid[])`)
+  const { rows } = await write<{ id: string }>(statement, { query })
   return rows
 }
 
-async function writeAndRefreshPostRelationVotes(
+async function writeVotes(
+  query: TransactionQuery,
   voterId: string,
   relation: EntityRelationMetadata,
   relations: Array<{ id?: string }>,
   score: 0 | 1,
-  postId: string,
 ): Promise<void> {
-  const votes = relations.flatMap(relation =>
-    relation.id ? [{ entityId: relation.id, score }] : [],
-  )
+  const votes = relations.flatMap(item => (item.id ? [{ entityId: item.id, score }] : []))
   if (votes.length === 0) return
   await upsertEntityRelationElectionVotes(voterId, votes, undefined, relation, {
+    query,
     enqueueVoteStats: false,
   })
-  await refreshPostCategoryVoteStats(postId, relation.table_name, relations)
+}
+
+function collectRelationIds(
+  target: Map<string, Set<string>>,
+  tableName: string,
+  relations: Array<{ id?: string }>,
+): void {
+  const ids = target.get(tableName) ?? new Set<string>()
+  for (const relation of relations) if (relation.id) ids.add(relation.id)
+  target.set(tableName, ids)
 }

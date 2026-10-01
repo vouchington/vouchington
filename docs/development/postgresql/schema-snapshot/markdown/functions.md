@@ -50,14 +50,6 @@ CREATE OR REPLACE FUNCTION public.fn_assert_follower_distribution_recipient_boun
  LANGUAGE plpgsql
 ```
 
-## `fn_assert_post_category_finalization_children`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_post_category_finalization_children()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_assert_review_succession_topics`
 
 ```sql
@@ -782,15 +774,6 @@ CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_ent
  IMMUTABLE
 ```
 
-## `fn_post_category_finalization_actor_ids(target_post_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_post_category_finalization_actor_ids(target_post_id uuid)
- RETURNS uuid[]
- LANGUAGE sql
- STABLE
-```
-
 ## `fn_preserve_notification_publication_target`
 
 ```sql
@@ -1465,12 +1448,4 @@ CREATE OR REPLACE FUNCTION public.membership_grant_remaining_duration(grant_id u
  RETURNS interval
  LANGUAGE sql
  STABLE PARALLEL SAFE
-```
-
-## `repair_post_category_finalization_admission_response_on_delete`
-
-```sql
-CREATE OR REPLACE FUNCTION public.repair_post_category_finalization_admission_response_on_delete()
- RETURNS trigger
- LANGUAGE plpgsql
 ```
