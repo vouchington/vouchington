@@ -46,3 +46,5 @@ behavior.
   their status changes, carrier skips, and specialized ingress.
 - [Copyright notice, appeal, and counter-notice routes](reference-copyright-submission-request-validation.md)
   record their handler order, kept statuses, and cross-client verification.
+- [Copyright guest capability and guest filing routes](reference-copyright-guest-request-validation.md)
+  record their handler order, kept statuses, and why the capability header is never validated.

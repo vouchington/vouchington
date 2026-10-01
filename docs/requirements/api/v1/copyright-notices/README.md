@@ -109,6 +109,12 @@ with `POST /api/v1/copyright-notices/:id/guest-filings` and the `Copyright-Guest
 header. A capability files at most one court or CCB hold (409 on a repeat), and a received
 withdrawal revokes every live capability on the case.
 
+The guest capability and guest filing bodies are closed: an unknown key, or a `cf_turnstile_response`
+that is not a string, is a `422` before any service call. The `Copyright-Guest-Capability` header is
+checked by the route and never passed to the schema validator, so it cannot appear in a diagnostic.
+Existing field-named `422` and the capability `403` are unchanged; see
+[request validation](../../reference-copyright-guest-request-validation.md).
+
 ## Performance
 
 Mutation routes are uncached. An EU or UK receipt writes the notice, routing, and acknowledgment
