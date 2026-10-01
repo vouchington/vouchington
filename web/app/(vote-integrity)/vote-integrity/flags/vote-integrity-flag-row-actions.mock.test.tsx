@@ -27,7 +27,21 @@ vi.mock(
       ),
       SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
       SelectItem: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-      SelectTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+      SelectTrigger: ({
+        children,
+        ...props
+      }: {
+        children: ReactNode
+        'aria-label'?: string
+        'data-pw'?: string
+      }) => (
+        <div
+          aria-label={props['aria-label']}
+          data-pw={props['data-pw']}
+        >
+          {children}
+        </div>
+      ),
       SelectValue: () => null,
     }) as unknown as typeof import('@/components/ui/select'),
 )
@@ -86,6 +100,37 @@ describe('VoteIntegrityFlagActions', () => {
     expect(screen.getByText('by admin-1')).toBeInTheDocument()
   })
 
+  it('shows the resolved time when no actor is recorded', () => {
+    render(
+      <VoteIntegrityFlagActions
+        flag={{
+          ...flag,
+          resolved_at: '2026-02-02T12:00:00Z',
+          resolution: 'dismissed',
+        }}
+        state={state()}
+      />,
+    )
+
+    expect(screen.getByRole('time')).toHaveAttribute('datetime', '2026-02-02T12:00:00Z')
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+  })
+
+  it('offers dismiss, penalize, and suspend without a resolution test id', () => {
+    render(
+      <VoteIntegrityFlagActions
+        flag={flag}
+        state={state()}
+      />,
+    )
+
+    expect(document.querySelector('[aria-label="Resolution"]')).not.toHaveAttribute('data-pw')
+    expect(screen.getByText('Dismiss')).toBeInTheDocument()
+    expect(screen.getByText('Penalize')).toBeInTheDocument()
+    expect(screen.getByText('Suspend')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Reload result' })).not.toBeInTheDocument()
+  })
+
   it('updates pending resolution selection and retries reconciliation', () => {
     const updateResolution = vi.fn<VitestLooseMock>()
     const retryReconciliation = vi.fn<VitestLooseMock>()
@@ -104,7 +149,23 @@ describe('VoteIntegrityFlagActions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'choose penalized' }))
     expect(updateResolution).toHaveBeenCalledWith(flag.id, 'penalized')
     expect(screen.getByText('Result uncertain')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reload result' }).parentElement).toHaveAttribute(
+      'data-pw',
+      'vote-integrity-flag-reconciliation',
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Reload result' }))
     expect(retryReconciliation).toHaveBeenCalledWith(flag.id)
+  })
+
+  it('shows an action error without a reconciliation control', () => {
+    render(
+      <VoteIntegrityFlagActions
+        flag={flag}
+        state={state({ actionErrors: { [flag.id]: 'Result uncertain' } })}
+      />,
+    )
+
+    expect(screen.getByText('Result uncertain')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Reload result' })).not.toBeInTheDocument()
   })
 })

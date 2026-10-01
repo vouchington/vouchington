@@ -70,6 +70,7 @@
   "hover-card.stories.tsx": ["UserProfile"],
   "input-otp.stories.tsx": ["Default", "Filled"],
   "input.stories.tsx": ["Default", "WithLabel", "Error", "Disabled", "Search", "TypeInteraction"],
+  "integrity-flag-action-row.stories.tsx": ["ResolvedActor", "ReportUnresolved", "VoteUnresolved"],
   "interactive-components.stories.tsx": [
     "ScoreVoteVariants",
     "SharedButtons",
