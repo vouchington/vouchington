@@ -1,6 +1,7 @@
 # PostgreSQL
 
 - Use [schema/reference docs](../../../docs/development/postgresql/README.md), [generated snapshot index](../../../docs/development/postgresql/schema-snapshot/markdown/README.md), and [schema quality rules](../../../docs/development/postgres-schema-rules.md). Choose fixed/config-driven/view placement through [schema object buckets](../../../docs/development/postgresql/reference-migrations-views-and-config-driven.md#schema-object-buckets).
+- Apply [R1–R7](../../../docs/development/postgres-schema-rules.md#r1--names-explain-the-stored-thing-in-full-words): full-word names and typed columns, concrete FKs, canonical history/work/cursor shapes, shared helpers, partition-aware explicit queries, and comments. Follow the linked decision record for approved examples and phase scope.
 - Keep creators idempotent where possible and SQL lintable with `pnpm run squawk`. Hardcoded UUIDs are UUIDv7 (version nibble `7`).
 - Apply prelaunch canonical creators and disposable DB rebuilding; preserve fresh-bootstrap ledger/checksum integrity and [staging drift rules](../../../docs/development/postgresql/reference-migrations-views-and-config-driven.md#staging-schema-drift-pre-launch-only).
 - Never add `ALTER TABLE ADD COLUMN` or `DROP TABLE` migrations. Fold columns into their original `CREATE TABLE`. The `postgres-no-add-column` exception list in [`.no-mistakes.yml`](../../../.no-mistakes.yml) is empty. Cross-file FKs use `ALTER TABLE ADD CONSTRAINT`.
