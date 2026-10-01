@@ -19,8 +19,9 @@ async function registerOwnedApp() {
   return { owner, app: oauth_app }
 }
 
-function clientRow(page: Page, clientName: string) {
-  return page.getByTestId('admin-oauth-client-row').filter({ hasText: clientName })
+// Key rows on the client id: the name can change, and a list refresh then re-renders the row.
+function clientRow(page: Page, clientId: string) {
+  return page.getByTestId('admin-oauth-client-row').filter({ hasText: clientId })
 }
 
 function waitForVerificationChange(page: Page, method: 'PUT' | 'DELETE') {
@@ -40,7 +41,7 @@ test.describe('Admin OAuth Clients', () => {
     await navigateTo(page, '/admin/oauth-clients')
     await expect(page.getByTestId('admin-oauth-clients-heading')).toContainText('OAuth')
 
-    const row = clientRow(page, app.client_name)
+    const row = clientRow(page, app.client_id)
     await expect(row).toContainText(app.client_id)
     await expect(row).toContainText('mcp.user:read')
     await expect(row).toContainText('Unverified')
@@ -48,37 +49,40 @@ test.describe('Admin OAuth Clients', () => {
     const verification = waitForVerificationChange(page, 'PUT')
     await row.getByTestId('admin-oauth-client-verification-button').click()
     expect((await verification).status()).toBe(200)
-    await expect(row.getByTestId('admin-oauth-client-verification-button')).toContainText('Remove')
-    await expect(row).toContainText('Verified')
+    // The refresh after the write drops the verified app from the unverified list.
+    await expect(row).toHaveCount(0)
 
     await page.getByTestId('admin-oauth-clients-filter-verified').click()
     await expect(page).toHaveURL(/verification=verified/)
-    const verifiedRow = clientRow(page, app.client_name)
-    await expect(verifiedRow).toBeVisible()
+    const verifiedRow = clientRow(page, app.client_id)
+    await expect(verifiedRow).toContainText('Verified')
+    await expect(verifiedRow.getByTestId('admin-oauth-client-verification-button')).toContainText(
+      'Remove',
+    )
 
     const removal = waitForVerificationChange(page, 'DELETE')
     await verifiedRow.getByTestId('admin-oauth-client-verification-button').click()
     expect((await removal).status()).toBe(204)
-    await expect(verifiedRow.getByTestId('admin-oauth-client-verification-button')).toContainText(
-      'Verify',
-    )
-    await expect(verifiedRow).toContainText('Unverified')
+    await expect(verifiedRow).toHaveCount(0)
 
     await page.getByTestId('admin-oauth-clients-filter-all').click()
     await expect(page).toHaveURL(/verification=all/)
-    await expect(clientRow(page, app.client_name)).toContainText('Unverified')
+    const allRow = clientRow(page, app.client_id)
+    await expect(allRow).toContainText('Unverified')
+    await expect(allRow.getByTestId('admin-oauth-client-verification-button')).toContainText(
+      'Verify',
+    )
   })
 
   test('refuses to verify an app renamed after the page loaded', async ({ page }) => {
     const { owner, app } = await registerOwnedApp()
     await navigateTo(page, '/admin/oauth-clients?verification=unverified')
     await expect(page.getByTestId('admin-oauth-clients-filter-unverified')).toBeVisible()
-    const row = clientRow(page, app.client_name)
+    const row = clientRow(page, app.client_id)
     await expect(row).toBeVisible()
 
-    await updateOwnedOAuthApp(owner.id, app.id, {
-      client_name: `Renamed Playwright OAuth app ${randomSuffix()}`,
-    })
+    const renamed = `Renamed Playwright OAuth app ${randomSuffix()}`
+    await updateOwnedOAuthApp(owner.id, app.id, { client_name: renamed })
 
     const verification = waitForVerificationChange(page, 'PUT')
     await row.getByTestId('admin-oauth-client-verification-button').click()
@@ -86,6 +90,8 @@ test.describe('Admin OAuth Clients', () => {
     await expect(
       page.locator('[data-sonner-toast]').filter({ hasText: 'name or redirect URIs changed' }),
     ).toBeVisible()
+    // The refused verification re-fetches the list, so the same app now shows its new name.
+    await expect(row).toContainText(renamed)
     await expect(row).toContainText('Unverified')
     await expect(row.getByTestId('admin-oauth-client-verification-button')).toContainText('Verify')
   })
