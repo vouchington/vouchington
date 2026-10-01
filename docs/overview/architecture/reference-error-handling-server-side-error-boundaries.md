@@ -13,6 +13,8 @@ When a server-side API call throws an `ApiError` with a non-recoverable status (
 | `global-error.tsx` | `web/app/global-error.tsx` | Root layout errors (e.g., `auth/me` 429)       | Full-page; replaces root layout (own `<html>/<body>`) |
 | `error.tsx`        | `web/app/error.tsx`        | Route-segment errors (page-level API failures) | In-shell; sidebar/navbar still visible                |
 
+`error.tsx` and `global-error.tsx` both render `web/components/shared/app-error-panel.tsx` for the status, title, description, retry, and home actions. Each boundary keeps its own digest parsing, locale source, and reset cache invalidation. `global-error.tsx` still owns the standalone `<html>` and `<body>`.
+
 ### `getCurrentUser()` error contract
 
 `getCurrentUser()` returns `null` only for 401 responses (the user is not signed in). All other errors — including 429, 500, and network failures — propagate so the appropriate error boundary can display a styled page instead of silently treating the user as signed out.

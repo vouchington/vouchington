@@ -2,11 +2,10 @@
 
 import { Suspense, useSyncExternalStore } from 'react'
 import './globals.css'
-import Link from 'next/link'
 import Script from 'next/script'
 import { DEFAULT_UI_LOCALE, normalizeUiLocale } from '@ts-shared/languages/ui-locales'
+import { AppErrorPanel } from '@/components/shared/app-error-panel'
 import { parseErrorDigest } from '@/lib/api/error-helpers'
-import { Button } from '@/components/ui/button'
 import { invalidateRouteMessages } from '@/lib/i18n/route-messages-cache'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { invalidateMessages, useTranslations } from '@/lib/i18n/use-translations'
@@ -53,46 +52,22 @@ function GlobalErrorBody({
   }
 
   return (
-    <div
-      className='flex min-h-svh flex-col items-center justify-center py-16 text-center'
-      data-pw='global-error-page'
-    >
-      <p className='text-6xl font-bold text-muted-foreground'>{status}</p>
-      <h1
-        className='mt-4 text-2xl font-semibold'
-        data-pw='global-error-page-title'
-      >
-        {title}
-      </h1>
-      <p
-        className='mt-2 max-w-sm text-muted-foreground text-sm'
-        data-pw='global-error-page-description'
-      >
-        {description}
-      </p>
-      <div className='mt-8 flex flex-wrap justify-center gap-3'>
-        <Button
-          className='min-h-11'
-          onClick={retry}
-          data-pw='global-error-page-retry-button'
-        >
-          {t('extracted.app.globalError.tryAgain_d8b8392e')}
-        </Button>
-        <Button
-          asChild
-          variant='outline'
-          className='min-h-11'
-        >
-          <Link
-            href='/'
-            prefetch={false}
-            data-pw='global-error-page-home-link'
-          >
-            {t('extracted.app.globalError.goHome_a0aac914')}
-          </Link>
-        </Button>
-      </div>
-    </div>
+    <AppErrorPanel
+      status={status}
+      title={title}
+      description={description}
+      retryLabel={t('extracted.app.globalError.tryAgain_d8b8392e')}
+      homeLabel={t('extracted.app.globalError.goHome_a0aac914')}
+      onRetry={retry}
+      variant='global'
+      dataPw={{
+        root: 'global-error-page',
+        title: 'global-error-page-title',
+        description: 'global-error-page-description',
+        retry: 'global-error-page-retry-button',
+        home: 'global-error-page-home-link',
+      }}
+    />
   )
 }
 
