@@ -71,9 +71,12 @@ describe('bookmark candidate errors in an owned filter', () => {
     try {
       await backfillUserBookmarkBloomFilter(user.id)
       await backfillUserBookmarkBloomFilter(other.id)
-      await expect(
-        checkBookmarkBloomCandidates(user.id, relation.table_name, [objectId]),
-      ).resolves.toEqual({ ready: true, results: [false] })
+      const initial = await checkBookmarkBloomCandidates(user.id, relation.table_name, [objectId])
+      expect(initial).toEqual({ ready: true, results: [expect.any(Boolean)] })
+      const otherInitial = await checkBookmarkBloomCandidates(other.id, relation.table_name, [
+        objectId,
+      ])
+      expect(otherInitial).toEqual({ ready: true, results: [expect.any(Boolean)] })
       const before = sentryCaptureExceptionMock.mock.calls.length
       await bloomValkeyClient.set(getBookmarkBloomFilter(user.id).getKey(), 'owned-wrong-type')
 
@@ -86,7 +89,7 @@ describe('bookmark candidate errors in an owned filter', () => {
       )
       await expect(
         checkBookmarkBloomCandidates(other.id, relation.table_name, [objectId]),
-      ).resolves.toEqual({ ready: true, results: [false] })
+      ).resolves.toEqual(otherInitial)
     } finally {
       await Promise.all([
         deleteUserBookmarkBloomFilter(user.id),

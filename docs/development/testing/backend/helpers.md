@@ -291,6 +291,10 @@ metadata when asserting that a real processing failure releases its lease and re
 lease for one owned post/source when asserting durable worker failure and retry state.
 `provider-http` supplies actual Undici `MockAgent` HTTP parsing for injected provider fetches;
 its default-export fetch observer restores the external SDK method even when processing throws.
+`withTruncatedHttpResponseForTest` owns a loopback HTTP server and Undici dispatcher. It verifies
+the expected synthetic provider URL, returns actual response headers, then terminates only that
+response socket to exercise production body-reader and network-error classification. Its callback
+receives the real transport and request count; server and dispatcher close after the callback.
 
 ## Notification Push Recovery Backlogs
 

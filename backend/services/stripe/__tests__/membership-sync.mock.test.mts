@@ -14,14 +14,13 @@ import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-q
 import { createMembership } from '@services/memberships'
 import { insertStripeEvent } from '../events.mts'
 import { ensureMembershipFromStripeSubscription } from '../membership-sync.mts'
-import { makeStripeSubscriptionEvent } from '../../../test-helpers/services/stripe/membership-sync-event.mts'
 
 vi.mock<typeof import('@modules/stripe/client')>(
   import('@modules/stripe/client'),
-  async original => ({
-    ...(await original()),
-    getStripeClient: vi.fn<typeof getStripeClient>(),
-  }),
+  async original => {
+    const actual = await original()
+    return { ...actual, getStripeClient: vi.fn<typeof getStripeClient>(actual.getStripeClient) }
+  },
 )
 
 describe('ensureMembershipFromStripeSubscription provider transaction failures', () => {
@@ -40,7 +39,6 @@ describe('ensureMembershipFromStripeSubscription provider transaction failures',
       stripeCustomerId: customerId,
       providerApplicationId: applicationId,
     })
-    await insertStripeEvent(makeStripeSubscriptionEvent<Stripe.Event>(eventId, subscriptionId))
     const before = await getTestMembershipRaw(membership.id)
     const sourceBefore = await getTestMembershipSourceState(membership.id)
     const evidenceBefore = await getTestMembershipProviderEvidenceId(membership.id)
@@ -51,40 +49,160 @@ describe('ensureMembershipFromStripeSubscription provider transaction failures',
       maxNetworkRetries: 0,
     })
     vi.mocked(getStripeClient).mockReturnValue(client)
+    const created = 1_800_000_000
     const customer = {
       id: customerId,
       object: 'customer',
+      balance: 0,
+      created,
+      default_source: null,
+      description: 'Owned membership customer',
+      email: `tests+${randomUUID()}@voucha.ai`,
+      livemode: true,
       metadata: { userId: user.id },
-    } satisfies Pick<Stripe.Customer, 'id' | 'object' | 'metadata'>
-    const price = { id: sku.stripe_price_id } satisfies Pick<Stripe.Price, 'id'>
+      shipping: null,
+      invoice_settings: {
+        custom_fields: null,
+        default_payment_method: null,
+        footer: null,
+        rendering_options: null,
+      },
+    } satisfies Stripe.Customer
+    const productId = `prod_${randomUUID()}`
+    const price = {
+      id: sku.stripe_price_id,
+      object: 'price',
+      active: true,
+      billing_scheme: 'per_unit',
+      created,
+      currency: 'usd',
+      custom_unit_amount: null,
+      livemode: true,
+      lookup_key: null,
+      metadata: {},
+      nickname: 'Owned Plus monthly price',
+      product: productId,
+      recurring: {
+        interval: 'month',
+        interval_count: 1,
+        meter: null,
+        trial_period_days: null,
+        usage_type: 'licensed',
+      },
+      tax_behavior: 'unspecified',
+      tiers_mode: null,
+      transform_quantity: null,
+      type: 'recurring',
+      unit_amount: 1000,
+      unit_amount_decimal: null,
+    } satisfies Stripe.Price
+    const plan = {
+      id: price.id,
+      object: 'plan',
+      active: true,
+      amount: 1000,
+      amount_decimal: null,
+      billing_scheme: 'per_unit',
+      created,
+      currency: 'usd',
+      interval: 'month',
+      interval_count: 1,
+      livemode: true,
+      metadata: {},
+      meter: null,
+      nickname: price.nickname,
+      product: productId,
+      tiers_mode: null,
+      transform_usage: null,
+      trial_period_days: null,
+      usage_type: 'licensed',
+    } satisfies Stripe.Plan
     const item = {
-      price,
-      current_period_start: 1_800_000_000,
+      id: `si_${randomUUID()}`,
+      object: 'subscription_item',
+      billing_thresholds: null,
+      created,
+      current_period_start: created,
       current_period_end: 1_802_592_000,
-    } satisfies Pick<Stripe.SubscriptionItem, 'current_period_start' | 'current_period_end'> & {
-      price: Pick<Stripe.Price, 'id'>
-    }
+      discounts: [],
+      metadata: {},
+      plan,
+      price,
+      quantity: 1,
+      subscription: subscriptionId,
+      tax_rates: [],
+    } satisfies Stripe.SubscriptionItem
     const subscription = {
       id: subscriptionId,
       object: 'subscription',
-      customer: customerId,
-      metadata: {},
-      status: 'active',
-      livemode: true,
+      application: null,
+      application_fee_percent: null,
+      automatic_tax: { disabled_reason: null, enabled: false, liability: null },
+      billing_cycle_anchor: created,
+      billing_cycle_anchor_config: null,
+      billing_mode: { flexible: null, type: 'classic' },
+      billing_schedules: [],
+      billing_thresholds: null,
+      cancel_at: null,
       cancel_at_period_end: false,
-      start_date: 1_800_000_000,
-      items: { data: [item] },
-    } satisfies Pick<
-      Stripe.Subscription,
-      | 'id'
-      | 'object'
-      | 'customer'
-      | 'metadata'
-      | 'status'
-      | 'livemode'
-      | 'cancel_at_period_end'
-      | 'start_date'
-    > & { items: { data: (typeof item)[] } }
+      canceled_at: null,
+      cancellation_details: null,
+      collection_method: 'charge_automatically',
+      created,
+      currency: 'usd',
+      customer: customerId,
+      customer_account: null,
+      days_until_due: null,
+      default_payment_method: null,
+      default_source: null,
+      description: 'Owned active Plus membership',
+      discounts: [],
+      ended_at: null,
+      invoice_settings: {
+        account_tax_ids: null,
+        custom_fields: null,
+        description: null,
+        footer: null,
+        issuer: { type: 'self' },
+      },
+      items: {
+        object: 'list',
+        data: [item],
+        has_more: false,
+        url: `/v1/subscription_items?subscription=${subscriptionId}`,
+      },
+      latest_invoice: null,
+      livemode: true,
+      managed_payments: null,
+      metadata: {},
+      next_pending_invoice_item_invoice: null,
+      on_behalf_of: null,
+      pause_collection: null,
+      payment_settings: null,
+      pending_invoice_item_interval: null,
+      pending_setup_intent: null,
+      pending_update: null,
+      schedule: null,
+      start_date: created,
+      status: 'active',
+      test_clock: null,
+      transfer_data: null,
+      trial_end: null,
+      trial_settings: null,
+      trial_start: null,
+    } satisfies Stripe.Subscription
+    const event = {
+      id: eventId,
+      object: 'event',
+      api_version: null,
+      created,
+      data: { object: subscription },
+      livemode: true,
+      pending_webhooks: 0,
+      request: null,
+      type: 'customer.subscription.updated',
+    } satisfies Stripe.Event
+    await insertStripeEvent(event)
     agent
       .get('https://api.stripe.com')
       .intercept({
