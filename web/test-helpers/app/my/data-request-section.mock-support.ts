@@ -18,6 +18,11 @@ function createJsonResponse(status: number, data: unknown): Response {
   return Response.json(data, { status })
 }
 
+/** A ready export's expiry, relative to the run so the component never sees it as expired. */
+function createFutureExpiresAt(): string {
+  return new Date(Date.now() + 30 * 86_400_000).toISOString()
+}
+
 type EventSourceListener = (event: MessageEvent) => void
 
 class MockEventSource {
@@ -96,7 +101,7 @@ async function renderReadyWithoutDownloadLink(input: {
       id: input.requestId,
       status: 'ready',
       created_at: createdAt,
-      expires_at: '2027-01-01T00:00:00.000Z',
+      expires_at: createFutureExpiresAt(),
       download_url: 'https://s3.example.com/export.zip',
     }),
   )
@@ -120,6 +125,7 @@ function resetDataRequestDoubles() {
 }
 
 export {
+  createFutureExpiresAt,
   createJsonResponse,
   installDataRequestDoubles,
   MockEventSource,
