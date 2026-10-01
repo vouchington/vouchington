@@ -27,6 +27,7 @@ describe('semantic candidate window', () => {
       'WHERE semantic_vector_post.bedrock_nova_multimodal_v1_embedding IS NOT NULL',
     )
     expect(candidateSql).toContain('AND posts.id = semantic_vector_post.id')
+    expect(candidateSql).toContain('AND semantic_vector_post.created_by_id =')
     expect(candidateSql).toContain('LIMIT 1\n    ) semantic_eligible_post')
     expect(candidateSql.indexOf('posts.search_vector @@')).toBeLessThan(
       candidateSql.indexOf('LIMIT 1'),

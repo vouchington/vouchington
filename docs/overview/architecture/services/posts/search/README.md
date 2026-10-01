@@ -65,13 +65,17 @@ constant embedding in eligibility filters and distance ordering even with repeat
 The parameter-only text query is also inlined so hybrid planning sees its real selectivity.
 Candidate selection drives raw distance ordering from the vector relation and checks all
 eligibility in a correlated, one-row lateral lookup before counting toward the cap.
+An explicit author scope also filters the driving relation, allowing selective author indexes
+and exact distance sorting instead of an unrelated global ANN traversal.
 After candidate selection, ranking and cursor filters read posts by candidate ID through bounded
 lateral lookups; the outer query cannot rescan the corpus to recompute embedding distances.
 
-The seeded CI measurement motivating this setting observed candidate startup costs of
-5,633.14 for an index plan and 13,418.39 for a sequential scan, with total query times
-of 168.942 ms and 169.499 ms respectively. These were different seeded runs and do
-not establish a latency improvement; the index plan remains an EXPLAIN gate.
+The repaired, distinct-direction CI corpus measured all four custom semantic/hybrid plans
+using HNSW: 1,000 candidates, 26 output rows, and 30.960–33.992 ms execution time.
+Their candidate startup cost was 4,943.71, with total estimated cost 104,527–104,530.
+The same scenarios measured generic plans at 191.694–198.306 ms. These are synthetic
+100,000-post / 40,000-vector measurements, not production latency or exact-recall guarantees.
+See [the captured validation record](https://github.com/vouchington/vouchington/pull/1636).
 
 Approximate recall and a capped result window are intentional ([#1549](https://github.com/vouchington/vouchington/issues/1549)).
 The candidate cap is defined by `SEMANTIC_POST_CANDIDATE_LIMIT` in the query builder. Ranking

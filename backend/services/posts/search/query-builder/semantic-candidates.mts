@@ -1,6 +1,7 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { BasicUser } from '@services/users/types'
 import type { PostSearchOptions } from '../types.mts'
+import { buildPostSearchAuthorFilter } from './base-filters.mts'
 import { appendPostSearchSelectAndJoins } from './select-and-joins.mts'
 import { appendPostSearchWhereClause } from './where-clause.mts'
 
@@ -41,6 +42,13 @@ export function buildSemanticPostCandidates(
       LIMIT 1
     ) semantic_eligible_post
     WHERE semantic_vector_post.bedrock_nova_multimodal_v1_embedding IS NOT NULL
+  `)
+  if (options.user_id) {
+    query
+      .append(sql` AND `)
+      .append(buildPostSearchAuthorFilter(options.user_id, 'semantic_vector_post'))
+  }
+  query.append(sql`
     ORDER BY semantic_vector_post.bedrock_nova_multimodal_v1_embedding <=>
       semantic_search_embedding.embedding
     LIMIT ${SEMANTIC_POST_CANDIDATE_LIMIT}
