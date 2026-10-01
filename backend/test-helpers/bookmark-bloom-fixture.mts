@@ -10,9 +10,10 @@ import { overrideDynamicConfigFieldsForTest, createTestUser } from './index.mts'
 
 export function registerBookmarkBloomFixture() {
   let user: PrivateUser
+  let createdUserId: string | undefined
   let topicFollowRelationTableName: string
   let rssFeedItemSaveRelationTableName: string
-  let restoreBloomFilterConfig: () => void
+  let restoreBloomFilterConfig: (() => void) | undefined
 
   beforeAll(async () => {
     await bloomFilterConfig.waitForInitialization()
@@ -25,6 +26,7 @@ export function registerBookmarkBloomFixture() {
     const createdUser = await createTestUser()
     if (!createdUser) throw new Error('Failed to create test user')
     user = createdUser
+    createdUserId = createdUser.id
 
     const topicRelation = getUserBookmarkRelationsForEntityType('topic').find(
       relationData => relationData.predicate === 'follow',
@@ -40,6 +42,7 @@ export function registerBookmarkBloomFixture() {
   })
 
   afterEach(async () => {
+    if (!createdUserId) return
     overrideDynamicConfigFieldsForTest(bloomFilterConfig, { bookmarkBloomFilterEnabled: true })
     // Wait for any in-flight bloom filter jobs to finish before deleting the filter.
     // getBookmarksForEntities enqueues a backfill job when the filter is unready; that job runs
@@ -52,12 +55,15 @@ export function registerBookmarkBloomFixture() {
     if (worker.getActiveCount() > 0) {
       await new Promise<void>(resolve => worker.once('drained', resolve))
     }
-    await deleteUserBookmarkBloomFilter(user.id).catch(() => {})
+    await deleteUserBookmarkBloomFilter(createdUserId).catch(() => {})
   })
 
   afterAll(async () => {
-    await deleteUserBookmarkBloomFilter(user.id).catch(() => {})
-    restoreBloomFilterConfig()
+    try {
+      if (createdUserId) await deleteUserBookmarkBloomFilter(createdUserId).catch(() => {})
+    } finally {
+      restoreBloomFilterConfig?.()
+    }
   })
   return {
     get user() {
