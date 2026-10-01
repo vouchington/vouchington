@@ -3,7 +3,7 @@ import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
-import { getCopyrightNoticePrivateAggregate } from '@services/copyright-notices'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { createCopyrightReplayFixture } from '@services/copyright-notices/route-replay-fixture-setup'
 import { exhaustCopyrightActionIntent } from '@services/copyright-notices/route-replay-fixtures'
 

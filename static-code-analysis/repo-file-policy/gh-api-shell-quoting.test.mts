@@ -18,22 +18,21 @@ import {
 } from './gh-api-shell-quoting.mts'
 
 const root = resolve(import.meta.dirname, '../..')
+
 function allTrackedFiles(): string[] {
-  return execFileSync('git', ['ls-files', '-z'], {
-    cwd: root,
-    encoding: 'utf8',
-    maxBuffer: 4 * 1024 * 1024,
-  })
-    .split('\0')
-    .filter(Boolean)
+  const options = { cwd: root, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 } as const
+  return execFileSync('git', ['ls-files', '-z'], options).split('\0').filter(Boolean)
 }
+
 describe('gh api shell-quoting guard', () => {
   it('flags an unquoted `?` right after the gh api argument starts', () => {
     expect(shellScriptViolations('gh api repos/x/y?a=1&b=2\n')).toHaveLength(1)
   })
+
   it('flags an unquoted `&` that would silently background the command', () => {
     expect(shellScriptViolations('gh api "repos/x/labels" -f name=foo&color=bar\n')).toHaveLength(1)
   })
+
   it('stays silent on a fully double-quoted URL carrying both `?` and `&`', () => {
     expect(shellScriptViolations('gh api "repos/x/y?a=1&b=2"\n')).toEqual([])
   })

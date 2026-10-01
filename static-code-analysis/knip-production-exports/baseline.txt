@@ -159,16 +159,12 @@ exports backend/services/conversations-messages/conversations.mts getConversatio
 exports backend/services/conversations-messages/conversations.mts updateConversationLastResponseId
 exports backend/services/conversations-messages/create.mts createConversationMessage
 exports backend/services/copyright-notices/appeal-recommendations.mts copyrightAppealRecommendations
-exports backend/services/copyright-notices/correspondence.mts approveCopyrightCorrespondence
 exports backend/services/copyright-notices/email-intake-parses.mts getCopyrightEmailIntakeForAgent
 exports backend/services/copyright-notices/email-intake-test-fixtures.mts createParsedCopyrightEmailIntake
 exports backend/services/copyright-notices/eu-notice-receipt.mts receiveEuCopyrightNoticeInTransaction
-exports backend/services/copyright-notices/evidence.mts appendCopyrightEvidenceArtifact
 exports backend/services/copyright-notices/form-screening-executions.mts claimCopyrightFormScreening
 exports backend/services/copyright-notices/form-screening-executions.mts failCopyrightFormScreening
 exports backend/services/copyright-notices/guest-capabilities.mts authorizeCopyrightGuestCapability
-exports backend/services/copyright-notices/index.mts appendCopyrightEvidenceArtifact
-exports backend/services/copyright-notices/index.mts approveCopyrightCorrespondence
 exports backend/services/copyright-notices/index.mts authorizeCopyrightGuestCapability
 exports backend/services/copyright-notices/index.mts claimCopyrightDeliveryIntent
 exports backend/services/copyright-notices/index.mts copyrightAppealRecommendations

@@ -6,7 +6,7 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { createCopyrightNoticeNotification, listNotifications } from '@services/notifications'
-import { createCopyrightNoticeAggregate } from './index.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 
 describe('copyright in-app notification delivery', () => {
   it('persists a poster restriction notice once by its legal delivery key', async () => {

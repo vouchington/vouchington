@@ -5,14 +5,15 @@ import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
-  appendCopyrightSubmissionAssessment,
   createCopyrightCounterNotice,
-  createCounterNoticeDeadline,
   createEligibleCopyrightRestoreIntent,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
 } from './index.mts'
-import { createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import {
+  acceptCounterNoticeForRestoration,
+  createCopyrightRestorationHoldFixture,
+} from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 const counterNoticeBody = {
   name: 'Poster',
@@ -40,14 +41,11 @@ async function openRestorationWindow() {
     crypto.randomUUID(),
     { ...counterNoticeBody, targetIds: [target.id] },
   )
-  const counterAssessment = await appendCopyrightSubmissionAssessment({
+  const { deadline } = await acceptCounterNoticeForRestoration({
+    noticeId: fixture.notice.id,
     submissionId: counterNotice.submission.id,
-    assessedAt: new Date('2026-07-02T12:00:00.000Z'),
-    currentUser: fixture.moderator,
-    substantiallyCompliant: true,
-    targetIds: [target.id],
+    moderator: fixture.moderator,
   })
-  const deadline = await createCounterNoticeDeadline({ assessmentId: counterAssessment.id })
   return {
     ...fixture,
     target,

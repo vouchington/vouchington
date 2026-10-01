@@ -4,13 +4,13 @@ import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
-  getCopyrightNoticePrivateAggregate,
 } from './index.mts'
 import {
   createCopyrightRestorationHoldFixture,
   createCounterNoticeRestoreIntent,
   deliverInitialCopyrightWithhold,
 } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 export async function openHeldCounterNoticeRestore(
   dependencies: Partial<CopyrightActionDeliveryDependencies>,

@@ -6,17 +6,14 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import {
-  createCopyrightFormIntake,
-  getCopyrightNoticePrivateAggregate,
-  prepareCopyrightEmailDelivery,
-} from './index.mts'
+import { createCopyrightFormIntake, prepareCopyrightEmailDelivery } from './index.mts'
 import {
   appendCopyrightFormScreening,
   applyNonSpamSignedInCopyrightFormScreening,
 } from './form-screenings.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 async function createRestrictedNotice(poster: Awaited<ReturnType<typeof createTestUser>>) {
   const claimant = await createTestUser()

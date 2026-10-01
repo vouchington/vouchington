@@ -12,15 +12,15 @@ import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
   completeCopyrightMandatoryHumanReview,
-  createCopyrightNoticeAggregate,
   createCopyrightDeliveryIntent,
   createCopyrightCounterNotice,
   createOutboundCopyrightCorrespondence,
-  createCounterNoticeDeadline,
   createEligibleCopyrightRestoreIntent,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
 } from './index.mts'
+import { acceptCounterNoticeForRestoration } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright restriction concurrency', () => {
   it('notifies only the poster at the restricted post-image placement', async () => {
@@ -210,14 +210,11 @@ describe('copyright restriction concurrency', () => {
         targetIds: [target.id],
       },
     )
-    const assessment = await appendCopyrightSubmissionAssessment({
+    const { deadline } = await acceptCounterNoticeForRestoration({
+      noticeId: notice.id,
       submissionId: counterNotice.submission.id,
-      assessedAt: new Date('2026-07-01T12:00:00.000Z'),
-      currentUser: moderator,
-      substantiallyCompliant: true,
-      targetIds: [target.id],
+      moderator,
     })
-    const deadline = await createCounterNoticeDeadline({ assessmentId: assessment.id })
     const [review, restoration] = await Promise.allSettled([
       completeCopyrightMandatoryHumanReview({
         noticeId: notice.id,

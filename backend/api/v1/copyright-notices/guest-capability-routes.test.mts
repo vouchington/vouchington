@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createCopyrightNoticeAggregate } from '@services/copyright-notices'
 import {
   createTestUser,
   getTestPostImagePlacement,
@@ -8,6 +7,7 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 
 const dayMs = 24 * 60 * 60 * 1000
 

@@ -5,12 +5,12 @@ import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
   resolveCopyrightLegalHold,
 } from './index.mts'
 import { createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
 import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright notice restoration holds', () => {
   it('re-restricts an exact restored tuple for a hold received before restoration, then restores only after resolution', async () => {

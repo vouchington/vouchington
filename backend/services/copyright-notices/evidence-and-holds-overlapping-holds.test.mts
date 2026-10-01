@@ -5,11 +5,11 @@ import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
   resolveCopyrightLegalHold,
 } from './index.mts'
 import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright notice overlapping legal holds', () => {
   it('replays a blocked restore after the final overlapping hold resolves', async () => {

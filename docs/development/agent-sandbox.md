@@ -235,6 +235,46 @@ would prompt on every unsandboxed retry, including `git push` and `gh`.
 the `dev/` allow rules to be exactly the two blanket rules plus one narrow entry per `dev/` command
 in `sandbox.excludedCommands`, and checks representative commands against the allow and deny rules.
 
+## Claude review-skip for the rebase lifecycle
+
+Claude `permissions.allow` pre-approves the commands the
+[git workflow](../../.agents/skills/agent-workflow/git-and-prs.md) runs once a rebase has started:
+`git rebase --continue` (also as `GIT_EDITOR=true git rebase --continue`), `git rebase --skip`,
+`git rebase --abort`, and the lease push `git push --force-with-lease=*`. A command that matches an
+allow rule is approved before the auto-mode classifier runs
+([permission modes](https://code.claude.com/docs/en/permission-modes)). Without these rules, the
+classifier refused `git rebase --skip` and lease pushes even though the workflow requires them. None of them can start a rebase. `git rebase <upstream>`, `-i`, and `--onto` stay
+on review, and starting a rebase goes through `./dev/rebase-onto-main`.
+
+Claude Code matching limits these rules
+([permissions](https://code.claude.com/docs/en/permissions)):
+
+- Every subcommand of a compound command must match a rule, and a `cd` into another directory is
+  never read-only. `cd <other worktree> && git rebase --skip` and `git -C <dir> …` both go to
+  review. Run these commands bare from the session's own worktree. A Claude session that may rebase
+  works in a harness worktree under `.claude/worktrees/`, not in a hand-made tmpdir worktree.
+- An allow rule does not match past a leading environment assignment unless Claude Code treats that
+  variable as known-safe. `GIT_EDITOR` is not documented either way, so the `GIT_EDITOR=true` form
+  has its own literal rule. No session has yet confirmed that the literal rule matches.
+- `*` matches any text, so the lease rule also matches a lease push that adds `--force`, `-f`, or a
+  `+` refspec. The PreToolUse hook and `.husky/pre-push` block those. They are not deny rules
+  ([How Grok reuses Claude rules](agent-harness-parity.md#how-grok-reuses-claude-rules)).
+- Prose `autoMode` entries are read only from user settings, managed settings, and `--settings`,
+  not from `.claude/settings.json`. A classifier exception for any other command shape goes in
+  `~/.claude/settings.json`.
+
+Accepted risk: `git *` already runs outside the OS sandbox, and the lease rule's `*` admits any
+further arguments. A lease push with `--receive-pack=` or `--exec=`, or one to a local repository
+whose hooks the agent wrote, can run arbitrary code without review. That is the same class of risk
+the [dev/ rules](#claude-review-skip-for-dev-commands) accept, and partial deny rules would not
+close it.
+
+Grok reuses these strings with prefix matching, as it already did for `--continue` and `--abort`.
+Codex keeps them on its ordinary review path; `.codex/rules/default.rules` has no `git rebase` or
+`git push` prefix. [`dev/claude-settings-dev-allow.test.mts`](../../dev/claude-settings-dev-allow.test.mts)
+checks the approved commands, the forms that stay on review, and the hook block on a raw force
+inside a lease push.
+
 ## Three-surface consistency when the allowlist does change
 
 Adding a new **OS** escalation entry (for a _different_ command than the ones above) means updating
@@ -248,7 +288,8 @@ three surfaces together:
 Review-skip breadth is a separate decision from OS escalation. Do not add a Codex `prefix_rule` or
 Claude `permissions.allow` entry for `git rebase` / `stash` / `cherry-pick` or `gh run` / `api` /
 `workflow` just to "restore" three-surface match; those families stay out of both review-skip
-lists.
+lists. The only exceptions are the Claude
+[rebase lifecycle](#claude-review-skip-for-the-rebase-lifecycle) rules, which cannot start a rebase.
 
 [`dev/agent-sandbox-config.test.mts`](../../dev/agent-sandbox-config.test.mts) enforces
 narrowness (it fails on a bare `git`/`gh`/`rtk`/`npx` prefix), requires the remaining

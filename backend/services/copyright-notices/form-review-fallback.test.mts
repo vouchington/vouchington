@@ -6,17 +6,14 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
-import {
-  createCopyrightFormIntake,
-  getCopyrightNoticePrivateAggregate,
-  reviewCopyrightFormIntake,
-} from './index.mts'
+import { createCopyrightFormIntake, reviewCopyrightFormIntake } from './index.mts'
 import {
   appendCopyrightFormScreening,
   applyNonSpamSignedInCopyrightFormScreening,
 } from './form-screenings.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 async function expectQueuedRestore(noticeId: string) {
   const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
