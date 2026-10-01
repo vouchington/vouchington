@@ -9,7 +9,15 @@ path has approved the current post revision, then awaits its child enqueue. `pos
 re-reads primary state, checks the receipt's content and configuration fingerprints, claims a
 60-second lease, and bounds local/provider execution to 55 seconds. Completion applies classifier
 votes and tags only; it never writes clearance, review, or publication state. The five-minute
-`reconcile-post-classifier-applications` job streams incomplete receipt identities from Postgres.
+`reconcile-post-classifier-applications` job streams incomplete receipt identities from Postgres
+and re-enqueues those whose stable-id job is gone. Only an enqueue that actually adds a job is
+counted; a receipt whose tenth counted job has vanished is given up (see the
+[recovery transitions](../../../services/post-classifier/README.md#recovery-transitions)). The sweep
+alarms through `recordPostClassifierReceiptAlarm` (`@modules/on-error`, message
+`post_classifier_receipt_alarm`, grouped by `alarm_kind`) when a receipt is given up, when the
+provider client cannot be built, and when the oldest in-flight receipt is older than 26 hours (past
+the longest spend-cap parking window; throttled to once per hour). C12 (#225) owns receipt-health
+alarms going forward.
 
 ## Exports
 
@@ -34,7 +42,12 @@ Copyright appeal jobs persist bounded `confirm`, `modify`, `reverse`, or `uncert
 the immutable appeal receipt and a minimal notice/restriction summary. Their processor has no path
 that changes material availability: a moderator must review the stored recommendation and make any
 restriction decision separately. The five-minute copyright reconciler re-enqueues an appeal only
-while no recommendation exists.
+while no recommendation exists. It re-enqueues a parsed email intake only while the intake has no
+recommendation and no staff decision (an initial review or an admitted or rejected correspondence
+review), so an email staff handled while intake was off is never sent to the model afterward.
+While `COPYRIGHT_INTAKE_ENABLED` is off, the email-intake job returns without a model call and the
+whole reconciler pass is skipped; the first pass after the switch is on dispatches every email
+ingested during the pause.
 
 ## Token-limiter wiring (TPM)
 

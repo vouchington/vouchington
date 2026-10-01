@@ -278,7 +278,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "fixtureIds": ["web.copyright.staff-queue.default"],
-      "hash": "23d3af874d086e698f1d1628372a5430afea7f463525e2dcac476731bbb01d78"
+      "hash": "10486aaeba182d064fdaf21ea89de055be5f3d936deacf12e5163510d9ea6490"
     },
     "GET:/api/v1/currencies": {
       "fixtureIds": ["shared.currencies.list.default"],
@@ -445,6 +445,14 @@
     "GET:/api/v1/my/cards": {
       "fixtureIds": ["native.cards.empty", "native.cards.page-1", "native.cards.page-2"],
       "hash": "271b5f8980c4290e70c65a42d9e9496ea779ffc6b8a30edc97a7faf14ac802f0"
+    },
+    "GET:/api/v1/my/conversations": {
+      "fixtureIds": ["native.chat.conversations"],
+      "hash": "9b29d3decc16d46e98170e679e88571375ec4455c8072104e4f907bde9169d18"
+    },
+    "GET:/api/v1/my/conversations/:conversationId/messages": {
+      "fixtureIds": ["native.chat.incomplete", "native.chat.page-1", "native.chat.page-2"],
+      "hash": "74cc3043751ab3875fbbc5c854490c23eae72718341939d37f74c34ac75fdc5d"
     },
     "GET:/api/v1/my/email-addresses": {
       "fixtureIds": ["native.my.email-addresses.empty"],
@@ -890,7 +898,7 @@
     },
     "PATCH:/api/v1/my/messages/:conversationId": {
       "fixtureIds": ["native.messages.policy.default"],
-      "hash": "8583c029321cf9c1cedc2ed17f11af0724461ed87a3ccff42f8159a8f34ffe18"
+      "hash": "91894b7d39f7b76887d726f03c752835d4515488f642f43117118f84f4672060"
     },
     "PATCH:/api/v1/my/oauth-apps/:id": {
       "fixtureIds": ["web.my.oauth-apps.update"],
@@ -1013,6 +1021,22 @@
     "POST:/api/v1/communities/:idOrSlug/ban-evasion/:userId": {
       "fixtureIds": ["native.moderation.ban-evasion.confirm"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "POST:/api/v1/conversations/:conversationId/client-generated-chat": {
+      "fixtureIds": ["native.chat.completed", "native.chat.duplicate", "native.chat.retry"],
+      "hash": "57d9f965f6a9933c3f8d61183e4858488eb7ce9540106987345c28b1da2b2af1"
+    },
+    "POST:/api/v1/conversations/:conversationId/client-generated-chat#conflict": {
+      "fixtureIds": ["native.chat.identity-conflict"],
+      "hash": "6993c8ec7b82251702f5afa7a59e011559585b4f9ec85967d770be7707aa1ac2"
+    },
+    "POST:/api/v1/conversations/:conversationId/client-generated-chat#forbidden": {
+      "fixtureIds": ["native.chat.forbidden"],
+      "hash": "6993c8ec7b82251702f5afa7a59e011559585b4f9ec85967d770be7707aa1ac2"
+    },
+    "POST:/api/v1/conversations/:conversationId/client-generated-chat#unauthorized": {
+      "fixtureIds": ["native.chat.unauthorized"],
+      "hash": "6993c8ec7b82251702f5afa7a59e011559585b4f9ec85967d770be7707aa1ac2"
     },
     "POST:/api/v1/copyright-notices/:id/guest-capabilities": {
       "fixtureIds": ["web.copyright.guest-capability.issued"],
@@ -1383,6 +1407,46 @@
     "native.cards.update.full": {
       "fixtureIds": ["native.cards.update.full"],
       "hash": "807b88dc92295e86e3c343ae9ec88dd526ed465802c08908c50644c36164c248"
+    },
+    "native.chat.completed": {
+      "fixtureIds": ["native.chat.completed"],
+      "hash": "5dd0136849ed15c8e098450dfe2bbc9dc1dd0cd5fdf55af4c692f988165b5e36"
+    },
+    "native.chat.conversations": {
+      "fixtureIds": ["native.chat.conversations"],
+      "hash": "ea00a925938bb54795b72ea3813b0a2cb4b7faee0aa5c0a9f680ff9053b93129"
+    },
+    "native.chat.duplicate": {
+      "fixtureIds": ["native.chat.duplicate"],
+      "hash": "5dd0136849ed15c8e098450dfe2bbc9dc1dd0cd5fdf55af4c692f988165b5e36"
+    },
+    "native.chat.forbidden": {
+      "fixtureIds": ["native.chat.forbidden"],
+      "hash": "d803b8cd6aef950bd59c7467fe8ce4d612d0730f5b0270a521b792f7ef6e4550"
+    },
+    "native.chat.identity-conflict": {
+      "fixtureIds": ["native.chat.identity-conflict"],
+      "hash": "d803b8cd6aef950bd59c7467fe8ce4d612d0730f5b0270a521b792f7ef6e4550"
+    },
+    "native.chat.incomplete": {
+      "fixtureIds": ["native.chat.incomplete"],
+      "hash": "a7d3117e16887eabada9648bfdd8e3747182e5f39722226aeaa312d979e9a7db"
+    },
+    "native.chat.page-1": {
+      "fixtureIds": ["native.chat.page-1"],
+      "hash": "ff427ab380a5735731602437adb953db19c91c9aca30aad29b6b890a334fc4b0"
+    },
+    "native.chat.page-2": {
+      "fixtureIds": ["native.chat.page-2"],
+      "hash": "f4b6833f09eed130c12eb5129e51cbbe6c46a96334f7c5886013a17c121b9bdc"
+    },
+    "native.chat.retry": {
+      "fixtureIds": ["native.chat.retry"],
+      "hash": "5dd0136849ed15c8e098450dfe2bbc9dc1dd0cd5fdf55af4c692f988165b5e36"
+    },
+    "native.chat.unauthorized": {
+      "fixtureIds": ["native.chat.unauthorized"],
+      "hash": "d803b8cd6aef950bd59c7467fe8ce4d612d0730f5b0270a521b792f7ef6e4550"
     },
     "native.comments.ancestors.bounded.deep-continuation": {
       "fixtureIds": ["native.comments.ancestors.bounded.deep-continuation"],
@@ -2674,7 +2738,7 @@
     },
     "web.copyright.staff-queue.default": {
       "fixtureIds": ["web.copyright.staff-queue.default"],
-      "hash": "ed1c3e3c1cc5c78fc3d039af79f80bf9c57a85951e0f7494cf055520aed9b754"
+      "hash": "59e5fec107be94dee46b42ba832642b0796d890066600ca8f1834b40ee17ebec"
     },
     "web.growth-metrics.default": {
       "fixtureIds": ["web.growth-metrics.default"],

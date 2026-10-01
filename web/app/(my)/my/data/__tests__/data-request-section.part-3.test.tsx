@@ -1,4 +1,5 @@
 import {
+  createFutureExpiresAt,
   createJsonResponse,
   installDataRequestDoubles,
   MockEventSource,
@@ -46,7 +47,7 @@ describe('DataRequestSection', () => {
         id: 'request-terminal-stale-rest',
         status: 'ready',
         created_at: '2026-01-01T00:00:00.000Z',
-        expires_at: '2027-01-01T00:00:00.000Z',
+        expires_at: createFutureExpiresAt(),
         download_url: 'https://s3.example.com/export.zip',
       }),
     )

@@ -51,7 +51,7 @@ const backendUnitWorkerExitAfterPassLog = [
 ].join('\n')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'Main CI (backend)',
+  workflowName: 'Backend',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [],

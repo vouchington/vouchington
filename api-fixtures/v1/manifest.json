@@ -11583,7 +11583,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "23d3af874d086e698f1d1628372a5430afea7f463525e2dcac476731bbb01d78",
+      "hash": "10486aaeba182d064fdaf21ea89de055be5f3d936deacf12e5163510d9ea6490",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -12166,6 +12166,49 @@
                           "required": true,
                           "schema": {
                             "type": "string"
+                          }
+                        },
+                        "review": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "accepted": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "reviewed_at": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "reviewed_by_id": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "type": "null"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "screening": {
@@ -23559,6 +23602,283 @@
       "source": "backend/api/v1/my/cards.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/my/conversations": {
+      "bodyKind": "content",
+      "hash": "9b29d3decc16d46e98170e679e88571375ec4455c8072104e4f907bde9169d18",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/my/conversations",
+      "schema": {
+        "definitions": {
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            },
+            "results": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "created_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "title": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "updated_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/my/conversations.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/my/conversations/:conversationId/messages": {
+      "bodyKind": "content",
+      "hash": "74cc3043751ab3875fbbc5c854490c23eae72718341939d37f74c34ac75fdc5d",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/my/conversations/:conversationId/messages",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "page_info": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "end_cursor": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "has_next_page": {
+                    "required": true,
+                    "schema": {
+                      "type": "boolean"
+                    }
+                  },
+                  "start_cursor": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "results": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "completion": {
+                      "required": true,
+                      "schema": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "status": {
+                            "required": true,
+                            "schema": {
+                              "type": "union",
+                              "variants": [
+                                {
+                                  "type": "literal",
+                                  "value": "completed"
+                                },
+                                {
+                                  "type": "literal",
+                                  "value": "failed"
+                                },
+                                {
+                                  "type": "literal",
+                                  "value": "incomplete"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "content": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "content": {
+                                "required": true,
+                                "schema": {
+                                  "type": "union",
+                                  "variants": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "role": {
+                                "required": true,
+                                "schema": {
+                                  "type": "union",
+                                  "variants": [
+                                    {
+                                      "type": "literal",
+                                      "value": "assistant"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "user"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "conversation_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "created_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "updated_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/my/conversations.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/my/email-addresses": {
       "bodyKind": "content",
       "hash": "96f3cd2d68fa7d115f3275747a122290649ba7ae8b57681b17aeedd2e8515c03",
@@ -23648,7 +23968,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/my/identity.mts",
+      "source": "backend/api/v1/my/email-addresses.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/my/email-preferences": {
@@ -25485,7 +25805,7 @@
           "type": "ref"
         }
       },
-      "source": "backend/api/v1/my/import-export.mts",
+      "source": "backend/api/v1/my/import-rss-feeds.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/my/landing-pages": {
@@ -27317,7 +27637,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/my/messages.mts",
+      "source": "backend/api/v1/my/messages-thread.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/my/messages/:conversationId/participants": {
@@ -27494,7 +27814,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/my/messages.mts",
+      "source": "backend/api/v1/my/messages-thread.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/my/notifications": {
@@ -55854,7 +56174,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/users/collections.mts",
+      "source": "backend/api/v1/users/collections.rss.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/users/:idOrSlug/rss-feeds/:listType": {
@@ -57280,7 +57600,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/users/collections.mts",
+      "source": "backend/api/v1/users/collections.rss.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/users/:idOrSlug/topics/:listType": {
@@ -61717,7 +62037,7 @@
     },
     "PATCH:/api/v1/my/messages/:conversationId": {
       "bodyKind": "content",
-      "hash": "8583c029321cf9c1cedc2ed17f11af0724461ed87a3ccff42f8159a8f34ffe18",
+      "hash": "91894b7d39f7b76887d726f03c752835d4515488f642f43117118f84f4672060",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
@@ -61730,7 +62050,17 @@
             "participant_add_policy": {
               "required": true,
               "schema": {
-                "type": "string"
+                "type": "union",
+                "variants": [
+                  {
+                    "type": "literal",
+                    "value": "all_members"
+                  },
+                  {
+                    "type": "literal",
+                    "value": "owner_only"
+                  }
+                ]
               }
             }
           },
@@ -65644,6 +65974,342 @@
       "statusCodes": [204],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/conversations/:conversationId/client-generated-chat": {
+      "bodyKind": "content",
+      "hash": "57d9f965f6a9933c3f8d61183e4858488eb7ce9540106987345c28b1da2b2af1",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/conversations/:conversationId/client-generated-chat",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "assistant_message": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "completion": {
+                    "required": true,
+                    "schema": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "status": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "literal",
+                                "value": "completed"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "failed"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "incomplete"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "content": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "content": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            },
+                            "role": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "literal",
+                                    "value": "assistant"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "user"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "conversation_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "created_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "updated_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "turn": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "assistant_message_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "user_message_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "user_message": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "completion": {
+                    "required": true,
+                    "schema": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "status": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "literal",
+                                "value": "completed"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "failed"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "incomplete"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "content": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "content": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            },
+                            "role": {
+                              "required": true,
+                              "schema": {
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "literal",
+                                    "value": "assistant"
+                                  },
+                                  {
+                                    "type": "literal",
+                                    "value": "user"
+                                  }
+                                ]
+                              }
+                            }
+                          },
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "conversation_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "created_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "updated_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/conversations/index-routes/conversations-by-conversationid-client-generated-chat-post.mts",
+      "statusKnowledge": "default"
+    },
+    "POST:/api/v1/conversations/:conversationId/client-generated-chat#conflict": {
+      "bodyKind": "content",
+      "hash": "6993c8ec7b82251702f5afa7a59e011559585b4f9ec85967d770be7707aa1ac2",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/conversations/:conversationId/client-generated-chat",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "message": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/conversations/index-routes/conversations-by-conversationid-client-generated-chat-post.mts",
+      "statusCodes": [409],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/conversations/:conversationId/client-generated-chat#forbidden": {
+      "bodyKind": "content",
+      "hash": "6993c8ec7b82251702f5afa7a59e011559585b4f9ec85967d770be7707aa1ac2",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/conversations/:conversationId/client-generated-chat",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "message": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/conversations/index-routes/conversations-by-conversationid-client-generated-chat-post.mts",
+      "statusCodes": [403],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/conversations/:conversationId/client-generated-chat#unauthorized": {
+      "bodyKind": "content",
+      "hash": "6993c8ec7b82251702f5afa7a59e011559585b4f9ec85967d770be7707aa1ac2",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/conversations/:conversationId/client-generated-chat",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "message": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/conversations/index-routes/conversations-by-conversationid-client-generated-chat-post.mts",
+      "statusCodes": [401],
+      "statusKnowledge": "explicit"
+    },
     "POST:/api/v1/copyright-notices/:id/guest-capabilities": {
       "bodyKind": "content",
       "hash": "d020364fa55f17a7d92aa47b6df59fa93651e78fcd65be6691cb9593e0fb0387",
@@ -69436,7 +70102,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/my/identity.mts",
+      "source": "backend/api/v1/my/email-addresses.mts",
       "statusKnowledge": "default"
     },
     "POST:/api/v1/my/email-addresses/:email/verifications": {
@@ -69528,7 +70194,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/my/identity.mts",
+      "source": "backend/api/v1/my/email-addresses.mts",
       "statusKnowledge": "default"
     },
     "POST:/api/v1/my/import/rss-feeds": {
@@ -69617,7 +70283,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/my/import-export.mts",
+      "source": "backend/api/v1/my/import-rss-feeds.mts",
       "statusCodes": [201],
       "statusKnowledge": "explicit"
     },
@@ -69911,7 +70577,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/my/messages.mts",
+      "source": "backend/api/v1/my/messages-thread.mts",
       "statusCodes": [201],
       "statusKnowledge": "explicit"
     },
@@ -73240,6 +73906,295 @@
     }
   },
   "fixtures": [
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/conversations/:conversationId/client-generated-chat",
+      "bodyFile": "responses/native.chat.completed.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.chat.completed",
+      "method": "POST",
+      "migratedFrom": ["docs/requirements/api/v1/conversations/README.md"],
+      "path": "/api/v1/conversations/0198ffff-0000-7000-8000-000000000001/client-generated-chat",
+      "requestBody": {
+        "assistant_content": "Hi",
+        "assistant_message_id": "0198ffff-0001-7000-8000-000000000002",
+        "message": "Hello",
+        "model_provider": "apple_foundation",
+        "user_message_id": "0198ffff-0001-7000-8000-000000000001"
+      },
+      "responseSchema": {
+        "hash": "5dd0136849ed15c8e098450dfe2bbc9dc1dd0cd5fdf55af4c692f988165b5e36",
+        "key": "native.chat.completed"
+      },
+      "route": {
+        "pathParams": {
+          "conversationId": "0198ffff-0000-7000-8000-000000000001"
+        },
+        "routeTemplate": "/api/v1/conversations/:conversationId/client-generated-chat"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-chat-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/conversations/:conversationId/client-generated-chat",
+      "bodyFile": "responses/native.chat.duplicate.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.chat.duplicate",
+      "method": "POST",
+      "migratedFrom": ["docs/requirements/api/v1/conversations/README.md"],
+      "path": "/api/v1/conversations/0198ffff-0000-7000-8000-000000000001/client-generated-chat",
+      "requestBody": {
+        "assistant_content": "Hi",
+        "assistant_message_id": "0198ffff-0001-7000-8000-000000000002",
+        "message": "Hello",
+        "model_provider": "apple_foundation",
+        "user_message_id": "0198ffff-0001-7000-8000-000000000001"
+      },
+      "responseSchema": {
+        "hash": "5dd0136849ed15c8e098450dfe2bbc9dc1dd0cd5fdf55af4c692f988165b5e36",
+        "key": "native.chat.duplicate"
+      },
+      "route": {
+        "pathParams": {
+          "conversationId": "0198ffff-0000-7000-8000-000000000001"
+        },
+        "routeTemplate": "/api/v1/conversations/:conversationId/client-generated-chat"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-chat-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/conversations/:conversationId/client-generated-chat",
+      "bodyFile": "responses/native.chat.retry.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.chat.retry",
+      "method": "POST",
+      "migratedFrom": ["docs/requirements/api/v1/conversations/README.md"],
+      "path": "/api/v1/conversations/0198ffff-0000-7000-8000-000000000001/client-generated-chat",
+      "requestBody": {
+        "assistant_content": "Hi",
+        "assistant_message_id": "0198ffff-0001-7000-8000-000000000002",
+        "message": "Hello",
+        "model_provider": "apple_foundation",
+        "user_message_id": "0198ffff-0001-7000-8000-000000000001"
+      },
+      "responseSchema": {
+        "hash": "5dd0136849ed15c8e098450dfe2bbc9dc1dd0cd5fdf55af4c692f988165b5e36",
+        "key": "native.chat.retry"
+      },
+      "route": {
+        "pathParams": {
+          "conversationId": "0198ffff-0000-7000-8000-000000000001"
+        },
+        "routeTemplate": "/api/v1/conversations/:conversationId/client-generated-chat"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-chat-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "none",
+      "backendResponseContractKey": "POST:/api/v1/conversations/:conversationId/client-generated-chat#unauthorized",
+      "bodyFile": "responses/native.chat.unauthorized.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.chat.unauthorized",
+      "method": "POST",
+      "migratedFrom": ["docs/requirements/api/v1/conversations/README.md"],
+      "path": "/api/v1/conversations/0198ffff-0000-7000-8000-000000000001/client-generated-chat",
+      "requestBody": {
+        "assistant_content": "Hi",
+        "assistant_message_id": "0198ffff-0001-7000-8000-000000000002",
+        "message": "Hello",
+        "model_provider": "apple_foundation",
+        "user_message_id": "0198ffff-0001-7000-8000-000000000001"
+      },
+      "responseSchema": {
+        "hash": "d803b8cd6aef950bd59c7467fe8ce4d612d0730f5b0270a521b792f7ef6e4550",
+        "key": "native.chat.unauthorized"
+      },
+      "route": {
+        "pathParams": {
+          "conversationId": "0198ffff-0000-7000-8000-000000000001"
+        },
+        "routeTemplate": "/api/v1/conversations/:conversationId/client-generated-chat"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-chat-cases.mts"
+      },
+      "status": 401
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/conversations/:conversationId/client-generated-chat#forbidden",
+      "bodyFile": "responses/native.chat.forbidden.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.chat.forbidden",
+      "method": "POST",
+      "migratedFrom": ["docs/requirements/api/v1/conversations/README.md"],
+      "path": "/api/v1/conversations/0198ffff-0000-7000-8000-000000000001/client-generated-chat",
+      "requestBody": {
+        "assistant_content": "Hi",
+        "assistant_message_id": "0198ffff-0001-7000-8000-000000000002",
+        "message": "Hello",
+        "model_provider": "apple_foundation",
+        "user_message_id": "0198ffff-0001-7000-8000-000000000001"
+      },
+      "responseSchema": {
+        "hash": "d803b8cd6aef950bd59c7467fe8ce4d612d0730f5b0270a521b792f7ef6e4550",
+        "key": "native.chat.forbidden"
+      },
+      "route": {
+        "pathParams": {
+          "conversationId": "0198ffff-0000-7000-8000-000000000001"
+        },
+        "routeTemplate": "/api/v1/conversations/:conversationId/client-generated-chat"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-chat-cases.mts"
+      },
+      "status": 403
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/conversations/:conversationId/client-generated-chat#conflict",
+      "bodyFile": "responses/native.chat.identity-conflict.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.chat.identity-conflict",
+      "method": "POST",
+      "migratedFrom": ["docs/requirements/api/v1/conversations/README.md"],
+      "path": "/api/v1/conversations/0198ffff-0000-7000-8000-000000000001/client-generated-chat",
+      "requestBody": {
+        "assistant_content": "Hi",
+        "assistant_message_id": "0198ffff-0001-7000-8000-000000000002",
+        "message": "Hello",
+        "model_provider": "apple_foundation",
+        "user_message_id": "0198ffff-0001-7000-8000-000000000001"
+      },
+      "responseSchema": {
+        "hash": "d803b8cd6aef950bd59c7467fe8ce4d612d0730f5b0270a521b792f7ef6e4550",
+        "key": "native.chat.identity-conflict"
+      },
+      "route": {
+        "pathParams": {
+          "conversationId": "0198ffff-0000-7000-8000-000000000001"
+        },
+        "routeTemplate": "/api/v1/conversations/:conversationId/client-generated-chat"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-chat-cases.mts"
+      },
+      "status": 409
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/my/conversations/:conversationId/messages",
+      "bodyFile": "responses/native.chat.page-1.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.chat.page-1",
+      "method": "GET",
+      "migratedFrom": ["docs/requirements/api/v1/conversations/README.md"],
+      "path": "/api/v1/my/conversations/0198ffff-0000-7000-8000-000000000001/messages",
+      "query": {
+        "limit": "1"
+      },
+      "responseSchema": {
+        "hash": "ff427ab380a5735731602437adb953db19c91c9aca30aad29b6b890a334fc4b0",
+        "key": "native.chat.page-1"
+      },
+      "route": {
+        "pathParams": {
+          "conversationId": "0198ffff-0000-7000-8000-000000000001"
+        },
+        "routeTemplate": "/api/v1/my/conversations/:conversationId/messages"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-chat-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/my/conversations/:conversationId/messages",
+      "bodyFile": "responses/native.chat.page-2.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.chat.page-2",
+      "method": "GET",
+      "migratedFrom": ["docs/requirements/api/v1/conversations/README.md"],
+      "path": "/api/v1/my/conversations/0198ffff-0000-7000-8000-000000000001/messages",
+      "query": {
+        "after": "eyJpZCI6IjAxOThmZmZmLTAwMDEtNzAwMC04MDAwLTAwMDAwMDAwMDAwMiJ9",
+        "limit": "1"
+      },
+      "responseSchema": {
+        "hash": "f4b6833f09eed130c12eb5129e51cbbe6c46a96334f7c5886013a17c121b9bdc",
+        "key": "native.chat.page-2"
+      },
+      "route": {
+        "pathParams": {
+          "conversationId": "0198ffff-0000-7000-8000-000000000001"
+        },
+        "routeTemplate": "/api/v1/my/conversations/:conversationId/messages"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-chat-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/my/conversations/:conversationId/messages",
+      "bodyFile": "responses/native.chat.incomplete.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.chat.incomplete",
+      "method": "GET",
+      "migratedFrom": ["docs/requirements/api/v1/conversations/README.md"],
+      "path": "/api/v1/my/conversations/0198ffff-0000-7000-8000-000000000001/messages",
+      "query": {
+        "limit": "1"
+      },
+      "responseSchema": {
+        "hash": "a7d3117e16887eabada9648bfdd8e3747182e5f39722226aeaa312d979e9a7db",
+        "key": "native.chat.incomplete"
+      },
+      "route": {
+        "pathParams": {
+          "conversationId": "0198ffff-0000-7000-8000-000000000001"
+        },
+        "routeTemplate": "/api/v1/my/conversations/:conversationId/messages"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-chat-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/my/conversations",
+      "bodyFile": "responses/native.chat.conversations.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.chat.conversations",
+      "method": "GET",
+      "migratedFrom": ["docs/requirements/api/v1/conversations/README.md"],
+      "path": "/api/v1/my/conversations",
+      "responseSchema": {
+        "hash": "ea00a925938bb54795b72ea3813b0a2cb4b7faee0aa5c0a9f680ff9053b93129",
+        "key": "native.chat.conversations"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/my/conversations"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-chat-cases.mts"
+      },
+      "status": 200
+    },
     {
       "auth": "fixture-admin",
       "backendResponseContractKey": "GET:/api/v1/admin/ai-costs",
@@ -82514,7 +83469,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "ed1c3e3c1cc5c78fc3d039af79f80bf9c57a85951e0f7494cf055520aed9b754",
+        "hash": "59e5fec107be94dee46b42ba832642b0796d890066600ca8f1834b40ee17ebec",
         "key": "web.copyright.staff-queue.default"
       },
       "route": {

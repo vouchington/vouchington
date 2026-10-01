@@ -30,6 +30,13 @@ export type CopyrightStaffCase = {
       /** Advisory AI guidance for the moderator; never a decision. */
       guidance: CopyrightFormGuidance | null
     } | null
+    /** The recorded moderator decision; null while the intake awaits review. */
+    review: {
+      accepted: boolean
+      reviewed_at: Date
+      /** Null once the reviewing moderator's account is erased. */
+      reviewed_by_id: string | null
+    } | null
   } | null
   restrictions: Array<{
     id: string

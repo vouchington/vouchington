@@ -14,6 +14,7 @@ import { currentUserCanFilterHostnameModeration } from '@services/urls-hostnames
 import { getTopicIdByAnyCached, getTopicIdsByAnyCachedBatch } from '@services/entity-cache'
 import { extractIdentifier, extractIdentifiers, checkShouldReturnEmpty } from './resolve.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
+import { prepareQueryForValidation } from './prepare-query.mts'
 
 function parseModerationBooleanParam(canFilter: boolean, value: unknown): boolean | undefined {
   if (!canFilter || value === undefined || value === 'null') return undefined
@@ -36,6 +37,22 @@ const hostnamesQueryContract = defineQueryContract({
   blocked: queryNullableBoolean(),
   crawlable: queryNullableBoolean(),
 })
+
+/**
+ * Pure projection of the raw query into the generated request-contract shape. It runs the
+ * pagination parser (keeping its 400 for a malformed limit or cursor) and touches no service, so
+ * the route can validate the query before topic identifiers are resolved.
+ */
+export function prepareHostnamesSearchParams(query: Record<string, unknown>) {
+  const validationQuery = prepareQueryForValidation(query, {
+    ...hostnamesParser.queryContract,
+    ...hostnamesQueryContract.queryContract,
+  })
+  const pagination = hostnamesParser.parse(query)
+  if (query.limit !== undefined) validationQuery.limit = pagination.limit
+  if (pagination.after !== undefined) validationQuery.after = pagination.after
+  return { validationQuery }
+}
 
 async function parseHostnamesSearchParamsImpl(
   query: Record<string, unknown>,

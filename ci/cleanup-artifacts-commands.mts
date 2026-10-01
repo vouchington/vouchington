@@ -1,7 +1,6 @@
 import { classifyArtifact } from './cleanup-artifacts-patterns.mts'
 import {
   defaultDeps,
-  runCleanup as runCleanupEngine,
   sweepCleanup as sweepCleanupEngine,
   type CleanupDeps,
   type DeletionSummary,
@@ -9,16 +8,6 @@ import {
 
 export type { CleanupDeps }
 export { defaultDeps }
-
-export async function runCleanup(
-  repo: string,
-  token: string,
-  runId: string,
-  deps: CleanupDeps = defaultDeps,
-  log: (message: string) => void = console.error,
-): Promise<DeletionSummary> {
-  return runCleanupEngine({ repo, token, runId, classify: classifyArtifact, deps, log })
-}
 
 export async function sweepCleanup(
   repo: string,

@@ -1,5 +1,5 @@
 import app from '../../app.mts'
-import { requireAuth, validateUUIDParam } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import {
   listActiveUserSessions,
   registerAuthenticatedSession,
@@ -11,6 +11,7 @@ import { assertNotSuspended } from '@services/users/suspension'
 import { getDeviceContext } from './device-context.mts'
 import type { Context } from '@jongleberry/api-server'
 import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   createPaginationParser,
   decodeScopedPreciseTimestampCursor,
@@ -27,6 +28,18 @@ app.route('/api/v1/auth/sessions').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/auth/sessions')
   const sessionData = await ctx.getSessionTokenData()
   ctx.assert(sessionData, 401, 'Session data not found')
+
+  // The parser keeps its 400 and limit clamping; the contract then validates the values it settled
+  // on. All of it runs before `registerAuthenticatedSession` so a rejected query repairs nothing.
+  const options = sessionsParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, sessionsParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/auth/sessions', { query })
+  const scope = `auth-sessions:${currentUser.id}:last-seen-desc-id-desc`
+  const after = options.after
+    ? decodeScopedPreciseTimestampCursor(options.after, scope, 'Invalid cursor format')
+    : undefined
+
   const deviceClass = 'dc' in sessionData ? sessionData.dc : undefined
   const expiresAt =
     'exp' in sessionData && sessionData.exp ? new Date(sessionData.exp * 1000) : undefined
@@ -43,11 +56,6 @@ app.route('/api/v1/auth/sessions').get(async (ctx: Context) => {
     })
   }
 
-  const options = sessionsParser.parse(ctx.query)
-  const scope = `auth-sessions:${currentUser.id}:last-seen-desc-id-desc`
-  const after = options.after
-    ? decodeScopedPreciseTimestampCursor(options.after, scope, 'Invalid cursor format')
-    : undefined
   const { results, hasNextPage } = await listActiveUserSessions(currentUser.id, sessionData.sid, {
     limit: options.limit,
     after,
@@ -67,6 +75,7 @@ app.route('/api/v1/auth/sessions').get(async (ctx: Context) => {
 app.route('/api/v1/auth/sessions/:id').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/auth/sessions/:id')
   assertNotSuspended(currentUser)
+  validateRequestContract(ctx, 'DELETE:/api/v1/auth/sessions/:id', { path: ctx.params })
   const sessionId = validateUUIDParam(ctx, 'id')
 
   const revoked = await revokeAuthenticatedSession(currentUser.id, sessionId)

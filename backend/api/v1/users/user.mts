@@ -42,6 +42,7 @@ import {
   getOptionalAuthAndRateLimit,
   requireAuth,
   setAnonymousPublicCacheHeaders,
+  validateRequestContract,
 } from '../../response-helpers.mts'
 
 app
@@ -106,6 +107,7 @@ app
     const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/users/:idOrSlug')
     assertNotSuspended(currentUser)
     const body = (await ctx.request.json('1mb')) as UpdateUserOptions
+    validateRequestContract(ctx, 'PATCH:/api/v1/users/:idOrSlug', { body })
     const updated = await updateUser(currentUser, ctx.params.idOrSlug!, body)
     ctx.json({ user: { ...updated, is_official_account: isOfficialAccount(updated) } })
   })
@@ -136,11 +138,13 @@ const userVouchBaseOptions: Omit<CreateVoteHandlerOptions, 'routeKey'> = {
 const userVouchVoteHandler = createVoteHandler({
   ...userVouchBaseOptions,
   routeKey: 'PUT:/api/v1/users/:id/vouch-vote',
+  requestContractOperation: 'PUT:/api/v1/users/:id/vouch-vote',
 })
 
 const clearUserVouchVoteHandler = createVoteClearHandler({
   ...userVouchBaseOptions,
   routeKey: 'DELETE:/api/v1/users/:id/vouch-vote',
+  requestContractOperation: 'DELETE:/api/v1/users/:id/vouch-vote',
 })
 
 app.route('/api/v1/users/:id/vouch-vote').put(async ctx => {

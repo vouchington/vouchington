@@ -1,34 +1,25 @@
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 
 import { readHookPayload } from './codex-hooks/hook-payload.mts'
 import type { HookPayload } from './codex-hooks/types.mts'
 import { renderPostToolReminder, type PostToolTmuxOptions } from './tmux-reminder-post-tool.mts'
 
+// Checked-in stand-in: executing a script this test just wrote can fail with
+// ETXTBSY, and paneTitle would treat that as an empty title.
+const paneTitleTmux = fileURLToPath(new URL('./test-helpers/pane-title-tmux.sh', import.meta.url))
+
 function withFakeTmux(
   paneTitle: string,
   run: (options: PostToolTmuxOptions) => string | null,
 ): string | null {
-  const dir = mkdtempSync(join(tmpdir(), 'voucha-tmux-reminder-post-tool-'))
-  const tmuxCommand = join(dir, 'tmux')
-  writeFileSync(
-    tmuxCommand,
-    [
-      '#!/bin/bash',
-      'case "$1" in',
-      `  display-message) printf '%s\\n' ${JSON.stringify(paneTitle)} ;;`,
-      'esac',
-      '',
-    ].join('\n'),
-    { mode: 0o755 },
-  )
-  try {
-    return run({ env: process.env, tmuxCommand })
-  } finally {
-    rmSync(dir, { force: true, recursive: true })
-  }
+  return run({
+    env: { ...process.env, VOUCHA_FAKE_PANE_TITLE: paneTitle },
+    tmuxCommand: paneTitleTmux,
+  })
 }
 
 describe('renderPostToolReminder', () => {
@@ -133,6 +124,39 @@ describe('renderPostToolReminder', () => {
     ).toBeNull()
   })
 
+  it('stays silent when a transient tmux spawn failure is followed by a -pr<N> title', () => {
+    const payload: HookPayload = { tool_input: { command: 'git push' }, tool_name: 'Bash' }
+    let attempts = 0
+    const reminder = renderPostToolReminder(payload, '%1', {
+      spawnPaneTitle: () => {
+        attempts += 1
+        if (attempts === 1) {
+          const error = new Error('spawn ETXTBSY') as NodeJS.ErrnoException
+          error.code = 'ETXTBSY'
+          return { error, status: null, stdout: '' }
+        }
+        return { error: null, status: 0, stdout: 'my-feature-pr123\n' }
+      },
+    })
+    expect(reminder).toBeNull()
+    expect(attempts).toBe(2)
+  })
+
+  it('still reminds when tmux cannot be spawned', () => {
+    const payload: HookPayload = { tool_input: { command: 'git push' }, tool_name: 'Bash' }
+    let attempts = 0
+    const reminder = renderPostToolReminder(payload, '%1', {
+      spawnPaneTitle: () => {
+        attempts += 1
+        const error = new Error('spawn ENOENT') as NodeJS.ErrnoException
+        error.code = 'ENOENT'
+        return { error, status: null, stdout: '' }
+      },
+    })
+    expect(reminder).toContain('git push on PR branch')
+    expect(attempts).toBe(1)
+  })
+
   it('reminds after gh pr create', () => {
     const payload: HookPayload = {
       tool_input: { command: 'gh pr create --title x --body y' },
@@ -199,15 +223,9 @@ describe('renderPostToolReminder', () => {
 
   it('reads the pane title from VOUCHA_TMUX_BIN instead of the first tmux on PATH', () => {
     const payload: HookPayload = { tool_input: { command: 'git push' }, tool_name: 'Bash' }
-    const realDir = mkdtempSync(join(tmpdir(), 'voucha-tmux-bin-'))
     const decoyDir = mkdtempSync(join(tmpdir(), 'voucha-tmux-decoy-'))
     const marker = join(decoyDir, 'invoked')
     const originalPath = process.env.PATH ?? ''
-    writeFileSync(
-      join(realDir, 'tmux'),
-      ['#!/bin/bash', "printf '%s\\n' 'my-feature-pr123'", ''].join('\n'),
-      { mode: 0o755 },
-    )
     writeFileSync(
       join(decoyDir, 'tmux'),
       ['#!/bin/bash', `touch ${JSON.stringify(marker)}`, "printf '%s\\n' 'my-feature'", ''].join(
@@ -216,13 +234,13 @@ describe('renderPostToolReminder', () => {
       { mode: 0o755 },
     )
     vi.stubEnv('PATH', `${decoyDir}:${originalPath}`)
-    vi.stubEnv('VOUCHA_TMUX_BIN', join(realDir, 'tmux'))
+    vi.stubEnv('VOUCHA_FAKE_PANE_TITLE', 'my-feature-pr123')
+    vi.stubEnv('VOUCHA_TMUX_BIN', paneTitleTmux)
     try {
       expect(renderPostToolReminder(payload, '%1')).toBeNull()
       expect(existsSync(marker)).toBe(false)
     } finally {
       vi.unstubAllEnvs()
-      rmSync(realDir, { force: true, recursive: true })
       rmSync(decoyDir, { force: true, recursive: true })
     }
   })

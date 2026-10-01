@@ -1,4 +1,4 @@
-import type { Tool, ToolAnnotations, ToolSurface } from '../types.mts'
+import type { Tool, ToolAnnotations, ToolOutputSchema, ToolSurface } from '../types.mts'
 import { getToolRequiredScopes } from './select.mts'
 
 export type McpToolAnnotations = {
@@ -14,6 +14,7 @@ export type McpToolShape = {
   title?: string
   description?: string
   inputSchema: Record<string, unknown>
+  outputSchema?: ToolOutputSchema
   annotations?: McpToolAnnotations
   _meta?: {
     'voucha/requiredScopes': string[]
@@ -38,6 +39,7 @@ export function toolToMcpTool(
       string,
       unknown
     >,
+    ...(tool.meta?.outputSchema ? { outputSchema: tool.meta.outputSchema } : {}),
     ...(tool.meta ? { annotations: toMcpToolAnnotations(tool.meta.annotations) } : {}),
     ...(mcpScopes ? { _meta: { 'voucha/requiredScopes': mcpScopes } } : {}),
   }

@@ -51,6 +51,42 @@ claude mcp add --scope local voucha-user-mcp --transport http \
 | `tools/list` | Lists tools filtered by role, plan, and key permissions |
 | `tools/call` | Executes a tool; enforces same checks as list           |
 
+## Audit
+
+Every call made with a valid OAuth access token or API key is recorded in the durable
+`mcp_call_audit_events` log before it runs, one row per JSON-RPC message. A row holds the acting
+user, the OAuth client or the API key id, the tool or JSON-RPC method, the outcome (accepted, a
+scope, plan, or argument denial, or a tool error), the time, and the correlation id that the
+response returns as `X-Correlation-Id`. It never holds the token, key, arguments, or results. A
+request with no valid credential writes no row.
+
+- `413`: a batch of more than 25 JSON-RPC messages, recorded as one `invalid_request` row.
+- `503`: the audit row could not be stored, so the call did not run.
+
+See the [MCP tools architecture](../../../../overview/architecture/services/mcp-tools/README.md#mcp-audit-log).
+
+## Tool Results
+
+A tool that declares an output schema publishes it in `tools/list` as `outputSchema`: a JSON Schema
+object with an `object` root and every `$ref` resolved, so a client needs no other document. The
+`tools/call` result for such a tool carries the result twice, as `structuredContent` and as the same
+JSON in one `text` content block for clients that predate structured output. The two are always
+equal.
+
+The server checks `structuredContent` against the published schema before sending it, so a client
+never receives a result that breaks the schema it was promised. A result that fails the check is a
+server bug, not a caller error: the caller gets the generic `Tool execution failed. Please try
+again.` result (`isError: true`, no `structuredContent`) and operators get an error report that
+names the tool and the failing path, never the value.
+
+The 1 MiB response bound covers the whole `tools/call` result of every tool, including the JSON
+escaping of the text block, and a structured result counts both copies. An oversized result returns
+an `isError` result that asks the caller to narrow the query or lower the limit.
+
+A tool without an output schema returns only the `text` block and its result is not validated. The
+set of those tools can only shrink; see
+[MCP Tools service](../../../../overview/architecture/services/mcp-tools/README.md#structured-tool-results).
+
 ## Performance
 
 | Endpoint         | Round Trips | Caching | Notes                                                                                                 |

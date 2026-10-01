@@ -1,4 +1,3 @@
-import { isPlaywrightShardSetupJob, isStorePlaywrightOtelDownstream } from './playwright-rules.mts'
 import {
   hasExplicitOomEvidence,
   hasGenericFailureSignal,
@@ -6,10 +5,7 @@ import {
 } from './runner-shutdown-fingerprints.mts'
 import { isStatefulCiJob } from './stateful-job.mts'
 import { isAreaGateJob } from './ci-aggregate-jobs.mts'
-import {
-  findRunnerShutdownConsumer,
-  playwrightSelectJobName,
-} from './runner-shutdown-consumer-registry.mts'
+import { findRunnerShutdownConsumer } from './runner-shutdown-consumer-registry.mts'
 import type { WorkflowRunContext } from './types.mts'
 
 // Idempotent workflows where a clean runner shutdown of a leaf job is safe to rerun.
@@ -20,13 +16,7 @@ const idempotentWorkflows = new Set([
   'Cloudflare Worker',
   'Lambdas',
   'Tooling',
-  'Main CI (backend)',
-  'Main CI (checks)',
-  'Main CI (storybook)',
-  'Main CI (web)',
 ])
-
-const storePlaywrightOtelJobName = 'store-playwright-otel'
 
 export async function runnerShutdownLeafRerunMatch(ctx: WorkflowRunContext): Promise<boolean> {
   if (!idempotentWorkflows.has(ctx.workflowName)) return false
@@ -50,20 +40,10 @@ export async function runnerShutdownLeafRerunMatch(ctx: WorkflowRunContext): Pro
     )
   }
 
-  // Compute leaf jobs: remove area/main fan-ins and the conditional
-  // store-playwright-otel / cancelled consumer jobs only when
-  // their own dependency state proves they are downstream of a failed leaf.
-  const hasFailedPlaywrightShard = ctx.failedJobNames.some(
-    name => isPlaywrightShardSetupJob(name) || name === playwrightSelectJobName,
-  )
+  // Compute leaf jobs: remove area fan-ins and cancelled consumer jobs only when their own
+  // dependency state proves they are downstream of a failed leaf.
   const leafJobs = ctx.failedJobNames.filter(
-    name =>
-      !isAreaGateJob(ctx.workflowName, name) &&
-      !isCancelledKnownConsumerWithoutFailure(name) &&
-      !(
-        name === storePlaywrightOtelJobName &&
-        isStorePlaywrightOtelDownstream(ctx, hasFailedPlaywrightShard, logs)
-      ),
+    name => !isAreaGateJob(ctx.workflowName, name) && !isCancelledKnownConsumerWithoutFailure(name),
   )
   if (leafJobs.length === 0) return false
 

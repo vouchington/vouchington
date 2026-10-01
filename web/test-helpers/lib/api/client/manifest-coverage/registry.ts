@@ -7,6 +7,7 @@ import { nonWebClientEndpointRegistry } from './non-web-registry'
 import { moderationEndpointRegistry } from './moderation-registry'
 import { resourceEndpointRegistry } from './resource-registry'
 import { mergeEndpointRegistries } from './endpoint-registry'
+import { nativeChatEndpointRegistry } from './native-chat-registry'
 
 export const nonWebEndpointRegistry = mergeEndpointRegistries(
   authAndFediverseEndpointRegistry,
@@ -17,4 +18,5 @@ export const nonWebEndpointRegistry = mergeEndpointRegistries(
   engineeringEndpointRegistry,
   moderationEndpointRegistry,
   resourceEndpointRegistry,
+  nativeChatEndpointRegistry,
 )

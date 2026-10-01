@@ -573,6 +573,9 @@
     "fn_enforce_membership_provider_evidence_immutability": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_enforce_membership_provider_evidence_immutability()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'membership provider evidence records are immutable';\n  END IF;\n\n  IF ROW(\n    NEW.id,\n    NEW.provider,\n    NEW.environment,\n    NEW.application_id,\n    NEW.provider_event_id,\n    NEW.evidence_lookup_sha256,\n    NEW.encrypted_evidence,\n    NEW.received_at\n  ) IS DISTINCT FROM ROW(\n    OLD.id,\n    OLD.provider,\n    OLD.environment,\n    OLD.application_id,\n    OLD.provider_event_id,\n    OLD.evidence_lookup_sha256,\n    OLD.encrypted_evidence,\n    OLD.received_at\n  ) OR (\n    OLD.membership_provider_lineage_id IS NOT NULL\n    AND NEW.membership_provider_lineage_id IS DISTINCT FROM OLD.membership_provider_lineage_id\n  ) THEN\n    RAISE EXCEPTION 'membership provider evidence identity is immutable';\n  END IF;\n\n  IF OLD.rejected_at IS NOT NULL\n    OR num_nonnulls(NEW.verified_at, NEW.rejected_at) <> 1\n    OR (\n      OLD.verified_at IS NOT NULL\n      AND (NEW.verified_at IS NOT NULL OR NEW.rejected_at IS NULL)\n    )\n  THEN\n    RAISE EXCEPTION 'membership provider evidence lifecycle is terminal';\n  END IF;\n\n  RETURN NEW;\nEND $function$\n"
     },
+    "fn_ensure_retained_api_key_identity(identity_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_retained_api_key_identity(identity_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  LOOP\n    INSERT INTO retained_api_key_identities (id) VALUES (identity_id) ON CONFLICT (id) DO NOTHING;\n    PERFORM id FROM retained_api_key_identities WHERE id = identity_id FOR KEY SHARE;\n    EXIT WHEN FOUND;\n  END LOOP;\nEND;\n$function$\n"
+    },
     "fn_ensure_retained_image_identity(identity_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_retained_image_identity(identity_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  LOOP\n    INSERT INTO retained_image_identities (id) VALUES (identity_id) ON CONFLICT (id) DO NOTHING;\n    PERFORM id FROM retained_image_identities WHERE id = identity_id FOR KEY SHARE;\n    EXIT WHEN FOUND;\n  END LOOP;\nEND;\n$function$\n"
     },
@@ -838,7 +841,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_moderator_action_type()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.action_type IS DISTINCT FROM NEW.action_type THEN\n    RAISE EXCEPTION 'moderator action type is immutable';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_protect_post_classifier_application": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_post_classifier_application()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.post_id IS DISTINCT FROM NEW.post_id\n    OR OLD.id IS DISTINCT FROM NEW.id\n    OR OLD.input_sha256 IS DISTINCT FROM NEW.input_sha256\n    OR OLD.configuration_json::text IS DISTINCT FROM NEW.configuration_json::text\n    OR OLD.configuration_sha256 IS DISTINCT FROM NEW.configuration_sha256\n    OR OLD.shared_actor_id IS DISTINCT FROM NEW.shared_actor_id\n    OR OLD.community_identity_id IS DISTINCT FROM NEW.community_identity_id\n    OR OLD.detector_package_version IS DISTINCT FROM NEW.detector_package_version\n    OR OLD.local_topic_id IS DISTINCT FROM NEW.local_topic_id\n    OR OLD.decision_batch_id IS DISTINCT FROM NEW.decision_batch_id THEN\n    RAISE EXCEPTION 'post classifier application identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF ((OLD.local_flagged IS NOT NULL OR OLD.outcomes_persisted_at IS NOT NULL) AND (\n      ROW(OLD.local_flagged, OLD.local_reason, OLD.local_confidence_score,\n        OLD.local_confidence_threshold, OLD.local_classification, OLD.local_detector,\n        OLD.local_detector_model_version)\n      IS DISTINCT FROM\n      ROW(NEW.local_flagged, NEW.local_reason, NEW.local_confidence_score,\n        NEW.local_confidence_threshold, NEW.local_classification, NEW.local_detector,\n        NEW.local_detector_model_version)\n    ))\n    OR OLD.provider_attempts_started > NEW.provider_attempts_started\n    OR (OLD.terminal_remote_failed_at IS NOT NULL AND (\n      OLD.terminal_remote_failed_at IS DISTINCT FROM NEW.terminal_remote_failed_at\n      OR OLD.terminal_remote_failure_kind IS DISTINCT FROM NEW.terminal_remote_failure_kind\n    ))\n    OR (OLD.superseded_at IS NOT NULL AND NEW.superseded_at IS NOT NULL\n      AND OLD.superseded_at IS DISTINCT FROM NEW.superseded_at) THEN\n    RAISE EXCEPTION 'post classifier application outcome is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF (OLD.outcomes_persisted_at IS NOT NULL\n      AND OLD.outcomes_persisted_at IS DISTINCT FROM NEW.outcomes_persisted_at)\n    OR (OLD.votes_applied_at IS NOT NULL\n      AND OLD.votes_applied_at IS DISTINCT FROM NEW.votes_applied_at)\n    OR (OLD.tags_applied_at IS NOT NULL\n      AND OLD.tags_applied_at IS DISTINCT FROM NEW.tags_applied_at)\n    OR (OLD.completed_at IS NOT NULL\n      AND OLD.completed_at IS DISTINCT FROM NEW.completed_at)\n    OR (OLD.superseded_at IS NOT NULL AND (\n      OLD.outcomes_persisted_at IS DISTINCT FROM NEW.outcomes_persisted_at\n      OR OLD.votes_applied_at IS DISTINCT FROM NEW.votes_applied_at\n      OR OLD.tags_applied_at IS DISTINCT FROM NEW.tags_applied_at\n      OR OLD.completed_at IS DISTINCT FROM NEW.completed_at\n    )) THEN\n    RAISE EXCEPTION 'post classifier application phase is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_post_classifier_application()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.post_id IS DISTINCT FROM NEW.post_id\n    OR OLD.id IS DISTINCT FROM NEW.id\n    OR OLD.input_sha256 IS DISTINCT FROM NEW.input_sha256\n    OR OLD.configuration_json::text IS DISTINCT FROM NEW.configuration_json::text\n    OR OLD.configuration_sha256 IS DISTINCT FROM NEW.configuration_sha256\n    OR OLD.shared_actor_id IS DISTINCT FROM NEW.shared_actor_id\n    OR OLD.community_identity_id IS DISTINCT FROM NEW.community_identity_id\n    OR OLD.detector_package_version IS DISTINCT FROM NEW.detector_package_version\n    OR OLD.local_topic_id IS DISTINCT FROM NEW.local_topic_id\n    OR OLD.decision_batch_id IS DISTINCT FROM NEW.decision_batch_id THEN\n    RAISE EXCEPTION 'post classifier application identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF ((OLD.local_flagged IS NOT NULL OR OLD.outcomes_persisted_at IS NOT NULL) AND (\n      ROW(OLD.local_flagged, OLD.local_reason, OLD.local_confidence_score,\n        OLD.local_confidence_threshold, OLD.local_classification, OLD.local_detector,\n        OLD.local_detector_model_version)\n      IS DISTINCT FROM\n      ROW(NEW.local_flagged, NEW.local_reason, NEW.local_confidence_score,\n        NEW.local_confidence_threshold, NEW.local_classification, NEW.local_detector,\n        NEW.local_detector_model_version)\n    ))\n    OR OLD.provider_attempts_started > NEW.provider_attempts_started\n    OR OLD.sweep_enqueue_count > NEW.sweep_enqueue_count\n    OR (OLD.terminal_remote_failed_at IS NOT NULL AND (\n      OLD.terminal_remote_failed_at IS DISTINCT FROM NEW.terminal_remote_failed_at\n      OR OLD.terminal_remote_failure_kind IS DISTINCT FROM NEW.terminal_remote_failure_kind\n    ))\n    OR (OLD.superseded_at IS NOT NULL AND NEW.superseded_at IS NOT NULL\n      AND OLD.superseded_at IS DISTINCT FROM NEW.superseded_at) THEN\n    RAISE EXCEPTION 'post classifier application outcome is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF (OLD.outcomes_persisted_at IS NOT NULL\n      AND OLD.outcomes_persisted_at IS DISTINCT FROM NEW.outcomes_persisted_at)\n    OR (OLD.votes_applied_at IS NOT NULL\n      AND OLD.votes_applied_at IS DISTINCT FROM NEW.votes_applied_at)\n    OR (OLD.tags_applied_at IS NOT NULL\n      AND OLD.tags_applied_at IS DISTINCT FROM NEW.tags_applied_at)\n    OR (OLD.completed_at IS NOT NULL\n      AND OLD.completed_at IS DISTINCT FROM NEW.completed_at)\n    OR (OLD.superseded_at IS NOT NULL AND (\n      OLD.outcomes_persisted_at IS DISTINCT FROM NEW.outcomes_persisted_at\n      OR OLD.votes_applied_at IS DISTINCT FROM NEW.votes_applied_at\n      OR OLD.tags_applied_at IS DISTINCT FROM NEW.tags_applied_at\n      OR OLD.completed_at IS DISTINCT FROM NEW.completed_at\n    )) THEN\n    RAISE EXCEPTION 'post classifier application phase is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_protect_post_clearance_change_type": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_post_clearance_change_type()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.change_type IS DISTINCT FROM NEW.change_type THEN\n    RAISE EXCEPTION 'post clearance change type is immutable';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -854,6 +857,9 @@
     },
     "fn_refresh_rss_feed_item_unmapped_category_count": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_refresh_rss_feed_item_unmapped_category_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  current_item_count BIGINT;\nBEGIN\n  IF TG_OP != 'INSERT' AND OLD.topic_id IS NULL THEN\n    SELECT item_count INTO current_item_count\n    FROM rss_feed_item_unmapped_category_counts\n    WHERE category_text = LOWER(OLD.category_text)\n    FOR UPDATE;\n\n    IF current_item_count = 1 THEN\n      DELETE FROM rss_feed_item_unmapped_category_counts\n      WHERE category_text = LOWER(OLD.category_text);\n    ELSIF current_item_count > 1 THEN\n      UPDATE rss_feed_item_unmapped_category_counts\n      SET item_count = item_count - 1,\n          updated_at = CURRENT_TIMESTAMP\n      WHERE category_text = LOWER(OLD.category_text);\n    END IF;\n  END IF;\n\n  IF TG_OP != 'DELETE' AND NEW.topic_id IS NULL THEN\n    INSERT INTO rss_feed_item_unmapped_category_counts (category_text, item_count)\n    VALUES (LOWER(NEW.category_text), 1)\n    ON CONFLICT (category_text) DO UPDATE\n    SET item_count = rss_feed_item_unmapped_category_counts.item_count + 1,\n        updated_at = CURRENT_TIMESTAMP;\n  END IF;\n\n  RETURN NULL;\nEND;\n$function$\n"
+    },
+    "fn_register_retained_api_key_identity": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_api_key_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_ensure_retained_api_key_identity(NEW.id);\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_register_retained_image_identity": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_image_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_ensure_retained_image_identity(NEW.id);\n  RETURN NEW;\nEND;\n$function$\n"
@@ -3227,8 +3233,8 @@
         },
         "on_flag_action": {
           "collation": null,
-          "comment": "Action taken when a moderator flags content: none (log only) or review_queue (move to review queue).",
-          "defaultExpression": "'review_queue'::moderator_on_flag_action",
+          "comment": "Action taken when a moderator flags content: none (record only, the default; every seeded moderator) or review_queue (move to review queue).",
+          "defaultExpression": "'none'::moderator_on_flag_action",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
@@ -5065,6 +5071,15 @@
       },
       "comment": "User-issued API keys for programmatic access (format: voucha_<type>_<32 hex random>_<16 hex checksum>), stored as SHA-256 hashes.",
       "foreignKeys": {
+        "api_keys_id_fkey": {
+          "columns": ["id"],
+          "definition": "FOREIGN KEY (id) REFERENCES retained_api_key_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_api_key_identities",
+          "validated": true
+        },
         "api_keys_user_id_fkey": {
           "columns": ["user_id"],
           "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
@@ -5173,7 +5188,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_api_keys_updated_at": "CREATE TRIGGER trigger_api_keys_updated_at BEFORE UPDATE ON public.api_keys FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_api_keys_updated_at": "CREATE TRIGGER trigger_api_keys_updated_at BEFORE UPDATE ON public.api_keys FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
+        "trigger_register_retained_api_key_identity": "CREATE TRIGGER trigger_register_retained_api_key_identity BEFORE INSERT ON public.api_keys FOR EACH ROW EXECUTE FUNCTION fn_register_retained_api_key_identity()"
       },
       "uniqueConstraints": {}
     },
@@ -42303,6 +42319,7 @@
     "mcp_call_audit_events": {
       "checkConstraints": {
         "mcp_call_audit_events_check": "CHECK (((tool_name IS NULL) OR (jsonrpc_method = 'tools/call'::text)))",
+        "mcp_call_audit_events_check1": "CHECK ((num_nonnulls(oauth_client_id, api_key_id) = 1))",
         "mcp_call_audit_events_jsonrpc_method_check": "CHECK ((jsonrpc_method ~ '^[A-Za-z][A-Za-z0-9_./-]{0,63}$'::text))",
         "mcp_call_audit_events_outcome_check": "CHECK ((outcome = ANY (ARRAY['accepted'::text, 'tool_error'::text, 'invalid_request'::text, 'invalid_arguments'::text, 'not_found'::text, 'role_denied'::text, 'plan_denied'::text, 'scopes_undeclared'::text, 'insufficient_scope'::text, 'rate_limited'::text])))",
         "mcp_call_audit_events_resource_check": "CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))",
@@ -42312,13 +42329,24 @@
       "columns": {
         "actor_user_id": {
           "collation": null,
-          "comment": "Owner of the verified access token; references the retained user identity so hard deletion preserves the record.",
+          "comment": "Owner of the verified access token or API key; references the retained user identity so hard deletion preserves the record.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "api_key_id": {
+          "collation": null,
+          "comment": "API key the call authenticated with, by the retained API key identity so the record survives key deletion; NULL when the call used an OAuth access token. The key secret is never stored.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "correlation_id": {
@@ -42351,17 +42379,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "oauth_client_id": {
           "collation": null,
-          "comment": "OAuth client the access token was issued to.",
+          "comment": "OAuth client the access token was issued to; NULL when the call used an API key, and exactly one of oauth_client_id and api_key_id is set.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 5,
           "type": "uuid"
         },
@@ -42373,7 +42401,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "outcome": {
@@ -42384,18 +42412,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "text"
         },
         "resource": {
           "collation": null,
-          "comment": "Protected resource URL the access token was validated against.",
+          "comment": "Protected resource URL of the MCP surface that received the call.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "surface": {
@@ -42417,11 +42445,11 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "text"
         }
       },
-      "comment": "Append-only durable audit of MCP calls made with a verified OAuth access token; one row per JSON-RPC message, plus a tool_error follow-up row for an admitted tool call that failed. Arguments, results, tokens, and headers are never stored.",
+      "comment": "Append-only durable audit of MCP calls made with a verified OAuth access token or user API key; one row per JSON-RPC message, plus a tool_error follow-up row for an admitted tool call that failed. Arguments, results, tokens, keys, and headers are never stored.",
       "foreignKeys": {
         "mcp_call_audit_events_actor_user_id_fkey": {
           "columns": ["actor_user_id"],
@@ -42430,6 +42458,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "retained_user_identities",
+          "validated": true
+        },
+        "mcp_call_audit_events_api_key_id_fkey": {
+          "columns": ["api_key_id"],
+          "definition": "FOREIGN KEY (api_key_id) REFERENCES retained_api_key_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_api_key_identities",
           "validated": true
         },
         "mcp_call_audit_events_oauth_client_id_fkey": {
@@ -42471,6 +42508,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_mcp_call_audit_events__api_key": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_mcp_call_audit_events__api_key ON ONLY public.mcp_call_audit_events USING btree (api_key_id, id) WHERE (api_key_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "api_key_id",
+              "descending": false,
+              "expression": "api_key_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(api_key_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_mcp_call_audit_events__correlation": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -42501,7 +42565,7 @@
         "idx_mcp_call_audit_events__oauth_client": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_mcp_call_audit_events__oauth_client ON ONLY public.mcp_call_audit_events USING btree (oauth_client_id, id)",
+          "definition": "CREATE INDEX idx_mcp_call_audit_events__oauth_client ON ONLY public.mcp_call_audit_events USING btree (oauth_client_id, id) WHERE (oauth_client_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -42519,7 +42583,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": null,
+          "predicate": "(oauth_client_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -65832,7 +65896,8 @@
         "post_classifier_applications_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))",
         "post_classifier_applications_local_classification_check": "CHECK ((local_classification = ANY (ARRAY['ai'::text, 'human'::text])))",
         "post_classifier_applications_provider_attempts_started_check": "CHECK ((provider_attempts_started >= 0))",
-        "post_classifier_applications_terminal_remote_failure_kind_check": "CHECK ((terminal_remote_failure_kind = ANY (ARRAY['provider-error'::text, 'invalid-result'::text, 'context-rejected'::text, 'attempts-exhausted'::text])))"
+        "post_classifier_applications_sweep_enqueue_count_check": "CHECK ((sweep_enqueue_count >= 0))",
+        "post_classifier_applications_terminal_remote_failure_kind_check": "CHECK ((terminal_remote_failure_kind = ANY (ARRAY['provider-error'::text, 'invalid-result'::text, 'context-rejected'::text, 'attempts-exhausted'::text, 'client-unavailable'::text, 'sweep-bound-exceeded'::text])))"
       },
       "columns": {
         "community_identity_id": {
@@ -65854,7 +65919,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 28,
           "type": "timestamp with time zone"
         },
         "configuration_json": {
@@ -65887,7 +65952,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 30,
           "type": "timestamp with time zone"
         },
         "decision_batch_id": {
@@ -65942,7 +66007,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "timestamp with time zone"
         },
         "lease_token": {
@@ -65953,7 +66018,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "uuid"
         },
         "leased_at": {
@@ -65964,7 +66029,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "local_classification": {
@@ -65975,7 +66040,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "text"
         },
         "local_confidence_score": {
@@ -65986,7 +66051,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "double precision"
         },
         "local_confidence_threshold": {
@@ -65997,7 +66062,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "double precision"
         },
         "local_detector": {
@@ -66008,7 +66073,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "text"
         },
         "local_detector_model_version": {
@@ -66019,7 +66084,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "text"
         },
         "local_flagged": {
@@ -66030,7 +66095,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "boolean"
         },
         "local_reason": {
@@ -66041,7 +66106,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "text"
         },
         "local_topic_id": {
@@ -66063,7 +66128,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         },
         "post_id": {
@@ -66107,8 +66172,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 29,
           "type": "timestamp with time zone"
+        },
+        "sweep_enqueue_count": {
+          "collation": null,
+          "comment": "Recovery-sweep enqueues that actually added a job for this receipt; monotone and bounded, one past the bound marks a receipt the sweep has stopped recovering.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "integer"
         },
         "tags_applied_at": {
           "collation": null,
@@ -66118,7 +66194,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 27,
           "type": "timestamp with time zone"
         },
         "terminal_remote_failed_at": {
@@ -66129,18 +66205,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "terminal_remote_failure_kind": {
           "collation": null,
-          "comment": "Durable reason remote classification stopped without a complete valid decision.",
+          "comment": "Durable reason remote classification stopped without a complete valid decision; client-unavailable means the provider client could not be built, sweep-bound-exceeded means the recovery sweep re-enqueued the receipt its bounded number of times.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "text"
         },
         "updated_at": {
@@ -66151,7 +66227,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "votes_applied_at": {
@@ -66162,7 +66238,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 26,
           "type": "timestamp with time zone"
         }
       },
@@ -92282,9 +92358,59 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
+    "retained_api_key_identities": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete API key identity owner that outlives the live row while durable audit references remain; never authorizes calls.",
+      "foreignKeys": {},
+      "growth": "unbounded",
+      "indexes": {
+        "retained_api_key_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_api_key_identities_pkey ON public.retained_api_key_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "retained_identity_cleanup_progress": {
       "checkConstraints": {
-        "retained_identity_cleanup_progress_family_check": "CHECK ((family = ANY (ARRAY['user'::text, 'topic'::text, 'post'::text, 'rss_feed_item'::text, 'image'::text, 'image_placement_binding'::text])))"
+        "retained_identity_cleanup_progress_family_check": "CHECK ((family = ANY (ARRAY['user'::text, 'api_key'::text, 'topic'::text, 'post'::text, 'rss_feed_item'::text, 'image'::text, 'image_placement_binding'::text])))"
       },
       "columns": {
         "cursor_identity_id": {

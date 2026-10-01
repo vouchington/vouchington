@@ -13,7 +13,7 @@ describe('Storybook browser runner local Vite script network changes', () => {
     const { deps, removed, spawnCalls, stderr } = makeDeps([first, second])
     const result = runStorybookBrowserTests({ env: { CI: 'true' } }, deps)
 
-    first.stdout.emit('data', 'VITE v8.3.0 ready in 573 ms')
+    first.stdout.emit('data', 'VITE v0.0.0 ready in 573 ms')
     first.stderr.emit('data', networkChange)
     first.emit('close', 1, null)
     await waitFor(() => spawnCalls.length === 2)

@@ -7,6 +7,7 @@ import {
   neutralScoreProvenanceColumnSql,
   semanticScoreProvenanceColumnSql,
 } from './utils/neutral-score-provenance-schema.mts'
+/** @public loaded by path by the config-driven migration runner */
 export default () => VOTE_SCHEMA_CONFIGS.map(createVoteSchemaSql).join('\n\n')
 
 function createVoteSchemaSql(config: VoteSchemaConfig): string {

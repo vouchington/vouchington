@@ -1,7 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { verifyGooglePlaySubscription } from './subscription-verifier.mts'
 
 describe('Google Play deferred replacement verification', () => {
+  // Freeze the clock before the fixed expiries so the verifier's default `now` never passes them.
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-01T00:00:00Z'))
+  })
+  afterEach(() => vi.useRealTimers())
+
   it('retains the deferred target without entitling it before its line item has an expiry', () => {
     expect(
       verifyGooglePlaySubscription({

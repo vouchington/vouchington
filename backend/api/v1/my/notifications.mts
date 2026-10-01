@@ -2,8 +2,9 @@ import app from '../../app.mts'
 import { enqueueDeleteNotification } from '@queues/notifications/enqueues'
 import type { Context } from '@jongleberry/api-server'
 import { createPaginationParser } from '@modules/pagination'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   hasNotification,
   getUnreadNotificationsSummary,
@@ -16,6 +17,14 @@ import {
   deleteWebPushSubscription,
 } from '@services/notifications'
 
+type CreateWebPushSubscriptionRequest = {
+  endpoint: string
+  p256dh: string
+  auth: string
+  expiration_time_ms?: number | null
+  user_agent?: string
+}
+
 const notificationsParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { min: 1, max: 100, default: 25 },
@@ -25,10 +34,22 @@ const pushSubscriptionsParser = createPaginationParser({
   limit: { min: 1, max: 100, default: 25 },
 })
 
+function parseEndpointUrl(endpoint: string): URL | null {
+  try {
+    return new URL(endpoint)
+  } catch {
+    return null
+  }
+}
+
 app.route('/api/v1/my/notifications').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/my/notifications', notificationsParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/notifications')
 
   const options = notificationsParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, notificationsParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/notifications', { query })
   ctx.json(await listNotifications(currentUser.id, options))
 })
 
@@ -40,7 +61,9 @@ app.route('/api/v1/my/notifications/unread').get(async (ctx: Context) => {
 
 app.route('/api/v1/my/notifications/:id/redirect-target').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/notifications/:id/redirect-target')
-  ctx.assert(ctx.params.id, 400, 'id is required')
+  validateRequestContract(ctx, 'GET:/api/v1/my/notifications/:id/redirect-target', {
+    path: ctx.params,
+  })
 
   const target_url = await markNotificationReadAndGetRedirectTarget(currentUser.id, ctx.params.id!)
   ctx.assert(target_url, 404, 'Notification not found')
@@ -58,7 +81,7 @@ app
   .route('/api/v1/my/notifications/:id')
   .patch(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/my/notifications/:id')
-    ctx.assert(ctx.params.id, 400, 'id is required')
+    validateRequestContract(ctx, 'PATCH:/api/v1/my/notifications/:id', { path: ctx.params })
 
     const updated = await markNotificationRead(currentUser.id, ctx.params.id!)
     ctx.assert(updated, 404, 'Notification not found')
@@ -66,7 +89,7 @@ app
   })
   .delete(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/my/notifications/:id')
-    ctx.assert(ctx.params.id, 400, 'id is required')
+    validateRequestContract(ctx, 'DELETE:/api/v1/my/notifications/:id', { path: ctx.params })
 
     const exists = await hasNotification(currentUser.id, ctx.params.id!)
     ctx.assert(exists, 404, 'Notification not found')
@@ -78,54 +101,40 @@ app.route('/api/v1/my/notifications/push-subscriptions').get(async (ctx: Context
   apiQuery('GET:/api/v1/my/notifications/push-subscriptions', pushSubscriptionsParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/notifications/push-subscriptions')
 
-  ctx.json(
-    await listWebPushSubscriptionsPage(currentUser.id, pushSubscriptionsParser.parse(ctx.query)),
-  )
+  const options = pushSubscriptionsParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, pushSubscriptionsParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/notifications/push-subscriptions', { query })
+  ctx.json(await listWebPushSubscriptionsPage(currentUser.id, options))
 })
 
 app.route('/api/v1/my/notifications/push-subscriptions').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/notifications/push-subscriptions')
 
-  const body = (await ctx.request.json('20kb')) as Record<string, unknown>
-  const endpoint =
-    typeof body.endpoint === 'string'
-      ? (() => {
-          try {
-            return new URL(body.endpoint)
-          } catch {
-            return null
-          }
-        })()
-      : null
+  const body = (await ctx.request.json('20kb')) as CreateWebPushSubscriptionRequest
+  validateRequestContract(ctx, 'POST:/api/v1/my/notifications/push-subscriptions', { body })
+  // The schema fixes types; length, scheme and integer bounds are semantic checks.
+  const endpoint = parseEndpointUrl(body.endpoint)
   ctx.assert(
     endpoint?.protocol === 'https:' && endpoint.host.length > 0,
     400,
     'endpoint must be a valid HTTPS URL',
   )
   ctx.assert(
-    typeof body.p256dh === 'string' && body.p256dh.length >= 16 && body.p256dh.length <= 512,
+    body.p256dh.length >= 16 && body.p256dh.length <= 512,
     400,
     'p256dh must be between 16 and 512 characters',
   )
   ctx.assert(
-    typeof body.auth === 'string' && body.auth.length >= 8 && body.auth.length <= 512,
+    body.auth.length >= 8 && body.auth.length <= 512,
     400,
     'auth must be between 8 and 512 characters',
   )
+  const expirationTimeMs = body.expiration_time_ms ?? null
   ctx.assert(
-    body.expiration_time_ms === null ||
-      body.expiration_time_ms === undefined ||
-      (typeof body.expiration_time_ms === 'number' &&
-        Number.isFinite(body.expiration_time_ms) &&
-        Number.isInteger(body.expiration_time_ms) &&
-        body.expiration_time_ms >= 0),
+    expirationTimeMs === null || (Number.isInteger(expirationTimeMs) && expirationTimeMs >= 0),
     422,
     'expiration_time_ms must be a non-negative integer or null',
-  )
-  ctx.assert(
-    body.user_agent === undefined || typeof body.user_agent === 'string',
-    422,
-    'user_agent must be a string',
   )
 
   const subscription = await upsertWebPushSubscription({
@@ -133,8 +142,8 @@ app.route('/api/v1/my/notifications/push-subscriptions').post(async (ctx: Contex
     endpoint: endpoint.href,
     p256dh: body.p256dh,
     auth: body.auth,
-    expirationTimeMs: (body.expiration_time_ms as number | null | undefined) ?? null,
-    userAgent: (body.user_agent as string | undefined) ?? '',
+    expirationTimeMs,
+    userAgent: body.user_agent ?? '',
   })
 
   ctx.setStatus(201)
@@ -146,7 +155,9 @@ app.route('/api/v1/my/notifications/push-subscriptions/:id').delete(async (ctx: 
     ctx,
     'DELETE:/api/v1/my/notifications/push-subscriptions/:id',
   )
-  ctx.assert(ctx.params.id, 400, 'id is required')
+  validateRequestContract(ctx, 'DELETE:/api/v1/my/notifications/push-subscriptions/:id', {
+    path: ctx.params,
+  })
 
   await deleteWebPushSubscription(currentUser.id, ctx.params.id!)
   ctx.setStatus(204)

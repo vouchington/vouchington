@@ -45,7 +45,7 @@ END $$;
 
 -- api_keys
 CREATE TABLE IF NOT EXISTS api_keys (
-  id UUID DEFAULT uuidv7() PRIMARY KEY,
+  id UUID DEFAULT uuidv7() PRIMARY KEY REFERENCES retained_api_key_identities (id) ON DELETE RESTRICT,
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   prefix TEXT NOT NULL,
   key_hash BYTEA NOT NULL,
@@ -62,6 +62,9 @@ CREATE TABLE IF NOT EXISTS api_keys (
   CHECK (label = TRIM(label)),
   CHECK (char_length(label) <= 100)
 );
+
+CREATE OR REPLACE TRIGGER trigger_register_retained_api_key_identity
+  BEFORE INSERT ON api_keys FOR EACH ROW EXECUTE FUNCTION fn_register_retained_api_key_identity();
 
 CREATE OR REPLACE TRIGGER trigger_api_keys_updated_at
   BEFORE UPDATE ON api_keys FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();

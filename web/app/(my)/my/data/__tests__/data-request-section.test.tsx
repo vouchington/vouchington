@@ -1,4 +1,5 @@
 import {
+  createFutureExpiresAt,
   createJsonResponse,
   installDataRequestDoubles,
   MockEventSource,
@@ -48,7 +49,7 @@ describe('DataRequestSection', () => {
         id: 'request-ready',
         status: 'ready',
         created_at: '2026-01-02T00:00:00.000Z',
-        expires_at: '2026-12-31T00:00:00.000Z',
+        expires_at: createFutureExpiresAt(),
         download_url: 'https://s3.example.com/export.zip?X-Amz-Signature=abc',
       }),
     )
@@ -88,7 +89,7 @@ describe('DataRequestSection', () => {
         id: 'request-pending',
         status: 'ready',
         created_at: '2026-01-01T00:00:00.000Z',
-        expires_at: '2027-01-01T00:00:00.000Z',
+        expires_at: createFutureExpiresAt(),
         download_url: 'https://s3.example.com/export.zip',
       }),
     )
@@ -133,7 +134,7 @@ describe('DataRequestSection', () => {
         id: 'request-pending-rest-fail',
         status: 'ready',
         created_at: '2026-01-01T00:00:00.000Z',
-        expires_at: '2027-01-01T00:00:00.000Z',
+        expires_at: createFutureExpiresAt(),
         download_url: 'https://s3.example.com/export.zip',
       }),
     )

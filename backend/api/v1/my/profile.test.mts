@@ -55,11 +55,11 @@ describe('PATCH /api/v1/my/profile', () => {
     expect(response.body.profile.markdown).toBe(markdown)
   })
 
-  it('returns 400 when markdown missing', async () => {
+  it('returns 422 when markdown missing', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    await request.patch('/api/v1/my/profile').send({}).expect(400)
+    await request.patch('/api/v1/my/profile').send({}).expect(422)
   })
 })
 
@@ -110,14 +110,14 @@ describe('Profile links CRUD', () => {
     expect(response.body.profile_link.handle).toBe('octocat')
   })
 
-  it('POST /api/v1/my/profile/links returns 400 for invalid link_type', async () => {
+  it('POST /api/v1/my/profile/links returns 422 for invalid link_type', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
     await request
       .post('/api/v1/my/profile/links')
       .send({ link_type: 'invalid', url: 'https://example.com' })
-      .expect(400)
+      .expect(422)
   })
 
   it('PATCH /api/v1/my/profile/links/:id updates a link', async () => {

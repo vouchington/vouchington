@@ -12,6 +12,8 @@ const GIT_PUSH_COMMAND_PATTERN = /(^|[;&|])\s*git\s+push(\s|$)/
 const RESET_WORKTREE_INVOCATION_PATTERN =
   /(^|[;&|])\s*(\.\/)?dev\/reset-worktree(?:\s+(--help|-h))?(?=[;&|]|\s|$)/g
 const PR_SUFFIX_PATTERN = /-pr\d+$/
+const transientTmuxSpawnCodes = new Set(['EAGAIN', 'EBUSY', 'EINTR', 'EMFILE', 'ENFILE', 'ETXTBSY'])
+const tmuxSpawnAttempts = 3
 
 // Scans every dev/reset-worktree invocation in the command separately rather than
 // exempting the whole string when any one of them is --help/-h: a compound command
@@ -26,22 +28,51 @@ function hasNonHelpResetWorktreeInvocation(command: string): boolean {
   return false
 }
 
+export type PaneTitleSpawnResult = {
+  error?: NodeJS.ErrnoException | null
+  status: number | null
+  stdout: string
+}
+
+export type PaneTitleSpawn = (
+  command: string,
+  args: readonly string[],
+  env: NodeJS.ProcessEnv,
+) => PaneTitleSpawnResult
+
 export type PostToolTmuxOptions = {
   env?: NodeJS.ProcessEnv
+  spawnPaneTitle?: PaneTitleSpawn
   tmuxCommand?: string
 }
 
-function paneTitle(tmuxPane: string, tmuxCommand: string, env: NodeJS.ProcessEnv): string {
-  const result = spawnSync(
-    tmuxCommand,
-    ['display-message', '-p', '-t', tmuxPane, '#{pane_title}'],
-    {
-      encoding: 'utf8',
+function spawnTmux(
+  command: string,
+  args: readonly string[],
+  env: NodeJS.ProcessEnv,
+): PaneTitleSpawnResult {
+  const result = spawnSync(command, [...args], { encoding: 'utf8', env })
+  return { error: result.error, status: result.status, stdout: result.stdout }
+}
+
+function paneTitle(
+  tmuxPane: string,
+  tmuxCommand: string,
+  env: NodeJS.ProcessEnv,
+  spawn: PaneTitleSpawn,
+): string {
+  // ETXTBSY/EAGAIN are a missed lookup, not an empty pane title.
+  for (let attempt = 0; attempt < tmuxSpawnAttempts; attempt += 1) {
+    const result = spawn(
+      tmuxCommand,
+      ['display-message', '-p', '-t', tmuxPane, '#{pane_title}'],
       env,
-    },
-  )
-  if (result.status !== 0) return ''
-  return result.stdout.trim()
+    )
+    if (result.status === 0) return result.stdout.trim()
+    const code = result.error?.code
+    if (typeof code !== 'string' || !transientTmuxSpawnCodes.has(code)) return ''
+  }
+  return ''
 }
 
 // The bash `post-tool` case gated its whole Bash/Shell/run_terminal_command branch on
@@ -75,6 +106,7 @@ export function renderPostToolReminder(
   // miss is indistinguishable from an empty pane title.
   const env = options?.env ?? process.env
   const tmuxCommand = options?.tmuxCommand || env.VOUCHA_TMUX_BIN || 'tmux'
+  const spawn = options?.spawnPaneTitle ?? spawnTmux
   if (tmuxPane === '') return null
 
   const toolName = hookToolName(payload)
@@ -98,7 +130,7 @@ export function renderPostToolReminder(
   }
 
   if (GIT_PUSH_COMMAND_PATTERN.test(command)) {
-    const title = paneTitle(tmuxPane, tmuxCommand, env)
+    const title = paneTitle(tmuxPane, tmuxCommand, env, spawn)
     if (!PR_SUFFIX_PATTERN.test(title)) {
       return '[tmux-window-name] git push on PR branch — confirm -pr<N> suffix is set: ./dev/tmux-name <feature-pr123>  (dangerouslyDisableSandbox: true)'
     }
@@ -108,7 +140,7 @@ export function renderPostToolReminder(
   // --help/-h exits before reset-worktree touches the pane title (or anything else), so it
   // never leaves a stale title behind -- don't remind for it.
   if (hasNonHelpResetWorktreeInvocation(command)) {
-    const title = paneTitle(tmuxPane, tmuxCommand, env)
+    const title = paneTitle(tmuxPane, tmuxCommand, env, spawn)
     if (title !== '') {
       return '[tmux-window-name] reset-worktree ran — pane title should be empty. ./dev/tmux-name ""  (dangerouslyDisableSandbox: true)'
     }

@@ -38,7 +38,7 @@ describe('backend-credentialed-provider-smoke-test-transient (OpenAI rate-limit 
 
   it('matches the OpenAI autotagger rate limit on Main CI backend attempt 1', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (backend)',
+      workflowName: 'Backend',
       failedJobNames: [backendCredentialedJobName],
       failedJobLogs: () =>
         Promise.resolve(new Map([[backendCredentialedJobName, matchingOpenAILog]])),
@@ -68,7 +68,7 @@ describe('backend-credentialed-provider-smoke-test-transient (OpenAI rate-limit 
     const ctx = makeCtx({
       runAttempt: 2,
       ruleAttempts: new Map([['backend-credentialed-provider-smoke-test-transient', 1]]),
-      workflowName: 'Main CI (backend)',
+      workflowName: 'Backend',
       failedJobNames: [backendCredentialedJobName],
       failedJobLogs: () =>
         Promise.resolve(new Map([[backendCredentialedJobName, matchingOpenAILog]])),
@@ -82,7 +82,7 @@ describe('backend-credentialed-provider-smoke-test-transient (OpenAI rate-limit 
     const ctx = makeCtx({
       runAttempt: 3,
       ruleAttempts: new Map([['backend-credentialed-provider-smoke-test-transient', 3]]),
-      workflowName: 'Main CI (backend)',
+      workflowName: 'Backend',
       failedJobNames: [backendCredentialedJobName],
       failedJobLogs: () =>
         Promise.resolve(new Map([[backendCredentialedJobName, matchingOpenAILog]])),

@@ -41,9 +41,14 @@ export function NotificationsPage({
 
   const notifications = mergeNotificationPages(pages, deletedIds, readAtById)
 
+  // Zero-arg `new Date()` stays inside the state updaters. Render reads `read_at`, so a clock
+  // read in the handler body is an impure render.
   async function handleMarkRead(notification: NotificationListNotification) {
-    const readAt = readAtById[notification.id] ?? notification.read_at ?? new Date().toISOString()
-    setReadAtById(prev => ({ ...prev, [notification.id]: readAt }))
+    const readAt = readAtById[notification.id] ?? notification.read_at
+    setReadAtById(prev => ({
+      ...prev,
+      [notification.id]: readAt ?? new Date().toISOString(),
+    }))
     markMyNotificationReadKeepalive(notification.id).catch(Sentry.captureException)
     const target = resolveNotificationTarget(notification, notifications.communities)
     if (target) navigateToTarget(target)
@@ -61,10 +66,12 @@ export function NotificationsPage({
   async function handleMarkAllRead() {
     try {
       await markAllMyNotificationsRead()
-      const now = new Date().toISOString()
-      setReadAtById(
-        Object.fromEntries(notifications.results.map(result => [result.id, result.read_at ?? now])),
-      )
+      setReadAtById(() => {
+        const now = new Date().toISOString()
+        return Object.fromEntries(
+          notifications.results.map(result => [result.id, result.read_at ?? now]),
+        )
+      })
     } catch {
       toast.error('Failed to mark notifications as read.')
     }

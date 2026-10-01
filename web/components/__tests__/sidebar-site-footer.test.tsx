@@ -10,6 +10,7 @@ describe('SidebarSiteFooter', () => {
     expect(footer).toContainElement(screen.getByRole('link', { name: 'About' }))
     expect(footer).toContainElement(screen.getByRole('link', { name: 'Copyright' }))
     expect(footer).toContainElement(screen.getByRole('link', { name: 'Stories' }))
+    expect(footer).toHaveTextContent(`${new Date().getFullYear()} Voucha`)
   })
 
   it('links support to the public support email address', () => {

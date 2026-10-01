@@ -17,11 +17,14 @@ relative path, following other PSQL tests without adding a `@data-stores/psql` â
 
 Route suites that jscpd reports together call one registrar from a literal `describe` in each
 test file. The registrars live next to this README: vote lists, scoped credential pagination,
-community claim and escalation routes, RSS feeds, landing-page analytics, and similarity search.
+community claim and escalation routes, mod-internal-thread routes, RSS feeds, landing-page analytics, similarity search, and topic referral and rewards program attributes.
 Community application and invite list GETs share
 [`registerCommunityListGetAuthTests`](../../../../backend/test-helpers/community-list-get-auth-tests.mts).
 The applications suite keeps private visibility on the moderator success case and the `apps-get-*`
 slug prefixes. The invites suite omits visibility and keeps the `invites-get-*` prefixes.
+Passkey and TOTP rename routes share
+[`auth-credential-rename-tests.mts`](../../../../backend/test-helpers/auth-credential-rename-tests.mts).
+Each file keeps its path, insert helper, suffix, and renamed label.
 Copyright email-intake and form-screening enqueue tests share
 [`copyright-agent-enqueue-recovery-tests.mts`](../../../../backend/test-helpers/copyright-agent-enqueue-recovery-tests.mts).
 Each file keeps its queue name, payload, and expected job options.
@@ -35,6 +38,10 @@ Crawl URL redirect suites share the injected fetch mocks, `crawlUrl` wrapper, te
 result fixture from
 [`services/crawls/crawl-url-redirect-harness.mts`](../../../../backend/test-helpers/services/crawls/crawl-url-redirect-harness.mts).
 Each file keeps its own cases.
+Facebook and X friend-sync batching tests share account setup, the deletion-fence page commit, and
+bounded stale-row cleanup in
+[`services/oauth/friends-batch-sync.mts`](../../../../backend/test-helpers/services/oauth/friends-batch-sync.mts).
+Each file keeps its `undici` `vi.mock` and that provider's page payload.
 Captcha route tests share the Turnstile fixture token from
 [`captcha/test-captcha-token.mts`](../../../../backend/test-helpers/captcha/test-captcha-token.mts). The Turnstile `fetch` mock
 factory stays in [`captcha/undici-mock.mts`](../../../../backend/test-helpers/captcha/undici-mock.mts); each consumer keeps its own
@@ -42,6 +49,9 @@ factory stays in [`captcha/undici-mock.mts`](../../../../backend/test-helpers/ca
 request reader, and `undici` fetch mock from
 [`lemmy-no-data-fixtures.mts`](../../../../backend/test-helpers/lemmy-no-data-fixtures.mts). Those
 tests keep the `.no-data.mock.test.mts` suffix so Vitest selects `backend-no-data-mocks`.
+Agent and manual community unpublish lock-order cases share
+[`expectUnpublishHoldsPublicationLockWhileWaitingOnReview`](../../../../backend/test-helpers/entities/community-post-review-publication-lock.mts).
+Each case keeps its title, slug prefix, review-lock SQL comment, member setup, unpublish call, and result assertion.
 
 ## `onceEntityListenerCompleted`
 

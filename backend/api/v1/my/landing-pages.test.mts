@@ -113,6 +113,34 @@ describe('Landing pages API', () => {
     ).toBe(true)
   })
 
+  it('gets, promotes, and deletes landing pages', async () => {
+    const request = createRequest()
+    await request.authenticateAs(user)
+    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const first = await request
+      .post('/api/v1/my/landing-pages')
+      .send({ title: 'First', slug: `first-${suffix}` })
+      .expect(201)
+    const second = await request
+      .post('/api/v1/my/landing-pages')
+      .send({ title: 'Second', slug: `second-${suffix}` })
+      .expect(201)
+    const firstId = first.body.landing_page.id as string
+    const secondId = second.body.landing_page.id as string
+
+    const fetched = await request.get(`/api/v1/my/landing-pages/${firstId}`).expect(200)
+    expect(fetched.body.landing_page.id).toBe(firstId)
+
+    const promoted = await request
+      .patch(`/api/v1/my/landing-pages/${secondId}`)
+      .send({ is_default: true })
+      .expect(200)
+    expect(promoted.body.landing_page.is_default).toBe(true)
+
+    await request.delete(`/api/v1/my/landing-pages/${firstId}`).expect(204)
+    await request.get(`/api/v1/my/landing-pages/${firstId}`).expect(404)
+  })
+
   it('lists candidates for the current user', async () => {
     const request = createRequest()
     await request.authenticateAs(user)

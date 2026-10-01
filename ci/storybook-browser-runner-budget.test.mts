@@ -108,7 +108,7 @@ describe('Storybook browser runner shared budget', () => {
       deps,
     )
 
-    child.stdout.emit('data', 'VITE v8.0.16 ready in 573 ms')
+    child.stdout.emit('data', 'VITE v0.0.0 ready in 573 ms')
     now = 175_000
     expect(timeouts[0].delay).toBe(175_000)
     timeouts[0].callback()

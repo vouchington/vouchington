@@ -103,8 +103,8 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 31 manifests, including the scheduler tombstone, and 83 live jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(31)
+  it('imports the exact 30 manifests and 83 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(30)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),

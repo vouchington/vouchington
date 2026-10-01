@@ -142,12 +142,9 @@ describe('tests-playwright.yml diagnostic upload conditions (issue #51)', () => 
   it('uploads JUnit, test-results, and wrangler logs on failure or a confirmed retry, never on a clean pass', () => {
     // A flaky test that fails then passes on retry makes the job exit 0, so a bare `failure()`
     // guard never fires for these three steps and nothing gets uploaded. But a bare
-    // `!cancelled()` reintroduces a different bug: cleanup-artifacts fans in whenever the whole
-    // run goes green and deletes these exact artifact names right back out, so a clean run
-    // would upload something only to have it deleted moments later. Gating on
-    // `failure() || retried == 'true'` means a clean run uploads nothing at all, while a failed
-    // or flaky-and-retried run still uploads and (per the cleanup-artifacts-patterns.json change
-    // in this same PR) survives the green-run cleanup sweep.
+    // `!cancelled()` would upload on every clean run. Gating on
+    // `failure() || retried == 'true'` keeps failed and flaky-and-retried evidence
+    // while avoiding unnecessary clean-run uploads.
     const shardJob = workflow.match(/\n {2}playwright-tests:[\s\S]*?(?=\n {2}[a-zA-Z0-9_-]+:\n|$)/)
     expect(shardJob).not.toBeNull()
     const body = shardJob![0]

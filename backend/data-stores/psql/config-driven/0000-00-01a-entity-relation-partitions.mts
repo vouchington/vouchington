@@ -1,6 +1,7 @@
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import { generateDefaultPartitions } from './utils/partition-utils.mts'
 
+/** @public loaded by path by the config-driven migration runner */
 export default () => {
   return createPostRelationPartitions()
 }

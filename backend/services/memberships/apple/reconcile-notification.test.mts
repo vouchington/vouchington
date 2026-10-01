@@ -265,7 +265,7 @@ function makeVerifier(
         appAccountToken: undefined,
         bundleId: fixture.applicationId,
         environment: Environment.SANDBOX,
-        expiresDate: Date.parse('2026-10-01T00:00:00.000Z'),
+        expiresDate: Math.floor(performance.timeOrigin) + 30 * 86_400_000, // per-run, future
         inAppOwnershipType: InAppOwnershipType.FAMILY_SHARED,
         originalTransactionId: fixture.providerLineageId,
         productId: fixture.providerProductId,

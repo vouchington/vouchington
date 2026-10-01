@@ -33,6 +33,9 @@ The registry consumes `@voucha/api-fixtures/v1/request-contracts.json`. Do not h
 artifact; regenerate it through the repository's API-contract tooling whenever an exposed request
 shape changes.
 
+The same file carries a `responses` map, which this registry ignores: only `operations` define
+request coverage. `@voucha/tools` reads `responses` to derive MCP output schemas.
+
 ## Adoption
 
 `@vouchington/request-contract-validation` compiles carriers, rejects duplicate header names, and

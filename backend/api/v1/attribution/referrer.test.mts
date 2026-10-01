@@ -112,7 +112,7 @@ describe('referrer', () => {
       expect(rows).toHaveLength(0)
     })
 
-    it('returns 400 if referrer is missing', async () => {
+    it('returns 422 if referrer is missing', async () => {
       const request = createRequest()
       const { deviceToken, sessionToken } = await createAnonymousSession()
       setSameOriginSessionCookies(request, deviceToken.token, sessionToken.token)
@@ -120,10 +120,10 @@ describe('referrer', () => {
       await request
         .post('/api/v1/attribution/referrer')
         .send({ landing_url: 'https://example.com/' })
-        .expect(400)
+        .expect(422)
     })
 
-    it('returns 400 if landing_url is missing', async () => {
+    it('returns 422 if landing_url is missing', async () => {
       const request = createRequest()
       const { deviceToken, sessionToken } = await createAnonymousSession()
       setSameOriginSessionCookies(request, deviceToken.token, sessionToken.token)
@@ -131,7 +131,7 @@ describe('referrer', () => {
       await request
         .post('/api/v1/attribution/referrer')
         .send({ referrer: referrer!.id })
-        .expect(400)
+        .expect(422)
     })
 
     it('returns 400 if landing_url is not a valid URL', async () => {

@@ -12,7 +12,7 @@ import {
   hasVitestTestFailureSignal,
   hasWebStackBuildFailureSignal,
 } from './runner-shutdown-fingerprints.mts'
-import { ciStorybookJobName, storybookJobName } from './storybook-shared.mts'
+import { ciStorybookJobName } from './storybook-shared.mts'
 
 // Marks the start of the shared build-web-targets composite action's log region. Not host-lock- or
 // runner-shutdown-specific; several consumers below and web-build-rules.mts key off it to find
@@ -22,9 +22,7 @@ export const buildWebTargetsStepMarker = '##[group]Run ./.github/actions/build-w
 export const backendUnitShardPattern = /^test-backend-unit \/ backend-tests \(\d+\)$/
 export const backendSmokeJobName = 'backend-smoke / smoke'
 export const backendCredentialedJobName = 'test-backend-credentialed / backend-credentialed-tests'
-export const mainChecksToolingJobName = 'tooling-tests / tooling'
 export const areaToolingJobName = 'test-tooling / tooling'
-export const staticWebJobName = 'static-checks / static-web'
 export const areaStaticWebJobName = 'static-web / static-web'
 export const webTestsShardPattern = /^test-web \/ web-tests \(\d+\)$/
 export const webApiShardPattern = /^test-web-api \/ web-api-tests \([1-9]\d*\)$/
@@ -37,8 +35,6 @@ export function isWebApiShardJob(jobName: string | undefined): boolean {
 export function isWebIntegrationShardJob(jobName: string | undefined): boolean {
   return typeof jobName === 'string' && webIntegrationShardPattern.test(jobName)
 }
-export const playwrightSelectJobName = 'playwright-tests / select'
-
 interface ConsumerEntry {
   matches: (jobName: string) => boolean
   isConsumerFailure: (log: string) => boolean
@@ -59,15 +55,15 @@ const consumers: ConsumerEntry[] = [
       !hasBackendCredentialedVitestStarted(log) || hasBackendCredentialedVitestFailure(log),
   },
   {
-    matches: name => name === mainChecksToolingJobName || name === areaToolingJobName,
+    matches: name => name === areaToolingJobName,
     isConsumerFailure: log => !hasToolingVitestStarted(log) || hasVitestTestFailureSignal(log),
   },
   {
-    matches: name => name === storybookJobName || name === ciStorybookJobName,
+    matches: name => name === ciStorybookJobName,
     isConsumerFailure: log => !hasStorybookVitestStarted(log) || hasVitestTestFailureSignal(log),
   },
   {
-    matches: name => name === staticWebJobName || name === areaStaticWebJobName,
+    matches: name => name === areaStaticWebJobName,
     isConsumerFailure: log =>
       !log.includes(buildWebTargetsStepMarker) ||
       hasWebStackBuildFailureSignal(log) ||

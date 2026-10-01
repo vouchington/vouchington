@@ -6,14 +6,17 @@ import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/cop
 
 const KILL_SWITCH_MESSAGE = 'Copyright intake is not available'
 
-// COPYRIGHT_INTAKE_ENABLED closes new claimant intake only (#1210). In-case responses carry
-// statutory clocks (§512(g) counter-notices and court/CCB filings, DSA and UK redress) and staff
-// decisions keep existing cases moving, so both stay open while intake is off.
+// COPYRIGHT_INTAKE_ENABLED closes new claimant intake only (#1210): the notice forms and staff
+// approval of an emailed notice, which would open a new case. Email is still ingested and reviewed
+// while it is off (#1443). In-case responses carry statutory clocks (§512(g) counter-notices and
+// court/CCB filings, DSA and UK redress) and the other staff decisions keep existing cases moving,
+// so both stay open.
 const routeClasses = {
   newIntake: [
     'POST:/api/v1/copyright-notices',
     'POST:/api/v1/copyright-eu-notices',
     'POST:/api/v1/copyright-uk-notices',
+    'POST:/api/v1/copyright-email-intakes/:id/approvals',
   ],
   inCaseResponse: [
     'POST:/api/v1/copyright-notices/:id/appeals',
@@ -24,7 +27,6 @@ const routeClasses = {
     'POST:/api/v1/copyright-uk-notices/:id/redress-requests',
   ],
   staff: [
-    'POST:/api/v1/copyright-email-intakes/:id/approvals',
     'POST:/api/v1/copyright-email-intakes/:id/correspondence',
     'POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections',
     'POST:/api/v1/copyright-email-intakes/:id/rejections',

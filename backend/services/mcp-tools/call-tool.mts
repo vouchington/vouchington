@@ -6,7 +6,8 @@ import type { ApiScope } from '@modules/scopes'
 import type { ToolInvocationContext } from '@voucha/tools/types'
 import { resolveMcpToolCall, type McpToolCallResolution } from './resolve-tool-call.mts'
 import { validateToolArguments } from './validate-tool-arguments.mts'
-import { McpToolResultTooLargeError, serializeMcpToolResult } from './serialize-mcp-tool-result.mts'
+import { buildToolResult } from './build-tool-result.mts'
+import { McpToolResultTooLargeError } from './serialize-mcp-tool-result.mts'
 
 export {
   MAX_MCP_TOOL_RESULT_BYTES,
@@ -43,9 +44,7 @@ export async function callMcpTool(
       grantedScopes: permissions,
     }
     const result = await tool.function(user)(args as never, invocationContext)
-    return {
-      content: [{ type: 'text', text: serializeMcpToolResult(result) }],
-    }
+    return buildToolResult(toolName, result, tool.meta?.outputSchema)
   } catch (err) {
     // An oversized result is fixed by asking for less, so it goes back to the caller unreported.
     if (err instanceof McpToolResultTooLargeError) {

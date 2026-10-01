@@ -17,7 +17,9 @@
       "types": "./*.mts",
       "import": "./*.mts",
       "default": "./*.mts"
-    }
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
   },
   "scripts": {},
   "dependencies": {
@@ -33,7 +35,8 @@
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
-    "oxfmt": "^0.70.0",
-    "vouchington-tooling": "^0.24.1"
+    "oxfmt": "^0.71.0",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "vouchington-tooling": "^0.26.0"
   }
 }

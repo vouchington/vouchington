@@ -1,53 +1,26 @@
-import { it, expect, beforeAll, describe } from 'vitest'
-
+import { beforeAll, describe, expect, it } from 'vitest'
 import { createPost } from '../create.mts'
-
 import { getPostByAny } from '../get.mts'
-
 import { getPostIds } from '../search/get-ids.mts'
-
 import { canViewPost } from '../check-privacy-access.mts'
-
-import { followUser } from '@voucha/test-helpers/entities/test-entities'
-
-import { insertTestPost } from '@voucha/test-helpers/entities/posts'
-
-import type { PrivateUser } from '@services/users/types'
-
+import { createBroadcastPrivacyAudience } from '@voucha/test-helpers/entities/broadcast-privacy-audience'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
-
-import { updatePost } from '../update.mts'
-
 import { approveTestPost } from '@voucha/test-helpers/entities/post-clearance'
-
 import {
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers/entities/communities'
-
 import { getCommunityPostReview } from '@services/communities/publications/get'
+import type { PrivateUser } from '@services/users/types'
 
 describe('create.broadcast-privacy', () => {
   let creator: PrivateUser
-
-  let follower: PrivateUser
-
-  let mutualFollower: PrivateUser
-
   let stranger: PrivateUser
 
   beforeAll(async () => {
-    creator = await createTestUser()
-    follower = await createTestUser()
-    mutualFollower = await createTestUser()
-    stranger = await createTestUser()
-
-    // follower follows creator (one-way)
-    await followUser(follower, creator)
-
-    // mutual follow between mutualFollower and creator
-    await followUser(mutualFollower, creator)
-    await followUser(creator, mutualFollower)
+    const audience = await createBroadcastPrivacyAudience()
+    creator = audience.creator
+    stranger = audience.stranger
   })
 
   describe('create post with broadcast/privacy', () => {
@@ -284,7 +257,4 @@ describe('create.broadcast-privacy', () => {
       await expect(canViewPost(creator, approvedPost)).resolves.toBe(false)
     })
   })
-  // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof insertTestPost)
-  void (0 as unknown as typeof updatePost)
 })

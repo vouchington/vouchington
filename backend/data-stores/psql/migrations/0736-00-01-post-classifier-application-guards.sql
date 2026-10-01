@@ -39,6 +39,7 @@ BEGIN
         NEW.local_detector_model_version)
     ))
     OR OLD.provider_attempts_started > NEW.provider_attempts_started
+    OR OLD.sweep_enqueue_count > NEW.sweep_enqueue_count
     OR (OLD.terminal_remote_failed_at IS NOT NULL AND (
       OLD.terminal_remote_failed_at IS DISTINCT FROM NEW.terminal_remote_failed_at
       OR OLD.terminal_remote_failure_kind IS DISTINCT FROM NEW.terminal_remote_failure_kind

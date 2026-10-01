@@ -9,6 +9,7 @@ export function sharedParentUuidv7(parentTable: string) {
 
 export const RETAINED_ID_POLICIES = [
   ['retained_user_identities', sharedParentUuidv7('users')],
+  ['retained_api_key_identities', sharedParentUuidv7('api_keys')],
   ['retained_topic_identities', sharedParentUuidv7('topics')],
   ['retained_post_identities', sharedParentUuidv7('posts')],
   ['retained_rss_feed_item_identities', sharedParentUuidv7('rss_feed_items')],

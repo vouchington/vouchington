@@ -21,14 +21,13 @@ type Job = {
 type Workflow = { jobs?: Record<string, Job> }
 
 const workflow = load(readFileSync('.github/workflows/main-storybook.yml', 'utf8')) as Workflow
-const reusableWorkflow = readFileSync('.github/workflows/storybook.yml', 'utf8')
-
 describe('Main Storybook workflow', () => {
-  it('publishes one protected attempt-bound artifact only after Storybook tests succeed', () => {
+  it('builds and publishes one protected attempt-bound artifact without rerunning Storybook tests', () => {
     const publish = workflow.jobs?.['publish-storybook']
 
-    expect(publish?.needs).toEqual(['storybook-build'])
-    expect(publish?.if).toContain("needs.storybook-build.result == 'success'")
+    expect(Object.keys(workflow.jobs ?? {})).toEqual(['publish-storybook'])
+    expect(publish?.needs).toBeUndefined()
+    expect(publish?.if).toBeUndefined()
     expect(publish?.['runs-on']).toBe('ubuntu-latest')
     expect(publish?.permissions).toEqual({ contents: 'read' })
 
@@ -51,10 +50,8 @@ describe('Main Storybook workflow', () => {
     })
   })
 
-  it('keeps the reusable Storybook test workflow free of the trusted deployment artifact', () => {
-    expect(reusableWorkflow).not.toContain(
-      'storybook-${{ github.run_id }}-${{ github.run_attempt }}',
-    )
-    expect(reusableWorkflow).not.toContain('delivery/storybook')
+  it('does not call the reusable Storybook validation workflow', () => {
+    const source = readFileSync('.github/workflows/main-storybook.yml', 'utf8')
+    expect(source).not.toContain('uses: ./.github/workflows/storybook.yml')
   })
 })

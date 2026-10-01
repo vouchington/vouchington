@@ -5,6 +5,7 @@
  */
 import { VOTE_SCHEMA_CONFIGS } from './utils/election-schema-config.mts'
 
+/** @public loaded by path by the config-driven migration runner */
 export default function generateHostnameElectionsIndexes(): string {
   // Verify url_hostnames has elections configured so the vote columns exist.
   const hostnameConfig = VOTE_SCHEMA_CONFIGS.find(c => c.entityTable === 'url_hostnames')

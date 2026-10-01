@@ -2,13 +2,7 @@
 // cleanup-artifacts.mts — deletes intermediate GitHub Actions artifacts so the account
 // stays under its billed Actions storage cap.
 //
-// Subcommands:
-//
-//   run --run-id <id>
-//     Deletes every non-expired, delete-classified artifact produced by one workflow
-//     run. Intended to run from the producing workflow's terminal success fan-in,
-//     after every same-run artifact consumer has finished — see
-//     .github/workflows/cleanup-artifacts.yml.
+// Subcommand:
 //
 //   sweep --older-than-hours <n>
 //     Paginates the repo's full artifact list (newest-first) and deletes delete-
@@ -19,13 +13,12 @@
 // Never fails the calling workflow step: per-artifact errors are logged and skipped,
 // and this script always exits 0 (the workflow step also sets continue-on-error).
 
-import { runCleanup, sweepCleanup } from './cleanup-artifacts-commands.mts'
+import { sweepCleanup } from './cleanup-artifacts-commands.mts'
 import type { DeletionSummary } from './cleanup-artifacts-plan.mts'
 
 function usage(): string {
   return [
-    'Usage: cleanup-artifacts.mts run --run-id <id>',
-    '       cleanup-artifacts.mts sweep --older-than-hours <n>',
+    'Usage: cleanup-artifacts.mts sweep --older-than-hours <n>',
     '',
     'Requires GITHUB_TOKEN or GH_TOKEN and GITHUB_REPOSITORY (owner/repo) in the env.',
   ].join('\n')
@@ -51,23 +44,13 @@ export async function main(
   const token = env.GITHUB_TOKEN ?? env.GH_TOKEN
   const repo = env.GITHUB_REPOSITORY
 
-  if (subcommand !== 'run' && subcommand !== 'sweep') {
+  if (subcommand !== 'sweep') {
     console.error(usage())
     return 2
   }
   if (!token || !repo) {
     console.error('[cleanup-artifacts] missing GITHUB_TOKEN/GH_TOKEN or GITHUB_REPOSITORY')
     return 0 // Never fail the calling workflow step for a missing-secret misconfiguration.
-  }
-
-  if (subcommand === 'run') {
-    const runId = flagValue(rest, '--run-id')
-    if (!runId) {
-      console.error(usage())
-      return 2
-    }
-    logSummary('run', await runCleanup(repo, token, runId))
-    return 0
   }
 
   const olderThanHoursRaw = flagValue(rest, '--older-than-hours')?.trim()

@@ -16,24 +16,16 @@ describe('main workflow permissions', () => {
     const main = workflow('main-cloudflare-worker')
 
     expect(main.permissions).toEqual({ contents: 'read' })
-    expect(main.jobs?.['cloudflare-worker-tests']?.permissions).toEqual({
-      actions: 'read',
-      contents: 'read',
-    })
     expect(main.jobs?.['publish-cloudflare-worker']?.permissions).toEqual({
       contents: 'read',
     })
     expect(main.jobs?.dispatch).toBeUndefined()
   })
 
-  it('keeps Lambda OIDC access off the test job', () => {
+  it('keeps Lambda publication read-only', () => {
     const main = workflow('main-lambdas')
 
     expect(main.permissions).toEqual({ contents: 'read' })
-    expect(main.jobs?.['lambdas-tests']?.permissions).toEqual({
-      actions: 'read',
-      contents: 'read',
-    })
     expect(main.jobs?.['publish-image-resize']?.permissions).toEqual({ contents: 'read' })
     expect(main.jobs?.dispatch).toBeUndefined()
   })

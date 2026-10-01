@@ -3,6 +3,7 @@ import onError from '@modules/on-error'
 import {
   createMcpCallAuditContext,
   recordMcpCallAudit,
+  type McpCallAuditCredential,
   type McpCallAuditEvent,
   type McpCallAuditOutcome,
   type McpServerConfig,
@@ -21,15 +22,16 @@ export function unreadMcpCall(outcome: McpCallAuditOutcome): McpCallAuditEvent {
   return { jsonrpcMethod: null, toolName: null, outcome }
 }
 
-// Only a verified OAuth principal has the actor and client the audit needs, so an unauthenticated
-// request never writes a row. Returns null on a surface that does not audit calls.
+// Only a verified credential (an OAuth access token, or an API key on a surface that accepts them)
+// has the actor and credential identity the audit needs, so an unauthenticated request never writes
+// a row. Returns null on a surface that does not audit calls.
 export function startMcpRequestAudit(
   ctx: Context,
   config: McpServerConfig,
-  principal: { ownerId: string; oauthClientId: string | null },
+  principal: { ownerId: string; credential: McpCallAuditCredential },
 ): McpRequestAudit | null {
-  if (!config.auditCalls || principal.oauthClientId === null) return null
-  const context = createMcpCallAuditContext(config, principal.ownerId, principal.oauthClientId)
+  if (!config.auditCalls) return null
+  const context = createMcpCallAuditContext(config, principal.ownerId, principal.credential)
   ctx.set('X-Correlation-Id', context.correlationId)
   return {
     async record(events) {

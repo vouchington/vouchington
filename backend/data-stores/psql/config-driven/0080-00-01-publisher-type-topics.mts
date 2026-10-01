@@ -71,6 +71,7 @@ UNION ALL
 SELECT id FROM inserted_topic;`
 }
 
+/** @public loaded by path by the config-driven migration runner */
 export default function generatePublisherTypeTopicsSQL(): string {
   const parts: string[] = ['-- Seed publisher type topics']
   const topics = [PARENT, ...CHILDREN]

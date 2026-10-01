@@ -7,6 +7,7 @@ Endpoints for managing the current user's personal data: identity, profile, noti
 ## Contents
 
 - <a id="endpoints"></a>[Endpoints](reference-endpoints.md)
+- <a id="request-validation"></a>[Request Validation](reference-request-validation.md)
 - <a id="get-apiv1myrewards-program-statuses"></a>[GET /api/v1/my/rewards-program-statuses](reference-get-api-v1-my-rewards-program-statuses.md)
 - <a id="patch-apiv1myidentity"></a>[PATCH /api/v1/my/identity](reference-patch-api-v1-my-identity.md)
 - <a id="post-apiv1mycards"></a>[POST /api/v1/my/cards](reference-post-api-v1-my-cards.md)

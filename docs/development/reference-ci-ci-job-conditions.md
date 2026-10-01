@@ -27,11 +27,12 @@ load their images locally rather than publishing runtime artifacts.
 
 The same reusable workflows publish the smoke-tested and scanned images from trusted merge-group
 runs. Main reuses each image whose attestation verifies, fails when a present image does not verify,
-and builds and publishes only the targets whose manifest is missing. The
-shared runtime-image path filters select both merge-group publication and main deployment intent;
-test-only and documentation-only main runs keep their validation coverage without requesting an
-image fallback or completed-deploy dispatch.
+and builds and publishes only the targets whose manifest is missing. The shared runtime-image path
+filters select both merge-group publication and main deployment intent. A main run whose diff
+touches no runtime-image input stops after that detection, without an image fallback or
+completed-deploy dispatch; the area workflows already validated that revision in the merge queue,
+and [Nightly](../../.github/workflows/nightly.yml) reruns every area at the main tip.
 
 Main workflows retain their own path-scoped triggers and completed-run deployment receiver. They
-are not a continuation of pull-request or merge-group CI. See [area test suites](ci.md#area-test-suites)
+publish only and do not rerun pull-request or merge-group test suites. See [area test suites](ci.md#area-test-suites)
 and [coverage gates](reference-ci-coverage-gates.md) for the detailed contracts.

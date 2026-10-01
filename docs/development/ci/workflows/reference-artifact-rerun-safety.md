@@ -13,10 +13,10 @@ without the full LCOV evidence its patch rules need. Codecov receives the same f
 informational evidence; it is never a required check.
 
 Artifact names in workflows and composite actions must remain classified `keep` or `delete` in
-[`ci/cleanup-artifacts-patterns.json`](../../../../ci/cleanup-artifacts-patterns.json). The same-run
-cleanup runs only after the relevant main-branch producer and its required consumers succeed or
-legitimately skip. Pull-request workflows do not get `actions: write` for cleanup, because their
-workflow definition is PR-controlled; their artifacts expire naturally.
+[`ci/cleanup-artifacts-patterns.json`](../../../../ci/cleanup-artifacts-patterns.json). The trusted
+scheduled/manual sweep removes delete-classified artifacts from successful or cancelled runs only
+after its age threshold; failed-run evidence remains until GitHub expiration. Pull-request
+workflows do not get `actions: write` for cleanup because their definitions are PR-controlled.
 
 Keep required producer-consumer handoffs visible to the workflow topology model. It resolves only
 same-run jobs, including local reusable workflows. Inspect the result with `pnpm run ci:topology`.

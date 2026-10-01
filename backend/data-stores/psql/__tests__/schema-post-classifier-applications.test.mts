@@ -118,6 +118,35 @@ describe('post classifier application schema', () => {
     await expect(fixture.clearTerminalFailure()).rejects.toMatchObject({ code: '23514' })
   })
 
+  it.each([
+    'provider-error',
+    'invalid-result',
+    'context-rejected',
+    'attempts-exhausted',
+    'client-unavailable',
+    'sweep-bound-exceeded',
+  ])('accepts %s as a terminal remote failure kind', async kind => {
+    const classifier = await createClassifierFixture()
+    const batch = await classifier.createTopicBatch()
+    const fixture = await createFixture({
+      postId: classifier.postId,
+      decisionBatchId: batch.batchId,
+    })
+
+    await expect(fixture.markTerminalFailure(kind)).resolves.toMatchObject({ rowCount: 1 })
+  })
+
+  it('keeps the sweep enqueue counter non-negative and monotone', async () => {
+    const fixture = await createFixture()
+    expect((await fixture.read())?.sweep_enqueue_count).toBe(0)
+
+    await expect(fixture.setSweepEnqueueCount(-1)).rejects.toMatchObject({ code: '23514' })
+    await fixture.setSweepEnqueueCount(3)
+    await fixture.setSweepEnqueueCount(3)
+    await expect(fixture.setSweepEnqueueCount(2)).rejects.toMatchObject({ code: '23514' })
+    expect((await fixture.read())?.sweep_enqueue_count).toBe(3)
+  })
+
   it('keeps terminal remote failure exclusive of committed results and effect phases', async () => {
     const classifier = await createClassifierFixture()
     const batch = await classifier.createTopicBatch()

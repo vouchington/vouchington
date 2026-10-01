@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       otel_enabled:
-        description: 'Whether Playwright web servers should export OTel traces/logs for main CI observability'
+        description: 'Whether Playwright web servers should export OTel traces/logs for opt-in diagnostics'
         type: boolean
         required: false
         default: false
@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       otel_enabled:
-        description: 'Export OTel traces/logs for this manual run (default off; see PLAYWRIGHT_OTEL_ENABLED for the main CI default)'
+        description: 'Export OTel traces/logs for this manual run (default off)'
         type: boolean
         required: false
         default: false
@@ -236,12 +236,8 @@ jobs:
           retention-days: 1
           if-no-files-found: warn
       - name: Upload JUnit test results
-        # cleanup-artifacts (main-checks.yml/main-web.yml) fans in on the *whole run* going
-        # green, so a flaky test that fails then passes on retry -- exactly the case this
-        # upload exists to capture -- makes cleanup delete it right back out from under a
-        # bare `!cancelled()`. Gate on an actual failure or a confirmed retry (the
-        # `run-playwright` step's `retried` output) instead, so a clean run uploads nothing
-        # at all and has nothing for cleanup to race.
+        # Retain failed and flaky-then-passed evidence, but avoid uploads on clean runs.
+        # The `run-playwright` step reports confirmed retries through `retried`.
         if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}
         timeout-minutes: 1
         continue-on-error: true

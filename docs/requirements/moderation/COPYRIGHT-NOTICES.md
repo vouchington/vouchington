@@ -10,9 +10,13 @@ enabled until CAPTCHA, agent recovery, notification, reversible-media, staff UI,
 evidence-storage dependencies are deployed and the activation checklist below is complete.
 The flag controls only new claimant intake and new agent disclosure. While it is off, one shared
 guard returns 503 from the three new-intake routes: the signed-in and guest form
-(`POST /api/v1/copyright-notices`) and EU and UK notice submission. Every designated-agent email,
-including a reply on an existing case, enters through email intake, so the SES worker leaves inbound
-mail unprocessed in storage until the switch is on again and staff watch that inbox directly (see the
+(`POST /api/v1/copyright-notices`) and EU and UK notice submission. It also guards staff approval of
+an emailed notice (`POST /api/v1/copyright-email-intakes/:id/approvals`), because approval opens a
+new case, and it keeps the AI email-intake recommendation job from running. Every designated-agent
+email, including a reply on an existing case, is still ingested, parsed, and queued for staff while
+the flag is off, so no message waits unseen in storage. Staff can reject an email or record a
+matched reply as correspondence, and an email ingested during the pause receives its recommendation
+after the switch is turned on unless staff already decided it (see the
 [runbook](../../runbooks/copyright-notices.md#intake-activation)). Disabling intake must never hide accepted complaints or
 interrupt an existing case's staff review, appeal, counter-notice, court or CCB filing, correction,
 withdrawal, EU or UK redress, hold, delivery, enforcement, or restoration obligations. Those in-case
@@ -55,6 +59,14 @@ checklist with gaps, risk notes (possible fair use, abuse signals, mismatched cl
 suggested action. The model sees no claimant contact details, email, address, or signature text.
 The staff case labels it "AI guidance — not a decision"; no workflow predicate reads it, so it
 never creates an assessment or restriction.
+
+The staff case keeps the screening and guidance after a moderator records the intake review, so a
+later reviewer of a restriction, appeal, or counter-notice sees what the intake reviewer saw. The
+case's `form_review.review` is null while the intake awaits a decision. Once decided it holds the
+`accepted` decision, `reviewed_at`, and `reviewed_by_id`, which is null after the reviewer's
+account is erased. The moderator's rationale is not part of that projection. Only an unreviewed
+intake offers the approve and reject actions; the intake review reason still leaves the queue once
+the decision is recorded.
 
 Restriction admission and screening start serialize under the form fence. A restriction admitted
 first stays effective, including before its action delivery runs. A newer pending attempt blocks
@@ -153,7 +165,8 @@ Lifecycle events hold one typed source reference per event (except the case-leve
 with a concrete foreign key and database-checked same-case ownership. Action events point to the
 action intent, which owns its restriction; legal-hold target membership remains in the assessment's
 child rows. Review outcomes, encrypted rationale, recovery origin, and replay reason are typed columns,
-not a JSON relationship envelope. Member timelines still project only event type and timestamp.
+not a JSON relationship envelope. Timelines project only event type and timestamp, filtered by
+audience (see Member and staff surfaces).
 
 ## Submission and evidence integrity
 
@@ -218,10 +231,24 @@ snapshot. A target reference is returned only when that viewer may otherwise see
 
 `/copyright/notices` and `/copyright/notices/:id` require authentication. They list only accepted
 US cases and project case identifier, dates, target URL, restriction state, a metadata-free
-lifecycle timeline, and the claimant's current public profile when one exists. They never expose
-legal claimant or poster identity, email, mailing address, signature, raw email, evidence artifacts,
-encrypted fields, moderator rationale, or agent recommendation. A guest or erased claimant has no
-member-visible profile link.
+allowlisted lifecycle timeline, and the claimant's current public profile when one exists. They
+never expose legal claimant or poster identity, email, mailing address, signature, raw email,
+evidence artifacts, encrypted fields, moderator rationale, or agent recommendation. A guest or
+erased claimant has no member-visible profile link.
+
+The timeline is an audience allowlist decided per event type in
+`backend/services/copyright-notices/timeline-visibility.mts`, and a database-backed test fails when
+a lifecycle event type has no decision. Any signed-in member sees only case-facing events: notice
+received, provisional restriction imposed, placement withheld and restored, appeal received and
+reviewed, counter-notice received and reviewed, and withdrawal received. A case's claimant or an
+affected poster, through `/copyright/notices/:id/participant`, sees the same events. Staff receive
+the unfiltered timeline through that participant read model only. A received court or CCB hold,
+supplements, counter-notice deadline starts, restoration and placement-retention internals,
+submission and legal-hold assessments, human-review completion, evidence and correspondence
+handling, action, delivery, and registry replays, and every guest-capability event are staff-only.
+Whether a poster may see a received court or CCB hold, which explains why restoration did not
+happen, is an open owner and counsel decision. A new event type stays invisible to members and
+participants until it is added to the allowlist.
 
 A guest who is not signed in acts only with a hashed, expiring, revocable capability for one case.
 Staff issue that token once, with an expiry no more than 30 days after issue. The capability records

@@ -15,7 +15,9 @@
       "types": "./*.mts",
       "import": "./*.mts",
       "default": "./*.mts"
-    }
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
   },
   "scripts": {},
   "dependencies": {
@@ -39,7 +41,6 @@
     "@queues/language-detection": "workspace:^",
     "@queues/openai-moderation": "workspace:^",
     "@queues/unfurl-referral-links": "workspace:^",
-    "@queues/wikipedia-recommender": "workspace:^",
     "@workers/ai-agents": "workspace:^",
     "@workers/bedrock-embeddings": "workspace:^",
     "@workers/bedrock-embeddings-batch": "workspace:^",

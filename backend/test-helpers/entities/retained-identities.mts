@@ -6,6 +6,7 @@ import {
 
 const ROOT_TABLES = {
   user: 'retained_user_identities',
+  api_key: 'retained_api_key_identities',
   topic: 'retained_topic_identities',
   post: 'retained_post_identities',
   rss_feed_item: 'retained_rss_feed_item_identities',

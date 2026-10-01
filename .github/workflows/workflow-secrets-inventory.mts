@@ -46,14 +46,6 @@ export interface SecretInventoryEntry {
 }
 
 export const SECRET_INVENTORY = {
-  AWS_OTEL_STORE_ROLE_ARN: {
-    provisioned: true,
-    notes: 'AWS role used only for optional Playwright telemetry storage (repo secret).',
-  },
-  AWS_OTEL_STORE_URI: {
-    provisioned: true,
-    notes: 'S3 prefix used only for optional Playwright telemetry storage (repo secret).',
-  },
   AWS_TEST_ROLE_ARN: {
     provisioned: true,
     notes: 'AWS role used by credentialed tests and validation builds (repo secret).',

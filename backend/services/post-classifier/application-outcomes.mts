@@ -12,16 +12,11 @@ import {
   type PostClassifierApplicationLease,
 } from './application-identity.mts'
 import { assertRemoteInputCandidates } from './application-input-validation.mts'
-
-export type PostClassifierLocalOutcome = {
-  flagged: boolean
-  reason: string
-  confidenceScore: number
-  confidenceThreshold: number
-  classification: 'ai' | 'human'
-  detector: string
-  detectorModelVersion: string
-}
+import {
+  assertLocalOutcome,
+  localOutcomeAssignments,
+  type PostClassifierLocalOutcome,
+} from './application-local-outcome.mts'
 
 export type PersistPostClassifierOutcomesInput = {
   lease: PostClassifierApplicationLease
@@ -61,18 +56,14 @@ export async function persistPostClassifierOutcomesWithQuery(
     assertPersistedDecisionMatchesConfiguration(lease, persisted.decision)
   }
 
-  await query(sql`/* persistPostClassifierApplicationOutcomes */
+  await query(
+    sql`/* persistPostClassifierApplicationOutcomes */
     UPDATE post_classifier_applications
-    SET local_flagged = ${input.localOutcome?.flagged ?? null},
-      local_reason = ${input.localOutcome?.reason ?? null},
-      local_confidence_score = ${input.localOutcome?.confidenceScore ?? null},
-      local_confidence_threshold = ${input.localOutcome?.confidenceThreshold ?? null},
-      local_classification = ${input.localOutcome?.classification ?? null},
-      local_detector = ${input.localOutcome?.detector ?? null},
-      local_detector_model_version = ${input.localOutcome?.detectorModelVersion ?? null},
+    SET `.append(localOutcomeAssignments(input.localOutcome)).append(sql`,
       outcomes_persisted_at = clock_timestamp()
     WHERE post_id = ${lease.postId} AND id = ${lease.applicationId}
-  `)
+  `),
+  )
   return 'persisted'
 }
 
@@ -127,29 +118,6 @@ export function assertPersistedDecisionMatchesConfiguration(
       throw new Error('post classifier remote decision lineage does not match its receipt')
     }
     seen.add(key)
-  }
-}
-
-function assertLocalOutcome(
-  lease: PostClassifierApplicationLease,
-  outcome: PostClassifierLocalOutcome | undefined,
-): void {
-  const local = lease.resolved.configuration.local
-  if (!local) {
-    if (outcome) throw new Error('post classifier local outcome is not enabled by its receipt')
-    return
-  }
-  if (!outcome) throw new Error('post classifier local outcome is required by its receipt')
-  if (
-    !Number.isFinite(outcome.confidenceScore) ||
-    outcome.confidenceScore < 0 ||
-    outcome.confidenceScore > 1 ||
-    outcome.confidenceThreshold !== local.confidenceThreshold ||
-    !outcome.reason ||
-    !outcome.detector ||
-    !outcome.detectorModelVersion
-  ) {
-    throw new Error('post classifier local outcome does not match its receipt')
   }
 }
 

@@ -11,7 +11,7 @@ import { admitRouteContribution, executePreparedContribution } from '@services/c
 import { CONTRIBUTION_ADMISSION_IN_PROGRESS } from '@modules/on-error/error-codes'
 import { getUserActivePlan } from '@services/memberships'
 import { assertNotSuspended } from '@services/users'
-import { requireAuthAndRateLimit } from '../../response-helpers.mts'
+import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { apiHeaders } from '../../response-contract.mts'
 
 /**
@@ -53,6 +53,10 @@ app.route('/api/v1/stories/:storyId/discussions').post(async (ctx: Context) => {
     'POST:/api/v1/stories/:storyId/discussions',
   )
   assertNotSuspended(currentUser)
+  validateRequestContract(ctx, 'POST:/api/v1/stories/:storyId/discussions', {
+    path: ctx.params,
+    header: ctx.req.headers,
+  })
 
   const storyId = ctx.params.storyId!
   ctx.assert(isUUID(storyId), 400, 'Invalid story ID')

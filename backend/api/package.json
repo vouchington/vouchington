@@ -37,7 +37,9 @@
       "types": "./*.mts",
       "import": "./*.mts",
       "default": "./*.mts"
-    }
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
   },
   "scripts": {},
   "dependencies": {
@@ -120,7 +122,6 @@
     "@queues/user-rss-feed-imports": "workspace:^",
     "@queues/vote-integrity": "workspace:^",
     "@queues/vote-weight": "workspace:^",
-    "@queues/wikipedia-recommender": "workspace:^",
     "@services/account-data-requests": "workspace:^",
     "@services/admin-imports": "workspace:^",
     "@services/agents": "workspace:^",

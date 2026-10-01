@@ -10,12 +10,16 @@ import type {
   loadSesInboundObjectVersion,
 } from './s3.mts'
 import { SesInboundTerminalError, type ParsedSesInboundEmail } from './mime.mts'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { processSesInboundEmail, reconcileSesInboundEmails } from '../processors.mts'
 
 vi.mock<typeof import('mailparser')>(import('mailparser'), async importOriginal => importOriginal())
 
-describe('SES copyright inbound routing', () => {
-  it('reconciles every copyright evidence page while intake is enabled', async () => {
+// The intake switch gates decisions, not ingest (#1443): every test below runs with it off.
+describe('SES copyright inbound routing while intake is switched off', () => {
+  useCopyrightIntakeEnvironment({ enabled: false })
+
+  it('reconciles every copyright evidence page', async () => {
     const listCopyrightObjects = vi
       .fn<
         (
@@ -34,7 +38,6 @@ describe('SES copyright inbound routing', () => {
 
     await expect(
       reconcileSesInboundEmails({
-        isCopyrightIntakeEnabled: () => true,
         listCopyrightSesInboundObjects: listCopyrightObjects,
         enqueueOrRetryBulkSesInboundProcess: enqueueOrRetry,
       }),
@@ -58,27 +61,7 @@ describe('SES copyright inbound routing', () => {
     ])
   })
 
-  it('does not scan copyright evidence while intake is disabled', async () => {
-    const listCopyrightObjects = vi.fn<() => Promise<{ objectKeys: string[] }>>()
-    const enqueueOrRetry = vi.fn<() => Promise<number>>().mockResolvedValue(0)
-
-    await expect(
-      reconcileSesInboundEmails({
-        isCopyrightIntakeEnabled: () => false,
-        listCopyrightSesInboundObjects: listCopyrightObjects,
-        enqueueOrRetryBulkSesInboundProcess: enqueueOrRetry,
-      }),
-    ).resolves.toEqual({ enqueued: 0 })
-
-    expect(listCopyrightObjects).not.toHaveBeenCalled()
-    expect(enqueueOrRetry).not.toHaveBeenCalled()
-  })
-
-  it('preserves the raw email before source cleanup and awaits agent enqueue', async () => {
-    vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
-    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
-    vi.stubEnv('SES_COPYRIGHT_SOURCE_EMAIL', 'copyright@voucha.ai')
-    vi.stubEnv('SES_COPYRIGHT_REPLY_TO', 'copyright@voucha.ai')
+  it('ingests a notice and a reply, preserving the raw email before source cleanup', async () => {
     const data = {
       sesMessageId: 'ses-copyright-message',
       objectKey: 'copyright-incoming/ses-copyright-message',
@@ -186,11 +169,9 @@ describe('SES copyright inbound routing', () => {
       deleteSesInboundObject: deleteObject,
     })
     expect(enqueue).toHaveBeenCalledTimes(2)
-    vi.unstubAllEnvs()
   })
 
   it('keeps malformed MIME as a staff-visible failed intake before cleanup', async () => {
-    vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
     const data = {
       sesMessageId: 'ses-malformed-copyright',
       objectKey: 'copyright-incoming/ses-malformed-copyright',
@@ -240,6 +221,5 @@ describe('SES copyright inbound routing', () => {
     })
     expect(enqueue).not.toHaveBeenCalled()
     expect(deleteObject).toHaveBeenCalledWith(data.objectKey)
-    vi.unstubAllEnvs()
   })
 })

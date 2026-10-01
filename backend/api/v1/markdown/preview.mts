@@ -1,7 +1,10 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import renderMarkdown from '@services/markdown'
-import { parseJsonBody, requireAuth } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
+
+/** Closed request body for `POST /api/v1/markdown/preview`; a missing field previews as empty. */
+type MarkdownPreviewBody = { markdown?: string }
 
 /**
  * POST /api/v1/markdown/preview
@@ -19,8 +22,9 @@ import { parseJsonBody, requireAuth } from '../../response-helpers.mts'
 app.route('/api/v1/markdown/preview').post(async (ctx: Context) => {
   await requireAuth(ctx, 'POST:/api/v1/markdown/preview')
 
-  const body = await parseJsonBody<{ markdown?: unknown }>(ctx, '32kb')
-  const markdown = typeof body.markdown === 'string' ? body.markdown : ''
+  const body = await parseJsonBody<MarkdownPreviewBody>(ctx, '32kb')
+  validateRequestContract(ctx, 'POST:/api/v1/markdown/preview', { body })
+  const markdown = body.markdown ?? ''
 
   const html = await renderMarkdown(markdown, {
     allowHtml: false,

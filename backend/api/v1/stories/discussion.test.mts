@@ -72,10 +72,27 @@ describe('discussion', () => {
       await request.post(`/api/v1/stories/${story.id}/discussions`).expect(401)
     })
 
+    it('returns 401 without a validation diagnostic for a malformed unauthenticated call', async () => {
+      const response = await createRequest()
+        .post('/api/v1/stories/not-a-uuid/discussions')
+        .set('Idempotency-Key', 'not-a-uuid')
+        .expect(401)
+      expect(response.body.message).toBe('Unauthorized')
+    })
+
     it('returns 400 for invalid UUID', async () => {
       const request = createRequest()
       await request.authenticateAs(user)
       await request.post('/api/v1/stories/not-a-uuid/discussions').expect(400)
+    })
+
+    it('returns 422 for a malformed Idempotency-Key before any story lookup', async () => {
+      const request = createRequest()
+      await request.authenticateAs(user)
+      await request
+        .post(`/api/v1/stories/${randomUUID()}/discussions`)
+        .set('Idempotency-Key', 'not-a-uuid')
+        .expect(422)
     })
 
     it('returns 404 for unknown story', async () => {

@@ -66,7 +66,6 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   // the deploy step's Current Version ID scrape free of ANSI escape codes.
   'NO_COLOR',
   'OTEL_OUTPUT_ROOT',
-  'OTEL_STORE_URI',
   'PAT_TOKEN',
   'POSTGRES_DB',
   'POSTGRES_HOST_AUTH_METHOD',

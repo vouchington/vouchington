@@ -19,7 +19,7 @@ Response:
       "system_user_id": "...",
       "system_username": "self-promotion",
       "label_topic_slugs": ["self-promotion"],
-      "on_flag_action": "review_queue",
+      "on_flag_action": "none",
       "enabled": false,
       "enabled_at": null,
       "enabled_by_id": null,

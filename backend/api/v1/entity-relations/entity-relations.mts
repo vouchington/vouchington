@@ -8,7 +8,8 @@ import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { parseEntityRelationSearchInput } from '@services/entity-relations'
 import { indexById } from '@modules/utils'
 import { entityRelationViewerFor, getPublicUserByIdOrSlug } from '@services/users'
-import { requireAuth } from '../../response-helpers.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
 import {
   defineQueryContract,
@@ -50,9 +51,8 @@ app
       'GET:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType',
       entityRelationsQuery,
     )
-    await ctx.applyRouteRateLimit(
-      'GET:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType',
-    )
+    const operation = 'GET:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType'
+    await ctx.applyRouteRateLimit(operation)
     // topic_alias is an internal category projection used by authored-content and RSS flows.
     // It deliberately has no generic public entity surface; callers consume typed category data.
     ctx.assert(
@@ -72,14 +72,16 @@ app
       limit: ctx.query.limit,
       summary: ctx.query.summary,
     })
+    // User-subject reads are authenticated; reject anonymous callers before any schema diagnostic.
+    if (parsed.entityType === 'user') await requireAuth(ctx, operation)
+    // The parser keeps its 400s and clamps `limit`; the contract then rejects wrong types.
+    const query = prepareQueryForValidation(ctx.query, entityRelationsQuery.queryContract)
+    if (ctx.query.limit !== undefined) query.limit = parsed.options.limit
+    validateRequestContract(ctx, operation, { path: ctx.params, query })
 
     const currentUser = await ctx.getCurrentUser()
     let resolvedSubjectId = parsed.subjectId
     if (parsed.entityType === 'user') {
-      await requireAuth(
-        ctx,
-        'GET:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType',
-      )
       const target = await getPublicUserByIdOrSlug(parsed.subjectId, { readOnly: false })
       ctx.assert(target, 404, 'User not found')
       resolvedSubjectId = target.id
@@ -97,11 +99,6 @@ app
     ]
     if (parsed.summary) cursorScopeParts.push('summary')
     const cursorScope = cursorScopeParts.join(':')
-    ctx.assert(
-      ctx.query.after === undefined || typeof ctx.query.after === 'string',
-      400,
-      'Invalid cursor format',
-    )
     const after =
       typeof ctx.query.after === 'string'
         ? parseEntityRelationCursor(ctx, ctx.query.after, cursorScope, parsed)
@@ -172,6 +169,11 @@ app
       ctx.params.objectType!,
     )
     const body = (await ctx.request.json('1mb')) as { objectId?: string }
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType',
+      { path: ctx.params, body },
+    )
     const { relation } = await createEntityRelationAction(
       currentUser,
       { kind: 'first_party' },

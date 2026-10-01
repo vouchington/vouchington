@@ -76,13 +76,13 @@ describe('Lambda Tests workflow', () => {
     expect(violations).toEqual([])
   })
 
-  it('publishes one attempt-bound image-resize package only after validation succeeds', () => {
+  it('publishes one attempt-bound image-resize package without rerunning validation', () => {
     const parsed = load(mainWorkflow) as MainWorkflow
     const publish = parsed.jobs?.['publish-image-resize']
 
-    expect(publish?.needs).toEqual(['static-checks', 'lambdas-tests'])
-    expect(publish?.if).toContain("needs.static-checks.result == 'success'")
-    expect(publish?.if).toContain("needs.lambdas-tests.result == 'success'")
+    expect(Object.keys(parsed.jobs ?? {})).toEqual(['publish-image-resize'])
+    expect(publish?.needs).toBeUndefined()
+    expect(publish?.if).toBeUndefined()
     expect(publish?.permissions).toEqual({ contents: 'read' })
 
     const build = publish?.steps?.find(step =>

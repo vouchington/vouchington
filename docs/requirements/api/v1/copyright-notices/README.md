@@ -14,10 +14,14 @@ provisional restriction.
 `COPYRIGHT_INTAKE_ENABLED` is the intake kill switch. While it is off, or while the evidence
 bucket, copyright sender and reply-to addresses, or media-delivery enforcement is unconfigured,
 `POST /api/v1/copyright-notices`, `POST /api/v1/copyright-eu-notices`, and
-`POST /api/v1/copyright-uk-notices` return `503` before authentication. New EU and UK notices need
-this switch in addition to the territorial policy approval. In-case responses (appeals,
-counter-notices, guest filings, EU and UK redress, EU supervised complaints) and every staff route
-stay available so existing cases keep their statutory paths.
+`POST /api/v1/copyright-uk-notices` return `503` before authentication. Staff approval of an
+emailed notice, `POST /api/v1/copyright-email-intakes/:id/approvals`, returns the same `503` because
+it opens a new case. New EU and UK notices need this switch in addition to the territorial policy
+approval. In-case responses (appeals, counter-notices, guest filings, EU and UK redress, EU
+supervised complaints) and every other staff route stay available so existing cases keep their
+statutory paths. Email is still ingested and listed in the staff email intake queue while the switch
+is off, and staff can reject an email or record a matched reply through
+`POST /api/v1/copyright-email-intakes/:id/correspondence`.
 
 Browser clients must send a Cloudflare Turnstile token in `cf_turnstile_response` for every
 copyright notice, appeal, and counter-notice submission. Native iOS clients may instead use the
@@ -37,6 +41,12 @@ and display label. It excludes legal identity, contact details, signatures, and 
 It uses the canonical opaque `after` cursor and bounded `limit` (1–100; default 100), returning
 `page_info` so the member-visible index can continue beyond its first page.
 
+The detail's `timeline` is an audience allowlist: a member sees only case-facing events (notice
+received, provisional restriction imposed, placement withheld and restored, appeal and
+counter-notice received and reviewed, withdrawal received) and never internal review, replay,
+legal-hold, or guest-capability events. `GET /api/v1/copyright-notices/:id/participant` gives a
+claimant or affected poster the same case-facing events and gives staff the unfiltered timeline.
+
 The staff review queue uses the same bounded `after` and `limit` contract. Its cursor is scoped to
 the actionable queue and orders by `(urgency, waiting_since, id)`: a missed restoration deadline
 first, then a deadline past escalation, then all other open work, each oldest wait first. Every
@@ -45,6 +55,12 @@ after the first page. Each item adds `reasons` (the distinct open-item kinds), `
 oldest open item's time), and `next_deadline` (the earliest open deadline's `escalation_at` and
 `restoration_deadline_at`, or null). Urgency is evaluated against the current time on each request,
 so a case whose deadline passes between pages moves to an earlier tier.
+
+A queued item's `form_review` returns the intake's screening and advisory guidance whether or not a
+moderator has decided it. Its `review` is null until then, and afterwards `{ accepted, reviewed_at,
+reviewed_by_id }` with a null `reviewed_by_id` once the reviewer's account is erased. The
+moderator's rationale is never returned. The `form_intake_review` reason applies only while
+`review` is null.
 
 The staff email intake queue, `GET /api/v1/copyright-email-intakes/review-queue`, uses the same
 bounded `after` and `limit` contract with its own cursor scope. It orders unreviewed intakes by

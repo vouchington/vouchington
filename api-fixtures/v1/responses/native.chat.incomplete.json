@@ -1,0 +1,22 @@
+{
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJpZCI6IjAxOThmZmZmLTAwMDEtNzAwMC04MDAwLTAwMDAwMDAwMDAwMiJ9"
+  },
+  "results": [
+    {
+      "completion": {
+        "status": "incomplete"
+      },
+      "content": {
+        "content": null,
+        "role": "assistant"
+      },
+      "conversation_id": "0198ffff-0000-7000-8000-000000000001",
+      "created_at": "2026-09-29T00:00:00.000Z",
+      "id": "0198ffff-0001-7000-8000-000000000002",
+      "updated_at": "2026-09-29T00:00:00.000Z"
+    }
+  ]
+}

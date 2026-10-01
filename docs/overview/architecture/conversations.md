@@ -31,8 +31,25 @@ flowchart TD
   persist --> reconcile[Reconcile persisted user and assistant messages]
 ```
 
-The transitional hosted streaming route and agentic-run records remain only until native client
-migrations complete. They are not a web product surface and must not gain new web consumers.
+The public transcript DTOs expose conversation identity, title and timestamps, and message identity,
+content, timestamps and completion (`completed`, `incomplete`, or `failed`). They omit provider
+response chaining, execution identities and stored error diagnostics. A submitted turn uses the client's ordered UUIDv7
+`user_message_id` and `assistant_message_id`, scoped to its conversation, as its identity. Clients persist both IDs before sending
+and reuse them with identical text on retries. The existing message primary key and a conversation
+row lock make duplicate submissions return the original pair atomically; changed content or partial
+identity reuse returns 409. Both stored message JSON values carry an opaque SHA-256 fingerprint
+of the ordered ID pair, so recombining messages from separate turns also conflicts. The fingerprint
+is omitted from public DTOs and does not join execution records. Generation provider details remain internal run metadata and do not
+appear in transcript responses. Incomplete stored assistant placeholders remain readable in history.
+
+The shared decode examples are generated under `api-fixtures/v1/responses/native.chat.*.json` for
+Swift, Android, .NET and web; clients adopt them through clients#149 and clients#150 independently.
+
+The transitional hosted streaming route and agentic-run records are removed by
+[A6 (#185)](https://github.com/vouchington/vouchington/issues/185) after this shared transcript
+contract. Under decision D1, server removal proceeds without waiting on native client migrations;
+clients adopt independently. These retained paths are not a web product surface and must not gain
+new web consumers.
 
 Native clients use REST/API calls derived from `backend/tools/manifest.json` for client-surface
 tools rather than runtime MCP. See [Agent Tools](agent-tools/README.md).

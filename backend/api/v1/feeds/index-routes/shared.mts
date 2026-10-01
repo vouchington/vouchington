@@ -1,4 +1,13 @@
-import { createPaginationParser } from '@modules/pagination'
+import {
+  createPaginationParser,
+  defineQueryContract,
+  queryBoolean,
+  queryCsvArray,
+  queryEnum,
+  queryNumber,
+  queryString,
+} from '@modules/pagination'
+import { VALID_MEDIA_TYPES } from '@modules/pagination/filters'
 import { loadCommunityForViewer } from '@services/communities'
 import type { PostFeedType, RssFeedItemFeedType } from '@services/feeds/types'
 import { resolveHashtagTopicSearch } from '@services/search-params'
@@ -23,6 +32,28 @@ export const rssFeedItemFeedParser = createPaginationParser({
     search: true,
     mediaTypes: true,
   },
+})
+
+/** Query keys the posts feed handler reads beside the pagination parser. */
+export const postFeedExtraQuery = defineQueryContract({
+  community: queryString(),
+  min_score_follow_topics: queryNumber(),
+  min_score_follow_users: queryNumber(),
+  q: queryString(),
+})
+
+/**
+ * Every query key the RSS feed item feed reads. `media_type` overrides the parser's scalar enum
+ * because the parser also accepts comma-separated and repeated values (`?media_type=audio,video`).
+ */
+export const rssFeedItemFeedQuery = defineQueryContract({
+  ...rssFeedItemFeedParser.queryContract,
+  community: queryString(),
+  has_related_posts: queryBoolean(),
+  media_type: queryCsvArray(queryEnum(VALID_MEDIA_TYPES)),
+  min_score_follow_rss_feeds: queryNumber(),
+  min_score_follow_topics: queryNumber(),
+  q: queryString(),
 })
 
 export async function parseHashtagFeedSearchOptions(query: Record<string, unknown>) {

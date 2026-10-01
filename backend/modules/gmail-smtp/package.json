@@ -17,13 +17,15 @@
       "types": "./*.mts",
       "import": "./*.mts",
       "default": "./*.mts"
-    }
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
   },
   "scripts": {},
   "dependencies": {
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
-    "nodemailer": "^10.0.10"
+    "nodemailer": "^10.0.12"
   },
   "devDependencies": {
     "@types/nodemailer": "^8.0.2"

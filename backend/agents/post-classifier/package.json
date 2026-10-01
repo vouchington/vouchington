@@ -17,12 +17,15 @@
       "types": "./*.mts",
       "import": "./*.mts",
       "default": "./*.mts"
-    }
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
   },
   "scripts": {},
   "dependencies": {
     "@agents/_shared": "workspace:^",
     "@agents/classifiers": "workspace:^",
+    "@modules/on-error": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/classifiers": "workspace:^",

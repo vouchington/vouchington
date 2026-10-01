@@ -4,10 +4,10 @@ import { RULES } from '../rules.mts'
 import { makeCtx } from '../../test-helpers/transient-retry/helpers.mts'
 
 describe('storybook-browser-startup-transient', () => {
-  const storybookJobName = 'storybook-build / storybook'
+  const storybookJobName = 'storybook / storybook'
   const ciStorybookJobName = 'storybook / storybook'
   const runnerMissingAttempt = `FAIL web-storybook-browser (chromium) storybook/design-system/button.stories.tsx
-Error: Failed to import test file /work/filaments/node_modules/.pnpm/@storybook+addon-vitest@10.4.6/node_modules/@storybook/addon-vitest/dist/vitest-plugin/setup-file.js
+Error: Failed to import test file /work/filaments/node_modules/.pnpm/@storybook+addon-vitest@0.0.0/node_modules/@storybook/addon-vitest/dist/vitest-plugin/setup-file.js
 Caused by: Error: Vitest failed to find the runner. One of the following is possible:
 - "vitest" is imported directly without running "vitest" command
 Test Files 149 failed (149)
@@ -18,7 +18,7 @@ ${runnerMissingAttempt}
 
   it('matches the Main CI Storybook add-on setup runner-context startup failure', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
     })
@@ -68,7 +68,7 @@ ${runnerMissingAttempt}
 
   it('matches the GitHub log archive ANSI rendering for the no-tests summary', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       failedJobNames: [storybookJobName],
       failedJobLogs: () =>
         Promise.resolve(
@@ -84,7 +84,7 @@ ${runnerMissingAttempt}
 
   it('does not match after the single outer startup rerun is exhausted', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       runAttempt: 2,
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
@@ -96,7 +96,7 @@ ${runnerMissingAttempt}
 
   it('does not match the same fingerprint after the retry cap is exhausted', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       runAttempt: 3,
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
@@ -108,7 +108,7 @@ ${runnerMissingAttempt}
 
   it('does not match story assertions after browser test output starts', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       failedJobNames: [storybookJobName],
       failedJobLogs: () =>
         Promise.resolve(
@@ -138,7 +138,7 @@ vite:deps new dependencies found: @vouchington/session-jwt
 [vite] (client) optimized dependencies changed. reloading
 ##[error]Process completed with exit code 1.`
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
     })
@@ -156,7 +156,7 @@ vite:deps new dependencies found: @vouchington/session-jwt
 [vite] (client) optimized dependencies changed. reloading
 ##[error]Process completed with exit code 1.`
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
     })
@@ -173,7 +173,7 @@ vite:deps new dependencies found: @vouchington/session-jwt
 [vite] (client) optimized dependencies changed. reloading
 ##[error]Process completed with exit code 1.`
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
     })
@@ -193,7 +193,7 @@ TypeError: Failed to fetch dynamically imported module: http://localhost:6006/vi
 ${runnerMissingAttempt}
 ##[error]Process completed with exit code 1.`
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
     })
@@ -205,7 +205,7 @@ ${runnerMissingAttempt}
 
   it('reruns the workflow when Storybook publish is downstream', async () => {
     const ctx = makeCtx({
-      workflowName: 'Main CI (storybook)',
+      workflowName: 'Web',
       failedJobNames: [storybookJobName, 'publish'],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
     })

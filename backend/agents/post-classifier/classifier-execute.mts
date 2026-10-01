@@ -4,12 +4,15 @@ import {
   StructuredDecisionError,
   type StructuredDecisionClient,
 } from '@modules/structured-decisions'
+import { recordPostClassifierReceiptAlarm } from '@modules/on-error'
 import { createPostModerationContent } from '@services/posts/content'
 import { persistPostClassifierOutcomes } from '@services/post-classifier/application-outcomes'
+import type { PostClassifierLocalOutcome } from '@services/post-classifier/application-local-outcome'
 import { readPostClassifierOutcomes } from '@services/post-classifier/application-read'
 import {
   releasePostClassifierAdmissionLease,
   startPostClassifierProviderAttempt,
+  failPostClassifierClientUnavailable,
   failPostClassifierRemoteAttempt,
 } from '@services/post-classifier/application-attempt'
 import { OpenAiSpendCapBreachError } from '@services/ai-usage'
@@ -55,7 +58,7 @@ export async function executePostClassifierOutcomes(
 
   const local = input.lease.resolved.configuration.local
   input.signal.throwIfAborted()
-  const localOutcome = local
+  const detected = local
     ? await dependencies.detectLocal(
         [content.title, content.markdown].filter(Boolean).join('\n\n'),
         {
@@ -63,24 +66,49 @@ export async function executePostClassifierOutcomes(
         },
       )
     : undefined
+  const localOutcome: PostClassifierLocalOutcome | undefined = detected && {
+    flagged: detected.flagged,
+    reason: detected.reason,
+    confidenceScore: detected.confidence_score,
+    confidenceThreshold: detected.confidence_threshold,
+    classification: detected.classification,
+    detector: detected.detector,
+    detectorModelVersion: detected.detector_model_version,
+  }
   input.signal.throwIfAborted()
   let remoteDecision: PersistClassifierDecisionInput | undefined
   if (classifierInput) {
     if (!input.lease.decisionBatchId)
       throw new Error('Remote post classifier requires a pre-reserved decision batch')
     const phase = { reserved: false, returned: false }
-    const baseClient = dependencies.createClient({
-      beforeAttempt: async () => {
-        const attempt = await startPostClassifierProviderAttempt({
-          ...input.lease,
-          maxAttempts: input.maxAttempts,
+    let baseClient: StructuredDecisionClient
+    try {
+      baseClient = dependencies.createClient({
+        beforeAttempt: async () => {
+          const attempt = await startPostClassifierProviderAttempt({
+            ...input.lease,
+            maxAttempts: input.maxAttempts,
+          })
+          if (attempt === 'no_remote')
+            throw new Error('Remote post classifier receipt has no remote work')
+          if (attempt !== 'started') throw new AttemptStopped(attempt)
+          phase.reserved = true
+        },
+      })
+    } catch (error) {
+      // A client that cannot be built (missing credentials) fails identically on every retry, so it
+      // ends the remote half through the recorded path instead of looping the sweep.
+      const failure = await failPostClassifierClientUnavailable({ ...input.lease, localOutcome })
+      if (failure === 'terminal') {
+        recordPostClassifierReceiptAlarm({
+          kind: 'client-unavailable',
+          postId: input.lease.postId,
+          applicationId: input.lease.applicationId,
+          error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
         })
-        if (attempt === 'no_remote')
-          throw new Error('Remote post classifier receipt has no remote work')
-        if (attempt !== 'started') throw new AttemptStopped(attempt)
-        phase.reserved = true
-      },
-    })
+      }
+      return failure
+    }
     try {
       remoteDecision = await prepareSingleCallClassifierDecision({
         ...classifierInput,
@@ -124,15 +152,7 @@ export async function executePostClassifierOutcomes(
   }
   const outcome = await persistPostClassifierOutcomes({
     lease: input.lease,
-    localOutcome: localOutcome && {
-      flagged: localOutcome.flagged,
-      reason: localOutcome.reason,
-      confidenceScore: localOutcome.confidence_score,
-      confidenceThreshold: localOutcome.confidence_threshold,
-      classification: localOutcome.classification,
-      detector: localOutcome.detector,
-      detectorModelVersion: localOutcome.detector_model_version,
-    },
+    localOutcome,
     remoteDecision,
   })
   return outcome

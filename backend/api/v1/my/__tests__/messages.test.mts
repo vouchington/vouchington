@@ -101,10 +101,10 @@ describe('messages API', () => {
       expect(response.body.conversation.channel_type).toBe('direct_message')
     })
 
-    it('returns 400 when user_id is missing', async () => {
+    it('returns 422 when user_id is missing', async () => {
       const request = createRequest()
       await request.authenticateAs(user)
-      await request.post('/api/v1/my/messages').send({}).expect(400)
+      await request.post('/api/v1/my/messages').send({}).expect(422)
     })
 
     it('returns 400 when messaging yourself', async () => {
@@ -147,11 +147,11 @@ describe('messages API', () => {
       expect(response.body.conversation.channel_type).toBe('direct_message')
     })
 
-    it('returns 400 when user_ids exceeds the 25-recipient limit', async () => {
+    it('returns 422 when user_ids exceeds the 25-recipient limit', async () => {
       const tooManyIds = Array.from({ length: 26 }, () => crypto.randomUUID())
       const request = createRequest()
       await request.authenticateAs(user)
-      await request.post('/api/v1/my/messages').send({ user_ids: tooManyIds }).expect(400)
+      await request.post('/api/v1/my/messages').send({ user_ids: tooManyIds }).expect(422)
     })
 
     it('returns 403 when two recipients in a group DM have blocked each other', async () => {
@@ -172,10 +172,10 @@ describe('messages API', () => {
         .expect(403)
     })
 
-    it('returns 400 when user_ids is empty array', async () => {
+    it('returns 422 when user_ids is empty array', async () => {
       const request = createRequest()
       await request.authenticateAs(user)
-      await request.post('/api/v1/my/messages').send({ user_ids: [] }).expect(400)
+      await request.post('/api/v1/my/messages').send({ user_ids: [] }).expect(422)
     })
   })
 })

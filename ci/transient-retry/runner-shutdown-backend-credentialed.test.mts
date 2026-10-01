@@ -17,7 +17,7 @@ const shutdownOnlyMarkers = [
 const backendCredentialedCleanShutdownLog = [
   'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-stripe --coverage',
   '  CI_PROJECT: backend-credentialed',
-  ' RUN  v4.1.9 /home/runner/actions-runner/4/_work/filaments/filaments',
+  ' RUN  v0.0.0 /home/runner/actions-runner/4/_work/filaments/filaments',
   'Coverage enabled with v8',
   '##[error]The runner has received a shutdown signal. This can happen when the runner service is stopped, or a manually started runner is canceled.',
   'undefined',
@@ -57,7 +57,7 @@ const backendCredentialedSetupFailureBeforeVitestLog = [
 const makeBackendCredentialedCtx = (
   overrides: Partial<WorkflowRunContext> = {},
 ): WorkflowRunContext => ({
-  workflowName: 'Main CI (backend)',
+  workflowName: 'Backend',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [backendCredentialedJobName],
@@ -68,7 +68,7 @@ const makeBackendCredentialedCtx = (
 })
 
 describe('runnerShutdownLeafRerunMatch — backend-credentialed consumer', () => {
-  it('reruns Main CI (backend) when backend credentialed tests are cleanly shutdown', async () => {
+  it('reruns Backend when backend credentialed tests are cleanly shutdown', async () => {
     expect(await runnerShutdownLeafRerunMatch(makeBackendCredentialedCtx())).toBe(true)
   })
 

@@ -36,7 +36,7 @@ describe('Households API Routes', () => {
       const request = createRequest()
       await request.authenticateAs(owner)
 
-      await request.get('/api/v1/households').query({ access: 'other' }).expect(400)
+      await request.get('/api/v1/households').query({ access: 'other' }).expect(422)
       await request.get('/api/v1/households').query({ limit: 0 }).expect(400)
       await request.get('/api/v1/households').query({ after: '' }).expect(400)
     })

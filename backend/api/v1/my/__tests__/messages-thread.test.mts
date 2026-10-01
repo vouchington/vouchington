@@ -143,7 +143,7 @@ describe('messages thread API', () => {
       expect(response.body.message.body_text).toBe('Hello there')
     })
 
-    it('returns 400 when text is missing', async () => {
+    it('returns 422 when text is missing', async () => {
       const setupRequest = createRequest()
       await setupRequest.authenticateAs(user)
       const convResponse = await setupRequest
@@ -154,7 +154,7 @@ describe('messages thread API', () => {
 
       const request = createRequest()
       await request.authenticateAs(user)
-      await request.post(`/api/v1/my/messages/${conversationId}/messages`).send({}).expect(400)
+      await request.post(`/api/v1/my/messages/${conversationId}/messages`).send({}).expect(422)
     })
 
     it('returns 403 when user is not a participant', async () => {

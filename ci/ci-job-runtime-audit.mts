@@ -18,7 +18,6 @@ export const vouchingtonRuntimeAuditOptions: Omit<RuntimeAuditOptions, 'reposito
     { name: 'Cloudflare Worker', event: 'pull_request' },
     { name: 'Lambdas', event: 'pull_request' },
     { name: 'Tooling', event: 'pull_request' },
-    { name: /^Main CI \(.+\)$/, event: 'push' },
   ],
   // Raised from the tool default (360s) alongside the fewer/longer-running-shards CI target
   // (<10m hard ceiling, targeting 8m per job). Leave hardCeilingSeconds at its 600s default —

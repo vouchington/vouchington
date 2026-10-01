@@ -16,7 +16,7 @@ describe('actionlint workflow', () => {
       '.github/zizmor.yaml',
       '.mise.toml',
     ]) {
-      expect(workflow.split(`- '${path}'`)).toHaveLength(3)
+      expect(workflow.split(`- '${path}'`)).toHaveLength(2)
     }
   })
 

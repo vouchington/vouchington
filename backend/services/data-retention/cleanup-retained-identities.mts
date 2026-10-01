@@ -36,6 +36,13 @@ export const ROOT_FAMILIES = {
       ...retainedRelationReferences('user'),
     ],
   },
+  api_key: {
+    table: 'retained_api_key_identities',
+    references: [
+      ['api_keys', 'id'],
+      ['mcp_call_audit_events', 'api_key_id'],
+    ],
+  },
   topic: {
     table: 'retained_topic_identities',
     references: [

@@ -1,3 +1,7 @@
+import {
+  toConversationTranscript,
+  toMessageTranscript,
+} from '@services/conversations-messages/transcript'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -10,7 +14,7 @@ import {
   currentUserCanDeleteConversation,
 } from '@services/conversations-messages'
 import { getConversationMessagesByConversationId } from '@services/conversations-messages/messages'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
 import { assertOpenAiSpendCapNotBreached } from '@services/ai-usage'
 import {
@@ -24,6 +28,8 @@ import {
   isSimpleCursor,
   simplePaginationParser,
 } from '@modules/pagination'
+
+type UpdateConversationTitleRequest = { title: string }
 
 // GET /api/v1/my/conversations
 app.route('/api/v1/my/conversations').get(async (ctx: Context) => {
@@ -43,7 +49,7 @@ app.route('/api/v1/my/conversations').get(async (ctx: Context) => {
   const results = conversations.slice(0, limit)
 
   ctx.json({
-    results,
+    results: results.map(toConversationTranscript),
     page_info: buildPageInfo(results, {
       hasNextPage: hasMore,
       getCursor: conversation => ({ id: conversation.id }),
@@ -64,6 +70,9 @@ app.route('/api/v1/my/conversations/:conversationId/messages').get(async (ctx: C
   if (!conversation) ctx.throw(404, 'Conversation not found')
   if (!(await currentUserCanViewConversation(currentUser, conversation)))
     ctx.throw(403, 'Access denied')
+  validateRequestContract(ctx, 'GET:/api/v1/my/conversations/:conversationId/messages', {
+    path: ctx.params,
+  })
 
   const { after: encodedAfter, limit } = simplePaginationParser.parse(ctx.query)
   const after = encodedAfter
@@ -77,7 +86,7 @@ app.route('/api/v1/my/conversations/:conversationId/messages').get(async (ctx: C
   const hasMore = messages.length > limit
   const results = hasMore ? messages.slice(1) : messages
   ctx.json({
-    results,
+    results: results.map(toMessageTranscript),
     page_info: {
       has_next_page: hasMore,
       start_cursor: results.at(-1) ? encodeCursor({ id: results.at(-1)!.id }) : null,
@@ -97,13 +106,16 @@ app.route('/api/v1/my/conversations/:conversationId').patch(async (ctx: Context)
   if (!(await currentUserCanUpdateConversation(currentUser, conversation)))
     ctx.throw(403, 'Access denied')
 
-  const body = (await ctx.request.json('10kb')) as Record<string, unknown>
-  ctx.assert(typeof body.title === 'string', 400, 'title is required and must be a string')
+  const body = (await ctx.request.json('10kb')) as UpdateConversationTitleRequest
+  validateRequestContract(ctx, 'PATCH:/api/v1/my/conversations/:conversationId', {
+    path: ctx.params,
+    body,
+  })
 
-  await updateConversationTitle(conversationId, body.title as string, currentUser.id)
+  await updateConversationTitle(conversationId, body.title, currentUser.id)
 
   const updated = await getConversationById(conversationId)
-  ctx.json({ conversation: updated })
+  ctx.json({ conversation: updated ? toConversationTranscript(updated) : null })
 })
 
 // DELETE /api/v1/my/conversations/:conversationId
@@ -116,6 +128,9 @@ app.route('/api/v1/my/conversations/:conversationId').delete(async (ctx: Context
   if (!conversation) ctx.throw(404, 'Conversation not found')
   if (!(await currentUserCanDeleteConversation(currentUser, conversation)))
     ctx.throw(403, 'Access denied')
+  validateRequestContract(ctx, 'DELETE:/api/v1/my/conversations/:conversationId', {
+    path: ctx.params,
+  })
 
   await softDeleteConversation(conversationId, currentUser.id)
 
@@ -133,9 +148,12 @@ app.route('/api/v1/my/conversations/:conversationId/title').post(async (ctx: Con
   if (!(await currentUserCanUpdateConversation(currentUser, conversation)))
     ctx.throw(403, 'Access denied')
   assertNotSuspended(currentUser)
+  validateRequestContract(ctx, 'POST:/api/v1/my/conversations/:conversationId/title', {
+    path: ctx.params,
+  })
 
   if (conversation.title?.trim()) {
-    ctx.json({ conversation })
+    ctx.json({ conversation: toConversationTranscript(conversation) })
     return
   }
 
@@ -154,5 +172,5 @@ app.route('/api/v1/my/conversations/:conversationId/title').post(async (ctx: Con
   const updated = await updateConversationTitle(conversationId, title, currentUser.id).then(() =>
     getConversationById(conversationId),
   )
-  ctx.json({ conversation: updated })
+  ctx.json({ conversation: updated ? toConversationTranscript(updated) : null })
 })

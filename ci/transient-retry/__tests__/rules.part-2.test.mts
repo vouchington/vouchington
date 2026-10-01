@@ -18,7 +18,6 @@ describe('RULES catalogue', () => {
   describe('workflow-cancelled-without-failure-signal', () => {
     it.each([
       ['Web', 1],
-      ['Main CI (checks)', 2],
       ['Main CI (web)', 2],
       ['Portability Tests', 1],
       ['Static Code Analysis', 1],

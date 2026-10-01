@@ -25,14 +25,18 @@ import { isAdminUser } from '@services/users'
 import { parseNumberParams } from '@ts-shared/utils/query'
 import app from '../../../app.mts'
 import { requireAuth } from '../../../response-helpers.mts'
+import { apiQuery } from '../../../response-contract.mts'
+import { parseAndValidatePaginatedRequest } from '../../../validate-paginated-query.mts'
 
 import {
   loadOptionalFeedCommunityScope,
   parseHashtagFeedSearchOptions,
   rssFeedItemFeedParser,
+  rssFeedItemFeedQuery,
 } from './shared.mts'
 
 app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/feeds/rss_feed_items/:feed_type', rssFeedItemFeedQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/feeds/rss_feed_items/:feed_type')
 
   const feedType = ctx.params.feed_type as RssFeedItemFeedType
@@ -43,7 +47,12 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
   )
 
   // Parse pagination and common filters
-  const paginationOptions = rssFeedItemFeedParser.parse(ctx.query)
+  const paginationOptions = parseAndValidatePaginatedRequest(
+    ctx,
+    'GET:/api/v1/feeds/rss_feed_items/:feed_type',
+    rssFeedItemFeedParser,
+    { path: true, extraQueryContracts: [rssFeedItemFeedQuery.queryContract] },
+  )
   const hashtagSearchOptions = await parseHashtagFeedSearchOptions(ctx.query)
 
   // Parse feed-specific parameters

@@ -34,7 +34,9 @@ vi.mock(import('@/components/copyright/copyright-response-forms'), () => ({
   CopyrightCounterNoticeForm: () => <div>counter-notice form</div>,
 }))
 vi.mock(import('@/components/copyright/copyright-notice-detail'), () => ({
-  CopyrightNoticeDetailView: () => <div>notice detail</div>,
+  CopyrightNoticeDetailView: ({ notice }) => (
+    <div>notice detail {notice.timeline.map(event => event.event_type).join(',')}</div>
+  ),
 }))
 vi.mock(import('@/components/copyright/copyright-staff-queue'), () => ({
   CopyrightStaffQueue: () => <div>staff queue</div>,
@@ -149,17 +151,28 @@ describe('copyright pages', () => {
   })
 
   it('loads a public notice and poster response routes', async () => {
-    mockNotice.mockResolvedValue({ id: 'notice-1' } as never)
+    mockNotice.mockResolvedValue({ id: 'notice-1', timeline: [] } as never)
     mockParticipant.mockResolvedValue({
       viewer_role: 'poster',
       respondable_target_ids: ['target-1'],
+      timeline: [{ id: 'event-1', event_type: 'notice_received', created_at: '2026-07-01' }],
     } as never)
     render(await CopyrightNoticePage({ params: Promise.resolve({ id: 'notice-1' }) }))
-    expect(screen.getByText('notice detail')).toBeInTheDocument()
+    expect(screen.getByText('notice detail notice_received')).toBeInTheDocument()
     render(await CopyrightAppealPage({ params: Promise.resolve({ id: 'notice-1' }) }))
     expect(screen.getByText('appeal form')).toBeInTheDocument()
     render(await CopyrightCounterNoticePage({ params: Promise.resolve({ id: 'notice-1' }) }))
     expect(screen.getByText('counter-notice form')).toBeInTheDocument()
+  })
+
+  it('shows the member timeline when the viewer has no participant read model', async () => {
+    mockNotice.mockResolvedValue({
+      id: 'notice-1',
+      timeline: [{ id: 'event-1', event_type: 'placement_withheld', created_at: '2026-07-01' }],
+    } as never)
+    mockParticipant.mockResolvedValue(null)
+    render(await CopyrightNoticePage({ params: Promise.resolve({ id: 'notice-1' }) }))
+    expect(screen.getByText('notice detail placement_withheld')).toBeInTheDocument()
   })
 
   it('returns notFound when the viewer cannot use staff or poster routes', async () => {

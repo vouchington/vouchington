@@ -25,7 +25,12 @@ const noticeDetail = (profile: typeof claimant | null) => ({
   timeline: [
     {
       id: '00000000-0000-7000-8000-000000000807',
-      event_type: 'notice_accepted',
+      event_type: 'notice_received',
+      created_at: '2026-07-01T12:00:00.000Z',
+    },
+    {
+      id: '00000000-0000-7000-8000-0000000008f1',
+      event_type: 'provisional_restriction_imposed',
       created_at: '2026-07-01T12:01:00.000Z',
     },
   ],

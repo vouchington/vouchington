@@ -1,3 +1,4 @@
+import { toConversationTranscript } from '@services/conversations-messages/transcript'
 import type { Context } from '@jongleberry/api-server'
 import { createConversation } from '@services/conversations-messages/create'
 import { assertNotSuspended } from '@services/users'
@@ -15,5 +16,5 @@ app.route('/api/v1/conversations').post(async (ctx: Context) => {
 
   const conversation = await createConversation(currentUser.id, title)
 
-  ctx.json({ conversation })
+  ctx.json({ conversation: toConversationTranscript(conversation) })
 })

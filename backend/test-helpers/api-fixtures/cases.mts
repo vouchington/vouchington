@@ -1,3 +1,4 @@
+import { nativeChatApiFixtureCases } from './native-chat-cases.mts'
 import { engineeringOpsApiFixtureCases } from './engineering-ops-cases.mts'
 import { dynamicConfigApiFixtureCases } from './dynamic-config-cases.mts'
 import { nativeDomainUrlApiFixtureCases } from './native-domain-url-cases.mts'
@@ -48,6 +49,10 @@ function fromCaseFile(caseFile: string, cases: ApiFixtureCase[]): ResolvedApiFix
 }
 
 export const apiFixtureCases: ResolvedApiFixtureCase[] = [
+  ...fromCaseFile(
+    'backend/test-helpers/api-fixtures/native-chat-cases.mts',
+    nativeChatApiFixtureCases,
+  ),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-ai-cost-cases.mts',
     nativeAiCostApiFixtureCases,

@@ -9,7 +9,8 @@ import { getUrlByAnyCached } from '@services/entity-fetch/get'
 import { searchCrawlsForUrl, searchPublicUrlCrawlsForUrl } from '@services/crawls'
 import { currentUserCanFilterHostnameModeration } from '@services/urls-hostnames'
 import { createPaginationParser } from '@modules/pagination'
-import { apiResponse } from '../../response-contract.mts'
+import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 
 const crawlsParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -17,6 +18,7 @@ const crawlsParser = createPaginationParser({
 })
 
 app.route('/api/v1/urls/:id/crawls').get(async ctx => {
+  apiQuery('GET:/api/v1/urls/:id/crawls', crawlsParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/urls/:id/crawls')
 
   const membership = currentUserCanTriggerCrawl(currentUser)
@@ -26,6 +28,13 @@ app.route('/api/v1/urls/:id/crawls').get(async ctx => {
     return ctx.throw(403, 'Premium membership required')
   }
 
+  const paginationOptions = parseAndValidatePaginatedRequest(
+    ctx,
+    'GET:/api/v1/urls/:id/crawls',
+    crawlsParser,
+    { path: true },
+  )
+
   const urlId = ctx.params.id!
   const url = await getUrlByAnyCached(urlId)
   if (!url) return ctx.throw(404, 'URL not found')
@@ -33,7 +42,6 @@ app.route('/api/v1/urls/:id/crawls').get(async ctx => {
   const canSeeModeration = currentUserCanFilterHostnameModeration(currentUser)
   if (url.hostname?.blocked && !canSeeModeration) return ctx.throw(404, 'URL not found')
 
-  const paginationOptions = crawlsParser.parse(ctx.query)
   const canViewHeaders = currentUserCanTriggerCrawl(currentUser)
   const searchOptions = {
     after: paginationOptions.after,

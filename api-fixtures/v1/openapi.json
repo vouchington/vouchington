@@ -13,6 +13,63 @@
       }
     },
     "schemas": {
+      "AddEmailAddressRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "email_address": {
+            "type": "string"
+          }
+        },
+        "required": ["email_address"],
+        "type": "object"
+      },
+      "AddHouseholdMembershipBody": {
+        "additionalProperties": false,
+        "properties": {
+          "individual_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "relationship": {
+            "type": "string"
+          }
+        },
+        "required": ["individual_id"],
+        "type": "object"
+      },
+      "AddListPostBody": {
+        "additionalProperties": false,
+        "properties": {
+          "post_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["post_id"],
+        "type": "object"
+      },
+      "AddListRssFeedItemBody": {
+        "additionalProperties": false,
+        "properties": {
+          "rss_feed_item_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["rss_feed_item_id"],
+        "type": "object"
+      },
+      "AddParticipantRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "user_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["user_id"],
+        "type": "object"
+      },
       "AdminOAuthClientView": {
         "additionalProperties": false,
         "properties": {
@@ -87,18 +144,6 @@
           "verified_by_id"
         ],
         "type": "object"
-      },
-      "AgentModelProvider": {
-        "enum": [
-          "android_aicore",
-          "anthropic",
-          "apple_foundation",
-          "openai_compatible",
-          "openai",
-          "openrouter",
-          "windows_foundry"
-        ],
-        "type": "string"
       },
       "AgentModerationContext": {
         "additionalProperties": false,
@@ -297,6 +342,33 @@
         ],
         "type": "object"
       },
+      "AppAttestAttestBody": {
+        "additionalProperties": false,
+        "properties": {
+          "attestation": {
+            "type": "string"
+          },
+          "challengeId": {
+            "type": "string"
+          },
+          "keyId": {
+            "type": "string"
+          }
+        },
+        "required": ["attestation", "challengeId", "keyId"],
+        "type": "object"
+      },
+      "AppAttestChallengeBody": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": ["assertion", "attestation"],
+            "type": "string"
+          }
+        },
+        "required": ["type"],
+        "type": "object"
+      },
       "AppAttestEnvironment": {
         "enum": ["development", "production"],
         "type": "string"
@@ -426,6 +498,68 @@
         "properties": {
           "category_text": {},
           "topic_id": {}
+        },
+        "type": "object"
+      },
+      "AttributionReferrerBody": {
+        "additionalProperties": false,
+        "properties": {
+          "landing_url": {
+            "type": "string"
+          },
+          "referrer": {
+            "type": "string"
+          },
+          "utm": {
+            "$ref": "#/components/schemas/AttributionReferrerUtmBody"
+          }
+        },
+        "required": ["landing_url", "referrer"],
+        "type": "object"
+      },
+      "AttributionReferrerUtmBody": {
+        "additionalProperties": false,
+        "properties": {
+          "utm_campaign": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "utm_content": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "utm_medium": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "utm_source": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
         },
         "type": "object"
       },
@@ -2349,322 +2483,6 @@
         "required": ["allowed"],
         "type": "object"
       },
-      "Conversation": {
-        "additionalProperties": false,
-        "properties": {
-          "channel_type": {
-            "type": "string"
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "created_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "deleted_at": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "deleted_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "last_response_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "title": {
-            "type": "string"
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "updated_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": [
-          "channel_type",
-          "created_at",
-          "created_by_id",
-          "deleted_at",
-          "deleted_by_id",
-          "id",
-          "last_response_id",
-          "title",
-          "updated_at",
-          "updated_by_id"
-        ],
-        "type": "object"
-      },
-      "ConversationMessage": {
-        "additionalProperties": false,
-        "properties": {
-          "content": {
-            "anyOf": [
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "content": {
-                    "type": "string"
-                  },
-                  "role": {
-                    "const": "user"
-                  }
-                },
-                "required": ["content", "role"],
-                "type": "object"
-              },
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "content": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "error": {
-                    "type": "string"
-                  },
-                  "role": {
-                    "const": "assistant"
-                  }
-                },
-                "required": ["content", "role"],
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "conversation_id": {
-            "type": "string"
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "created_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "deleted_at": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "deleted_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "updated_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": [
-          "content",
-          "conversation_id",
-          "created_at",
-          "created_by_id",
-          "deleted_at",
-          "deleted_by_id",
-          "id",
-          "updated_at",
-          "updated_by_id"
-        ],
-        "type": "object"
-      },
-      "ConversationMessageAgenticRun": {
-        "additionalProperties": false,
-        "properties": {
-          "completed_at": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "conversation_id": {
-            "type": "string"
-          },
-          "conversation_message_id": {
-            "type": "string"
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "deleted_at": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "error": {},
-          "failed_at": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "input": {},
-          "model_name": {
-            "type": "string"
-          },
-          "model_provider": {
-            "$ref": "#/components/schemas/AgentModelProvider"
-          },
-          "output": {},
-          "parent_agentic_run_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "started_at": {
-            "type": "string"
-          },
-          "status": {
-            "$ref": "#/components/schemas/ConversationMessageAgenticRunStatus"
-          },
-          "termination_reason": {
-            "anyOf": [
-              {
-                "const": "error"
-              },
-              {
-                "const": "max_iterations"
-              },
-              {
-                "const": "max_topics"
-              },
-              {
-                "const": "no_tool_calls"
-              },
-              {
-                "const": "stalled"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "updated_at": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "completed_at",
-          "conversation_id",
-          "conversation_message_id",
-          "created_at",
-          "deleted_at",
-          "error",
-          "failed_at",
-          "id",
-          "input",
-          "model_name",
-          "model_provider",
-          "output",
-          "parent_agentic_run_id",
-          "started_at",
-          "status",
-          "termination_reason",
-          "updated_at"
-        ],
-        "type": "object"
-      },
-      "ConversationMessageAgenticRunStatus": {
-        "enum": ["completed", "failed", "running"],
-        "type": "string"
-      },
       "ConversationParticipant": {
         "additionalProperties": false,
         "properties": {
@@ -2731,85 +2549,6 @@
           "role",
           "user_id",
           "username"
-        ],
-        "type": "object"
-      },
-      "ConversationWithoutChannelType": {
-        "additionalProperties": false,
-        "properties": {
-          "created_at": {
-            "type": "string"
-          },
-          "created_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "deleted_at": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "deleted_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "last_response_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "title": {
-            "type": "string"
-          },
-          "updated_at": {
-            "type": "string"
-          },
-          "updated_by_id": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": [
-          "created_at",
-          "created_by_id",
-          "deleted_at",
-          "deleted_by_id",
-          "id",
-          "last_response_id",
-          "title",
-          "updated_at",
-          "updated_by_id"
         ],
         "type": "object"
       },
@@ -3666,6 +3405,36 @@
                   "intake_id": {
                     "type": "string"
                   },
+                  "review": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "accepted": {
+                            "type": "boolean"
+                          },
+                          "reviewed_at": {
+                            "type": "string"
+                          },
+                          "reviewed_by_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": ["accepted", "reviewed_at", "reviewed_by_id"],
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "screening": {
                     "anyOf": [
                       {
@@ -3718,7 +3487,7 @@
                     "type": "string"
                   }
                 },
-                "required": ["intake_id", "screening", "source_kind"],
+                "required": ["intake_id", "review", "screening", "source_kind"],
                 "type": "object"
               },
               {
@@ -4402,6 +4171,53 @@
         "required": ["hostname"],
         "type": "object"
       },
+      "CreateCardRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "card_id": {
+            "type": "string"
+          }
+        },
+        "required": ["card_id"],
+        "type": "object"
+      },
+      "CreateConversationRequest": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "user_id": {
+                "format": "uuid",
+                "type": "string"
+              }
+            },
+            "required": ["user_id"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "user_ids": {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 25,
+                "minItems": 1,
+                "type": "array",
+                "uniqueItems": false
+              }
+            },
+            "required": ["user_ids"],
+            "type": "object"
+          }
+        ]
+      },
+      "CreateHouseholdBody": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
       "CreateInstanceResult": {
         "additionalProperties": false,
         "properties": {
@@ -4429,6 +4245,53 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "CreateLandingPageRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["slug", "title"],
+        "type": "object"
+      },
+      "CreateListBody": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "visibility": {
+            "enum": ["private", "public", "unlisted"],
+            "type": "string"
+          }
+        },
+        "required": ["name"],
         "type": "object"
       },
       "CreateOAuthAppRequest": {
@@ -4461,6 +4324,45 @@
           }
         },
         "required": ["client_name", "redirect_uris", "scopes"],
+        "type": "object"
+      },
+      "CreatePointValuationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "rewards_program_id": {
+            "type": "string"
+          },
+          "value_per_point": {
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "maximum": 9999999999,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "currency": {
+                "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                "type": "string"
+              },
+              "scale": {
+                "const": 6
+              }
+            },
+            "required": ["amount", "currency", "scale"],
+            "type": "object"
+          }
+        },
+        "required": ["rewards_program_id", "value_per_point"],
         "type": "object"
       },
       "CreatePostRatingBody": {
@@ -4603,6 +4505,57 @@
         },
         "type": "object"
       },
+      "CreateProfileLinkRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "handle": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "link_type": {
+            "$ref": "#/components/schemas/ProfileLinkType"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["link_type"],
+        "type": "object"
+      },
       "CreateReferralLinkBody": {
         "additionalProperties": false,
         "properties": {
@@ -4738,6 +4691,16 @@
         "required": ["slug"],
         "type": "object"
       },
+      "CreateRewardsProgramStatusRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "rewards_program_status_id": {
+            "type": "string"
+          }
+        },
+        "required": ["rewards_program_status_id"],
+        "type": "object"
+      },
       "CreateRssFeedBody": {
         "additionalProperties": false,
         "properties": {
@@ -4769,6 +4732,31 @@
           }
         },
         "required": ["rss_feed_id", "status", "topic_id", "topic_slug"],
+        "type": "object"
+      },
+      "CreateSpendingCategoryRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "household_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "spending_category_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "spending_frequency": {
+            "enum": ["annually", "monthly"],
+            "type": "string"
+          }
+        },
+        "required": ["amount", "spending_category_id"],
         "type": "object"
       },
       "CreateTopicAliasesBody": {
@@ -4953,6 +4941,35 @@
           }
         },
         "required": ["name", "slug"],
+        "type": "object"
+      },
+      "CreateWebPushSubscriptionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "auth": {
+            "type": "string"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "expiration_time_ms": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "p256dh": {
+            "type": "string"
+          },
+          "user_agent": {
+            "type": "string"
+          }
+        },
+        "required": ["auth", "endpoint", "p256dh"],
         "type": "object"
       },
       "CuratedAsideItem": {
@@ -5403,6 +5420,16 @@
           "id",
           "updated_at"
         ],
+        "type": "object"
+      },
+      "DismissAsideRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "aside_key": {
+            "type": "string"
+          }
+        },
+        "required": ["aside_key"],
         "type": "object"
       },
       "DynamicConfigFieldMetadata": {
@@ -6927,6 +6954,19 @@
         },
         "type": "object"
       },
+      "GrantConsentRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "consent_type": {
+            "$ref": "#/components/schemas/ConsentType"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": ["consent_type", "version"],
+        "type": "object"
+      },
       "GrowthMetrics": {
         "additionalProperties": false,
         "properties": {
@@ -7191,6 +7231,16 @@
         ],
         "type": "object"
       },
+      "ImportCommunityListBody": {
+        "additionalProperties": false,
+        "properties": {
+          "community_slug": {
+            "type": "string"
+          }
+        },
+        "required": ["community_slug"],
+        "type": "object"
+      },
       "ImportRow": {
         "additionalProperties": false,
         "properties": {
@@ -7267,6 +7317,52 @@
         ],
         "type": "object"
       },
+      "ImportRssFeedsRequest": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "csv": {
+                "type": "string"
+              },
+              "follow": {
+                "type": "boolean"
+              }
+            },
+            "required": ["csv"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "follow": {
+                "type": "boolean"
+              },
+              "opml": {
+                "type": "string"
+              }
+            },
+            "required": ["opml"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "follow": {
+                "type": "boolean"
+              },
+              "urls": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": ["urls"],
+            "type": "object"
+          }
+        ]
+      },
       "ImportTopicResult": {
         "additionalProperties": false,
         "properties": {
@@ -7288,6 +7384,22 @@
           }
         },
         "required": ["input", "status"],
+        "type": "object"
+      },
+      "ImportTopicsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": false
+          }
+        },
+        "required": ["names"],
         "type": "object"
       },
       "ImportType": {
@@ -7809,6 +7921,21 @@
         "required": ["can_create_landing_pages", "profile_links", "referral_links", "reviews"],
         "type": "object"
       },
+      "LandingPageClickBody": {
+        "additionalProperties": false,
+        "properties": {
+          "group_member_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "landing_page_item_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["landing_page_item_id"],
+        "type": "object"
+      },
       "LandingPageItem": {
         "anyOf": [
           {
@@ -7918,6 +8045,88 @@
         "required": ["click_count", "item_id", "item_type"],
         "type": "object"
       },
+      "LandingPageItemRequest": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "entries": {
+                "items": {
+                  "$ref": "#/components/schemas/LandingPageTopicEntryRequest"
+                },
+                "type": "array"
+              },
+              "topic_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": {
+                "const": "topic_group"
+              }
+            },
+            "required": ["entries", "topic_id", "type"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "type": {
+                "const": "link"
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": ["label", "type", "url"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "profile_link_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": {
+                "const": "profile_link"
+              }
+            },
+            "required": ["profile_link_id", "type"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "referral_link_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": {
+                "const": "referral_link"
+              }
+            },
+            "required": ["referral_link_id", "type"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "review_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": {
+                "const": "review"
+              }
+            },
+            "required": ["review_id", "type"],
+            "type": "object"
+          }
+        ]
+      },
       "LandingPageTopic": {
         "additionalProperties": false,
         "properties": {
@@ -7936,6 +8145,38 @@
         },
         "required": ["id", "name", "slug", "topic_type"],
         "type": "object"
+      },
+      "LandingPageTopicEntryRequest": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "referral_link_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": {
+                "const": "referral_link"
+              }
+            },
+            "required": ["referral_link_id", "type"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "review_id": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": {
+                "const": "review"
+              }
+            },
+            "required": ["review_id", "type"],
+            "type": "object"
+          }
+        ]
       },
       "LandingPageTopicGroupEntry": {
         "anyOf": [
@@ -7972,6 +8213,27 @@
             "type": "object"
           }
         ]
+      },
+      "LandingPageVisitBody": {
+        "additionalProperties": false,
+        "properties": {
+          "referrer": {
+            "type": "string"
+          },
+          "utm_campaign": {
+            "type": "string"
+          },
+          "utm_content": {
+            "type": "string"
+          },
+          "utm_medium": {
+            "type": "string"
+          },
+          "utm_source": {
+            "type": "string"
+          }
+        },
+        "type": "object"
       },
       "LandingPagesPage": {
         "additionalProperties": false,
@@ -8178,6 +8440,15 @@
       "ManualCrawlTarget": {
         "enum": ["html_url", "referral_link", "rss_feed"],
         "type": "string"
+      },
+      "MarkdownPreviewBody": {
+        "additionalProperties": false,
+        "properties": {
+          "markdown": {
+            "type": "string"
+          }
+        },
+        "type": "object"
       },
       "MemberUserWarningListItem": {
         "additionalProperties": false,
@@ -12555,6 +12826,49 @@
         },
         "type": "object"
       },
+      "Partial_EmailPreferences": {
+        "additionalProperties": false,
+        "properties": {
+          "community_digest_frequency": {
+            "enum": ["daily", "none", "weekly"],
+            "type": "string"
+          },
+          "engagement_emails_enabled": {
+            "type": "boolean"
+          },
+          "moderation_email_cadence": {
+            "enum": ["daily", "selected_days", "weekly"],
+            "type": "string"
+          },
+          "moderation_email_days_of_week": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "moderation_email_time_of_day": {
+            "type": "string"
+          },
+          "moderation_email_timezone": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "moderation_emails_enabled": {
+            "type": "boolean"
+          },
+          "news_digest_frequency": {
+            "enum": ["daily", "none", "weekly"],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "Partial_Record__remove_____warn_____approve_____reject_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal__number": {
         "additionalProperties": false,
         "properties": {
@@ -16068,6 +16382,36 @@
         },
         "type": "object"
       },
+      "ReorderProfileLinksRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": ["ids"],
+        "type": "object"
+      },
+      "ReplaceLandingPageItemsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LandingPageItemRequest"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["items"],
+        "type": "object"
+      },
       "ReportAbusePenalty": {
         "additionalProperties": false,
         "properties": {
@@ -17418,6 +17762,16 @@
           }
         ]
       },
+      "SendMessageRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["text"],
+        "type": "object"
+      },
       "SessionBody": {
         "additionalProperties": false,
         "properties": {
@@ -17599,6 +17953,16 @@
       "SetIntegrationStatusResult": {
         "enum": ["noop", "updated"],
         "type": "string"
+      },
+      "SetPrimaryEmailAddressRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "is_primary": {
+            "const": true
+          }
+        },
+        "required": ["is_primary"],
+        "type": "object"
       },
       "SimilarTopic": {
         "additionalProperties": false,
@@ -18838,6 +19202,75 @@
         "required": ["category_text", "item_count", "rejected"],
         "type": "object"
       },
+      "UpdateCardRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "authorized_user_of_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "closed_on": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "credit_limit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_authorized_user": {
+            "type": "boolean"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "opened_on": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "received_sign_up_bonus_on": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
       "UpdateCommunityPostTypeSettingsInput": {
         "additionalProperties": false,
         "properties": {
@@ -18848,6 +19281,16 @@
             "type": "boolean"
           }
         },
+        "type": "object"
+      },
+      "UpdateConversationTitleRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["title"],
         "type": "object"
       },
       "UpdateCrawlerUpdates": {
@@ -18903,6 +19346,160 @@
         },
         "type": "object"
       },
+      "UpdateDisplayPreferencesRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "public_verified_name_display": {
+            "enum": ["first_name_last_initial", "first_name", "full_name", "hidden"],
+            "type": "string"
+          },
+          "verified_badge_visible": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateHostnameBody": {
+        "additionalProperties": false,
+        "properties": {
+          "blocked": {
+            "type": "boolean"
+          },
+          "crawlable": {
+            "type": "boolean"
+          },
+          "ignore_robots_txt": {
+            "anyOf": [
+              {
+                "const": false
+              },
+              {
+                "const": true
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "link_rel_follow": {
+            "type": "boolean"
+          },
+          "skip_web_risk": {
+            "type": "boolean"
+          },
+          "unreliable_status_codes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "UpdateHouseholdBody": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "UpdateIdentityRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "profile_image_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "use_display_name_from": {
+            "enum": [
+              "apple",
+              "facebook",
+              "github",
+              "google",
+              "linkedin",
+              "microsoft",
+              "username",
+              "x"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateLandingPageRequest": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "is_default": {
+                "const": true
+              }
+            },
+            "required": ["is_default"],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "slug": {
+                "type": "string"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "title": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "UpdateListBody": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "visibility": {
+            "enum": ["private", "public", "unlisted"],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "UpdateOAuthAppRequest": {
         "additionalProperties": false,
         "properties": {
@@ -18921,6 +19518,52 @@
         },
         "type": "object"
       },
+      "UpdateParticipantAddPolicyRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "participant_add_policy": {
+            "enum": ["all_members", "owner_only"],
+            "type": "string"
+          }
+        },
+        "required": ["participant_add_policy"],
+        "type": "object"
+      },
+      "UpdatePointValuationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "value_per_point": {
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "maximum": 9999999999,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "currency": {
+                "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                "type": "string"
+              },
+              "scale": {
+                "const": 6
+              }
+            },
+            "required": ["amount", "currency", "scale"],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
       "UpdatePostRatingBody": {
         "additionalProperties": false,
         "properties": {
@@ -18931,6 +19574,63 @@
             "type": "number"
           }
         },
+        "type": "object"
+      },
+      "UpdateProfileLinkRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "handle": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "UpdateProfileRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "markdown": {
+            "type": "string"
+          }
+        },
+        "required": ["markdown"],
         "type": "object"
       },
       "UpdateReferralLinkBody": {
@@ -19009,6 +19709,32 @@
         },
         "type": "object"
       },
+      "UpdateRewardsProgramStatusRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "since": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "until": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
       "UpdateRssFeedBody": {
         "additionalProperties": false,
         "properties": {
@@ -19062,6 +19788,29 @@
                 "type": "null"
               }
             ]
+          }
+        },
+        "type": "object"
+      },
+      "UpdateSpendingCategoryRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "spending_frequency": {
+            "enum": ["annually", "monthly"],
+            "type": "string"
           }
         },
         "type": "object"
@@ -19197,6 +19946,32 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "UpsertHostnameBody": {
+        "additionalProperties": false,
+        "properties": {
+          "blocked": {
+            "type": "boolean"
+          },
+          "hostname": {
+            "type": "string"
+          }
+        },
+        "required": ["hostname"],
+        "type": "object"
+      },
+      "UpsertPlaybackPositionBody": {
+        "additionalProperties": false,
+        "properties": {
+          "completed": {
+            "type": "boolean"
+          },
+          "position_seconds": {
+            "type": "number"
+          }
+        },
+        "required": ["position_seconds"],
         "type": "object"
       },
       "UrlCrawlHistory": {
@@ -19784,6 +20559,76 @@
           "updated_at",
           "years_of_credit_history"
         ],
+        "type": "object"
+      },
+      "UserFinancialProfileInput": {
+        "additionalProperties": false,
+        "properties": {
+          "cards_opened_24m": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "credit_score_range": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "currency": {
+            "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+            "type": "string"
+          },
+          "hard_inquiries_12m": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "stated_income_range": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoneyRange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total_credit_limit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "years_of_credit_history": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
         "type": "object"
       },
       "UserGrowth": {
@@ -20812,6 +21657,16 @@
           }
         },
         "required": ["dnsInstructions", "rawToken", "wellKnownInstructions"],
+        "type": "object"
+      },
+      "VerifyEmailAddressRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": ["token"],
         "type": "object"
       },
       "VerifyOAuthClientRequest": {
@@ -23380,13 +24235,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "attestation": {},
-                  "challengeId": {},
-                  "keyId": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/AppAttestAttestBody"
               }
             }
           }
@@ -23422,11 +24271,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "type": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/AppAttestChallengeBody"
               }
             }
           }
@@ -26082,7 +26927,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/AttributionReferrerBody"
               }
             }
           }
@@ -36261,7 +37106,23 @@
                   "additionalProperties": false,
                   "properties": {
                     "conversation": {
-                      "$ref": "#/components/schemas/Conversation"
+                      "additionalProperties": false,
+                      "properties": {
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["created_at", "id", "title", "updated_at"],
+                      "type": "object"
                     }
                   },
                   "required": ["conversation"],
@@ -36347,22 +37208,207 @@
                 "schema": {
                   "additionalProperties": false,
                   "properties": {
-                    "agentic_run": {
-                      "$ref": "#/components/schemas/ConversationMessageAgenticRun"
-                    },
                     "assistant_message": {
-                      "$ref": "#/components/schemas/ConversationMessage"
+                      "additionalProperties": false,
+                      "properties": {
+                        "completion": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "enum": ["completed", "failed", "incomplete"],
+                              "type": "string"
+                            }
+                          },
+                          "required": ["status"],
+                          "type": "object"
+                        },
+                        "content": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "content": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "role": {
+                                  "enum": ["assistant", "user"],
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["content", "role"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "conversation_id": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "completion",
+                        "content",
+                        "conversation_id",
+                        "created_at",
+                        "id",
+                        "updated_at"
+                      ],
+                      "type": "object"
+                    },
+                    "turn": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "assistant_message_id": {
+                          "type": "string"
+                        },
+                        "user_message_id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["assistant_message_id", "user_message_id"],
+                      "type": "object"
                     },
                     "user_message": {
-                      "$ref": "#/components/schemas/ConversationMessage"
+                      "additionalProperties": false,
+                      "properties": {
+                        "completion": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "enum": ["completed", "failed", "incomplete"],
+                              "type": "string"
+                            }
+                          },
+                          "required": ["status"],
+                          "type": "object"
+                        },
+                        "content": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "content": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "role": {
+                                  "enum": ["assistant", "user"],
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["content", "role"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "conversation_id": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "completion",
+                        "content",
+                        "conversation_id",
+                        "created_at",
+                        "id",
+                        "updated_at"
+                      ],
+                      "type": "object"
                     }
                   },
-                  "required": ["agentic_run", "assistant_message", "user_message"],
+                  "required": ["assistant_message", "turn", "user_message"],
                   "type": "object"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["message"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Conflict"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -44609,6 +45655,114 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "community",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_score_follow_topics",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_score_follow_users",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "post_types",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "discussion",
+                  "review",
+                  "data_point",
+                  "comment",
+                  "link",
+                  "article",
+                  "blog_post",
+                  "story"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "semantic_search_query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "enum": ["new", "hot"],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "text_search_query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "time_range",
+            "required": false,
+            "schema": {
+              "enum": ["1d", "1w", "1m", "1y", "all"],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -44638,6 +45792,25 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
             }
           }
         ],
@@ -44683,6 +45856,118 @@
             "name": "feed_type",
             "required": true,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "community",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_related_posts",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "media_type",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": ["article", "audio", "video"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "media_types",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": ["article", "audio", "video"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
+          },
+          {
+            "in": "query",
+            "name": "min_score_follow_rss_feeds",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_score_follow_topics",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "semantic_search_query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "text_search_query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "time_range",
+            "required": false,
+            "schema": {
+              "enum": ["1d", "1w", "1m", "1y", "all"],
               "type": "string"
             }
           }
@@ -44923,7 +46208,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpsertHostnameBody"
               }
             }
           }
@@ -45802,7 +47087,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateHostnameBody"
               }
             }
           }
@@ -46025,7 +47310,9 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/CreateHouseholdBody"
+              }
             }
           }
         },
@@ -46122,6 +47409,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHouseholdBody"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -46285,7 +47581,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/AddHouseholdMembershipBody"
               }
             }
           }
@@ -46631,7 +47927,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/LandingPageClickBody"
               }
             }
           }
@@ -46677,7 +47973,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/LandingPageVisitBody"
               }
             }
           }
@@ -46709,6 +48005,26 @@
     "/api/v1/lists": {
       "get": {
         "operationId": "get_api_v1_lists",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -46761,21 +48077,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "description": {
-                    "type": "string"
-                  },
-                  "name": {
-                    "type": "string"
-                  },
-                  "visibility": {
-                    "enum": ["private", "public", "unlisted"],
-                    "type": "string"
-                  }
-                },
-                "required": ["name"],
-                "type": "object"
+                "$ref": "#/components/schemas/CreateListBody"
               }
             }
           }
@@ -46907,27 +48209,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "description": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "name": {
-                    "type": "string"
-                  },
-                  "visibility": {
-                    "enum": ["private", "public", "unlisted"],
-                    "type": "string"
-                  }
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/UpdateListBody"
               }
             }
           }
@@ -46973,14 +48255,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "community_slug": {
-                    "type": "string"
-                  }
-                },
-                "required": ["community_slug"],
-                "type": "object"
+                "$ref": "#/components/schemas/ImportCommunityListBody"
               }
             }
           }
@@ -47022,6 +48297,40 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "media_type",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "read",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -47089,14 +48398,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "post_id": {
-                    "type": "string"
-                  }
-                },
-                "required": ["post_id"],
-                "type": "object"
+                "$ref": "#/components/schemas/AddListPostBody"
               }
             }
           }
@@ -47173,14 +48475,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "rss_feed_item_id": {
-                    "type": "string"
-                  }
-                },
-                "required": ["rss_feed_item_id"],
-                "type": "object"
+                "$ref": "#/components/schemas/AddListRssFeedItemBody"
               }
             }
           }
@@ -47267,11 +48562,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "markdown": {}
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/MarkdownPreviewBody"
               }
             }
           }
@@ -49640,7 +50931,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/DismissAsideRequest"
               }
             }
           }
@@ -49681,6 +50972,29 @@
     "/api/v1/my/bans": {
       "get": {
         "operationId": "get_api_v1_my_bans",
+        "parameters": [
+          {
+            "description": "Opaque cursor from page_info.end_cursor.",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Larger values are clamped to 100; other invalid values use 25.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -49787,6 +51101,27 @@
     "/api/v1/my/cards": {
       "get": {
         "operationId": "get_api_v1_my_cards",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -49809,7 +51144,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateCardRequest"
               }
             }
           }
@@ -49876,7 +51211,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateCardRequest"
               }
             }
           }
@@ -49994,7 +51329,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/GrantConsentRequest"
               }
             }
           }
@@ -50049,6 +51384,31 @@
     "/api/v1/my/contribution-status": {
       "get": {
         "operationId": "get_api_v1_my_contribution-status",
+        "parameters": [
+          {
+            "description": "Also return this action limit; an unknown action is rejected with 400.",
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "enum": [
+                "topic",
+                "topic_recommendation",
+                "discussion",
+                "review",
+                "comment",
+                "data_point",
+                "article",
+                "blog_post",
+                "community",
+                "rss_feed",
+                "post_rating",
+                "fediverse_instance"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -50121,7 +51481,23 @@
                     },
                     "results": {
                       "items": {
-                        "$ref": "#/components/schemas/ConversationWithoutChannelType"
+                        "additionalProperties": false,
+                        "properties": {
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["created_at", "id", "title", "updated_at"],
+                        "type": "object"
                       },
                       "type": "array"
                     }
@@ -50177,7 +51553,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateConversationTitleRequest"
               }
             }
           }
@@ -50192,7 +51568,23 @@
                     "conversation": {
                       "anyOf": [
                         {
-                          "$ref": "#/components/schemas/Conversation"
+                          "additionalProperties": false,
+                          "properties": {
+                            "created_at": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "updated_at": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["created_at", "id", "title", "updated_at"],
+                          "type": "object"
                         },
                         {
                           "type": "null"
@@ -50265,7 +51657,69 @@
                     },
                     "results": {
                       "items": {
-                        "$ref": "#/components/schemas/ConversationMessage"
+                        "additionalProperties": false,
+                        "properties": {
+                          "completion": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "status": {
+                                "enum": ["completed", "failed", "incomplete"],
+                                "type": "string"
+                              }
+                            },
+                            "required": ["status"],
+                            "type": "object"
+                          },
+                          "content": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "content": {
+                                    "anyOf": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "role": {
+                                    "enum": ["assistant", "user"],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["content", "role"],
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "conversation_id": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "completion",
+                          "content",
+                          "conversation_id",
+                          "created_at",
+                          "id",
+                          "updated_at"
+                        ],
+                        "type": "object"
                       },
                       "type": "array"
                     }
@@ -50306,7 +51760,23 @@
                       "additionalProperties": false,
                       "properties": {
                         "conversation": {
-                          "$ref": "#/components/schemas/Conversation"
+                          "additionalProperties": false,
+                          "properties": {
+                            "created_at": {
+                              "type": "string"
+                            },
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "updated_at": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["created_at", "id", "title", "updated_at"],
+                          "type": "object"
                         }
                       },
                       "required": ["conversation"],
@@ -50318,7 +51788,23 @@
                         "conversation": {
                           "anyOf": [
                             {
-                              "$ref": "#/components/schemas/Conversation"
+                              "additionalProperties": false,
+                              "properties": {
+                                "created_at": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "updated_at": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["created_at", "id", "title", "updated_at"],
+                              "type": "object"
                             },
                             {
                               "type": "null"
@@ -50440,7 +51926,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/AddEmailAddressRequest"
               }
             }
           }
@@ -50507,7 +51993,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/SetPrimaryEmailAddressRequest"
               }
             }
           }
@@ -50599,7 +52085,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/VerifyEmailAddressRequest"
               }
             }
           }
@@ -50706,7 +52192,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/Partial_EmailPreferences"
               }
             }
           }
@@ -50738,6 +52224,39 @@
     "/api/v1/my/export/rss-feeds": {
       "get": {
         "operationId": "get_api_v1_my_export_rss-feeds",
+        "parameters": [
+          {
+            "description": "Only export feeds of this type: article, podcast, video or mixed. An empty value means no filter.",
+            "in": "query",
+            "name": "feed_type",
+            "required": false,
+            "schema": {
+              "enum": ["article", "podcast", "video", "mixed"],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Any value other than json or csv exports opml.",
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "opml",
+              "enum": ["json", "csv", "opml"],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only the literal 1 answers 204 without a body when the export fits the limit.",
+            "in": "query",
+            "name": "preflight",
+            "required": false,
+            "schema": {
+              "enum": ["1"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -50778,6 +52297,28 @@
     "/api/v1/my/export/topics": {
       "get": {
         "operationId": "get_api_v1_my_export_topics",
+        "parameters": [
+          {
+            "description": "Only the literal 1 streams the bare JSON array instead of a results object.",
+            "in": "query",
+            "name": "download",
+            "required": false,
+            "schema": {
+              "enum": ["1"],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only the literal 1 answers 204 without a body when the export fits the limit.",
+            "in": "query",
+            "name": "preflight",
+            "required": false,
+            "schema": {
+              "enum": ["1"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -50853,7 +52394,9 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/UserFinancialProfileInput"
+              }
             }
           }
         },
@@ -51498,7 +53041,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateIdentityRequest"
               }
             }
           }
@@ -52131,7 +53674,9 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDisplayPreferencesRequest"
+              }
             }
           }
         },
@@ -52225,7 +53770,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/ImportRssFeedsRequest"
               }
             }
           }
@@ -52305,7 +53850,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/ImportTopicsRequest"
               }
             }
           }
@@ -52404,7 +53949,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateLandingPageRequest"
               }
             }
           }
@@ -52584,7 +54129,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateLandingPageRequest"
               }
             }
           }
@@ -52734,7 +54279,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/ReplaceLandingPageItemsRequest"
               }
             }
           }
@@ -52817,6 +54362,27 @@
     "/api/v1/my/messages": {
       "get": {
         "operationId": "get_api_v1_my_messages",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -52898,7 +54464,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateConversationRequest"
               }
             }
           }
@@ -53026,7 +54592,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateParticipantAddPolicyRequest"
               }
             }
           }
@@ -53039,6 +54605,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "participant_add_policy": {
+                      "enum": ["all_members", "owner_only"],
                       "type": "string"
                     }
                   },
@@ -53065,6 +54632,25 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
             }
           }
         ],
@@ -53140,7 +54726,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/SendMessageRequest"
               }
             }
           }
@@ -53179,6 +54765,25 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
             }
           }
         ],
@@ -53227,7 +54832,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/AddParticipantRequest"
               }
             }
           }
@@ -53290,6 +54895,27 @@
     "/api/v1/my/notifications": {
       "get": {
         "operationId": "get_api_v1_my_notifications",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -53459,7 +55085,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateWebPushSubscriptionRequest"
               }
             }
           }
@@ -53912,7 +55538,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateProfileRequest"
               }
             }
           }
@@ -53983,7 +55609,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateProfileLinkRequest"
               }
             }
           }
@@ -54019,7 +55645,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/ReorderProfileLinksRequest"
               }
             }
           }
@@ -54089,7 +55715,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateProfileLinkRequest"
               }
             }
           }
@@ -54121,6 +55747,27 @@
     "/api/v1/my/referral-clicks": {
       "get": {
         "operationId": "get_api_v1_my_referral-clicks",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -54197,6 +55844,38 @@
     "/api/v1/my/removed-posts": {
       "get": {
         "operationId": "get_api_v1_my_removed-posts",
+        "parameters": [
+          {
+            "description": "Opaque cursor from page_info.end_cursor.",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only the literal value true includes them.",
+            "in": "query",
+            "name": "include_platform",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Larger values are clamped to 100; other invalid values use 25.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -54350,7 +56029,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreatePointValuationRequest"
               }
             }
           }
@@ -54417,7 +56096,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdatePointValuationRequest"
               }
             }
           }
@@ -54492,7 +56171,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateRewardsProgramStatusRequest"
               }
             }
           }
@@ -54559,7 +56238,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateRewardsProgramStatusRequest"
               }
             }
           }
@@ -54634,7 +56313,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateSpendingCategoryRequest"
               }
             }
           }
@@ -54701,7 +56380,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/UpdateSpendingCategoryRequest"
               }
             }
           }
@@ -54763,6 +56442,27 @@
     "/api/v1/my/warnings": {
       "get": {
         "operationId": "get_api_v1_my_warnings",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -54962,13 +56662,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "completed": {},
-                  "position_seconds": {}
-                },
-                "required": ["position_seconds"],
-                "type": "object"
+                "$ref": "#/components/schemas/UpsertPlaybackPositionBody"
               }
             }
           }
@@ -67732,6 +69426,25 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -72008,6 +73721,34 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "feed_type",
+            "required": false,
+            "schema": {
+              "enum": ["article", "podcast", "video", "mixed"],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 25,
+              "minimum": 1,
+              "type": "integer"
             }
           }
         ],

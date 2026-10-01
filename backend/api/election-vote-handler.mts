@@ -47,8 +47,6 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
   const rateLimiter = new RateLimiter({ prefix: options.rateLimitPrefix, ttlSeconds: 60 })
 
   return async function handleVote(ctx: Context): Promise<void> {
-    ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid ID')
-
     const currentUser = await ctx.getCurrentUser()
     ctx.assert(currentUser, 401, 'Unauthorized')
 
@@ -57,6 +55,9 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
     if (options.preAssertAccess) {
       await options.preAssertAccess(ctx, currentUser)
     }
+
+    // After auth and role checks, so callers denied access never see a validation diagnostic.
+    ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid ID')
 
     const isAdmin = isAdminUser(currentUser)
     const entity =

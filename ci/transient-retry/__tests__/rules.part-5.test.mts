@@ -39,7 +39,7 @@ function storybookBrowserEnv(): Record<string, unknown> {
 
 describe('RULES catalogue', () => {
   describe('storybook-browser-startup-transient warm-cache variant', () => {
-    const storybookJobName = 'storybook-build / storybook'
+    const storybookJobName = 'storybook / storybook'
 
     it('keeps the workflow env marker aligned with Storybook browser log fingerprints', async () => {
       const env = storybookBrowserEnv()
@@ -49,13 +49,13 @@ describe('RULES catalogue', () => {
       const log = [
         `${envLogMarker}\n`,
         '[storybook-browser] starting attempt 1/3 with cache /runner/_temp/storybook-cache\n',
-        'VITE v8.0.16  ready in 573 ms\n',
+        'VITE v0.0.0  ready in 573 ms\n',
         '[storybook-browser] no test output for 120000ms after Vite startup — suspected Vitest/Chromium tester-connection hang; last output:\n',
-        'VITE v8.0.16  ready in 573 ms\n',
+        'VITE v0.0.0  ready in 573 ms\n',
         '##[error]Process completed with exit code 143.',
       ].join('')
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
       })
@@ -68,13 +68,13 @@ describe('RULES catalogue', () => {
       const warmCacheLog =
         'VITEST_STORYBOOK_BROWSER: 1\n' +
         '[storybook-browser] starting attempt 1/3 with cache /runner/_temp/vite-storybook-browser-27755469939-1-storybook-attempt-1\n' +
-        'VITE v8.0.16  ready in 573 ms\n' +
+        'VITE v0.0.0  ready in 573 ms\n' +
         '[storybook-browser] no test output for 120000ms after Vite startup — suspected Vitest/Chromium tester-connection hang; last output:\n' +
-        'VITE v8.0.16  ready in 573 ms\n' +
+        'VITE v0.0.0  ready in 573 ms\n' +
         '##[error]Process completed with exit code 143.\n' +
         '##[error]The runner has received a shutdown signal.'
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, warmCacheLog]])),
       })
@@ -93,7 +93,7 @@ describe('RULES catalogue', () => {
         '##[error]The runner has received a shutdown signal.\n' +
         '##[error]The operation was canceled.'
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         runAttempt: 2,
         ruleAttempts: new Map([['storybook-browser-startup-transient', 1]]),
         failedJobNames: [storybookJobName],
@@ -114,7 +114,7 @@ describe('RULES catalogue', () => {
         '##[error]The runner has received a shutdown signal.\n' +
         '##[error]The operation was canceled'
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         runAttempt: 2,
         ruleAttempts: new Map([['storybook-browser-startup-transient', 1]]),
         failedJobNames: [storybookJobName],
@@ -136,7 +136,7 @@ describe('RULES catalogue', () => {
         '##[error]The runner has received a shutdown signal.\n' +
         '##[error]The operation was canceled'
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         runAttempt: 2,
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
@@ -148,7 +148,7 @@ describe('RULES catalogue', () => {
 
     it('does not match the watchdog hang before Vite is ready', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
@@ -172,7 +172,7 @@ describe('RULES catalogue', () => {
     it('matches the terminal watchdog attempt when Vite ready is outside the last-output tail', async () => {
       const debugTail = `${'Playwright debug output\n'.repeat(80)}tail only\n`
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
@@ -182,7 +182,7 @@ describe('RULES catalogue', () => {
                 [
                   'VITEST_STORYBOOK_BROWSER: 1\n',
                   '[storybook-browser] starting attempt 2/3 with cache /runner/_temp/vite-storybook-browser-27755469939-1-storybook-attempt-2\n',
-                  'VITE v8.0.16  ready in 573 ms\n',
+                  'VITE v0.0.0  ready in 573 ms\n',
                   debugTail,
                   '[storybook-browser] no test output for 120000ms after Vite startup — suspected Vitest/Chromium tester-connection hang; last output:\n',
                   debugTail,
@@ -199,7 +199,7 @@ describe('RULES catalogue', () => {
 
     it('matches the terminal watchdog hang when a previous step emitted a Vitest summary', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
@@ -209,9 +209,9 @@ describe('RULES catalogue', () => {
                 'Run Storybook snapshots\n' +
                   'Test Files 20 passed (20)\n' +
                   'VITEST_STORYBOOK_BROWSER: 1\n' +
-                  'VITE v8.0.16  ready in 573 ms\n' +
+                  'VITE v0.0.0  ready in 573 ms\n' +
                   '[storybook-browser] no test output for 120000ms after Vite startup — suspected Vitest/Chromium tester-connection hang; last output:\n' +
-                  'VITE v8.0.16  ready in 573 ms\n' +
+                  'VITE v0.0.0  ready in 573 ms\n' +
                   '##[error]Process completed with exit code 143.',
               ],
             ]),
@@ -224,7 +224,7 @@ describe('RULES catalogue', () => {
 
     it('does not match an earlier watchdog hang followed by a later real failure', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
@@ -232,9 +232,9 @@ describe('RULES catalogue', () => {
               [
                 storybookJobName,
                 'VITEST_STORYBOOK_BROWSER: 1\n' +
-                  'VITE v8.0.16  ready in 573 ms\n' +
+                  'VITE v0.0.0  ready in 573 ms\n' +
                   '[storybook-browser] no test output for 120000ms after Vite startup — suspected Vitest/Chromium tester-connection hang; last output:\n' +
-                  'VITE v8.0.16  ready in 573 ms\n' +
+                  'VITE v0.0.0  ready in 573 ms\n' +
                   '[storybook-browser] retrying after retryable Vite failure on attempt 1\n' +
                   '[storybook-browser] starting attempt 2/3 with cache /runner/_temp/vite-storybook-browser-27755469939-1-storybook-attempt-2\n' +
                   'Failed to import test file\n' +
@@ -250,7 +250,7 @@ describe('RULES catalogue', () => {
 
     it('matches the watchdog hang when the runner exits after terminating the child', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
@@ -258,9 +258,9 @@ describe('RULES catalogue', () => {
               [
                 storybookJobName,
                 'VITEST_STORYBOOK_BROWSER: 1\n' +
-                  'VITE v5.0.0 ready in 45ms\n' +
+                  'VITE v0.0.0 ready in 45ms\n' +
                   '[storybook-browser] no test output for 120000ms after Vite startup — suspected Vitest/Chromium tester-connection hang; last output:\n' +
-                  'VITE v5.0.0 ready in 45ms\n' +
+                  'VITE v0.0.0 ready in 45ms\n' +
                   '##[error]Process completed with exit code 1.',
               ],
             ]),
@@ -273,7 +273,7 @@ describe('RULES catalogue', () => {
 
     it('does not match a watchdog hang after Storybook browser tests start', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
@@ -281,10 +281,10 @@ describe('RULES catalogue', () => {
               [
                 storybookJobName,
                 'VITEST_STORYBOOK_BROWSER: 1\n' +
-                  'VITE v5.0.0 ready in 45ms\n' +
+                  'VITE v0.0.0 ready in 45ms\n' +
                   '|web-storybook-browser| story started\n' +
                   '[storybook-browser] no test output for 120000ms after Vite startup — suspected Vitest/Chromium tester-connection hang; last output:\n' +
-                  'VITE v5.0.0 ready in 45ms\n' +
+                  'VITE v0.0.0 ready in 45ms\n' +
                   '|web-storybook-browser| story started\n' +
                   '##[error]Process completed with exit code 143.',
               ],

@@ -128,6 +128,10 @@ describe('copyright email intake persistence', () => {
       rationale: 'The message is unrelated spam.',
     }
 
+    await expect(readTestPendingCopyrightAgentDispatches(intake.id)).resolves.toEqual([
+      { kind: 'email', intakeId: intake.id },
+    ])
+
     const rejected = await rejectCopyrightEmailIntake({
       ...input,
       responseKind: 'needs_information',
@@ -135,6 +139,9 @@ describe('copyright email intake persistence', () => {
     })
     const duplicate = await rejectCopyrightEmailIntake(input)
 
+    // A staff-decided email needs no recommendation, so a decision recorded while intake is off
+    // does not send the email to the model once intake is switched back on.
+    await expect(readTestPendingCopyrightAgentDispatches(intake.id)).resolves.toEqual([])
     await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
       { accepted: false, promoted_copyright_notice_id: null },
     ])

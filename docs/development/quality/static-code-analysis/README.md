@@ -322,6 +322,41 @@ suppress with a trailing same-line comment, which ast-grep parses as a separate 
 rule covers only the `Tsx`-parsed extensions; Rust, Lua, SQL, shell, Python, and YAML sources are
 not scanned.
 
+## Knip Production Exports
+
+`pnpm run knip:production-exports` finds backend exports that only tests keep alive. Almost every
+backend package declares a wildcard manifest export (`"./*"`), which Knip expands into `**/*.mts`
+production entries. Knip applies its test-file negations to configured entries but not to entries
+derived from manifest exports, so `*.test.mts` files would be entries and their imports would keep
+test-only exports reachable. A `null` export target does become a negated pattern, so each of those
+manifests also declares `"./*.test.mts": null` and `"./*/__tests__/*": null`. Node and TypeScript
+honor the single-star key and ignore the multi-star one, and nothing imports a test file by package
+specifier. Add both keys to any new backend package that declares `"./*"`.
+
+- **Baseline.** [`baseline.txt`](../../../../static-code-analysis/knip-production-exports/baseline.txt)
+  lists one `<issue type> <repo-relative path> <symbol>` line per known finding, sorted, without line
+  numbers. The [preprocessor](../../../../static-code-analysis/knip-production-exports/baseline.mts)
+  is passed to Knip with `--preprocessor` and drops baselined findings before Knip computes its exit
+  status, so a new finding fails the run. A line that matches no finding is stale and also fails,
+  so the file only shrinks.
+- **Update.** `pnpm run knip:production-exports:update` rewrites the baseline from the current
+  findings. Run it after deleting exports to remove their stale lines; a diff that adds lines accepts
+  new debt and needs review.
+- **Fixing a new finding.** Delete the export, make it module-private, move a test-only helper into
+  test helpers, or mark a deliberate seam with a JSDoc `@public` tag and a reason, which Knip never
+  reports. Config-driven migration default exports carry that tag because the migration runner loads
+  them by path.
+- **Test helpers.** `knip.jsonc` lists `backend/test-helpers!` in `ignoreWorkspaces`. The `!`
+  applies it only under `--production`, so the shared helper package can't keep production exports
+  alive there, and default Knip still checks it. Helper files inside production packages, such as
+  `test-helpers.mts` or `*test-support.mts`, remain production entries: their own unused exports are
+  reported, but exports they import are not. Move them into `backend/test-helpers`.
+- **Config hints.** Knip disables configuration hints under `--production`, so
+  `pnpm exec knip --treat-config-hints-as-errors` remains the check for stale `knip.jsonc` entries.
+
+The baseline follows [Rolling Out A Repo-Wide Guard](#rolling-out-a-repo-wide-guard): the guard and
+its seeded baseline land first, and remediation removes entries in later changes.
+
 ## Migration Artifact Cleanup
 
 The PostgreSQL [relational-storage guard](../../../../static-code-analysis/repo-file-policy/relational-storage-guard.mts) reads the

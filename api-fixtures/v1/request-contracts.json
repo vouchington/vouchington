@@ -1,5 +1,62 @@
 {
   "components": {
+    "AddEmailAddressRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "email_address": {
+          "type": "string"
+        }
+      },
+      "required": ["email_address"],
+      "type": "object"
+    },
+    "AddHouseholdMembershipBody": {
+      "additionalProperties": false,
+      "properties": {
+        "individual_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "relationship": {
+          "type": "string"
+        }
+      },
+      "required": ["individual_id"],
+      "type": "object"
+    },
+    "AddListPostBody": {
+      "additionalProperties": false,
+      "properties": {
+        "post_id": {
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "required": ["post_id"],
+      "type": "object"
+    },
+    "AddListRssFeedItemBody": {
+      "additionalProperties": false,
+      "properties": {
+        "rss_feed_item_id": {
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "required": ["rss_feed_item_id"],
+      "type": "object"
+    },
+    "AddParticipantRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "user_id": {
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "required": ["user_id"],
+      "type": "object"
+    },
     "AdminOAuthClientView": {
       "additionalProperties": false,
       "properties": {
@@ -74,18 +131,6 @@
         "verified_by_id"
       ],
       "type": "object"
-    },
-    "AgentModelProvider": {
-      "enum": [
-        "android_aicore",
-        "anthropic",
-        "apple_foundation",
-        "openai_compatible",
-        "openai",
-        "openrouter",
-        "windows_foundry"
-      ],
-      "type": "string"
     },
     "AgentModerationContext": {
       "additionalProperties": false,
@@ -284,6 +329,33 @@
       ],
       "type": "object"
     },
+    "AppAttestAttestBody": {
+      "additionalProperties": false,
+      "properties": {
+        "attestation": {
+          "type": "string"
+        },
+        "challengeId": {
+          "type": "string"
+        },
+        "keyId": {
+          "type": "string"
+        }
+      },
+      "required": ["attestation", "challengeId", "keyId"],
+      "type": "object"
+    },
+    "AppAttestChallengeBody": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["assertion", "attestation"],
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
     "AppAttestEnvironment": {
       "enum": ["development", "production"],
       "type": "string"
@@ -413,6 +485,68 @@
       "properties": {
         "category_text": {},
         "topic_id": {}
+      },
+      "type": "object"
+    },
+    "AttributionReferrerBody": {
+      "additionalProperties": false,
+      "properties": {
+        "landing_url": {
+          "type": "string"
+        },
+        "referrer": {
+          "type": "string"
+        },
+        "utm": {
+          "$ref": "#/components/schemas/AttributionReferrerUtmBody"
+        }
+      },
+      "required": ["landing_url", "referrer"],
+      "type": "object"
+    },
+    "AttributionReferrerUtmBody": {
+      "additionalProperties": false,
+      "properties": {
+        "utm_campaign": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "utm_content": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "utm_medium": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "utm_source": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
       },
       "type": "object"
     },
@@ -2332,322 +2466,6 @@
       "required": ["allowed"],
       "type": "object"
     },
-    "Conversation": {
-      "additionalProperties": false,
-      "properties": {
-        "channel_type": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "created_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "deleted_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "deleted_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "last_response_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "title": {
-          "type": "string"
-        },
-        "updated_at": {
-          "type": "string"
-        },
-        "updated_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "required": [
-        "channel_type",
-        "created_at",
-        "created_by_id",
-        "deleted_at",
-        "deleted_by_id",
-        "id",
-        "last_response_id",
-        "title",
-        "updated_at",
-        "updated_by_id"
-      ],
-      "type": "object"
-    },
-    "ConversationMessage": {
-      "additionalProperties": false,
-      "properties": {
-        "content": {
-          "anyOf": [
-            {
-              "additionalProperties": false,
-              "properties": {
-                "content": {
-                  "type": "string"
-                },
-                "role": {
-                  "const": "user"
-                }
-              },
-              "required": ["content", "role"],
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "content": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
-                "error": {
-                  "type": "string"
-                },
-                "role": {
-                  "const": "assistant"
-                }
-              },
-              "required": ["content", "role"],
-              "type": "object"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "conversation_id": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "created_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "deleted_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "deleted_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "updated_at": {
-          "type": "string"
-        },
-        "updated_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "required": [
-        "content",
-        "conversation_id",
-        "created_at",
-        "created_by_id",
-        "deleted_at",
-        "deleted_by_id",
-        "id",
-        "updated_at",
-        "updated_by_id"
-      ],
-      "type": "object"
-    },
-    "ConversationMessageAgenticRun": {
-      "additionalProperties": false,
-      "properties": {
-        "completed_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "conversation_id": {
-          "type": "string"
-        },
-        "conversation_message_id": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "deleted_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "error": {},
-        "failed_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "input": {},
-        "model_name": {
-          "type": "string"
-        },
-        "model_provider": {
-          "$ref": "#/components/schemas/AgentModelProvider"
-        },
-        "output": {},
-        "parent_agentic_run_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "started_at": {
-          "type": "string"
-        },
-        "status": {
-          "$ref": "#/components/schemas/ConversationMessageAgenticRunStatus"
-        },
-        "termination_reason": {
-          "anyOf": [
-            {
-              "const": "error"
-            },
-            {
-              "const": "max_iterations"
-            },
-            {
-              "const": "max_topics"
-            },
-            {
-              "const": "no_tool_calls"
-            },
-            {
-              "const": "stalled"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "updated_at": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "completed_at",
-        "conversation_id",
-        "conversation_message_id",
-        "created_at",
-        "deleted_at",
-        "error",
-        "failed_at",
-        "id",
-        "input",
-        "model_name",
-        "model_provider",
-        "output",
-        "parent_agentic_run_id",
-        "started_at",
-        "status",
-        "termination_reason",
-        "updated_at"
-      ],
-      "type": "object"
-    },
-    "ConversationMessageAgenticRunStatus": {
-      "enum": ["completed", "failed", "running"],
-      "type": "string"
-    },
     "ConversationParticipant": {
       "additionalProperties": false,
       "properties": {
@@ -2714,85 +2532,6 @@
         "role",
         "user_id",
         "username"
-      ],
-      "type": "object"
-    },
-    "ConversationWithoutChannelType": {
-      "additionalProperties": false,
-      "properties": {
-        "created_at": {
-          "type": "string"
-        },
-        "created_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "deleted_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "deleted_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "last_response_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "title": {
-          "type": "string"
-        },
-        "updated_at": {
-          "type": "string"
-        },
-        "updated_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "required": [
-        "created_at",
-        "created_by_id",
-        "deleted_at",
-        "deleted_by_id",
-        "id",
-        "last_response_id",
-        "title",
-        "updated_at",
-        "updated_by_id"
       ],
       "type": "object"
     },
@@ -3644,6 +3383,36 @@
                 "intake_id": {
                   "type": "string"
                 },
+                "review": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "accepted": {
+                          "type": "boolean"
+                        },
+                        "reviewed_at": {
+                          "type": "string"
+                        },
+                        "reviewed_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["accepted", "reviewed_at", "reviewed_by_id"],
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "screening": {
                   "anyOf": [
                     {
@@ -3696,7 +3465,7 @@
                   "type": "string"
                 }
               },
-              "required": ["intake_id", "screening", "source_kind"],
+              "required": ["intake_id", "review", "screening", "source_kind"],
               "type": "object"
             },
             {
@@ -4374,6 +4143,53 @@
       "required": ["hostname"],
       "type": "object"
     },
+    "CreateCardRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "card_id": {
+          "type": "string"
+        }
+      },
+      "required": ["card_id"],
+      "type": "object"
+    },
+    "CreateConversationRequest": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "user_id": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          "required": ["user_id"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "user_ids": {
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "maxItems": 25,
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": false
+            }
+          },
+          "required": ["user_ids"],
+          "type": "object"
+        }
+      ]
+    },
+    "CreateHouseholdBody": {
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object"
+    },
     "CreateInstanceResult": {
       "additionalProperties": false,
       "properties": {
@@ -4401,6 +4217,53 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "CreateLandingPageRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "slug": {
+          "type": "string"
+        },
+        "subtitle": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": ["slug", "title"],
+      "type": "object"
+    },
+    "CreateListBody": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "visibility": {
+          "enum": ["private", "public", "unlisted"],
+          "type": "string"
+        }
+      },
+      "required": ["name"],
       "type": "object"
     },
     "CreateOAuthAppRequest": {
@@ -4433,6 +4296,45 @@
         }
       },
       "required": ["client_name", "redirect_uris", "scopes"],
+      "type": "object"
+    },
+    "CreatePointValuationRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "note": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "rewards_program_id": {
+          "type": "string"
+        },
+        "value_per_point": {
+          "additionalProperties": false,
+          "properties": {
+            "amount": {
+              "maximum": 9999999999,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "currency": {
+              "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+              "type": "string"
+            },
+            "scale": {
+              "const": 6
+            }
+          },
+          "required": ["amount", "currency", "scale"],
+          "type": "object"
+        }
+      },
+      "required": ["rewards_program_id", "value_per_point"],
       "type": "object"
     },
     "CreatePostRatingBody": {
@@ -4575,6 +4477,57 @@
       },
       "type": "object"
     },
+    "CreateProfileLinkRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "handle": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "image_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "link_type": {
+          "$ref": "#/components/schemas/ProfileLinkType"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": ["link_type"],
+      "type": "object"
+    },
     "CreateReferralLinkBody": {
       "additionalProperties": false,
       "properties": {
@@ -4710,6 +4663,16 @@
       "required": ["slug"],
       "type": "object"
     },
+    "CreateRewardsProgramStatusRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "rewards_program_status_id": {
+          "type": "string"
+        }
+      },
+      "required": ["rewards_program_status_id"],
+      "type": "object"
+    },
     "CreateRssFeedBody": {
       "additionalProperties": false,
       "properties": {
@@ -4741,6 +4704,31 @@
         }
       },
       "required": ["rss_feed_id", "status", "topic_id", "topic_slug"],
+      "type": "object"
+    },
+    "CreateSpendingCategoryRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "$ref": "#/components/schemas/Money"
+        },
+        "household_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "spending_category_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "spending_frequency": {
+          "enum": ["annually", "monthly"],
+          "type": "string"
+        }
+      },
+      "required": ["amount", "spending_category_id"],
       "type": "object"
     },
     "CreateTopicAliasesBody": {
@@ -4925,6 +4913,35 @@
         }
       },
       "required": ["name", "slug"],
+      "type": "object"
+    },
+    "CreateWebPushSubscriptionRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "auth": {
+          "type": "string"
+        },
+        "endpoint": {
+          "type": "string"
+        },
+        "expiration_time_ms": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "p256dh": {
+          "type": "string"
+        },
+        "user_agent": {
+          "type": "string"
+        }
+      },
+      "required": ["auth", "endpoint", "p256dh"],
       "type": "object"
     },
     "CuratedAsideItem": {
@@ -5375,6 +5392,16 @@
         "id",
         "updated_at"
       ],
+      "type": "object"
+    },
+    "DismissAsideRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "aside_key": {
+          "type": "string"
+        }
+      },
+      "required": ["aside_key"],
       "type": "object"
     },
     "DynamicConfigFieldMetadata": {
@@ -6899,6 +6926,19 @@
       },
       "type": "object"
     },
+    "GrantConsentRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "consent_type": {
+          "$ref": "#/components/schemas/ConsentType"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": ["consent_type", "version"],
+      "type": "object"
+    },
     "GrowthMetrics": {
       "additionalProperties": false,
       "properties": {
@@ -7163,6 +7203,16 @@
       ],
       "type": "object"
     },
+    "ImportCommunityListBody": {
+      "additionalProperties": false,
+      "properties": {
+        "community_slug": {
+          "type": "string"
+        }
+      },
+      "required": ["community_slug"],
+      "type": "object"
+    },
     "ImportRow": {
       "additionalProperties": false,
       "properties": {
@@ -7239,6 +7289,52 @@
       ],
       "type": "object"
     },
+    "ImportRssFeedsRequest": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "csv": {
+              "type": "string"
+            },
+            "follow": {
+              "type": "boolean"
+            }
+          },
+          "required": ["csv"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "follow": {
+              "type": "boolean"
+            },
+            "opml": {
+              "type": "string"
+            }
+          },
+          "required": ["opml"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "follow": {
+              "type": "boolean"
+            },
+            "urls": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": ["urls"],
+          "type": "object"
+        }
+      ]
+    },
     "ImportTopicResult": {
       "additionalProperties": false,
       "properties": {
@@ -7260,6 +7356,22 @@
         }
       },
       "required": ["input", "status"],
+      "type": "object"
+    },
+    "ImportTopicsRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "names": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 500,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": false
+        }
+      },
+      "required": ["names"],
       "type": "object"
     },
     "ImportType": {
@@ -7776,6 +7888,21 @@
       "required": ["can_create_landing_pages", "profile_links", "referral_links", "reviews"],
       "type": "object"
     },
+    "LandingPageClickBody": {
+      "additionalProperties": false,
+      "properties": {
+        "group_member_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "landing_page_item_id": {
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "required": ["landing_page_item_id"],
+      "type": "object"
+    },
     "LandingPageItem": {
       "anyOf": [
         {
@@ -7885,6 +8012,88 @@
       "required": ["click_count", "item_id", "item_type"],
       "type": "object"
     },
+    "LandingPageItemRequest": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "entries": {
+              "items": {
+                "$ref": "#/components/schemas/LandingPageTopicEntryRequest"
+              },
+              "type": "array"
+            },
+            "topic_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": {
+              "const": "topic_group"
+            }
+          },
+          "required": ["entries", "topic_id", "type"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "type": {
+              "const": "link"
+            },
+            "url": {
+              "type": "string"
+            }
+          },
+          "required": ["label", "type", "url"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "profile_link_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": {
+              "const": "profile_link"
+            }
+          },
+          "required": ["profile_link_id", "type"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "referral_link_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": {
+              "const": "referral_link"
+            }
+          },
+          "required": ["referral_link_id", "type"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "review_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": {
+              "const": "review"
+            }
+          },
+          "required": ["review_id", "type"],
+          "type": "object"
+        }
+      ]
+    },
     "LandingPageTopic": {
       "additionalProperties": false,
       "properties": {
@@ -7903,6 +8112,38 @@
       },
       "required": ["id", "name", "slug", "topic_type"],
       "type": "object"
+    },
+    "LandingPageTopicEntryRequest": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "referral_link_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": {
+              "const": "referral_link"
+            }
+          },
+          "required": ["referral_link_id", "type"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "review_id": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": {
+              "const": "review"
+            }
+          },
+          "required": ["review_id", "type"],
+          "type": "object"
+        }
+      ]
     },
     "LandingPageTopicGroupEntry": {
       "anyOf": [
@@ -7939,6 +8180,27 @@
           "type": "object"
         }
       ]
+    },
+    "LandingPageVisitBody": {
+      "additionalProperties": false,
+      "properties": {
+        "referrer": {
+          "type": "string"
+        },
+        "utm_campaign": {
+          "type": "string"
+        },
+        "utm_content": {
+          "type": "string"
+        },
+        "utm_medium": {
+          "type": "string"
+        },
+        "utm_source": {
+          "type": "string"
+        }
+      },
+      "type": "object"
     },
     "LandingPagesPage": {
       "additionalProperties": false,
@@ -8145,6 +8407,15 @@
     "ManualCrawlTarget": {
       "enum": ["html_url", "referral_link", "rss_feed"],
       "type": "string"
+    },
+    "MarkdownPreviewBody": {
+      "additionalProperties": false,
+      "properties": {
+        "markdown": {
+          "type": "string"
+        }
+      },
+      "type": "object"
     },
     "MemberUserWarningListItem": {
       "additionalProperties": false,
@@ -12522,6 +12793,49 @@
       },
       "type": "object"
     },
+    "Partial_EmailPreferences": {
+      "additionalProperties": false,
+      "properties": {
+        "community_digest_frequency": {
+          "enum": ["daily", "none", "weekly"],
+          "type": "string"
+        },
+        "engagement_emails_enabled": {
+          "type": "boolean"
+        },
+        "moderation_email_cadence": {
+          "enum": ["daily", "selected_days", "weekly"],
+          "type": "string"
+        },
+        "moderation_email_days_of_week": {
+          "items": {
+            "type": "number"
+          },
+          "type": "array"
+        },
+        "moderation_email_time_of_day": {
+          "type": "string"
+        },
+        "moderation_email_timezone": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "moderation_emails_enabled": {
+          "type": "boolean"
+        },
+        "news_digest_frequency": {
+          "enum": ["daily", "none", "weekly"],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "Partial_Record__remove_____warn_____approve_____reject_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal__number": {
       "additionalProperties": false,
       "properties": {
@@ -16029,6 +16343,36 @@
       },
       "type": "object"
     },
+    "ReorderProfileLinksRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": ["ids"],
+      "type": "object"
+    },
+    "ReplaceLandingPageItemsRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/components/schemas/LandingPageItemRequest"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["items"],
+      "type": "object"
+    },
     "ReportAbusePenalty": {
       "additionalProperties": false,
       "properties": {
@@ -17379,6 +17723,16 @@
         }
       ]
     },
+    "SendMessageRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": ["text"],
+      "type": "object"
+    },
     "SessionBody": {
       "additionalProperties": false,
       "properties": {
@@ -17560,6 +17914,16 @@
     "SetIntegrationStatusResult": {
       "enum": ["noop", "updated"],
       "type": "string"
+    },
+    "SetPrimaryEmailAddressRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "is_primary": {
+          "const": true
+        }
+      },
+      "required": ["is_primary"],
+      "type": "object"
     },
     "SimilarTopic": {
       "additionalProperties": false,
@@ -18799,6 +19163,75 @@
       "required": ["category_text", "item_count", "rejected"],
       "type": "object"
     },
+    "UpdateCardRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "authorized_user_of_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "closed_on": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "credit_limit": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/Money"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_authorized_user": {
+          "type": "boolean"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "opened_on": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "received_sign_up_bonus_on": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
     "UpdateCommunityPostTypeSettingsInput": {
       "additionalProperties": false,
       "properties": {
@@ -18809,6 +19242,16 @@
           "type": "boolean"
         }
       },
+      "type": "object"
+    },
+    "UpdateConversationTitleRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": ["title"],
       "type": "object"
     },
     "UpdateCrawlerUpdates": {
@@ -18864,6 +19307,160 @@
       },
       "type": "object"
     },
+    "UpdateDisplayPreferencesRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "public_verified_name_display": {
+          "enum": ["first_name_last_initial", "first_name", "full_name", "hidden"],
+          "type": "string"
+        },
+        "verified_badge_visible": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "UpdateHostnameBody": {
+      "additionalProperties": false,
+      "properties": {
+        "blocked": {
+          "type": "boolean"
+        },
+        "crawlable": {
+          "type": "boolean"
+        },
+        "ignore_robots_txt": {
+          "anyOf": [
+            {
+              "const": false
+            },
+            {
+              "const": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "link_rel_follow": {
+          "type": "boolean"
+        },
+        "skip_web_risk": {
+          "type": "boolean"
+        },
+        "unreliable_status_codes": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "UpdateHouseholdBody": {
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object"
+    },
+    "UpdateIdentityRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "profile_image_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "use_display_name_from": {
+          "enum": [
+            "apple",
+            "facebook",
+            "github",
+            "google",
+            "linkedin",
+            "microsoft",
+            "username",
+            "x"
+          ],
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "UpdateLandingPageRequest": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "is_default": {
+              "const": true
+            }
+          },
+          "required": ["is_default"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "slug": {
+              "type": "string"
+            },
+            "subtitle": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "title": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      ]
+    },
+    "UpdateListBody": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "visibility": {
+          "enum": ["private", "public", "unlisted"],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "UpdateOAuthAppRequest": {
       "additionalProperties": false,
       "properties": {
@@ -18882,6 +19479,52 @@
       },
       "type": "object"
     },
+    "UpdateParticipantAddPolicyRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "participant_add_policy": {
+          "enum": ["all_members", "owner_only"],
+          "type": "string"
+        }
+      },
+      "required": ["participant_add_policy"],
+      "type": "object"
+    },
+    "UpdatePointValuationRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "note": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "value_per_point": {
+          "additionalProperties": false,
+          "properties": {
+            "amount": {
+              "maximum": 9999999999,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "currency": {
+              "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+              "type": "string"
+            },
+            "scale": {
+              "const": 6
+            }
+          },
+          "required": ["amount", "currency", "scale"],
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "UpdatePostRatingBody": {
       "additionalProperties": false,
       "properties": {
@@ -18892,6 +19535,63 @@
           "type": "number"
         }
       },
+      "type": "object"
+    },
+    "UpdateProfileLinkRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "handle": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "image_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "UpdateProfileRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "markdown": {
+          "type": "string"
+        }
+      },
+      "required": ["markdown"],
       "type": "object"
     },
     "UpdateReferralLinkBody": {
@@ -18970,6 +19670,32 @@
       },
       "type": "object"
     },
+    "UpdateRewardsProgramStatusRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "since": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "until": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
     "UpdateRssFeedBody": {
       "additionalProperties": false,
       "properties": {
@@ -19023,6 +19749,29 @@
               "type": "null"
             }
           ]
+        }
+      },
+      "type": "object"
+    },
+    "UpdateSpendingCategoryRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "$ref": "#/components/schemas/Money"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "spending_frequency": {
+          "enum": ["annually", "monthly"],
+          "type": "string"
         }
       },
       "type": "object"
@@ -19158,6 +19907,32 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "UpsertHostnameBody": {
+      "additionalProperties": false,
+      "properties": {
+        "blocked": {
+          "type": "boolean"
+        },
+        "hostname": {
+          "type": "string"
+        }
+      },
+      "required": ["hostname"],
+      "type": "object"
+    },
+    "UpsertPlaybackPositionBody": {
+      "additionalProperties": false,
+      "properties": {
+        "completed": {
+          "type": "boolean"
+        },
+        "position_seconds": {
+          "type": "number"
+        }
+      },
+      "required": ["position_seconds"],
       "type": "object"
     },
     "UrlCrawlHistory": {
@@ -19745,6 +20520,76 @@
         "updated_at",
         "years_of_credit_history"
       ],
+      "type": "object"
+    },
+    "UserFinancialProfileInput": {
+      "additionalProperties": false,
+      "properties": {
+        "cards_opened_24m": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "credit_score_range": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "currency": {
+          "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+          "type": "string"
+        },
+        "hard_inquiries_12m": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "stated_income_range": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/MoneyRange"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "total_credit_limit": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/Money"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "years_of_credit_history": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "number"
+            }
+          ]
+        }
+      },
       "type": "object"
     },
     "UserGrowth": {
@@ -20766,6 +21611,16 @@
         }
       },
       "required": ["dnsInstructions", "rawToken", "wellKnownInstructions"],
+      "type": "object"
+    },
+    "VerifyEmailAddressRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "token": {
+          "type": "string"
+        }
+      },
+      "required": ["token"],
       "type": "object"
     },
     "VerifyOAuthClientRequest": {
@@ -24024,6 +24879,62 @@
         },
         "required": ["feed_type"],
         "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "community": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "min_score_follow_topics": {
+            "type": "number"
+          },
+          "min_score_follow_users": {
+            "type": "number"
+          },
+          "post_types": {
+            "items": {
+              "enum": [
+                "discussion",
+                "review",
+                "data_point",
+                "comment",
+                "link",
+                "article",
+                "blog_post",
+                "story"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "q": {
+            "type": "string"
+          },
+          "semantic_search_query": {
+            "type": "string"
+          },
+          "sort": {
+            "enum": ["new", "hot"],
+            "type": "string"
+          },
+          "text_search_query": {
+            "type": "string"
+          },
+          "time_range": {
+            "enum": ["1d", "1w", "1m", "1y", "all"],
+            "type": "string"
+          }
+        },
+        "type": "object"
       }
     },
     "GET:/api/v1/feeds/referral_links/:feed_type": {
@@ -24035,6 +24946,20 @@
         },
         "required": ["feed_type"],
         "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
       }
     },
     "GET:/api/v1/feeds/rss_feed_items/:feed_type": {
@@ -24045,6 +24970,59 @@
           }
         },
         "required": ["feed_type"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "community": {
+            "type": "string"
+          },
+          "has_related_posts": {
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "media_type": {
+            "items": {
+              "enum": ["article", "audio", "video"],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "media_types": {
+            "items": {
+              "enum": ["article", "audio", "video"],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "min_score_follow_rss_feeds": {
+            "type": "number"
+          },
+          "min_score_follow_topics": {
+            "type": "number"
+          },
+          "q": {
+            "type": "string"
+          },
+          "semantic_search_query": {
+            "type": "string"
+          },
+          "text_search_query": {
+            "type": "string"
+          },
+          "time_range": {
+            "enum": ["1d", "1w", "1m", "1y", "all"],
+            "type": "string"
+          }
+        },
         "type": "object"
       }
     },
@@ -24248,6 +25226,21 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/lists": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/lists/:id": {
       "path": {
         "properties": {
@@ -24267,6 +25260,25 @@
           }
         },
         "required": ["id"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "media_type": {
+            "type": "string"
+          },
+          "read": {
+            "type": "boolean"
+          }
+        },
         "type": "object"
       }
     },
@@ -24323,6 +25335,38 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/my/bans": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/cards": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/my/communities": {
       "query": {
         "properties": {
@@ -24334,6 +25378,30 @@
             "maximum": 100,
             "minimum": 1,
             "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/contribution-status": {
+      "query": {
+        "properties": {
+          "action": {
+            "enum": [
+              "topic",
+              "topic_recommendation",
+              "discussion",
+              "review",
+              "comment",
+              "data_point",
+              "article",
+              "blog_post",
+              "community",
+              "rss_feed",
+              "post_rating",
+              "fediverse_instance"
+            ],
+            "type": "string"
           }
         },
         "type": "object"
@@ -24361,6 +25429,41 @@
             "maximum": 100,
             "minimum": 1,
             "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/export/rss-feeds": {
+      "query": {
+        "properties": {
+          "feed_type": {
+            "enum": ["article", "podcast", "video", "mixed"],
+            "type": "string"
+          },
+          "format": {
+            "default": "opml",
+            "enum": ["json", "csv", "opml"],
+            "type": "string"
+          },
+          "preflight": {
+            "enum": ["1"],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/export/topics": {
+      "query": {
+        "properties": {
+          "download": {
+            "enum": ["1"],
+            "type": "string"
+          },
+          "preflight": {
+            "enum": ["1"],
+            "type": "string"
           }
         },
         "type": "object"
@@ -24415,6 +25518,22 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/my/messages": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/my/messages/:conversationId": {
       "path": {
         "properties": {
@@ -24435,6 +25554,20 @@
         },
         "required": ["conversationId"],
         "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
       }
     },
     "GET:/api/v1/my/messages/:conversationId/participants": {
@@ -24445,6 +25578,36 @@
           }
         },
         "required": ["conversationId"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/notifications": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
         "type": "object"
       }
     },
@@ -24507,6 +25670,41 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/my/referral-clicks": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/removed-posts": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "include_platform": {
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/my/rewards-program-point-valuations": {
       "query": {
         "properties": {
@@ -24540,6 +25738,22 @@
       }
     },
     "GET:/api/v1/my/spending-categories": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/warnings": {
       "query": {
         "properties": {
           "after": {
@@ -25668,6 +26882,20 @@
         },
         "required": ["id"],
         "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
       }
     },
     "GET:/api/v1/urls/:id/crawls/:crawlId": {
@@ -25871,6 +27099,24 @@
           }
         },
         "required": ["idOrSlug", "listType"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "feed_type": {
+            "enum": ["article", "podcast", "video", "mixed"],
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 25,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
         "type": "object"
       }
     },
@@ -26342,7 +27588,7 @@
     },
     "PATCH:/api/v1/hostnames/:id": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateHostnameBody"
       },
       "path": {
         "properties": {
@@ -26355,6 +27601,9 @@
       }
     },
     "PATCH:/api/v1/households/:id": {
+      "body": {
+        "$ref": "#/components/schemas/UpdateHouseholdBody"
+      },
       "path": {
         "properties": {
           "id": {
@@ -26367,27 +27616,7 @@
     },
     "PATCH:/api/v1/lists/:id": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "description": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "visibility": {
-            "enum": ["private", "public", "unlisted"],
-            "type": "string"
-          }
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/UpdateListBody"
       },
       "path": {
         "properties": {
@@ -26401,7 +27630,7 @@
     },
     "PATCH:/api/v1/my/cards/:id": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateCardRequest"
       },
       "path": {
         "properties": {
@@ -26415,7 +27644,7 @@
     },
     "PATCH:/api/v1/my/conversations/:conversationId": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateConversationTitleRequest"
       },
       "path": {
         "properties": {
@@ -26429,7 +27658,7 @@
     },
     "PATCH:/api/v1/my/email-addresses/:email": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/SetPrimaryEmailAddressRequest"
       },
       "path": {
         "properties": {
@@ -26443,20 +27672,22 @@
     },
     "PATCH:/api/v1/my/email-preferences": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/Partial_EmailPreferences"
       }
     },
     "PATCH:/api/v1/my/identity": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateIdentityRequest"
       }
     },
     "PATCH:/api/v1/my/identity-verification/display-preferences": {
-      "body": {}
+      "body": {
+        "$ref": "#/components/schemas/UpdateDisplayPreferencesRequest"
+      }
     },
     "PATCH:/api/v1/my/landing-pages/:pageId": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateLandingPageRequest"
       },
       "path": {
         "properties": {
@@ -26470,7 +27701,7 @@
     },
     "PATCH:/api/v1/my/messages/:conversationId": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateParticipantAddPolicyRequest"
       },
       "path": {
         "properties": {
@@ -26509,12 +27740,12 @@
     },
     "PATCH:/api/v1/my/profile": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateProfileRequest"
       }
     },
     "PATCH:/api/v1/my/profile/links/:id": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateProfileLinkRequest"
       },
       "path": {
         "properties": {
@@ -26528,7 +27759,7 @@
     },
     "PATCH:/api/v1/my/rewards-program-point-valuations/:id": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdatePointValuationRequest"
       },
       "path": {
         "properties": {
@@ -26542,7 +27773,7 @@
     },
     "PATCH:/api/v1/my/rewards-program-statuses/:id": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateRewardsProgramStatusRequest"
       },
       "path": {
         "properties": {
@@ -26556,7 +27787,7 @@
     },
     "PATCH:/api/v1/my/spending-categories/:id": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateSpendingCategoryRequest"
       },
       "path": {
         "properties": {
@@ -27050,22 +28281,12 @@
     },
     "POST:/api/v1/app-attestation/attest": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "attestation": {},
-          "challengeId": {},
-          "keyId": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/AppAttestAttestBody"
       }
     },
     "POST:/api/v1/app-attestation/challenge": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "type": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/AppAttestChallengeBody"
       }
     },
     "POST:/api/v1/appeals": {
@@ -27126,7 +28347,7 @@
     },
     "POST:/api/v1/attribution/referrer": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/AttributionReferrerBody"
       }
     },
     "POST:/api/v1/auth/bluesky/link": {
@@ -28618,15 +29839,17 @@
     },
     "POST:/api/v1/hostnames": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpsertHostnameBody"
       }
     },
     "POST:/api/v1/households": {
-      "body": {}
+      "body": {
+        "$ref": "#/components/schemas/CreateHouseholdBody"
+      }
     },
     "POST:/api/v1/households/:id/memberships": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/AddHouseholdMembershipBody"
       },
       "path": {
         "properties": {
@@ -28665,7 +29888,7 @@
     },
     "POST:/api/v1/landing-pages/:landingPageId/clicks": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/LandingPageClickBody"
       },
       "path": {
         "properties": {
@@ -28679,7 +29902,7 @@
     },
     "POST:/api/v1/landing-pages/:landingPageId/visits": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/LandingPageVisitBody"
       },
       "path": {
         "properties": {
@@ -28693,33 +29916,12 @@
     },
     "POST:/api/v1/lists": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "description": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "visibility": {
-            "enum": ["private", "public", "unlisted"],
-            "type": "string"
-          }
-        },
-        "required": ["name"],
-        "type": "object"
+        "$ref": "#/components/schemas/CreateListBody"
       }
     },
     "POST:/api/v1/lists/:id/import": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "community_slug": {
-            "type": "string"
-          }
-        },
-        "required": ["community_slug"],
-        "type": "object"
+        "$ref": "#/components/schemas/ImportCommunityListBody"
       },
       "path": {
         "properties": {
@@ -28733,14 +29935,7 @@
     },
     "POST:/api/v1/lists/:id/items/posts": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "post_id": {
-            "type": "string"
-          }
-        },
-        "required": ["post_id"],
-        "type": "object"
+        "$ref": "#/components/schemas/AddListPostBody"
       },
       "path": {
         "properties": {
@@ -28754,14 +29949,7 @@
     },
     "POST:/api/v1/lists/:id/items/rss-feed-items": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "rss_feed_item_id": {
-            "type": "string"
-          }
-        },
-        "required": ["rss_feed_item_id"],
-        "type": "object"
+        "$ref": "#/components/schemas/AddListRssFeedItemBody"
       },
       "path": {
         "properties": {
@@ -28775,11 +29963,7 @@
     },
     "POST:/api/v1/markdown/preview": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "markdown": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/MarkdownPreviewBody"
       }
     },
     "POST:/api/v1/mcp": {
@@ -28907,17 +30091,17 @@
     },
     "POST:/api/v1/my/aside-preferences": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/DismissAsideRequest"
       }
     },
     "POST:/api/v1/my/cards": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateCardRequest"
       }
     },
     "POST:/api/v1/my/consents": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/GrantConsentRequest"
       }
     },
     "POST:/api/v1/my/conversations/:conversationId/title": {
@@ -28933,12 +30117,12 @@
     },
     "POST:/api/v1/my/email-addresses": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/AddEmailAddressRequest"
       }
     },
     "POST:/api/v1/my/email-addresses/:email/verifications": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/VerifyEmailAddressRequest"
       },
       "path": {
         "properties": {
@@ -28952,12 +30136,12 @@
     },
     "POST:/api/v1/my/import/rss-feeds": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/ImportRssFeedsRequest"
       }
     },
     "POST:/api/v1/my/import/topics": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/ImportTopicsRequest"
       },
       "header": {
         "properties": {
@@ -28971,17 +30155,17 @@
     },
     "POST:/api/v1/my/landing-pages": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateLandingPageRequest"
       }
     },
     "POST:/api/v1/my/messages": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateConversationRequest"
       }
     },
     "POST:/api/v1/my/messages/:conversationId/messages": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/SendMessageRequest"
       },
       "path": {
         "properties": {
@@ -28995,7 +30179,7 @@
     },
     "POST:/api/v1/my/messages/:conversationId/participants": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/AddParticipantRequest"
       },
       "path": {
         "properties": {
@@ -29009,7 +30193,7 @@
     },
     "POST:/api/v1/my/notifications/push-subscriptions": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateWebPushSubscriptionRequest"
       }
     },
     "POST:/api/v1/my/oauth-apps": {
@@ -29030,22 +30214,22 @@
     },
     "POST:/api/v1/my/profile/links": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateProfileLinkRequest"
       }
     },
     "POST:/api/v1/my/rewards-program-point-valuations": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreatePointValuationRequest"
       }
     },
     "POST:/api/v1/my/rewards-program-statuses": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateRewardsProgramStatusRequest"
       }
     },
     "POST:/api/v1/my/spending-categories": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateSpendingCategoryRequest"
       }
     },
     "POST:/api/v1/posts": {
@@ -30004,11 +31188,13 @@
       }
     },
     "PUT:/api/v1/my/financial-profile": {
-      "body": {}
+      "body": {
+        "$ref": "#/components/schemas/UserFinancialProfileInput"
+      }
     },
     "PUT:/api/v1/my/landing-pages/:pageId/items": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/ReplaceLandingPageItemsRequest"
       },
       "path": {
         "properties": {
@@ -30022,18 +31208,12 @@
     },
     "PUT:/api/v1/my/profile/links/order": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/ReorderProfileLinksRequest"
       }
     },
     "PUT:/api/v1/podcast-episodes/:id/playback-position": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "completed": {},
-          "position_seconds": {}
-        },
-        "required": ["position_seconds"],
-        "type": "object"
+        "$ref": "#/components/schemas/UpsertPlaybackPositionBody"
       },
       "path": {
         "properties": {
@@ -30246,6 +31426,245 @@
         "required": ["userId"],
         "type": "object"
       }
+    }
+  },
+  "responses": {
+    "DELETE:/api/v1/report-integrity/penalties/:id": {
+      "$ref": "#/components/schemas/RevokeReportAbusePenaltyResult"
+    },
+    "GET:/api/v1/admin/ai-costs": {
+      "$ref": "#/components/schemas/CommunityAiCostTotalsPage"
+    },
+    "GET:/api/v1/admin/moderation-analytics": {
+      "$ref": "#/components/schemas/ModerationAnalytics"
+    },
+    "GET:/api/v1/admin/users/:userId/landing-pages": {
+      "$ref": "#/components/schemas/LandingPagesPage"
+    },
+    "GET:/api/v1/availability": {
+      "$ref": "#/components/schemas/AvailabilityResult"
+    },
+    "GET:/api/v1/captcha-config": {
+      "$ref": "#/components/schemas/CaptchaConfigResponse"
+    },
+    "GET:/api/v1/communities": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/agent-prompts/history": {
+      "$ref": "#/components/schemas/ListCommunityAgentPromptHistoryResult"
+    },
+    "GET:/api/v1/communities/:idOrSlug/applications": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/invites": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/counts": {
+      "$ref": "#/components/schemas/CommunityListItemCounts"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/domains": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/posts": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/rss-feeds": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/topics": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/list-items/urls": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/members": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/moderation-analytics": {
+      "$ref": "#/components/schemas/ModerationAnalytics"
+    },
+    "GET:/api/v1/communities/:idOrSlug/moderation-transparency": {
+      "$ref": "#/components/schemas/ModerationTransparency"
+    },
+    "GET:/api/v1/communities/:idOrSlug/moderator-vacation": {
+      "$ref": "#/components/schemas/CommunityMemberVacationSettings"
+    },
+    "GET:/api/v1/communities/:idOrSlug/news": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/posts": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/communities/:idOrSlug/posts/:postId/moderation-results": {
+      "$ref": "#/components/schemas/ModerationResultsResponse"
+    },
+    "GET:/api/v1/communities/:idOrSlug/posts/pending": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/copyright-email-intakes/review-queue": {
+      "$ref": "#/components/schemas/CopyrightEmailIntakeQueueResponse"
+    },
+    "GET:/api/v1/copyright-notices/review-queue": {
+      "$ref": "#/components/schemas/CopyrightStaffQueueResponse"
+    },
+    "GET:/api/v1/currencies": {
+      "$ref": "#/components/schemas/CurrencyPage"
+    },
+    "GET:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/fediverse/search": {
+      "$ref": "#/components/schemas/FediverseSearchResponse"
+    },
+    "GET:/api/v1/feeds/posts/:feed_type": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/feeds/rss_feed_items/:feed_type": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/growth-metrics": {
+      "$ref": "#/components/schemas/GrowthMetrics"
+    },
+    "GET:/api/v1/localization": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/moderation-transparency": {
+      "$ref": "#/components/schemas/ModerationTransparency"
+    },
+    "GET:/api/v1/my/cards": {
+      "$ref": "#/components/schemas/IndividualCardPage"
+    },
+    "GET:/api/v1/my/import/rss-feeds/:importId": {
+      "$ref": "#/components/schemas/UserRssFeedImport"
+    },
+    "GET:/api/v1/my/notifications/unread": {
+      "$ref": "#/components/schemas/NotificationsUnreadSummaryResponseBody"
+    },
+    "GET:/api/v1/my/rewards-program-point-valuations": {
+      "$ref": "#/components/schemas/IndividualRewardsProgramPointValuationPage"
+    },
+    "GET:/api/v1/my/rewards-program-statuses": {
+      "$ref": "#/components/schemas/IndividualRewardsProgramStatusPage"
+    },
+    "GET:/api/v1/my/spending-categories": {
+      "$ref": "#/components/schemas/HouseholdSpendingCategoryPage"
+    },
+    "GET:/api/v1/platform-stats": {
+      "$ref": "#/components/schemas/PlatformStats"
+    },
+    "GET:/api/v1/posts": {
+      "$ref": "#/components/schemas/StreamJsonObjectInput_PostsResponseBody"
+    },
+    "GET:/api/v1/posts/:idOrSlug": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/posts/:idOrSlug/ancestors": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/posts/:idOrSlug/descendants": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/posts/review-queue": {
+      "$ref": "#/components/schemas/SearchReviewQueueResult"
+    },
+    "GET:/api/v1/psql/migrations": {
+      "$ref": "#/components/schemas/MigrationStatus"
+    },
+    "GET:/api/v1/psql/partitions": {
+      "$ref": "#/components/schemas/PartitionStatus"
+    },
+    "GET:/api/v1/recommended-topics": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/report-integrity/penalties": {
+      "$ref": "#/components/schemas/GetReportAbusePenaltiesResult"
+    },
+    "GET:/api/v1/rss-feed-items": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/rss-feed-items/:id": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/rss-feeds/recommended": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/rss-feeds/trending": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/stories/:id": {
+      "$ref": "#/components/schemas/StoryPageResponse"
+    },
+    "GET:/api/v1/topic-recommendations": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/topic-recommendations/:id": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/topic-recommendations/duplicates": {
+      "$ref": "#/components/schemas/FindTopicRecommendationDuplicatesResult"
+    },
+    "GET:/api/v1/topics": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/topics/:idOrSlug": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/topics/compare": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/trending-communities": {
+      "$ref": "#/components/schemas/TrendingCommunitiesResult"
+    },
+    "GET:/api/v1/trending-posts": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/trending-referral-programs": {
+      "$ref": "#/components/schemas/TrendingReferralProgramsResult"
+    },
+    "GET:/api/v1/trending-topics": {
+      "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/users/:username/landing-page": {
+      "$ref": "#/components/schemas/PublicLandingPage"
+    },
+    "GET:/api/v1/users/:username/landing-pages/:slug": {
+      "$ref": "#/components/schemas/PublicLandingPage"
+    },
+    "GET:/api/v1/vote-integrity/penalties": {
+      "$ref": "#/components/schemas/GetVoteWeightPenaltiesResult"
+    },
+    "PATCH:/api/v1/hostnames/:id": {
+      "$ref": "#/components/schemas/BlockHostnameResult"
+    },
+    "POST:/api/v1/auth/mfa/passkeys/authentication/verification": {
+      "$ref": "#/components/schemas/MfaVerificationResponseBody"
+    },
+    "POST:/api/v1/auth/mfa/totp/verification": {
+      "$ref": "#/components/schemas/MfaVerificationResponseBody"
+    },
+    "POST:/api/v1/auth/oauth/:provider/authorizations": {
+      "$ref": "#/components/schemas/BeginOAuthAuthorizationResult"
+    },
+    "POST:/api/v1/fediverse/instances": {
+      "$ref": "#/components/schemas/CreateInstanceResult"
+    },
+    "POST:/api/v1/rss-feeds": {
+      "$ref": "#/components/schemas/CreateSourceResult"
+    },
+    "POST:/api/v1/stories/:storyId/discussions": {
+      "$ref": "#/components/schemas/StoryPostResult"
+    },
+    "POST:/api/v1/topics/:idOrSlug/claims/:claimId/verification-token": {
+      "$ref": "#/components/schemas/VerificationTokenResult"
+    },
+    "POST:/api/v1/valkey/flush": {
+      "$ref": "#/components/schemas/FlushResult"
+    },
+    "POST:/api/v1/vote-integrity/flags/:id/penalties": {
+      "$ref": "#/components/schemas/ApplyRingPenaltyResult"
+    },
+    "PUT:/api/v1/communities/:idOrSlug/moderator-vacation": {
+      "$ref": "#/components/schemas/CommunityMemberVacationSettings"
     }
   },
   "source": "compiler-extracted-request-contracts",

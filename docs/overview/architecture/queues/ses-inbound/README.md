@@ -11,8 +11,7 @@ The S3 bucket notification targets an SQS queue in code, consumed by
 package's `enqueueSesInboundProcess()`.
 
 `processInboundEmail` reads copyright mail from `copyright-incoming/` in the private inbound-email
-bucket. When copyright intake is enabled, `reconcileInboundEmail` scans that prefix every five
-minutes, bulk-enqueues missing jobs, and retries retained failed jobs for objects still present.
+bucket. `reconcileInboundEmail` scans that prefix every five minutes, bulk-enqueues missing jobs, and retries retained failed jobs for objects still present.
 The worker preserves the complete source as copyright evidence before deleting a successfully
 processed object. Terminally invalid objects move to `failed/`.
 

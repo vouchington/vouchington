@@ -14,7 +14,11 @@
 
 [migrations/](../../../backend/data-stores/psql/migrations/), [views/](../../../backend/data-stores/psql/views/), and [config-driven/](../../../backend/data-stores/psql/config-driven/) are the three
 package directories backing the buckets above; `config-driven/` is also updated in place as config
-grows (entity relations, partitions, seed topics, seed agents).
+grows (entity relations, partitions, seed topics, seed agents). The runner loads each `config-driven/`
+generator by path, so its default export carries a
+`/** @public loaded by path by the config-driven migration runner */` tag; otherwise the
+[production-exports guard](../quality/static-code-analysis/README.md#knip-production-exports)
+reports it as an export only tests use.
 
 Forced view rebuilding drops only the managed ordinary and materialized declarations with PostgreSQL's
 default `RESTRICT` behavior. The runner retries dependency failures after another managed drop makes
@@ -180,8 +184,11 @@ config-driven operations, and views. After migration the database contains:
   [`config-driven/0005-00-01-seed-topics.mts`](../../../backend/data-stores/psql/config-driven/0005-00-01-seed-topics.mts)
 - **Agents** — `system` user, agent system users (`autotagger`, `story-teller`, and all moderator slugs including `click-bait`,
   `vague-post`, and `shit-post`),
-  agent rows, `agents__moderators` rows, and active moderator prompts seeded by
+  agent rows, and `agents__moderators` rows (slug, baseline flag) seeded by
   [`config-driven/0010-00-01-seed-agents.mts`](../../../backend/data-stores/psql/config-driven/0010-00-01-seed-agents.mts).
+  The seed writes no `agent_prompts` rows: only community prompts create them, and the built-in
+  classifier's prompt, model, and provider are seeded by
+  [`config-driven/0635-00-03-seed-post-classifier.mts`](../../../backend/data-stores/psql/config-driven/0635-00-03-seed-post-classifier.mts).
   Agent users have **no** `administrator` role.
 - **Admin user** — `jong` user with primary email `jong@voucha.ai` and the `administrator`
   role, seeded by

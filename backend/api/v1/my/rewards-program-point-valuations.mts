@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
 import { createPaginationParser } from '@modules/pagination'
 import {
@@ -10,7 +10,19 @@ import {
   deleteIndividualRewardsProgramPointValuationById,
 } from '@services/individuals-households'
 import { assertNotSuspended } from '@services/users'
-import { isScaledMoney, type ScaledMoney } from '@ts-shared/money'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
+import type { ScaledMoney } from '@ts-shared/money'
+
+type CreatePointValuationRequest = {
+  rewards_program_id: string
+  value_per_point: ScaledMoney
+  note?: string | null
+}
+
+type UpdatePointValuationRequest = {
+  value_per_point?: ScaledMoney
+  note?: string | null
+}
 
 const pointValuationsPagination = createPaginationParser({
   cursor: { type: 'simple', paramName: 'after' },
@@ -23,6 +35,9 @@ app.route('/api/v1/my/rewards-program-point-valuations').get(async (ctx: Context
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/rewards-program-point-valuations')
 
   const options = pointValuationsPagination.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, pointValuationsPagination.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/rewards-program-point-valuations', { query })
   const page = await getIndividualRewardsProgramPointValuations(currentUser, currentUser, options)
   ctx.json(page)
 })
@@ -32,26 +47,14 @@ app.route('/api/v1/my/rewards-program-point-valuations').post(async (ctx: Contex
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/rewards-program-point-valuations')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as Record<string, unknown>
-  ctx.assert(typeof body.rewards_program_id === 'string', 400, 'rewards_program_id is required')
-  ctx.assert('value_per_point' in body, 400, 'value_per_point is required')
-  ctx.assert(
-    isScaledMoney(body.value_per_point),
-    422,
-    'value_per_point must be valid scale-six money',
-  )
-  if ('note' in body && body.note !== undefined && body.note !== null) {
-    ctx.assert(typeof body.note === 'string', 422, 'note must be a string or null')
-  }
+  const body = (await ctx.request.json('10kb')) as CreatePointValuationRequest
+  validateRequestContract(ctx, 'POST:/api/v1/my/rewards-program-point-valuations', { body })
 
   const valuation = await createIndividualRewardsProgramPointValuation(
     currentUser,
     currentUser,
-    body.rewards_program_id as string,
-    {
-      value_per_point: body.value_per_point as ScaledMoney,
-      note: typeof body.note === 'string' ? body.note : undefined,
-    },
+    body.rewards_program_id,
+    { value_per_point: body.value_per_point, note: body.note ?? undefined },
   )
 
   ctx.setStatus(201)
@@ -66,30 +69,17 @@ app.route('/api/v1/my/rewards-program-point-valuations/:id').patch(async (ctx: C
   )
   assertNotSuspended(currentUser)
 
-  const id = ctx.params.id!
-  ctx.assert(id, 400, 'id is required')
-
-  const body = (await ctx.request.json('10kb')) as Record<string, unknown>
-  if ('value_per_point' in body) {
-    ctx.assert(
-      isScaledMoney(body.value_per_point),
-      422,
-      'value_per_point must be valid scale-six money',
-    )
-  }
-  if ('note' in body && body.note !== undefined && body.note !== null) {
-    ctx.assert(typeof body.note === 'string', 422, 'note must be a string or null')
-  }
+  const body = (await ctx.request.json('10kb')) as UpdatePointValuationRequest
+  validateRequestContract(ctx, 'PATCH:/api/v1/my/rewards-program-point-valuations/:id', {
+    path: ctx.params,
+    body,
+  })
 
   const valuation = await updateIndividualRewardsProgramPointValuationById(
     currentUser,
     currentUser,
-    id,
-    {
-      value_per_point:
-        'value_per_point' in body ? (body.value_per_point as ScaledMoney) : undefined,
-      note: 'note' in body ? (body.note as string | null | undefined) : undefined,
-    },
+    ctx.params.id!,
+    { value_per_point: body.value_per_point, note: body.note },
   )
 
   ctx.json({ point_valuation: valuation })
@@ -102,11 +92,11 @@ app.route('/api/v1/my/rewards-program-point-valuations/:id').delete(async (ctx: 
     'DELETE:/api/v1/my/rewards-program-point-valuations/:id',
   )
   assertNotSuspended(currentUser)
+  validateRequestContract(ctx, 'DELETE:/api/v1/my/rewards-program-point-valuations/:id', {
+    path: ctx.params,
+  })
 
-  const id = ctx.params.id!
-  ctx.assert(id, 400, 'id is required')
-
-  await deleteIndividualRewardsProgramPointValuationById(currentUser, currentUser, id)
+  await deleteIndividualRewardsProgramPointValuationById(currentUser, currentUser, ctx.params.id!)
 
   ctx.setStatus(204)
 })

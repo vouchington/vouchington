@@ -66,7 +66,7 @@ export async function verifyMediaDeliveryReplayRoute(): Promise<true> {
   return true
 }
 
-async function exhaustCopyrightActionIntent(intentId: string): Promise<void> {
+export async function exhaustCopyrightActionIntent(intentId: string): Promise<void> {
   const startedAt = new Date('2026-07-01T12:01:00.000Z')
   const failedPublish = async () => Promise.reject(new Error('provider outage'))
   await expectCopyrightActionDeliveryFailures(intentId, startedAt, failedPublish, [0, 20, 40, 60])

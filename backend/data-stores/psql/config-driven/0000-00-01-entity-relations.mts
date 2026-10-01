@@ -8,6 +8,7 @@ import type { EntityRelationEntityType } from '@voucha/types/entities/entity-rel
 import { createEntityRelationVoteIntegrityTargets } from './utils/entity-relation-vote-integrity-targets.mts'
 import { createRetainedEntityRelationImpacts } from './utils/retained-entity-relation-impacts.mts'
 
+/** @public loaded by path by the config-driven migration runner */
 export default () => {
   const tableCreation = entityRelationMetadatum.map(createEntityRelationTable).join('\n\n')
   const electionRelations = entityRelationMetadatum.filter(metadata => metadata.election)

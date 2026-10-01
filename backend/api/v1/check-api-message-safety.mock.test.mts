@@ -1,3 +1,4 @@
+import { v7 as uuidv7 } from 'uuid'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createOpenAIModerationResponse, createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -93,6 +94,8 @@ describe('checkApiMessageSafety', () => {
     const response = await request
       .post(`/api/v1/conversations/${conversation.id}/client-generated-chat`)
       .send({
+        user_message_id: uuidv7(),
+        assistant_message_id: uuidv7(),
         message: 'safe client message',
         assistant_content: 'unsafe assistant content',
         model_provider: 'apple_foundation',

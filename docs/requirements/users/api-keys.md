@@ -105,7 +105,7 @@ other unrecognized bearer credential. The token must be valid (unexpired, unrevo
 unrevoked grant and client), belong to a current administrator, be bound to the admin protected
 resource, and carry the scope each tool declares (`mcp.admin:read` or `mcp.admin:write`). See the
 [OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md#protected-resources-and-discovery)
-and the [MCP tools architecture](../../overview/architecture/services/mcp-tools/README.md#admin-mcp-audit-log)
+and the [MCP tools architecture](../../overview/architecture/services/mcp-tools/README.md#mcp-audit-log)
 for the per-call audit log.
 
 ## Rate Limits
@@ -166,7 +166,7 @@ Append `apikey=YOUR_KEY` to the query string:
 - A bloom filter provides a fast-path rejection for unknown keys
 - Keys can be revoked instantly via the settings page or API by setting `revoked_at`; validation ignores revoked rows
 - `last_used_at` is tracked for monitoring
-- Revoked keys retain an audit trail but are immediately invalid
+- Revoked keys retain an audit trail but are immediately invalid. Every user MCP call made with a key is recorded before it runs in `mcp_call_audit_events` under the key id, owner, tool, and outcome, never the arguments, results, or raw key; a call that cannot be recorded gets `503`, and deleting the owner keeps the audit rows
 - Any authenticated user can create API keys
 - API keys never carry admin-audience scopes and never authenticate to the admin MCP endpoint
 - RSS keys are read-only, but they are still bearer credentials in URLs. Keyed RSS responses use `Cache-Control: private` and `Referrer-Policy: no-referrer`; users should revoke keys that appear in logs, referrals, or shared URLs.

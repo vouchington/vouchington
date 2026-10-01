@@ -7,7 +7,7 @@
 import { generateMonthlyPartitions } from './utils/partition-utils.mts'
 import { CRAWL_PARTITION_TABLES } from './utils/partition-config.mts'
 
-/** @internal */
+/** @public loaded by path by the config-driven migration runner */
 export default function createCrawlPartitions(): string {
   return generateMonthlyPartitions({
     tables: CRAWL_PARTITION_TABLES,

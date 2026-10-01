@@ -55,7 +55,7 @@ describe('Storybook browser bootstrap telemetry', () => {
       expect(telemetry.consume('stderr', line, 10).hasNonDiagnosticOutput).toBe(false)
     }
     expect(
-      telemetry.consume('stdout', 'VITE v8.1.5 ready in 500 ms\n', 20).hasNonDiagnosticOutput,
+      telemetry.consume('stdout', 'VITE v0.0.0 ready in 500 ms\n', 20).hasNonDiagnosticOutput,
     ).toBe(true)
   })
 

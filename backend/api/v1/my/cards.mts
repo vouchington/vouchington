@@ -1,14 +1,28 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { apiQuery } from '../../response-contract.mts'
 import { createPaginationParser } from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   getIndividualCards,
   createIndividualCard,
   updateIndividualCardById,
   deleteIndividualCardById,
 } from '@services/individuals-households'
-import { isMoney, type Money } from '@ts-shared/money'
+import type { Money } from '@ts-shared/money'
+
+type CreateCardRequest = { card_id: string }
+
+type UpdateCardRequest = {
+  opened_on?: string | null
+  closed_on?: string | null
+  received_sign_up_bonus_on?: string | null
+  credit_limit?: Money | null
+  is_authorized_user?: boolean
+  authorized_user_of_id?: string | null
+  note?: string | null
+}
 
 const cardsPagination = createPaginationParser({
   cursor: { type: 'simple', paramName: 'after' },
@@ -17,9 +31,13 @@ const cardsPagination = createPaginationParser({
 
 // GET /api/v1/my/cards
 app.route('/api/v1/my/cards').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/my/cards', cardsPagination)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/cards')
 
   const options = cardsPagination.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, cardsPagination.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/cards', { query })
   const page = await getIndividualCards(currentUser, currentUser, options)
   ctx.json(page)
 })
@@ -28,10 +46,10 @@ app.route('/api/v1/my/cards').get(async (ctx: Context) => {
 app.route('/api/v1/my/cards').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/cards')
 
-  const body = (await ctx.request.json('10kb')) as Record<string, unknown>
-  ctx.assert(typeof body.card_id === 'string', 400, 'card_id is required')
+  const body = (await ctx.request.json('10kb')) as CreateCardRequest
+  validateRequestContract(ctx, 'POST:/api/v1/my/cards', { body })
 
-  const card = await createIndividualCard(currentUser, currentUser, body.card_id as string)
+  const card = await createIndividualCard(currentUser, currentUser, body.card_id)
 
   ctx.setStatus(201)
   ctx.json({ card })
@@ -41,69 +59,17 @@ app.route('/api/v1/my/cards').post(async (ctx: Context) => {
 app.route('/api/v1/my/cards/:id').patch(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/my/cards/:id')
 
-  const cardId = ctx.params.id!
-  ctx.assert(cardId, 400, 'id is required')
+  const body = (await ctx.request.json('10kb')) as UpdateCardRequest
+  validateRequestContract(ctx, 'PATCH:/api/v1/my/cards/:id', { path: ctx.params, body })
 
-  const body = (await ctx.request.json('10kb')) as Record<string, unknown>
-
-  if ('credit_limit' in body && body.credit_limit !== null && body.credit_limit !== undefined) {
-    ctx.assert(isMoney(body.credit_limit), 422, 'credit_limit must be valid money')
-  }
-  if ('is_authorized_user' in body && body.is_authorized_user !== undefined) {
-    ctx.assert(
-      typeof body.is_authorized_user === 'boolean',
-      422,
-      'is_authorized_user must be a boolean',
-    )
-  }
-  if (
-    'authorized_user_of_id' in body &&
-    body.authorized_user_of_id !== null &&
-    body.authorized_user_of_id !== undefined
-  ) {
-    ctx.assert(
-      typeof body.authorized_user_of_id === 'string',
-      422,
-      'authorized_user_of_id must be a string',
-    )
-  }
-  if ('note' in body && body.note !== undefined && body.note !== null) {
-    ctx.assert(typeof body.note === 'string', 422, 'note must be a string or null')
-  }
-  if ('opened_on' in body && body.opened_on !== null && body.opened_on !== undefined) {
-    ctx.assert(typeof body.opened_on === 'string', 422, 'opened_on must be a string')
-  }
-  if ('closed_on' in body && body.closed_on !== null && body.closed_on !== undefined) {
-    ctx.assert(typeof body.closed_on === 'string', 422, 'closed_on must be a string')
-  }
-  if (
-    'received_sign_up_bonus_on' in body &&
-    body.received_sign_up_bonus_on !== null &&
-    body.received_sign_up_bonus_on !== undefined
-  ) {
-    ctx.assert(
-      typeof body.received_sign_up_bonus_on === 'string',
-      422,
-      'received_sign_up_bonus_on must be a string',
-    )
-  }
-
-  const card = await updateIndividualCardById(currentUser, currentUser, cardId, {
-    opened_on: 'opened_on' in body ? (body.opened_on as string | null | undefined) : undefined,
-    closed_on: 'closed_on' in body ? (body.closed_on as string | null | undefined) : undefined,
-    received_sign_up_bonus_on:
-      'received_sign_up_bonus_on' in body
-        ? (body.received_sign_up_bonus_on as string | null | undefined)
-        : undefined,
-    credit_limit:
-      'credit_limit' in body ? (body.credit_limit as Money | null | undefined) : undefined,
-    is_authorized_user:
-      'is_authorized_user' in body ? (body.is_authorized_user as boolean | undefined) : undefined,
-    authorized_user_of_id:
-      'authorized_user_of_id' in body
-        ? (body.authorized_user_of_id as string | null | undefined)
-        : undefined,
-    note: 'note' in body ? (body.note as string | null | undefined) : undefined,
+  const card = await updateIndividualCardById(currentUser, currentUser, ctx.params.id!, {
+    opened_on: body.opened_on,
+    closed_on: body.closed_on,
+    received_sign_up_bonus_on: body.received_sign_up_bonus_on,
+    credit_limit: body.credit_limit,
+    is_authorized_user: body.is_authorized_user,
+    authorized_user_of_id: body.authorized_user_of_id,
+    note: body.note,
   })
 
   ctx.json({ card })
@@ -112,11 +78,9 @@ app.route('/api/v1/my/cards/:id').patch(async (ctx: Context) => {
 // DELETE /api/v1/my/cards/:id
 app.route('/api/v1/my/cards/:id').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/my/cards/:id')
+  validateRequestContract(ctx, 'DELETE:/api/v1/my/cards/:id', { path: ctx.params })
 
-  const cardId = ctx.params.id!
-  ctx.assert(cardId, 400, 'id is required')
-
-  await deleteIndividualCardById(currentUser, currentUser, cardId)
+  await deleteIndividualCardById(currentUser, currentUser, ctx.params.id!)
 
   ctx.setStatus(204)
 })

@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
+import { removePostClassifierJobForTest } from '@voucha/test-helpers/post-classifier-queue-jobs'
 import { ai_agents } from '../queues.mts'
 import type { PostClassifierJobData } from '../types.mts'
 import {
   enqueueBulkPostClassifiers,
   enqueuePostClassifier,
   enqueuePostClassifierDispatcher,
+  postClassifierJobExists,
 } from './post-classifier.mts'
 import { enqueueReconcilePostClassifierApplications } from './reconcile-post-classifier-applications.mts'
 
@@ -85,5 +87,39 @@ describe('post classifier enqueue', () => {
         )
         .sort(),
     ).toEqual(items.map(item => item.applicationId).sort())
+  })
+})
+
+function receiptJobData() {
+  return {
+    applicationId: randomUUID(),
+    postId: randomUUID(),
+    inputSha256: Buffer.alloc(32, 7).toString('hex'),
+    configurationSha256: Buffer.alloc(32, 8).toString('hex'),
+    detectorPackageVersion: '0.4.3',
+  }
+}
+
+describe('post classifier receipt job identity', () => {
+  it('returns only the receipts whose job it added', async () => {
+    const first = receiptJobData()
+    const second = receiptJobData()
+
+    await expect(enqueueBulkPostClassifiers([first])).resolves.toEqual([first.applicationId])
+    await expect(enqueueBulkPostClassifiers([first, second])).resolves.toEqual([
+      second.applicationId,
+    ])
+    await expect(enqueueBulkPostClassifiers([first, second])).resolves.toEqual([])
+  })
+
+  it('reports whether the receipt job is still retained', async () => {
+    const receipt = receiptJobData()
+    await expect(postClassifierJobExists(receipt.applicationId)).resolves.toBe(false)
+
+    await enqueuePostClassifier(receipt)
+    await expect(postClassifierJobExists(receipt.applicationId)).resolves.toBe(true)
+
+    removePostClassifierJobForTest(receipt.applicationId)
+    await expect(postClassifierJobExists(receipt.applicationId)).resolves.toBe(false)
   })
 })

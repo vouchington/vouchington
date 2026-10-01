@@ -17,9 +17,11 @@ CREATE TABLE IF NOT EXISTS post_classifier_applications (
   local_topic_id UUID REFERENCES topics (id) ON DELETE RESTRICT,
   decision_batch_id UUID,
   provider_attempts_started INTEGER NOT NULL DEFAULT 0 CHECK (provider_attempts_started >= 0),
+  sweep_enqueue_count INTEGER NOT NULL DEFAULT 0 CHECK (sweep_enqueue_count >= 0),
   terminal_remote_failure_kind TEXT CHECK (
     terminal_remote_failure_kind IN (
-      'provider-error', 'invalid-result', 'context-rejected', 'attempts-exhausted'
+      'provider-error', 'invalid-result', 'context-rejected', 'attempts-exhausted',
+      'client-unavailable', 'sweep-bound-exceeded'
     )
   ),
   terminal_remote_failed_at TIMESTAMPTZ,
@@ -138,7 +140,7 @@ COMMENT ON COLUMN post_classifier_applications.configuration_sha256 IS
 COMMENT ON COLUMN post_classifier_applications.shared_actor_id IS
   'Shared classifier system user attributing automatic topic votes and tags.';
 COMMENT ON COLUMN post_classifier_applications.terminal_remote_failure_kind IS
-  'Durable reason remote classification stopped without a complete valid decision.';
+  'Durable reason remote classification stopped without a complete valid decision; client-unavailable means the provider client could not be built, sweep-bound-exceeded means the recovery sweep re-enqueued the receipt its bounded number of times.';
 COMMENT ON COLUMN post_classifier_applications.terminal_remote_failed_at IS
   'Time remote classification became terminal for this content and configuration identity.';
 COMMENT ON COLUMN post_classifier_applications.local_flagged IS
@@ -179,5 +181,7 @@ COMMENT ON COLUMN post_classifier_applications.decision_batch_id IS
   'Concrete same-post C3 batch reserved before provider execution; NULL for local-only work.';
 COMMENT ON COLUMN post_classifier_applications.provider_attempts_started IS
   'Physical provider calls started under lease; effect-only retries and committed-result replay do not increment it.';
+COMMENT ON COLUMN post_classifier_applications.sweep_enqueue_count IS
+  'Recovery-sweep enqueues that actually added a job for this receipt; monotone and bounded, one past the bound marks a receipt the sweep has stopped recovering.';
 COMMENT ON COLUMN post_classifier_applications.superseded_at IS
   'Current obsolete-receipt marker; cleared when the exact approved content/configuration identity becomes current again. Outcomes and attempt budget remain immutable.';

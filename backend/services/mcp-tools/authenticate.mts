@@ -10,7 +10,12 @@ import type { McpServerConfig } from './config.mts'
 const BEARER_CREDENTIAL_PATTERN = /^Bearer +([A-Za-z0-9\-._~+/]+=*) *$/i
 
 type McpVerifiedCredential =
-  | { credential: 'api_key'; oauthClientId: null; rateLimitIdentity: { apiKeyId: string } }
+  | {
+      credential: 'api_key'
+      oauthClientId: null
+      apiKeyId: string
+      rateLimitIdentity: { apiKeyId: string }
+    }
   | { credential: 'oauth'; oauthClientId: string; rateLimitIdentity: { userId: string } }
 
 export type McpBearerAuthentication =
@@ -63,6 +68,7 @@ async function verifyMcpBearerToken(
     credential: {
       credential: 'api_key',
       oauthClientId: null,
+      apiKeyId: apiKey.id,
       rateLimitIdentity: { apiKeyId: apiKey.id },
     },
     scopes: apiKey.permissions,

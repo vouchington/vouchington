@@ -7,7 +7,6 @@ on:
       - '.github/workflows/cleanup-artifacts.yml'
       - 'ci/cleanup-artifacts-pattern-matcher.mjs'
       - 'ci/cleanup-artifacts-patterns.json'
-      - 'ci/cleanup-run-artifacts.mjs'
       - '.github/workflows/main-storybook.yml'
       - '.github/workflows/storybook.yml'
       - '.github/actions/**'
@@ -34,8 +33,6 @@ permissions:
 
 jobs:
   publish-storybook:
-    needs: [storybook-build]
-    if: ${{ !cancelled() && needs.storybook-build.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -66,12 +63,3 @@ jobs:
           if-no-files-found: error
           retention-days: 1
           overwrite: true
-
-  storybook-build:
-    uses: ./.github/workflows/storybook.yml
-    permissions:
-      actions: read
-      contents: read
-    with:
-      cancel_in_progress: false
-      checkout_ref: ${{ github.sha }}

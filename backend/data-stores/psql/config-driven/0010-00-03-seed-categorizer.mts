@@ -13,6 +13,8 @@ import { buildSystemUserUpsertSQL } from './utils/system-user-seed.mts'
  * Routes through buildSystemUserUpsertSQL so the reserved username is reclaimed from any
  * non-system squatter before the system row is (re)upserted; the generic helper does not set
  * vote_weight, so a separate idempotent follow-up statement pins it here.
+ *
+ * @public loaded by path by the config-driven migration runner
  */
 export default function generateSeedCategorizerSQL(): string {
   return [RSS_FEED_CATEGORIZER_USERNAME, RSS_FEED_COLLABORATIVE_CATEGORIZER_USERNAME]

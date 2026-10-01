@@ -1,4 +1,5 @@
 import { nativeCopyrightClaimantApiFixtureCases } from './native-copyright-claimant-cases.mts'
+import { formGuidance, reviewedStaffCase } from './native-copyright-staff-form-review.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 const postId = '00000000-0000-7000-8000-000000000801'
@@ -43,26 +44,9 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
               state: 'completed',
               recommendation: 'not_obviously_invalid',
               rationale: 'No obvious spam markers.',
-              guidance: {
-                summary: 'A claimant reports an unlicensed copy of an original photograph.',
-                elements: [
-                  { element: 'signature', status: 'present', gap: null },
-                  { element: 'work_identification', status: 'present', gap: null },
-                  {
-                    element: 'material_identification',
-                    status: 'unclear',
-                    gap: 'The hosted use URL does not name the specific image.',
-                  },
-                  { element: 'contact_information', status: 'present', gap: null },
-                  { element: 'good_faith_statement', status: 'present', gap: null },
-                  { element: 'accuracy_authority_statement', status: 'present', gap: null },
-                ],
-                risk_notes: [
-                  { kind: 'possible_fair_use', note: 'The post may be a critical review.' },
-                ],
-                suggested_action: 'request_information',
-              },
+              guidance: formGuidance,
             },
+            review: null,
           },
           restrictions: [],
           appeals: [],
@@ -78,6 +62,7 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
             restoration_deadline_at: '2026-07-15T12:00:00.000Z',
           },
         },
+        reviewedStaffCase,
       ],
       page_info: {
         has_next_page: true,

@@ -133,11 +133,11 @@ describe('POST /api/v1/my/spending-categories', () => {
       .expect(415)
   })
 
-  it('returns 400 when spending_category_id is missing', async () => {
+  it('returns 422 when spending_category_id is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    await request.post('/api/v1/my/spending-categories').send({ amount: 100 }).expect(400)
+    await request.post('/api/v1/my/spending-categories').send({ amount: 100 }).expect(422)
   })
 
   it('returns 422 when spending_category_id is not a UUID', async () => {

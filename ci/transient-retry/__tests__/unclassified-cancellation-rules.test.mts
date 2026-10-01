@@ -29,13 +29,10 @@ describe('unclassified timeouts and cancellations', () => {
   }
 
   it.each([
-    ['Main CI (backend)', 'deploy-api / deploy (api)'],
-    ['Main CI (web)', 'deploy / deploy (web)'],
-    ['Main CI (backend)', 'migrate / migrate'],
-    ['Main CI (web)', 'dispatch / dispatch'],
-    ['Main CI (checks)', 'publish / publish-package'],
-    ['Main CI (storybook)', 'publish'],
-    ['Main CI (lambdas)', 'deploy / deploy (image-resize)'],
+    ['Main CI (backend)', 'publish-backend-images / build'],
+    ['Main CI (web)', 'publish-web-images / build'],
+    ['Main CI (storybook)', 'publish-storybook'],
+    ['Main CI (lambdas)', 'publish-image-resize'],
   ])('does not ignore cancellation in %s for stateful job %s', async (workflowName, jobName) => {
     const result = await decide(
       makeCtx({

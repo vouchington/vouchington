@@ -1,5 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
+import { isUUID } from '@modules/utils'
 import { requireAuth } from '../../response-helpers.mts'
 import {
   getPrivateUserByIdOrSlug,
@@ -96,6 +97,9 @@ app.route('/api/v1/users/:idOrSlug/data-request/stream').get(async (ctx: Context
 
   // First read to obtain the request ID used to address the pub/sub channel.
   const requestIdParam = typeof ctx.query.request_id === 'string' ? ctx.query.request_id : undefined
+  // SSE routes have no response-route registration, so `apiQuery` cannot declare this key; assert
+  // the UUID shape here so a malformed id is a 422 instead of a database 500.
+  ctx.assert(!requestIdParam || isUUID(requestIdParam), 422, 'Invalid request ID')
   const requestRef = requestIdParam
     ? await getDataRequestById(user.id, requestIdParam)
     : await getLatestDataRequest(user.id)

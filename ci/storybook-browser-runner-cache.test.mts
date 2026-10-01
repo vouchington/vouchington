@@ -18,7 +18,7 @@ describe('Storybook browser runner cache policy', () => {
       deps,
     )
 
-    first.stdout.emit('data', 'VITE v8.1.5 ready in 573 ms')
+    first.stdout.emit('data', 'VITE v0.0.0 ready in 573 ms')
     first.stderr.emit(
       'data',
       'Failed to connect to the browser session "session" [web-storybook-browser (chromium)] within the timeout.',

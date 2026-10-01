@@ -78,10 +78,10 @@ function assertMarkerIsFreshAndUnique(
 
 describe('step-group-marker-freshness', () => {
   describe('YAML step headers (Table A)', () => {
-    it('Cloudflare Worker tsc marker matches checks-static.yml', () => {
+    it('Cloudflare Worker tsc marker matches static-code-analysis.yml', () => {
       assertMarkerIsFreshAndUnique(
         cloudflareWorkerTscStepMarker,
-        '../../.github/workflows/checks-static.yml',
+        '../../.github/workflows/static-code-analysis.yml',
       )
     })
 

@@ -119,13 +119,41 @@ describe('GET + PUT /api/v1/podcast-episodes/:id/playback-position', () => {
         .expect(415)
     })
 
-    it('returns 400 when position_seconds is missing', async () => {
+    it('returns 401 without a validation diagnostic for a malformed anonymous call', async () => {
+      const response = await createRequest()
+        .put('/api/v1/podcast-episodes/not-a-uuid/playback-position')
+        .send({ position_seconds: 'abc', extra: true })
+        .expect(401)
+      expect(response.body.message).toBe('Unauthorized')
+    })
+
+    it.each([
+      ['missing', {}],
+      ['not a number', { position_seconds: 'abc' }],
+      ['null', { position_seconds: null }],
+      ['sent with a non-boolean completed', { position_seconds: 10, completed: 'yes' }],
+      ['sent with an unknown field', { position_seconds: 10, extra: true }],
+    ])('returns 422 when position_seconds is %s', async (_name, body) => {
       const { id: episodeId } = await createTestRssFeedItemWithUrl(rssFeedId)
       const request = createRequest()
       await request.authenticateAs(user)
       await request
         .put(`/api/v1/podcast-episodes/${episodeId}/playback-position`)
-        .send({})
+        .send(body)
+        .expect(422)
+      const saved = await request
+        .get(`/api/v1/podcast-episodes/${episodeId}/playback-position`)
+        .expect(200)
+      expect(saved.body.playback_position).toBeNull()
+    })
+
+    it('returns 400 when position_seconds is not below one million', async () => {
+      const { id: episodeId } = await createTestRssFeedItemWithUrl(rssFeedId)
+      const request = createRequest()
+      await request.authenticateAs(user)
+      await request
+        .put(`/api/v1/podcast-episodes/${episodeId}/playback-position`)
+        .send({ position_seconds: 1_000_000 })
         .expect(400)
     })
 
@@ -136,16 +164,6 @@ describe('GET + PUT /api/v1/podcast-episodes/:id/playback-position', () => {
       await request
         .put(`/api/v1/podcast-episodes/${episodeId}/playback-position`)
         .send({ position_seconds: -1 })
-        .expect(400)
-    })
-
-    it('returns 400 when position_seconds is not a number', async () => {
-      const { id: episodeId } = await createTestRssFeedItemWithUrl(rssFeedId)
-      const request = createRequest()
-      await request.authenticateAs(user)
-      await request
-        .put(`/api/v1/podcast-episodes/${episodeId}/playback-position`)
-        .send({ position_seconds: 'abc' })
         .expect(400)
     })
 

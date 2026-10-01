@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { runCleanup, sweepCleanup, type CleanupDeps } from './cleanup-artifacts-commands.mts'
+import { sweepCleanup, type CleanupDeps } from './cleanup-artifacts-commands.mts'
 import type { GithubArtifact } from './cleanup-artifacts-github.mts'
 
 const REPO = 'vouchington/vouchington'
@@ -25,58 +25,6 @@ function fakeDeps(overrides: Partial<CleanupDeps> = {}): CleanupDeps {
     ...overrides,
   }
 }
-
-describe('runCleanup', () => {
-  it('deletes the delete-classified, non-expired artifacts of a run', async () => {
-    const deps = fakeDeps({
-      listRunArtifacts: vi
-        .fn<CleanupDeps['listRunArtifacts']>()
-        .mockResolvedValue([
-          artifact({ id: 1, name: 'lcov-full-web-shard-1', size_in_bytes: 10 }),
-          artifact({ id: 2, name: 'lcov-full-web-shard-2', expired: true }),
-        ]),
-    })
-
-    const summary = await runCleanup(REPO, TOKEN, '999', deps)
-
-    expect(deps.deleteArtifact).toHaveBeenCalledExactlyOnceWith(REPO, TOKEN, 1)
-    expect(summary).toEqual({ deletedCount: 1, bytesFreed: 10 })
-  })
-
-  it('logs and continues past a failed delete', async () => {
-    const deps = fakeDeps({
-      listRunArtifacts: vi
-        .fn<CleanupDeps['listRunArtifacts']>()
-        .mockResolvedValue([artifact({ id: 1 }), artifact({ id: 2 })]),
-      deleteArtifact: vi
-        .fn<CleanupDeps['deleteArtifact']>()
-        .mockResolvedValueOnce('failed')
-        .mockResolvedValueOnce('deleted'),
-    })
-    const log = vi.fn<(message: string) => void>()
-
-    const summary = await runCleanup(REPO, TOKEN, '999', deps, log)
-
-    expect(log).toHaveBeenCalledWith(expect.stringContaining('failed to delete'))
-    expect(summary).toEqual({ deletedCount: 1, bytesFreed: 100 })
-  })
-
-  it('does not count already-deleted (not-found) artifacts as freed', async () => {
-    const deps = fakeDeps({
-      listRunArtifacts: vi
-        .fn<CleanupDeps['listRunArtifacts']>()
-        .mockResolvedValue([artifact({ id: 1 }), artifact({ id: 2 })]),
-      deleteArtifact: vi
-        .fn<CleanupDeps['deleteArtifact']>()
-        .mockResolvedValueOnce('not-found')
-        .mockResolvedValueOnce('deleted'),
-    })
-
-    const summary = await runCleanup(REPO, TOKEN, '999', deps)
-
-    expect(summary).toEqual({ deletedCount: 1, bytesFreed: 100 })
-  })
-})
 
 describe('sweepCleanup', () => {
   it('pages through artifacts, checks run conclusions, and deletes eligible ones', async () => {

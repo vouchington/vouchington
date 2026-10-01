@@ -28,8 +28,6 @@ permissions:
 
 jobs:
   publish-cloudflare-worker:
-    needs: [static-checks, cloudflare-worker-tests]
-    if: ${{ !cancelled() && needs.static-checks.result == 'success' && needs.cloudflare-worker-tests.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -79,20 +77,3 @@ jobs:
           if-no-files-found: error
           retention-days: 1
           overwrite: true
-
-  cloudflare-worker-tests:
-    needs: [static-checks]
-    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
-    permissions:
-      actions: read
-      contents: read
-    uses: ./.github/workflows/tests-cloudflare-worker.yml
-    secrets: inherit
-
-  static-checks:
-    uses: ./.github/workflows/checks-static.yml
-    with:
-      cloudflare-worker: true
-    permissions:
-      contents: read
-      actions: read

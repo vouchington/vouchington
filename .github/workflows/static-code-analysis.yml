@@ -16,6 +16,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
+      - name: Build backend email templates
+        # Backend resolves the @email-templates/core package through its generated dist export.
+        working-directory: email-templates
+        run: pnpm run build
+        timeout-minutes: 1
       - name: Typecheck scripts
         shell: bash
         run: pnpm exec tsc --noEmit --project tsconfig.json
@@ -36,8 +41,28 @@ jobs:
         shell: bash
         run: pnpm exec tsc --noEmit --project integration-tests/tsconfig.json
         timeout-minutes: 3
+      - name: Typecheck backend and email templates
+        shell: bash
+        run: pnpm exec tsc --noEmit --incremental --project backend/tsconfig.json && pnpm exec tsc --noEmit --project email-templates/tsconfig.json
+        timeout-minutes: 3
+      - name: Typecheck web
+        working-directory: web
+        shell: bash
+        run: pnpm exec next typegen && pnpm exec tsc --noEmit --incremental
+        timeout-minutes: 3
+        env:
+          NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: '1x00000000000000000000AA'
+          ALLOW_TURNSTILE_TEST_KEY: 'true'
+      - name: Typecheck lambdas
+        shell: bash
+        run: pnpm exec tsc --noEmit --project lambdas/tsconfig.json
+        timeout-minutes: 3
+      - name: Typecheck Cloudflare Worker
+        shell: bash
+        run: pnpm exec tsc --noEmit --project cloudflare-worker/tsconfig.json
+        timeout-minutes: 2
       - name: Install CI tools via mise
-        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
         # Repository cache policy permits only the pnpm store and Playwright browsers.
         with:
           cache: false
@@ -70,17 +95,6 @@ jobs:
           set -euo pipefail
           node static-code-analysis/run-tooling-dependency-cruiser.mts --cache
           pnpm exec depcruise --config .dependency-cruiser.cjs --output-type err --cache --cache-strategy content --do-not-follow "^(?!playwright/tests/)" playwright/tests
-      - name: Build backend email templates
-        # Required by knip below, which resolves the `@email-templates/core`
-        # package export target (`./dist/index.mjs`). The backend
-        # `postinstall` script builds this workspace package. Build it
-        # explicitly so knip sees the package export target even if a prior
-        # install or workspace clean left the generated output absent.
-        working-directory: email-templates
-        run: pnpm run build
-        timeout-minutes: 1
-        # No --cache: each CI job starts from a fresh workspace and the uncached run
-        # remains well under this step's timeout.
       - run: pnpm exec knip --treat-config-hints-as-errors
         timeout-minutes: 5
       - run: pnpm run knip:production-exports
@@ -107,7 +121,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Install CI tools via mise
-        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
         # Repository cache policy permits only the pnpm store and Playwright browsers.
         with:
           cache: false

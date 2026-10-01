@@ -54,7 +54,7 @@ describe('Storybook browser startup progress detection', () => {
       deps,
     )
 
-    child.stdout.emit('data', 'VITE v8.0.16 ready in 573 ms')
+    child.stdout.emit('data', 'VITE v0.0.0 ready in 573 ms')
     now = 900
     child.stdout.emit(
       'data',
@@ -117,7 +117,7 @@ describe('Storybook browser startup progress detection', () => {
       deps,
     )
 
-    child.stdout.emit('data', 'VITE v8.0.16  ready in 573 ms')
+    child.stdout.emit('data', 'VITE v0.0.0  ready in 573 ms')
     child.stdout.emit('data', '|web-storybook-browser| slow story started')
     now = 900
     child.stderr.emit(
@@ -151,7 +151,7 @@ describe('Storybook browser startup progress detection', () => {
       deps,
     )
 
-    child.stdout.emit('data', 'VITE v8.0.16  ready in 573 ms')
+    child.stdout.emit('data', 'VITE v0.0.0  ready in 573 ms')
     now = 50
     child.stdout.emit('data', '[vite] (client) [optimizer] scanning dependencies...')
     now = 1051
@@ -267,7 +267,7 @@ describe('Storybook browser startup progress detection', () => {
 
   it('retries runner-missing when the two markers arrive in separate chunks far apart', async () => {
     const setupFileChunk =
-      'Error: Failed to import test file /repo/node_modules/.pnpm/@storybook+addon-vitest@10.4.6/node_modules/@storybook/addon-vitest/dist/vitest-plugin/setup-file.js'
+      'Error: Failed to import test file /repo/node_modules/.pnpm/@storybook+addon-vitest@0.0.0/node_modules/@storybook/addon-vitest/dist/vitest-plugin/setup-file.js'
     // >1000 chars of unrelated FAIL output between the two markers evicts the setup-file chunk from
     // the sliding buffer before the runner-missing line lands; only the sticky latch survives it.
     const failFiller =

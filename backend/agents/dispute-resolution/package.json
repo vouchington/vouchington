@@ -15,7 +15,9 @@
       "types": "./*.mts",
       "import": "./*.mts",
       "default": "./*.mts"
-    }
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
   },
   "dependencies": {
     "@agents/_shared": "workspace:^",

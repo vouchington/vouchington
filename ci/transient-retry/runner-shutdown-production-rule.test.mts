@@ -15,7 +15,7 @@ function makeContext(
   overrides: Partial<WorkflowRunContext> = {},
 ): WorkflowRunContext {
   return {
-    workflowName: 'Main CI (backend)',
+    workflowName: 'Backend',
     conclusion: 'failure',
     runAttempt: 1,
     failedJobNames: [backendUnitJobName],
@@ -58,7 +58,7 @@ describe('runner-shutdown-leaf-rerun production registration', () => {
   })
 
   it('reruns a clean tooling shutdown', async () => {
-    const toolingJobName = 'tooling-tests / tooling'
+    const toolingJobName = 'test-tooling / tooling'
     const toolingShutdownLog = [
       'node ci/tooling-test-runner.mts --bail=3',
       '##[error]The runner has received a shutdown signal.',
@@ -67,7 +67,7 @@ describe('runner-shutdown-leaf-rerun production registration', () => {
     await expect(
       decide(
         makeContext(toolingShutdownLog, {
-          workflowName: 'Main CI (checks)',
+          workflowName: 'Tooling',
           failedJobNames: [toolingJobName],
           failedJobLogs: () => Promise.resolve(new Map([[toolingJobName, toolingShutdownLog]])),
         }),

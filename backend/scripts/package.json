@@ -16,7 +16,9 @@
       "types": "./*.mts",
       "import": "./*.mts",
       "default": "./*.mts"
-    }
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
   },
   "scripts": {},
   "dependencies": {
@@ -54,7 +56,6 @@
     "@services/platform-stats": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/prioritized-referral-links": "workspace:^",
-    "@services/queue-monitoring": "workspace:^",
     "@services/recently-viewed": "workspace:^",
     "@services/recommended-rss-feeds": "workspace:^",
     "@services/recommended-topics": "workspace:^",

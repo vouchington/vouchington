@@ -1,5 +1,6 @@
 import { buildSystemUserUpsertSQL } from './utils/system-user-seed.mts'
 
+/** @public loaded by path by the config-driven migration runner */
 export default function generateSeedAdminUserSQL(): string {
   const parts: string[] = ['-- Create jong admin user and grant administrator role']
 

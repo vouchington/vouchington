@@ -45,11 +45,8 @@ describe('worker queue policy', () => {
     }
   })
 
-  it('allows only universal and scheduler-tombstone definitions to always run', () => {
-    expect(alwaysRunQueueNames(CPU_SCHEDULE_DEFINITIONS)).toEqual([
-      'heartbeat',
-      'wikipedia-recommender',
-    ])
+  it('allows only universal definitions to always run', () => {
+    expect(alwaysRunQueueNames(CPU_SCHEDULE_DEFINITIONS)).toEqual(['heartbeat'])
     expect(alwaysRunQueueNames(IO_SCHEDULE_DEFINITIONS)).toEqual([])
   })
 

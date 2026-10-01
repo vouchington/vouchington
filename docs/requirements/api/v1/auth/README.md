@@ -55,6 +55,10 @@ is not further constrained) — see
 
 Disconnects the OAuth account for the given provider from the currently authenticated user.
 
+**Request:** No body. After `requireAuth`, `:provider` is validated against the path contract, then
+`assertValidProvider` (`400` if unknown); unauthenticated callers get a bare `401`. See
+[Request Validation](../sessions-authentication/reference-request-validation.md#query-and-path-carriers-on-protected-routes).
+
 **Response:** `204 No Content`
 
 ## POST /api/v1/auth/oauth/:provider/continue

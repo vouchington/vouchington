@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { bookmarkEntity, unbookmarkEntity } from '@services/bookmarks/upsert'
 import { getBookmarksForEntity } from '@services/bookmarks/get'
 import { entityRelationMetadatum } from '@services/entity-relations/metadata'
@@ -13,6 +13,9 @@ import { isUUID } from '@modules/utils'
 app.route('/api/v1/bookmarks/:entityType/:entityId').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/bookmarks/:entityType/:entityId')
 
+  validateRequestContract(ctx, 'GET:/api/v1/bookmarks/:entityType/:entityId', {
+    path: ctx.params,
+  })
   const { entityType, entityId } = ctx.params
 
   ctx.assert(isUUID(entityId!), 422, 'Invalid entity ID')
@@ -40,6 +43,9 @@ app
       'PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate',
     )
 
+    validateRequestContract(ctx, 'PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate', {
+      path: ctx.params,
+    })
     const { entityType, entityId, predicate } = ctx.params
 
     ctx.assert(isUUID(entityId!), 422, 'Invalid entity ID')
@@ -67,6 +73,9 @@ app
       'DELETE:/api/v1/bookmarks/:entityType/:entityId/:predicate',
     )
 
+    validateRequestContract(ctx, 'DELETE:/api/v1/bookmarks/:entityType/:entityId/:predicate', {
+      path: ctx.params,
+    })
     const { entityType, entityId, predicate } = ctx.params
 
     ctx.assert(isUUID(entityId!), 422, 'Invalid entity ID')

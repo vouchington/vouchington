@@ -18,9 +18,8 @@ Every CI job targets around 8 minutes of execution time via fewer, longer-runnin
 minutes is a hard performance ceiling, not a timeout or CI failure threshold. The read-only
 [`ci-job-runtime-audit.mts`](../../ci/ci-job-runtime-audit.mts) command is a thin wrapper over
 `vouchington-tooling/gha-runtime-audit`. It checks successful jobs in each workflow's 10 most recent
-completed in-scope runs: area-workflow pull requests plus `Main CI (*)` pushes on
-`main`. The audit's main-targeting sample is narrower than the area workflow triggers so the 10-run
-horizon stays comparable.
+completed in-scope runs from the six area workflows on pull requests; main workflows publish
+or deploy and are intentionally outside the validation-runtime audit.
 It retains up to the latest five successful executions for each exact job name within that horizon; it
 does not claim exhaustive history. The scheduled
 [`ci-job-runtime.md`](../prompts/scheduled/ci-job-runtime.md) prompt turns the highest-ranked breach
@@ -66,7 +65,21 @@ rejects uploads that omit the literal `retention-days: 1` or substitute another 
 artifacts are consumed only by their owning area workflow and remain available for that retention
 window.
 
-[cleanup-artifacts.yml](../../.github/workflows/cleanup-artifacts.yml) immediately deletes delete-classified artifacts inside six Main CI push workflows (checks, backend, cloudflare-worker, lambdas, storybook, and web). Each main-branch producer calls the reusable cleanup only from its terminal fan-in, after all required same-run consumers and terminal jobs succeed or legitimately skip; the caller passes its own `github.run_id`, so no delayed external `workflow_run` cleanup can overlap a later attempt. Pull-request area workflows never receive `actions: write` for cleanup because their workflow definitions and helpers come from the pull-request revision; a same-repository bot could edit any trust gate declared there. Pull-request runs and successful runs from any other workflow wait for the trusted scheduled sweep. Every six hours, that sweep deletes delete-classified artifacts only when their artifact `created_at` is older than 6 hours and their producing run concluded exactly `success` or `cancelled`. This is an eligibility threshold plus sweep cadence, not a six-hour grace window after cancellation. An unavailable/null run lookup is skipped for that sweep and retried on the next one; if it later resolves `success` or `cancelled`, it is eligible then. `failure`, `timed_out`, `action_required`, known unknown/unrecognized, and every other known conclusion are never swept and remain until GitHub expiration, because reruns may need their same-run handoffs; see [AUTHORING.md § Artifact Rerun Safety](ci/workflows/AUTHORING.md#artifact-rerun-safety). Which artifact name prefixes are kept (`next-static-*`) versus deleted (including the same-run `code-review-payload` handoff) is defined once in [ci/cleanup-artifacts-patterns.json](../../ci/cleanup-artifacts-patterns.json) for both the dependency-free in-run cleanup and the TypeScript sweep; a guard test fails if any real `upload-artifact` name in the workflows matches neither list. Docker build record uploads are disabled with `DOCKER_BUILD_RECORD_UPLOAD: 'false'` on the build workflows, so `.dockerbuild` records are no longer kept. Trivy upload artifacts stay enabled because they also carry the scan tables and SBOM outputs.
+[cleanup-artifacts.yml](../../.github/workflows/cleanup-artifacts.yml) runs a trusted sweep every six
+hours. It deletes delete-classified artifacts only when their artifact `created_at` is older than 6
+hours and their producing run concluded exactly `success` or `cancelled`. This is an eligibility
+threshold plus sweep cadence, not a six-hour grace window after cancellation. An unavailable/null
+run lookup is skipped for that sweep and retried on the next one; if it later resolves `success` or
+`cancelled`, it is eligible then. `failure`, `timed_out`, `action_required`, known
+unknown/unrecognized, and every other known conclusion are never swept and remain until GitHub
+expiration, because reruns may need their same-run handoffs; see [AUTHORING.md § Artifact Rerun
+Safety](ci/workflows/AUTHORING.md#artifact-rerun-safety). Which artifact name prefixes are
+kept (`next-static-*`) versus deleted (including the same-run `code-review-payload` handoff) is
+defined once in [ci/cleanup-artifacts-patterns.json](../../ci/cleanup-artifacts-patterns.json); a
+guard test fails if any real `upload-artifact` name in the workflows matches neither list. Docker
+build record uploads are disabled with `DOCKER_BUILD_RECORD_UPLOAD: 'false'` on the build workflows,
+so `.dockerbuild` records are no longer kept. Trivy upload artifacts stay enabled because they also
+carry the scan tables and SBOM outputs.
 
 Keep workflow triggers narrow, reproduce failures locally before rerunning, and keep tests
 fail-fast-ish (`--bail=3` for Vitest; `maxFailures: CI ? 3 : undefined` for Playwright). Area
@@ -74,8 +87,7 @@ workflows and Gitleaks subscribe to `merge_group` checks requested; a merge grou
 areas its base-to-head diff touches.
 Other workflows keep their path and branch filters. Playwright, web integration, and Docker image
 build filters should skip Markdown-only, Vitest-only, test-helper-only, and Storybook-only changes
-on both pull requests and `main` pushes unless the changed files are directly owned by that
-workflow. Direct `node_modules` caches and `actions/setup-node` package-manager cache helpers are
+unless the changed files are directly owned by that workflow. Direct `node_modules` caches and `actions/setup-node` package-manager cache helpers are
 not allowed. Ephemeral GitHub-hosted jobs may cache the pnpm store, Playwright browsers, and shared
 web test runtime output through the explicit, SHA-pinned `actions/cache` policy in the [GitHub
 Actions checklist](../checklists/github-actions.md).
@@ -141,13 +153,14 @@ The canonical workflow contract is [Auto Harness automation](ci/workflows/refere
 with accepted residuals and the operator-authenticated incident-response drain control in the
 [security boundary](ci/workflows/reference-harness-automation-accepted-risk.md).
 
-Automation Fix Main revalidates the same completed source attempt before prompt transfer and
+Automation Fix Main accepts push failures from the publisher workflows and schedule/manual failures
+only from the exact same-repository `Nightly` workflow on `main`. It revalidates the same completed
+source attempt before prompt transfer and
 needs-human escalation. A queued, running, or completed rerun suppresses obsolete dispatch,
 duplicate-issue comments, and escalation. Uncatalogued genuine transients still require a classifier
 with a real-log fixture and counterfixtures; a successful manual rerun alone cannot satisfy
-completion. The direct `static-checks / static-web` production-build watchdog fingerprint is
-catalogued separately as `main-web-static-build-watchdog-timeout` (`maxAttempts: 1`); its detailed
-markers and look-alikes are in [Classifying Transient Infrastructure Failures](reference-ci-classifying-transient-infrastructure-failures.md).
+completion. Detailed transient markers and look-alikes are in [Classifying Transient Infrastructure
+Failures](reference-ci-classifying-transient-infrastructure-failures.md).
 
 When the merge queue removes a pull request because its merge-group CI failed or timed out,
 [Merge Queue Ejection](../../.github/workflows/merge-queue-ejection.yml) dispatches an Auto Harness

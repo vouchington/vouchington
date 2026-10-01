@@ -43,7 +43,6 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `ci-area-coverage.yml`              | `coverage`                      | job    | `ubuntu-latest`                       | 10            |
 | `ci-detect-changes.yml`             | `detect-changes`                | job    | `ubuntu-slim`                         | 3             |
 | `ci-upload-codecov.yml`             | `upload-codecov`                | matrix | `ubuntu-latest`                       | 8             |
-| `cleanup-artifacts.yml`             | `cleanup-run`                   | job    | `ubuntu-slim`                         | 10            |
 | `cleanup-artifacts.yml`             | `cleanup-sweep`                 | job    | `ubuntu-latest`                       | 26            |
 | `cloudflare-worker.yml`             | `changes`                       | job    | → `ci-detect-changes.yml`             | 360           |
 | `cloudflare-worker.yml`             | `cloudflare-worker`             | job    | `ubuntu-latest`                       | 5             |
@@ -87,37 +86,13 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `lambdas.yml`                       | `test-lambdas`                  | job    | → `tests-lambdas.yml`                 | 360           |
 | `lint-links.yml`                    | `lint-links`                    | job    | `ubuntu-slim`                         | 10            |
 | `main-backend.yml`                  | `backend-deploy-intent`         | job    | `ubuntu-slim`                         | 2             |
-| `main-backend.yml`                  | `backend-smoke`                 | job    | → `checks-backend-smoke.yml`          | 360           |
 | `main-backend.yml`                  | `detect-image-publication`      | job    | `ubuntu-slim`                         | 5             |
-| `main-backend.yml`                  | `postgres-schema-tests`         | job    | → `tests-postgres-schema.yml`         | 360           |
 | `main-backend.yml`                  | `publish-backend-images`        | job    | → `publish-backend-images.yml`        | 360           |
-| `main-backend.yml`                  | `static-checks`                 | job    | → `checks-static.yml`                 | 360           |
-| `main-backend.yml`                  | `test-backend-credentialed`     | job    | → `tests-backend-credentialed.yml`    | 360           |
-| `main-backend.yml`                  | `test-backend-modules`          | job    | → `tests-backend-modules.yml`         | 360           |
-| `main-backend.yml`                  | `test-backend-unit`             | job    | → `tests-backend-unit.yml`            | 360           |
-| `main-checks.yml`                   | `cleanup-artifacts`             | job    | → `cleanup-artifacts.yml`             | 360           |
-| `main-checks.yml`                   | `explain-analyze`               | job    | → `explain-analyze.yml`               | 360           |
-| `main-checks.yml`                   | `select-main-checks`            | job    | `ubuntu-slim`                         | 2             |
-| `main-checks.yml`                   | `tooling-tests`                 | job    | → `tests-tooling.yml`                 | 360           |
-| `main-checks.yml`                   | `ts-shared-tests`               | job    | → `tests-ts-shared.yml`               | 360           |
-| `main-cloudflare-worker.yml`        | `cloudflare-worker-tests`       | job    | → `tests-cloudflare-worker.yml`       | 360           |
 | `main-cloudflare-worker.yml`        | `publish-cloudflare-worker`     | job    | `ubuntu-latest`                       | 10            |
-| `main-cloudflare-worker.yml`        | `static-checks`                 | job    | → `checks-static.yml`                 | 360           |
-| `main-lambdas.yml`                  | `lambdas-tests`                 | job    | → `tests-lambdas.yml`                 | 360           |
 | `main-lambdas.yml`                  | `publish-image-resize`          | job    | `ubuntu-latest`                       | 10            |
-| `main-lambdas.yml`                  | `static-checks`                 | job    | → `checks-static.yml`                 | 360           |
 | `main-storybook.yml`                | `publish-storybook`             | job    | `ubuntu-latest`                       | 10            |
-| `main-storybook.yml`                | `storybook-build`               | job    | → `storybook.yml`                     | 360           |
-| `main-web.yml`                      | `cleanup-artifacts`             | job    | → `cleanup-artifacts.yml`             | 360           |
 | `main-web.yml`                      | `detect-image-publication`      | job    | `ubuntu-slim`                         | 5             |
-| `main-web.yml`                      | `playwright-credentialed-tests` | job    | → `tests-playwright-credentialed.yml` | 360           |
-| `main-web.yml`                      | `playwright-tests`              | job    | → `tests-playwright.yml`              | 360           |
 | `main-web.yml`                      | `publish-web-images`            | job    | → `publish-web-images.yml`            | 360           |
-| `main-web.yml`                      | `static-checks`                 | job    | → `checks-static.yml`                 | 360           |
-| `main-web.yml`                      | `store-playwright-otel`         | job    | `ubuntu-slim`                         | 8             |
-| `main-web.yml`                      | `test-web`                      | job    | → `tests-web.yml`                     | 360           |
-| `main-web.yml`                      | `test-web-api`                  | job    | → `tests-web-api.yml`                 | 360           |
-| `main-web.yml`                      | `test-web-integration`          | job    | → `tests-web-integration.yml`         | 360           |
 | `main-web.yml`                      | `web-deploy-intent`             | job    | `ubuntu-slim`                         | 2             |
 | `merge-queue-ejection.yml`          | `comment-session`               | job    | `ubuntu-slim`                         | 2             |
 | `merge-queue-ejection.yml`          | `dispatch`                      | job    | → `harness-dispatch.yml`              | 360           |

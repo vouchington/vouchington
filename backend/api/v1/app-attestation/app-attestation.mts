@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { v7 } from 'uuid'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { parseJsonBody } from '../../response-helpers.mts'
+import { parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
 import { setAuthenticationCookies } from '@modules/api-utils'
 import { BYPASS_DISABLED } from '@modules/on-error/error-codes'
 import { createDeviceAndSessionTokens, refreshSessionState } from '@services/jwt-session'
@@ -14,7 +14,11 @@ import {
 } from '@services/app-attestation'
 import { getPrivateUserByAny } from '@services/users/get'
 
-const APP_ATTEST_CHALLENGE_TYPES: readonly AppAttestChallengeType[] = ['attestation', 'assertion']
+/** Closed request body for `POST /api/v1/app-attestation/challenge`. */
+type AppAttestChallengeBody = { type: 'attestation' | 'assertion' }
+
+/** Closed request body for `POST /api/v1/app-attestation/attest`; the iOS client sends camelCase keys. */
+type AppAttestAttestBody = { keyId: string; attestation: string; challengeId: string }
 
 // POST /api/v1/app-attestation/challenge — issue a single-use App Attest challenge.
 // Device-scoped, not user-scoped: an anonymous device must be able to attest itself
@@ -23,14 +27,9 @@ app.route('/api/v1/app-attestation/challenge').post(async (ctx: Context) => {
   await ctx.applyRouteRateLimit('POST:/api/v1/app-attestation/challenge')
   if (!isAppAttestationEnabled()) ctx.throw(403, 'App Attest is not enabled', BYPASS_DISABLED)
 
-  const body = await parseJsonBody<{ type?: unknown }>(ctx, '1kb')
-  ctx.assert(
-    typeof body.type === 'string' &&
-      APP_ATTEST_CHALLENGE_TYPES.includes(body.type as AppAttestChallengeType),
-    422,
-    'type must be "attestation" or "assertion"',
-  )
-  const type = body.type as AppAttestChallengeType
+  const body = await parseJsonBody<AppAttestChallengeBody>(ctx, '1kb')
+  validateRequestContract(ctx, 'POST:/api/v1/app-attestation/challenge', { body })
+  const type: AppAttestChallengeType = body.type
 
   const challengeId = v7()
   const challenge = randomBytes(32).toString('base64url')
@@ -46,22 +45,11 @@ app.route('/api/v1/app-attestation/attest').post(async (ctx: Context) => {
   await ctx.applyRouteRateLimit('POST:/api/v1/app-attestation/attest')
   if (!isAppAttestationEnabled()) ctx.throw(403, 'App Attest is not enabled', BYPASS_DISABLED)
 
-  const body = await parseJsonBody<{
-    keyId?: unknown
-    attestation?: unknown
-    challengeId?: unknown
-  }>(ctx, '100kb')
-  ctx.assert(typeof body.keyId === 'string' && body.keyId.length > 0, 422, 'keyId is required')
-  ctx.assert(
-    typeof body.attestation === 'string' && body.attestation.length > 0,
-    422,
-    'attestation is required',
-  )
-  ctx.assert(
-    typeof body.challengeId === 'string' && body.challengeId.length > 0,
-    422,
-    'challengeId is required',
-  )
+  const body = await parseJsonBody<AppAttestAttestBody>(ctx, '100kb')
+  validateRequestContract(ctx, 'POST:/api/v1/app-attestation/attest', { body })
+  ctx.assert(body.keyId.length > 0, 422, 'keyId is required')
+  ctx.assert(body.attestation.length > 0, 422, 'attestation is required')
+  ctx.assert(body.challengeId.length > 0, 422, 'challengeId is required')
 
   // Revalidate freshness/suspension via the same hot/warm/cold check used everywhere else
   // session state is trusted, and use its `did` (rather than blindly trusting the request's
