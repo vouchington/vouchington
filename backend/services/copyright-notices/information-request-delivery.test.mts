@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction } from '@voucha/test-helpers'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { failTestCopyrightDeliveryIntent } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { captureTestLogOutput } from '@voucha/test-helpers/services/copyright-notices/capture-log-output'
