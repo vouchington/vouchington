@@ -26,19 +26,35 @@ runs:
         key: playwright-browsers-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright-cache-key.outputs.lockfile-hash }}
 
     - name: Install Playwright browsers
-      # Healthy installs finish well under two minutes. One retry covers a transient mirror stall.
-      # The action kills the attempt's process tree at timeout_seconds.
-      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
-      with:
-        timeout_seconds: 120
-        max_attempts: 2
-        shell: bash
-        command: |
-          set -euo pipefail
-          if pnpm exec playwright install-deps --dry-run chromium > /dev/null 2>&1; then
-            :
-          else
-            bash "$GITHUB_WORKSPACE/ci/wait-for-apt-locks.sh"
-            pnpm exec playwright install-deps --dry-run chromium || pnpm exec playwright install-deps chromium
+      shell: bash
+      # A stalled apt or browser download must die inside this attempt. Healthy installs
+      # finish well under two minutes; one retry covers a transient mirror stall.
+      run: |
+        set -euo pipefail
+        attempt=1
+        max_attempts=2
+        install_status=0
+        while [ "$attempt" -le "$max_attempts" ]; do
+          set +e
+          python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 120 bash -c '
+            set -euo pipefail
+            if pnpm exec playwright install-deps --dry-run chromium > /dev/null 2>&1; then
+              :
+            else
+              bash "$GITHUB_WORKSPACE/ci/wait-for-apt-locks.sh"
+              pnpm exec playwright install-deps --dry-run chromium || pnpm exec playwright install-deps chromium
+            fi
+            pnpm exec playwright install chromium
+          '
+          install_status=$?
+          set -e
+          if [ "$install_status" -eq 0 ]; then
+            exit 0
           fi
-          pnpm exec playwright install chromium
+          if [ "$attempt" -ge "$max_attempts" ]; then
+            echo "::error::Playwright browser install failed after ${max_attempts} attempts (status ${install_status})"
+            exit "$install_status"
+          fi
+          echo "::warning::Playwright browser install attempt ${attempt} failed with status ${install_status}; retrying"
+          attempt=$((attempt + 1))
+        done
