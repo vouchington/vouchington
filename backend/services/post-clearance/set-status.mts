@@ -1,5 +1,6 @@
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
+import { reviveClassifierRunRequests } from '@services/classifier-runs'
 import { lockPostPublication } from '@services/post-publication'
 import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
 import { ensureCurrentPostModerationVersion } from './moderation-ledger.mts'
@@ -64,7 +65,11 @@ async function writePostClearanceStatus(
       await ensureCurrentPostModerationVersion(postId, { query })
     }
     await lockPostPublication(query, postId)
-    const { rows } = await query<{ id: string; community_id: string | null }>(
+    const { rows } = await query<{
+      id: string
+      community_id: string | null
+      input_sha256: Buffer
+    }>(
       `/* setPostClearanceStatus */
       WITH inserted_change AS (
         INSERT INTO post_clearance_changes (
@@ -114,7 +119,8 @@ async function writePostClearanceStatus(
           ELSE COALESCE($3, updated_by_id) END
       FROM inserted_change
       WHERE posts.id = inserted_change.post_id
-      RETURNING inserted_change.id, posts.community_id`,
+      RETURNING inserted_change.id, posts.community_id,
+        posts.llm_moderation_content_sha256 AS input_sha256`,
       [
         postId,
         changeType,
@@ -127,9 +133,19 @@ async function writePostClearanceStatus(
         isCompensation,
       ],
     )
-    const change = rows[0] ?? null
-    if (change) await recordPostClearancePublicationChange(query, postId, change.community_id)
-    return change
+    const row = rows[0]
+    if (!row) return null
+    if (status === 'approved') {
+      // The sweep retires a request while its post is not approved; approving it again at the same
+      // content returns those requests to the sweep. This only revives, so a post that was never
+      // requested (one approved at creation, whose C6 request `processPostCreated` writes) gets none.
+      await reviveClassifierRunRequests(query, {
+        subject: { postId, rssFeedItemId: null },
+        inputSha256: row.input_sha256,
+      })
+    }
+    await recordPostClearancePublicationChange(query, postId, row.community_id)
+    return { id: row.id, community_id: row.community_id }
   }
   const change = await runPostClearanceTransaction(transactionOptions, run)
   if (change && !transactionOptions.query && !transactionOptions.client)

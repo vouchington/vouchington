@@ -1,7 +1,11 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import {
+  retireIneligibleClassifierRunRequests,
+  type IneligibleClassifierRunRequest,
+} from './run-retirement.mts'
 import { CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND } from './run-sweep.mts'
-import type { ClassifierRunAdapter } from './types.mts'
+import type { ClassifierRunAdapter, ClassifierRunSubject } from './types.mts'
 
 export const CLASSIFIER_RUN_DISCOVERY_PAGE_SIZE = 100
 
@@ -79,13 +83,27 @@ type RequestRow = {
   id: string
   post_id: string | null
   rss_feed_item_id: string | null
+  input_sha256: Buffer
   created_at: Date
+  eligible: boolean
+}
+
+function subjectOf(row: RequestRow): ClassifierRunSubject {
+  if (row.post_id !== null) return { postId: row.post_id, rssFeedItemId: null }
+  if (row.rss_feed_item_id !== null) return { postId: null, rssFeedItemId: row.rss_feed_item_id }
+  throw new Error(`classifier run request ${row.id} has no subject`)
 }
 
 /**
  * One keyset page of subjects that were requested for this classifier but never reserved a run:
  * unsettled requests the adapter's own eligibility predicate accepts. This is the discovery that
  * recovers a subject whose run reservation never happened, whatever the reason.
+ *
+ * A request the predicate rejects is not left to be re-scanned every sweep. If its subject is no
+ * longer live at the content it asked for (deleted, unapproved, or moved to new content), that
+ * content version can never be classified, so the request is retired as stale; a request whose
+ * subject is live and only waiting (for an embedding) stays pending. A producer that makes the
+ * subject live again re-arms the request. See `retireIneligibleClassifierRunRequests`.
  */
 export async function listPendingClassifierRunRequests<C, L, E>(
   adapter: ClassifierRunAdapter<C, L, E>,
@@ -94,24 +112,34 @@ export async function listPendingClassifierRunRequests<C, L, E>(
 ): Promise<DiscoveryPage<PendingClassifierRunRequest>> {
   const { rows } = await write<RequestRow>(
     sql`/* listPendingClassifierRunRequests */
-    SELECT request.id, request.post_id, request.rss_feed_item_id, request.created_at
+    SELECT request.id, request.post_id, request.rss_feed_item_id, request.input_sha256,
+      request.created_at, (`.append(adapter.requestEligibility()).append(sql`) AS eligible
     FROM classifier_run_requests request
     JOIN classifiers classifier ON classifier.id = request.classifier_id
     WHERE classifier.slug = ${adapter.slug}
       AND request.id > COALESCE(${after}::uuid, ${FIRST_UUID}::uuid)
       AND request.run_id IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
-      AND (`.append(adapter.requestEligibility()).append(sql`)
     ORDER BY request.id
     LIMIT ${limit}
   `),
   )
+  const items: PendingClassifierRunRequest[] = []
+  const ineligible: IneligibleClassifierRunRequest[] = []
+  for (const row of rows) {
+    if (row.eligible) {
+      items.push({
+        requestId: row.id,
+        postId: row.post_id,
+        rssFeedItemId: row.rss_feed_item_id,
+        createdAt: row.created_at,
+      })
+    } else {
+      ineligible.push({ subject: subjectOf(row), inputSha256: row.input_sha256 })
+    }
+  }
+  await retireIneligibleClassifierRunRequests(adapter, ineligible)
   return {
-    items: rows.map(row => ({
-      requestId: row.id,
-      postId: row.post_id,
-      rssFeedItemId: row.rss_feed_item_id,
-      createdAt: row.created_at,
-    })),
+    items,
     next: rows.length === limit ? (rows[rows.length - 1]?.id ?? null) : null,
   }
 }

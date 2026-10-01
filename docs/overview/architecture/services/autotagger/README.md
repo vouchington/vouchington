@@ -37,7 +37,10 @@ per-classifier input building and outcome application that lifecycle asks for:
 - **Readiness** (`readiness.mts`) — a subject is ready only once its embedding was built from its
   current content. `hasCurrentAutotaggerEmbedding` gates reservation (an unready request stays
   unsettled); `autotaggerRequestEligibility` puts the same predicate in the sweep query, so the wait
-  for the embedding never burns the sweep's enqueue bound.
+  for the embedding never burns the sweep's enqueue bound. Only the wait is transient: a request
+  whose post is no longer approved, or whose feed item was deleted or moved to other content, fails
+  the same predicate for good, so the sweep retires it as stale instead of re-scanning it (see the
+  [sweep](../classifier-runs/README.md#recovery-sweep)). The embedding wait never retires a request.
 - **Effects** (`effects.mts`) — `applyAutotaggerEffects` applies the durable decision to the exact
   post or feed item the run classified, inside the completion transaction
   (`applyTopicClassifierDecisionRelations`): each positive topic result creates or updates that
@@ -49,7 +52,10 @@ per-classifier input building and outcome application that lifecycle asks for:
   dynamic-config-backed `AutotaggerPaidLimitsFields`: a global `enabled` kill-switch, the post
   author's tiered `max_topics` cap (free/plus/pro), and the two independent RSS enrichment tiers
   (discoverable-source LLM pass, paid-follower collaborative pass). This is the intended "pause
-  autotagging" switch, not classifier deactivation.
+  autotagging" switch, not classifier deactivation. Tagging follows the author's membership at the
+  time of posting: the plan is read once, when the receipt reserves its candidates, and is outside
+  the receipt identity, so a post written on the free plan is never re-tagged when its author
+  upgrades (there is no upgrade-triggered discovery and no backfill).
 - **Candidate topic reads** (`read-candidate-topics.mts`) — the topic names and descriptions the
   question set is built from.
 

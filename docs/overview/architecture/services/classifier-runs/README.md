@@ -58,9 +58,19 @@ creates a second receipt.
 | `classifier_run_candidates`      | Insert-only, ordered candidates a run captured at reservation: topics (C5, C6) or stories and standalone RSS items (C9), one nullable foreign key per kind with an exact-one `CHECK`. Not part of the identity; a replay reads them and never searches again. |
 | `post_classifier_local_outcomes` | Insert-only C5 local detector outcome, one row per run, written on every terminal kind that has one.                                                                                                                                                          |
 
-A request is settled by exactly one of: a run, `no_work_at`, or `stale_at`. Re-approving a
-subject re-arms a settled or stale request for its new content hash. Deleting a run returns its
-request to the sweep.
+A request is settled by exactly one of: a run, `no_work_at`, or `stale_at`. Requesting a
+subject again re-arms a settled or stale request for its content hash, and a feed-item re-upsert
+re-arms a stale one. Deleting a run returns its request to the sweep.
+
+`stale_at` is also how the sweep retires a request that can never be classified. A request whose
+subject is no longer live at the content it asked for (deleted, no longer approved, or moved to
+other content) is terminal for that content version: it is settled stale and never selected again. A
+subject that becomes live again at that content is re-armed by its producer, and new content gets
+its own request. A producer re-arms in the transaction that makes the subject live, after the
+subject lock: `requestClassifierRuns` (the moderation decision), `reviveClassifierRunRequests`
+(a status write that approves a post), and the feed upsert. Reviving only returns a stale request
+for the current content to the sweep; it never creates a request or widens the classifiers a
+producer asked for.
 
 ## Lifecycle
 
@@ -69,10 +79,13 @@ actor, and then the adapter's configuration is re-resolved. A mismatch between t
 the resolved current state means the run is obsolete and is superseded, never repaired in place.
 
 1. **Request.** `requestClassifierRuns` writes one request per classifier in the caller's
-   transaction and marks older-hash requests stale. Post approval requests C5 and C6 together
-   (`APPROVAL_CLASSIFIER_SLUGS`); a post approved at creation requests C6 from
+   transaction and marks older-hash requests stale. Post approval by the moderation decision
+   (`checkPostClearance`) requests C5 and C6 together; a post approved at creation requests C6 from
    `processPostCreated` (`requestApprovedPostClassifierRuns`); an RSS upsert requests C6 and C9 for each
-   written feed item (`requestRssFeedItemClassifierRuns`, which has no approval gate).
+   written feed item (`requestRssFeedItemClassifierRuns`, which has no approval gate). A status
+   write that approves a post (`setPostClearanceStatus`, `restorePostClearanceStatus`) requests
+   nothing new but revives the post's stale requests for its current content, so a post approved
+   again after the sweep retired its requests is swept again.
 2. **Reserve.** `reserveClassifierRun` first prepares the candidate set for a classifier that has
    one (`adapter.captureCandidates` for topics, `adapter.captureStoryCandidates` for stories,
    skipped when the identity already has a receipt, whose set is reused instead of searching
@@ -120,7 +133,15 @@ The sweep has two discovery queries, both bounded, keyset-paginated and drained 
 - **Pending requests** (`listPendingClassifierRunRequests`): requests with no run, no settlement
   and an adapter-supplied eligibility predicate (`requestEligibility`), so a subject that never
   got a receipt is dispatched. C6 and C9 carry their embedding predicate here, so waiting for an
-  embedding never spends the run's sweep bound.
+  embedding never spends the run's sweep bound. Each page also retires the requests the predicate
+  rejected whose subject is no longer live at the requested content
+  (`retireIneligibleClassifierRunRequests`), so the sweep stops re-scanning them every tick. The
+  adapter's own `lockCurrent` decides: it returns the subject only while it is live, so a subject it
+  returns at the requested content is merely waiting and its request stays pending, while anything
+  else is settled stale for that content hash alone. Each request is judged in its own transaction
+  under the subject's lock, the order every producer takes, so a retirement cannot overwrite a
+  request that was just re-armed. A classifier gets this without a new hook as long as
+  `lockCurrent` reflects liveness.
 
 Only an enqueue that `addBulk` actually added counts toward `CLASSIFIER_RUN_SWEEP_ENQUEUE_BOUND`
 (10). At the bound, a run is given up only once its stable-id job no longer exists, becoming
@@ -146,6 +167,9 @@ Each failure mode below names its durable state and recovery, then the idempoten
   reserved. Supersession is durable and releases the old lease.
 - **Missing configuration**: approval commits, the request stays pending and the sweep retries.
   The request stays unsettled until a run, no-work or stale settlement settles it.
+- **Subject no longer eligible**: the sweep settles the request stale for that content hash, and
+  re-approval or new content revives it. The settlement is scoped to the hash and made under the
+  subject lock.
 - **Provider client unavailable**: the remote half ends as `client-unavailable`, keeps the local
   outcome and alarms once. The terminal kind is immutable and the local outcome is insert-only.
 - **Attempt cap**: the cap check ends the run as `attempts-exhausted`, and the sweep does not

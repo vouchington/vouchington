@@ -73,7 +73,7 @@ describe('post classifier run adapter (real PG)', () => {
     expect(await runs(post.id)).toEqual([])
   })
 
-  it('keeps a request with an unapproved or revised post out of the sweep until it is current', async () => {
+  it('retires a request whose post is unapproved or revised, and sweeps it again once it is re-requested', async () => {
     const eligible = await createApprovedClassifierPost()
     const unapproved = await createApprovedClassifierPost()
     const revised = await createApprovedClassifierPost()
@@ -88,7 +88,10 @@ describe('post classifier run adapter (real PG)', () => {
     expect(pending).toContain(eligible.post.id)
     expect(pending).not.toContain(unapproved.post.id)
     expect(pending).not.toContain(revised.post.id)
+
     await setTestPostClearanceStatus(unapproved.post.id, 'approved')
+    await request(unapproved.post, unapproved.inputSha256)
+
     expect(await pendingPostIds()).toContain(unapproved.post.id)
   })
 
