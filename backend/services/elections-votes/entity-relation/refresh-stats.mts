@@ -19,7 +19,7 @@ export async function refreshEntityRelationVoteStatsFromPrimaryWithFallback(
 
 export async function refreshEntityRelationVoteStatsById(relationId: string): Promise<void> {
   const tableUnions = electionRelationTables.map(
-    table => `SELECT id, '${table}'::text AS relation_table
+    table => `SELECT id, '${table}'::text AS entity_relation
       FROM "${table}"
       WHERE id = $1 AND deleted_at IS NULL`,
   )
@@ -29,10 +29,10 @@ export async function refreshEntityRelationVoteStatsById(relationId: string): Pr
     LIMIT 1`,
     [relationId],
   )
-  const relation = rows[0] as { id?: string; relation_table?: string } | undefined
-  if (!relation?.id || !relation.relation_table) return
+  const relation = rows[0] as { id?: string; entity_relation?: string } | undefined
+  if (!relation?.id || !relation.entity_relation) return
   await refreshEntityRelationVoteStatsFromPrimaryWithFallback(
-    createEntityRelationElectionTarget(relation.id, relation.relation_table),
+    createEntityRelationElectionTarget(relation.id, relation.entity_relation),
   )
 }
 

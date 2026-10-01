@@ -118,9 +118,8 @@ async function selectPaidFollowerTopics(
       FROM relation__rss_feed_item__category__topic relation
       JOIN LATERAL (
         SELECT score
-        FROM entity_relation_votes
-        WHERE relation_table = 'relation__rss_feed_item__category__topic'
-          AND entity_relation_id = relation.id
+        FROM relation__rss_feed_item__category__topic__votes
+        WHERE entity_relation_id = relation.id
           AND user_id = ${collaborativeCategorizerId}
         ORDER BY id DESC
         LIMIT 1

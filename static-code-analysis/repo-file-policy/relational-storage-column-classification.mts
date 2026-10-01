@@ -5,7 +5,6 @@ import {
   ALLOWED_NONRELATION_UUID,
   ALLOWED_OWN_PRIMARY_UUID,
   ALLOWED_TOKEN_CURSOR_PROTOCOL_ID,
-  PARTITION_FOREIGN_KEY_COLUMNS,
 } from './relational-storage-catalog.mts'
 import {
   ENCODED_KEY_NAME,
@@ -17,7 +16,6 @@ import {
   relationalStorageDiagnostic,
   typeBase,
   type ObservedRelationalColumns,
-  type RelationalStorageOptions,
 } from './relational-storage-type-rules.mts'
 
 type Catalog = ReadonlySet<string>
@@ -52,7 +50,6 @@ export function classifyRelationalColumn(
   columnName: string,
   column: SchemaTableSnapshot['columns'][string],
   table: SchemaTableSnapshot,
-  options: RelationalStorageOptions,
   observed: ObservedRelationalColumns,
   errors: string[],
 ): void {
@@ -90,12 +87,7 @@ export function classifyRelationalColumn(
     columnName !== 'id' &&
     (columnName.endsWith('_id') || columnName.endsWith('_uuid')) &&
     !coveredByForeignKey(table, columnName) &&
-    !isGeneratedAlias(table, key, column.generatedExpression) &&
-    !(
-      table.relationKind === 'partitioned table' &&
-      PARTITION_FOREIGN_KEY_COLUMNS.has(key) &&
-      options.verifiedPartitionForeignKeys?.has(key)
-    )
+    !isGeneratedAlias(table, key, column.generatedExpression)
   ) {
     checkCategory(
       key,

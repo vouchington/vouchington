@@ -47,12 +47,12 @@ export function checkRelationalStorage(
           ),
         )
       }
-      classifyRelationalColumn(key, columnName, column, table, options, observed, errors)
+      classifyRelationalColumn(key, columnName, column, table, observed, errors)
     }
   }
 
   if (options.enforceCatalogFreshness !== false) {
-    appendCatalogFreshness(schema, observed, errors, options)
+    appendCatalogFreshness(schema, observed, errors)
   }
   return errors
 }

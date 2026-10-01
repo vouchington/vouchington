@@ -114,17 +114,17 @@ function assertEntityRelationVotePruning(result: ExplainResult): void {
       .map(node => stringFromUnknown(node['Relation Name'] ?? ''))
       .filter(name => /__votes__(?:default|p_\w+)$/.test(name)),
   )
-  const hasBothKeys = ['relation_table', 'entity_relation_id'].every(key =>
+  const hasTargetKey = ['entity_relation_id'].every(key =>
     new RegExp(`\\b${key}\\b`).test(result.query_text),
   )
   const [onlyChild] = voteChildren
   if (
-    !hasBothKeys ||
+    !hasTargetKey ||
     voteChildren.size !== 1 ||
     !onlyChild?.startsWith('relation__post__category__topic__votes__')
   ) {
     throw new Error(
-      `${result.name} must constrain relation_table and entity_relation_id to prune both partition levels`,
+      `${result.name} must constrain entity_relation_id to prune the concrete vote table`,
     )
   }
 }

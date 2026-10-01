@@ -20,19 +20,15 @@ COMMENT ON TABLE ${retained} IS 'Concrete retained identity for an elected relat
 COMMENT ON COLUMN ${retained}.subject_id IS 'Concrete subject root paired with this retained relation identifier.';`
   })
   const cleanupProgress = `CREATE TABLE IF NOT EXISTS retained_relation_identity_cleanup_progress (
-  relation_table TEXT PRIMARY KEY,
+  entity_relation elected_entity_relations PRIMARY KEY,
   cursor_subject_id UUID,
   cursor_relation_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK ((cursor_subject_id IS NULL) = (cursor_relation_id IS NULL))
 );
 
-INSERT INTO retained_relation_identity_cleanup_progress (relation_table)
-VALUES ${electionRelations.map(metadata => `('${metadata.table_name}')`).join(', ')}
-ON CONFLICT (relation_table) DO NOTHING;
-
 COMMENT ON TABLE retained_relation_identity_cleanup_progress IS 'One operational keyset cursor per metadata-declared elected relation family.';
-COMMENT ON COLUMN retained_relation_identity_cleanup_progress.relation_table IS 'Metadata family selector for cleanup, not a persisted relation reference.';
+COMMENT ON COLUMN retained_relation_identity_cleanup_progress.entity_relation IS 'Metadata family selector for cleanup, not a persisted relation reference.';
 COMMENT ON COLUMN retained_relation_identity_cleanup_progress.cursor_subject_id IS 'Last scanned subject position, not a durable relationship.';
 COMMENT ON COLUMN retained_relation_identity_cleanup_progress.cursor_relation_id IS 'Last scanned relation position, not a durable relationship.';`
   const targetColumns = electionRelations.map(getEntityRelationIntegrityTargetColumn)

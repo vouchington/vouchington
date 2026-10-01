@@ -3,7 +3,10 @@
  */
 
 import { read, write } from '@data-stores/psql'
-import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
+import {
+  entityRelationMetadatum,
+  getEntityRelationVoteTableName,
+} from '@voucha/types/entities/entity-relations-metadata'
 import sql from 'sql-template-strings'
 
 const ALLOWED_RELATION_TABLES = new Set(
@@ -70,12 +73,19 @@ export async function getEntityRelation(
 export async function getEntityRelationVoteStorageRows(
   entityRelationIds: string[],
 ): Promise<Array<{ entity_relation_id: string; storage_table: string }>> {
-  const { rows } = await read(sql`/* getEntityRelationVoteStorageRows */
-    SELECT entity_relation_id, tableoid::regclass::text AS storage_table
-    FROM entity_relation_votes
-    WHERE entity_relation_id = ANY(${entityRelationIds}::uuid[])
-    ORDER BY entity_relation_id
-  `)
+  const selects = entityRelationMetadatum.flatMap(metadata =>
+    metadata.election
+      ? [
+          `SELECT entity_relation_id, tableoid::regclass::text AS storage_table
+          FROM ${getEntityRelationVoteTableName(metadata)}
+          WHERE entity_relation_id = ANY($1::uuid[])`,
+        ]
+      : [],
+  )
+  const { rows } = await read(
+    `/* getEntityRelationVoteStorageRows */ ${selects.join(' UNION ALL ')} ORDER BY entity_relation_id`,
+    [entityRelationIds],
+  )
   return rows as Array<{ entity_relation_id: string; storage_table: string }>
 }
 

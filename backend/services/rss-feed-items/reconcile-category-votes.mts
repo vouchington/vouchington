@@ -1,3 +1,4 @@
+import { getEntityRelationVoteTableName } from '@voucha/types/entities/entity-relations-metadata'
 import type { QueryExecutor } from '@data-stores/psql'
 import { upsertEntityRelationElectionVotes } from '@services/elections-votes/entity-relation/votes-upsert'
 import {
@@ -83,7 +84,7 @@ async function retractUnsupportedCategorizerVotesForKind(
   if (relationIds.length === 0) return
   await query(
     `/* reconcileRssFeedItemCategorySnapshots lock */
-    SELECT pg_advisory_xact_lock(hashtextextended('entity_relation_votes:' || $1::text || ':' || relation_id::text, 0))
+    SELECT pg_advisory_xact_lock(hashtextextended('${getEntityRelationVoteTableName(metadata)}:' || $1::text || ':' || relation_id::text, 0))
     FROM unnest($2::uuid[]) AS input(relation_id) ORDER BY relation_id`,
     [categorizerId, relationIds.map(relation => relation.id).toSorted()],
   )

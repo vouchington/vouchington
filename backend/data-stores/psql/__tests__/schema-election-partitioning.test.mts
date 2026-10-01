@@ -3,6 +3,7 @@ import {
   entityRelationMetadatum,
   getEntityRelationVoteTableName,
 } from '@voucha/types/entities/entity-relations-metadata'
+import { getElectionIndexName } from '../config-driven/utils/election-sql-identifiers.mts'
 import { VOTE_SCHEMA_CONFIGS } from '../config-driven/utils/election-schema-config.mts'
 import { onGracefulShutdown, read } from '../index.mts'
 import { NON_DEFAULT_ID_EXCEPTIONS } from '../schema-growth-classification.mts'
@@ -76,36 +77,29 @@ describe('election schema partitioning', () => {
     }
   })
 
-  it('uses LIST then target RANGE partitioning for every entity-relation election leaf', async () => {
-    const [parentRows, leafRows, constraints, indexes] = await Promise.all([
-      getPartitionRows(['entity_relation_votes']),
+  it('range-partitions every concrete relation vote parent with its own composite foreign key', async () => {
+    const [leafRows, constraints, indexes] = await Promise.all([
       getPartitionRows(relationVoteTables),
-      getConstraintRows(['entity_relation_votes', ...relationVoteTables]),
-      getIndexRows(['entity_relation_votes']),
+      getConstraintRows(relationVoteTables),
+      getIndexRows(relationVoteTables),
     ])
-
-    expect(parentRows).toHaveLength(electionRelations.length)
-    expect(new Set(parentRows.map(row => row.child_name))).toEqual(new Set(relationVoteTables))
-    expect(
-      parentRows.every(
-        row => row.strategy === 'l' && row.partition_key === 'LIST (relation_table)',
-      ),
-    ).toBe(true)
-    expect(
-      constraints
-        .filter(row => row.table_name === 'entity_relation_votes' && row.constraint_type === 'p')
-        .map(row => row.definition),
-    ).toEqual(['PRIMARY KEY (relation_table, entity_relation_id, id)'])
-    expect(indexes.map(row => row.index_name)).toEqual(
-      expect.arrayContaining([
-        'idx_entity_relation_votes__relation__user__id',
-        'idx_entity_relation_votes__relation__id',
-        'idx_entity_relation_votes__user__relation__id',
-      ]),
-    )
-
+    expect(relationVoteTables).toHaveLength(17)
     for (const metadata of electionRelations) {
       const voteTable = getEntityRelationVoteTableName(metadata)
+      expect(
+        constraints
+          .filter(row => row.table_name === voteTable && row.constraint_type === 'p')
+          .map(row => row.definition),
+      ).toEqual(['PRIMARY KEY (entity_relation_id, id)'])
+      expect(
+        indexes.filter(row => row.table_name === voteTable).map(row => row.index_name),
+      ).toEqual(
+        expect.arrayContaining(
+          ['relation__user__id', 'relation__id', 'user__relation__id'].map(suffix =>
+            getElectionIndexName(voteTable, suffix),
+          ),
+        ),
+      )
       expect(leafRows.filter(row => row.table_name === voteTable)).toEqual([
         {
           table_name: voteTable,
@@ -197,7 +191,7 @@ describe('election schema partitioning', () => {
       WHERE table_schema = 'public'
         AND ((table_name = ANY($1) AND column_name = 'id')
           OR (table_name = ANY($2) AND column_name = ANY($3))
-          OR (table_name = 'entity_relation_votes' AND column_name = 'entity_relation_id')
+          OR (table_name = ANY($5) AND column_name = 'entity_relation_id')
           OR (table_name = ANY($4) AND column_name = 'created_at'))
       ORDER BY table_name, column_name`,
       [
@@ -207,7 +201,8 @@ describe('election schema partitioning', () => {
         ],
         configuredVoteTables,
         VOTE_SCHEMA_CONFIGS.map(config => config.entityIdColumn),
-        [...configuredVoteTables, 'entity_relation_votes'],
+        [...configuredVoteTables, ...relationVoteTables],
+        relationVoteTables,
       ],
     )
 
@@ -248,20 +243,22 @@ describe('election schema partitioning', () => {
         }),
       )
     }
-    expect(columns).toContainEqual(
-      expect.objectContaining({
-        table_name: 'entity_relation_votes',
-        column_name: 'entity_relation_id',
-        data_type: 'uuid',
-      }),
-    )
-    expect(columns).toContainEqual(
-      expect.objectContaining({
-        table_name: 'entity_relation_votes',
-        column_name: 'created_at',
-        generation_expression: 'uuid_extract_timestamp(id)',
-      }),
-    )
+    for (const voteTable of relationVoteTables) {
+      expect(columns).toContainEqual(
+        expect.objectContaining({
+          table_name: voteTable,
+          column_name: 'entity_relation_id',
+          data_type: 'uuid',
+        }),
+      )
+      expect(columns).toContainEqual(
+        expect.objectContaining({
+          table_name: voteTable,
+          column_name: 'created_at',
+          generation_expression: 'uuid_extract_timestamp(id)',
+        }),
+      )
+    }
 
     const { rows: samples } = await read<{ target_id: string; target_timestamp: Date }>(
       `/* getUuidV7TargetTimestampEvidence */

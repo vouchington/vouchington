@@ -4,8 +4,6 @@ import type { SchemaSnapshot, SchemaTableSnapshot } from '@vouchington/postgres/
 import { checkRelationalStorage } from './relational-storage-guard.mts'
 import { emptySchemaSnapshot, plainSnapshotTable } from './schema-snapshot-test-fixtures.mts'
 import { setupRepoFilePolicyTest } from '../test-helpers/repo-file-policy-fixtures.mts'
-import { verifyEntityRelationVotePartitionForeignKeys } from './partition-foreign-key-proof.mts'
-import createEntityRelationsSql from '../../backend/data-stores/psql/config-driven/0000-00-01-entity-relations.mts'
 
 function column(type: string, generatedExpression: string | null = null) {
   return {
@@ -180,35 +178,6 @@ describe('relational storage guard', () => {
     expect(currentErrors).toEqual([])
     const staleErrors = checkRelationalStorage(value)
     expect(staleErrors).toEqual(expect.arrayContaining([expect.stringContaining('stale')]))
-  })
-
-  it('accepts only the proven concrete FK on every generated LIST partition', () => {
-    const sql = createEntityRelationsSql()
-    expect(verifyEntityRelationVotePartitionForeignKeys(sql)).toEqual([])
-    expect(
-      verifyEntityRelationVotePartitionForeignKeys(
-        sql.replace(
-          'FOREIGN KEY (subject_id, entity_relation_id)',
-          'UNIQUE (subject_id, entity_relation_id)',
-        ),
-      ),
-    ).not.toEqual([])
-    const value = snapshot('entity_relation_votes', {
-      subject_id: column('uuid'),
-      entity_relation_id: column('uuid'),
-    })
-    value.tables.entity_relation_votes.relationKind = 'partitioned table'
-    const verifiedPartitionForeignKeys = new Set([
-      'entity_relation_votes.subject_id',
-      'entity_relation_votes.entity_relation_id',
-    ])
-    expect(
-      checkRelationalStorage(value, {
-        enforceCatalogFreshness: false,
-        verifiedPartitionForeignKeys,
-      }),
-    ).toEqual([])
-    expect(checkRelationalStorage(value, { enforceCatalogFreshness: false })).not.toEqual([])
   })
 })
 

@@ -6,7 +6,7 @@ import {
 } from '../shared/entity-service.mts'
 import { getElectionVotesByUser } from '../shared/vote-get.mts'
 import type { ElectionVote } from '../shared/types.mts'
-import { ENTITY_RELATION_ELECTION_CONFIG } from './config.mts'
+import { ENTITY_RELATION_ELECTION_CONFIG, getEntityRelationElectionConfig } from './config.mts'
 
 /** Viewer votes for relations of one concrete table; ids are only unique within a table. */
 export function getEntityRelationElectionVotesByUser(
@@ -15,10 +15,9 @@ export function getEntityRelationElectionVotesByUser(
   entityIds: string[],
 ): Promise<ElectionVote<'relation'>[]> {
   return getElectionVotesByUser(
-    ENTITY_RELATION_ELECTION_CONFIG,
+    getEntityRelationElectionConfig(relationTable),
     userId,
     entityIds,
-    relationTable,
   ) as Promise<ElectionVote<'relation'>[]>
 }
 export const getEntityRelationElectionVote = createVoteGetByUser<'relation'>(

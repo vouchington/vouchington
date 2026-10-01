@@ -162,7 +162,8 @@ from `@services/users`, since that package depends on this one. Trusted internal
 
 Election-capable relation tables include partial active-row indexes scoped by `subject_id` for both `best` (`votes_score_sort DESC, created_at DESC`) and `newest` (`created_at DESC`) listings.
 Their vote events live in generated per-relation tables with composite foreign keys that include
-`subject_id`; their `entity_relation_votes` partitioned parent provides the shared read contract.
+`subject_id`. Each vote parent uses RANGE partitioning by `entity_relation_id`; the enum-tagged
+`view_entity_relation_votes` union provides the cross-family read contract.
 
 Route handlers should call the parsing helpers in this service instead of duplicating entity-type,
 predicate, RSS item ID, or pagination validation in API files.

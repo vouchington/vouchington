@@ -94,11 +94,10 @@ export async function upsertEntityRelationElectionVotes(
       ),
     )
     query.append(sql` (
-        relation_table, user_id, subject_id, entity_relation_id, score,
+        user_id, subject_id, entity_relation_id, score,
         ip_address, device_id, session_id, user_agent_id
       )
-      SELECT ${metadata.table_name},
-        user_id, subject_id, entity_relation_id, score,
+      SELECT user_id, subject_id, entity_relation_id, score,
         ip_address, device_id, session_id, user_agent_id
       FROM matched_relations
       WHERE relation_index = `)
@@ -128,7 +127,7 @@ export async function upsertEntityRelationElectionVotes(
   targetRelations.forEach((_metadata, index) => {
     if (index > 0) query.append(sql` UNION ALL `)
     query.append(
-      `SELECT entity_id, user_id, score, created_at, '${targetRelations[index]!.table_name}'::text AS relation_table FROM inserted_${index}`,
+      `SELECT entity_id, user_id, score, created_at, '${targetRelations[index]!.table_name}'::text AS entity_relation FROM inserted_${index}`,
     )
   })
 
@@ -136,14 +135,16 @@ export async function upsertEntityRelationElectionVotes(
     await transaction(sql`/* lockActiveUserForEntityRelationElectionVoteMutation */
       SELECT fn_lock_active_user_for_mutation(${userId}::uuid)
     `)
-    await transaction(sql`/* lockEntityRelationElectionVoteMutations */
-      SELECT pg_advisory_xact_lock(
-        hashtextextended('entity_relation_votes:' || ${userId} || ':' || ordered.entity_id::text, 0)
+    const locks = targetRelations
+      .flatMap(metadata =>
+        values.map(value => ({
+          key: `${getEntityRelationVoteTableName(metadata)}:${userId}:${value.entityId}`,
+        })),
       )
-      FROM (
-        SELECT unnest(${values.map(value => value.entityId)}::uuid[]) AS entity_id
-        ORDER BY entity_id
-      ) ordered
+      .sort((left, right) => left.key.localeCompare(right.key))
+    await transaction(sql`/* lockEntityRelationElectionVoteMutations */
+      SELECT pg_advisory_xact_lock(hashtextextended(ordered.lock_key, 0))
+      FROM (SELECT unnest(${locks.map(lock => lock.key)}::text[]) AS lock_key ORDER BY lock_key) ordered
     `)
     return transaction(query)
   }
@@ -151,18 +152,18 @@ export async function upsertEntityRelationElectionVotes(
     queryOptions.query || queryOptions.client
       ? await withTransactionOptions(queryOptions, run)
       : await upsertEntityRelationElectionVotesInOwnedTransaction(run)
-  const upsertedVotes = rows as Array<ElectionVoteMutationResult & { relation_table: string }>
+  const upsertedVotes = rows as Array<ElectionVoteMutationResult & { entity_relation: string }>
   const voteStatsTargets = relationMetadata
     ? values.map(vote =>
         createEntityRelationElectionTarget(vote.entityId, relationMetadata.table_name),
       )
     : upsertedVotes.map(vote =>
-        createEntityRelationElectionTarget(vote.entity_id, vote.relation_table),
+        createEntityRelationElectionTarget(vote.entity_id, vote.entity_relation),
       )
   if (voteStatsTargets.length > 0 && enqueueVoteStats) {
     void enqueueBulkUpdateEntityRelationElectionVoteStats(voteStatsTargets)
   }
-  return upsertedVotes.map(({ relation_table: _relationTable, ...vote }) => vote)
+  return upsertedVotes.map(({ entity_relation: _relationTable, ...vote }) => vote)
 }
 
 async function upsertEntityRelationElectionVotesInOwnedTransaction<T>(

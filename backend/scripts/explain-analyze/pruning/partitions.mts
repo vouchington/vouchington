@@ -5,7 +5,7 @@ export const PRUNING_PARENTS = [
   'conversation_messages',
   'relation__post__category__topic__votes',
 ] as const
-export const VOTE_PARENT = 'entity_relation_votes'
+export const VOTE_PARENT = 'relation__post__category__topic__votes'
 export const PROOF_YEARS = [2024, 2025] as const
 
 export function rangeLeaf(parent: string, year: number): string {
