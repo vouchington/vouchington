@@ -277,6 +277,20 @@ test. Pass `{ enabled: false }` to keep that configuration but turn the switch o
 the switch alone closed intake. The helper does not mock AWS; add `installTestMediaDeliveryEdge()`
 when the test publishes delivery changes.
 
+## REST Usage Metering
+
+REST usage-quota suites share `@voucha/test-helpers/rest-usage-meter`.
+`registerRestUsageRoutes(base)` registers the read, 404, 500, IP-only, repeated-boundary, and 202
+write routes a suite calls, all under its own `base` so two suites on one app never collide. Call
+`useRestUsageMetering(analyticsPrefix)` inside a `describe`: route rate limiting is off under test,
+so it switches the kill switch on for each test, restores the config afterward, and starts a local
+analytics directory. `waitForUsageRows(userId, count)` and `waitForAnonymousUsageRows(count)` wait
+for the `api_usage` rows, which land just after the response closes, and `usageQuotaKeys()` lists
+every usage-quota Valkey key so a test can prove no IP, device, or session id reached one. Valkey
+and the analytics directory are shared across forks, so assert on a user's own bucket and rows;
+anonymous rows have no owner, so count them relative to a prior read. The row readers live in
+`@voucha/test-helpers/api-usage-analytics`.
+
 ## Surviving a Dirty Database
 
 The DB accumulates rows from every test run and is never cleaned. These patterns prevent flaky tests.
