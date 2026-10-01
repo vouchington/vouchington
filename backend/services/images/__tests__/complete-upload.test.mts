@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
+import { randomBytes, createHash } from 'node:crypto'
+import { Readable } from 'node:stream'
+import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
+import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
+import { markImageUploadFailed } from '../upload-state.mts'
+import { getImageByIdFromPrimary } from '../get.mts'
 import {
   createTestUser,
   insertPendingTestImage,
@@ -65,5 +72,51 @@ describe('completeImageUpload', () => {
     await expect(completeImageUpload(user, image_id)).rejects.toMatchObject({
       status: 400,
     })
+  })
+
+  it('preserves the promotion rejection when reading terminal state for cleanup fails', async () => {
+    const imageId = await insertPendingTestImage(user.id)
+    const bytes = randomBytes(64)
+    const digest = createHash('sha256').update(bytes).digest('hex')
+    const originalSend = S3Client.prototype.send
+    const send = vi.fn<VitestLooseMock>(async function (this: S3Client, command: unknown) {
+      if (command instanceof GetObjectCommand && command.input.Key === imageId) {
+        return { $metadata: {}, Body: Readable.from([bytes]), ContentType: 'image/png' }
+      }
+      if (
+        command instanceof PutObjectCommand &&
+        (command.input.Key === imageId || command.input.Key === digest)
+      ) {
+        expect(command.input.Body).toBeInstanceOf(Readable)
+        for await (const chunk of command.input.Body as Readable) {
+          expect(Buffer.from(chunk)).toEqual(bytes)
+        }
+        if (command.input.Key === digest)
+          await markImageUploadFailed(imageId, 'Owned terminal failure during promotion')
+        return { $metadata: {} }
+      }
+      return Reflect.apply(originalSend, this, [command])
+    })
+    const sendSpy = vi.spyOn(S3Client.prototype, 'send').mockImplementation(send)
+    try {
+      const { result, error } = await withPostgresPoolQueryFailureForTest(
+        '/* getImageByIdFromPrimary */',
+        () => completeImageUpload(user, imageId).catch((err: unknown) => err),
+        { command: 'SELECT' },
+      )
+      expect(error).toMatchObject({ code: '25P02' })
+      expect(result).toMatchObject({
+        status: 409,
+        message: 'Image upload is no longer eligible for promotion',
+      })
+      expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(error, expect.anything())
+      await expect(getImageByIdFromPrimary(imageId, true)).resolves.toMatchObject({
+        upload_completed_at: null,
+        upload_failed_at: expect.any(Date),
+        upload_error: 'Owned terminal failure during promotion',
+      })
+    } finally {
+      sendSpy.mockRestore()
+    }
   })
 })
