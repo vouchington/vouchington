@@ -2,9 +2,9 @@ import type { ClassifierCandidateKind } from '@voucha/types'
 import {
   classifierDecisionResultKey,
   flattenClassifierDecisionResults,
-  serializeClassifierRawResponse,
   type NormalizedClassifierDecisionInput,
 } from './decision-input.mts'
+import { serializeClassifierRawResponse } from './raw-response.mts'
 import {
   ClassifierDecisionReuseError,
   type ClassifierDecisionInputResult,

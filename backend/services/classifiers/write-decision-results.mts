@@ -4,9 +4,9 @@ import {
   classifierDecisionCandidateKind,
   classifierDecisionEntityId,
   flattenClassifierDecisionResults,
-  serializeClassifierRawResponse,
   type NormalizedClassifierDecisionInput,
 } from './decision-input.mts'
+import { serializeClassifierRawResponse } from './raw-response.mts'
 import type { ClassifierDecisionSnapshot } from './classifier-decision-snapshot.mts'
 import { insertCommunityPromptResults } from './write-community-prompt-results.mts'
 import { buildColumnArrays, type PersistedInputRow } from './write-decision-result-columns.mts'

@@ -5,6 +5,7 @@ import type {
   PersistClassifierDecisionInput,
 } from './types.mts'
 import { isUUID } from '@modules/utils/ids'
+import { serializeClassifierRawResponse } from './raw-response.mts'
 
 export type NormalizedClassifierDecisionInput = PersistClassifierDecisionInput & {
   calls: readonly (PersistClassifierDecisionCall & {
@@ -104,10 +105,6 @@ export function classifierDecisionResultKey(result: ClassifierDecisionInputResul
   return `${result.candidateKind}:${classifierDecisionEntityId(result)}`
 }
 
-export function serializeClassifierRawResponse(value: unknown): string {
-  return JSON.stringify(normalizeJsonValue(value))
-}
-
 function assertDecisionCalls(calls: readonly PersistClassifierDecisionCall[]): void {
   const resultKeys = new Set<string>()
   const storedCandidateIds = new Set<string>()
@@ -140,22 +137,4 @@ function assertDecisionResult(result: ClassifierDecisionInputResult): void {
     throw new Error('Classifier result probability must be between zero and one')
   }
   serializeClassifierRawResponse(result.rawResponse)
-}
-
-function normalizeJsonValue(value: unknown): unknown {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') return value
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value))
-      throw new Error('Classifier raw response must be JSON serializable')
-    return value
-  }
-  if (Array.isArray(value)) return value.map(normalizeJsonValue)
-  if (typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, child]) => [key, normalizeJsonValue(child)]),
-    )
-  }
-  throw new Error('Classifier raw response must be JSON serializable')
 }
