@@ -79,6 +79,9 @@ visible to signed-in members. When a signed-in member filed the notice, a record
 member's current public profile if it still exists. Records do not reveal legal names, contact
 details, signatures, raw correspondence, evidence, moderator rationale, or agent analysis.
 
+See [Copyright and the DMCA on Voucha](./copyright-and-dmca.md) and
+[How Copyright Complaints Work](./copyright-complaints.md) for more detail on the copyright process.
+
 ## Appeals
 
 Members may appeal eligible warnings, bans, and post removals. Verified topic representatives may file disputes about reviews they believe are legally or factually problematic.

@@ -108,6 +108,9 @@ that has since been deleted, shows no claimant profile. Case records never show 
 contact details, signatures, raw email, evidence, moderator rationale, or agent analysis. Other
 private case data is restricted to case participants where appropriate and to authorized staff.
 
+See [Copyright and the DMCA on Voucha](./copyright-and-dmca.md) and
+[How Copyright Complaints Work](./copyright-complaints.md) for more detail on the copyright process.
+
 ### Analytics
 
 We use server-side analytics (Google Tag Manager, server-side configuration) to understand platform usage, improve features, and measure performance. Analytics are only loaded when you grant consent via the cookie banner. We do not use client-side advertising trackers or Google AdSense.

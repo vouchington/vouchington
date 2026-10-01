@@ -159,7 +159,8 @@ Voucha may restrict access to hosted material when it receives and validates a c
 The copyright program is not active until Voucha registers a designated agent with the US Copyright
 Office and publishes a monitored contact channel. Until then, no address or form is represented as
 an active statutory DMCA intake channel. The rest of this section describes the process once the
-program is active.
+program is active. See [Copyright and the DMCA on Voucha](./copyright-and-dmca.md) and
+[How Copyright Complaints Work](./copyright-complaints.md) for more detail.
 
 ### Submitting a Notice
 
