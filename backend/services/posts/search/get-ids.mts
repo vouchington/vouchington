@@ -1,7 +1,7 @@
 import type { BasicUser } from '@services/users/types'
 import type { PostSearchOptions, PostSearchResult } from './types.mts'
 import { buildPostSearchQuery } from './query-builder.mts'
-import { read } from '@data-stores/psql'
+import { executePostSearchQuery } from './execute-query.mts'
 import { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
 import {
   hasSemanticSearch as hasSemanticSearchFn,
@@ -60,7 +60,7 @@ export async function getPostIds(
   if (ranking_lt !== undefined) queryOptions.ranking_lt = ranking_lt
   if (hot_score_lt !== undefined) queryOptions.hot_score_lt = hot_score_lt
   const query = buildPostSearchQuery(currentUser, queryOptions)
-  const { rows } = await read(query)
+  const { rows } = await executePostSearchQuery(query, hasSemanticSearch)
   const typedRows = rows as PostSearchRow[]
   const hasNextPage = typedRows.length > limit
   const resultRows = typedRows.slice(0, limit)

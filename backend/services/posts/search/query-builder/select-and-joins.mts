@@ -13,6 +13,7 @@ export function appendPostSearchSelectAndJoins(
     options,
     rankingScoreExpression,
     sort,
+    useSemanticCandidates = false,
   }: {
     currentUser?: BasicUser
     followingRankExpression: SQLStatement | null
@@ -21,6 +22,7 @@ export function appendPostSearchSelectAndJoins(
     options: PostSearchOptions
     rankingScoreExpression: SQLStatement | null
     sort: string
+    useSemanticCandidates?: boolean
   },
 ): void {
   query.append(sql`SELECT
@@ -39,6 +41,9 @@ export function appendPostSearchSelectAndJoins(
   query.append(sql`
     FROM posts
   `)
+  if (useSemanticCandidates) {
+    query.append(sql`JOIN semantic_post_candidates ON semantic_post_candidates.id = posts.id\n`)
+  }
   appendSearchJoins(query, { hasSemanticSearch, hasTextSearch, options })
   if (sort === 'following_new' && currentUser) appendFollowingJoin(query, currentUser.id)
 }

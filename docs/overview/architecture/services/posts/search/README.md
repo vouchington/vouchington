@@ -52,13 +52,26 @@ Notes:
 
 ### Semantic search plan
 
-Semantic filtering (`semantic_search_query` and the `similar_*` options) is a distance-threshold predicate, not a nearest-neighbour scan. The pgvector HNSW index serves only `ORDER BY embedding <=> query LIMIT n`, so this query never uses it and `hnsw.iterative_scan` does not apply. REST `GET /api/v1/posts` and MCP `search_posts` share this one query.
+REST `GET /api/v1/posts` and MCP `search_posts` share one query. A `semantic_search_query`
+first selects a materialized window ordered by raw cosine distance, with privacy, moderation,
+text and other search filters applied before the window. The HNSW scan uses strict iterative
+ordering and finite search limits; its settings and a forced custom plan are scoped to the
+read transaction and do not leak into pooled connections.
 
-- `sort=relevance` with a semantic query (alone or hybrid) computes the distance for every candidate row and sorts by the ranking score; cost grows with the number of embedded posts that pass the other filters.
-- `sort=new`, and `similar_*` requests with either sort, walk `posts.id DESC` and filter on distance until the page fills. `similar_*` requests have no ranking expression, so `sort=relevance` is recency-ordered within the threshold.
-- Hybrid requests can also switch to a slower generic plan on a long-lived pooled connection, because the query runs as a named prepared statement.
+Approximate recall and a capped result window are intentional ([#1549](https://github.com/vouchington/vouchington/issues/1549)).
+The candidate cap is defined by `SEMANTIC_POST_CANDIDATE_LIMIT` in the query builder. Ranking
+formulas and the distance threshold are unchanged within those candidates. Hybrid ranking
+can omit high text-score matches outside the distance window. Recency, vote and hot sorts
+also operate within that same window.
 
-The plan evidence, the reasoning, and the open candidate-window decision are in the [search-utils plan notes](../../../backend/modules/search-utils/README.md#semantic-post-search-plan).
+Page cursors apply after candidate selection, so later pages never refill the window with new
+candidates. Pagination ends at its boundary; facets count that window rather than the exhaustive
+match set. Approximate recall can under-fill a page after the finite scan budget is exhausted.
+Text-only and `similar_*` requests retain their existing query paths; similar-item relevance
+remains recency-ordered within the threshold.
+
+The representative vector seeds and semantic/hybrid scenarios in `backend/scripts/explain-analyze/`
+compare custom and generic plans. See the [search-utils plan notes](../../../backend/modules/search-utils/README.md#semantic-post-search-plan).
 
 ## Get IDs
 

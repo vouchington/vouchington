@@ -204,6 +204,15 @@ automod flag list. Native delivery is tracked by
 [vouchington-clients#199](https://github.com/vouchington/vouchington-clients/issues/199); this
 repository does not edit `vouchington-clients`.
 
+## Semantic post search candidate window
+
+#1549 keeps REST post search and MCP `search_posts` on the same approximate, capped candidate
+window. Existing response fields and opaque cursors stay the same; pagination ends at the window,
+and facets count only its candidates. Web, Swift and .NET can continue using `has_next_page` and
+the server cursor without decoder changes. Hybrid results can omit matches outside the window;
+clients must not describe these search results or counts as exhaustive. Similar-item searches
+retain their current behavior.
+
 ## Staff action history handoff
 
 Issue #635 extends the shared moderator-action catalog and transcript of staff actions with typed

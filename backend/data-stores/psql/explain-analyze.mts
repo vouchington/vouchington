@@ -56,7 +56,11 @@ export async function explainAnalyze(
   name: string,
   input: QueryInput,
   values?: readonly unknown[],
-  options: { jit?: 'on' | 'off'; planCacheMode?: ExplainPlanCacheMode } = {},
+  options: {
+    jit?: 'on' | 'off'
+    planCacheMode?: ExplainPlanCacheMode
+    localSettings?: Readonly<Record<string, string>>
+  } = {},
 ): Promise<ExplainResult> {
   let text: string
   if (typeof input === 'string') {
@@ -85,6 +89,9 @@ export async function explainAnalyze(
     // Must run before PREPARE: a generic plan can be built at prepare time, so planning and
     // execution have to see the same work_mem or the two can disagree on whether a sort spills.
     await client.query(`/* explainAnalyze */ SET LOCAL work_mem = '${EXPLAIN_WORK_MEM}'`)
+    await client.query(sql`/* explainAnalyze */
+      SELECT set_config(key, value, true)
+      FROM jsonb_each_text(${JSON.stringify(options.localSettings ?? {})}::jsonb)`)
     await client.query(`/* explainAnalyze */ ${prepareText}`)
     prepared = true
     const argumentSql = await buildPreparedArgumentSql(client, preparedStatementName, values ?? [])
