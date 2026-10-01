@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Copyright complaints are a distinct legal aggregate.  This migration records
 -- evidence and decisions only; it deliberately enables no media restriction.
 
@@ -298,6 +299,7 @@ CREATE TABLE copyright_notice_action_intents (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'completed', 'stale', 'blocked', 'failed')),
   delivery_attempt_count integer NOT NULL DEFAULT 0 CHECK (delivery_attempt_count BETWEEN 0 AND 5),
+  lease_token uuid,
   claimed_at timestamptz,
   completed_at_reason text CHECK (completed_at_reason IS NULL OR completed_at_reason IN ('completed', 'stale', 'blocked', 'failed')),
   failure_message text CHECK (failure_message IS NULL OR char_length(failure_message) BETWEEN 1 AND 4096),

@@ -23,6 +23,7 @@ const MAX_ATTEMPTS = 5
 const CLAIM_TIMEOUT_MS = 5 * 60 * 1000
 
 export type CopyrightClaimedActionIntent = CopyrightActionIntentRecord & {
+  lease_token: string
   placement_id: string
   image_id: string
 }
@@ -54,7 +55,7 @@ export async function claimCopyrightActionIntent(
       FOR UPDATE SKIP LOCKED
     ), claimed AS (
       UPDATE copyright_notice_action_intents intent
-    SET state = 'claimed', delivery_attempt_count = intent.delivery_attempt_count + 1,
+    SET lease_token = uuidv7(), state = 'claimed', delivery_attempt_count = intent.delivery_attempt_count + 1,
       claimed_at = ${now}, next_attempt_at = NULL, failure_message = NULL
     FROM candidate
     WHERE intent.id = candidate.id

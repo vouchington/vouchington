@@ -161,33 +161,40 @@ describe('current copyright form screening execution', () => {
   it('claims one live attempt and rotates failed retry tokens', async () => {
     const { notice } = await createClearScreenedForm()
     const started = await startCopyrightFormScreening(notice.intake.id)
-    await expect(claimCopyrightFormScreening(notice.intake.id)).resolves.toEqual(started)
+    const claimed = await claimCopyrightFormScreening(notice.intake.id)
+    expect(claimed?.leaseToken).not.toBe(started.leaseToken)
     await expect(claimCopyrightFormScreening(notice.intake.id)).resolves.toBeNull()
-    await failCopyrightFormScreening(started)
+    await failCopyrightFormScreening(claimed!)
     await expect(claimCopyrightFormScreening(notice.intake.id)).resolves.toEqual({
       intakeId: started.intakeId,
       attemptNumber: started.attemptNumber + 1,
+      leaseToken: expect.any(String),
     })
   })
 
   it('rotates an expired claim and fences its late output', async () => {
     const { notice } = await createClearScreenedForm()
-    const old = await startCopyrightFormScreening(notice.intake.id)
-    await claimCopyrightFormScreening(notice.intake.id)
+    await startCopyrightFormScreening(notice.intake.id)
+    const old = (await claimCopyrightFormScreening(notice.intake.id))!
     await expireTestCopyrightScreeningClaim(notice.intake.id)
     const retry = await claimCopyrightFormScreening(notice.intake.id)
+    expect(retry?.leaseToken).not.toBe(old.leaseToken)
     expect(retry?.attemptNumber).toBe(old.attemptNumber + 1)
-    await expect(
-      completeCopyrightFormScreening(old, {
-        intakeId: notice.intake.id,
-        inputSha256: Buffer.alloc(32, 1),
-        recommendation: 'not_obviously_invalid',
-        rationale: 'Late output.',
-        guidance: testCopyrightFormGuidance,
-        promptVersion: 'copyright-form-screening-v2',
-        model: 'test-model',
-      }),
-    ).resolves.toBeNull()
+    const input = {
+      intakeId: notice.intake.id,
+      inputSha256: Buffer.alloc(32, 1),
+      recommendation: 'not_obviously_invalid' as const,
+      rationale: 'Late output.',
+      guidance: testCopyrightFormGuidance,
+      promptVersion: 'copyright-form-screening-v2',
+      model: 'test-model',
+    }
+    await expect(completeCopyrightFormScreening(old, input)).resolves.toBeNull()
+    await failCopyrightFormScreening(old)
+    const result = await completeCopyrightFormScreening(retry!, input)
+    expect(result).toBeTypeOf('string')
+    await failCopyrightFormScreening(old)
+    await expect(completeCopyrightFormScreening(retry!, input)).resolves.toBe(result)
   })
 
   it('serializes new pending authority ahead of already-started admission through the PostgreSQL form fence', async () => {

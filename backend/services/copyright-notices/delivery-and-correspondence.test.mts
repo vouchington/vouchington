@@ -30,7 +30,6 @@ function readRecoverableDeliveryIntentIds(channel: 'in_app' | 'email', intentId:
     intentId,
   )
 }
-
 async function createFixture() {
   const [claimant, moderatorRecord] = await Promise.all([
     createTestUserDirect(),
@@ -71,7 +70,6 @@ async function createFixture() {
   if (!aggregate) throw new Error('fixture notice disappeared')
   return { aggregate, claimant, moderator, notice }
 }
-
 describe('copyright delivery and correspondence persistence', () => {
   it('delivers a claimed in-app copyright notice exactly once', async () => {
     const { claimant, notice } = await createFixture()
@@ -85,7 +83,6 @@ describe('copyright delivery and correspondence persistence', () => {
       channel: 'in_app',
       idempotencyKey: `copyright-in-app-${crypto.randomUUID()}`,
     })
-
     await expect(deliverCopyrightInAppNotification(intent.id)).resolves.toBe(true)
     await expect(deliverCopyrightInAppNotification(intent.id)).resolves.toBe(false)
     const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
@@ -107,7 +104,6 @@ describe('copyright delivery and correspondence persistence', () => {
       idempotencyKey: `copyright-replay-${crypto.randomUUID()}`,
     }
     const first = await createCopyrightDeliveryIntent(input)
-
     await expect(createCopyrightDeliveryIntent(input)).resolves.toMatchObject({ id: first.id })
     await expect(readRecoverableDeliveryIntentIds('in_app', first.id)).resolves.toEqual([first.id])
     await expect(readRecoverableDeliveryIntentIds('email', first.id)).resolves.toEqual([])
@@ -159,7 +155,6 @@ describe('copyright delivery and correspondence persistence', () => {
       channel: 'email',
       idempotencyKey: `copyright-wrong-channel-${crypto.randomUUID()}`,
     })
-
     await expect(deliverCopyrightInAppNotification(intent.id)).rejects.toMatchObject({
       status: 422,
     })
@@ -191,9 +186,13 @@ describe('copyright delivery and correspondence persistence', () => {
       idempotencyKey: `copyright-delivery-${crypto.randomUUID()}`,
       recipientEmail,
     })
-    expect((await claimCopyrightDeliveryIntent(intent.id))?.state).toBe('claimed')
+    const claim = await claimCopyrightDeliveryIntent(intent.id)
     expect(
-      await markCopyrightDeliveryIntentFailed({ intentId: intent.id, error: 'temporary' }),
+      await markCopyrightDeliveryIntentFailed({
+        intentId: intent.id,
+        leaseToken: claim!.lease_token,
+        error: 'temporary',
+      }),
     ).toBe(true)
     expect(await claimCopyrightDeliveryIntent(intent.id)).toBeNull()
     const bounceRecipientEmail = `tests+copyright-delivery-${crypto.randomUUID()}@voucha.ai`
@@ -208,11 +207,15 @@ describe('copyright delivery and correspondence persistence', () => {
       idempotencyKey: `copyright-delivery-${crypto.randomUUID()}`,
       recipientEmail: bounceRecipientEmail,
     })
-    expect((await claimCopyrightDeliveryIntent(bounceIntent.id))?.state).toBe('claimed')
+    const bounceClaim = await claimCopyrightDeliveryIntent(bounceIntent.id)
     const sesMessageId = `ses-${crypto.randomUUID()}`
-    expect(await markCopyrightDeliveryIntentSent({ intentId: bounceIntent.id, sesMessageId })).toBe(
-      true,
-    )
+    expect(
+      await markCopyrightDeliveryIntentSent({
+        intentId: bounceIntent.id,
+        leaseToken: bounceClaim!.lease_token,
+        sesMessageId,
+      }),
+    ).toBe(true)
     expect(
       await markCopyrightDeliveryIntentBouncedBySesMessageId({
         sesMessageId,

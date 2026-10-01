@@ -7,7 +7,11 @@ import {
 } from './form-screening-guidance.mts'
 
 type Transaction = Awaited<ReturnType<typeof beginTransaction>>
-export type CopyrightFormScreeningAttempt = { intakeId: string; attemptNumber: number }
+export type CopyrightFormScreeningAttempt = {
+  intakeId: string
+  attemptNumber: number
+  leaseToken: string
+}
 export type CopyrightFormScreeningResultInput = {
   intakeId: string
   inputSha256: Buffer
@@ -41,18 +45,19 @@ export async function startCopyrightFormScreeningInTransaction(
   await lockCopyrightFormReview(intakeId, transaction)
   const { rows } = await transaction<{
     attempt_number: number
+    lease_token: string
   }>(sql`/* startCopyrightFormScreening */
     INSERT INTO copyright_notice_form_screening_executions (
-      copyright_notice_form_intake_id, attempt_number, state, started_at
-    ) VALUES (${intakeId}, 1, 'pending', clock_timestamp())
+      copyright_notice_form_intake_id, lease_token, attempt_number, state, started_at
+    ) VALUES (${intakeId}, uuidv7(), 1, 'pending', clock_timestamp())
     ON CONFLICT (copyright_notice_form_intake_id) DO UPDATE
-    SET attempt_number = copyright_notice_form_screening_executions.attempt_number + 1,
+    SET lease_token = uuidv7(), attempt_number = copyright_notice_form_screening_executions.attempt_number + 1,
       state = 'pending', copyright_notice_form_screening_id = NULL,
       started_at = clock_timestamp(), claimed_at = NULL, completed_at = NULL,
       updated_at = clock_timestamp()
-    RETURNING attempt_number
+    RETURNING attempt_number, lease_token
   `)
-  return { intakeId, attemptNumber: rows[0]!.attempt_number }
+  return { intakeId, attemptNumber: rows[0]!.attempt_number, leaseToken: rows[0]!.lease_token }
 }
 
 /** A live duplicate does not run the provider; retrying a failed/expired claim rotates its token. */
@@ -63,19 +68,22 @@ export async function claimCopyrightFormScreening(
   await lockCopyrightFormReview(intakeId, transaction)
   const { rows } = await transaction<{
     attempt_number: number
+    lease_token: string
   }>(sql`/* claimCopyrightFormScreening */
     UPDATE copyright_notice_form_screening_executions
-    SET attempt_number = attempt_number + CASE WHEN state = 'failed' OR claimed_at IS NOT NULL THEN 1 ELSE 0 END,
+    SET lease_token = uuidv7(), attempt_number = attempt_number + CASE WHEN state = 'failed' OR claimed_at IS NOT NULL THEN 1 ELSE 0 END,
       state = 'pending', copyright_notice_form_screening_id = NULL,
       started_at = CASE WHEN state = 'failed' OR claimed_at IS NOT NULL THEN clock_timestamp() ELSE started_at END,
       claimed_at = clock_timestamp(), completed_at = NULL, updated_at = clock_timestamp()
     WHERE copyright_notice_form_intake_id = ${intakeId}
       AND (state = 'failed' OR (state = 'pending'
         AND (claimed_at IS NULL OR claimed_at < clock_timestamp() - INTERVAL '15 minutes')))
-    RETURNING attempt_number
+    RETURNING attempt_number, lease_token
   `)
   await transaction.commit()
-  return rows[0] ? { intakeId, attemptNumber: rows[0].attempt_number } : null
+  return rows[0]
+    ? { intakeId, attemptNumber: rows[0].attempt_number, leaseToken: rows[0].lease_token }
+    : null
 }
 
 export async function completeCopyrightFormScreening(
@@ -92,7 +100,7 @@ export async function completeCopyrightFormScreening(
   }>(sql`/* completeCopyrightFormScreening:attempt */
     SELECT state, copyright_notice_form_screening_id
     FROM copyright_notice_form_screening_executions
-    WHERE copyright_notice_form_intake_id = ${attempt.intakeId} AND attempt_number = ${attempt.attemptNumber}
+    WHERE copyright_notice_form_intake_id = ${attempt.intakeId} AND attempt_number = ${attempt.attemptNumber} AND lease_token = ${attempt.leaseToken}
     FOR UPDATE
   `)
   const execution = executions[0]
@@ -115,7 +123,7 @@ export async function completeCopyrightFormScreening(
     UPDATE copyright_notice_form_screening_executions
     SET state = 'completed', copyright_notice_form_screening_id = ${id},
       claimed_at = NULL, completed_at = clock_timestamp(), updated_at = clock_timestamp()
-    WHERE copyright_notice_form_intake_id = ${attempt.intakeId} AND attempt_number = ${attempt.attemptNumber}
+    WHERE copyright_notice_form_intake_id = ${attempt.intakeId} AND attempt_number = ${attempt.attemptNumber} AND lease_token = ${attempt.leaseToken}
   `)
   await transaction.commit()
   return id
@@ -130,7 +138,7 @@ export async function failCopyrightFormScreening(
     UPDATE copyright_notice_form_screening_executions
     SET state = 'failed', claimed_at = NULL, completed_at = clock_timestamp(), updated_at = clock_timestamp()
     WHERE copyright_notice_form_intake_id = ${attempt.intakeId}
-      AND attempt_number = ${attempt.attemptNumber} AND state = 'pending'
+      AND attempt_number = ${attempt.attemptNumber} AND lease_token = ${attempt.leaseToken} AND state = 'pending'
   `)
   await transaction.commit()
 }

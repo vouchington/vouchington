@@ -49,6 +49,7 @@ export async function getCopyrightEmailCorrespondence(intentId: string): Promise
 }> {
   const { rows } = await read<{
     id: string
+    lease_token: string | null
     copyright_notice_id: string
     copyright_notice_submission_id: string | null
     copyright_notice_correspondence_message_id: string
@@ -61,7 +62,7 @@ export async function getCopyrightEmailCorrespondence(intentId: string): Promise
     delivery_attempt_count: number
     body_ciphertext: string
   }>(sql`/* getCopyrightEmailCorrespondence */
-      SELECT intent.id, intent.copyright_notice_id, intent.copyright_notice_submission_id,
+      SELECT intent.id, intent.lease_token, intent.copyright_notice_id, intent.copyright_notice_submission_id,
         intent.copyright_notice_correspondence_message_id, intent.recipient_user_id,
         intent.recipient_role, intent.delivery_kind, intent.channel, intent.state, intent.ses_message_id,
         intent.delivery_attempt_count,

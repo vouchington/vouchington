@@ -41,6 +41,15 @@ route as new intake, in-case response, or staff and fails on an unclassified rou
 No caller may update copyright tables directly. In particular, a delivery worker cannot decide that
 a counter-notice is compliant or that a hold is qualifying.
 
+## Work claim ownership
+
+Action intents, delivery intents, email intake responses, enforcement requests, and form screening
+executions rotate a UUID `lease_token` on each claim or reclaim. Workers carry that token through
+completion and failure; a worker whose claim was reclaimed cannot change the newer owner's state.
+Action delivery also checks ownership under its row lock before placement mutations and again after
+external projection. Form screening retains its attempt-number fence alongside the token. Existing
+claim expiration and recovery windows are unchanged; there are no claim renewal paths.
+
 ## Current screening authority
 
 One [current execution](../../../backend/services/copyright-notices/form-screening-executions.mts)

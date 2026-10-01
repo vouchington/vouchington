@@ -6,6 +6,7 @@ const MAX_ATTEMPTS = 5
 const RETRY_BASE_MS = 60 * 1000
 
 export async function failCopyrightActionIntent(input: {
+  leaseToken: string
   intentId: string
   failedAt: Date
   failureMessage: string
@@ -15,7 +16,7 @@ export async function failCopyrightActionIntent(input: {
     sql`/* failCopyrightActionIntent:lock */
       SELECT delivery_attempt_count
       FROM copyright_notice_action_intents
-      WHERE id = ${input.intentId} AND state = 'claimed'
+      WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken}
       FOR UPDATE
     `,
   )
@@ -36,7 +37,7 @@ export async function failCopyrightActionIntent(input: {
               input.failedAt.getTime() + RETRY_BASE_MS * 2 ** (intent.delivery_attempt_count - 1),
             )
       }
-    WHERE id = ${input.intentId} AND state = 'claimed'
+    WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken}
   `)
   await transaction.commit()
   return failed ? 'failed' : 'retrying'

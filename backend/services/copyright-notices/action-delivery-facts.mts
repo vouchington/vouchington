@@ -10,7 +10,7 @@ export type CopyrightActionFacts = Omit<
 /** The immutable intent identity and its existing restoration authority, shared by delivery and replay. */
 export function copyrightActionDeliveryFacts() {
   return sql`/* copyrightActionDeliveryFacts */
-    SELECT target.copyright_notice_id, intent.copyright_restriction_id, target.placement_id,
+    SELECT intent.lease_token, target.copyright_notice_id, intent.copyright_restriction_id, target.placement_id,
     target_image.image_id, intent.expected_placement_revision, intent.action,
     intent.copyright_notice_deadline_id,
     restriction.lifted_at AS restriction_lifted_at, restriction.human_reviewed_at,

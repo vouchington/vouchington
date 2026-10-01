@@ -12,6 +12,7 @@ import {
 export type { LockedCopyrightActionDelivery }
 export async function getCopyrightActionPlacementKey(
   intentId: string,
+  leaseToken: string,
   query: TransactionQuery,
 ): Promise<string | null> {
   const { rows } = await query<{ placement_id: string }>(sql`
@@ -20,18 +21,19 @@ export async function getCopyrightActionPlacementKey(
     FROM copyright_notice_action_intents intent
     JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    WHERE intent.id = ${intentId} AND intent.state = 'claimed'
+    WHERE intent.id = ${intentId} AND intent.state = 'claimed' AND intent.lease_token = ${leaseToken}
   `)
   return rows[0]?.placement_id ?? null
 }
 
 export async function lockCopyrightActionDelivery(
   intentId: string,
+  leaseToken: string,
   query: TransactionQuery,
 ): Promise<LockedCopyrightActionDelivery | null> {
   const statement = copyrightActionDeliveryFacts()
   statement.append(sql`/* lockCopyrightActionDelivery */
-    WHERE intent.id = ${intentId} AND intent.state = 'claimed'
+    WHERE intent.id = ${intentId} AND intent.state = 'claimed' AND intent.lease_token = ${leaseToken}
     FOR UPDATE OF intent, restriction, target`)
   const { rows } = await query<CopyrightActionFacts>(statement)
   const locked = rows[0]
@@ -111,6 +113,7 @@ export async function insertCopyrightActionLifecycleEvent(
 
 export async function completeCopyrightActionIntentInTransaction(input: {
   intentId: string
+  leaseToken: string
   outcome: CopyrightActionDeliveryOutcome
   completedAt: Date
   failureMessage?: string
@@ -121,6 +124,6 @@ export async function completeCopyrightActionIntentInTransaction(input: {
     SET state = ${input.outcome}, completed_at = ${input.completedAt},
       completed_at_reason = ${input.outcome}, failure_message = ${input.failureMessage ?? null},
       next_attempt_at = NULL
-    WHERE id = ${input.intentId} AND state = 'claimed'
+    WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken}
   `)
 }

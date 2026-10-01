@@ -22,6 +22,7 @@ export async function compensateCopyrightActionFailure(
   const failureMessage = error instanceof Error ? error.message : String(error)
   const result = await failCopyrightActionIntent({
     intentId: intent.id,
+    leaseToken: intent.lease_token,
     failedAt: now,
     failureMessage,
   })

@@ -102,7 +102,11 @@ describe('copyright email promotion', () => {
     expect(first.text).toContain('Please identify the work')
     const outboundMessageId = `ses-outbound-${crypto.randomUUID()}`
     expect(
-      await markCopyrightEmailIntakeResponseSent({ responseId, sesMessageId: outboundMessageId }),
+      await markCopyrightEmailIntakeResponseSent({
+        responseId,
+        leaseToken: first.leaseToken,
+        sesMessageId: outboundMessageId,
+      }),
     ).toBe(true)
     expect(await markCopyrightEmailIntakeResponseBouncedBySesMessageId(outboundMessageId)).toBe(
       true,
@@ -114,16 +118,18 @@ describe('copyright email promotion', () => {
       responseKind: 'rejected',
       responseMessage: null,
     })
-    await prepareCopyrightEmailIntakeResponseDelivery(responseId)
+    const prepared = await prepareCopyrightEmailIntakeResponseDelivery(responseId)
     await expect(
       markCopyrightEmailIntakeResponseFailed({
         responseId,
+        leaseToken: prepared.leaseToken,
         error: 'The email provider timed out.',
       }),
     ).resolves.toBe(true)
     await expect(
       markCopyrightEmailIntakeResponseSent({
         responseId,
+        leaseToken: prepared.leaseToken,
         sesMessageId: `ses-should-not-send-${crypto.randomUUID()}`,
       }),
     ).resolves.toBe(false)

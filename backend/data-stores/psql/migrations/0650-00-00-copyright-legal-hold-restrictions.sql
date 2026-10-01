@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_enforcement_requests (
   copyright_notice_submission_assessment_id uuid PRIMARY KEY REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT,
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
@@ -8,6 +9,7 @@ CREATE TABLE copyright_notice_enforcement_requests (
   completed_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  lease_token uuid,
   claimed_at timestamptz,
   CHECK ((state = 'completed') = (completed_at IS NOT NULL)),
   CHECK ((state = 'claimed') = (claimed_at IS NOT NULL))

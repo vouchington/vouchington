@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- A form intake is the durable admission record for a structured copyright allegation.
 -- It deliberately records the anti-spam recommendation separately: the model is advisory and
 -- cannot write a restriction or a human-review decision.
@@ -38,6 +39,7 @@ CREATE TABLE copyright_notice_form_screening_executions (
   state text NOT NULL CHECK (state IN ('pending', 'failed', 'completed')),
   copyright_notice_form_screening_id uuid,
   started_at timestamptz NOT NULL,
+  lease_token uuid,
   claimed_at timestamptz,
   completed_at timestamptz,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
