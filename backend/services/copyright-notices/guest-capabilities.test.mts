@@ -17,12 +17,12 @@ import {
   appendCopyrightGuestFiling,
   authorizeCopyrightGuestCapability,
   copyrightGuestCapabilityMaxLifetimeMs,
-  createCopyrightNoticeAggregate,
-  getCopyrightNoticePrivateAggregate,
   issueCopyrightGuestCapability,
   requestCopyrightGuestInformation,
   revokeCopyrightGuestCapability,
 } from './index.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 async function openNotice() {
   const owner = await createTestUserDirect()

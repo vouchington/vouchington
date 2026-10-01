@@ -20,14 +20,14 @@ import { copyrightCorrespondencePurpose } from './correspondence.mts'
 import {
   appendCopyrightGuestFiling,
   authorizeCopyrightGuestCapability,
-  createCopyrightNoticeAggregate,
-  getCopyrightNoticePrivateAggregate,
   getCopyrightParticipantNoticeDetail,
   getCopyrightPublicNoticeDetail,
   issueCopyrightGuestCapability,
   requestCopyrightGuestInformation,
 } from './index.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 async function openNotice() {
   const owner = await createTestUserDirect()

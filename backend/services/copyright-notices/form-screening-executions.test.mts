@@ -19,7 +19,6 @@ import {
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
-  getCopyrightNoticePrivateAggregate,
 } from './index.mts'
 import {
   appendCopyrightFormScreening,
@@ -35,6 +34,7 @@ import { claimCopyrightEnforcementRequest } from './enforcement-request-claim.mt
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('current copyright form screening execution', () => {
   useAutomaticProvisionalWithholding()

@@ -1,9 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  createCopyrightNoticeAggregate,
-  receiveEuCopyrightNotice,
-  receiveUkCopyrightNotice,
-} from '@services/copyright-notices'
+import { receiveEuCopyrightNotice, receiveUkCopyrightNotice } from '@services/copyright-notices'
 import { createParsedCopyrightEmailIntake } from '@services/copyright-notices/email-intake-test-fixtures'
 import { linkCopyrightEmailIntakeToNotice } from '@services/copyright-notices/email-threading'
 import { counterNoticeBody } from '@services/copyright-notices/route-test-fixtures'
@@ -19,6 +15,7 @@ import { readCopyrightEmailIntakeReview } from '@voucha/test-helpers/data-stores
 import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 

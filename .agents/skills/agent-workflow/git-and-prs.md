@@ -24,6 +24,9 @@ rebase`, use `git pull --rebase`/`-r`, or rebase a mid-stack branch directly ont
 - Use `git -C <worktree-root>` for commands with repo-relative paths. After rebase, push with a
   lease. With concurrent writers, capture the remote tip before fetching and use
   `--force-with-lease=<branch>:<sha>` so a later fetch cannot silently widen the lease.
+- Claude skips review for the continue, skip, abort, and lease push only when they run bare from
+  the session's own worktree, with no `cd` or `-C`
+  ([rebase lifecycle](../../../docs/development/agent-sandbox.md#claude-review-skip-for-the-rebase-lifecycle)).
 
 ### Reading the four refs
 

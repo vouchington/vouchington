@@ -3,10 +3,10 @@ import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/co
 import type { CopyrightImagePlacement } from '@services/images/placements'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
-  getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
 } from './index.mts'
 import { createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright action delivery branches', () => {
   it('marks a withhold stale when the placement transition is no longer current', async () => {

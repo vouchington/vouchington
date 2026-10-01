@@ -167,6 +167,37 @@ describe('runnerShutdownLeafRerunMatch safety regressions', () => {
     expect(matched).toBe(false)
   })
 
+  it('does NOT rerun web-integration when a next.config.ts guard throws before shutdown', async () => {
+    const matched = await runnerShutdownLeafRerunMatch(
+      makeCtx(
+        [webIntegrationJobName],
+        new Map([
+          [
+            webIntegrationJobName,
+            [
+              'Failed to load next.config.ts, see more info here https://nextjs.org/docs/messages/next-config-error',
+              'Error: The web build requires sharp >=0.0.0; found 0.0.0',
+              shutdownOnlyMarkers,
+            ].join('\n'),
+          ],
+        ]),
+      ),
+    )
+    expect(matched).toBe(false)
+  })
+
+  it('still reruns web-integration when the log only mentions next.config.ts before shutdown', async () => {
+    const matched = await runnerShutdownLeafRerunMatch(
+      makeCtx(
+        [webIntegrationJobName],
+        new Map([
+          [webIntegrationJobName, ['Loaded next.config.ts', shutdownOnlyMarkers].join('\n')],
+        ]),
+      ),
+    )
+    expect(matched).toBe(true)
+  })
+
   it('does NOT rerun Playwright when pre-test Next build fails before shutdown', async () => {
     const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(

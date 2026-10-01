@@ -10,20 +10,19 @@ import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/co
 import {
   appendCopyrightNoticeSubmission,
   appendCopyrightSubmissionAssessment,
-  approveCopyrightCorrespondence,
   claimCopyrightDeliveryIntent,
   createCopyrightDeliveryIntent,
-  createCopyrightNoticeAggregate,
   deliverCopyrightInAppNotification,
   prepareCopyrightEmailDelivery,
   createOutboundCopyrightCorrespondence,
-  getCopyrightNoticePrivateAggregate,
   markCopyrightDeliveryIntentBouncedBySesMessageId,
   markCopyrightDeliveryIntentFailed,
   markCopyrightDeliveryIntentSent,
   searchRecoverableCopyrightDeliveryIntentIds,
 } from './index.mts'
 import { resolveCopyrightEmailRecipient } from './delivery-transport.mts'
+import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 function readRecoverableDeliveryIntentIds(channel: 'in_app' | 'email', intentId: string) {
   return readTestOwnedCopyrightSweepIds(
@@ -266,7 +265,7 @@ describe('copyright delivery and correspondence persistence', () => {
     ).rejects.toThrow('Email and guest-form assessments require a copyright reviewer')
   })
 
-  it('keeps outbound correspondence scoped to its own case and audits approval', async () => {
+  it('keeps outbound correspondence scoped to its own case and audits its creation', async () => {
     const first = await createFixture()
     const second = await createFixture()
     await expect(
@@ -287,14 +286,12 @@ describe('copyright delivery and correspondence persistence', () => {
       bodyCiphertext: `draft-${crypto.randomUUID()}`,
       draftedById: null,
     })
-    await approveCopyrightCorrespondence({
-      currentUser: first.moderator,
-      correspondenceId: draft.id,
-      approvedAt: new Date('2026-07-01T12:00:00.000Z'),
-    })
     const aggregate = await getCopyrightNoticePrivateAggregate(first.notice.id)
-    expect(aggregate?.lifecycleEvents.map(event => event.event_type)).toEqual(
-      expect.arrayContaining(['outbound_correspondence_created', 'agent_correspondence_approved']),
+    expect(aggregate?.lifecycleEvents).toContainEqual(
+      expect.objectContaining({
+        event_type: 'outbound_correspondence_created',
+        copyright_notice_correspondence_id: draft.id,
+      }),
     )
   })
 })

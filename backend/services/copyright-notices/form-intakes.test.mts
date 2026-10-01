@@ -12,7 +12,6 @@ import {
   createCopyrightAppeal,
   createCopyrightCounterNotice,
   createCopyrightFormIntake,
-  getCopyrightNoticePrivateAggregate,
 } from './index.mts'
 import {
   appendCopyrightFormScreening,
@@ -20,6 +19,7 @@ import {
 } from './form-screenings.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright form intakes', () => {
   useAutomaticProvisionalWithholding()
