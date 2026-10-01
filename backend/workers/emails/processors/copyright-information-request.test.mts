@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction } from '@voucha/test-helpers'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
 import { markCopyrightDeliveryIntentBouncedBySesMessageId } from '@services/copyright-notices'
