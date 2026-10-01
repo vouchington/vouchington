@@ -65,8 +65,7 @@ The current screening execution, rather than the newest result UUID or any histo
 owns automatic authority. See [current screening authority](../../../../requirements/moderation/COPYRIGHT-NOTICES.md#current-screening-authority)
 for the admission boundary and [execution services](../../../../../backend/services/copyright-notices/form-screening-executions.mts) for token fencing.
 Final restriction admission takes placement, form, notice, and assessment locks in that order.
-Human approval commits a genuine human assessment with its intake review; that assessment is the
-durable record that its targets still need restricting.
+Human approval commits a genuine human assessment with its intake review.
 Human provenance is the absence of a screening FK, including after the reviewer account is erased.
 
 ## Invariants
@@ -86,13 +85,9 @@ Human provenance is the absence of a screening FK, including after the reviewer 
 - Legal receipts, evidence, assessments, targets, and lifecycle events are immutable. Restriction
   lifts are one-way transitions. A legal-blocker transition may reopen the same eligible blocked
   restore intent; its identity and original authority are immutable, and the reset is audited.
-- A compliant, current notice assessment owes a restriction to every target that has no restriction
-  row yet, and there is no separate enforcement queue: the assessment commits atomically with that
-  obligation, and the reconciliation sweep recomputes it from the durable restrictions. Each
-  restriction rechecks the assessment under the placement, form, notice and assessment locks, so a
-  superseded or non-compliant assessment imposes nothing, and a failed imposition stays owed. A
-  target that has had a restriction, even one since lifted, is settled for every assessment, so
-  enforcement never restricts it again.
+- A compliant, current notice assessment owes a restriction to every target that never had one; the
+  sweep recomputes this from durable restrictions. Each imposition rechecks the assessment under its
+  locks, so a stale assessment imposes nothing and a failed one stays owed.
 - `precheckCopyrightRestoration` is a non-authoritative pure helper.
   `createEligibleCopyrightRestoreIntent` locks the legal ledger and creates a preliminary fenced
   intent; it cannot authorize a media delivery change by itself.
