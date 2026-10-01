@@ -374,18 +374,24 @@ importers:
       '@agents/_shared':
         specifier: workspace:^
         version: link:../_shared
+      '@agents/classifier-runs':
+        specifier: workspace:^
+        version: link:../classifier-runs
+      '@agents/classifiers':
+        specifier: workspace:^
+        version: link:../classifiers
       '@agents/politics-averse':
         specifier: workspace:^
         version: link:../politics-averse
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../../modules/openai-utils
-      '@services/communities':
+      '@modules/structured-decisions':
         specifier: workspace:^
-        version: link:../../services/communities
+        version: link:../../modules/structured-decisions
+      '@services/classifier-runs':
+        specifier: workspace:^
+        version: link:../../services/classifier-runs
       '@services/community-agent-prompts':
         specifier: workspace:^
         version: link:../../services/community-agent-prompts
@@ -398,13 +404,13 @@ importers:
       '@services/posts':
         specifier: workspace:^
         version: link:../../services/posts
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       openai:
         specifier: ^7.23.0
         version: 7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
     devDependencies:
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -4476,6 +4482,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
+      '@services/classifier-runs':
+        specifier: workspace:^
+        version: link:../classifier-runs
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
@@ -4577,6 +4586,12 @@ importers:
       '@services/agents':
         specifier: workspace:^
         version: link:../agents
+      '@services/classifier-runs':
+        specifier: workspace:^
+        version: link:../classifier-runs
+      '@services/classifiers':
+        specifier: workspace:^
+        version: link:../classifiers
       '@services/communities':
         specifier: workspace:^
         version: link:../communities
@@ -4592,6 +4607,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -18557,11 +18575,6 @@ packages:
 
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
-    peerDependencies:
-      ajv: ^8.0.0
-    peerDependenciesMeta:
-      ajv:
-        optional: true
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -27619,8 +27632,8 @@ snapshots:
       - supports-color
       - zod
 
-  ajv-formats@2.1.1(ajv@8.20.0):
-    optionalDependencies:
+  ajv-formats@2.1.1:
+    dependencies:
       ajv: 8.20.0
     optional: true
 
@@ -30828,7 +30841,7 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
       ajv: 8.20.0
-      ajv-formats: 2.1.1(ajv@8.20.0)
+      ajv-formats: 2.1.1
       ajv-keywords: 5.1.0(ajv@8.20.0)
     optional: true
 

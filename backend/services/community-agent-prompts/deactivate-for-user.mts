@@ -28,7 +28,6 @@ export async function deactivateCommunityPromptsForUser(
         cap.community_id,
         cap.created_by_id,
         cap.slot_allocated,
-        cap.on_flag_action,
         cap.activated_at,
         cap.deactivated_at,
         cap.deleted_at,

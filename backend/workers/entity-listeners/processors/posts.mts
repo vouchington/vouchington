@@ -13,8 +13,7 @@ import { getPrivateUserByAny } from '@services/users/get'
 import { enqueueDetectBanEvasion } from '@queues/ban-evasion/enqueues'
 import { isFirstCommunityPost } from '@services/communities/ban-evasion'
 import { enqueueSpamDetection } from '@queues/spam-detection/enqueues'
-import { enqueueBulkCommunityModerationDispatchers } from '@queues/ai-agents/enqueues/community-moderation'
-import { getApprovedReviewsForPost } from '@services/communities/publications/get'
+import { requestCommunityModerationRunForPost } from '@services/communities/publications/moderation-run'
 import onError from '@modules/on-error'
 import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
 import { resetPostClearanceIfContentCurrent } from '@services/post-clearance'
@@ -102,12 +101,8 @@ export const processPostUpdated = async ({
   if (contentChanged) {
     const reset = await resetPostClearanceIfContentCurrent(id, content_sha256)
     if (!reset) return
-    const communityIds = await getApprovedReviewsForPost(id)
-    if (communityIds.length > 0) {
-      void enqueueBulkCommunityModerationDispatchers(
-        communityIds.map(communityId => ({ postId: id, communityId })),
-      )
-    }
+    // The edited content gets its own durable C8 request; a published post only.
+    await requestCommunityModerationRunForPost(id)
     await enqueueSpamDetection(id, {
       contentSha256: content_sha256,
       deduplicationKey: moderationDeduplicationKey,

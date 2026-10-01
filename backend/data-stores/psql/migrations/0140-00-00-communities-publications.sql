@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS communities (
   post_approval_required_at TIMESTAMPTZ,
   allow_review_posts BOOLEAN NOT NULL DEFAULT false,
   allow_data_point_posts BOOLEAN NOT NULL DEFAULT false,
+  automod_action community_automod_action NOT NULL DEFAULT 'record_only',
   trusted_at TIMESTAMPTZ,
   profile_image_id UUID REFERENCES images ON DELETE SET NULL,
   banner_image_id UUID REFERENCES images ON DELETE SET NULL,
@@ -133,6 +134,7 @@ COMMENT ON COLUMN communities.member_roster_visibility IS 'Who can see regular m
 COMMENT ON COLUMN communities.member_invites_allowed_at IS 'When set, existing members can invite new members (not just owners/moderators). NULL means only owners/moderators can invite.';
 COMMENT ON COLUMN communities.post_approval_required_at IS 'When set, posts must be approved by a moderator before becoming visible. NULL means no approval required.';
 COMMENT ON COLUMN communities.allow_review_posts IS 'When true, active community members can create review posts in this community.';
+COMMENT ON COLUMN communities.automod_action IS 'What the community moderation classifier does when a post trips one of the community''s active prompts: record_only (the default, only the per-prompt agent_moderations projection), review_queue (the post stays published and enters the moderator review queue) or unpublish. Read when the classifier run completes, so changing it never re-runs a classification.';
 COMMENT ON COLUMN communities.allow_data_point_posts IS 'When true, active community members can create data point posts in this community.';
 COMMENT ON COLUMN communities.trusted_at IS 'When set, posts in this community bypass the clearance pending gate and are immediately visible. NULL means standard clearance flow.';
 COMMENT ON COLUMN communities.profile_image_id IS 'Optional avatar/logo image for the community.';
@@ -517,11 +519,6 @@ COMMENT ON COLUMN community_pinned_posts.pinned_by_id IS 'Moderator who pinned t
 -- 0210-00-00-community-agent-prompts.sql
 -- ============================================================================
 
-DO $$ BEGIN
-  CREATE TYPE community_prompt_on_flag_action AS ENUM ('none', 'unpublish');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
-
 CREATE TABLE IF NOT EXISTS community_agent_prompts (
   -- extension table: id IS an agent_prompts.id; timestamps come from agent_prompts
   id UUID NOT NULL PRIMARY KEY REFERENCES agent_prompts(id) ON DELETE CASCADE,
@@ -532,8 +529,6 @@ CREATE TABLE IF NOT EXISTS community_agent_prompts (
   slot_allocated BOOLEAN NOT NULL DEFAULT false,
   activated_at   TIMESTAMPTZ,
   deactivated_at TIMESTAMPTZ,
-
-  on_flag_action community_prompt_on_flag_action NOT NULL DEFAULT 'none',
 
   deleted_at    TIMESTAMPTZ,
   deleted_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -572,7 +567,6 @@ COMMENT ON COLUMN community_agent_prompts.community_id IS 'The community this ag
 COMMENT ON COLUMN community_agent_prompts.slot_allocated IS 'Whether this prompt has been allocated a slot for active use.';
 COMMENT ON COLUMN community_agent_prompts.activated_at IS 'When the prompt was activated for community use. Mutually exclusive with deactivated_at.';
 COMMENT ON COLUMN community_agent_prompts.deactivated_at IS 'When the prompt was deactivated. Mutually exclusive with activated_at.';
-COMMENT ON COLUMN community_agent_prompts.on_flag_action IS 'Action taken when this community prompt flags content: none or unpublish.';
 
 -- community_auto_tagger_agents
 CREATE TABLE IF NOT EXISTS community_auto_tagger_agents (

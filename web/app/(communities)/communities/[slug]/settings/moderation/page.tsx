@@ -24,6 +24,7 @@ import { ModQueue } from '@/components/communities/mod-queue'
 import { CommunityAgentPromptHistory } from '@/components/communities/community-agent-prompt-history'
 import { CommunityAgentPromptsPanel } from '@/components/communities/community-agent-prompts-panel'
 import { CommunityAiAgentsPanel } from '@/components/communities/community-ai-agents-panel'
+import { CommunityAutomodActionForm } from '@/components/communities/community-automod-action-form'
 import { CommunityAutomodFlagsPanel } from '@/components/communities/community-automod-flags-panel'
 import { CommunityAutomodReviewPanel } from '@/components/communities/community-automod-review-panel'
 import { CommunityBansPanel } from '@/components/communities/community-bans-panel'
@@ -200,6 +201,10 @@ export default async function CommunityModerationPage({ params, searchParams }: 
       ) : (
         <PanelError label={t('extracted.moderation.page.agentPrompts_b17006d4')} />
       )}
+      <CommunityAutomodActionForm
+        key={`${community.slug}-${community.automod_action}`}
+        community={community}
+      />
       {agentPromptHistory ? (
         <CommunityAgentPromptHistory
           key={agentPromptHistory.entries[0]?.id ?? community.slug}

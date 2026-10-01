@@ -138,6 +138,7 @@ describe('CommunityModerationPage rendering', () => {
     render(jsx)
 
     expect(screen.getByText('mod-queue')).toBeDefined()
+    expect(screen.getByText('automod-action-form')).toBeDefined()
   })
 
   it('passes a valid report sort to the moderation queue fetch and component', async () => {

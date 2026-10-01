@@ -11,6 +11,7 @@
       "allow_review_posts": false,
       "archived_at": null,
       "archived_by_id": null,
+      "automod_action": "record_only",
       "banner_image_id": null,
       "created_at": "2026-01-01T00:00:00Z",
       "created_by_id": "user-1",

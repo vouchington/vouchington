@@ -1394,6 +1394,7 @@ rules:
         - .stripe
         - .no-data.mock
         - .real-glide.mock
+        - .actions.mock
         - .mock
         - .generated
         - .routes

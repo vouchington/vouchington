@@ -1117,6 +1117,9 @@
             }
           ]
         },
+        "automod_action": {
+          "$ref": "#/components/schemas/CommunityAutomodAction"
+        },
         "banner_image_id": {
           "anyOf": [
             {
@@ -1291,6 +1294,7 @@
         "allow_review_posts",
         "archived_at",
         "archived_by_id",
+        "automod_action",
         "banner_image_id",
         "created_at",
         "created_by_id",
@@ -1401,9 +1405,6 @@
         "model_provider": {
           "type": "string"
         },
-        "on_flag_action": {
-          "$ref": "#/components/schemas/CommunityPromptOnFlagAction"
-        },
         "prompt": {
           "type": "string"
         },
@@ -1426,7 +1427,6 @@
         "id",
         "model_name",
         "model_provider",
-        "on_flag_action",
         "prompt",
         "slot_allocated",
         "updated_at"
@@ -1841,6 +1841,10 @@
         "system_username"
       ],
       "type": "object"
+    },
+    "CommunityAutomodAction": {
+      "enum": ["record_only", "review_queue", "unpublish"],
+      "type": "string"
     },
     "CommunityBanEvasionContext": {
       "additionalProperties": false,
@@ -2292,10 +2296,6 @@
         "post_id"
       ],
       "type": "object"
-    },
-    "CommunityPromptOnFlagAction": {
-      "enum": ["none", "unpublish"],
-      "type": "string"
     },
     "CommunitySavedReply": {
       "additionalProperties": false,
@@ -19981,6 +19981,16 @@
       },
       "type": "object"
     },
+    "UpdateCommunityAutomodSettingsInput": {
+      "additionalProperties": false,
+      "properties": {
+        "automod_action": {
+          "$ref": "#/components/schemas/CommunityAutomodAction"
+        }
+      },
+      "required": ["automod_action"],
+      "type": "object"
+    },
     "UpdateCommunityPostTypeSettingsInput": {
       "additionalProperties": false,
       "properties": {
@@ -28446,6 +28456,20 @@
           }
         },
         "required": ["idOrSlug", "id"],
+        "type": "object"
+      }
+    },
+    "PATCH:/api/v1/communities/:idOrSlug/automod-settings": {
+      "body": {
+        "$ref": "#/components/schemas/UpdateCommunityAutomodSettingsInput"
+      },
+      "path": {
+        "properties": {
+          "idOrSlug": {
+            "type": "string"
+          }
+        },
+        "required": ["idOrSlug"],
         "type": "object"
       }
     },

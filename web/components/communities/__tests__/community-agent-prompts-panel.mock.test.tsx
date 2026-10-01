@@ -47,7 +47,6 @@ function prompt(overrides: Partial<CommunityAgentPrompt>): CommunityAgentPrompt 
     model_name: 'gpt-4',
     model_provider: 'openai',
     slot_allocated: false,
-    on_flag_action: 'none',
     activated_at: null,
     deactivated_at: null,
     created_at: '2026-01-01T00:00:00.000Z',

@@ -2,7 +2,6 @@ import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
-import { enqueueCommunityModerationDispatcher } from '@queues/ai-agents/enqueues/community-moderation'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { recordModeratorAction } from '@services/moderator-actions'
 import {
@@ -14,9 +13,9 @@ import { assertPublicationModeratorAccess, getPublicationReview } from './access
 import { assertNotBanned } from '../bans/get.mts'
 import { lockCommunityUser } from '../bans/lock.mts'
 import { overridePublication } from './platform-override.mts'
+import { requestCommunityModerationRun } from './moderation-run.mts'
 import { recordPublicationReviewChange } from './review-change.mts'
 
-export { unpublishPostAsAgent } from './agent-moderate.mts'
 export { assertModeratorAccess } from './access.mts'
 export { unpublishPost } from './unpublish.mts'
 
@@ -72,6 +71,7 @@ export async function approvePublication(
       action: 'approve',
     })
     await recordCommunityPublicationChange(query, communityId, postId)
+    await requestCommunityModerationRun(query, postId)
   }
   await query.commit()
 
@@ -84,7 +84,6 @@ export async function approvePublication(
     })
     await recordModeratorAction(currentUser.id, { actionType: 'approve', communityId, postId })
     void enqueueRefreshTopHashtags()
-    void enqueueCommunityModerationDispatcher(postId, communityId)
   }
 }
 

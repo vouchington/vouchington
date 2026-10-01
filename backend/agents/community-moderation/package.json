@@ -24,18 +24,20 @@
   "scripts": {},
   "dependencies": {
     "@agents/_shared": "workspace:^",
+    "@agents/classifier-runs": "workspace:^",
+    "@agents/classifiers": "workspace:^",
     "@agents/politics-averse": "workspace:^",
-    "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
-    "@services/communities": "workspace:^",
+    "@modules/structured-decisions": "workspace:^",
+    "@services/classifier-runs": "workspace:^",
     "@services/community-agent-prompts": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/moderation": "workspace:^",
     "@services/posts": "workspace:^",
+    "@voucha/types": "workspace:^",
     "openai": "^7.23.0"
   },
   "devDependencies": {
-    "@services/users": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

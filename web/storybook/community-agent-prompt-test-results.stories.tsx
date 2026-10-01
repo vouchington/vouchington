@@ -8,7 +8,7 @@ const simulation = {
     time_window_hours: 168,
     sample_count: 240,
     would_flag_count: 3,
-    would_unpublish_count: 1,
+    community_automod_action: 'review_queue',
     false_positive_estimate: {
       historical_flagged_count: 12,
       historical_approved_count: 200,
@@ -26,7 +26,6 @@ const simulation = {
       content_excerpt: 'Hey everyone, use my link below to get a free sign-up bonus...',
       flagged: true,
       reason: 'Repeated unrelated referral link promotion.',
-      would_unpublish: true,
     },
     {
       post_id: '019000000000000000000000202',
@@ -38,7 +37,6 @@ const simulation = {
       content_excerpt: 'Not affiliated with any bank, just sharing a comparison I made...',
       flagged: true,
       reason: 'Borderline promotional language.',
-      would_unpublish: false,
     },
   ],
 } satisfies CommunityAutomodSimulation

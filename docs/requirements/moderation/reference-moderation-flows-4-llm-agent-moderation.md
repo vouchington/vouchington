@@ -4,8 +4,9 @@
 
 ## 4. LLM Agent Moderation
 
-**Trigger:** Post clearance approved (enqueues `classifier-run-dispatcher`). Community prompts run
-separately through `community-moderation-dispatcher` and `community-moderation-prompt`.
+**Trigger:** Post clearance approved (enqueues `classifier-run-dispatcher`). Community prompts are
+the `community-moderation` classifier on the same lifecycle: a publication change writes a
+`classifier_run_requests` row and enqueues `classifier-run-dispatcher` after commit.
 
 **Baseline vs community-opt-in moderators:**
 
@@ -27,15 +28,19 @@ The config carries only each moderator's identity, prompt text, and baseline fla
 provisions the system user, `agents` row, and `agents__moderators` row per slug, and no
 `agent_prompts` rows: the classifier's prompt, model, and provider are seeded with the post
 classifier. Every seeded moderator is record-only (`agents__moderators.on_flag_action` defaults to
-`none`); only community prompts can act on a flag (`community_agent_prompts.on_flag_action`).
+`none`); only a community's own prompts can act on a flag, through the community-level
+`communities.automod_action` setting.
 
-**Processing (community prompts, `backend/agents/community-moderation/run.mts`):**
+**Processing (community prompts, `backend/agents/community-moderation/classifier-run.mts`):**
 
-1. Checks content SHA256 for deduplication (existing results reused)
-2. Calls the OpenAI moderation helper (`callOpenAIModeration` in
-   `backend/agents/community-moderation/openai-moderation.mts`)
-3. Stores result in `agent_moderations`
-4. On flag with `on_flag_action = 'unpublish'`: unpublishes the post from the community as the agent
+1. Pins the community's active prompts and the content SHA256 on the reserved run; a completed run
+   is replayed rather than re-applied
+2. Makes one provider call that asks every pinned prompt (at most 30 questions and 40,000 rule
+   characters)
+3. Stores per-prompt results in `agent_moderations`
+4. On flag, applies `communities.automod_action`: `record_only` (default) does nothing more,
+   `review_queue` flags the review for moderators, and `unpublish` unpublishes the post as automod
+   unless `platform_override_at` is set
 5. Records LLM token usage and cost to `ai_usage_ledger` (fire-and-forget; flex-tier calls only)
 
 The fixed-label built-in agents apply through the post classifier

@@ -173,6 +173,21 @@ scope consumers to migrate; clients consume the reduced generated catalog. Topic
 and URLs remain content fields and are unaffected. Hosted research/discovery package deletion
 remains owned by #1546; this change only removes their references to retired tools.
 
+## Community automod action handoff
+
+#221 moves community prompt moderation onto the shared classifier-run lifecycle and replaces the
+per-prompt `on_flag_action` with one community setting, `communities.automod_action`
+(`record_only` by default, `review_queue` or `unpublish`). `Community` responses carry
+`automod_action`, owners and moderators set it with
+`PATCH /api/v1/communities/:idOrSlug/automod-settings`, and the web moderation page renders the
+control. `community_agent_prompts` no longer has `on_flag_action`, so the prompt responses drop that
+field, and the automod simulate response drops `would_unpublish` and `would_unpublish_count` in
+favor of `simulation.community_automod_action`. Swift and .NET must decode the new `Community`
+field and the reduced prompt and simulate shapes, and render the setting where they render the
+automod flag list. Native delivery is tracked by
+[vouchington-clients#199](https://github.com/vouchington/vouchington-clients/issues/199); this
+repository does not edit `vouchington-clients`.
+
 ## Staff action history handoff
 
 Issue #635 extends the shared moderator-action catalog and transcript of staff actions with typed

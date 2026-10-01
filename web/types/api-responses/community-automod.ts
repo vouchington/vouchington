@@ -2,6 +2,9 @@ import type * as Api from './shared'
 
 type PageInfo = Api.PageInfo
 
+/** The community's `automod_action` setting: what a flagged post's community prompt does. */
+export type CommunityAutomodActionSetting = Api.Serialized<Api.BackendCommunity>['automod_action']
+
 interface BufferJSON {
   type: 'Buffer'
   data: number[]
@@ -104,7 +107,6 @@ export interface CommunityAutomodSimulationResult {
   content_excerpt: string
   flagged: boolean
   reason: string
-  would_unpublish: boolean
 }
 
 export interface CommunityAutomodSimulation {
@@ -112,7 +114,7 @@ export interface CommunityAutomodSimulation {
   time_window_hours: number
   sample_count: number
   would_flag_count: number
-  would_unpublish_count: number
+  community_automod_action: CommunityAutomodActionSetting
   false_positive_estimate: {
     historical_flagged_count: number
     historical_approved_count: number

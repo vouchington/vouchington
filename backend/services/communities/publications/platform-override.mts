@@ -2,11 +2,11 @@ import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
-import { enqueueCommunityModerationDispatcher } from '@queues/ai-agents/enqueues/community-moderation'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { lockPostPublication } from '@services/post-publication'
 import { assertPublicationModeratorAccess, getPublicationReview } from './access.mts'
+import { requestCommunityModerationRun } from './moderation-run.mts'
 import { recordCommunityPublicationChange } from './publication-change.mts'
 import { recordPublicationReviewChange, type PublicationReviewAction } from './review-change.mts'
 
@@ -47,6 +47,9 @@ export async function overridePublication(
     privateNote: override.privateNote,
   })
   await recordCommunityPublicationChange(query, communityId, postId)
+  if (override.action === 'approve' || override.action === 'restore') {
+    await requestCommunityModerationRun(query, postId)
+  }
   await query.commit()
 
   const actionType =
@@ -58,9 +61,6 @@ export async function overridePublication(
     reason: override.reasonCode,
   })
   void enqueueRefreshTopHashtags()
-  if (override.action === 'approve' || override.action === 'restore') {
-    void enqueueCommunityModerationDispatcher(postId, communityId)
-  }
 }
 
 function createPlatformOverrideUpdate(

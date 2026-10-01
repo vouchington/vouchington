@@ -96,7 +96,6 @@ describe('POST /api/v1/communities/:slug/automod/simulate', () => {
       communityId: community.id,
       createdById: owner.id,
       slotAllocated: false,
-      onFlagAction: 'unpublish',
     })
 
     const request = createRequest()
@@ -112,7 +111,7 @@ describe('POST /api/v1/communities/:slug/automod/simulate', () => {
       time_window_hours: 24,
       sample_count: 0,
       would_flag_count: 0,
-      would_unpublish_count: 0,
+      community_automod_action: 'record_only',
       false_positive_estimate: {
         historical_flagged_count: 0,
         historical_approved_count: 0,
@@ -133,7 +132,6 @@ describe('POST /api/v1/communities/:slug/automod/simulate', () => {
       communityId: community.id,
       createdById: owner.id,
       slotAllocated: false,
-      onFlagAction: 'unpublish',
     })
 
     const request = createRequest()

@@ -5,21 +5,18 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
+import { readClassifierRunDispatcherJobsForTest } from '@voucha/test-helpers/classifier-run-queue-jobs'
+import { getClassifierRunRequestFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
+import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
 import type { PrivateUser } from '@services/users/types'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
 import type { ProcessPostCreatedJobData } from '@queues/entity-listeners/types'
-import { ai_agents } from '@queues/ai-agents/queues'
-import type { CommunityModerationDispatcherJobData } from '@queues/ai-agents/types'
 
 import { createPost } from '../create.mts'
 
 let admin: PrivateUser
 let user: PrivateUser
 const NON_FAILED_QUEUE_STATES = ['waiting', 'active', 'delayed', 'completed'] as const
-const ALL_QUEUE_STATES = [...NON_FAILED_QUEUE_STATES, 'failed'] as const
-const QUEUE_OBSERVATION_MS = 500
-const QUEUE_POLL_INTERVAL_MS = 25
-type QueueState = (typeof ALL_QUEUE_STATES)[number]
 
 describe('create.admin-bypass', () => {
   beforeAll(async () => {
@@ -27,7 +24,7 @@ describe('create.admin-bypass', () => {
     user = await createTestUser()
   })
 
-  it('createPost does not enqueue community moderation for admin auto-approved publications', async () => {
+  it('createPost does not request community moderation for admin auto-approved publications', async () => {
     const suffix = createRandomString(8)
     const community = await insertTestCommunity({ createdById: admin.id })
 
@@ -40,10 +37,13 @@ describe('create.admin-bypass', () => {
 
     expect(post.clearance_status).toBe('approved')
     await expect.poll(() => findPostCreatedJobInNonFailedState(post.id)).toBeDefined()
-    await expectNoCommunityModerationDispatcherJobInAnyState(post.id, community.id)
+    expect(
+      await getClassifierRunRequestFacts(post.id, COMMUNITY_MODERATION_CLASSIFIER_SLUG),
+    ).toEqual([])
+    expect(await readClassifierRunDispatcherJobsForTest(post.id)).toEqual([])
   })
 
-  it('createPost still enqueues community moderation for non-admin auto-approved publications', async () => {
+  it('createPost still requests community moderation for non-admin auto-approved publications', async () => {
     const suffix = createRandomString(8)
     const community = await insertTestCommunity({ createdById: user.id })
     await insertTestCommunityMember({ communityId: community.id, userId: user.id })
@@ -57,12 +57,19 @@ describe('create.admin-bypass', () => {
 
     expect(post.clearance_status).toBe('pending')
     await expect.poll(() => findPostCreatedJobInNonFailedState(post.id)).toBeDefined()
+    expect(
+      await getClassifierRunRequestFacts(post.id, COMMUNITY_MODERATION_CLASSIFIER_SLUG),
+    ).toMatchObject([{ run_id: null, no_work_at: null, stale_at: null }])
     await expect
-      .poll(() => findCommunityModerationDispatcherJobInNonFailedState(post.id, community.id))
-      .toMatchObject({
-        name: 'community-moderation-dispatcher',
-        data: { postId: post.id, communityId: community.id },
+      .poll(async () => {
+        const jobs = await readClassifierRunDispatcherJobsForTest(post.id)
+        return jobs.filter(
+          job =>
+            (job.data as { classifier?: string }).classifier ===
+            COMMUNITY_MODERATION_CLASSIFIER_SLUG,
+        ).length
       })
+      .toBe(1)
   })
 })
 
@@ -74,48 +81,4 @@ async function findPostCreatedJobInNonFailedState(postId: string) {
     job =>
       job.name === 'processPostCreated' && (job.data as ProcessPostCreatedJobData).id === postId,
   )
-}
-
-async function findCommunityModerationDispatcherJobInNonFailedState(
-  postId: string,
-  communityId: string,
-) {
-  return findCommunityModerationDispatcherJob(postId, communityId, NON_FAILED_QUEUE_STATES)
-}
-
-async function findCommunityModerationDispatcherJobInAnyState(postId: string, communityId: string) {
-  return findCommunityModerationDispatcherJob(postId, communityId, ALL_QUEUE_STATES)
-}
-
-async function expectNoCommunityModerationDispatcherJobInAnyState(
-  postId: string,
-  communityId: string,
-) {
-  const observedUntil = Date.now() + QUEUE_OBSERVATION_MS
-  await expect
-    .poll(
-      async () => {
-        const job = await findCommunityModerationDispatcherJobInAnyState(postId, communityId)
-        if (job) return 'enqueued'
-        return Date.now() >= observedUntil ? 'absent' : 'observing'
-      },
-      { interval: QUEUE_POLL_INTERVAL_MS, timeout: QUEUE_OBSERVATION_MS + 500 },
-    )
-    .toBe('absent')
-}
-
-async function findCommunityModerationDispatcherJob(
-  postId: string,
-  communityId: string,
-  states: readonly QueueState[],
-) {
-  const jobs = (await Promise.all(states.map(state => ai_agents.getJobs(state)))).flat()
-  return jobs.find(job => {
-    const data = job.data as CommunityModerationDispatcherJobData
-    return (
-      job.name === 'community-moderation-dispatcher' &&
-      data.postId === postId &&
-      data.communityId === communityId
-    )
-  })
 }
