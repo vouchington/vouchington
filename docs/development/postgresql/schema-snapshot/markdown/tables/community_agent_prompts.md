@@ -21,7 +21,8 @@ Not partitioned — growth: unbounded.
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `uq_community_agent_prompts__id__community`: `UNIQUE (id, community_id)`
 
 **Check constraints:**
 
@@ -42,6 +43,7 @@ _none_
 - `idx_community_agent_prompts__community_id_bare`: `CREATE INDEX idx_community_agent_prompts__community_id_bare ON public.community_agent_prompts USING btree (community_id)`
 - `idx_community_agent_prompts__created_by_id`: `CREATE INDEX idx_community_agent_prompts__created_by_id ON public.community_agent_prompts USING btree (created_by_id)`
 - `idx_community_agent_prompts__created_by_id__slot`: `CREATE INDEX idx_community_agent_prompts__created_by_id__slot ON public.community_agent_prompts USING btree (created_by_id, slot_allocated) WHERE (deleted_at IS NULL)`
+- `uq_community_agent_prompts__id__community`: `CREATE UNIQUE INDEX uq_community_agent_prompts__id__community ON public.community_agent_prompts USING btree (id, community_id)`
 
 **Triggers:**
 
