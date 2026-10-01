@@ -7,7 +7,7 @@ import {
   startCopyrightFormScreening,
   completeCopyrightFormScreening,
 } from './form-screening-executions.mts'
-import { processCopyrightEnforcementRequest } from './enforcement-requests.mts'
+import { enforceCopyrightAssessment } from './enforce-assessment.mts'
 
 /** @public Cross-workspace persistence boundary used by the copyright form-screening agent. */
 export async function appendCopyrightFormScreening(
@@ -116,5 +116,5 @@ export async function applyNonSpamSignedInCopyrightFormScreening(
       transaction,
     ))
   await transaction.commit()
-  await processCopyrightEnforcementRequest(assessment.id)
+  await enforceCopyrightAssessment(assessment.id)
 }

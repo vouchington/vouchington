@@ -47,25 +47,15 @@ export function searchRecoverableCopyrightFormReviewIntakeIds(
               AND restriction.lifted_at IS NULL
               AND restriction.human_review_action IS NULL
           )
-        ) OR review.reviewed_by_id IS NULL AND (
-          EXISTS (
-            SELECT 1 FROM copyright_notice_submission_assessments assessment
-            JOIN copyright_restrictions restriction
-              ON restriction.authorizing_assessment_id = assessment.id
-            WHERE assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
-              AND assessment.assessed_by_id IS NULL
-              AND assessment.copyright_notice_form_screening_id IS NOT NULL
-              AND restriction.lifted_at IS NULL
-              AND restriction.human_review_action IS NULL
-          ) OR EXISTS (
-            SELECT 1 FROM copyright_notice_submission_assessments assessment
-            JOIN copyright_notice_enforcement_requests request
-              ON request.copyright_notice_submission_assessment_id = assessment.id
-            WHERE assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
-              AND assessment.assessed_by_id IS NULL
-              AND assessment.copyright_notice_form_screening_id IS NOT NULL
-              AND request.state IN ('pending', 'claimed')
-          )
+        ) OR review.reviewed_by_id IS NULL AND EXISTS (
+          SELECT 1 FROM copyright_notice_submission_assessments assessment
+          JOIN copyright_restrictions restriction
+            ON restriction.authorizing_assessment_id = assessment.id
+          WHERE assessment.copyright_notice_submission_id = intake.copyright_notice_submission_id
+            AND assessment.assessed_by_id IS NULL
+            AND assessment.copyright_notice_form_screening_id IS NOT NULL
+            AND restriction.lifted_at IS NULL
+            AND restriction.human_review_action IS NULL
         )
       )`,
     statement => write(statement),
@@ -143,19 +133,4 @@ export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string)
     state.reviewed_by_id,
     state.reviewed_at,
   )
-  await completeAutomatedCopyrightEnforcementRequests(state.submission_id)
-}
-
-async function completeAutomatedCopyrightEnforcementRequests(submissionId: string): Promise<void> {
-  await write(sql`/* completeAutomatedCopyrightEnforcementRequests */
-    UPDATE copyright_notice_enforcement_requests request
-    SET state = 'completed', claimed_at = NULL, completed_at = CURRENT_TIMESTAMP,
-      updated_at = CURRENT_TIMESTAMP
-    FROM copyright_notice_submission_assessments assessment
-    WHERE request.copyright_notice_submission_assessment_id = assessment.id
-      AND assessment.copyright_notice_submission_id = ${submissionId}
-      AND assessment.assessed_by_id IS NULL
-      AND assessment.copyright_notice_form_screening_id IS NOT NULL
-      AND request.state IN ('pending', 'claimed')
-  `)
 }

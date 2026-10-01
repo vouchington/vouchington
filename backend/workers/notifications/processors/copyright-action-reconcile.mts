@@ -1,13 +1,13 @@
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import {
   createDueStatutoryCopyrightRestoreIntentsForDeadline,
-  createMissingCopyrightEnforcementRequests,
-  processCopyrightEnforcementRequest,
+  enforceCopyrightAssessment,
+  recoverMissingDecisionAssessments,
   recoverRejectedCopyrightFormReviewEffect,
   recoverBlockedCopyrightHoldRestorations,
   searchBlockedCopyrightHoldRestorationNoticeIds,
   searchDueStatutoryCopyrightRestorationDeadlineIds,
-  searchReconcilableCopyrightEnforcementRequestIds,
+  searchPendingCopyrightEnforcementAssessmentIds,
   searchRecoverableCopyrightActionIntentIds,
   searchRecoverableCopyrightFormReviewIntakeIds,
 } from '@services/copyright-notices'
@@ -22,9 +22,9 @@ import {
 export type ReconcileCopyrightActionIntentsDeps = {
   searchFormReviews: typeof searchRecoverableCopyrightFormReviewIntakeIds
   recoverFormReview: typeof recoverRejectedCopyrightFormReviewEffect
-  createMissingEnforcementRequests: typeof createMissingCopyrightEnforcementRequests
-  searchEnforcementRequests: typeof searchReconcilableCopyrightEnforcementRequestIds
-  processEnforcementRequest: typeof processCopyrightEnforcementRequest
+  recoverDecisionAssessments: typeof recoverMissingDecisionAssessments
+  searchPendingEnforcement: typeof searchPendingCopyrightEnforcementAssessmentIds
+  enforceAssessment: typeof enforceCopyrightAssessment
   searchBlockedHoldRestorations: typeof searchBlockedCopyrightHoldRestorationNoticeIds
   recoverBlockedHoldRestorations: typeof recoverBlockedCopyrightHoldRestorations
   searchDueRestorations: typeof searchDueStatutoryCopyrightRestorationDeadlineIds
@@ -37,9 +37,9 @@ export type ReconcileCopyrightActionIntentsDeps = {
 const defaultDeps: ReconcileCopyrightActionIntentsDeps = {
   searchFormReviews: searchRecoverableCopyrightFormReviewIntakeIds,
   recoverFormReview: recoverRejectedCopyrightFormReviewEffect,
-  createMissingEnforcementRequests: createMissingCopyrightEnforcementRequests,
-  searchEnforcementRequests: searchReconcilableCopyrightEnforcementRequestIds,
-  processEnforcementRequest: processCopyrightEnforcementRequest,
+  recoverDecisionAssessments: recoverMissingDecisionAssessments,
+  searchPendingEnforcement: searchPendingCopyrightEnforcementAssessmentIds,
+  enforceAssessment: enforceCopyrightAssessment,
   searchBlockedHoldRestorations: searchBlockedCopyrightHoldRestorationNoticeIds,
   recoverBlockedHoldRestorations: recoverBlockedCopyrightHoldRestorations,
   searchDueRestorations: searchDueStatutoryCopyrightRestorationDeadlineIds,
@@ -50,8 +50,8 @@ const defaultDeps: ReconcileCopyrightActionIntentsDeps = {
 }
 
 /**
- * Walks every page of each copyright action sweep in stage order: rejected form reviews, missing
- * enforcement requests, pending enforcement, blocked hold restorations, due statutory restorations,
+ * Walks every page of each copyright action sweep in stage order: rejected form reviews, lost
+ * decision assessments, pending enforcement, blocked hold restorations, due statutory restorations,
  * then recoverable action intents. A failed item, page read, or stage does not stop the rest; the
  * job fails afterwards with every error so its retry covers what is still pending.
  */
@@ -71,14 +71,14 @@ export async function processReconcileCopyrightActionIntents(
       ),
     () =>
       runCopyrightSweepStage(tally, async () => {
-        await deps.createMissingEnforcementRequests()
+        await deps.recoverDecisionAssessments()
         return []
       }),
     () =>
       runCopyrightSweepStage(tally, () =>
         walkCopyrightSweep(
-          page => deps.searchEnforcementRequests(page),
-          ids => settleCopyrightSweepSequentially(ids, id => deps.processEnforcementRequest(id)),
+          page => deps.searchPendingEnforcement(page),
+          ids => settleCopyrightSweepSequentially(ids, id => deps.enforceAssessment(id)),
         ),
       ),
     () =>

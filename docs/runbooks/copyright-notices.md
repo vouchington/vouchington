@@ -295,7 +295,7 @@ Its `reason` tag has the same value, and one boolean tag per count shows which c
     or CCB filing awaiting assessment or resolution, timed from receipt;
   - an active restriction with no human review, timed from when it was imposed;
   - a failed media action or failed or bounced delivery, timed from the failure; and
-  - an enforcement request that has not completed, timed from its creation.
+  - a compliant assessment with a target it has not yet restricted, timed from the assessment.
 
   Deadline items are left out here because the two counts below cover them.
 

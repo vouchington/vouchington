@@ -6,7 +6,7 @@ export const sharedDbScopeTables = {
   getPendingCopyrightAgentDispatches: 'copyright_notice_dispatch_sources',
   searchDueStatutoryCopyrightRestorationDeadlineIds: 'copyright_notice_deadlines',
   searchRecoverableCopyrightFormReviewIntakeIds: 'copyright_notice_form_intake_reviews',
-  searchReconcilableCopyrightEnforcementRequestIds: 'copyright_notice_enforcement_requests',
+  searchPendingCopyrightEnforcementAssessmentIds: 'copyright_notice_submission_assessments',
   searchRecoverableCopyrightActionIntentIds: 'copyright_notice_action_intents',
   searchBlockedCopyrightHoldRestorationNoticeIds: 'copyright_notices',
   searchRecoverableCopyrightDeliveryIntentIds: 'copyright_notice_delivery_intents',

@@ -67,7 +67,6 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'copyright_notice_email_intake_reviews',
   'copyright_notice_email_intakes',
   'copyright_notice_email_thread_references',
-  'copyright_notice_enforcement_requests',
   'copyright_notice_evidence_artifacts',
   'copyright_notice_form_intakes',
   'copyright_notice_form_intake_reviews',

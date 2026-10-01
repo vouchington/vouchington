@@ -7,14 +7,6 @@ import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import { completeCopyrightActionIntentInTransaction } from '../services/copyright-notices/action-delivery-locking.mts'
 
-export async function expireTestCopyrightEnforcementClaim(assessmentId: string): Promise<void> {
-  await write(sql`/* expireTestCopyrightEnforcementClaim */
-    UPDATE copyright_notice_enforcement_requests
-    SET claimed_at = CURRENT_TIMESTAMP - INTERVAL '16 minutes'
-    WHERE copyright_notice_submission_assessment_id = ${assessmentId} AND state = 'claimed'
-  `)
-}
-
 export async function completeTestCopyrightActionClaim(
   intentId: string,
   leaseToken: string,

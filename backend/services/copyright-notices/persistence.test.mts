@@ -6,7 +6,7 @@ import {
   completeCopyrightMandatoryHumanReview,
   createCopyrightCounterNotice,
   createEligibleCopyrightRestoreIntent,
-  processCopyrightEnforcementRequest,
+  enforceCopyrightAssessment,
 } from './index.mts'
 import { acceptCounterNoticeForRestoration } from './evidence-and-holds-restoration-hold-fixtures.mts'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -23,16 +23,14 @@ async function createFixture() {
   })
 }
 describe('copyright notice persistence', () => {
-  it('recovers a durable enforcement request after a post-assessment failure', async () => {
+  it('recovers an owed restriction after a post-assessment failure', async () => {
     const { notice, noticeAssessment } = await createFixture()
     const interrupted = vi
       .fn<typeof acceptCopyrightNoticeAndImposeRestriction>()
       .mockRejectedValueOnce(new Error('simulated worker interruption'))
 
     await expect(
-      processCopyrightEnforcementRequest(noticeAssessment.id, {
-        imposeRestriction: interrupted,
-      }),
+      enforceCopyrightAssessment(noticeAssessment.id, { imposeRestriction: interrupted }),
     ).rejects.toThrow('simulated worker interruption')
     await expect(getCopyrightNoticePrivateAggregate(notice.id)).resolves.toEqual(
       expect.objectContaining({
@@ -41,7 +39,7 @@ describe('copyright notice persistence', () => {
       }),
     )
 
-    await expect(processCopyrightEnforcementRequest(noticeAssessment.id)).resolves.toBe('completed')
+    await enforceCopyrightAssessment(noticeAssessment.id)
     await expect(getCopyrightNoticePrivateAggregate(notice.id)).resolves.toEqual(
       expect.objectContaining({
         notice: expect.objectContaining({ accepted_at: expect.any(Date) }),

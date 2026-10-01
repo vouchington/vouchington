@@ -1,14 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
-import {
-  countCopyrightActiveRestrictionsForNotice,
-  readCopyrightEnforcementRequest,
-} from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
   createCopyrightDeliveryIntent,
   createOutboundCopyrightCorrespondence,
-  processCopyrightEnforcementRequest,
+  enforceCopyrightAssessment,
+  searchPendingCopyrightEnforcementAssessmentIds,
 } from './index.mts'
 import {
   createTestUserDirect,
@@ -85,8 +84,8 @@ async function createEnforcementFixture() {
   return { assessment, moderator, notice, submission }
 }
 
-describe('copyright enforcement requests', () => {
-  it('terminalizes a request whose assessment was rejected before its worker runs', async () => {
+describe('copyright assessment enforcement', () => {
+  it('imposes nothing for an assessment that was rejected before enforcement runs', async () => {
     const { assessment, moderator, notice, submission } = await createEnforcementFixture()
     await appendCopyrightSubmissionAssessment({
       submissionId: submission.id,
@@ -96,15 +95,11 @@ describe('copyright enforcement requests', () => {
       supersedesAssessmentId: assessment.id,
     })
 
-    await expect(processCopyrightEnforcementRequest(assessment.id)).resolves.toBe('completed')
+    await expect(enforceCopyrightAssessment(assessment.id)).resolves.toBeUndefined()
     await expect(countCopyrightActiveRestrictionsForNotice(notice.id)).resolves.toBe(0)
-    await expect(readCopyrightEnforcementRequest(assessment.id)).resolves.toEqual({
-      state: 'completed',
-      completed_at: expect.any(Date),
-    })
   })
 
-  it('terminalizes stale authority discovered after the request is claimed', async () => {
+  it('settles stale authority discovered while a target is being imposed', async () => {
     const { assessment, moderator, notice, submission } = await createEnforcementFixture()
     const supersedeBeforeImposing = vi
       .fn<typeof acceptCopyrightNoticeAndImposeRestriction>()
@@ -116,28 +111,35 @@ describe('copyright enforcement requests', () => {
           substantiallyCompliant: false,
           supersedesAssessmentId: assessment.id,
         })
-        await expect(processCopyrightEnforcementRequest(assessment.id)).resolves.toBe('not_claimed')
+        await expect(enforceCopyrightAssessment(assessment.id)).resolves.toBeUndefined()
         return acceptCopyrightNoticeAndImposeRestriction(input)
       })
 
     await expect(
-      processCopyrightEnforcementRequest(assessment.id, {
-        imposeRestriction: supersedeBeforeImposing,
-      }),
-    ).resolves.toBe('completed')
+      enforceCopyrightAssessment(assessment.id, { imposeRestriction: supersedeBeforeImposing }),
+    ).resolves.toBeUndefined()
     expect(supersedeBeforeImposing).toHaveBeenCalledOnce()
     await expect(countCopyrightActiveRestrictionsForNotice(notice.id)).resolves.toBe(0)
-    await expect(readCopyrightEnforcementRequest(assessment.id)).resolves.toEqual({
-      state: 'completed',
-      completed_at: expect.any(Date),
-    })
   })
 
   it('imposes an unchanged compliant assessment once', async () => {
     const { assessment, notice } = await createEnforcementFixture()
 
-    await expect(processCopyrightEnforcementRequest(assessment.id)).resolves.toBe('completed')
-    await expect(processCopyrightEnforcementRequest(assessment.id)).resolves.toBe('not_claimed')
+    await enforceCopyrightAssessment(assessment.id)
+    await enforceCopyrightAssessment(assessment.id)
+    await expect(countCopyrightActiveRestrictionsForNotice(notice.id)).resolves.toBe(1)
+  })
+
+  it('leaves a committed assessment owing its target until the sweep enforces it once', async () => {
+    const { assessment, notice } = await createEnforcementFixture()
+    const listed = () =>
+      readTestOwnedCopyrightSweepIds(searchPendingCopyrightEnforcementAssessmentIds, assessment.id)
+
+    await expect(listed()).resolves.toEqual([assessment.id])
+    await expect(countCopyrightActiveRestrictionsForNotice(notice.id)).resolves.toBe(0)
+
+    await enforceCopyrightAssessment(assessment.id)
+    await expect(listed()).resolves.toEqual([])
     await expect(countCopyrightActiveRestrictionsForNotice(notice.id)).resolves.toBe(1)
   })
 })
