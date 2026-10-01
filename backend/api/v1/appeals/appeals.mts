@@ -12,19 +12,21 @@ import {
   redactModerationAppeal,
   listRedactedModerationAppeals,
   MODERATION_APPEAL_STATUSES,
-  type ModerationAppealStatus,
 } from '@services/moderation-appeals'
 import { isModerationStaff } from '@services/users'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
 import {
-  decodeScopedUuidCursor,
   defineQueryContract,
-  encodeScopedUuidCursor,
   queryBoolean,
   queryEnum,
   queryInteger,
   queryString,
 } from '@modules/pagination'
+import {
+  beforeIdFromCursor,
+  parseAndValidateCaseListQuery,
+  scopedPageInfo,
+} from '../../case-list-query-helpers.mts'
 
 type CreateModerationAppealRequest = {
   target_type: 'warning' | 'ban' | 'removal' | 'suspension'
@@ -60,51 +62,25 @@ app.route('/api/v1/appeals').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/appeals', appealsQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/appeals')
 
-  // Unreadable limits and unknown statuses fall back to defaults, so the contract below checks the
-  // settled values: it rejects only a fractional limit, which used to reach SQL and answer 500.
-  const limitRaw = ctx.query.limit !== undefined ? Number(ctx.query.limit) : 25
-  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 100) : 25
-
-  const statusParam = ctx.query.status
-  const status: ModerationAppealStatus =
-    typeof statusParam === 'string' &&
-    MODERATION_APPEAL_STATUSES.includes(statusParam as ModerationAppealStatus)
-      ? (statusParam as ModerationAppealStatus)
-      : 'pending'
+  const { status, limit, after, mine } = parseAndValidateCaseListQuery(
+    ctx,
+    'GET:/api/v1/appeals',
+    MODERATION_APPEAL_STATUSES,
+  )
   const isStaff = isModerationStaff(currentUser)
-  const after = typeof ctx.query.after === 'string' ? ctx.query.after : undefined
-  validateRequestContract(ctx, 'GET:/api/v1/appeals', {
-    query: {
-      status,
-      limit,
-      ...(ctx.query.mine === 'true' && { mine: true }),
-      ...(after !== undefined && { after }),
-    },
-  })
 
   // Non-staff see only their own appeals; `mine=true` also scopes staff callers.
-  const appellantUserId = !isStaff || ctx.query.mine === 'true' ? currentUser.id : undefined
+  const appellantUserId = !isStaff || mine ? currentUser.id : undefined
   const cursorScope = `appeals:${status}:${appellantUserId ?? 'staff-all'}:id-desc`
-  const beforeId =
-    after !== undefined
-      ? decodeScopedUuidCursor(after, cursorScope, 'Invalid cursor format').id
-      : undefined
 
   const { appeals, hasNextPage } = await listModerationAppeals({
     status,
     limit,
-    beforeId,
+    beforeId: beforeIdFromCursor(after, cursorScope),
     appellantUserId,
   })
 
-  const page_info = {
-    has_next_page: hasNextPage,
-    start_cursor: appeals[0] ? encodeScopedUuidCursor(appeals[0].id, cursorScope) : null,
-    end_cursor:
-      hasNextPage && appeals.at(-1)
-        ? encodeScopedUuidCursor(appeals.at(-1)!.id, cursorScope)
-        : null,
-  }
+  const page_info = scopedPageInfo(appeals, hasNextPage, cursorScope)
   if (isStaff) {
     ctx.json(apiResponse('GET:/api/v1/appeals#staff', { appeals, page_info }))
     return

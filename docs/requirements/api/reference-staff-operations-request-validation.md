@@ -130,7 +130,10 @@ owns a pagination parser follows this order:
 4. `validateRequestContract`.
 
 `backend/api/validate-paginated-query.mts` implements steps 2 to 4 for the list routes
-(`parseAndValidatePaginatedRequest`). Routes with a bespoke limit (`mod-notes`, fediverse search,
+(`parseAndValidatePaginatedRequest`). `GET /appeals` and `GET /disputes` read their filters
+leniently instead, and share `backend/api/case-list-query-helpers.mts`: unreadable limits and
+unknown statuses settle to the defaults before the contract runs, and the helper also owns the
+cursor decode and `page_info` envelope for those two lists. Routes with a bespoke limit (`mod-notes`, fediverse search,
 `currencies`) validate the settled value the same way. Routes with no response contract wrap the
 existing payload in `apiResponse(...)` (an identity) so `apiQuery` applies; the response fixtures for
 `GET /memberships/refundable-charges` and `GET /rss-feed-categories` were added for that reason.
