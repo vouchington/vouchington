@@ -5,6 +5,26 @@ import { getUserFinancialProfile } from './get.mts'
 import { upsertUserFinancialProfile } from './upsert.mts'
 
 describe('upsertUserFinancialProfile concurrency', () => {
+  it('maps an out-of-range monetary value to 422 without storing a partial profile', async () => {
+    const user = await createTestUser()
+
+    await expect(
+      upsertUserFinancialProfile(user.id, {
+        total_credit_limit: { amount: -1, currency: 'usd' },
+      }),
+    ).rejects.toMatchObject({
+      status: 422,
+      message: 'financial profile money is outside the supported range',
+    })
+    expect(await getUserFinancialProfile(user.id)).toBeNull()
+
+    await expect(
+      upsertUserFinancialProfile(user.id, {
+        total_credit_limit: { amount: 100, currency: 'usd' },
+      }),
+    ).resolves.toMatchObject({ total_credit_limit: { amount: 100, currency: 'usd' } })
+  })
+
   it('serializes competing first creates without mixing amount state across currencies', async () => {
     const user = await createTestUser()
     const jpyIncome = {

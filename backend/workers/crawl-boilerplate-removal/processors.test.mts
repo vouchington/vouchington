@@ -22,6 +22,16 @@ afterEach(async () => {
 })
 
 describe('filterValidUtf8HtmlFiles', () => {
+  it('propagates an unreadable file instead of treating it as malformed UTF-8', async () => {
+    const [file] = await createArtifacts([VALID_HTML_A])
+    await rm(file!.filePath)
+
+    await expect(filterValidUtf8HtmlFiles([file!])).rejects.toMatchObject({
+      code: 'ENOENT',
+      path: file!.filePath,
+    })
+  })
+
   it('keeps only files that are valid UTF-8', async () => {
     const files = await createArtifacts([VALID_HTML_A, INVALID_UTF8_HTML, VALID_HTML_B])
     expect(await filterValidUtf8HtmlFiles(files)).toEqual([files[0], files[2]])

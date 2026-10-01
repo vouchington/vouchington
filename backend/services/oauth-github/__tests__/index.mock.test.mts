@@ -17,6 +17,22 @@ describe('upsertGithubAccount', () => {
     fetchSpy.mockReset()
   })
 
+  it('reports a profile transport failure after a successful token exchange', async () => {
+    const failure = new DOMException('profile request timed out', 'TimeoutError')
+    fetchSpy
+      .mockResolvedValueOnce(response({ access_token: 'token', token_type: 'bearer' }))
+      .mockRejectedValueOnce(failure)
+      .mockResolvedValueOnce(response([]))
+
+    const err = await upsertGithubAccount('code', 'https://example.com/callback').catch(
+      (err: unknown) => err,
+    )
+
+    expect(err).toMatchObject({ status: 502 })
+    expect((err as Error).cause).toBe(failure)
+    expect(fetchSpy).toHaveBeenNthCalledWith(2, 'https://api.github.com/user', expect.any(Object))
+  })
+
   it('exchanges a code, loads the profile and persists only a verified primary email', async () => {
     const login = `github-${createRandomString(8)}`
     fetchSpy

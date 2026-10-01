@@ -23,6 +23,25 @@ describe('upsertXAccount', () => {
     vi.doUnmock('undici')
   })
 
+  it('reports a profile transport failure after a successful token exchange', async () => {
+    const failure = new DOMException('profile request timed out', 'TimeoutError')
+    fetchSpy
+      .mockResolvedValueOnce(response({ access_token: 'token', token_type: 'bearer' }))
+      .mockRejectedValueOnce(failure)
+
+    const err = await upsertXAccount('code', 'https://example.com/callback', 'verifier').catch(
+      (err: unknown) => err,
+    )
+
+    expect(err).toMatchObject({ status: 502 })
+    expect((err as Error).cause).toBe(failure)
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      2,
+      'https://api.x.com/2/users/me?user.fields=profile_image_url',
+      expect.any(Object),
+    )
+  })
+
   it('exchanges a PKCE code, loads its profile, and persists the token material', async () => {
     const userId = `x-${createRandomString(8)}`
     fetchSpy

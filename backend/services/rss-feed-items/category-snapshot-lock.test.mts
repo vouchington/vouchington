@@ -9,6 +9,28 @@ import {
 } from './category-snapshot-lock.mts'
 
 describe('RSS feed item category snapshot locks', () => {
+  it('releases locks after an operation fails and preserves the original error', async () => {
+    const itemId = crypto.randomUUID()
+    const failure = new Error('category reconciliation failed')
+
+    await expect(
+      withRssFeedItemCategorySnapshotLocks([itemId], async () => {
+        throw failure
+      }),
+    ).rejects.toBe(failure)
+
+    await expect(
+      getTestPostgresAdvisoryLockHolderProcessId({
+        namespace: RSS_CATEGORY_SNAPSHOT_LOCK_NAMESPACE,
+        key: itemId,
+      }),
+    ).rejects.toThrow('PostgreSQL did not report the test advisory-lock holder')
+
+    await expect(
+      withRssFeedItemCategorySnapshotLocks([itemId], async () => 'reconciled'),
+    ).resolves.toBe('reconciled')
+  })
+
   it('serializes overlapping operations for the same RSS feed item', async () => {
     const itemId = crypto.randomUUID()
     const firstEntered = Promise.withResolvers<void>()
