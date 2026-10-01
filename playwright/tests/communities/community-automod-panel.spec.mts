@@ -11,6 +11,7 @@ import {
   insertTestCommunityMember,
   insertTestCommunityPostReview,
   insertTestPost,
+  setTestCommunityPostReviewAutomodFlag,
   updateTestCommunityPostReviewState,
 } from '../../../backend/test-helpers/index.mts'
 
@@ -50,18 +51,20 @@ test.beforeAll(async () => {
     markdown: 'Post flagged by automod for review panel test.',
     communityId: community.id,
   })
-  // The community_prompt source type requires a community_post_reviews row with
-  // unpublished_at set and unpublished_by_id = NULL (automod-driven unpublish).
+  // The community_prompt source type lists posts the unpublish action removed: a review row whose
+  // automod_action is 'unpublish' and whose unpublished_at is the moment it was flagged.
   await insertTestCommunityPostReview({
     communityId: community.id,
     postId,
     submittedById: owner.id,
   })
+  const flaggedAt = new Date()
   await updateTestCommunityPostReviewState({
     communityId: community.id,
     postId,
-    unpublishedAt: new Date(),
+    unpublishedAt: flaggedAt,
   })
+  await setTestCommunityPostReviewAutomodFlag({ postId, action: 'unpublish', flaggedAt })
   await insertTestAgentModeration({
     postId,
     agentId: agentPrompt.agent_id,
@@ -129,18 +132,20 @@ test.describe('Community automod review panel', () => {
       markdown: 'Post to keep removed via automod review panel.',
       communityId: community.id,
     })
-    // The community_prompt source type requires a community_post_reviews row with
-    // unpublished_at set and unpublished_by_id = NULL (automod-driven unpublish).
+    // The community_prompt source type lists posts the unpublish action removed: a review row whose
+    // automod_action is 'unpublish' and whose unpublished_at is the moment it was flagged.
     await insertTestCommunityPostReview({
       communityId: community.id,
       postId,
       submittedById: owner.id,
     })
+    const flaggedAt = new Date()
     await updateTestCommunityPostReviewState({
       communityId: community.id,
       postId,
-      unpublishedAt: new Date(),
+      unpublishedAt: flaggedAt,
     })
+    await setTestCommunityPostReviewAutomodFlag({ postId, action: 'unpublish', flaggedAt })
     await insertTestAgentModeration({
       postId,
       agentId: agentPrompt.agent_id,
