@@ -9,7 +9,7 @@ describe('finalizePostUpdateAndDeliver', () => {
   it('returns the transaction-captured post and sends one update event', async () => {
     const updatedPost = { id: 'post-id', post_related_topics: [] } as unknown as Post
     const enqueueUpdate = vi.fn<typeof enqueueOnPostUpdated>()
-    const invalidatePosts = vi.fn<typeof invalidate.posts>()
+    const invalidatePosts = vi.fn<typeof invalidate.posts>().mockResolvedValue(undefined)
 
     await expect(
       finalizePostUpdateAndDeliver(
