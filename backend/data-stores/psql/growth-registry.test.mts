@@ -171,6 +171,11 @@ describe('schema growth registry', () => {
       key: 'story_id',
       children: 'default',
     })
+    expect(PARTITION_POLICIES.get('community_prompt_classifier_results')).toMatchObject({
+      strategy: 'RANGE',
+      key: 'batch_id',
+      children: 'default',
+    })
     expect(UNBOUNDED_UNPARTITIONED_TABLES.has('classifier_candidate_thresholds')).toBe(true)
   })
 

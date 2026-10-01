@@ -1,3 +1,4 @@
+import type { ClassifierCandidateKind } from '@voucha/types'
 import type {
   ClassifierDecisionInputResult,
   PersistClassifierDecisionCall,
@@ -24,7 +25,7 @@ export function normalizeClassifierDecisionInput(
   assertClassifierDecisionBatchIdentity(input)
   const resultIds = input.calls.flatMap(call =>
     call.results.flatMap(result => [
-      result.candidateKind === 'topic' ? result.topicId : result.storyId,
+      classifierDecisionEntityId(result),
       ...(result.storedCandidateId ? [result.storedCandidateId] : []),
     ]),
   )
@@ -75,7 +76,7 @@ export function assertClassifierDecisionStoredCandidateIds(
 
 export function classifierDecisionCandidateKind(
   input: Pick<NormalizedClassifierDecisionInput, 'calls'>,
-): 'topic' | 'story' {
+): ClassifierCandidateKind {
   const firstResult = input.calls[0]?.results[0]
   if (!firstResult) throw new Error('Classifier decision requires a candidate result')
   return firstResult.candidateKind
@@ -87,8 +88,20 @@ export function flattenClassifierDecisionResults(
   return input.calls.flatMap(call => call.results)
 }
 
+/** The topic, story or community prompt a result scores. */
+export function classifierDecisionEntityId(result: ClassifierDecisionInputResult): string {
+  switch (result.candidateKind) {
+    case 'topic':
+      return result.topicId
+    case 'story':
+      return result.storyId
+    case 'community_prompt':
+      return result.communityPromptId
+  }
+}
+
 export function classifierDecisionResultKey(result: ClassifierDecisionInputResult): string {
-  return result.candidateKind === 'topic' ? `topic:${result.topicId}` : `story:${result.storyId}`
+  return `${result.candidateKind}:${classifierDecisionEntityId(result)}`
 }
 
 export function serializeClassifierRawResponse(value: unknown): string {
@@ -98,7 +111,7 @@ export function serializeClassifierRawResponse(value: unknown): string {
 function assertDecisionCalls(calls: readonly PersistClassifierDecisionCall[]): void {
   const resultKeys = new Set<string>()
   const storedCandidateIds = new Set<string>()
-  let candidateKind: 'topic' | 'story' | undefined
+  let candidateKind: ClassifierCandidateKind | undefined
   for (const [index, call] of calls.entries()) {
     if (call.shardOrdinal !== index || call.results.length === 0) {
       throw new Error('Classifier decision calls must have consecutive non-empty shard ordinals')
@@ -107,7 +120,7 @@ function assertDecisionCalls(calls: readonly PersistClassifierDecisionCall[]): v
       assertDecisionResult(result)
       candidateKind ??= result.candidateKind
       if (candidateKind !== result.candidateKind) {
-        throw new Error('Classifier decision cannot mix topic and story candidates')
+        throw new Error('Classifier decision cannot mix candidate kinds')
       }
       const key = classifierDecisionResultKey(result)
       if (resultKeys.has(key)) {

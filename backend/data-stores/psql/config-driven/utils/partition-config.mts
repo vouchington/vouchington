@@ -41,12 +41,14 @@ export const POST_PARTITION_TABLES: string[] = [
 
 /**
  * Classifier results retain one row per candidate. Topic and story ownership use
- * separate parents so UUIDv7 RANGE pruning remains direct for either entity.
+ * separate parents so UUIDv7 RANGE pruning remains direct for either entity. Community prompt
+ * results have no stable per-prompt key worth pruning on, so they range over their decision batch.
  */
 export const CLASSIFIER_RESULT_PARTITION_TABLES: string[] = [
   'classifier_decision_batch_candidates',
   'topic_classifier_results',
   'story_classifier_results',
+  'community_prompt_classifier_results',
 ]
 
 /**

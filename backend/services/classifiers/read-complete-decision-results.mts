@@ -1,4 +1,5 @@
 import type { QueryExecutor } from '@data-stores/psql'
+import type { ClassifierCandidateKind } from '@voucha/types'
 import sql from 'sql-template-strings'
 import type {
   ClassifierDecisionScope,
@@ -25,11 +26,16 @@ type ResultRow = {
 export async function readResults(
   query: QueryExecutor,
   batchId: string,
-  candidateKind: 'topic' | 'story',
+  candidateKind: ClassifierCandidateKind,
 ): Promise<PersistedClassifierDecision['results']> {
-  return candidateKind === 'topic'
-    ? readTopicResults(query, batchId)
-    : readStoryResults(query, batchId)
+  switch (candidateKind) {
+    case 'topic':
+      return readTopicResults(query, batchId)
+    case 'story':
+      return readStoryResults(query, batchId)
+    case 'community_prompt':
+      return readCommunityPromptResults(query, batchId)
+  }
 }
 
 async function readTopicResults(
@@ -68,9 +74,27 @@ async function readStoryResults(
   return rows.map(row => toPersistedResult(row, 'story'))
 }
 
+async function readCommunityPromptResults(
+  query: QueryExecutor,
+  batchId: string,
+): Promise<PersistedClassifierDecision['results']> {
+  const { rows } = await query<ResultRow & { entity_id: string }>(sql`
+    /* readCompleteCommunityPromptClassifierDecisionResults */
+    SELECT id, batch_id, decision_call_id, classifier_id, NULL::uuid AS candidate_id,
+      NULL::uuid AS threshold_id, prompt_version_id, probability::float8 AS probability,
+      effective_lower_threshold::float8 AS effective_lower_threshold,
+      effective_upper_threshold::float8 AS effective_upper_threshold, raw_response,
+      scope_category, scope_community_id, community_prompt_id AS entity_id
+    FROM community_prompt_classifier_results
+    WHERE batch_id = ${batchId}
+    ORDER BY community_prompt_id
+  `)
+  return rows.map(row => toPersistedResult(row, 'community_prompt'))
+}
+
 function toPersistedResult(
   row: ResultRow & { entity_id?: string },
-  candidateKind: 'topic' | 'story',
+  candidateKind: ClassifierCandidateKind,
 ): PersistedClassifierDecisionResult {
   const entityId = row.entity_id
   if (!entityId) throw new Error('Classifier result did not return its concrete candidate entity')
@@ -90,9 +114,20 @@ function toPersistedResult(
     rawResponse: row.raw_response,
     scope: toScope(row.scope_category, row.scope_community_id),
   }
-  return candidateKind === 'topic'
-    ? { ...shared, candidateKind, topicId: entityId }
-    : { ...shared, candidateKind, storyId: entityId }
+  switch (candidateKind) {
+    case 'topic':
+      return { ...shared, candidateKind, topicId: entityId }
+    case 'story':
+      return { ...shared, candidateKind, storyId: entityId }
+    case 'community_prompt':
+      return {
+        ...shared,
+        candidateKind,
+        communityPromptId: entityId,
+        storedCandidateId: null,
+        thresholdId: null,
+      }
+  }
 }
 
 export function toScope(

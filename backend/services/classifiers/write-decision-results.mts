@@ -2,23 +2,15 @@ import type { OwnedTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
   classifierDecisionCandidateKind,
+  classifierDecisionEntityId,
   flattenClassifierDecisionResults,
   serializeClassifierRawResponse,
   type NormalizedClassifierDecisionInput,
 } from './decision-input.mts'
 import type { ClassifierDecisionSnapshot } from './classifier-decision-snapshot.mts'
+import { insertCommunityPromptResults } from './write-community-prompt-results.mts'
+import { buildColumnArrays, type PersistedInputRow } from './write-decision-result-columns.mts'
 import type { ClassifierDecisionInputResult, PersistedClassifierDecisionCall } from './types.mts'
-
-type PersistedInputRow = {
-  candidateId: string | null
-  decisionCallId: string | undefined
-  entityId: string
-  probability: number
-  rawResponse: string
-  thresholdId: string | null
-  lowerThreshold: number
-  upperThreshold: number
-}
 
 export async function insertClassifierDecisionResults(
   query: OwnedTransaction,
@@ -41,9 +33,14 @@ export async function insertClassifierDecisionResults(
   if (rows.some(row => !row.decisionCallId)) {
     throw new Error('Classifier decision call is missing its persisted shard')
   }
-  return classifierDecisionCandidateKind(input) === 'topic'
-    ? insertTopicResults(query, input, rows)
-    : insertStoryResults(query, input, rows)
+  switch (classifierDecisionCandidateKind(input)) {
+    case 'topic':
+      return insertTopicResults(query, input, rows)
+    case 'story':
+      return insertStoryResults(query, input, rows)
+    case 'community_prompt':
+      return insertCommunityPromptResults(query, input, rows)
+  }
 }
 
 function toPersistedInputRow(
@@ -56,7 +53,7 @@ function toPersistedInputRow(
   return {
     candidateId: result.storedCandidateId,
     decisionCallId,
-    entityId: result.candidateKind === 'topic' ? result.topicId : result.storyId,
+    entityId: classifierDecisionEntityId(result),
     probability: result.probability,
     rawResponse: serializeClassifierRawResponse(result.rawResponse),
     thresholdId: snapshot?.threshold_id ?? null,
@@ -131,19 +128,6 @@ function buildStoryInsert(
       story_id, decision_call_id, candidate_id, threshold_id, probability, lower_threshold,
       upper_threshold, raw_response
     )`
-}
-
-function buildColumnArrays(rows: readonly PersistedInputRow[]) {
-  return {
-    entityIds: rows.map(row => row.entityId),
-    callIds: rows.map(row => row.decisionCallId!),
-    candidateIds: rows.map(row => row.candidateId),
-    thresholdIds: rows.map(row => row.thresholdId),
-    probabilities: rows.map(row => row.probability),
-    lowerThresholds: rows.map(row => row.lowerThreshold),
-    upperThresholds: rows.map(row => row.upperThreshold),
-    rawResponses: rows.map(row => row.rawResponse),
-  }
 }
 
 export function expectedClassifierDecisionResultCount(

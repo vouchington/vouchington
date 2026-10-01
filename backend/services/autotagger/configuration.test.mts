@@ -41,6 +41,8 @@ describe('C6 run configuration (real PG)', () => {
     })
     expect(resolved?.remote).toMatchObject({
       classifierId: resolved?.configuration.classifierId,
+      scope: { scopeCategory: 'global', scopeCommunityId: null },
+      candidateKind: 'topic',
       capturedCandidates: true,
       candidates: [],
     })
