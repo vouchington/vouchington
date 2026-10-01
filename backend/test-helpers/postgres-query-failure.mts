@@ -44,9 +44,10 @@ export async function withPostgresQueryFailureForTest<Result>(
       restorations.add(restore)
       const query = ((...args: unknown[]) => {
         const text = queryText(args[0])
+        const command = text.trimStart().replace(/^\/\*[\s\S]*?\*\/\s*/, '')
         const ownsContext = queryFailureContext.getStore() === context && context.active
-        if (ownsContext && /^BEGIN\b/.test(text)) began = true
-        if (ownsContext && /^(?:COMMIT|ROLLBACK)\b/.test(text)) began = false
+        if (ownsContext && /^BEGIN\b/.test(command)) began = true
+        if (ownsContext && /^(?:COMMIT|ROLLBACK)\b/.test(command)) began = false
         const target = text.trimStart()
         const matchesCommand =
           !options.command ||

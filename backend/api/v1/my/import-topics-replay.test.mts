@@ -53,7 +53,7 @@ describe('POST /api/v1/my/import/topics response replay', () => {
 
     expect(response.body).toMatchObject({ code: '22021' })
     expect(response.body).not.toHaveProperty('results')
-    await expect(getFollowedTopicIds(importingUser.id, [topic.id])).resolves.toEqual([])
+    await expect(getFollowedTopicIds(importingUser.id, [topic.id])).resolves.toEqual(new Set())
     await expect(getTopicImportRequestForTest(importingUser.id, topic.id)).resolves.toBeNull()
     // The actor-owned request key is reserved before lookup, but no import result is written.
     await expect(
