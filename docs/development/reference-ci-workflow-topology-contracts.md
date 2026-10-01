@@ -119,10 +119,11 @@ is remote, missing, non-callable, or ambiguous, and output checks recognize only
 speculative or cascading diagnostics while actionlint continues to own malformed YAML declarations.
 The table-driven policy exercised by
 [`ci/check-live-workflow-topology.mts`](../../ci/check-live-workflow-topology.mts) loads that
-graph once and fails closed on workflow/job inventory drift, missing lock intent or unlocked-workflow
-rationale, exact lock-group collisions (including expression templates), incomplete shared-lock
-families, reusable caller drift, required or forbidden routes, exact aggregate fan-ins, and
-eligibility ordering. Workflow-specific tests retain conditions, inputs,
+graph once and fails closed on workflow/job inventory drift, missing or stale lock intent and
+unlocked-workflow rationale, pending, cancellation, and scope mismatches against the typed lock
+intent, exact lock-group collisions (including expression templates), reusable caller drift,
+required or forbidden routes, exact aggregate fan-ins, and eligibility ordering. Workflow-specific
+tests retain conditions, inputs,
 outputs, secrets, permissions, runners, scripts, and runtime mechanics instead of duplicating graph
 assertions. See
 [GitHub Actions Concurrency Locks](ci/workflows/reference-github-actions-concurrency-locks.md)
