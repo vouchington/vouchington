@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import {
+  readAnonymousApiUsageRows,
   readApiUsageRows,
   startLocalAnalyticsForTest,
 } from '@voucha/test-helpers/api-usage-analytics'
@@ -176,6 +177,47 @@ describe('usage quota', () => {
     })
     expect(Number(oauthRow!.units)).toBe(0)
     expect(oauthRow!.api_key_id ?? null).toBeNull()
+  })
+
+  it('charges and reports a signed-in REST user by id alone', async () => {
+    const identity: UsageIdentity = { credential: 'session', userId: randomUUID() }
+
+    await settleUsage(settlement(identity, 200, 'rest_user'))
+    await settleUsage(settlement(identity, 404, 'rest_user'))
+
+    await expect(checkUsageQuota('rest_user', identity.userId, QUOTA)).resolves.toMatchObject({
+      limited: true,
+    })
+    const rows = await readApiUsageRows(identity.userId)
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toMatchObject({
+      surface: 'rest_user',
+      credential: 'session',
+      user_id: identity.userId,
+    })
+    expect(rows[0]!.api_key_id ?? null).toBeNull()
+    expect(rows[0]!.oauth_client_id ?? null).toBeNull()
+  })
+
+  it('charges anonymous REST traffic to one aggregate bucket with no caller dimension', async () => {
+    const limiter = {
+      add: vi.fn<RateLimiter['add']>(),
+      isRateLimited: vi.fn<RateLimiter['isRateLimited']>(),
+    }
+    const reportError = vi.fn<(error: Error) => void>()
+
+    await settleUsage(settlement({ credential: 'anonymous' }, 200, 'rest_anonymous'), {
+      limiter,
+      reportError,
+    })
+
+    expect(limiter.add).toHaveBeenCalledExactlyOnceWith(['rest_anonymous:aggregate'])
+    const [row, ...rest] = await readAnonymousApiUsageRows()
+    expect(rest).toEqual([])
+    expect(row).toMatchObject({ surface: 'rest_anonymous', credential: 'anonymous', units: 1 })
+    expect(row!.user_id ?? null).toBeNull()
+    expect(row!.api_key_id ?? null).toBeNull()
+    expect(row!.oauth_client_id ?? null).toBeNull()
   })
 
   it('stops enforcing when route rate limiting is off but still reports usage', async () => {

@@ -7,10 +7,13 @@ export type UsagePlan = ApiUsage['plan']
 export type UsageScopeClass = ApiUsage['scope_class']
 
 // The validated principal behind a request. Every field is a row id or a public OAuth client_id,
-// never a bearer token or an API key secret.
+// never a bearer token, an API key secret or a session cookie. An anonymous caller has no
+// principal: it is metered as one aggregate and deliberately carries no IP, device or session id.
 export type UsageIdentity =
   | { credential: 'api_key'; userId: string; apiKeyId: string }
   | { credential: 'oauth'; userId: string; oauthClientId: string; oauthGrantId: string }
+  | { credential: 'session'; userId: string }
+  | { credential: 'anonymous' }
 
 export type UsageQuota = {
   limit: number
