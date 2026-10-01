@@ -113,6 +113,11 @@ clock or decide legal merits. [`eu-notice-receipt.mts`](../../../../../backend/s
 [`territorial-notice-receipt.mts`](../../../../../backend/services/copyright-notices/territorial-notice-receipt.mts) and
 [`territorial-notice-receipt-sql.mts`](../../../../../backend/services/copyright-notices/territorial-notice-receipt-sql.mts). Each wrapper keeps its
 jurisdiction, storage tables, encryption purpose, and failure label.
+[`eu-redress.mts`](../../../../../backend/services/copyright-notices/eu-redress.mts) and
+[`uk-redress.mts`](../../../../../backend/services/copyright-notices/uk-redress.mts) are wrappers around the shared redress flow in
+[`territorial-redress.mts`](../../../../../backend/services/copyright-notices/territorial-redress.mts) and
+[`territorial-redress-sql.mts`](../../../../../backend/services/copyright-notices/territorial-redress-sql.mts). Each wrapper keeps its
+policy key, encryption purpose, and error text. Table and column identifiers stay in static SQL.
 
 ```mermaid
 flowchart TD
