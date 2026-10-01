@@ -86,23 +86,32 @@ export function CreateApiKeyForm({
           data-pw='api-keys-create-label-input'
         />
       </div>
-      <label className='block space-y-1'>
-        <span>{t('settings.apiKeys.expiry')}</span>
-        <select
-          value={lifetimeDays === null ? 'none' : lifetimeDays}
-          onChange={event =>
-            setLifetimeDays(
-              event.target.value === 'none' ? null : (Number(event.target.value) as 30 | 90 | 365),
-            )
-          }
-          data-pw='api-keys-lifetime'
-        >
-          <option value={30}>{t('settings.apiKeys.days30')}</option>
-          <option value={90}>{t('settings.apiKeys.days90')}</option>
-          {!isAdministrator && <option value={365}>{t('settings.apiKeys.year1')}</option>}
-          {!isAdministrator && <option value='none'>{t('settings.apiKeys.noExpiry')}</option>}
-        </select>
-      </label>
+      <ChoiceRadioGroup
+        idPrefix='api-key-lifetime'
+        legend={t('settings.apiKeys.expiry')}
+        value={lifetimeDays === null ? 'none' : String(lifetimeDays)}
+        onChange={value =>
+          setLifetimeDays(value === 'none' ? null : (Number(value) as 30 | 90 | 365))
+        }
+        options={[
+          { value: '30', label: t('settings.apiKeys.days30'), dataPw: 'api-keys-lifetime-30' },
+          { value: '90', label: t('settings.apiKeys.days90'), dataPw: 'api-keys-lifetime-90' },
+          ...(!isAdministrator
+            ? [
+                {
+                  value: '365',
+                  label: t('settings.apiKeys.year1'),
+                  dataPw: 'api-keys-lifetime-365',
+                },
+                {
+                  value: 'none',
+                  label: t('settings.apiKeys.noExpiry'),
+                  dataPw: 'api-keys-lifetime-none',
+                },
+              ]
+            : []),
+        ]}
+      />
       <div className='flex gap-2'>
         <Button
           type='submit'

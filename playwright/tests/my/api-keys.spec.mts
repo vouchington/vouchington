@@ -35,6 +35,9 @@ test.describe('My API Keys Page', () => {
     await expect(page.getByTestId('api-keys-create-confirm-button')).toBeVisible()
     await expect(page.getByTestId('api-keys-create-cancel-button')).toBeVisible()
     await expect(page.getByTestId('api-keys-create-label-input')).toBeVisible()
+    await expect(page.getByTestId('api-keys-lifetime-90')).toBeChecked()
+    await expect(page.getByTestId('api-keys-lifetime-365')).toBeVisible()
+    await expect(page.getByTestId('api-keys-lifetime-none')).toBeVisible()
   })
 
   test('Create button is disabled when label is empty', async ({ page }) => {
@@ -60,7 +63,7 @@ test.describe('My API Keys Page', () => {
   test('selects expiry and rotates while showing the replacement once', async ({ page }) => {
     const label = `Playwright rotation ${randomUUID()}`
     await page.getByTestId('api-keys-create-button').click()
-    await page.getByTestId('api-keys-lifetime').selectOption('30')
+    await page.getByTestId('api-keys-lifetime-30').click()
     await page.getByTestId('api-keys-create-label-input').pressSequentially(label)
     await page.getByTestId('api-keys-create-confirm-button').click()
     const rawInput = page.getByTestId('api-keys-created-raw-key-input')

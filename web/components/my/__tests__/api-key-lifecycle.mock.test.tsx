@@ -37,9 +37,9 @@ describe('API key lifetime controls', () => {
         setLabel={() => {}}
       />,
     )
-    expect(screen.getAllByRole('option')).toHaveLength(2)
-    expect(screen.getByRole('combobox')).toHaveValue('30')
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '90' } })
+    expect(screen.getByRole('radio', { name: '30 days' })).toBeChecked()
+    expect(screen.queryByRole('radio', { name: 'No expiry' })).toBeNull()
+    fireEvent.click(screen.getByRole('radio', { name: '90 days' }))
     expect(setLifetimeDays).toHaveBeenCalledWith(90)
     result.rerender(
       <CreateApiKeyForm
@@ -54,8 +54,8 @@ describe('API key lifetime controls', () => {
         setLabel={() => {}}
       />,
     )
-    expect(screen.getAllByRole('option')).toHaveLength(4)
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'none' } })
+    expect(screen.getByRole('radio', { name: '1 year' })).toBeVisible()
+    fireEvent.click(screen.getByRole('radio', { name: 'No expiry' }))
     expect(setLifetimeDays).toHaveBeenCalledWith(null)
   })
   it('shows invalid administrator guidance and rotates an unlimited key', () => {
