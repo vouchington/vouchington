@@ -1,24 +1,38 @@
-import { describe, expect, it, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { configure, render, screen } from '@testing-library/react'
 import {
   mockGetCurrentUser,
   mockIsAdmin,
   mockIsModerationStaff,
+  mockCommunityAutomodFlagsPanel,
   mockCommunityAutomodReviewPanel,
   mockGetCommunity,
   mockGetCommunityAutomodRecentActions,
+  mockGetCommunityModerationQueue,
   mockGetCommunityPendingModerationReports,
   makeUser,
   makeCommunityData,
-  defaultAutomodActions,
   resetModerationPageMocks,
 } from '@/test-helpers/components/community-moderation-page-fixtures'
+import {
+  defaultAutomodActions,
+  defaultAutomodFlags,
+} from '@/test-helpers/components/community-moderation-page-defaults'
 import {
   mockGetModmailInboxServer,
   resetCommunityModerationModmailMocks,
 } from '@/test-helpers/components/community-moderation-modmail-test-helper'
 
 import CommunityModerationPage from '../page'
+
+const { mockCaptureException } = vi.hoisted(() => ({
+  mockCaptureException: vi.fn<VitestLooseMock>(),
+}))
+
+vi.mock(
+  import('@sentry/nextjs'),
+  () => ({ captureException: mockCaptureException }) as unknown as typeof import('@sentry/nextjs'),
+)
 
 configure({ testIdAttribute: 'data-pw' })
 
@@ -53,6 +67,45 @@ describe('CommunityModerationPage rendering', () => {
     )
     expect(mockGetModmailInboxServer).toHaveBeenCalledWith('test-community')
     expect(screen.getByTestId('modmail-inbox')).toHaveTextContent('modmail-inbox:1')
+  })
+
+  it('loads the open automod flags and renders them in their own panel', async () => {
+    mockGetCurrentUser.mockResolvedValue(makeUser())
+    mockGetCommunity.mockResolvedValueOnce(makeCommunityData('moderator'))
+    mockIsAdmin.mockReturnValue(false)
+    mockIsModerationStaff.mockReturnValue(false)
+    const entries = [{ id: 'post-1', entity_id: 'post-1', queue_source: 'automod_flag' }]
+    mockGetCommunityModerationQueue.mockResolvedValueOnce({ ...defaultAutomodFlags, entries })
+
+    const jsx = await CommunityModerationPage({
+      params: Promise.resolve({ slug: 'test-community' }),
+    })
+    render(jsx)
+
+    expect(mockGetCommunityModerationQueue).toHaveBeenCalledWith('test-community', {
+      searchParams: { source: 'automod_flag', limit: 25 },
+    })
+    expect(mockCommunityAutomodFlagsPanel).toHaveBeenCalledWith(
+      expect.objectContaining({ entries, communitySlug: 'test-community' }),
+      undefined,
+    )
+  })
+
+  it('reports a failed flag lookup to Sentry without failing the page', async () => {
+    mockGetCurrentUser.mockResolvedValue(makeUser())
+    mockGetCommunity.mockResolvedValueOnce(makeCommunityData('moderator'))
+    mockIsAdmin.mockReturnValue(false)
+    mockIsModerationStaff.mockReturnValue(false)
+    const failure = new Error('network failure')
+    mockGetCommunityModerationQueue.mockRejectedValueOnce(failure)
+
+    await expect(
+      CommunityModerationPage({ params: Promise.resolve({ slug: 'test-community' }) }),
+    ).resolves.toBeDefined()
+
+    expect(mockCaptureException).toHaveBeenCalledWith(failure, {
+      tags: { panel: 'automodFlags' },
+    })
   })
 
   it('passes an explicit failure state when the server-rendered inbox request fails', async () => {

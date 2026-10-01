@@ -24,6 +24,7 @@ each phase.
 | 8   | Copyright staff email intake review                          | copyright-staff-email-review       | Swift + .NET | None: email-intake approval, rejection, information request, and correspondence review are web-only staff tooling.                                                                                                                                                                                                                 | 3     | [vouchington#1229]     |
 | 9   | Copyright staff guest-capability management                  | copyright-staff-guest-capabilities | Swift + .NET | None: issuing, listing, revoking, and information requests are web-only staff tooling.                                                                                                                                                                                                                                             | 3     | [vouchington#1229]     |
 | 10  | Copyright staff AI form-screening guidance                   | copyright-staff-ai-guidance        | Swift + .NET | None: the advisory guidance panel on the staff case is web-only.                                                                                                                                                                                                                                                                   | 3     | [vouchington#1229]     |
+| 11  | Community automod flag review                                | community-automod-flags            | Swift + .NET | None: web lists open automod flags on the community moderation page with a Dismiss action; native clients render neither. The per-community automod action setting follows in the next #221 change.                                                                                                                                | 3     | [clients#199]          |
 
 ## Synchronization rule
 
@@ -38,4 +39,5 @@ any mapped capability differs from web.
 [clients#57]: https://github.com/vouchington/vouchington-clients/issues/57
 [clients#92]: https://github.com/vouchington/vouchington-clients/issues/92
 [clients#177]: https://github.com/vouchington/vouchington-clients/issues/177
+[clients#199]: https://github.com/vouchington/vouchington-clients/issues/199
 [vouchington#1229]: https://github.com/vouchington/vouchington/issues/1229

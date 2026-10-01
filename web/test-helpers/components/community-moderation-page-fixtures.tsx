@@ -1,9 +1,17 @@
 import { vi } from 'vitest'
+import {
+  defaultAutomodActions,
+  defaultAutomodFlags,
+  defaultModeratorStats,
+  defaultPendingPosts,
+  defaultRestrictions,
+} from './community-moderation-page-defaults'
 type HeaderBag = { get: (key: string) => string | null }
 const {
   mockGetCurrentUser,
   mockIsAdmin,
   mockIsModerationStaff,
+  mockCommunityAutomodFlagsPanel,
   mockCommunityAutomodReviewPanel,
   mockGetCommunity,
   mockGetCommunityAiAgents,
@@ -11,6 +19,7 @@ const {
   mockGetCommunityAgentPromptHistory,
   mockGetCommunityAutomodRecentActions,
   mockGetCommunityBans,
+  mockGetCommunityModerationQueue,
   mockGetCommunityRestrictions,
   mockGetCommunityModeratorStats,
   mockGetCommunityPendingModerationReports,
@@ -23,6 +32,7 @@ const {
   mockGetCurrentUser: vi.fn<VitestLooseMock>(),
   mockIsAdmin: vi.fn<VitestLooseMock>(),
   mockIsModerationStaff: vi.fn<VitestLooseMock>(),
+  mockCommunityAutomodFlagsPanel: vi.fn<VitestLooseMock>(() => <div>automod-flags-panel</div>),
   mockCommunityAutomodReviewPanel: vi.fn<VitestLooseMock>(() => <div>automod-review-panel</div>),
   mockGetCommunity: vi.fn<VitestLooseMock>(),
   mockGetCommunityAiAgents: vi.fn<VitestLooseMock>(),
@@ -30,6 +40,7 @@ const {
   mockGetCommunityAgentPromptHistory: vi.fn<VitestLooseMock>(),
   mockGetCommunityAutomodRecentActions: vi.fn<VitestLooseMock>(),
   mockGetCommunityBans: vi.fn<VitestLooseMock>(),
+  mockGetCommunityModerationQueue: vi.fn<VitestLooseMock>(),
   mockGetCommunityRestrictions: vi.fn<VitestLooseMock>(),
   mockGetCommunityModeratorStats: vi.fn<VitestLooseMock>(),
   mockGetCommunityPendingModerationReports: vi.fn<VitestLooseMock>(),
@@ -44,10 +55,11 @@ const {
   mockHeaders: vi.fn<() => Promise<HeaderBag>>(),
 }))
 export { mockGetCurrentUser, mockIsAdmin, mockIsModerationStaff }
-export { mockCommunityAutomodReviewPanel, mockGetCommunity }
+export { mockCommunityAutomodFlagsPanel, mockCommunityAutomodReviewPanel, mockGetCommunity }
 export { mockGetCommunityAiAgents, mockGetCommunityAgentPrompts }
 export { mockGetCommunityAgentPromptHistory, mockGetCommunityAutomodRecentActions }
 export { mockGetCommunityBans, mockGetCommunityRestrictions, mockGetCommunityModeratorStats }
+export { mockGetCommunityModerationQueue }
 export { mockGetCommunityPendingModerationReports }
 export { mockGetCommunityPendingPosts, mockGetMyModeratorVacation }
 export { mockNotFound, mockRedirect, mockHeaders }
@@ -69,6 +81,7 @@ vi.mock(import('@/lib/api/server'), () => ({
   getCommunityAgentPromptHistory: mockGetCommunityAgentPromptHistory,
   getCommunityAutomodRecentActions: mockGetCommunityAutomodRecentActions,
   getCommunityBans: mockGetCommunityBans,
+  getCommunityModerationQueue: mockGetCommunityModerationQueue,
   getCommunityRestrictions: mockGetCommunityRestrictions,
   getCommunityModeratorStats: mockGetCommunityModeratorStats,
   getCommunityPendingModerationReports: mockGetCommunityPendingModerationReports,
@@ -116,6 +129,9 @@ vi.mock(import('@/components/communities/community-agent-prompts-panel'), () => 
 vi.mock(import('@/components/communities/community-agent-prompt-history'), () => ({
   CommunityAgentPromptHistory: () => <div>agent-prompt-history</div>,
 }))
+vi.mock(import('@/components/communities/community-automod-flags-panel'), () => ({
+  CommunityAutomodFlagsPanel: mockCommunityAutomodFlagsPanel,
+}))
 vi.mock(import('@/components/communities/community-automod-review-panel'), () => ({
   CommunityAutomodReviewPanel: mockCommunityAutomodReviewPanel,
 }))
@@ -156,25 +172,6 @@ export function makeCommunityData(
   }
 }
 
-export const defaultPendingPosts = {
-  results: [],
-  page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
-  posts: {},
-  posts_metrics: {},
-}
-export const defaultAutomodActions = {
-  automod_actions: [],
-  stats: { total_count: 0, false_positive_count: 0, false_positive_rate: 0 },
-  page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
-}
-export const defaultModeratorStats = { window: 30, stats: [], users: {} }
-export const defaultRestrictions = {
-  results: [],
-  page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
-  community_restrictions: {},
-  raid_mode_suggestion: { velocity_spike: false, flag_count: 0, latest_flagged_at: null },
-}
-
 export function resetModerationPageMocks() {
   vi.resetAllMocks()
   mockNotFound.mockImplementation(() => {
@@ -190,6 +187,7 @@ export function resetModerationPageMocks() {
   mockGetCommunityAgentPromptHistory.mockResolvedValue({ entries: [], next_cursor: null })
   mockGetCommunityAutomodRecentActions.mockResolvedValue(defaultAutomodActions)
   mockGetCommunityBans.mockResolvedValue({ bans: [] })
+  mockGetCommunityModerationQueue.mockResolvedValue(defaultAutomodFlags)
   mockGetCommunityModeratorStats.mockResolvedValue(defaultModeratorStats)
   mockGetCommunityRestrictions.mockResolvedValue(defaultRestrictions)
   mockGetMyModeratorVacation.mockResolvedValue(null)

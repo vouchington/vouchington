@@ -117,6 +117,11 @@ export type CommunityPostReview = {
   platform_override_action: 'approve' | 'reject' | 'unpublish' | 'restore' | null
   platform_override_reason_code: string | null
   platform_override_private_note: string | null
+  automod_action: 'review_queue' | 'unpublish' | null
+  automod_flagged_at: Date | null
+  automod_flagged_content_sha256: Buffer | null
+  automod_dismissed_at: Date | null
+  automod_dismissed_by_id: string | null
 }
 
 export type CommunityPinnedPost = {

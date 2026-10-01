@@ -255,7 +255,7 @@ export interface CommunityModerationQueueEntry {
   cursor_severity_rank?: number | null
   entity_type: 'rss_feed_item' | 'post' | 'comment' | 'user' | 'url_hostname'
   entity_id: string
-  queue_source: 'report' | 'community_review'
+  queue_source: 'report' | 'community_review' | 'automod_flag'
   flagged_reason?: string | null
   post_id?: string | null
   admin_action_path?: string | null

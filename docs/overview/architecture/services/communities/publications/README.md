@@ -27,6 +27,13 @@ moderators can instead record a platform override: approve, reject, unpublish, o
 latest override is a projection and every decision is retained in `community_post_review_changes`.
 Community and automated moderation cannot alter a publication after a platform override.
 
+A community whose automod action is `review_queue` records a classifier flag on the same review row
+(`automod_action`, `automod_flagged_at`, `automod_flagged_content_sha256`). The flag is open only
+for the post-content version it was raised on, until a moderator dismisses it
+(`automod_dismissed_at`, `automod_dismissed_by_id`) or the post leaves the approved state. The
+open-flag definition and the dismissal route live in the
+[community moderation reference](../../../../../requirements/moderation/reference-community-moderation-moderation-queue.md#automod-review-queue).
+
 ## Status Model
 
 | State       | Condition                                                                    |
@@ -59,18 +66,19 @@ Community feed search supports newest-first and hot-score sorting. The web canon
 
 ## API Surface
 
-| Function                                                   | File           |
-| ---------------------------------------------------------- | -------------- |
-| `createCommunityPostReview(userId, postId, id)`            | `add.mts`      |
-| `approvePublication(user, communityId, postId)`            | `moderate.mts` |
-| `rejectPublication(user, communityId, postId)`             | `moderate.mts` |
-| `unpublishPost(user, communityId, postId)`                 | `moderate.mts` |
-| `overridePublication(user, communityId, postId, override)` | `moderate.mts` |
-| `unpublishPostAsAgent(communityId, postId)`                | `moderate.mts` |
-| `searchCommunityPosts(communityId, opts?)`                 | `get.mts`      |
-| `searchPendingPosts(communityId, opts?)`                   | `get.mts`      |
-| `getCommunityPostReview(communityId, postId)`              | `get.mts`      |
-| `getApprovedReviewsForPost(postId)`                        | `get.mts`      |
+| Function                                                    | File               |
+| ----------------------------------------------------------- | ------------------ |
+| `createCommunityPostReview(userId, postId, id)`             | `add.mts`          |
+| `approvePublication(user, communityId, postId)`             | `moderate.mts`     |
+| `rejectPublication(user, communityId, postId)`              | `moderate.mts`     |
+| `unpublishPost(user, communityId, postId)`                  | `moderate.mts`     |
+| `overridePublication(user, communityId, postId, override)`  | `moderate.mts`     |
+| `unpublishPostAsAgent(communityId, postId)`                 | `moderate.mts`     |
+| `dismissCommunityAutomodFlag({ communityId, postId, ... })` | `automod-flag.mts` |
+| `searchCommunityPosts(communityId, opts?)`                  | `get.mts`          |
+| `searchPendingPosts(communityId, opts?)`                    | `get.mts`          |
+| `getCommunityPostReview(communityId, postId)`               | `get.mts`          |
+| `getApprovedReviewsForPost(postId)`                         | `get.mts`          |
 
 ## Related
 

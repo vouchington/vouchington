@@ -2254,6 +2254,10 @@
         ],
         "type": "object"
       },
+      "CommunityModerationQueueSource": {
+        "enum": ["automod_flag", "community_review", "report"],
+        "type": "string"
+      },
       "CommunityOwner": {
         "additionalProperties": false,
         "properties": {
@@ -34377,8 +34381,7 @@
                                 ]
                               },
                               "queue_source": {
-                                "enum": ["community_review", "report"],
-                                "type": "string"
+                                "$ref": "#/components/schemas/CommunityModerationQueueSource"
                               },
                               "reason": {
                                 "enum": [
@@ -34547,8 +34550,7 @@
                                     ]
                                   },
                                   "queue_source": {
-                                    "enum": ["community_review", "report"],
-                                    "type": "string"
+                                    "$ref": "#/components/schemas/CommunityModerationQueueSource"
                                   },
                                   "reason": {
                                     "enum": [
@@ -34748,8 +34750,7 @@
                                     ]
                                   },
                                   "queue_source": {
-                                    "enum": ["community_review", "report"],
-                                    "type": "string"
+                                    "$ref": "#/components/schemas/CommunityModerationQueueSource"
                                   },
                                   "reason": {
                                     "enum": [
@@ -36587,6 +36588,37 @@
             }
           }
         },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/communities/{idOrSlug}/posts/{postId}/automod-flag/dismissal": {
+      "post": {
+        "operationId": "post_api_v1_communities_idOrSlug_posts_postId_automod-flag_dismissal",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "idOrSlug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "postId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "204": {
             "description": "No Content"
