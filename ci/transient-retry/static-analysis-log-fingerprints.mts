@@ -31,14 +31,15 @@ export function hasOxlintTsgolintRuntimeFault(log: string): boolean {
     oxlintStepLog.includes('pnpm exec oxlint --type-aware --deny-warnings') &&
     oxlintStepLog.includes('unexpected fault address ') &&
     oxlintStepLog.includes('fatal error: fault') &&
-    // The Go import path, not a filesystem path: stable across the 0.23.0 vendored-checkout
-    // traceback shape (symbol-line prefix) and the 7.0.2001 -trimpath'd module shape (both symbol
+    // The Go import path, not a filesystem path: stable across the older vendored-checkout
+    // traceback shape (symbol-line prefix) and the current -trimpath'd module shape (both symbol
     // and file-line prefix), unlike the old `/tsgolint/typescript-go/internal/` build-path fragment
-    // that only matched a checkout layout tsgolint@7.0.2001 no longer has.
+    // that only matched a checkout layout the current tsgolint binary no longer has.
     oxlintStepLog.includes('github.com/microsoft/typescript-go/internal/') &&
-    // Only the prefix: the exact doubled "exit status: exit status: 2" composition was a 0.23.0
-    // formatting artifact that cannot be verified against the current oxlint-tsgolint@7.0.2001
-    // binary. The four other conjuncts plus the exit-code line below keep this anchored.
+    // Only the prefix: the exact doubled "exit status: exit status: 2" composition was a
+    // formatting artifact of the older vendored-checkout build that cannot be verified against the
+    // current oxlint-tsgolint binary. The four other conjuncts plus the exit-code line below keep
+    // this anchored.
     oxlintStepLog.includes('Error running tsgolint: ') &&
     oxlintStepLog.includes('##[error]Process completed with exit code 1.')
   )
