@@ -5757,6 +5757,12 @@ importers:
       '@modules/scopes':
         specifier: workspace:^
         version: link:../../modules/scopes
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
+      '@services/bookmarks':
+        specifier: workspace:^
+        version: link:../bookmarks
       '@services/communities':
         specifier: workspace:^
         version: link:../communities
@@ -10615,12 +10621,18 @@ importers:
       '@services/entity-relation-actions':
         specifier: workspace:^
         version: link:../services/entity-relation-actions
+      '@services/entity-relations':
+        specifier: workspace:^
+        version: link:../services/entity-relations
       '@services/feeds':
         specifier: workspace:^
         version: link:../services/feeds
       '@services/individuals-households':
         specifier: workspace:^
         version: link:../services/individuals-households
+      '@services/lists':
+        specifier: workspace:^
+        version: link:../services/lists
       '@services/posts':
         specifier: workspace:^
         version: link:../services/posts

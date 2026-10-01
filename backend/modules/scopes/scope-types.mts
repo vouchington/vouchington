@@ -10,6 +10,8 @@ export type ScopeDescriptionKey =
   | 'spending_write'
 
 export type ApiScope =
+  | 'bookmarks:read'
+  | 'bookmarks:write'
   | 'cards:read'
   | 'cards:write'
   | 'communities:read'
@@ -19,6 +21,8 @@ export type ApiScope =
   | 'entity-relations:write'
   | 'financial-profile:read'
   | 'financial-profile:write'
+  | 'lists:read'
+  | 'lists:write'
   | 'mcp.admin:read'
   | 'mcp.admin:write'
   | 'mcp.user:read'

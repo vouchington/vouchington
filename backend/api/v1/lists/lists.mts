@@ -4,7 +4,7 @@ import { defineQueryContract, queryInteger, queryString } from '@modules/paginat
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
-import { createList, searchUserLists, type ListVisibility } from '@services/lists'
+import { createOwnedList, searchUserLists, type ListVisibility } from '@services/lists'
 import { assertNotSuspended } from '@services/users'
 
 type CreateListBody = {
@@ -45,14 +45,8 @@ app
 
     const body = (await ctx.request.json('1mb')) as CreateListBody
     validateRequestContract(ctx, 'POST:/api/v1/lists', { body })
-    ctx.assert(body.name.length > 0, 422, 'name must be a non-empty string')
-    ctx.assert(body.name.length <= 255, 422, 'name must be 255 characters or less')
 
-    const list = await createList(currentUser.id, {
-      name: body.name,
-      description: body.description ?? null,
-      visibility: body.visibility ?? 'private',
-    })
+    const list = await createOwnedList(currentUser.id, body)
 
     ctx.setStatus(201)
     ctx.json({ list })

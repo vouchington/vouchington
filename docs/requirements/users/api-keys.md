@@ -13,9 +13,7 @@ Administrator MCP access is not an API-key type; see [Admin MCP is OAuth-only](#
 
 ## Key Format
 
-All keys follow `voucha_<type>_<32 hex random>_<16 hex HMAC checksum>`.
-
-Example: `voucha_rss_a1b2c3d4e5f6789012345678abcdef01_a3f29c7e4d8b1f05`
+All keys follow `voucha_<type>_<32 hex random>_<16 hex HMAC checksum>`, for example `voucha_rss_a1b2c3d4e5f6789012345678abcdef01_a3f29c7e4d8b1f05`.
 
 - **Brand prefix**: `voucha_`
 - **Type segment**: `rss` (typed enum, extensible)
@@ -31,18 +29,19 @@ API keys use a permission-based access control system. Each key has a `permissio
 
 ### Available Permissions
 
-| Permission                           | Description                                                     |
-| ------------------------------------ | --------------------------------------------------------------- |
-| `rss:read`                           | Access RSS feed endpoints (`/rss/posts`, `/rss/news`)           |
-| `topics:read`                        | Read topic and recommendation MCP tools                         |
-| `posts:read`                         | Read post MCP tools                                             |
-| `communities:read`                   | Read public community MCP tools                                 |
-| `cards:read/write`                   | Read or manage cards; write requires read                       |
-| `entity-relations:read/write`        | Read or add relations; write requires read                      |
-| `post-relations.owned-private:write` | Add relations or tags to owned private posts only               |
-| `financial-profile:read/write`       | Credit score, income, credit limit and history; exact grants    |
-| `spending:read/write`                | Spending categories, amounts, frequency and notes; exact grants |
-| `mcp.user:read/write`                | User MCP access excluding exact-grant permissions               |
+| Permission                                 | Description                                                                |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| `rss:read`                                 | Access RSS feed endpoints (`/rss/posts`, `/rss/news`)                      |
+| `topics:read`                              | Read topic and recommendation MCP tools                                    |
+| `posts:read`                               | Read post MCP tools                                                        |
+| `communities:read`                         | Read public community MCP tools                                            |
+| `cards:read/write`                         | Read or manage cards; write requires read                                  |
+| `entity-relations:read/write`              | Read or add relations; write requires read                                 |
+| `bookmarks:read/write`, `lists:read/write` | Set bookmarks or manage lists and items; write requires read               |
+| `post-relations.owned-private:write`       | Add relations, tags, bookmarks, or list items for owned private posts only |
+| `financial-profile:read/write`             | Credit score, income, credit limit and history; exact grants               |
+| `spending:read/write`                      | Spending categories, amounts, frequency and notes; exact grants            |
+| `mcp.user:read/write`                      | User MCP access excluding exact-grant permissions                          |
 
 Scopes use the strict lowercase `<resource>:<action>` grammar. Dot-delimited resources compose the
 surface and audience, such as `mcp.user` and `mcp.admin`. Unknown, whitespace-padded, case-normalized,

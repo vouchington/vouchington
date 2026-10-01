@@ -28,6 +28,14 @@ Removes the caller's bookmark relation and returns `204 No Content`. The route d
 target to remain visible, so users can clean up bookmarks after a target becomes private, hidden,
 or removed. Suspended users receive the standard account-suspended error.
 
+## MCP
+
+The `set_bookmark` and `remove_bookmark` MCP tools call the same shared bookmark commands as the
+PUT and DELETE routes, for the `save`, `follow`, `mute`, and `block` predicates only. They need the
+`bookmarks:read` and `bookmarks:write` scopes and a Plus plan, and reach the caller's own private
+post only with the exact `post-relations.owned-private:write` grant. See
+[Bookmark and List Write Tools](../../../../overview/architecture/agent-tools/bookmark-list-write-tools.md).
+
 ## Performance
 
 | Endpoint                                                  | Round Trips | Caching      | Notes        |

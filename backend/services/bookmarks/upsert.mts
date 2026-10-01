@@ -1,7 +1,10 @@
 // Self-register the bloom handler so bookmark writes work even when this file is
 // loaded via a subpath import that bypasses the package barrel.
 import './register-bookmark-bloom-handler.mts'
-import { upsertEntityRelation } from '@services/entity-relations/upsert'
+import {
+  upsertEntityRelation,
+  type UpsertEntityRelationOptions,
+} from '@services/entity-relations/upsert'
 import { softDeleteEntityRelation } from '@services/entity-relations/delete'
 import {
   entityRelationMetadatum,
@@ -84,13 +87,15 @@ export const bookmarkEntity = async (
   entityTypeName: EntityRelationEntityType,
   entity: { id: string },
   predicate: EntityRelationPredicateType,
+  // Only a trusted command's state-dependent authorization recheck, run inside the write.
+  options?: Pick<UpsertEntityRelationOptions, 'postMutationGuard'>,
 ) => {
   const relationData = entityRelationMetadatum.find(
     r => r.subject_type === 'user' && r.object_type === entityTypeName && r.predicate === predicate,
   )
   assert(relationData?.is_bookmark, 422, 'Invalid bookmark type.')
 
-  const relations = await upsertEntityRelation(user, relationData, user, [entity])
+  const relations = await upsertEntityRelation(user, relationData, user, [entity], options)
 
   const unfollowPredicate = IMPLICIT_UNFOLLOW[`${entityTypeName}:${predicate}`]
   if (unfollowPredicate) {
