@@ -2,8 +2,8 @@
 
 Source entrypoint: [backend/modules/sse-lifecycle/README.md](../../../../../../backend/modules/sse-lifecycle/README.md)
 
-The cross-process signal for an SSE cycle that reached its duration bound. Neither the API nor a
-worker owns it, so both import it from this module.
+The signal for an SSE cycle that reached its duration bound. Neither the API nor the chat agent
+owns it, so both import it from this module.
 
 ## Exports
 
@@ -14,11 +14,11 @@ The string `'sse-cycle-expired'`. It has two roles that share one value:
 - **Abort reason.** `startSSE()` (`backend/api/sse-helpers.mts`) aborts its `lifecycleSignal` with
   this reason when the cycle timer fires, for every SSE stream. Ordinary client disconnects abort
   without a reason, so a consumer can tell routine cycle expiry from a disconnect.
-- **Job signal name.** When a hosted-chat SSE cycle expires, the API signals the worker job with
-  this name so the worker aborts its generator and persists partial output with a retryable
-  assistant error. See [the `ai_agents` queue](../../../queues/ai-agents/README.md).
+- **Chat abort reason.** `@agents/chat` still treats it as a retryable expiry when it aborts a
+  stream. No route or worker job carries it across processes now that the hosted chat transport is
+  removed; the remaining chat agent code is deleted by the later chat-agent removal.
 
-The value is an external protocol between API and worker signals, so it must not change.
+The value must not change while either role still reads it.
 
 ## Related
 

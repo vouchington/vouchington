@@ -3,6 +3,7 @@ exports backend/agents/_shared/create-response.mts getOpenAIResponseAttemptHooks
 exports backend/agents/autotagger/content.mts createPostAutotagContent
 exports backend/agents/autotagger/content.mts createRssFeedItemAutotagContent
 exports backend/agents/autotagger/openai-autotagger.mts callOpenAIAutotagger
+exports backend/agents/chat/stream.mts streamChatResponse
 exports backend/agents/classifiers/execute.mts executeClassifierDecision
 exports backend/agents/classifiers/safe-content.mts classifierChoiceKey
 exports backend/agents/classifiers/safe-content.mts classifierPrompt
@@ -28,7 +29,6 @@ exports backend/data-stores/psql/schema-growth-retained-identities.mts RETAINED_
 exports backend/data-stores/valkey-core/app-integration.mts getValkeyAnalyticsPromiseForTest
 exports backend/data-stores/valkey-core/app-integration.mts resetValkeyAnalyticsLoaderForTest
 exports backend/data-stores/valkey-glide-mq/index.mts buildWorkerQueueSettings
-exports backend/data-stores/valkey-pubsub/chat-token-pubsub.mts closeChatTokenSubscriber
 exports backend/data-stores/valkey/clients.mts closeDynamicConfigValkeySubscriptionClient
 exports backend/data-stores/valkey/dynamic-config.mts dynamicConfigs
 exports backend/data-stores/valkey/events.mts valkeyEvents
@@ -146,6 +146,8 @@ exports backend/services/conversations-messages/agentic-runs.mts hasRunningAgent
 exports backend/services/conversations-messages/conversations.mts getConversationByCreatedByAndTitle
 exports backend/services/conversations-messages/conversations.mts updateConversationLastResponseId
 exports backend/services/conversations-messages/create.mts createConversationMessage
+exports backend/services/conversations-messages/update-message.mts updateConversationMessageContent
+exports backend/services/conversations-messages/update.mts failChatEnqueue
 exports backend/services/copyright-notices/appeal-recommendations.mts copyrightAppealRecommendations
 exports backend/services/copyright-notices/email-intake-parses.mts getCopyrightEmailIntakeForAgent
 exports backend/services/copyright-notices/email-intake-test-fixtures.mts createParsedCopyrightEmailIntake
@@ -414,6 +416,7 @@ exports backend/workers/user-deletions/processors/process-job.mts isFinalUserDel
 types backend/agents/_shared/subagent-tool.mts SubagentResult
 types backend/agents/_shared/subagent-tool.mts SubagentStepEvent
 types backend/agents/autotagger/dispatch-classifier.mts AutotaggerClassifierCandidate
+types backend/agents/chat/stream.mts ChatStreamEvent
 types backend/data-stores/valkey-rate-limiter/index.mts RateLimiterAddAndCheckWindowsOptions
 types backend/data-stores/valkey-rate-limiter/index.mts RetryRateLimiterSaturationDependencies
 types backend/data-stores/valkey/types.mts DynamicConfigField

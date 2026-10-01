@@ -41,7 +41,6 @@ export const EXPECTED_UNAVAILABLE_ROUTES: readonly string[] = [
   'PATCH:/api/v1/topics/:idOrSlug/retailer',
   'POST:/api/v1/admin/mcp',
   'POST:/api/v1/communities/:idOrSlug/posts',
-  'POST:/api/v1/conversations/:conversationId/chat',
   'POST:/api/v1/households/:id/memberships',
   'POST:/api/v1/images/:id/completions',
   'POST:/api/v1/images/upload-url',

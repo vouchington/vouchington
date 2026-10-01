@@ -63,7 +63,7 @@ describe('OpenAI spend-cap coordinated rechecks', () => {
 
   it('parks a registered breached job at the queried day end', async () => {
     const day = '2026-08-16'
-    const job = delayedJob('chat', {} as AIAgentJobData)
+    const job = delayedJob('report-judgement', {} as AIAgentJobData)
     const registerOpenAiSpendCapRecheck = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
 
     await expect(
@@ -82,7 +82,7 @@ describe('OpenAI spend-cap coordinated rechecks', () => {
 
   it('keeps a registered breach accepted when its coordinator enqueue rejects', async () => {
     const day = '2026-08-16'
-    const job = delayedJob('chat', {} as AIAgentJobData)
+    const job = delayedJob('report-judgement', {} as AIAgentJobData)
     const registerOpenAiSpendCapDelayedJob = vi
       .fn<typeof registerDelayedJob>()
       .mockResolvedValue({ accepted: true, generation: 'generation-a' })
@@ -111,7 +111,7 @@ describe('OpenAI spend-cap coordinated rechecks', () => {
 
   it('keeps a registered breach accepted when its coordinator enqueue throws synchronously', async () => {
     const day = '2026-08-16'
-    const job = delayedJob('chat', {} as AIAgentJobData)
+    const job = delayedJob('report-judgement', {} as AIAgentJobData)
     const registerOpenAiSpendCapDelayedJob = vi
       .fn<typeof registerDelayedJob>()
       .mockResolvedValue({ accepted: true, generation: 'generation-a' })
@@ -142,7 +142,7 @@ describe('OpenAI spend-cap coordinated rechecks', () => {
 
   it('short-delays a stale admission rejected by a releasing registry', async () => {
     const day = '2026-08-16'
-    const job = delayedJob('chat', {} as AIAgentJobData)
+    const job = delayedJob('report-judgement', {} as AIAgentJobData)
 
     await expect(
       processAIAgentWorkerJob(job, mockWorker(), {
@@ -162,7 +162,7 @@ describe('OpenAI spend-cap coordinated rechecks', () => {
     ['throws synchronously', true],
   ])('reports when registration %s and still parks the source job at midnight', async (_, sync) => {
     const day = '2026-08-16'
-    const job = delayedJob('chat', {} as AIAgentJobData)
+    const job = delayedJob('report-judgement', {} as AIAgentJobData)
     const registrationError = new Error('registration unavailable')
     const reportOpenAiSpendCapRegistrationFailure = vi.fn<(error: Error) => void>()
     const registerOpenAiSpendCapRecheck = sync

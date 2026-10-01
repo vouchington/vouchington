@@ -1,10 +1,10 @@
 import { readFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { Job } from 'glide-mq'
 import { AGENT_PRIORITY } from '@queues/ai-agents/config'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
-import { processAIAgent, type ProcessAIAgentDependencies } from './processors.mts'
+import { processAIAgent } from './processors.mts'
 
 describe('processAIAgent routing', () => {
   it('has a switch route for every configured ai-agent queue job name', async () => {
@@ -55,22 +55,14 @@ describe('processAIAgent routing', () => {
     expect(result).toBeUndefined()
   })
 
-  it('routes reconcile-chat-runtime-generations to the retained chat recovery processor', async () => {
-    const processReconcileChatRuntimeGenerations = vi.fn<
-      ProcessAIAgentDependencies['processReconcileChatRuntimeGenerations']
-    >(async () => undefined)
-
-    await expect(
-      processAIAgent(
-        {
-          name: 'reconcile-chat-runtime-generations',
-          data: {},
-        } as Job<AIAgentJobData>,
-        { processReconcileChatRuntimeGenerations },
-      ),
-    ).resolves.toBeUndefined()
-    expect(processReconcileChatRuntimeGenerations).toHaveBeenCalledOnce()
-  })
+  it.each(['chat', 'reconcile-chat-runtime-generations'])(
+    'rejects the removed hosted-chat job name %s through the unknown-job path',
+    name => {
+      expect(() => processAIAgent({ name, data: {} } as Job<AIAgentJobData>)).toThrow(
+        `Unknown AI agent job: ${name}`,
+      )
+    },
+  )
 
   it('treats missing copyright jobs as successful idempotent queue replays', async () => {
     const missing = '00000000-0000-7000-8000-000000000091'

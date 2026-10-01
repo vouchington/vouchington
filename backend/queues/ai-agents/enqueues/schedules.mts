@@ -7,7 +7,6 @@ import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME } from '../con
 import { ai_agents } from '../queues.mts'
 import { enqueueReconcileAutoDispatchJudgements } from './reconcile-auto-dispatch.mts'
 import { enqueueReconcileBackgroundResponses } from './reconcile-background-responses.mts'
-import { enqueueReconcileChatRuntimeGenerations } from './reconcile-chat-runtime-generations.mts'
 import { enqueueReconcileCopyrightAgentDispatches } from './reconcile-copyright-agent-dispatches.mts'
 import { enqueueReconcilePostClassifierApplications } from './reconcile-post-classifier-applications.mts'
 
@@ -72,24 +71,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_N
         schedule: '*/5 * * * *',
         description: 'Re-enqueue undispatched AI moderation judgements (crash recovery)',
         trigger: enqueueReconcileAutoDispatchJudgements,
-      },
-    ],
-  },
-  {
-    schedulerId: 'reconcileChatRuntimeGenerations',
-    repeat: { pattern: '*/5 * * * *' },
-    template: {
-      name: 'reconcile-chat-runtime-generations',
-      data: {},
-      opts: () => reconcilerOptions('reconcile-chat-runtime-generations'),
-    },
-    operatorSurfaces: [
-      {
-        kind: 'scheduled-jobs',
-        id: 'reconcileChatRuntimeGenerations',
-        schedule: '*/5 * * * *',
-        description: 'Fail stale hosted-chat generations after an interrupted worker',
-        trigger: enqueueReconcileChatRuntimeGenerations,
       },
     ],
   },

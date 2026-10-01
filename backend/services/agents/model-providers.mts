@@ -28,12 +28,6 @@ export const HOSTED_CHAT_MODEL_BY_PROVIDER = {
   anthropic: 'claude-sonnet-5',
 } as const satisfies Record<HostedChatModelProvider, AgentModel>
 
-export function parseHostedChatModelProvider(value: unknown): HostedChatModelProvider {
-  if (value === undefined || value === null) return 'openai'
-  if (value === 'openai' || value === 'anthropic') return value
-  throw new Error('Invalid chat provider')
-}
-
 export function parseClientGeneratedChatModelProvider(
   value: unknown,
 ): ClientGeneratedChatModelProvider {

@@ -1,16 +1,3 @@
-import type { AgentModelProvider } from '@voucha/types/entities/agent-model'
-
-type HostedChatModelProvider = Extract<AgentModelProvider, 'openai' | 'anthropic'>
-
-export type ChatJobData = {
-  conversationId: string
-  conversationMessageId: string
-  userMessageId: string
-  userMessage: string
-  userId: string
-  modelProvider?: HostedChatModelProvider
-}
-
 export type AutotaggerPostJobData = {
   id: string
 }
@@ -97,7 +84,6 @@ export type OpenAiSpendCapRecheckJobData = {
 }
 
 export type AIAgentJobData = (
-  | ChatJobData
   | AutotaggerPostJobData
   | AutotaggerRssFeedItemJobData
   | PostClassifierDispatcherJobData

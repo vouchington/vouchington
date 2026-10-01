@@ -2,13 +2,15 @@
 
 Source entrypoint: [backend/api/v1/conversations/README.md](../../../../../backend/api/v1/conversations/README.md)
 
-Chat conversation endpoints with queue-backed SSE streaming for hosted AI responses and a
-persistence endpoint for native client-generated responses.
+Chat conversation endpoints with a persistence endpoint for native client-generated responses.
+There is no hosted chat transport: `POST /api/v1/conversations/:conversationId/chat`, the `chat`
+and `reconcile-chat-runtime-generations` queue jobs, and the token pub/sub bridge were removed, and
+the route now returns 404.
 
 ## Endpoints
 
-The sections below cover conversation creation, hosted and client-generated chat, message listing,
-renaming, and deletion.
+The sections below cover conversation creation, client-generated chat, message listing, renaming,
+and deletion.
 
 ## POST /api/v1/conversations
 
@@ -21,48 +23,6 @@ Creates a new conversation for the current user.
 ```
 
 **Response:** `200 OK` with the created conversation object.
-
-## POST /api/v1/conversations/:conversationId/chat
-
-Sends a message to a conversation and streams the hosted AI assistant's response via
-Server-Sent Events (SSE). The route creates the user/assistant message pair, subscribes to the
-assistant message's Valkey token channel, enqueues a `chat` job on `ai_agents`, and pipes worker
-token chunks back to the client.
-
-**Request:**
-
-```json
-{ "message": "Your message here", "provider": "openai" }
-```
-
-Constraints:
-
-- Message must be a non-empty string
-- Maximum 32,768 characters
-- `provider` is optional and defaults to `openai`; `anthropic` uses the hosted Anthropic Messages API upgrade path.
-
-**Response:** `text/event-stream` — SSE stream of the assistant response chunks.
-
-If the connection closes before the token subscription is acquired and before background work
-starts, the persisted assistant placeholder is marked with a clear retry error so it does not
-remain an active turn. Metadata is sent first with a deterministic job ID derived from the assistant
-message ID. Ordinary disconnects after subscription acquisition retain the one-shot abort behavior;
-the 120-second lifecycle expiry instead persists partial content with a retryable assistant error.
-
-**SSE events:**
-
-- `metadata` — conversation, user message, assistant message, and queue job IDs
-- `text` — assistant text chunk
-- `tool_call` / `tool_result` — server-side OpenAI tool progress
-- `subagent_step` / `subagent_text` — server-side subagent progress
-- `done` — stream complete
-- `error` — stream failed
-
-**Authorization:** The authenticated user must own the conversation (created it). Returns 403 otherwise.
-
-**Safety:** The API checks prompt injection and content violations before processing. Its moderation
-provider call uses the configured direct or HTTP CONNECT transport; the worker-side chat entry point
-checks again through the direct provider path.
 
 ## POST /api/v1/conversations/:conversationId/client-generated-chat
 
@@ -89,7 +49,7 @@ Constraints:
 - Message IDs are lowercase UUIDv7 values scoped to the conversation, ordered user before assistant. Save the pair locally before sending; reuse it and the exact text on retries.
 - `message` must be a non-empty string, maximum 32,768 characters
 - `assistant_content` must be a non-empty string, maximum 65,536 characters
-- `model_provider` must be `openai_compatible`, `apple_foundation`, `windows_foundry`, or `android_aicore`; hosted providers must use `/chat`
+- `model_provider` must be `openai_compatible`, `apple_foundation`, `windows_foundry`, or `android_aicore`; hosted providers are rejected with 400
 - For `openai_compatible`, `model_name` is required, trimmed, maximum 256 characters, and persisted exactly as sent by the native client
 - For fixed native providers, `model_name` is optional and must match the provider when supplied; it is persisted as `apple-foundation-system`, `windows-system-language-model`, or `android-aicore-system`. During the Windows migration, the deployed `phi-silica` identity is accepted on input and normalized to `windows-system-language-model` before persistence.
 
@@ -161,7 +121,6 @@ Soft-deletes a conversation. The conversation is hidden from list endpoints but 
 ## Performance
 
 - `POST /api/v1/conversations`: 2 round trips; no caching (write); auth check and single create.
-- `POST /api/v1/conversations/:conversationId/chat`: 5+ round trips; no caching; auth, conversation lookup, concurrency check, API safety call, queue enqueue, and Valkey pub/sub SSE bridge.
   | POST /api/v1/conversations/:conversationId/client-generated-chat | 4+ | None (write) | Auth, conversation lookup, two API safety provider calls, transactional user/assistant/run insert |
   | GET /api/v1/my/conversations | 2 | None | Auth check, single paginated query |
   | GET /api/v1/my/conversations/:conversationId/messages | 3 | None | Auth, conversation lookup, messages query |

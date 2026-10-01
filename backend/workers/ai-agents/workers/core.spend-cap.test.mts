@@ -12,7 +12,7 @@ function mockJob(
 ): Job<AIAgentJobData> {
   return {
     data: (overrides.data ?? {}) as AIAgentJobData,
-    name: overrides.name ?? 'chat',
+    name: overrides.name ?? 'report-judgement',
     id: randomUUID(),
     reportTokens: vi.fn<(count: number) => Promise<void>>(),
     // Mirrors the real glide-mq job.moveToDelayed(): always throws DelayedError, caught by the
@@ -74,7 +74,7 @@ describe('processAIAgentWorkerJob -- daily OpenAI spend cap', () => {
       getDayBounds(new Date().toISOString().slice(0, 10)).endMs,
     )
     expect(recordOpenAiSpendCapBreach).toHaveBeenCalledExactlyOnceWith({
-      agentJobName: 'chat',
+      agentJobName: 'report-judgement',
       dailyTotalMicrounits: 1_000_000,
       dailyCapMicrounits: 1_000_000,
       reason: 'cap_exceeded',
@@ -171,36 +171,11 @@ describe('processAIAgentWorkerJob -- daily OpenAI spend cap', () => {
     expect(processAIAgent).not.toHaveBeenCalled()
     expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(expect.any(Number))
     expect(recordOpenAiSpendCapBreach).toHaveBeenCalledExactlyOnceWith({
-      agentJobName: 'chat',
+      agentJobName: 'report-judgement',
       dailyTotalMicrounits: 100,
       dailyCapMicrounits: 1_000_000,
       reason: 'unpriced_rows',
     })
-  })
-
-  it('skips the check entirely for a chat job explicitly routed to Anthropic, even with a total over the cap', async () => {
-    const job = mockJob({ data: { modelProvider: 'anthropic' } })
-    const worker = mockWorker()
-    const getOpenAiSpendCapFields =
-      vi.fn<() => { enabled: boolean; daily_cap_microunits: number }>()
-    const getDailyAiCostTotalMicrounits = vi.fn<() => Promise<DailyAiCostTotal>>()
-    const processAIAgent = vi
-      .fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
-      .mockResolvedValue('ok')
-
-    const result = await processAIAgentWorkerJob(job, worker, {
-      waitForOpenAiSpendCapConfig: () => Promise.resolve(),
-      getOpenAiSpendCapFields,
-      getDailyAiCostTotalMicrounits,
-      handleOpenAIRateLimit: vi.fn<(error: unknown, worker: Worker) => Promise<unknown>>(),
-      processAIAgent,
-    })
-
-    expect(result).toBe('ok')
-    expect(processAIAgent).toHaveBeenCalledOnce()
-    expect(getOpenAiSpendCapFields).not.toHaveBeenCalled()
-    expect(job.moveToDelayed).not.toHaveBeenCalled()
-    expect(getDailyAiCostTotalMicrounits).not.toHaveBeenCalled()
   })
 
   it('skips the check entirely for an auto-dispatch-judgement job, even with a total over the cap', async () => {

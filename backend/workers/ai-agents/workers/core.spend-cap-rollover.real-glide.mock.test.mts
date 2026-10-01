@@ -45,9 +45,15 @@ describe('daily OpenAI spend-cap rollover with real GlideMQ', () => {
     const ownedJobs: Job<AIAgentJobData>[] = []
 
     try {
-      const initialJob = await queue.add('chat', {} as AIAgentJobData, { jobId: randomUUID() })
-      const delayedJob = await queue.add('chat', {} as AIAgentJobData, { jobId: randomUUID() })
-      const freshJob = await queue.add('chat', {} as AIAgentJobData, { jobId: randomUUID() })
+      const initialJob = await queue.add('report-judgement', {} as AIAgentJobData, {
+        jobId: randomUUID(),
+      })
+      const delayedJob = await queue.add('report-judgement', {} as AIAgentJobData, {
+        jobId: randomUUID(),
+      })
+      const freshJob = await queue.add('report-judgement', {} as AIAgentJobData, {
+        jobId: randomUUID(),
+      })
       if (!initialJob || !delayedJob || !freshJob) throw new Error('Expected lease test jobs')
       ownedJobs.push(initialJob, delayedJob, freshJob)
 
@@ -91,8 +97,12 @@ describe('daily OpenAI spend-cap rollover with real GlideMQ', () => {
     const ownedJobs: Job<AIAgentJobData>[] = []
 
     try {
-      const firstJob = await queue.add('chat', {} as AIAgentJobData, { jobId: randomUUID() })
-      const freshJob = await queue.add('chat', {} as AIAgentJobData, { jobId: randomUUID() })
+      const firstJob = await queue.add('report-judgement', {} as AIAgentJobData, {
+        jobId: randomUUID(),
+      })
+      const freshJob = await queue.add('report-judgement', {} as AIAgentJobData, {
+        jobId: randomUUID(),
+      })
       if (!firstJob || !freshJob) throw new Error('Expected re-registration test jobs')
       ownedJobs.push(firstJob, freshJob)
 
@@ -181,8 +191,8 @@ describe('daily OpenAI spend-cap rollover with real GlideMQ', () => {
     )
 
     try {
-      const activeJob = await queue.add('chat', {} as AIAgentJobData)
-      const waitingJob = await queue.add('chat', {} as AIAgentJobData)
+      const activeJob = await queue.add('report-judgement', {} as AIAgentJobData)
+      const waitingJob = await queue.add('report-judgement', {} as AIAgentJobData)
       if (!activeJob || !waitingJob) throw new Error('Expected rollover test jobs')
 
       const registration = await registerOpenAiSpendCapDelayedJob(activeJob, day)
@@ -229,8 +239,8 @@ describe('daily OpenAI spend-cap rollover with real GlideMQ', () => {
     const queue = new Queue<AIAgentJobData>(queueName, connection)
 
     try {
-      const markedJob = await queue.add('chat', {} as AIAgentJobData)
-      const registeringJob = await queue.add('chat', {
+      const markedJob = await queue.add('report-judgement', {} as AIAgentJobData)
+      const registeringJob = await queue.add('report-judgement', {
         openAiSpendCapDelayedDay: day,
       } as AIAgentJobData)
       if (!markedJob || !registeringJob) throw new Error('Expected registering test jobs')

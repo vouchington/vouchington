@@ -1,7 +1,6 @@
 import type { Job } from 'glide-mq'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import type { AIAgentJobName } from '@queues/ai-agents/config'
-import { processChat } from './processors/process-chat.mts'
 import {
   processAutotaggerPost,
   processAutotaggerRssFeedItem,
@@ -26,28 +25,13 @@ import { processBackfillReportJudgements } from './processors/process-backfill-r
 import { processAutoDispatchJudgement } from './processors/process-auto-dispatch-judgement.mts'
 import { processReconcileAutoDispatchJudgements } from './processors/process-reconcile-auto-dispatch-judgements.mts'
 import { processReconcileBackgroundResponses } from './processors/process-reconcile-background-responses.mts'
-import { processReconcileChatRuntimeGenerations } from './processors/process-reconcile-chat-runtime-generations.mts'
 import { processReconcileCopyrightAgentDispatches } from './processors/process-reconcile-copyright-agent-dispatches.mts'
 import { processReconcilePostClassifierApplications } from './processors/process-reconcile-post-classifier-applications.mts'
 
-export type ProcessAIAgentDependencies = {
-  processReconcileChatRuntimeGenerations: typeof processReconcileChatRuntimeGenerations
-}
-
-const defaultProcessAIAgentDependencies: ProcessAIAgentDependencies = {
-  processReconcileChatRuntimeGenerations,
-}
-
-export function processAIAgent(
-  job: Job<AIAgentJobData>,
-  dependencyOverrides: Partial<ProcessAIAgentDependencies> = {},
-): Promise<unknown> {
-  const dependencies = { ...defaultProcessAIAgentDependencies, ...dependencyOverrides }
+export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
   const name = job.name as AIAgentJobName
 
   switch (name) {
-    case 'chat':
-      return processChat(job as Job<import('@queues/ai-agents/types').ChatJobData>)
     case 'autotagger-post':
       return processAutotaggerPost(
         job as Job<import('@queues/ai-agents/types').AutotaggerPostJobData>,
@@ -114,8 +98,6 @@ export function processAIAgent(
       return processReconcileAutoDispatchJudgements()
     case 'reconcile-background-responses':
       return processReconcileBackgroundResponses()
-    case 'reconcile-chat-runtime-generations':
-      return dependencies.processReconcileChatRuntimeGenerations()
     case 'reconcile-copyright-agent-dispatches':
       return processReconcileCopyrightAgentDispatches()
     default:

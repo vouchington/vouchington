@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createSystemUser } from '@voucha/test-helpers'
-import { createHostedChatTurn } from './chat-turns.mts'
+import { hasActiveChatTurnByConversationId } from './agentic-runs.mts'
 import {
   createConversation,
   createConversationMessage,
@@ -8,6 +8,7 @@ import {
   updateConversationMessageContent,
 } from './index.mts'
 import type { ConversationMessageContent } from './types.mts'
+
 describe('updateConversationMessageContent', () => {
   it('updates message content to assistant response', async () => {
     const random = Math.random().toString(36).slice(2, 10)
@@ -78,30 +79,26 @@ describe('updateConversationMessageContent', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Pending transitions')
-    const pending = await createHostedChatTurn({
-      conversationId: conversation.id,
-      createdById: user.id,
-      message: 'First',
+    await createConversationMessage(conversation.id, user.id, { role: 'user', content: 'First' })
+    const pending = await createConversationMessage(conversation.id, user.id, {
+      role: 'assistant',
+      content: null,
     })
-    await expect(
-      createHostedChatTurn({
-        conversationId: conversation.id,
-        createdById: user.id,
-        message: 'Blocked',
-      }),
-    ).rejects.toThrow('A message is already being processed')
+    await expect(hasActiveChatTurnByConversationId(conversation.id)).resolves.toBe(true)
 
-    await updateConversationMessageContent(conversation.id, pending.assistantMessage.id, {
+    await updateConversationMessageContent(conversation.id, pending.id, {
       role: 'assistant',
       content: null,
       error: 'provider failed',
     })
-    const afterError = await createHostedChatTurn({
-      conversationId: conversation.id,
-      createdById: user.id,
-      message: 'Retry',
+    await expect(hasActiveChatTurnByConversationId(conversation.id)).resolves.toBe(false)
+    await createConversationMessage(conversation.id, user.id, { role: 'user', content: 'Retry' })
+    const retry = await createConversationMessage(conversation.id, user.id, {
+      role: 'assistant',
+      content: null,
     })
-    await updateConversationMessageContent(conversation.id, afterError.assistantMessage.id, {
+    await expect(hasActiveChatTurnByConversationId(conversation.id)).resolves.toBe(true)
+    await updateConversationMessageContent(conversation.id, retry.id, {
       role: 'assistant',
       content: 'Completed',
     })
@@ -113,14 +110,6 @@ describe('updateConversationMessageContent', () => {
       { role: 'user', content: 'Retry' },
       { role: 'assistant', content: 'Completed' },
     ])
-    await expect(
-      createHostedChatTurn({
-        conversationId: conversation.id,
-        createdById: user.id,
-        message: 'Next',
-      }),
-    ).resolves.toMatchObject({
-      assistantMessage: { content: { role: 'assistant', content: null } },
-    })
+    await expect(hasActiveChatTurnByConversationId(conversation.id)).resolves.toBe(false)
   })
 })

@@ -10,7 +10,6 @@ single coordinator that releases jobs when an operator relaxes the daily cap.
 
 | Processor                                    | Job Name                                 | Description                                                                                                                                                    |
 | -------------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `processChat`                                | `chat`                                   | Runs hosted chat responses and publishes token chunks through Valkey pub/sub                                                                                   |
 | `processAutotaggerPost`                      | `autotagger-post`                        | Runs the autotagger agent on a post                                                                                                                            |
 | `processAutotaggerRssFeedItem`               | `autotagger-rss-feed-item`               | Runs the autotagger agent on an RSS feed item                                                                                                                  |
 | `processPostClassifierDispatcher`            | `post-classifier-dispatcher`             | Reserves one approved post/content/configuration receipt and awaits its classifier child enqueue                                                               |
@@ -24,7 +23,6 @@ single coordinator that releases jobs when an operator relaxes the daily cap.
 | `processStoryPost`                           | `story-post`                             | Generates or refreshes a story summary; entity recovery uses the awaited enqueue so queue failure retains the durable checkpoint for retry.                    |
 | `processStoryClustering`                     | `story-clustering`                       | Clusters an RSS feed item into stories; re-enqueues with 5 s delay (up to 10 times) when embedding is not yet visible — mirrors the autotagger retry pattern   |
 | `processReconcileBackgroundResponses`        | `reconcile-background-responses`         | Crash-recovery sweep of orphaned OpenAI `background: true` responses (cancel/retrieve/record); see [Background Response Sweeper](#background-response-sweeper) |
-| `processReconcileChatRuntimeGenerations`     | `reconcile-chat-runtime-generations`     | Fails stale hosted-chat generations and releases their conversation turn after an interrupted worker                                                           |
 | `processReconcileCopyrightAgentDispatches`   | `reconcile-copyright-agent-dispatches`   | Re-enqueues advisory email, form-screening, and appeal gaps; applies saved clear form screens without another model run                                        |
 
 ## Architecture
@@ -46,12 +44,18 @@ new coordinator instead of deduplicating against the old active job. Coordinator
 explicitly reported best-effort optimization: if the dedicated queue is unavailable after
 registration, the source job still reaches its midnight delay fallback.
 
-> **Chat starvation risk**: `chat` jobs use priority 1, but all worker slots can be occupied by long-running background jobs (autotagger and community moderation) before a chat job arrives. If interactive chat latency spikes, tune `WORKER_CONCURRENCY_AI_AGENTS` or split chat into a dedicated queue.
+There is no hosted chat job: `chat` and `reconcile-chat-runtime-generations` were removed with the
+hosted chat transport, and native chat persists through `client-generated-chat`. A `chat` or
+`reconcile-chat-runtime-generations` job still queued at deploy follows the worker's unknown-job
+path (`Unknown AI agent job: <name>`) and fails as an ordinary job failure without crashing the
+worker; the scheduled reconciler's scheduler is pruned when the manifest is upserted. A hosted run
+that was in flight at deploy stays active because no reconciler remains, so native chat for that
+conversation returns 409; prelaunch accepts that loss, and the agentic-run storage is left for the
+agentic-run removal work.
 
 ## Enqueue Files
 
 - [`enqueues/autotagger.mts`](../../../../../backend/queues/ai-agents/enqueues/autotagger.mts) — autotagger jobs
-- [`enqueues/chat.mts`](../../../../../backend/queues/ai-agents/enqueues/chat.mts) — chat jobs
 - [`enqueues/community-moderation.mts`](../../../../../backend/queues/ai-agents/enqueues/community-moderation.mts) — fire-and-forget community moderation jobs plus an awaited recovery variant
 - [`enqueues/copyright-email-intake.mts`](../../../../../backend/queues/ai-agents/enqueues/copyright-email-intake.mts) — replay-safe copyright email extraction jobs
 - [`enqueues/copyright-form-screening.mts`](../../../../../backend/queues/ai-agents/enqueues/copyright-form-screening.mts) — stable-ID structured form anti-spam jobs
@@ -62,30 +66,8 @@ registration, the source job still reaches its midnight delay fallback.
 - [`enqueues/story-clustering.mts`](../../../../../backend/queues/ai-agents/enqueues/story-clustering.mts) — story clustering jobs
 - [`enqueues/story-post.mts`](../../../../../backend/queues/ai-agents/enqueues/story-post.mts) — fire-and-forget creation enqueue plus an awaited recovery variant that propagates delivery failure
 - [`enqueues/reconcile-background-responses.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-background-responses.mts) — background-response sweeper job
-- [`enqueues/reconcile-chat-runtime-generations.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-chat-runtime-generations.mts) — hosted-chat runtime recovery job
 
-## Chat Streaming
-
-`reconcile-chat-runtime-generations` runs every five minutes while hosted chat remains available.
-It selects at most 100 stale top-level conversation runs, signals only that immutable batch to stop
-the matching worker, and atomically terminalizes each selected run and assistant message. This
-prevents a worker crash from leaving a conversation permanently unable to accept another turn.
-
-Chat jobs use the `ai_agents` queue for background model execution and Valkey pub/sub for the SSE
-bridge:
-
-1. API creates the user message and assistant placeholder, starts SSE, and immediately emits full
-   metadata with a deterministic job ID derived from the assistant message ID
-2. API subscribes to the assistant message's token channel, then enqueues a `chat` job using that
-   same logical ID for `jobId` and deduplication
-3. `processChat` runs `streamChatResponse()` in the worker
-4. Worker publishes text, tool, subagent, done, and error chunks with `publishChatToken`
-5. API pipes Valkey token chunks to the client as SSE events
-6. On an ordinary HTTP abort, API sends `abort`; on lifecycle expiry it sends
-   `sse-cycle-expired` (`SSE_CYCLE_EXPIRED` from
-   [`@modules/sse-lifecycle`](../../backend/modules/sse-lifecycle/README.md)). The worker
-   preserves ordinary disconnect behavior, while expiry aborts the generator and persists partial
-   output with a retryable assistant error
+## Copyright Agent Dispatch
 
 Copyright forms, successfully parsed email intakes, and appeals are durable before queue delivery. The
 five-minute `reconcile-copyright-agent-dispatches` job pages the whole pending backlog from
@@ -102,8 +84,7 @@ no agent processor changes material availability or a restriction.
 ## Background Response Sweeper
 
 Every OpenAI call in this queue that goes through `createOpenAIResponse()`
-(`@modules/openai-utils/create-response.mts`) — every job here except `chat`'s own streamed
-assistant response, which stays foreground for chat's time-to-first-token budget — now runs with
+(`@modules/openai-utils/create-response.mts`) — every job here — now runs with
 `background: true` internally, so a response keeps generating and billing on OpenAI's side even if
 the worker that started it crashes, OOM-kills, or is replaced mid-call by an ECS rolling deploy.
 `reconcile-background-responses` is the crash-recovery reconciler for that class of orphan: it runs

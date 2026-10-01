@@ -1,7 +1,6 @@
 import { getLatestConversationMessageAgenticRunByConversationMessageId } from '../agentic-runs.mts'
 import { describe, expect, it } from 'vitest'
 import { createSystemUser } from '@voucha/test-helpers'
-import { createHostedChatTurn } from '../chat-turns.mts'
 import {
   createClientGeneratedChatTurn,
   createConversation,
@@ -206,27 +205,25 @@ describe('conversations-messages service (conversations)', () => {
     })
   })
 
-  it('createHostedChatTurn creates a locked user and assistant placeholder turn', async () => {
+  it('createClientGeneratedChatTurn rejects a pending assistant placeholder that has no run yet', async () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
-    const conversation = await createConversation(user.id, 'Hosted model')
+    const conversation = await createConversation(user.id, 'Pending placeholder')
+    await createConversationMessage(conversation.id, user.id, { role: 'assistant', content: null })
 
-    const result = await createHostedChatTurn({
-      conversationId: conversation.id,
-      createdById: user.id,
-      message: 'Hello',
-    })
-
-    expect(result.userMessage.content).toEqual({ role: 'user', content: 'Hello' })
-    expect(result.assistantMessage.content).toEqual({ role: 'assistant', content: null })
     await expect(
-      createHostedChatTurn({
+      createClientGeneratedChatTurn({
+        userMessageId: user.id,
+        assistantMessageId: conversation.id,
         conversationId: conversation.id,
         createdById: user.id,
         message: 'Second',
+        assistantContent: 'Blocked.',
+        modelProvider: 'apple_foundation',
+        modelName: 'apple-foundation-system',
       }),
     ).rejects.toThrow('A message is already being processed')
-    await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(2)
+    await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(1)
   })
 
   it('createClientGeneratedChatTurn rejects active turns inside the insert transaction', async () => {

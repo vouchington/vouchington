@@ -55,94 +55,15 @@ describe('index.generated', () => {
     })
   })
 
-  describe('POST /api/v1/conversations/:conversationId/chat - non-mocked tests', () => {
-    it('should reject unknown hosted chat providers', async () => {
+  describe('POST /api/v1/conversations/:conversationId/chat (removed hosted transport)', () => {
+    it('should return 404 because no hosted chat route exists', async () => {
       const conversation = await createConversation(user.id, 'Test')
-      const request = createRequest()
-      await request.authenticateAs(user)
-      await request
-        .post(`/api/v1/conversations/${conversation.id}/chat`)
-        .send({ message: 'Hello', provider: 'localApple' })
-        .expect(400)
-    })
-
-    it('should reject empty hosted chat providers', async () => {
-      const conversation = await createConversation(user.id, 'Test')
-      const request = createRequest()
-      await request.authenticateAs(user)
-      await request
-        .post(`/api/v1/conversations/${conversation.id}/chat`)
-        .send({ message: 'Hello', provider: '' })
-        .expect(400)
-    })
-
-    it('should require authentication', async () => {
-      const request = createRequest()
-      await request
-        .post('/api/v1/conversations/test-id/chat')
-        .send({ message: 'Hello' })
-        .expect(401)
-    })
-
-    it('should return 404 for non-existent conversation', async () => {
-      const request = createRequest()
-      await request.authenticateAs(user)
-      await request
-        .post('/api/v1/conversations/00000000-0000-0000-0000-000000000000/chat')
-        .send({ message: 'Hello' })
-        .expect(404)
-    })
-
-    it('should reject conversations owned by another user', async () => {
-      const otherUser = await createTestUser()
-      const conversation = await createConversation(otherUser.id, 'Other user chat')
       const request = createRequest()
       await request.authenticateAs(user)
       await request
         .post(`/api/v1/conversations/${conversation.id}/chat`)
         .send({ message: 'Hello' })
-        .expect(403)
-    })
-
-    it('should require message to be a string', async () => {
-      const conversation = await createConversation(user.id, 'Test')
-      const request = createRequest()
-      await request.authenticateAs(user)
-      await request
-        .post(`/api/v1/conversations/${conversation.id}/chat`)
-        .send({ message: 123 })
-        .expect(400)
-    })
-
-    it('should reject empty messages', async () => {
-      const conversation = await createConversation(user.id, 'Test')
-      const request = createRequest()
-      await request.authenticateAs(user)
-      await request
-        .post(`/api/v1/conversations/${conversation.id}/chat`)
-        .send({ message: '   ' })
-        .expect(400)
-    })
-
-    it('should reject message over 32768 characters', async () => {
-      const conversation = await createConversation(user.id, 'Test')
-      const request = createRequest()
-      await request.authenticateAs(user)
-      await request
-        .post(`/api/v1/conversations/${conversation.id}/chat`)
-        .send({ message: 'x'.repeat(32_769) })
-        .expect(400)
-    })
-
-    it('should require JSON content type', async () => {
-      const conversation = await createConversation(user.id, 'Test')
-      const request = createRequest()
-      await request.authenticateAs(user)
-      await request
-        .post(`/api/v1/conversations/${conversation.id}/chat`)
-        .set('Content-Type', 'text/plain')
-        .send('message=test')
-        .expect(415)
+        .expect(404)
     })
   })
 

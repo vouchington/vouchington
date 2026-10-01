@@ -9,7 +9,6 @@ export const AI_AGENTS_DEFAULTS = {
 } as const
 
 export type AIAgentJobName =
-  | 'chat'
   | 'autotagger-post'
   | 'autotagger-rss-feed-item'
   | 'post-classifier-dispatcher'
@@ -29,11 +28,9 @@ export type AIAgentJobName =
   | 'auto-dispatch-judgement'
   | 'reconcile-auto-dispatch-judgements'
   | 'reconcile-background-responses'
-  | 'reconcile-chat-runtime-generations'
   | 'reconcile-copyright-agent-dispatches'
 
 export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
-  chat: 1,
   'community-moderation-prompt': 3,
   'post-classifier-dispatcher': 8,
   'post-classifier': 3,
@@ -53,7 +50,6 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'auto-dispatch-judgement': 10,
   'reconcile-auto-dispatch-judgements': 100,
   'reconcile-background-responses': 100,
-  'reconcile-chat-runtime-generations': 100,
   'reconcile-copyright-agent-dispatches': 100,
 }
 
@@ -66,9 +62,7 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // exempt for the same reason: it only applies an already-computed judgement (remove content, warn
 // a user, escalate, resolve a report) -- it never calls OpenAI itself, and blocking it on the cap
 // would leave harmful content live and reports unactioned. `community-moderation-dispatcher`
-// stays gated: every `community-moderation-prompt` job it can enqueue calls OpenAI. `chat` here is
-// necessary but not sufficient: `core.mts`'s gate also excludes Anthropic-routed chat jobs
-// (`job.data.modelProvider === 'anthropic'`), which never call OpenAI at all.
+// stays gated: every `community-moderation-prompt` job it can enqueue calls OpenAI.
 // `autotagger-post` and `autotagger-rss-feed-item` (C6) dispatch through the classifier path
 // (`@agents/autotagger/dispatch-classifier.mts`), which calls the seeded `tagging` classifier over
 // OpenRouter/Jev via `createStructuredDecisionClient`, never through the shared `runToolLoop`
@@ -79,14 +73,13 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // `assertOpenAiSpendCapNotBreached`/`recordAgentResponseUsage`/`latchAccountingUncertainty`
 // (issue #616), so C6's OpenRouter/Jev spend is recorded to `ai_usage_records` and subject to the
 // same daily cap as every other job type below, despite never calling OpenAI itself. `story-post`
-// is necessary but not sufficient, the same shape as `chat` above: a non-force retry against a post
+// is necessary but not sufficient: a non-force retry against a post
 // that already has `ai_summary_markdown` set only re-persists the existing summary to re-trigger
 // the downstream moderation/spam/embedding jobs (`updateStoryPostAgentResult`) -- it never calls
 // `callStoryPostAgent`. Blocking that recovery path on the cap would delay it until midnight even
 // though it cannot itself add to the day's spend. `core.mts`'s gate defers to
 // `wouldStoryPostCallOpenAI` (`backend/workers/ai-agents/processors/process-story-post.mts`) for it.
 export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
-  chat: true,
   'community-moderation-prompt': true,
   // The dispatcher only reserves durable intent. The child can finish local-only/effect replay
   // without provider spend; its structured-decision client performs the authoritative pre-call cap check.
@@ -108,6 +101,5 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'auto-dispatch-judgement': false,
   'reconcile-auto-dispatch-judgements': false,
   'reconcile-background-responses': false,
-  'reconcile-chat-runtime-generations': false,
   'reconcile-copyright-agent-dispatches': false,
 }

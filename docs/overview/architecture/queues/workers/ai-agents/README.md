@@ -2,7 +2,8 @@
 
 Source entrypoint: [backend/workers/ai-agents/README.md](../../../../../../backend/workers/ai-agents/README.md)
 
-Worker package for AI agent jobs such as chat, moderation, story clustering, autotagging, and recommendations.
+Worker package for AI agent jobs such as moderation, story clustering, autotagging, and recommendations.
+It has no hosted chat processor; native chat is client-generated.
 
 `post-classifier-dispatcher` reserves one immutable receipt after the safety and spam clearance
 path has approved the current post revision, then awaits its child enqueue. `post-classifier`
@@ -32,11 +33,6 @@ stale worker cannot race a live owner. All cancel/retrieve/record logic and the 
 matrix live in that service package — see
 [`@services/openai-background-responses`](../../../services/openai-background-responses/README.md)
 and [Background Response Sweeper](../../ai-agents/README.md#background-response-sweeper).
-
-`processReconcileChatRuntimeGenerations`
-(`processors/process-reconcile-chat-runtime-generations.mts`) signals stale hosted-chat jobs before
-terminalizing their matching conversation runs. It contains no standalone agent-response or pub/sub
-path; A6 owns removal once hosted chat is retired.
 
 Copyright appeal jobs persist bounded `confirm`, `modify`, `reverse`, or `uncertain` advice using
 the immutable appeal receipt and a minimal notice/restriction summary. Their processor has no path
@@ -86,16 +82,15 @@ ceiling was nominally reached.
 
 `processAIAgentWorkerJob` (`workers/core.mts`) calls `evaluateOpenAiSpendCapBreach()` before every
 dispatch, ahead of the token-limiter wiring above — but only when `jobProducesOpenAiSpend(job)`
-(`workers/core.mts`) says the job actually incurs billed OpenAI generation spend. That helper starts
-from `AI_AGENT_JOB_PRODUCES_SPEND`
-(`@queues/ai-agents/config`) and narrows two cases further: the four `reconcile-*` job types are
-exempt and always dispatch (they only sweep/cancel/re-enqueue existing work, and in particular
+(`workers/core.mts`) says the job actually incurs billed OpenAI generation spend. That helper reads
+`AI_AGENT_JOB_PRODUCES_SPEND`
+(`@queues/ai-agents/config`), which marks two cases exempt: the four `reconcile-*` job types always
+dispatch (they only sweep/cancel/re-enqueue existing work, and in particular
 `reconcile-background-responses` cancels orphaned leases that are still billing OpenAI, so blocking
 it on the cap would increase spend, not bound it); `auto-dispatch-judgement` is exempt for the same
 reason (it only applies an already-computed judgement via DB writes — remove, warn, escalate, or
-resolve — and never calls OpenAI itself); and a `chat` job explicitly routed to Anthropic
-(`job.data.modelProvider === 'anthropic'`, see `backend/agents/chat/stream.mts`) is exempt because it
-never calls OpenAI for billed generation, even though `chat` is spend-producing by default. (The
+resolve — and never calls OpenAI itself). A job name that is not in the map, such as a stale
+removed `chat` job, is treated as non-spending and reaches the unknown-job failure. (The
 shared `checkMessageSafety` moderation pre-check
 (`@services/openai-moderation/message-safety`) runs regardless of provider, but the Moderations
 endpoint is free and writes no `ai_usage_records` row — see the token-limiter section above — so it

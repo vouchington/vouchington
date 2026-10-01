@@ -142,3 +142,15 @@ submission and explicit completion status. Shared `api-fixtures/v1/responses/nat
 examples cover completion, retry, duplicate, authorization, pagination and incomplete history. Swift,
 Android and .NET adopt these independently under clients#149 and clients#150; the removed web chat
 surface does not gain a new rendered UI claim.
+
+### Hosted chat transport removal
+
+A6a (#1542) removes the hosted SSE `POST /api/v1/conversations/:conversationId/chat` route, so it
+now returns 404, along with its `chat` and `reconcile-chat-runtime-generations` queue jobs and the
+Valkey token channel. The regenerated `api-fixtures/v1/openapi.json` and
+`api-fixtures/v1/request-contracts.json` drop the operation and its unavailable-route entry. Native
+clients persist completed turns through `client-generated-chat` with a local provider and do not use
+a hosted fallback; that endpoint still rejects hosted providers with 400. Under decision D1 the
+server change does not wait on client migrations, so a native build that still calls the hosted
+route must delete that path in its own client PR. This repository does not edit
+`vouchington-clients`; track any such removal there alongside clients#149 and clients#150.

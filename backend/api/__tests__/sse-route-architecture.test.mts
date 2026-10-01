@@ -6,7 +6,6 @@ const CANONICAL_SSE_ROUTES = [
   'v1/admin/article-syncs.mts',
   'v1/admin/index-routes/postgresql-stream-get.mts',
   'v1/admin/index-routes/valkey-stream-get.mts',
-  'v1/conversations/index-routes/conversations-by-conversationid-chat-post.mts',
   'v1/images/index-routes/images-by-imageid-state-stream-get.mts',
   'v1/mq/index-routes/mq-stream-get.mts',
   'v1/my/imports/stream.mts',

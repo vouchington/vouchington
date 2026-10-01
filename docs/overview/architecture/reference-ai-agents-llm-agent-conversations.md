@@ -4,7 +4,7 @@
 
 ## LLM Agent Conversations
 
-`@services/conversations-messages` provides an agentic chat system backed by hosted model workers for OpenAI and Anthropic streaming, and by client-generated run records for native local models. The hosted route subscribes to a Valkey token channel, enqueues a chat job, and pipes worker-published chunks back to the client as SSE. Each conversation tracks:
+`@services/conversations-messages` persists chat for native local models as client-generated run records. The hosted chat transport (the SSE `POST /api/v1/conversations/:conversationId/chat` route, the `chat` and `reconcile-chat-runtime-generations` queue jobs, and the Valkey token channel) is removed, and that route returns 404. The orchestrator and subagent code below remains in `@agents/chat` only until the chat agent is deleted. Each conversation tracks:
 
 - `conversations` — top-level thread per user
 - `messages` — individual turns (user + assistant)
@@ -28,32 +28,9 @@ flowchart TD
   profileTools --> response
 ```
 
-```mermaid
-sequenceDiagram
-  participant Client
-  participant Route as Chat route
-  participant PubSub as Valkey token channel
-  participant Queue as ai_agents queue
-  participant Worker as processChat worker
-  participant Orchestrator as @agents/chat
-  participant Subagent as Specialized subagent
-  Client->>Route: Send message
-  Route->>Route: Moderate input and create messages
-  Route->>PubSub: Subscribe to assistant message channel
-  Route->>Queue: Enqueue chat job
-  Queue->>Worker: Run processChat
-  Worker->>Orchestrator: streamChatResponse tool loop
-  Orchestrator->>Subagent: Delegate broad task
-  Subagent-->>Orchestrator: Return result
-  Orchestrator-->>Worker: Emit text, tool, and subagent events
-  Worker->>PubSub: publishChatToken chunks
-  PubSub-->>Route: Token chunks
-  Route-->>Client: SSE events
-```
-
 The orchestrator handles quick lookups directly (`get_my_profile`, `search_topics`) and delegates broad research, discovery, or profile mutations to specialized subagents.
-Chat requests run prompt-injection and moderation checks both at the HTTP route and inside the
-worker-side `streamChatResponse()` entry point. When a response chain is not yet available, chat
+`streamChatResponse()` runs prompt-injection and moderation checks at its entry point, and the
+`client-generated-chat` route checks both the user message and the assistant content. When a response chain is not yet available, chat
 history is rebuilt as application-owned user/assistant messages with sanitized, wrapped content
 boundaries. Each provider adapter maps that history to its native message array; it is never
 flattened or serialized into prompt text. Stored messages are runtime-validated and malformed rows
@@ -84,8 +61,8 @@ device, then persisted through `POST /api/v1/conversations/:conversationId/clien
 with `model_provider: apple_foundation` and `model_name: apple-foundation-system` on Apple
 platforms. Windows sends `model_provider: windows_foundry` without a model name so each deployed API
 version can select its canonical Windows identity during client-first rollout and backend rollback.
-Hosted upgrades keep using the SSE `/chat` endpoint; OpenAI remains the default hosted provider,
-and Anthropic streams through the server-side Messages API adapter.
+There is no hosted fallback: `client-generated-chat` rejects hosted providers with 400 and the SSE
+`/chat` endpoint no longer exists.
 
 ### Subagent Pattern
 

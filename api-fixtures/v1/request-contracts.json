@@ -29204,20 +29204,6 @@
         "$ref": "#/components/schemas/Record_string_unknown"
       }
     },
-    "POST:/api/v1/conversations/:conversationId/chat": {
-      "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
-      },
-      "path": {
-        "properties": {
-          "conversationId": {
-            "type": "string"
-          }
-        },
-        "required": ["conversationId"],
-        "type": "object"
-      }
-    },
     "POST:/api/v1/conversations/:conversationId/client-generated-chat": {
       "body": {
         "$ref": "#/components/schemas/Record_string_unknown"
