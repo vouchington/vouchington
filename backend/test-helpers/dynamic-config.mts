@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { closeDynamicConfigValkeySubscriptionClient } from '@data-stores/valkey/clients'
 import { dynamicConfigs, type DynamicConfig } from '@data-stores/valkey/dynamic-config'
-import type { DynamicConfigField } from '@data-stores/valkey/types'
 
 const TEST_DYNAMIC_CONFIG_PREFIX = 'dynamic-config:test-'
 const TEST_DYNAMIC_CONFIG_KEY_PREFIX = 'test-'
 const TEST_RATE_LIMIT_THRESHOLD = 99_999
+
+type DynamicConfigField = Parameters<DynamicConfig['setFields']>[0][string]
 
 type DynamicConfigSchema = Pick<DynamicConfig, 'key' | 'fieldTypes' | 'defaultFields'>
 
