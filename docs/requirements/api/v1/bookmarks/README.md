@@ -34,7 +34,7 @@ The `set_bookmark` and `remove_bookmark` MCP tools call the same shared bookmark
 PUT and DELETE routes, for the `save`, `follow`, `mute`, and `block` predicates only. They need the
 `bookmarks:read` and `bookmarks:write` scopes and a Plus plan, and reach the caller's own private
 post only with the exact `post-relations.owned-private:write` grant. See
-[Bookmark and list write tools](../../../../overview/architecture/agent-tools/README.md#bookmark-and-list-write-tools).
+[Bookmark and List Write Tools](../../../../overview/architecture/agent-tools/bookmark-list-write-tools.md).
 
 ## Performance
 

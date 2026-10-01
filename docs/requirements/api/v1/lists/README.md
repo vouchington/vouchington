@@ -29,7 +29,7 @@ owner can still view their lists.
 The `create_list`, `update_list`, `delete_list`, `add_list_item`, and `remove_list_item` MCP tools
 run the same list commands and ownership checks as the routes above. They need the `lists:read` and
 `lists:write` scopes and a Plus plan. `POST /api/v1/lists/:id/import` has no MCP tool. See
-[Bookmark and list write tools](../../../../overview/architecture/agent-tools/README.md#bookmark-and-list-write-tools).
+[Bookmark and List Write Tools](../../../../overview/architecture/agent-tools/bookmark-list-write-tools.md).
 
 ## Performance
 
