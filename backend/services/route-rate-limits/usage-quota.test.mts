@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import {
   readApiUsageRows,
   startLocalAnalyticsForTest,
@@ -193,5 +194,63 @@ describe('usage quota', () => {
       limited: false,
     })
     expect(await readApiUsageRows(identity.userId)).toHaveLength(3)
+  })
+
+  describe('when Valkey fails', () => {
+    function failingDependencies(failure: unknown) {
+      const reportError = vi.fn<(error: Error) => void>()
+      const limiter = {
+        isRateLimited: vi.fn<RateLimiter['isRateLimited']>().mockRejectedValue(failure),
+        add: vi.fn<RateLimiter['add']>().mockRejectedValue(failure),
+      }
+      return { limiter, reportError }
+    }
+
+    it('fails open and reports the error when checking the quota', async () => {
+      const failure = new Error('Valkey unavailable')
+      const dependencies = failingDependencies(failure)
+
+      await expect(checkUsageQuota('mcp_user', randomUUID(), QUOTA, dependencies)).resolves.toEqual(
+        { limited: false, retryAfterSeconds: 0 },
+      )
+
+      expect(dependencies.limiter.isRateLimited).toHaveBeenCalledTimes(1)
+      expect(dependencies.reportError).toHaveBeenCalledExactlyOnceWith(failure)
+    })
+
+    it('reports a non-Error failure as an Error', async () => {
+      const dependencies = failingDependencies('connection reset')
+
+      await checkUsageQuota('mcp_user', randomUUID(), QUOTA, dependencies)
+      await settleUsage(settlement(apiKeyIdentity(), 200), dependencies)
+
+      expect(dependencies.reportError.mock.calls).toEqual([
+        [new Error('connection reset')],
+        [new Error('connection reset')],
+      ])
+    })
+
+    it('reports the error but still emits the usage event when charging the quota', async () => {
+      const failure = new Error('Valkey unavailable')
+      const dependencies = failingDependencies(failure)
+      const identity = apiKeyIdentity()
+
+      await expect(settleUsage(settlement(identity, 200), dependencies)).resolves.toBeUndefined()
+
+      expect(dependencies.limiter.add).toHaveBeenCalledTimes(1)
+      expect(dependencies.reportError).toHaveBeenCalledExactlyOnceWith(failure)
+      const [row, ...rest] = await readApiUsageRows(identity.userId)
+      expect(rest).toEqual([])
+      expect(Number(row!.units)).toBe(1)
+    })
+
+    it('does not touch Valkey to settle a request that is not charged', async () => {
+      const dependencies = failingDependencies(new Error('Valkey unavailable'))
+
+      await settleUsage(settlement(apiKeyIdentity(), 503), dependencies)
+
+      expect(dependencies.limiter.add).not.toHaveBeenCalled()
+      expect(dependencies.reportError).not.toHaveBeenCalled()
+    })
   })
 })

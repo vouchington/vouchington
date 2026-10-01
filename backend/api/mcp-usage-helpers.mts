@@ -1,5 +1,4 @@
 import type { Context } from '@jongleberry/api-server'
-import onError from '@modules/on-error'
 import type { authenticateMcpBearer, McpServerConfig } from '@services/mcp-tools'
 import {
   checkUsageQuota,
@@ -41,7 +40,8 @@ export function startMcpUsageMeter(
 
   ctx.res.once('close', () => {
     if (!ctx.res.headersSent) return
-    settleUsage({
+    // settleUsage reports its own Valkey and analytics failures and never rejects.
+    void settleUsage({
       surface,
       identity,
       plan,
@@ -49,7 +49,7 @@ export function startMcpUsageMeter(
       quota,
       statusCode: ctx.res.statusCode,
       durationMs: performance.now() - startedAt,
-    }).catch(error => onError(error instanceof Error ? error : new Error(String(error))))
+    })
   })
 
   return { checkQuota: () => checkUsageQuota(surface, identity.userId, quota) }

@@ -19,6 +19,17 @@ const usageLimiter = new RateLimiter({
   ttlSeconds: USAGE_QUOTA_WINDOW_SECONDS,
 })
 
+// Injectable so a Valkey failure can be exercised without breaking the shared Valkey instance.
+type UsageQuotaDependencies = {
+  limiter: Pick<RateLimiter, 'add' | 'isRateLimited'>
+  reportError: (error: Error) => void
+}
+
+const defaultDependencies: UsageQuotaDependencies = {
+  limiter: usageLimiter,
+  reportError: onError,
+}
+
 // The bucket is the owner and surface, so every credential a user holds draws on one allowance and
 // minting more API keys or OAuth grants does not widen it. It never contains a credential.
 function usageBucketId(surface: UsageSurface, userId: string): string {
@@ -36,30 +47,36 @@ export async function checkUsageQuota(
   surface: UsageSurface,
   userId: string,
   quota: UsageQuota,
+  { limiter, reportError }: UsageQuotaDependencies = defaultDependencies,
 ): Promise<UsageQuotaCheck> {
   if (!isRouteRateLimitEnabled()) return { limited: false, retryAfterSeconds: 0 }
   try {
-    const limited = await usageLimiter.isRateLimited(
+    const limited = await limiter.isRateLimited(
       [usageBucketId(surface, userId)],
       quota.limit,
       quota.windowSeconds,
     )
     return { limited, retryAfterSeconds: limited ? quota.windowSeconds : 0 }
   } catch (err) {
-    onError(err instanceof Error ? err : new Error(String(err)))
+    reportError(err instanceof Error ? err : new Error(String(err)))
     return { limited: false, retryAfterSeconds: 0 }
   }
 }
 
 // Charges the quota once the response status is known, then reports the request to analytics. The
 // metric is emitted whether or not enforcement is on, so a disabled limiter still measures usage.
-export async function settleUsage(settlement: UsageSettlement): Promise<void> {
+// Never rejects: a Valkey failure is reported and the usage event is still emitted, and the
+// analytics emitter reports its own delivery failures, so callers may fire and forget.
+export async function settleUsage(
+  settlement: UsageSettlement,
+  { limiter, reportError }: UsageQuotaDependencies = defaultDependencies,
+): Promise<void> {
   const units = usageUnitsForStatus(settlement.statusCode)
   if (units > 0 && isRouteRateLimitEnabled()) {
     try {
-      await usageLimiter.add([usageBucketId(settlement.surface, settlement.identity.userId)])
+      await limiter.add([usageBucketId(settlement.surface, settlement.identity.userId)])
     } catch (err) {
-      onError(err instanceof Error ? err : new Error(String(err)))
+      reportError(err instanceof Error ? err : new Error(String(err)))
     }
   }
   trackApiUsage(toApiUsage(settlement, units))
