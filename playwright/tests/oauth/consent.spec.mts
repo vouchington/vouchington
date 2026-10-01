@@ -4,7 +4,8 @@ import { navigateTo } from '../../helpers/navigate-to.mts'
 import { expect, test } from '../../helpers/test.mts'
 
 const USER_MCP_RESOURCE_METADATA_PATH = '/.well-known/oauth-protected-resource/api/v1/mcp'
-const SCOPES = 'entity-relations:read entity-relations:write post-relations.owned-private:write'
+const SCOPES =
+  'mcp.user:read financial-profile:read financial-profile:write spending:read spending:write entity-relations:read entity-relations:write post-relations.owned-private:write'
 
 test.describe('OAuth consent', () => {
   test.use({ storageState: AUTH_STATE })
@@ -59,11 +60,20 @@ test.describe('OAuth consent', () => {
     await expect(page.getByTestId('oauth-consent-resource')).toHaveText(resource)
     await expect(page.getByTestId('oauth-consent-scopes')).toContainText('entity-relations:read')
     await expect(page.getByTestId('oauth-consent-scopes')).toContainText('entity-relations:write')
-    await expect(page.getByTestId('oauth-consent-scopes')).toContainText(
+    await expect(page.getByTestId('oauth-consent-sensitive-scopes')).toContainText(
       'post-relations.owned-private:write',
     )
     await expect(page.getByTestId('oauth-consent-private-post-relations-permission')).toContainText(
       'Allow this credential to add relations and tags to your own private posts.',
+    )
+
+    await expect(page.getByTestId('oauth-consent-sensitive-scopes')).toContainText(
+      'financial-profile:read',
+    )
+    await expect(page.getByTestId('oauth-consent-sensitive-scopes')).toContainText('spending:write')
+    await expect(page.getByTestId('oauth-consent-sensitive-scopes')).toContainText('credit score')
+    await expect(page.getByTestId('oauth-consent-scopes')).toContainText(
+      'excluding financial profile',
     )
 
     const decisionResponse = page.waitForResponse(
@@ -94,7 +104,7 @@ test.describe('OAuth consent', () => {
       data: {
         client_name: `Playwright denied OAuth client ${randomBytes(6).toString('hex')}`,
         redirect_uris: [redirectUri],
-        scope: SCOPES,
+        scope: 'mcp.user:read',
       },
     })
     const registrationBody = await registration.text()
@@ -111,7 +121,7 @@ test.describe('OAuth consent', () => {
       redirect_uri: redirectUri,
       resource,
       response_type: 'code',
-      scope: SCOPES,
+      scope: 'mcp.user:read',
       state,
     })
 
@@ -120,6 +130,10 @@ test.describe('OAuth consent', () => {
     )
     await navigateTo(page, `/authorize?${authorize.toString()}`)
 
+    await expect(page.getByTestId('oauth-consent-sensitive-scopes')).toHaveCount(0)
+    await expect(page.getByTestId('oauth-consent-scopes')).toContainText(
+      'excluding financial profile',
+    )
     await page.getByTestId('oauth-consent-deny').click()
     await expect(page).toHaveURL(new RegExp(`^${escapeRegExp(redirectUri)}\\?`))
     const callback = new URL(page.url())

@@ -708,7 +708,7 @@
     },
     "GET:/api/v1/scopes": {
       "fixtureIds": ["shared.scopes.catalog"],
-      "hash": "69c8663d082a689ed73bf12361dd28d8427290d3efc4d35dde806668d834793a"
+      "hash": "1a400691a4a95a6e4521577068bba1c855243b10ddb52f50fb3c98cfe29f625c"
     },
     "GET:/api/v1/stories/:id": {
       "fixtureIds": ["native.stories.get.after", "native.stories.get.default"],

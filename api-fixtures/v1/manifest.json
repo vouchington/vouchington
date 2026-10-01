@@ -39224,7 +39224,7 @@
     },
     "GET:/api/v1/scopes": {
       "bodyKind": "content",
-      "hash": "69c8663d082a689ed73bf12361dd28d8427290d3efc4d35dde806668d834793a",
+      "hash": "1a400691a4a95a6e4521577068bba1c855243b10ddb52f50fb3c98cfe29f625c",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -39285,11 +39285,27 @@
                   "variants": [
                     {
                       "type": "literal",
+                      "value": "financial_profile_read"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "financial_profile_write"
+                    },
+                    {
+                      "type": "literal",
                       "value": "mcp_admin_full_access"
                     },
                     {
                       "type": "literal",
                       "value": "mcp_user_full_access"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "spending_read"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "spending_write"
                     },
                     {
                       "type": "null"

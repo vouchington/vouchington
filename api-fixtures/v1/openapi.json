@@ -18359,10 +18359,22 @@
           "description_key": {
             "anyOf": [
               {
+                "const": "financial_profile_read"
+              },
+              {
+                "const": "financial_profile_write"
+              },
+              {
                 "const": "mcp_admin_full_access"
               },
               {
                 "const": "mcp_user_full_access"
+              },
+              {
+                "const": "spending_read"
+              },
+              {
+                "const": "spending_write"
               },
               {
                 "type": "null"

@@ -8,6 +8,7 @@ import getDomainRatingsTool from '../get-domain-ratings.mts'
 import getMyCardsTool from '../get-my-cards.mts'
 import getMyPointValuationsTool from '../get-my-point-valuations.mts'
 import getMyProfileTool from '../get-my-profile.mts'
+import getMyFinancialProfileTool from '../get-my-financial-profile.mts'
 import getMyRewardsStatusesTool from '../get-my-rewards-statuses.mts'
 import getMySpendingTool from '../get-my-spending.mts'
 import getPostAncestorsTool from '../get-post-ancestors.mts'
@@ -44,6 +45,7 @@ export const ALL_TOOLS: readonly Tool[] = [
   getMyCardsTool,
   getMyPointValuationsTool,
   getMyProfileTool,
+  getMyFinancialProfileTool,
   getMyRewardsStatusesTool,
   getMySpendingTool,
   getPostAncestorsTool,

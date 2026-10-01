@@ -11,7 +11,7 @@ export const RSS_KEY_SCOPES: readonly string[] = ['rss:read']
 export interface ScopeResourceRow {
   descriptionKey: ScopeDescriptionKey | null
   resource: string
-  /** `mcp.<audience>` resources grant every tool of their audience and render first. */
+  /** `mcp.<audience>` resources grant non-sensitive tools of their audience and render first. */
   umbrella: boolean
   read: ScopeCatalogEntry | null
   write: ScopeCatalogEntry | null
@@ -35,9 +35,6 @@ export function scopeResourceRows(
   for (const entry of catalog) {
     if (!entry.surfaces.includes(surface) || !audiences.includes(entry.audience)) continue
     const existing = rows.get(entry.resource)
-    if (existing && existing.descriptionKey !== entry.description_key) {
-      throw new Error(`Scope resource ${entry.resource} has inconsistent description keys`)
-    }
     const row = existing ?? {
       descriptionKey: entry.description_key,
       resource: entry.resource,

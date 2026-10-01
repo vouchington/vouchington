@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import getMyProfileTool from './get-my-profile.mts'
+import getMyFinancialProfileTool from './get-my-financial-profile.mts'
 import { createTestUser } from '@voucha/test-helpers'
 import { insertTestCard } from '@voucha/test-helpers/entities/cards'
 import { insertTestRewardsProgram } from '@voucha/test-helpers/entities/rewards-programs'
@@ -87,7 +88,7 @@ describe('get_my_profile tool — real DB', () => {
     expect(result).toHaveProperty('point_valuations_page_info')
     expect(result).toHaveProperty('rewards_program_statuses')
     expect(result).toHaveProperty('rewards_program_statuses_page_info')
-    expect(result).toHaveProperty('financial_profile')
+    expect(result).not.toHaveProperty('financial_profile')
     expect(Array.isArray(result.cards)).toBe(true)
     expect(Array.isArray(result.point_valuations)).toBe(true)
     expect(Array.isArray(result.rewards_program_statuses)).toBe(true)
@@ -95,11 +96,11 @@ describe('get_my_profile tool — real DB', () => {
 
   it('returns null financial_profile for user with no profile', async () => {
     const freshUser = await createTestUser()
-    const execute = getMyProfileTool.function(freshUser)
+    const execute = getMyFinancialProfileTool.function(freshUser)
     const result = await execute({})
 
     expect(result.success).toBe(true)
-    expect(result.financial_profile).toBeNull()
+    expect(result.result.financial_profile).toBeNull()
   })
 
   it('includes financial_profile when user has one', async () => {
@@ -113,12 +114,12 @@ describe('get_my_profile tool — real DB', () => {
       },
     })
 
-    const execute = getMyProfileTool.function(profileUser)
+    const execute = getMyFinancialProfileTool.function(profileUser)
     const result = await execute({})
 
     expect(result.success).toBe(true)
-    expect(result.financial_profile).not.toBeNull()
-    const profile = result.financial_profile as { credit_score_range: string }
+    expect(result.result.financial_profile).not.toBeNull()
+    const profile = result.result.financial_profile as { credit_score_range: string }
     expect(profile.credit_score_range).toBe('670-739')
   })
 

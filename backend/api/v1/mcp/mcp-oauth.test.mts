@@ -129,6 +129,22 @@ describe('POST /api/v1/mcp with OAuth access tokens', () => {
     expect(JSON.parse(body.result?.content?.[0]?.text ?? '{}')).toMatchObject({ success: true })
   })
 
+  it('hides and refuses financial reads for an umbrella-only credential', async () => {
+    const listing = await postMcp(userTokens.access_token, MCP_LIST_BODY).expect(200)
+    const tools = (listing.body as { result: { tools: Array<{ name: string }> } }).result.tools
+    expect(tools.map(tool => tool.name)).not.toContain('get_my_financial_profile')
+    const denied = await postMcp(
+      userTokens.access_token,
+      toolCall('get_my_financial_profile'),
+    ).expect(403)
+    expect(denied.headers['www-authenticate']).toContain('financial-profile:read')
+    const scoped = await issueTestOAuthTokens(user, { scope: 'financial-profile:read' })
+    const allowed = await postMcp(scoped.access_token, toolCall('get_my_financial_profile')).expect(
+      200,
+    )
+    expect((allowed.body as JsonRpcResponse).result?.isError).toBeUndefined()
+  })
+
   it('keeps scope errors in-band for batches, which callMcpTool still enforces', async () => {
     const response = await postMcp(topicsOnlyTokens.access_token, [
       toolCall('get_my_profile', 1),
@@ -141,7 +157,9 @@ describe('POST /api/v1/mcp with OAuth access tokens', () => {
   })
 
   it('reports a plan-gated tool in-band instead of asking for more scopes', async () => {
-    const readOnly = await issueTestOAuthTokens(user, { scope: 'mcp.user:read' })
+    const readOnly = await issueTestOAuthTokens(user, {
+      scope: 'financial-profile:read financial-profile:write',
+    })
 
     const response = await postMcp(
       readOnly.access_token,

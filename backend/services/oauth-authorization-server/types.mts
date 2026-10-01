@@ -78,6 +78,7 @@ export type OAuthAuthorizationRequestView = {
   client_hostname: string | null
   resource: string
   scopes: ApiScope[]
+  sensitive_scopes: ApiScope[]
   expires_at: Date
 }
 

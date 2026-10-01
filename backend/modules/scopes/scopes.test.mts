@@ -139,6 +139,16 @@ describe('validateScopeSet', () => {
     ).toBe(false)
   })
 
+  it.each([
+    'financial-profile:read',
+    'financial-profile:write',
+    'spending:read',
+    'spending:write',
+  ] as const)('requires an exact grant for %s', scope => {
+    expect(hasScope(['mcp.user:read', 'mcp.user:write'], scope)).toBe(false)
+    expect(hasScope([scope], scope)).toBe(true)
+  })
+
   it('reads a replaced credential surface from the live catalogue', () => {
     const definition = SCOPE_DEFINITIONS['rss:read']
     const originalSurfaces = definition.surfaces
