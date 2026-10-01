@@ -50,18 +50,22 @@ export async function currentUserCanBookmarkTarget(
       )
     }
     case 'community':
-      try {
-        await loadCommunityForViewerOrApplicant(currentUser, entityId)
-        return true
-      } catch (error) {
-        const status =
-          typeof error === 'object' && error !== null && 'status' in error
-            ? error.status
-            : undefined
-        if (status === 404) return false
-        throw error
-      }
+      return canLoadBookmarkCommunity(() =>
+        loadCommunityForViewerOrApplicant(currentUser, entityId),
+      )
     default:
       return false
+  }
+}
+
+export async function canLoadBookmarkCommunity(load: () => Promise<unknown>): Promise<boolean> {
+  try {
+    await load()
+    return true
+  } catch (error) {
+    const status =
+      typeof error === 'object' && error !== null && 'status' in error ? error.status : undefined
+    if (status === 404) return false
+    throw error
   }
 }
