@@ -6,7 +6,9 @@
       "parse_status": "succeeded",
       "received_at": "2026-07-01T12:00:00.000Z",
       "recommendation_id": null,
-      "review_path": "initial"
+      "review_path": "initial",
+      "waiting_reason": "awaiting_review",
+      "waiting_since": "2026-07-01T12:00:00.000Z"
     }
   ],
   "page_info": {

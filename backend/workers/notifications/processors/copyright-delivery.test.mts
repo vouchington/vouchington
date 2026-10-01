@@ -18,28 +18,18 @@ function pages(...sequence: CopyrightSweepIdPage[]) {
   return async () => remaining.shift() ?? page([], null)
 }
 
-function reconcileDeps(sweeps: {
-  inApp?: CopyrightSweepIdPage[]
-  email?: CopyrightSweepIdPage[]
-  responses?: CopyrightSweepIdPage[]
-}) {
+function reconcileDeps(sweeps: { inApp?: CopyrightSweepIdPage[]; email?: CopyrightSweepIdPage[] }) {
   const inApp = pages(...(sweeps.inApp ?? []))
   const email = pages(...(sweeps.email ?? []))
   return {
     searchDeliveryIntents: vi.fn<Deps['searchDeliveryIntents']>(async options =>
       options.channel === 'in_app' ? inApp() : email(),
     ),
-    searchEmailIntakeResponses: vi.fn<Deps['searchEmailIntakeResponses']>(
-      pages(...(sweeps.responses ?? [])),
-    ),
     enqueueDeliverCopyrightNotice: vi
       .fn<Deps['enqueueDeliverCopyrightNotice']>()
       .mockResolvedValue(undefined),
     enqueueSendCopyrightNoticeEmail: vi
       .fn<Deps['enqueueSendCopyrightNoticeEmail']>()
-      .mockResolvedValue(undefined),
-    enqueueSendCopyrightEmailIntakeResponse: vi
-      .fn<Deps['enqueueSendCopyrightEmailIntakeResponse']>()
       .mockResolvedValue(undefined),
   }
 }
@@ -49,10 +39,9 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
     const deps = reconcileDeps({
       inApp: [page(['in-app-1', 'in-app-2'], 'in-app-cursor'), page(['in-app-3'], null)],
       email: [page(['email-1'], 'email-cursor'), page(['email-2'], null)],
-      responses: [page(['response-1'], 'response-cursor'), page(['response-2'], null)],
     })
 
-    await expect(processReconcileCopyrightDeliveryIntents(deps)).resolves.toEqual({ enqueued: 7 })
+    await expect(processReconcileCopyrightDeliveryIntents(deps)).resolves.toEqual({ enqueued: 5 })
 
     expect(deps.searchDeliveryIntents.mock.calls).toEqual(
       expect.arrayContaining([
@@ -63,24 +52,16 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
       ]),
     )
     expect(deps.searchDeliveryIntents).toHaveBeenCalledTimes(4)
-    expect(deps.searchEmailIntakeResponses.mock.calls).toEqual([
-      [{}],
-      [{ after: 'response-cursor' }],
-    ])
     expect(deps.enqueueDeliverCopyrightNotice.mock.calls).toEqual([
       ['in-app-1'],
       ['in-app-2'],
       ['in-app-3'],
     ])
     expect(deps.enqueueSendCopyrightNoticeEmail.mock.calls).toEqual([['email-1'], ['email-2']])
-    expect(deps.enqueueSendCopyrightEmailIntakeResponse.mock.calls).toEqual([
-      ['response-1'],
-      ['response-2'],
-    ])
   })
 
   it('keeps enqueueing past a failed page read and enqueue, then fails with both errors', async () => {
-    const deps = reconcileDeps({ responses: [page(['response'], null)] })
+    const deps = reconcileDeps({})
     const searchFailure = new Error('email intent search failed')
     const enqueueFailure = new Error('enqueue failed')
     const inApp = pages(
@@ -108,7 +89,6 @@ describe('processReconcileCopyrightDeliveryIntents', () => {
       ['same-page-in-app'],
       ['next'],
     ])
-    expect(deps.enqueueSendCopyrightEmailIntakeResponse).toHaveBeenCalledWith('response')
   })
 })
 

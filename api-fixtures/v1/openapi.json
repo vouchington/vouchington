@@ -3169,6 +3169,13 @@
           "review_path": {
             "enum": ["initial", "matched_thread", "unresolved_thread"],
             "type": "string"
+          },
+          "waiting_reason": {
+            "enum": ["awaiting_review", "reply_bounced", "reply_failed"],
+            "type": "string"
+          },
+          "waiting_since": {
+            "type": "string"
           }
         },
         "required": [
@@ -3177,7 +3184,9 @@
           "parse_status",
           "received_at",
           "recommendation_id",
-          "review_path"
+          "review_path",
+          "waiting_reason",
+          "waiting_since"
         ],
         "type": "object"
       },

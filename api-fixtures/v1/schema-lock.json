@@ -248,7 +248,7 @@
     },
     "GET:/api/v1/copyright-email-intakes/review-queue": {
       "fixtureIds": ["web.copyright.email-intake-queue.default"],
-      "hash": "bfc61eea1a1df35cecae4a5bd79e7b467c0813c1e8533d3728b1b0782cb7f0e9"
+      "hash": "aa3f27faa243815a024a9488de111719b8f75132bc2b72dca7c698757ecb63dd"
     },
     "GET:/api/v1/copyright-notices": {
       "fixtureIds": ["web.copyright.notices.default", "web.copyright.notices.null-claimant"],
@@ -2707,7 +2707,7 @@
     },
     "web.copyright.email-intake-queue.default": {
       "fixtureIds": ["web.copyright.email-intake-queue.default"],
-      "hash": "8a1b695335a766e2a4b3a708026f9bb34cad58eb05e3fc788bb90cfd8cb2513b"
+      "hash": "301a921796e646b7f7c8910869fc37566560ecc100ddb641a855e0cf5dcbd860"
     },
     "web.copyright.email-intake-rejection.no-reply": {
       "fixtureIds": ["web.copyright.email-intake-rejection.no-reply"],

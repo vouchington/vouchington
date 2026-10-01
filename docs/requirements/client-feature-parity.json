@@ -2876,6 +2876,7 @@
             "web/components/copyright/__tests__/copyright-email-review.parse-state.mock.test.tsx",
             "web/components/copyright/__tests__/copyright-email-review.reply-address.mock.test.tsx",
             "web/components/copyright/__tests__/copyright-email-review.needs-information.mock.test.tsx",
+            "web/components/copyright/copyright-email-review-reply-failure.mock.test.tsx",
             "web/components/copyright/copyright-email-approval-fields.test.tsx",
             "web/components/copyright/copyright-email-correspondence-fields.test.tsx"
           ]
@@ -2892,7 +2893,7 @@
         }
       },
       "gap": {
-        "summary": "Swift and .NET render no copyright email-intake queue, approval, rejection, information-request, or correspondence form. Email-intake review remains web-only staff tooling, and its rejection and information-request response fixtures have only the web consumer.",
+        "summary": "Swift and .NET render no copyright email-intake queue, approval, rejection, information-request, or correspondence form. Email-intake review remains web-only staff tooling, and its rejection and information-request response fixtures have only the web consumer. The queue fixture's `waiting_reason` and `waiting_since` fields, which surface a declined intake whose reply failed or bounced, have only the web consumer too.",
         "trackingIssue": "https://github.com/vouchington/vouchington/issues/1229"
       }
     },

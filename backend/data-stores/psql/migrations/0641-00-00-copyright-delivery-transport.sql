@@ -90,11 +90,13 @@ CREATE TRIGGER trigger_copyright_delivery_recipients_updated_at
 BEFORE UPDATE ON copyright_notice_delivery_recipients
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
--- Email has no safe body outside the immutable correspondence record. Keep that relationship
--- enforceable at the database boundary rather than relying on a worker convention.
+-- Email has no safe body outside the immutable correspondence record, or the immutable reply
+-- body of a declined email intake. Keep that relationship enforceable at the database boundary
+-- rather than relying on a worker convention.
 ALTER TABLE copyright_notice_delivery_intents
   ADD CONSTRAINT copyright_delivery_intents_email_correspondence
-  CHECK (channel <> 'email' OR copyright_notice_correspondence_message_id IS NOT NULL)
+  CHECK (channel <> 'email' OR copyright_notice_correspondence_message_id IS NOT NULL
+    OR copyright_notice_email_intake_id IS NOT NULL)
   NOT VALID;
 ALTER TABLE copyright_notice_delivery_intents
   VALIDATE CONSTRAINT copyright_delivery_intents_email_correspondence;

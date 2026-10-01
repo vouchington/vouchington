@@ -1,12 +1,8 @@
-import {
-  enqueueSendCopyrightEmailIntakeResponse,
-  enqueueSendCopyrightNoticeEmail,
-} from '@queues/emails/enqueues'
+import { enqueueSendCopyrightNoticeEmail } from '@queues/emails/enqueues'
 import { enqueueDeliverCopyrightNotice } from '@queues/notifications/enqueues'
 import {
   deliverCopyrightInAppNotification,
   searchRecoverableCopyrightDeliveryIntentIds,
-  searchRecoverableCopyrightEmailIntakeResponseIds,
 } from '@services/copyright-notices'
 import {
   enqueueEveryCopyrightSweepPage,
@@ -19,18 +15,14 @@ type CopyrightDeliveryChannel = Parameters<
 
 export type ReconcileCopyrightDeliveryIntentsDeps = {
   searchDeliveryIntents: typeof searchRecoverableCopyrightDeliveryIntentIds
-  searchEmailIntakeResponses: typeof searchRecoverableCopyrightEmailIntakeResponseIds
   enqueueDeliverCopyrightNotice: typeof enqueueDeliverCopyrightNotice
   enqueueSendCopyrightNoticeEmail: typeof enqueueSendCopyrightNoticeEmail
-  enqueueSendCopyrightEmailIntakeResponse: typeof enqueueSendCopyrightEmailIntakeResponse
 }
 
 const defaultDeps: ReconcileCopyrightDeliveryIntentsDeps = {
   searchDeliveryIntents: searchRecoverableCopyrightDeliveryIntentIds,
-  searchEmailIntakeResponses: searchRecoverableCopyrightEmailIntakeResponseIds,
   enqueueDeliverCopyrightNotice,
   enqueueSendCopyrightNoticeEmail,
-  enqueueSendCopyrightEmailIntakeResponse,
 }
 
 export async function processDeliverCopyrightNotice(
@@ -45,10 +37,10 @@ export async function processDeliverCopyrightNotice(
 }
 
 /**
- * Walks every page of each channel's delivery intents and of the email intake responses together,
- * enqueueing each row's delivery job. The job's claim, not this sweep, fails a lease-expired row at
- * the retry cap. A failed page read or enqueue does not stop the rest; the job fails afterwards with
- * every error so its retry covers what is still pending.
+ * Walks every page of each channel's delivery intents, enqueueing each row's delivery job. The
+ * job's claim, not this sweep, fails a lease-expired row at the retry cap. A failed page read or
+ * enqueue does not stop the rest; the job fails afterwards with every error so its retry covers
+ * what is still pending.
  */
 export async function processReconcileCopyrightDeliveryIntents(
   dependencyOverrides: Partial<ReconcileCopyrightDeliveryIntentsDeps> = {},
@@ -60,20 +52,15 @@ export async function processReconcileCopyrightDeliveryIntents(
     email: intentId => deps.enqueueSendCopyrightNoticeEmail(intentId),
   }
   const channels = Object.keys(enqueueByChannel) as CopyrightDeliveryChannel[]
-  await Promise.all([
-    ...channels.map(channel =>
+  await Promise.all(
+    channels.map(channel =>
       enqueueEveryCopyrightSweepPage(
         tally,
         page => deps.searchDeliveryIntents({ channel, ...page }),
         enqueueByChannel[channel],
       ),
     ),
-    enqueueEveryCopyrightSweepPage(
-      tally,
-      page => deps.searchEmailIntakeResponses(page),
-      responseId => deps.enqueueSendCopyrightEmailIntakeResponse(responseId),
-    ),
-  ])
+  )
   if (tally.errors.length > 0) {
     throw new AggregateError(tally.errors, 'Copyright delivery reconciliation failed')
   }
