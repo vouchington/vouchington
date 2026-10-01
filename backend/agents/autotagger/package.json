@@ -27,17 +27,13 @@
     "@agents/classifiers": "workspace:^",
     "@jongleberry/vurst-prompt": "^0.4.3",
     "@modules/structured-decisions": "workspace:^",
-    "@modules/utils": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/autotagger": "workspace:^",
     "@services/classifiers": "workspace:^",
-    "@services/conversations-messages": "workspace:^",
-    "@services/openai-agents": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/users": "workspace:^",
-    "@voucha/tools": "workspace:^",
     "@voucha/types": "workspace:^"
   },
   "devDependencies": {

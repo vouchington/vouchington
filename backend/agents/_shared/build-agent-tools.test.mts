@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { buildAgentTools, withCurry, agentToolsToSchemas } from './build-agent-tools.mts'
+import { buildAgentTools, agentToolsToSchemas } from './build-agent-tools.mts'
 import type { Tool } from '@voucha/tools'
 import type { BasicUser } from '@services/users/types'
 
@@ -95,29 +95,6 @@ describe('build-agent-tools', () => {
     expect(capturedArgs[0]).toBe(mockUser)
     expect(capturedArgs[1]).toBe('post')
     expect(capturedArgs[2]).toBe('entity-123')
-  })
-
-  it('withCurry produces a type-safe curried entry equivalent to the object-literal form', async () => {
-    let capturedArgs: unknown[] = []
-
-    const tool: Tool<unknown, string, [string, string]> = {
-      schema: { name: 'curry_tool', type: 'function', parameters: null, strict: null },
-      function: (user: BasicUser, entityType: string, entityId: string) => (_args: unknown) => {
-        capturedArgs = [user, entityType, entityId]
-        return Promise.resolve('done')
-      },
-    }
-
-    const entry = withCurry(tool, 'rss_feed_item', 'feed-456')
-    expect(entry.tool).toBe(tool)
-    expect(entry.curryArgs).toEqual(['rss_feed_item', 'feed-456'])
-
-    const { agentTools } = buildAgentTools(mockUser, [entry])
-    await agentTools[0].executor({} as never)
-
-    expect(capturedArgs[0]).toBe(mockUser)
-    expect(capturedArgs[1]).toBe('rss_feed_item')
-    expect(capturedArgs[2]).toBe('feed-456')
   })
 
   it('returns empty agentTools for empty input', () => {

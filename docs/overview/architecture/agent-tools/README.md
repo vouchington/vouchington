@@ -38,7 +38,7 @@ A tool may be on multiple surfaces simultaneously. Most user-facing tools carry 
 Every tool sets `meta.title`, a human-readable display name that `tools/list` sends as the MCP
 `title`. `meta.annotations` carries the MCP behavior hints: read tools set `readOnlyHint: true`,
 which `tools/list` also sends as `idempotentHint: true`; write tools set `destructiveHint` and
-`idempotentHint` explicitly. Tools that call a third-party service, such as Wikipedia, set
+`idempotentHint` explicitly. Tools that call a third-party service set
 `openWorldHint: true`.
 
 When a tool names REST equivalents in `meta.api`, its hints must agree with them:
@@ -111,7 +111,6 @@ reference.
 - **Search queries** — a tool with a REST equivalent names its query after the REST parameter
   (`q`, `text_search_query`, `semantic_search_query`) and pages like it (`after`, `limit`,
   `page_info`; see [Paged results](../../../requirements/api/v1/mcp/README.md#paged-results)).
-  `query` remains only on tools without one, such as `search_wikipedia`.
 - **Post types** — a `post_type` enum accepts the same values as its REST equivalent:
   `VALID_FILTERABLE_POST_TYPES` for `GET /api/v1/posts` and `VALID_TRENDING_POST_TYPES` for
   `GET /api/v1/trending-posts` (both in `ts-shared/feed-capabilities`).
@@ -148,11 +147,8 @@ tables that persist a row identifier.
 Tools with `surfaces: ['internal']` are excluded from MCP and client surfaces for one of
 these reasons:
 
-- **Write tools with extra curry args** — tools like `add_related_topic` take additional
-  call-time arguments (entity type + entity ID) that cannot be expressed in a flat
-  MCP-style dispatch. They require agent wiring via `withCurry`.
-- **Internal-only data** — tools like `search_crawls`, `search_crawl_chunks`,
-  `search_rss_feed_items` operate on data not appropriate for direct client consumption.
+- **Internal-only data** — `search_rss_feed_items` reads workflow data that is not exposed
+  directly to clients.
 
 ---
 

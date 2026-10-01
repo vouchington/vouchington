@@ -297,9 +297,6 @@ importers:
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
       '@services/ai-usage':
         specifier: workspace:^
         version: link:../../services/ai-usage
@@ -309,12 +306,6 @@ importers:
       '@services/classifiers':
         specifier: workspace:^
         version: link:../../services/classifiers
-      '@services/conversations-messages':
-        specifier: workspace:^
-        version: link:../../services/conversations-messages
-      '@services/openai-agents':
-        specifier: workspace:^
-        version: link:../../services/openai-agents
       '@services/posts':
         specifier: workspace:^
         version: link:../../services/posts
@@ -327,9 +318,6 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
-      '@voucha/tools':
-        specifier: workspace:^
-        version: link:../../tools
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -2589,25 +2577,6 @@ importers:
       '@types/validator':
         specifier: ^13.15.10
         version: 13.15.10
-
-  backend/modules/wikipedia-api:
-    dependencies:
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../utils
-      '@vouchington/wikimedia':
-        specifier: 0.1.0
-        version: 0.1.0
-      http-errors:
-        specifier: ^2.0.1
-        version: 2.0.1
-      undici:
-        specifier: ^8.11.2
-        version: 8.11.2
-    devDependencies:
-      '@types/http-errors':
-        specifier: ^2.0.5
-        version: 2.0.5
 
   backend/modules/worker-queue-inventory: {}
 
@@ -4888,13 +4857,6 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
-    devDependencies:
-      '@services/urls':
-        specifier: workspace:^
-        version: link:../urls
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/services/crawl-embeds:
     dependencies:
@@ -5116,9 +5078,6 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -5158,9 +5117,6 @@ importers:
       '@services/analytics':
         specifier: workspace:^
         version: link:../analytics
-      '@services/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../bedrock-embeddings
       '@services/crawl-chunks':
         specifier: workspace:^
         version: link:../crawl-chunks
@@ -10619,15 +10575,6 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
-      '@modules/wikipedia-api':
-        specifier: workspace:^
-        version: link:../modules/wikipedia-api
-      '@services/crawl-chunks':
-        specifier: workspace:^
-        version: link:../services/crawl-chunks
-      '@services/crawls':
-        specifier: workspace:^
-        version: link:../services/crawls
       '@services/data-points':
         specifier: workspace:^
         version: link:../services/data-points
@@ -10637,15 +10584,9 @@ importers:
       '@services/entity-relation-actions':
         specifier: workspace:^
         version: link:../services/entity-relation-actions
-      '@services/entity-relations':
-        specifier: workspace:^
-        version: link:../services/entity-relations
       '@services/individuals-households':
         specifier: workspace:^
         version: link:../services/individuals-households
-      '@services/openai-agents':
-        specifier: workspace:^
-        version: link:../services/openai-agents
       '@services/posts':
         specifier: workspace:^
         version: link:../services/posts
@@ -10694,13 +10635,7 @@ importers:
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
-      undici:
-        specifier: ^8.11.2
-        version: 8.11.2
     devDependencies:
-      '@services/urls':
-        specifier: workspace:^
-        version: link:../services/urls
       '@services/user-referral-program-links':
         specifier: workspace:^
         version: link:../services/user-referral-program-links
@@ -12853,7 +12788,7 @@ importers:
         version: 3.1141.0
       '@sentry/aws-serverless':
         specifier: 11.0.0
-        version: 11.0.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))
+        version: 11.0.0
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../ts-shared/deploy-environment
@@ -13232,7 +13167,7 @@ importers:
         version: 0.5.20(tailwindcss@4.3.3)
       '@testing-library/jest-dom':
         specifier: ^7.0.1
-        version: 7.0.1(@testing-library/dom@10.4.1)(vitest@5.0.2)
+        version: 7.0.1(@testing-library/dom@10.4.1)(vitest@5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)))
       '@testing-library/react':
         specifier: ^16.3.3
         version: 16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -18472,10 +18407,6 @@ packages:
 
   '@vouchington/uuid-v7@0.0.0':
     resolution: {integrity: sha512-MzrhsHnPzTUw5k1RWVKdfpYLKewPGx8+th4imB01LKIasEWOHxrMcwuZz1FEFgRHZdLtrhIs1DI78pGgOmqwvg==}
-    engines: {node: '>=24.0.0'}
-
-  '@vouchington/wikimedia@0.1.0':
-    resolution: {integrity: sha512-xDb5HaDhufN3B7V9G+HTcu5iYDO+vh8P76t2vR0LWGQegnLD93rSwCrM8vExmZvLLD3QjFapYBdGLRtWuTnlVQ==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/worker-runtime@0.1.0':
@@ -26369,7 +26300,7 @@ snapshots:
       domhandler: 5.0.3
       selderee: 0.12.0
 
-  '@sentry/aws-serverless@11.0.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))':
+  '@sentry/aws-serverless@11.0.0':
     dependencies:
       '@sentry/conventions': 0.23.0
       '@sentry/core': 11.0.0
@@ -26839,7 +26770,7 @@ snapshots:
       picocolors: 1.1.1
       redent: 3.0.0
 
-  '@testing-library/jest-dom@7.0.1(@testing-library/dom@10.4.1)(vitest@5.0.2)':
+  '@testing-library/jest-dom@7.0.1(@testing-library/dom@10.4.1)(vitest@5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)))':
     dependencies:
       '@adobe/css-tools': 4.5.0
       '@testing-library/dom': 10.4.1
@@ -27498,10 +27429,6 @@ snapshots:
   '@vouchington/uuid-v7@0.0.0':
     dependencies:
       uuid: 14.0.2
-
-  '@vouchington/wikimedia@0.1.0':
-    dependencies:
-      '@jongleberry/api-server': 2.1.0
 
   '@vouchington/worker-runtime@0.1.0(glide-mq@0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2)))':
     dependencies:

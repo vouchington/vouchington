@@ -4,15 +4,12 @@ import {
   CHAT_SUBAGENT_RETRY_POLICY,
 } from '@agents/_shared'
 import searchPostsTool from '@voucha/tools/search-posts'
-import searchCrawlsTool from '@voucha/tools/search-crawls'
 import searchRssFeedItemsTool from '@voucha/tools/search-rss-feed-items'
-import searchCrawlsSemanticTool from '@voucha/tools/search-crawls-semantic'
 import searchDataPointsTool from '@voucha/tools/search-data-points'
 import getTopicInsightsTool from '@voucha/tools/get-topic-insights'
 import compareTopicsTool from '@voucha/tools/compare-topics'
 import getReferralLinksTool from '@voucha/tools/get-referral-links'
 import searchTopicsTool from '@voucha/tools/search-topics'
-import getWikipediaSummaryTool from '@voucha/tools/get-wikipedia-summary'
 import getTopicDetailsTool from '@voucha/tools/get-topic-details'
 import getTopicMetricsTool from '@voucha/tools/get-topic-metrics'
 import { RESEARCH_SYSTEM_PROMPT } from './build-system-prompt.mts'
@@ -25,7 +22,7 @@ interface ResearchAgentArgs {
 const researchAgentTool = createSubagentTool<ResearchAgentArgs>({
   name: 'run_research_agent',
   description:
-    'Delegates a research task to a specialized agent that searches posts, web content, data points, and topic insights to produce a comprehensive summary. Use for broad questions requiring multiple searches or deep analysis (e.g. "find the best card for me", "compare travel cards"). Returns a synthesized research summary.',
+    'Delegates a research task to a specialized agent that searches posts, RSS articles, data points, and topic insights to produce a comprehensive summary. Use for broad questions requiring multiple searches or deep analysis (e.g. "find the best card for me", "compare travel cards"). Returns a synthesized research summary.',
   parameters: {
     type: 'object',
     properties: {
@@ -46,15 +43,12 @@ const researchAgentTool = createSubagentTool<ResearchAgentArgs>({
   maxRetries: CHAT_SUBAGENT_RETRY_POLICY.maxRetries,
   toolEntries: [
     searchPostsTool,
-    searchCrawlsTool,
     searchRssFeedItemsTool,
-    searchCrawlsSemanticTool,
     searchDataPointsTool,
     getTopicInsightsTool,
     compareTopicsTool,
     getReferralLinksTool,
     searchTopicsTool,
-    getWikipediaSummaryTool,
     getTopicDetailsTool,
     getTopicMetricsTool,
   ],

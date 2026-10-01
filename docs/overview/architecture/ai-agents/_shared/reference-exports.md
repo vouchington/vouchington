@@ -41,31 +41,13 @@ const response = await createOpenAIResponse(
 Converts an array of `Tool` definitions into `AgentTool[]` for use with `executeToolCalls` or `runToolLoop`. Eliminates per-tool boilerplate.
 
 ```typescript
-import { buildAgentTools, withCurry } from '@agents/_shared'
+import { buildAgentTools } from '@agents/_shared'
 
 // Simple tools
 const { agentTools } = buildAgentTools(currentUser, [searchPostsTool, searchRssFeedItemsTool])
-
-// Tool with extra curry args — use withCurry for end-to-end type safety
-const { agentTools } = buildAgentTools(currentUser, [
-  searchTopicsTool,
-  withCurry(addRelatedTopicTool, entityType, entityId),
-])
 ```
 
 `buildAgentTools` also forwards `formatResult` from each tool if present.
-
-### `withCurry(tool, ...curryArgs)`
-
-Type-safe helper for attaching extra curry args to a tool. Uses variadic tuple inference so TypeScript validates that `curryArgs` match the tool's `TCurry` parameter — no `as never` casts needed. Returns `{ tool, curryArgs }` which is a valid `AgentToolEntry`.
-
-```typescript
-import { withCurry } from '@agents/_shared'
-
-// Equivalent to { tool: addRelatedTopicTool, curryArgs: [entityType, entityId] }
-// but type-checked end-to-end.
-withCurry(addRelatedTopicTool, entityType, entityId)
-```
 
 ### `agentToolsToSchemas(tools)`
 

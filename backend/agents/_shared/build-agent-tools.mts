@@ -19,24 +19,6 @@ type CurriedToolEntry = { tool: DispatchableTool; curryArgs: readonly unknown[] 
 
 export type AgentToolEntry = DispatchableTool | CurriedToolEntry
 
-/**
- * Type-safe helper for binding curry args to a tool.
- * Variadic tuple inference enforces curryArgs match the tool's TCurry parameter
- * at compile time, so callers no longer need `as never` casts.
- *
- * @example
- *   buildAgentTools(currentUser, [
- *     searchPostsTool,
- *     withCurry(addRelatedTopicTool, entityType, entityId),
- *   ])
- */
-export function withCurry<TArgs, TResult, TCurry extends readonly unknown[]>(
-  tool: Tool<TArgs, TResult, TCurry>,
-  ...curryArgs: TCurry
-): { tool: Tool<TArgs, TResult, TCurry>; curryArgs: TCurry } {
-  return { tool, curryArgs }
-}
-
 function isToolEntry(entry: AgentToolEntry): entry is CurriedToolEntry {
   return 'tool' in entry && 'curryArgs' in entry
 }
@@ -53,10 +35,6 @@ function isToolEntry(entry: AgentToolEntry): entry is CurriedToolEntry {
  *     searchRssFeedItemsTool,
  *   ])
  *
- * @example Tool with extra curry args (e.g. add-related-topic):
- *   const { agentTools } = buildAgentTools(currentUser, [
- *     withCurry(addRelatedTopicTool, entityType, entityId),
- *   ])
  */
 export function buildAgentTools(
   currentUser: BasicUser,

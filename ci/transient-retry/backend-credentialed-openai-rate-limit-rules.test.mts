@@ -10,13 +10,12 @@ const backendCredentialedJobName = 'test-backend-credentialed / backend-credenti
 const matchingOpenAILog = buildBackendCredentialedFailureLog([
   {
     project: 'backend-openai',
-    path: 'backend/agents/autotagger/__tests__/openai-autotagger.openai.test.mts',
-    titlePath:
-      'callOpenAIAutotagger > runs with real OpenAI call and persists conversation run metadata',
+    path: 'backend/agents/_shared/__tests__/create-response.openai.test.mts',
+    titlePath: 'createResponse > completes a provider request',
     markerLines: [
       "Error: 429 We're currently processing too many requests - please try again later.",
       "Serialized Error: { status: 429, error: { type: 'invalid_request_error', code: 'rate_limit_exceeded' }, code: 'rate_limit_exceeded' }",
-      'backend/agents/autotagger/__tests__/openai-autotagger.openai.test.mts:35:22',
+      'backend/agents/_shared/__tests__/create-response.openai.test.mts:35:22',
     ],
   },
 ])
@@ -32,11 +31,11 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
 })
 
 describe('backend-credentialed-provider-smoke-test-transient (OpenAI rate-limit variant)', () => {
-  it('recognizes the OpenAI autotagger rate-limit fingerprint', () => {
+  it('recognizes the OpenAI provider rate-limit fingerprint', () => {
     expect(isBackendCredentialedProviderSmokeTestTransient(matchingOpenAILog)).toBe(true)
   })
 
-  it('matches the OpenAI autotagger rate limit on Main CI backend attempt 1', async () => {
+  it('matches the OpenAI provider rate limit on Main CI backend attempt 1', async () => {
     const ctx = makeCtx({
       workflowName: 'Backend',
       failedJobNames: [backendCredentialedJobName],
@@ -52,9 +51,8 @@ describe('backend-credentialed-provider-smoke-test-transient (OpenAI rate-limit 
     const assertionLog = buildBackendCredentialedFailureLog([
       {
         project: 'backend-openai',
-        path: 'backend/agents/autotagger/__tests__/openai-autotagger.openai.test.mts',
-        titlePath:
-          'callOpenAIAutotagger > runs with real OpenAI call and persists conversation run metadata',
+        path: 'backend/agents/_shared/__tests__/create-response.openai.test.mts',
+        titlePath: 'createResponse > completes a provider request',
         markerLines: [
           'AssertionError: expected metadata to be persisted',
           '##[error]Process completed with exit code 1.',

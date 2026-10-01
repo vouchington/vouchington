@@ -20,7 +20,6 @@ crawl/delivery holding a worker slot.
 | Fediverse NodeInfo budget                            | `backend/config/fediverse.mts`                                     | `FEDIVERSE_ADAPTER_BUDGET_MS`    | 4,500  |
 | Domain verification — DNS/SSRF resolution            | `backend/services/topic-claims/domain-verification-well-known.mts` | `DNS_TIMEOUT_MS`                 | 5,000  |
 | Domain verification well-known                       | `backend/services/topic-claims/domain-verification-well-known.mts` | `FETCH_TIMEOUT_MS`               | 10,000 |
-| Wikipedia API                                        | `backend/modules/wikipedia-api/api.mts`                            | `REQUEST_TIMEOUT_MS`             | 10,000 |
 | robots.txt                                           | `backend/services/urls-domains-robots/index.mts`                   | `FETCH_TIMEOUT_MS`               | 10,000 |
 | Remote ActivityPub actor fetch — DNS/SSRF resolution | `backend/services/remote-actors/fetch-remote-actor-document.mts`   | `DNS_TIMEOUT_MS`                 | 5,000  |
 | Remote ActivityPub actor fetch                       | `backend/services/remote-actors/fetch-remote-actor-document.mts`   | `FETCH_TIMEOUT_MS`               | 10,000 |

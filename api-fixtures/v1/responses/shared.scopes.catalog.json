@@ -224,15 +224,6 @@
       "resource": "topics",
       "scope": "topics:read",
       "surfaces": ["api-key", "oauth"]
-    },
-    {
-      "action": "read",
-      "audience": "user",
-      "description_key": null,
-      "requires": null,
-      "resource": "wikipedia",
-      "scope": "wikipedia:read",
-      "surfaces": ["api-key", "oauth"]
     }
   ]
 }

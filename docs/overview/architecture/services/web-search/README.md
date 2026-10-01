@@ -23,9 +23,7 @@ Full-text search over crawled pages and URL-string matching.
 
 ## Notes
 
-The hostname/crawl filter conditions mirror `buildValidCrawlChunksFilter()` from
-`@services/crawls/tools/filters.mts`. They are inlined here because the conditions must live
-inside the `content` CTE rather than appended as a separate SQL fragment.
+The hostname/crawl validity and freshness conditions live inside the `content` CTE.
 
 The `content` CTE picks the best-ranked chunk across all valid crawls for each URL in the
 trailing 30 days, not necessarily the chunk from the most recent crawl. A URL crawled multiple

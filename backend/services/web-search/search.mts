@@ -10,10 +10,7 @@ import type { WebSearchOptions, WebSearchResponse, WebSearchResult } from './typ
 /**
  * Full-text search over crawled pages and URL-string match.
  *
- * The hostname/crawl filter logic mirrors `buildValidCrawlChunksFilter()` from
- * `@services/crawls/tools/filters.mts` — inlined here because the CTE structure
- * requires the conditions to be embedded inside the `content` CTE rather than
- * appended as a fragment.
+ * Validity and freshness conditions stay inside the content CTE.
  */
 export async function searchWeb(options: WebSearchOptions): Promise<WebSearchResponse> {
   const { query } = options

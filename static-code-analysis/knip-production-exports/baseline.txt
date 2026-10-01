@@ -1,8 +1,5 @@
 exports backend/agents/_shared/create-response.mts getBackgroundResponseHooks
 exports backend/agents/_shared/create-response.mts getOpenAIResponseAttemptHooks
-exports backend/agents/autotagger/content.mts createPostAutotagContent
-exports backend/agents/autotagger/content.mts createRssFeedItemAutotagContent
-exports backend/agents/autotagger/openai-autotagger.mts callOpenAIAutotagger
 exports backend/agents/chat/stream.mts streamChatResponse
 exports backend/agents/classifiers/execute.mts executeClassifierDecision
 exports backend/agents/classifiers/safe-content.mts classifierChoiceKey

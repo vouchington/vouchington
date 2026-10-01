@@ -145,13 +145,6 @@
       "requiredScopes": ["topics:read"]
     },
     {
-      "name": "get_wikipedia_summary",
-      "description": "Gets detailed summary information for a Wikipedia article by title. Returns the full Wikipedia page data including description, extract, URL, and thumbnail. Use this after searching to get complete details about a specific article.",
-      "parameters": null,
-      "api": null,
-      "requiredScopes": ["wikipedia:read"]
-    },
-    {
       "name": "manage_my_cards",
       "description": "Manage the current user's wallet cards: add, update, or remove them. List them with get_my_cards.",
       "parameters": null,
@@ -254,13 +247,6 @@
         }
       ],
       "requiredScopes": ["topics:read"]
-    },
-    {
-      "name": "search_wikipedia",
-      "description": "Searches Wikipedia for articles by title. Returns a list of matching Wikipedia pages with their titles and page IDs. Use this to find relevant Wikipedia articles based on keywords or topics mentioned in the content.",
-      "parameters": null,
-      "api": null,
-      "requiredScopes": ["wikipedia:read"]
     },
     {
       "name": "update_my_financial_profile",

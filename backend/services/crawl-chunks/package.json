@@ -31,8 +31,5 @@
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2"
   },
-  "devDependencies": {
-    "@services/urls": "workspace:^",
-    "@voucha/test-helpers": "workspace:^"
-  }
+  "devDependencies": {}
 }
