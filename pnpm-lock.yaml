@@ -12606,6 +12606,9 @@ importers:
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
+      playwright:
+        specifier: 1.63.0
+        version: 1.63.0
       rehype-stringify:
         specifier: ^10.0.1
         version: 10.0.1
