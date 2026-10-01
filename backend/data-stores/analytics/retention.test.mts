@@ -31,6 +31,20 @@ describe('analytics retention', () => {
     await expectFileExists('queue_jobs', '2026-01-02')
   })
 
+  it('keeps api usage files for 90 days', async () => {
+    await writeJsonl('api_usage', '2026-01-01', [{ status_code: 200 }])
+    await writeJsonl('api_usage', '2026-01-02', [{ status_code: 200 }])
+
+    const result = await cleanupLocalAnalyticsRetention({
+      localDir: testDir,
+      now: new Date('2026-04-02T00:00:00.000Z'),
+    })
+
+    expect(result.deletedFiles).toBe(1)
+    await expectFileMissing('api_usage', '2026-01-01')
+    await expectFileExists('api_usage', '2026-01-02')
+  })
+
   it('deletes old 365-day web click and auth session files', async () => {
     await writeJsonl('web_click', '2025-01-01', [{ target_kind: 'item' }])
     await writeJsonl('auth_sessions', '2025-01-01', [{ event_type: 'created' }])

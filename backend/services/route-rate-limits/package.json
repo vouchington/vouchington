@@ -26,6 +26,8 @@
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",
     "@modules/on-error": "workspace:^",
+    "@modules/scopes": "workspace:^",
+    "@services/analytics": "workspace:^",
     "@services/user-rate-limits": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/session-jwt": "workspace:^"

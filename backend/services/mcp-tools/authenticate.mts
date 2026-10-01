@@ -16,7 +16,12 @@ type McpVerifiedCredential =
       apiKeyId: string
       rateLimitIdentity: { apiKeyId: string }
     }
-  | { credential: 'oauth'; oauthClientId: string; rateLimitIdentity: { userId: string } }
+  | {
+      credential: 'oauth'
+      oauthClientId: string
+      oauthGrantId: string
+      rateLimitIdentity: { userId: string }
+    }
 
 export type McpBearerAuthentication =
   | { status: 'missing' }
@@ -55,6 +60,7 @@ async function verifyMcpBearerToken(
       credential: {
         credential: 'oauth',
         oauthClientId: principal.client_id,
+        oauthGrantId: principal.grant_id,
         rateLimitIdentity: { userId: principal.user_id },
       },
       scopes: principal.scopes,

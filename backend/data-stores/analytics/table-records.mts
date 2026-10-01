@@ -167,3 +167,32 @@ export interface ContributionAdmissionRecord extends AnalyticsBaseRecord {
   outcome: 'created' | 'replay' | 'mismatch' | 'in_progress' | 'failed'
   duration_ms: number
 }
+
+// ---------------------------------------------------------------------------
+// api_usage
+// ---------------------------------------------------------------------------
+
+/**
+ * One row per metered API request. Attributed to the validated identity (owner user plus the API
+ * key id, or the OAuth client and grant), never to a bearer token or API key secret.
+ */
+export interface ApiUsageRecord extends AnalyticsBaseRecord {
+  surface: 'mcp_user' | 'mcp_admin'
+  credential: 'api_key' | 'oauth'
+  user_id: string
+  /** api_keys row id; set only for `credential: 'api_key'` */
+  api_key_id?: string
+  /** Public OAuth client_id; set only for `credential: 'oauth'` */
+  oauth_client_id?: string
+  /** oauth_grants row id; set only for `credential: 'oauth'` */
+  oauth_grant_id?: string
+  plan: 'free' | 'plus' | 'pro'
+  scope_class: 'read' | 'write'
+  unit: 'request'
+  /** Billable units: 1 for a served 2xx/4xx response, 0 for a 429 or an actual 5xx. */
+  units: number
+  status_code: number
+  /** Requests per 15 minutes selected for this surface, plan and scope class. */
+  quota_limit: number
+  duration_ms: number
+}
