@@ -5,17 +5,17 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import { expireTestCopyrightEmailIntakeResponseClaim } from '@voucha/test-helpers/data-stores/psql/copyright-delivery-claims'
+import { expireTestCopyrightDeliveryIntentClaim } from '@voucha/test-helpers/data-stores/psql/copyright-delivery-claims'
 import { readCopyrightEmailIntakeReview } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
   createCopyrightEmailIntake,
-  prepareCopyrightEmailIntakeResponseDelivery,
+  prepareCopyrightEmailDelivery,
   promoteCopyrightEmailIntake,
   recordCopyrightEmailParse,
   rejectCopyrightEmailIntake,
-  searchRecoverableCopyrightEmailIntakeResponseIds,
+  searchRecoverableCopyrightDeliveryIntentIds,
 } from './index.mts'
 import { appendCopyrightEmailIntakeRecommendation } from './email-recommendations.mts'
 import { getCopyrightEmailIntakeForAgent } from './email-intake-parses.mts'
@@ -25,7 +25,7 @@ import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/co
 
 function readRecoverableResponseIds(responseId: string) {
   return readTestOwnedCopyrightSweepIds(
-    searchRecoverableCopyrightEmailIntakeResponseIds,
+    options => searchRecoverableCopyrightDeliveryIntentIds({ ...options, channel: 'email' }),
     responseId,
   )
 }
@@ -151,19 +151,19 @@ describe('copyright email intake persistence', () => {
     if (!responseId) throw new Error('Email intake response was not created')
     await expect(readRecoverableResponseIds(responseId)).resolves.toEqual([responseId])
     await expect(
-      prepareCopyrightEmailIntakeResponseDelivery('00000000-0000-7000-8000-000000000046'),
-    ).rejects.toThrow('Copyright email intake response is not available to send')
-    await expect(prepareCopyrightEmailIntakeResponseDelivery(responseId)).resolves.toMatchObject({
+      prepareCopyrightEmailDelivery('00000000-0000-7000-8000-000000000046'),
+    ).rejects.toThrow('Copyright delivery intent is not available to send')
+    await expect(prepareCopyrightEmailDelivery(responseId)).resolves.toMatchObject({
       recipientEmail: expect.stringMatching(/^claimant-/),
       subject: 'More information is needed for your copyright notice',
       text: expect.stringContaining('Please identify the copyrighted work'),
     })
     await expect(readRecoverableResponseIds(responseId)).resolves.toEqual([])
 
-    await expireTestCopyrightEmailIntakeResponseClaim(responseId, 5)
+    await expireTestCopyrightDeliveryIntentClaim(responseId, 5)
     await expect(readRecoverableResponseIds(responseId)).resolves.toEqual([responseId])
-    await expect(prepareCopyrightEmailIntakeResponseDelivery(responseId)).rejects.toThrow(
-      'Copyright email intake response is not available to send',
+    await expect(prepareCopyrightEmailDelivery(responseId)).rejects.toThrow(
+      'Copyright delivery intent is not available to send',
     )
     await expect(readRecoverableResponseIds(responseId)).resolves.toEqual([])
   })

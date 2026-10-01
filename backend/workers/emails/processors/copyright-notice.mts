@@ -1,22 +1,18 @@
 import { sendClassifiedEmail } from '@services/email-classification'
 import {
-  CopyrightEmailIntakeResponseNotClaimedError,
   CopyrightDeliveryNotClaimedError,
-  markCopyrightEmailIntakeResponseFailed,
-  markCopyrightEmailIntakeResponseSent,
   markCopyrightDeliveryIntentFailed,
   markCopyrightDeliveryIntentEmailSent,
-  prepareCopyrightEmailIntakeResponseDelivery,
+  markCopyrightDeliveryIntentSent,
   prepareCopyrightEmailDelivery,
 } from '@services/copyright-notices'
 
 export async function processSendCopyrightNoticeEmail(data: {
-  intentId?: string
-  intakeResponseId?: string
+  intentId: string
 }): Promise<boolean> {
-  let prepared: Awaited<ReturnType<typeof prepareCopyrightEmail>> | undefined
+  let prepared: Awaited<ReturnType<typeof prepareCopyrightEmailDelivery>> | undefined
   try {
-    prepared = await prepareCopyrightEmail(data)
+    prepared = await prepareCopyrightEmailDelivery(data.intentId)
     const result = (await sendClassifiedEmail('processSendCopyrightNoticeEmail', {
       to: prepared.recipientEmail,
       subject: prepared.subject,
@@ -28,61 +24,25 @@ export async function processSendCopyrightNoticeEmail(data: {
     if (typeof result.MessageId !== 'string' || result.MessageId.length === 0) {
       throw new Error('SES accepted copyright email without a MessageId')
     }
-    return await markCopyrightEmailSent(data, prepared, result.MessageId)
+    const { leaseToken, correspondenceId } = prepared
+    const sesMessageId = result.MessageId
+    // A reply to a declined email intake has no case correspondence to mark sent.
+    return correspondenceId
+      ? await markCopyrightDeliveryIntentEmailSent({
+          intentId: data.intentId,
+          leaseToken,
+          correspondenceId,
+          sesMessageId,
+        })
+      : await markCopyrightDeliveryIntentSent({ intentId: data.intentId, leaseToken, sesMessageId })
   } catch (error) {
-    if (
-      error instanceof CopyrightDeliveryNotClaimedError ||
-      error instanceof CopyrightEmailIntakeResponseNotClaimedError
-    )
-      return false
-    if (prepared) await markCopyrightEmailFailed(data, prepared.leaseToken, error)
+    if (error instanceof CopyrightDeliveryNotClaimedError) return false
+    if (prepared)
+      await markCopyrightDeliveryIntentFailed({
+        intentId: data.intentId,
+        leaseToken: prepared.leaseToken,
+        error: error instanceof Error ? error.message : String(error),
+      })
     throw error
-  }
-}
-
-async function prepareCopyrightEmail(data: { intentId?: string; intakeResponseId?: string }) {
-  if (data.intentId && !data.intakeResponseId) return prepareCopyrightEmailDelivery(data.intentId)
-  if (data.intakeResponseId && !data.intentId) {
-    const response = await prepareCopyrightEmailIntakeResponseDelivery(data.intakeResponseId)
-    return { ...response, correspondenceId: null }
-  }
-  throw new Error('Copyright email job must identify exactly one delivery')
-}
-
-async function markCopyrightEmailSent(
-  data: { intentId?: string; intakeResponseId?: string },
-  prepared: Awaited<ReturnType<typeof prepareCopyrightEmail>>,
-  sesMessageId: string,
-): Promise<boolean> {
-  if (data.intentId && prepared.correspondenceId)
-    return markCopyrightDeliveryIntentEmailSent({
-      intentId: data.intentId,
-      leaseToken: prepared.leaseToken,
-      correspondenceId: prepared.correspondenceId,
-      sesMessageId,
-    })
-  return markCopyrightEmailIntakeResponseSent({
-    responseId: data.intakeResponseId!,
-    leaseToken: prepared.leaseToken,
-    sesMessageId,
-  })
-}
-
-async function markCopyrightEmailFailed(
-  data: { intentId?: string; intakeResponseId?: string },
-  leaseToken: string,
-  error: unknown,
-): Promise<void> {
-  const message = error instanceof Error ? error.message : String(error)
-  if (data.intentId && !data.intakeResponseId) {
-    await markCopyrightDeliveryIntentFailed({ intentId: data.intentId, leaseToken, error: message })
-    return
-  }
-  if (data.intakeResponseId && !data.intentId) {
-    await markCopyrightEmailIntakeResponseFailed({
-      responseId: data.intakeResponseId,
-      leaseToken,
-      error: message,
-    })
   }
 }

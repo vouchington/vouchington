@@ -18,6 +18,11 @@ const isolatedDatabaseCases = {
     fullName:
       'searchCopyrightStaffEmailIntakes > hides the queue from non-reviewers and lists unreviewed intakes, parsed or not, for staff',
   },
+  'copyright-staff-email-intake-reply-failures': {
+    file: 'backend/services/copyright-notices/email-intakes-staff-queue-reply-failures.test.mts',
+    fullName:
+      'copyright email intake queue reply failures > lists a declined intake whose reply failed or bounced with its reason and wait, and hides the rest',
+  },
   'copyright-email-queue-exact-limit': {
     file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
     fullName:

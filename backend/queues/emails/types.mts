@@ -88,9 +88,7 @@ export type ProcessSendCommunityModerationSummaryEmailVariables = Omit<
 }
 
 export type ProcessSendWelcomeEmailVariables = WelcomeEmailProps
-export type ProcessSendCopyrightNoticeEmailVariables =
-  | { intentId: string; intakeResponseId?: never }
-  | { intakeResponseId: string; intentId?: never }
+export type ProcessSendCopyrightNoticeEmailVariables = { intentId: string }
 
 export type ProcessSendCommunityApplicationDecisionEmailVariables =
   CommunityApplicationDecisionEmailProps

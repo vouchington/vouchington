@@ -26,14 +26,6 @@ export {
 export { promoteCopyrightEmailIntake } from './email-promotion.mts'
 export { rejectCopyrightEmailIntake } from './email-rejection.mts'
 export {
-  CopyrightEmailIntakeResponseNotClaimedError,
-  markCopyrightEmailIntakeResponseFailed,
-  markCopyrightEmailIntakeResponseSent,
-  markCopyrightEmailIntakeResponseBouncedBySesMessageId,
-  prepareCopyrightEmailIntakeResponseDelivery,
-  searchRecoverableCopyrightEmailIntakeResponseIds,
-} from './email-intake-responses.mts'
-export {
   getCopyrightStaffEmailIntake,
   getCopyrightParticipantNoticeDetail,
   getCopyrightPublicNoticeDetail,

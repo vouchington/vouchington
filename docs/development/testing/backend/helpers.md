@@ -364,11 +364,16 @@ reconcile page function that returns a `CopyrightSweepIdPage`; wrap a page funct
 or `channel` as `options => searchPage({ ...options, now })`.
 
 Delivery claims compare their 15-minute lease with the database's `CURRENT_TIMESTAMP`, so a test
-cannot advance the clock past it. `expireTestCopyrightDeliveryIntentClaim(id, attempts)` and
-`expireTestCopyrightEmailIntakeResponseClaim(id, attempts)` from
-`@voucha/test-helpers/data-stores/psql/copyright-delivery-claims` age one owned claimed row's lease
-and set its attempt count, so a test can assert the sweep lists it and the next claim reclaims or
-fails it.
+cannot advance the clock past it. `expireTestCopyrightDeliveryIntentClaim(id, attempts)` from
+`@voucha/test-helpers/data-stores/psql/copyright-delivery-claims` ages one owned claimed row's lease
+and sets its attempt count, so a test can assert the sweep lists it and the next claim reclaims or
+fails it. It covers case deliveries and replies to declined email intakes alike, because both are
+rows of `copyright_notice_delivery_intents`.
+
+`declineTestCopyrightEmailIntake()` and `bounceTestCopyrightEmailIntakeReply(intentId)` from
+`@voucha/test-helpers/services/copyright-notices/declined-email-intake` create a parsed intake and
+decline it through the real service, and send then bounce its reply. They return the intake and
+intent ids that a test of the reply outbox needs.
 
 ### Embedding collisions
 
@@ -452,7 +457,8 @@ The staff email intake queue (`GET /api/v1/copyright-email-intakes/review-queue`
 keyset ordering, but its global query cannot prove fixture ownership from an `after` cursor alone.
 Its exact global pagination cases run against fresh disposable databases through
 `test-helpers/vitest-isolated-database-case.mts`; shared-DB calls to this cataloged operation are
-rejected by the test guard. For notification push intent recovery, pass the test's owned
+rejected by the test guard. The reply-failure listing runs in the isolated
+`copyright-staff-email-intake-reply-failures` case for the same reason. For notification push intent recovery, pass the test's owned
 `notificationIds` on every page, including pages with an `after` cursor. A cursor only advances
 ordering; it does not exclude another fixture's eligible row.
 

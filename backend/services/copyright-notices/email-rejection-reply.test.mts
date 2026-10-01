@@ -9,7 +9,7 @@ import {
   createUnparsedCopyrightEmailIntake,
 } from './email-intake-test-fixtures.mts'
 import {
-  prepareCopyrightEmailIntakeResponseDelivery,
+  prepareCopyrightEmailDelivery,
   recordCopyrightEmailParse,
   rejectCopyrightEmailIntake,
 } from './index.mts'
@@ -73,11 +73,22 @@ describe.each([
 
       expect(result).toEqual({ responseId: expect.any(String), replyQueued: true })
       await expect(readCopyrightEmailIntakeResponses(intake.id)).resolves.toEqual([
-        { id: result.responseId, response_kind: kind, state: 'pending' },
+        { id: result.responseId, delivery_kind: `email_intake_${kind}`, state: 'pending' },
       ])
-      await expect(
-        prepareCopyrightEmailIntakeResponseDelivery(result.responseId as string),
-      ).resolves.toMatchObject({ recipientEmail: replyEmail })
+      await expect(prepareCopyrightEmailDelivery(result.responseId as string)).resolves.toEqual({
+        leaseToken: expect.any(String),
+        correspondenceId: null,
+        recipientEmail: replyEmail,
+        subject:
+          kind === 'rejected'
+            ? 'We could not accept your copyright notice'
+            : 'More information is needed for your copyright notice',
+        text: expect.stringContaining(
+          kind === 'rejected'
+            ? 'We could not accept your copyright notice.'
+            : 'Please identify the copyrighted work',
+        ),
+      })
       await expect(decide(intake.id, input)).resolves.toEqual({
         responseId: null,
         replyQueued: true,
@@ -122,11 +133,11 @@ describe('a copyright email intake with a succeeded parse', () => {
     const result = await decide(intake.id, decision)
 
     expect(result).toEqual({ responseId: expect.any(String), replyQueued: true })
-    await expect(
-      prepareCopyrightEmailIntakeResponseDelivery(result.responseId as string),
-    ).resolves.toMatchObject({
-      recipientEmail: expect.stringMatching(/^claimant-.+@example\.test$/),
-    })
+    await expect(prepareCopyrightEmailDelivery(result.responseId as string)).resolves.toMatchObject(
+      {
+        recipientEmail: expect.stringMatching(/^claimant-.+@example\.test$/),
+      },
+    )
   })
 
   it('refuses a typed reply address and records nothing', async () => {

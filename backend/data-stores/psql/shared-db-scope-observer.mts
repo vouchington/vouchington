@@ -10,7 +10,6 @@ export const sharedDbScopeTables = {
   searchRecoverableCopyrightActionIntentIds: 'copyright_notice_action_intents',
   searchBlockedCopyrightHoldRestorationNoticeIds: 'copyright_notices',
   searchRecoverableCopyrightDeliveryIntentIds: 'copyright_notice_delivery_intents',
-  searchRecoverableCopyrightEmailIntakeResponseIds: 'copyright_notice_email_intake_responses',
   replayFailedMediaDeliveryRegistryRecords: 'media_delivery_registry_records',
   listRecoverableMediaDeliveryRegistryKeys: 'media_delivery_registry_records',
   stageAllCurrentImagePlacementDeliveryRecords: 'media_delivery_registry_records',
