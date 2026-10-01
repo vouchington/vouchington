@@ -20,7 +20,11 @@ import {
 const root = resolve(import.meta.dirname, '../..')
 
 function allTrackedFiles(): string[] {
-  return execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
+  return execFileSync('git', ['ls-files', '-z'], {
+    cwd: root,
+    encoding: 'utf8',
+    maxBuffer: 4 * 1024 * 1024,
+  })
     .split('\0')
     .filter(Boolean)
 }
