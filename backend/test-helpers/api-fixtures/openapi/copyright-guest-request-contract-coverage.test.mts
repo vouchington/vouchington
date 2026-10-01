@@ -43,7 +43,7 @@ describe('copyright guest request contracts', () => {
     const schema = resolve(carriersOf(operation).body)
     expect(schema.type).toBe('object')
     expect(schema.additionalProperties).toBe(false)
-    expect([...(schema.required as string[])].sort()).toEqual(required)
+    expect((schema.required as string[]).toSorted()).toEqual(required)
   })
 
   it('keeps the guest filing CAPTCHA token an optional string', () => {
@@ -52,13 +52,13 @@ describe('copyright guest request contracts', () => {
   })
 
   it('limits the guest filing kind to the three accepted kinds', () => {
-    expect([...(properties(FILING).kind!.enum as string[])].sort()).toEqual(FILING_KINDS)
+    expect((properties(FILING).kind!.enum as string[]).toSorted()).toEqual(FILING_KINDS)
   })
 
   it.each(Object.entries(PATH_PARAMETERS))('%s declares its path ids', (operation, names) => {
     const path = carriersOf(operation).path as { properties: Schema; required: string[] }
-    expect([...path.required].sort()).toEqual(names)
-    expect(Object.keys(path.properties).sort()).toEqual(names)
+    expect(path.required.toSorted()).toEqual(names)
+    expect(Object.keys(path.properties).toSorted()).toEqual(names)
   })
 
   it('declares revocation without a body or query carrier', () => {
