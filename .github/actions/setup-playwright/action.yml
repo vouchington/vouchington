@@ -4,8 +4,9 @@ description: >
   with no persisted local state, so ~/.cache/ms-playwright is restored from
   actions/cache (keyed on the pnpm lockfile hash, with no restore-keys
   fallback so a stale or mismatched browser cache never silently restores —
-  a miss just re-installs). Dependency installation is scoped to the current
-  ephemeral runner.
+  a miss just re-installs). Missing Chromium system libraries are repaired with
+  apt on the current ephemeral runner; the browser download is separately
+  bounded and retried once.
 
 runs:
   using: composite
@@ -25,10 +26,41 @@ runs:
         path: ~/.cache/ms-playwright
         key: playwright-browsers-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright-cache-key.outputs.lockfile-hash }}
 
+    - name: Install Playwright system dependencies
+      shell: bash
+      # Never wrap this step in ci/run-bounded.py. Playwright runs `apt-get` through `sudo`, so the
+      # apt/dpkg processes are root-owned and an unprivileged deadline cannot reach them: it kills
+      # only the runner-owned parents, apt keeps downloading with the dpkg locks held, and a retry
+      # then waits on its predecessor's locks until it is killed too.
+      #
+      # Playwright always adds its `tools` font group to the Chromium dependency set, and the
+      # GitHub-hosted images do not ship it. Chromium launches without those fonts and no test here
+      # asserts pixels, so a font-only gap is not repaired: the packages come from a mirror that
+      # intermittently serves them at ~100 KB/s. A missing library is still repaired, and an
+      # unrecognised dry-run result takes the repair path. The wait-for-apt-locks deadline, apt's
+      # own network timeouts, and the caller's step timeout bound that path.
+      run: |
+        set -euo pipefail
+        missing_libraries() {
+          local report
+          report="$(pnpm exec playwright install-deps --dry-run chromium 2>&1 || true)"
+          printf '%s\n' "$report" >&2
+          printf '%s\n' "$report" | grep -E '^  ' | grep -Ev '^  x?fonts-' || true
+        }
+        if [ -z "$(missing_libraries)" ]; then
+          exit 0
+        fi
+        bash "$GITHUB_WORKSPACE/ci/wait-for-apt-locks.sh"
+        if [ -z "$(missing_libraries)" ]; then
+          exit 0
+        fi
+        pnpm exec playwright install-deps chromium
+
     - name: Install Playwright browsers
       shell: bash
-      # A stalled apt or browser download must die inside this attempt. Healthy installs
-      # finish well under two minutes; one retry covers a transient mirror stall.
+      # A stalled browser download must die inside this attempt. It runs as the runner user, so
+      # ci/run-bounded.py reaches its whole process group. Healthy installs finish well under two
+      # minutes; one retry covers a transient download stall.
       run: |
         set -euo pipefail
         attempt=1
@@ -36,16 +68,7 @@ runs:
         install_status=0
         while [ "$attempt" -le "$max_attempts" ]; do
           set +e
-          python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 120 bash -c '
-            set -euo pipefail
-            if pnpm exec playwright install-deps --dry-run chromium > /dev/null 2>&1; then
-              :
-            else
-              bash "$GITHUB_WORKSPACE/ci/wait-for-apt-locks.sh"
-              pnpm exec playwright install-deps --dry-run chromium || pnpm exec playwright install-deps chromium
-            fi
-            pnpm exec playwright install chromium
-          '
+          python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 120 pnpm exec playwright install chromium
           install_status=$?
           set -e
           if [ "$install_status" -eq 0 ]; then

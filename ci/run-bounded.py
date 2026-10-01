@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Run a command until it exits or the deadline elapses, then kill its process group."""
+"""Run a command until it exits or the deadline elapses, then kill its process group.
+
+The signals come from the calling user, so a root-owned descendant (anything run through
+`sudo`, such as Playwright's apt-get) survives the deadline, keeps its locks, and outlives
+the exit status 124 reported here. Bound only commands that run entirely as the caller.
+"""
 
 from __future__ import annotations
 

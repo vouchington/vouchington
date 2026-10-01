@@ -149,7 +149,8 @@ jobs:
           fi
       - name: Set image origin
         run: echo "IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT" >> "$GITHUB_ENV"
-      # Covers browser-cache restore plus two 2-minute install attempts.
+      # Covers browser-cache restore, the dependency probe, and two 2-minute browser download
+      # attempts. An apt repair of a missing system library is bounded by this step timeout.
       - uses: ./.github/actions/setup-playwright
         timeout-minutes: 5
       - name: Create cloudflare worker dev vars
