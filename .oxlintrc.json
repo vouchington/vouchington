@@ -16,7 +16,8 @@
     "promise",
     "oxc",
     "typescript",
-    "unicorn"
+    "unicorn",
+    "import"
   ],
   "jsPlugins": [
     "eslint-plugin-playwright",
@@ -48,45 +49,38 @@
     "respectEslintDisableDirectives": true
   },
   "rules": {
-    "import/consistent-type-specifier-style": "error",
-    "import/export": "error",
-    "import/exports-last": "error",
-    "import/extensions": [
-      "error",
-      "ignorePackages",
-      {
-        "mts": "always",
-        "ts": "never",
-        "js": "never",
-        "jsx": "never",
-        "cjs": "never",
-        "cts": "never",
-        "mjs": "never"
-      }
-    ],
-    "import/first": "error",
-    "import/group-exports": "error",
-    "import/max-dependencies": "error",
+    "import/consistent-type-specifier-style": "off", // Policy: Both inline and separate type imports are supported.
+    "import/exports-last": "off", // Policy: Exports remain next to the declarations they describe.
+    "import/extensions": "off", // Policy: Web extensionless imports and backend .mts imports follow their own resolvers.
+    "import/first": "off", // Policy: Module-level setup and imports may be interleaved where initialization requires it.
+    "import/group-exports": "off", // Policy: Exports stay near their declarations.
+    "import/max-dependencies": "off", // Policy: Module boundaries determine dependencies, without a fixed count.
+    "import/no-commonjs": "off", // Policy: Tool configuration and CJS plugin entrypoints use CommonJS.
+    "import/no-default-export": "off", // Policy: Framework entrypoints and package APIs may require default exports.
+    "import/no-named-export": "off", // Policy: Named exports are the backend convention.
+    "import/no-namespace": "off", // Policy: Namespace imports remain useful for module APIs.
+    "import/no-nodejs-modules": "off", // Policy: Backend and tooling intentionally use node: builtin imports.
+    "import/no-relative-parent-imports": "off", // Policy: Relative parent imports are valid within package boundaries.
+    "import/prefer-default-export": "off", // Policy: Named exports remain valid for modules with one declaration.
+    "import/unambiguous": "off", // Policy: Types-only and configuration files need not contain runtime module syntax.
+    "import/no-unassigned-import": "off", // Policy: Side-effect imports intentionally install initialization and styles.
+    "import/export": "off", // Staged #1696: 8 findings; scan 2026-10-01.
+    "import/namespace": "off", // Staged #1696: 9 findings; scan 2026-10-01.
+    "import/no-anonymous-default-export": "off", // Staged #1696: 7 findings; scan 2026-10-01.
+    "import/no-cycle": "off", // Staged #1696: 4 findings; scan 2026-10-01.
+    "import/no-duplicates": "off", // Staged #1696: 3 findings; scan 2026-10-01.
+    "import/no-named-as-default": "off", // Staged #1696: 3 findings; scan 2026-10-01.
+    "import/no-named-as-default-member": "off", // Staged #1696: 15 findings; scan 2026-10-01.
+    "import/no-dynamic-require": "error",
+    "import/no-named-default": "error",
+    "import/no-webpack-loader-syntax": "error",
+    "import/no-mutable-exports": "error",
+    "import/no-self-import": "error",
     "import/named": "error",
     "import/no-amd": "error",
-    "import/no-anonymous-default-export": "error",
-    "import/no-commonjs": "error",
-    "import/no-cycle": "error",
-    "import/no-default-export": "error",
-    "import/no-duplicates": "error",
-    "import/no-dynamic-require": "error",
-    "import/no-mutable-exports": "error",
-    "import/no-named-as-default": "error",
-    "import/no-named-as-default-member": "error",
-    "import/no-named-default": "error",
-    "import/no-named-export": "error",
-    "import/no-namespace": "error",
-    "import/no-nodejs-modules": "error",
-    "import/no-relative-parent-imports": "error",
-    "import/no-self-import": "error",
-    "import/no-webpack-loader-syntax": "error",
-    "import/prefer-default-export": "error",
-    "import/unambiguous": "error",
+    "import/default": "error", // Category-activated safety rule: imports must name a real default export.
+    "import/no-absolute-path": "error", // Category-activated safety rule: imports remain portable.
+    "import/no-empty-named-blocks": "error", // Category-activated safety rule: empty import bindings are unintended.
     "unicorn/catch-error-name": ["off", { "name": "err" }], // Staged #1695: 1365 findings / 872 files; scan 2026-10-01.
     "unicorn/consistent-assert": "off", // Staged #1692: 39 findings / 16 files; scan 2026-10-01.
     "unicorn/consistent-function-scoping": "off", // Policy: local functions may capture context even when hoisting is possible.
@@ -171,7 +165,7 @@
     "unicorn/prefer-module": "off", // Policy: CommonJS tooling and ES modules coexist in this repository.
     "unicorn/prefer-native-coercion-functions": "error",
     "unicorn/prefer-negative-index": "error",
-    "unicorn/prefer-node-protocol": "off", // Staged #1692: 1 findings / 1 files; scan 2026-10-01.
+    "unicorn/prefer-node-protocol": "error",
     "unicorn/prefer-number-properties": "off", // Policy: global numeric functions are allowed where their coercion is intended.
     "unicorn/prefer-object-from-entries": "error",
     "unicorn/prefer-optional-catch-binding": "error",
@@ -567,7 +561,7 @@
     // (not just removed) because the oxc plugin default for this rule is "error", so an absent
     // entry would silently re-enable it.
     "oxc/no-async-endpoint-handlers": "off",
-    "oxc/no-barrel-file": "error",
+    "oxc/no-barrel-file": "off", // Policy: canonical index.mts package/service barrels are the repository architecture.
     "oxc/no-const-enum": "error",
     "oxc/no-map-spread": "off",
     "oxc/no-optional-chaining": "off",

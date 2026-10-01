@@ -13,7 +13,8 @@
     "promise",
     "oxc",
     "typescript",
-    "unicorn"
+    "unicorn",
+    "import"
   ],
   "rules": {
     "no-console": "off",

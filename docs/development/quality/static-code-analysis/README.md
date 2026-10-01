@@ -426,13 +426,11 @@ for a worked example. Both restatements are enforced by `structured-config-polic
 enabled from [`.oxlintrc.react.json`](../../../../.oxlintrc.react.json); React/Next/JSX doctor _enables_
 live there too. Generic `js-*` and security doctor rules stay at root.
 
-The root and nested plugin lists enable the configured TypeScript and Unicorn rules. Keep
-`typescript` and `unicorn` present in every inherited-config copy; `structured-config-policy` enforces parity.
+The root and nested plugin lists enable the configured TypeScript, Unicorn, and Import rules. Keep
+`typescript`, `unicorn`, and `import` present in every inherited-config copy; `structured-config-policy` enforces parity.
 [`configured-plugins-oxlint.test.mts`](../../../../static-code-analysis/oxlint-plugin/configured-plugins-oxlint.test.mts)
 checks every concrete tracked config against the installed analyzer, including inherited rules and
-overrides, so another missing builtin plugin fails CI. The existing import-plugin gap is temporarily
-tracked in [#1697](https://github.com/vouchington/vouchington/issues/1697); its exception must be removed
-when that plugin is enabled.
+overrides and disabled rule declarations, so another missing builtin plugin fails CI.
 Staged Unicorn entries record rule-specific scan counts and link their remediation issues; permanent
 opt-outs state their repository policy beside the rule. Catch bindings prefer `err`; string literals
 use the simplest readable form rather than requiring `String.raw`. Meanwhile, [`typescript-plugin-oxlint.test.mts`](../../../../static-code-analysis/oxlint-plugin/typescript-plugin-oxlint.test.mts) runs
@@ -440,6 +438,8 @@ the installed analyzer with the real root and backend-agent configurations to pr
 type-aware TypeScript rules are active. The full lint command is `pnpm run oxlint`.
 
 `unicorn/prefer-import-meta-properties` is enforced wherever the root configuration is inherited, including backend and tooling workspaces. Use native `import.meta.dirname` and `import.meta.filename` rather than reconstructing them from `import.meta.url`.
+
+Clean import safety rules remain errors; module-style rules deliberately allow named exports, namespace and parent imports, Node builtins, framework default exports, and side-effect imports. The small import correctness backlog is staged in [#1696](https://github.com/vouchington/vouchington/issues/1696). Resolving imports also exposes canonical package and service entrypoint barrels to `oxc/no-barrel-file`; that rule stays off because `index.mts` barrels are the backend module contract.
 
 Each selected area coverage job consumes only its own full-LCOV artifacts and runs
 `ci/coverage-artifacts.sh area-check`; a missing full LCOV is a producer failure, not an optional

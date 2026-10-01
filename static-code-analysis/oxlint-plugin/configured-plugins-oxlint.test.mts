@@ -91,21 +91,11 @@ describe('configured builtin Oxlint plugins', () => {
   it.each(concreteConfigs)('loads the plugin for every configured builtin rule in %s', path => {
     const configs = ancestors(resolve(path))
     const effective = printConfig(resolve(path))
-    // #1697 enables the existing import plugin in the next stack layer and removes this exception.
     const missing = missingPlugins(configs, effective)
-    expect({ path, missing: missing.filter(rule => !rule.startsWith('import/')) }).toEqual({
+    expect({ path, missing }).toEqual({
       path,
       missing: [],
     })
-  })
-
-  it('keeps the temporary import exception limited to the outstanding root plugin gap', () => {
-    const path = resolve('.oxlintrc.json')
-    const effective = printConfig(path)
-    expect(effective.plugins).not.toContain('import')
-    expect(
-      missingPlugins(ancestors(path), effective).some(rule => rule.startsWith('import/')),
-    ).toBe(true)
   })
 
   it('checks override plugin replacements and inherited plugin defaults', () => {
