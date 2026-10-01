@@ -30,8 +30,13 @@ flowchart LR
   event -. pull requests only .-> label-pr[PR labeling]
   static & backend & web & cloudflare-worker & lambdas & tooling -. failed Dependabot PR run .-> fix-dependabot[Dependabot failure triage]
   event -. queue dequeue on CI failure or timeout .-> merge-queue-ejection[Queue ejection triage]
+  event -. merge group entry replaced .-> cancel-replaced-merge-group-runs[Cancel replaced entry runs]
   fix-dependabot & merge-queue-ejection --> harness-dispatch[Auto Harness dispatch]
 ```
+
+A removed queue entry makes GitHub rebuild the entries behind it on new queue branches. Each new
+entry's `cancel-replaced-merge-group-runs` job cancels the still-active merge-group runs of older
+entries of the same pull request; it is not a required check.
 
 The `static` check is its own required check. The area gates and `gitleaks` are likewise
 independent required checks; there is no monolithic CI workflow or cross-area report fan-in.
