@@ -95,6 +95,7 @@ describe('copyright guest capability request contracts', () => {
     it.each([
       ['an unknown key', { injected: true }],
       ['a non-string cf_turnstile_response', { cf_turnstile_response: 7 }],
+      ['a null cf_turnstile_response', { cf_turnstile_response: null }],
     ])('rejects %s before the capability is used', async (_label, extra) => {
       const { noticeId, capability } = await issuedCapability()
       const guest = createRequest()

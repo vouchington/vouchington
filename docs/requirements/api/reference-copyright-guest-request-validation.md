@@ -62,8 +62,10 @@ at: an unknown body key, and a `cf_turnstile_response` that is not a string.
   service enforces the 30-day ceiling, so a request the route accepted before is still accepted.
 - `cf_turnstile_response` is optional (`string`): App Attest callers send none, and the web client
   omits the key when it has no token. The earlier generated schema marked it required and nullable;
-  no client relied on that.
-- No status code changes for a valid request, and none for an invalid request that already failed.
+  no client relied on that. An explicit `null` is now rejected with `422` on purpose; before, the
+  route accepted it as "no token".
+- Apart from an explicit `null` CAPTCHA token, no status code changes for a valid request, and none
+  for an invalid request that already failed.
 
 ## The capability header is never exposed
 
