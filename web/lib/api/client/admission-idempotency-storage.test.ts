@@ -10,7 +10,7 @@ import {
   ADMISSION_RETENTION_MS,
   type AdmissionStoredEntry,
 } from './admission-idempotency-storage-entry'
-import { MemoryLockManager, MemoryStorage } from './admission-idempotency-test-helpers'
+import { MemoryLockManager, MemoryStorage } from './admission-idempotency-fixtures'
 
 const NOW = 1000
 

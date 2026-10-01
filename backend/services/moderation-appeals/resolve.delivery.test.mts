@@ -9,7 +9,7 @@ import type { PrivateUser } from '@voucha/types/entities/user'
 import { createModerationAppeal } from './create.mts'
 import { dismissModerationAppeal } from './dismiss-appeal.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
-import { deliverModerationAppealForTest } from './resolution.test-helpers.mts'
+import { deliverModerationAppealForTest } from './resolution.fixtures.mts'
 import { resolveModerationAppealAccept, resolveModerationAppealReduce } from './resolve.mts'
 
 describe('moderation appeal delivery requirement', () => {

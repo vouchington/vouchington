@@ -12,7 +12,7 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import {
   createRemoteActorFixture,
   randomSuffix,
-} from '@voucha/test-helpers/api/activitypub/inbox.test-helpers'
+} from '@voucha/test-helpers/api/activitypub/inbox.fixtures'
 
 const INBOX_HOST = 'inbox-capacity-test.example'
 const INBOX_URL = `http://${INBOX_HOST}/ap/inbox`

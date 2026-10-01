@@ -37,6 +37,7 @@ export const toolingProjects = [
       name: 'static-analysis-tools',
       include: [
         'static-code-analysis/repo-file-policy-worker-client.test.mts',
+        'static-code-analysis/helper-file-names.test.mts',
         'static-code-analysis/__tests__/run-node-checks.test.mts',
         'static-code-analysis/__tests__/run-node-checks.mock.test.mts',
         'static-code-analysis/__tests__/scc-complexity.test.mts',

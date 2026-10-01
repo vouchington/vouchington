@@ -13,7 +13,7 @@ import {
   assertShellSnippetsInOrder,
   requiredNamedStep,
   type WorkflowJob,
-} from '../test-helpers/workflow-test-helpers.mts'
+} from '../test-helpers/workflow-fixtures.mts'
 
 type Workflow = {
   jobs?: Record<string, WorkflowJob>

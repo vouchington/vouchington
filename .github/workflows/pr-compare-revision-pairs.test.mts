@@ -13,7 +13,7 @@ import {
   shellLogicalLines,
   type WorkflowJob,
   type WorkflowStep,
-} from '../test-helpers/workflow-test-helpers.mts'
+} from '../test-helpers/workflow-fixtures.mts'
 
 const PR_BASE_SHA = '${{ github.event.pull_request.base.sha }}'
 const PR_HEAD_SHA = '${{ github.event.pull_request.head.sha }}'

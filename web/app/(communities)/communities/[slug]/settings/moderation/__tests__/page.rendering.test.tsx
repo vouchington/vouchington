@@ -12,7 +12,7 @@ import {
   makeCommunityData,
   defaultAutomodActions,
   resetModerationPageMocks,
-} from '@/test-helpers/components/community-moderation-page-test-helpers'
+} from '@/test-helpers/components/community-moderation-page-fixtures'
 import {
   mockGetModmailInboxServer,
   resetCommunityModerationModmailMocks,

@@ -4,7 +4,7 @@ import {
   nightlyAreaWorkflowNames,
   parsedDependabot as parsed,
   promptText,
-} from '../test-helpers/fix-dependabot.test-helpers.mts'
+} from '../test-helpers/fix-dependabot.fixtures.mts'
 
 describe('fix-dependabot workflow', () => {
   it('keeps dependency repair validation inside the exact live branch boundary', () => {

@@ -16,7 +16,7 @@ import {
   workflowRunSubscriptions,
   workflowTriggerNames,
   type WorkflowJob,
-} from '../test-helpers/workflow-test-helpers.mts'
+} from '../test-helpers/workflow-fixtures.mts'
 
 describe('workflow test helpers', () => {
   it('reports workflow invariant failures with their supplied context', () => {

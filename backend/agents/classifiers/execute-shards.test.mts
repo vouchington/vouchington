@@ -9,7 +9,7 @@ import {
   topicAId,
   topicBId,
   topicCId,
-} from '@voucha/test-helpers/agents/classifiers/test-helpers'
+} from '@voucha/test-helpers/agents/classifiers/fixtures'
 import type { ClassifierContextPolicy } from './types.mts'
 
 const threeShardPolicy: ClassifierContextPolicy = {

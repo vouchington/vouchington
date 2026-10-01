@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getMyWebPushSubscriptionsClient } from '@/lib/api/client/my'
-import { MemoryLockManager } from '@/lib/api/client/admission-idempotency-test-helpers'
+import { MemoryLockManager } from '@/lib/api/client/admission-idempotency-fixtures'
 import {
   beginPushBindingReconciliation,
   bindPushBinding,

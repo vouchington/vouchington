@@ -4,7 +4,7 @@ import {
   LEGACY_EDITED_IN_PLACE_MARKER_MIGRATIONS,
   PRE_LAUNCH_IN_PLACE_EDITS,
 } from './postgres-schema-guardrail-allowlist.mts'
-import { setupRepoFilePolicyTest } from './repo-file-policy-test-helpers.mts'
+import { setupRepoFilePolicyTest } from '../test-helpers/repo-file-policy-fixtures.mts'
 
 describe('edited-in-place marker guard', () => {
   const { makeRepo, run, track } = setupRepoFilePolicyTest()

@@ -7,13 +7,13 @@ import {
   workflowHasMainPushTrigger,
   workflowRunSubscriptions,
   workflowTriggerNames,
-} from '../test-helpers/workflow-test-helpers.mts'
+} from '../test-helpers/workflow-fixtures.mts'
 import {
   fixMain,
   fixMainPrompt,
   parsedDispatch,
   parsedMain,
-} from '../test-helpers/fix-main.test-helpers.mts'
+} from '../test-helpers/fix-main.fixtures.mts'
 
 type Workflow = {
   name?: string

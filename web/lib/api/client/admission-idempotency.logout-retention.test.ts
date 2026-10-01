@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { AdmissionIdempotency } from './admission-idempotency'
-import { MemoryLockManager, MemoryStorage } from './admission-idempotency-test-helpers'
+import { MemoryLockManager, MemoryStorage } from './admission-idempotency-fixtures'
 
 function makeDeferred<T>() {
   let resolve!: (value: T) => void

@@ -6,7 +6,7 @@ import {
   makeChild,
   makeDeps,
   waitFor,
-} from './storybook-browser-runner-test-helpers.mts'
+} from './storybook-browser-runner-fixtures.mts'
 
 describe('Storybook browser Vite new-deps optimizer reload latch', () => {
   it('fail-fasts only after both the new-deps line and the reload marker arrive', async () => {

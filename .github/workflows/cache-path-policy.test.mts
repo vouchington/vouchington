@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   assertNoWorkflowViolations,
   type WorkflowStep,
-} from '../test-helpers/workflow-test-helpers.mts'
+} from '../test-helpers/workflow-fixtures.mts'
 
 type CacheStep = WorkflowStep & { with?: Record<string, unknown> }
 type CacheDocument = {

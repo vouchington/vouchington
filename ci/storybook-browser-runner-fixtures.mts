@@ -22,7 +22,7 @@ export {
   emitStorybookAddonVitestSetupRunnerMissingAnsi,
   emitStorybookAddonVitestSetupRunnerMissingOversized,
   storybookAddonVitestSetupRunnerMissingOversizedBlock,
-} from './storybook-browser-runner-output-test-helpers.mts'
+} from './storybook-browser-runner-output-fixtures.mts'
 
 export function makeChild(pid: number | undefined): Child {
   return Object.assign(new EventEmitter(), {

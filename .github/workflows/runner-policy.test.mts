@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   assertNoWorkflowViolations,
   type WorkflowStep,
-} from '../test-helpers/workflow-test-helpers.mts'
+} from '../test-helpers/workflow-fixtures.mts'
 import { ALLOWED_LABELS, classifyRunsOnValue } from './runner-policy-classify.mts'
 
 type Job = {

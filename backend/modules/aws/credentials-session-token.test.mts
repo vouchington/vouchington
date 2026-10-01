@@ -5,7 +5,7 @@ import {
   getSESCredentials,
   getS3Credentials,
 } from './credentials.mts'
-import { setupCredentialEnv } from '@voucha/test-helpers/modules/aws/credentials-test-helpers'
+import { setupCredentialEnv } from '@voucha/test-helpers/modules/aws/credentials-fixtures'
 
 describe('credentials', () => {
   const { setEnv } = setupCredentialEnv()

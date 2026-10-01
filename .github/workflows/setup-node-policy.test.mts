@@ -3,7 +3,7 @@ import {
   actionStepBlocks,
   workflowYamlPaths,
   yamlSource,
-} from '../test-helpers/pnpm-policy.test-helpers.mts'
+} from '../test-helpers/pnpm-policy.fixtures.mts'
 
 const allBlocks: Array<{ path: string; block: string }> = workflowYamlPaths.flatMap(path =>
   actionStepBlocks(yamlSource(path), /uses:\s+actions\/setup-node@/).map(block => ({

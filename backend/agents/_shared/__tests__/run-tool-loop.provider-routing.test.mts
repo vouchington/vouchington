@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { runToolLoop } from '../run-tool-loop.mts'
-import { makeTextResponse } from '../../../test-helpers/agents/_shared/run-tool-loop-test-helpers.mts'
+import { makeTextResponse } from '../../../test-helpers/agents/_shared/run-tool-loop-fixtures.mts'
 
 describe('runToolLoop OpenRouter transport', () => {
   it('uses the injected OpenRouter transport while preserving tool-loop request fields', async () => {

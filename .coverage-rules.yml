@@ -80,7 +80,7 @@ rules:
   - paths: 'backend/**'
     patch_coverage_min: 95
     area: backend
-  - paths: 'web/test-helpers/components/**/*test-helpers.tsx'
+  - paths: 'web/test-helpers/components/**/*fixtures.tsx'
     patch_coverage_min: 0
   - paths: 'web/test-helpers/storybook/**'
     patch_coverage_min: 0

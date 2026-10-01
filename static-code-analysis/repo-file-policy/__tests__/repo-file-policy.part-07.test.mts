@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import {
   parseTopicTypeEntries,
   setupRepoFilePolicyTest,
-} from '../repo-file-policy-test-helpers.mts'
+} from '../../test-helpers/repo-file-policy-fixtures.mts'
 
 describe('repo-file-policy', () => {
   const { makeRepo, run, track, trackTopicEnumSurfaces } = setupRepoFilePolicyTest()

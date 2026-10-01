@@ -4,7 +4,7 @@ import picomatch from 'picomatch'
 
 import { describe, expect, it } from 'vitest'
 
-import { assertNoWorkflowViolations } from '../../test-helpers/workflow-test-helpers.mts'
+import { assertNoWorkflowViolations } from '../../test-helpers/workflow-fixtures.mts'
 
 const dockerignoreText = readFileSync('.dockerignore', 'utf8')
 import { runtimePathFilters as refineRuntimeWebFilters } from '../../test-helpers/path-filter-test-fixtures.mts'

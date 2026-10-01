@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import type { InitSentryOptions } from './sentry.mts'
-import { getBeforeSend } from './sentry.mock-test-helpers.mts'
+import { getBeforeSend } from './sentry.mock-fixtures.mts'
 
 vi.mock<typeof import('@sentry/aws-serverless')>(import('@sentry/aws-serverless'), () => ({
   init: vi.fn<VitestLooseMock>(),

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { runStorybookBrowserTests } from './storybook-browser-runner.mts'
-import { makeChild, makeDeps, waitFor } from './storybook-browser-runner-test-helpers.mts'
+import { makeChild, makeDeps, waitFor } from './storybook-browser-runner-fixtures.mts'
 
 describe('Storybook browser runner shared budget', () => {
   it('reserves cleanup grace from the default five-minute budget', async () => {

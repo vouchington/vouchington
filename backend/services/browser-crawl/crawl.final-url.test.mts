@@ -5,7 +5,7 @@ import {
   makeMockPage,
   mockConnectOverCDP,
   resetCrawlMocks,
-} from './crawl-test-helpers.mts'
+} from './crawl-fixtures.mts'
 import { resetBlockerForTesting } from './adblocker-cache.mts'
 import { crawlWithBrowser } from './crawl.mts'
 

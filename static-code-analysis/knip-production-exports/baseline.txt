@@ -130,11 +130,11 @@ exports backend/services/bookmarks/counts.mts getPostBookmarkCounts
 exports backend/services/bookmarks/counts.mts getRssFeedBookmarkCounts
 exports backend/services/bookmarks/counts.mts getTopicBookmarkCounts
 exports backend/services/browser-crawl/adblocker-cache.mts resetBlockerForTesting
-exports backend/services/browser-crawl/crawl-test-helpers.mts getCrawlTestDependencies
-exports backend/services/browser-crawl/crawl-test-helpers.mts makeMockBrowser
-exports backend/services/browser-crawl/crawl-test-helpers.mts makeMockRoute
-exports backend/services/browser-crawl/crawl-test-helpers.mts makeMockWebSocketRoute
-exports backend/services/browser-crawl/crawl-test-helpers.mts resetCrawlMocks
+exports backend/services/browser-crawl/crawl-fixtures.mts getCrawlTestDependencies
+exports backend/services/browser-crawl/crawl-fixtures.mts makeMockBrowser
+exports backend/services/browser-crawl/crawl-fixtures.mts makeMockRoute
+exports backend/services/browser-crawl/crawl-fixtures.mts makeMockWebSocketRoute
+exports backend/services/browser-crawl/crawl-fixtures.mts resetCrawlMocks
 exports backend/services/captcha/config.mts resetTurnstileAlwaysApproveSkipLogForTests
 exports backend/services/communities/authorization.mts currentUserCanCreateCommunity
 exports backend/services/communities/invites/get.mts getMyInvites
@@ -217,6 +217,7 @@ exports backend/services/jwt-session/revocation.mts revokeSessions
 exports backend/services/jwt-session/user-sessions.mts touchAuthenticatedSession
 exports backend/services/landing-page-analytics/get-analytics.mts getLandingPageAnalytics
 exports backend/services/lists/lists.mts getList
+exports backend/services/localization/fixtures.mts installSampleLocalizationDatabase
 exports backend/services/localization/index.mts getLocalizationDatabase
 exports backend/services/localization/index.mts localizationBatchPayload
 exports backend/services/localization/index.mts localizationSqlitePath
@@ -224,7 +225,6 @@ exports backend/services/localization/index.mts queryValues
 exports backend/services/localization/index.mts resolveEmailLocalizationBatch
 exports backend/services/localization/index.mts setLocalizationDatabaseForTests
 exports backend/services/localization/resolve.mts resolveEmailLocalizationBatch
-exports backend/services/localization/test-helpers.mts installSampleLocalizationDatabase
 exports backend/services/media-delivery-safety/index.mts prepublishImageSurfaceDenial
 exports backend/services/memberships/apple/configured-verifier.mts createConfiguredAppleSignedTransactionEvidenceVerifier
 exports backend/services/memberships/apple/process-verification.mts processMembershipVerification
@@ -252,7 +252,7 @@ exports backend/services/memberships/stripe-catalog.mts isStripeMembershipCatalo
 exports backend/services/memberships/update-cancellation.mts cancelMembership
 exports backend/services/memberships/update.mts cancelMembership
 exports backend/services/moderation-appeals/get.mts getAppealCaseTrace
-exports backend/services/moderation-appeals/resolution.test-helpers.mts deliverModerationAppealForTest
+exports backend/services/moderation-appeals/resolution.fixtures.mts deliverModerationAppealForTest
 exports backend/services/moderation-cases/get.mts getCaseById
 exports backend/services/moderation-cases/index.mts getCaseById
 exports backend/services/moderation-cases/index.mts resolveCase
@@ -269,9 +269,9 @@ exports backend/services/notifications-push/test-fixtures.mts getLeaseExpiry
 exports backend/services/notifications-push/test-fixtures.mts successfulSendResult
 exports backend/services/notifications-push/test-fixtures.mts waitForDeliveredEndpoint
 exports backend/services/notifications/community-activity-digest.mts getPreviousClosedMondayWindow
+exports backend/services/oauth-apple/fixtures.mts createSignedJwt
+exports backend/services/oauth-apple/fixtures.mts makeFetchResponse
 exports backend/services/oauth-apple/index.mts getAppleAccountByAppleUserId
-exports backend/services/oauth-apple/test-helpers.mts createSignedJwt
-exports backend/services/oauth-apple/test-helpers.mts makeFetchResponse
 exports backend/services/oauth-authorization-server/access-tokens.mts isOAuthAccessToken
 exports backend/services/oauth-authorization-server/access-tokens.mts validateOAuthAccessToken
 exports backend/services/oauth-authorization-server/resources.mts getOAuthResourceMetadataUrl
@@ -292,7 +292,7 @@ exports backend/services/post-publication/test-fixtures.mts getTestPublicationPr
 exports backend/services/post-publication/test-fixtures.mts reconcileTestPublicationUntilSnapshotsComplete
 exports backend/services/post-publication/test-fixtures.mts recordTestStoryTopicPublicationChange
 exports backend/services/posts/create-link-post.mts createLinkPost
-exports backend/services/posts/images.test-helpers.mts createPostImageRollbackFixture
+exports backend/services/posts/images.fixtures.mts createPostImageRollbackFixture
 exports backend/services/posts/privacy-filter.mts buildPrivacyFilter
 exports backend/services/posts/review-successions/audit.mts REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE
 exports backend/services/posts/review-successions/index.mts listReviewSuccessionsForPostIds
@@ -381,7 +381,7 @@ exports backend/services/vote-integrity/config.mts VOTE_INTEGRITY_FLAG_TYPES
 exports backend/services/web-risk/state.mts configureWebRiskStateForTest
 exports backend/services/web-risk/state.mts resetWebRiskStateForTest
 exports backend/workers/account-data-requests/processors.mts publishTerminalStatus
-exports backend/workers/ai-agents/processors/process-appeal-resolution.test-helpers.mts rerunAppealResolutionThroughQueueForTest
+exports backend/workers/ai-agents/processors/process-appeal-resolution.fixtures.mts rerunAppealResolutionThroughQueueForTest
 exports backend/workers/ai-agents/processors/process-reconcile-post-classifier-applications.mts POST_CLASSIFIER_RECEIPT_AGE_ALARM_MS
 exports backend/workers/ai-agents/processors/spend-cap-recheck.mts getOpenAiSpendCapRecheckAt
 exports backend/workers/article-sync/processors.mts publishTerminalStatus
@@ -407,10 +407,10 @@ exports backend/workers/memberships/processors/stripe-event-test-fixtures.mts cr
 exports backend/workers/memberships/processors/stripe-event-test-fixtures.mts createUniqueStripePriceId
 exports backend/workers/memberships/processors/stripe-event-test-fixtures.mts toJobData
 exports backend/workers/openai-moderation/workers/openai_moderation_omni_single.mts processOpenAIModerationOmniSingleJob
-exports backend/workers/post-publication/processors/test-helpers.mts makeDependencies
-exports backend/workers/post-publication/processors/test-helpers.mts makeResult
-exports backend/workers/post-publication/processors/test-helpers.mts post
-exports backend/workers/post-publication/processors/test-helpers.mts work
+exports backend/workers/post-publication/processors/fixtures.mts makeDependencies
+exports backend/workers/post-publication/processors/fixtures.mts makeResult
+exports backend/workers/post-publication/processors/fixtures.mts post
+exports backend/workers/post-publication/processors/fixtures.mts work
 exports backend/workers/rss-feeds/processors.mts processFetchRssFeed
 exports backend/workers/rss-feeds/processors.mts processRssFeedsDispatcher
 exports backend/workers/ses-inbound/processors/streamed-mail-parts.mts MAX_MIME_TEXT_BYTES

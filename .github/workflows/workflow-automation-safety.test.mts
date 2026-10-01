@@ -6,7 +6,7 @@ import {
   gitSubcommandPattern,
   shellLogicalLines,
   workflowHasTrigger,
-} from '../test-helpers/workflow-test-helpers.mts'
+} from '../test-helpers/workflow-fixtures.mts'
 
 type Step = {
   name?: string

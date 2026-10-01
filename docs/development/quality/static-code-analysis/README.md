@@ -129,6 +129,9 @@ The error-level `no-sql-in-backend-tests` AST-grep rule enforces the SQL boundar
 test, including PostgreSQL-owned tests. The repository-scoped `banned-paths` configuration rejects
 nested `test-helpers` and the explicit `test-helper`, `test-support`, `test-utils`/`testutils`,
 `test-utilities`/`testutilities`, and `testing-helper`/`testing-helpers` aliases without a baseline.
+File basenames must not contain `test-helpers`; use descriptive names such as `fixtures.mts`
+inside an allowed helper directory. The same native guard checks tracked files, while directory
+names such as `backend/test-helpers/` remain valid.
 
 The `web-no-raw-api-response-client-boundary` rule protects audited `.ts` and `.tsx` client
 boundaries from regressing to raw API envelopes. Narrow server projectors are required; the mixed
@@ -562,7 +565,7 @@ Before first push for a new or changed policy rule:
 - For source-content assertions that require an export, match the export shape (for example,
   `/\bexport\b[^\n]*\bsymbolName\b/` for a single-line export) instead of using
   `content.includes('symbolName')`, which also matches imports, comments, and string literals.
-- Workflow-trigger helpers should live in `.github/test-helpers/workflow-test-helpers.mts` and cover scalar, array, and mapping `on:` shapes, `push` `branches` / `branches-ignore` handling, branch matching, and `workflow_run.workflows` extraction.
+- Workflow-trigger helpers should live in `.github/test-helpers/workflow-fixtures.mts` and cover scalar, array, and mapping `on:` shapes, `push` `branches` / `branches-ignore` handling, branch matching, and `workflow_run.workflows` extraction.
 - Custom language-control-flow and preprocessor guards need characterization fixtures for branch states such as `#if`, `#elif`, `#else`, parenthesized conditions, negation, and unrelated symbols before relying on the parser.
 - Include one positive fixture and one negative fixture for every new branch, with exact human-facing diagnostics and minimal passing protected surfaces.
 - For new parser, guard, or provider-field checks, cover boundary states (empty, null, unknown/sentinel, multi-byte where relevant) and make malformed input return safe sentinels (`[]`/`null`) instead of throwing.

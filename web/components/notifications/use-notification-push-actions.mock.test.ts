@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useNotificationPushActions } from './use-notification-push-actions'
 import { bootstrapPushBinding } from './push-registration'
-import { MemoryLockManager } from '@/lib/api/client/admission-idempotency-test-helpers'
+import { MemoryLockManager } from '@/lib/api/client/admission-idempotency-fixtures'
 import { withWebPushOwnershipLock } from '@/lib/push-ownership-lock'
 import {
   clearRuntimePublicConfigForTest,

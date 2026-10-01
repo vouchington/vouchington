@@ -15,7 +15,7 @@ import {
   mockRename,
   mockWriteFile,
   resetCrawlMocks,
-} from './crawl-test-helpers.mts'
+} from './crawl-fixtures.mts'
 import { getBlocker, resetBlockerForTesting } from './adblocker-cache.mts'
 import { crawlWithBrowser } from './crawl.mts'
 

@@ -13,7 +13,7 @@ import {
   topicAId,
   topicBId,
   threeNoulBindings,
-} from '@voucha/test-helpers/agents/classifiers/test-helpers'
+} from '@voucha/test-helpers/agents/classifiers/fixtures'
 
 describe('executeSingleCallClassifierDecision', () => {
   it('sends every binding in exactly one request and persists once', async () => {

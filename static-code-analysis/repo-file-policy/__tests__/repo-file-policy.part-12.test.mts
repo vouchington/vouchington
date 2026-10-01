@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { checkRepoFilePolicy, setupRepoFilePolicyTest } from '../repo-file-policy-test-helpers.mts'
+import {
+  checkRepoFilePolicy,
+  setupRepoFilePolicyTest,
+} from '../../test-helpers/repo-file-policy-fixtures.mts'
 
 describe('repo-file-policy', () => {
   const { makeRepo, run, track } = setupRepoFilePolicyTest()

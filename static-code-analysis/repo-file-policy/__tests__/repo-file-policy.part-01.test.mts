@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   SYNCED_MODERATION_POLICY_MATRIX_DOC,
   setupRepoFilePolicyTest,
-} from '../repo-file-policy-test-helpers.mts'
+} from '../../test-helpers/repo-file-policy-fixtures.mts'
 
 describe('repo-file-policy', () => {
   const { makeRepo, run, track } = setupRepoFilePolicyTest()

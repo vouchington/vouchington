@@ -17,7 +17,7 @@ import type { PrivateUser } from '@voucha/types/entities/user'
 import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
 import { resolveModerationAppealAccept } from './resolve.mts'
-import { deliverModerationAppealForTest } from './resolution.test-helpers.mts'
+import { deliverModerationAppealForTest } from './resolution.fixtures.mts'
 
 describe('resolve moderation appeals', () => {
   let staff: PrivateUser

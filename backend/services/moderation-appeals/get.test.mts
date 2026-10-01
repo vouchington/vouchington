@@ -12,7 +12,7 @@ import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
 import { getModerationAppealById, listModerationAppeals, getAppealCaseTrace } from './get.mts'
 import { dismissModerationAppeal } from './dismiss-appeal.mts'
-import { deliverModerationAppealForTest } from './resolution.test-helpers.mts'
+import { deliverModerationAppealForTest } from './resolution.fixtures.mts'
 
 describe('getModerationAppealById', () => {
   let staff: PrivateUser

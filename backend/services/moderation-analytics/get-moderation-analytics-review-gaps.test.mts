@@ -23,7 +23,7 @@ import {
   dismissModerationAppeal,
   resolveModerationAppealAccept,
 } from '@services/moderation-appeals'
-import { deliverModerationAppealForTest } from '@services/moderation-appeals/resolution.test-helpers'
+import { deliverModerationAppealForTest } from '@services/moderation-appeals/resolution.fixtures'
 import { checkPostClearance } from '@services/post-clearance'
 import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
 import { getModerationAnalytics } from './get-moderation-analytics.mts'

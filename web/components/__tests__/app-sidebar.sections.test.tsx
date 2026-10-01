@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { renderSidebar, setMockPathname } from '@/test-helpers/components/app-sidebar-test-helpers'
+import { renderSidebar, setMockPathname } from '@/test-helpers/components/app-sidebar-fixtures'
 import type { User } from '@/types/user'
 
 describe('AppSidebar', () => {

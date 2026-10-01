@@ -1,4 +1,4 @@
-id: no-services-http-test-helpers
+id: no-services-http-fixtures
 language: Tsx
 severity: error
 message: "Service tests must not import HTTP test helpers ('supertest'). Use real PostgreSQL/Valkey; HTTP-layer tests belong in backend/api/."

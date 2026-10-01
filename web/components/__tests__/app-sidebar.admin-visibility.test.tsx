@@ -4,7 +4,7 @@ import {
   getSectionLabels,
   renderSidebar,
   setMockPathname,
-} from '@/test-helpers/components/app-sidebar-test-helpers'
+} from '@/test-helpers/components/app-sidebar-fixtures'
 import type { User } from '@/types/user'
 
 describe('AppSidebar Admin section visibility', () => {

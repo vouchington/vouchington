@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { renderSidebar, setMockPathname } from '@/test-helpers/components/app-sidebar-test-helpers'
+import { renderSidebar, setMockPathname } from '@/test-helpers/components/app-sidebar-fixtures'
 import type { User } from '@/types/user'
 
 function hrefsByLabel(container: HTMLElement, labels: readonly string[]) {
