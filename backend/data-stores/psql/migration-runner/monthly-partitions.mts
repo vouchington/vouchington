@@ -10,6 +10,10 @@ import {
   type MonthlyPartitionTableConfig,
 } from '../config-driven/utils/partition-config.mts'
 import type { QueryExecutor } from '../types.mts'
+import {
+  assertSafeSqlIdentifier,
+  retireExpiredMonthlyPartitions,
+} from './retire-monthly-partitions.mts'
 
 type ExistingMonthlyPartitionRow = {
   parent_table: string
@@ -22,13 +26,6 @@ export type ExpiredMonthlyPartition = {
   dropPriority: number
   year: number
   month: number
-}
-
-function assertSafeSqlIdentifier(identifier: string): string {
-  if (!/^[a-z0-9_]+$/u.test(identifier)) {
-    throw new Error(`Unsafe SQL identifier: ${identifier}`)
-  }
-  return identifier
 }
 
 const RSS_FEED_CRAWLS_DEFAULT_PARTITION = 'rss_feed_crawls__default'
@@ -138,27 +135,5 @@ export async function cleanupPartitions(referenceDate: Date = new Date()): Promi
     referenceDate,
   )
 
-  if (expiredPartitions.length === 0) {
-    return
-  }
-
-  const sql = expiredPartitions
-    .map(partition => {
-      const partitionName = assertSafeSqlIdentifier(partition.partitionName)
-      // Partition DROP fires no ON DELETE action, and a partition that other tables' foreign keys
-      // still reference cannot be dropped. Clear the SET NULL pointers, then DETACH (which
-      // rejects any remaining referencing row) before the DROP. Other referenced families still
-      // need the same treatment: vouchington/vouchington#1290.
-      if (partition.table === 'crawls') {
-        return [
-          `UPDATE bedrock_embeddings_batches SET crawl_id = NULL WHERE crawl_id IN (SELECT id FROM ${partitionName});`,
-          `UPDATE user_referral_program_links SET last_crawl_id = NULL WHERE last_crawl_id IN (SELECT id FROM ${partitionName});`,
-          `ALTER TABLE crawls DETACH PARTITION ${partitionName};`,
-          `DROP TABLE IF EXISTS ${partitionName};`,
-        ].join('\n')
-      }
-      return `DROP TABLE IF EXISTS ${partitionName};`
-    })
-    .join('\n')
-  await write(sql)
+  await retireExpiredMonthlyPartitions(expiredPartitions)
 }
