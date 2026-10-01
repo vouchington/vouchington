@@ -491,6 +491,31 @@ legal hold on a placement whose post author is that account. A qualifying hold i
 with an original claimant, the same material, a proceeding kind, a commencement time, and a
 designated-agent receipt, and with no resolution row. An open review alone does not block deletion.
 
+## Data export
+
+The account data export (GDPR Art. 15, CCPA right to know) includes the account's copyright records
+under a deliberately conservative redaction rule, so the export reveals nothing new. Counsel
+confirms the rule under [#1230](https://github.com/vouchington/vouchington/issues/1230).
+
+- The account's own signed-in submissions are exported decrypted in full: filed notices (claimant
+  name, contact, work description, statements, signature, target references), counter-notices (name,
+  address, telephone, consents, statements, signature), and appeals (reason).
+- A case the account is party to from the other side uses only the participant projection a
+  non-staff member already sees: accepted cases, dates, target visibility and restriction state, the
+  claimant's public profile, and the member timeline. The export never decrypts or includes the
+  other party's legal name, address, email, phone, or signature, and never includes moderator
+  rationale, internal notes, agent recommendations, reviewer identities, staff-only timeline events,
+  or raw email.
+- Repeat-infringer incidents about the account list their dates, operative state, linked notice id,
+  and any staff disposition, with no claimant identity. Decided reviews list outcome and dates; rationales
+  and open reviews are withheld.
+- Delivery intents, email intake responses, and other outbox rows are transport, not user records,
+  and are not exported. EU and UK redress records and court or CCB filings are not exported, and
+  claimants who only used email have no account, so they use a manual request.
+- An erased account's export has no copyright records.
+
+See [account data export](../users/ACCOUNT-DATA-EXPORT.md#copyright-records) for the files.
+
 ## Evidence retention
 
 Retention deletion is not built yet, so nothing is deleted today. Case records, evidence objects,
