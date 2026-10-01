@@ -31,7 +31,9 @@ export async function getImportRowsByBatchId(batchId: string): Promise<ImportRow
   const { rows } = await read(
     sql`/* getImportRowsByBatchId */
     SELECT
-      row_definition.*,
+      row_definition.id, row_definition.batch_id, row_definition.row_index,
+      row_definition.input_data, row_definition.completed_at, row_definition.failed_at,
+      row_definition.error_message, row_definition.created_at, row_definition.updated_at,
       COALESCE(row_definition.topic_id, row_definition.rss_feed_id)
         AS created_entity_id
     FROM admin_import_rows row_definition

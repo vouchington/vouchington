@@ -105,4 +105,12 @@ export const nativeModerationAppealApiFixtureCases = [
     status: 202,
     migratedFrom: ['backend/api/v1/appeals/appeals.mts'],
   }),
+  fixtureCase({
+    id: 'native.moderation.appeals.detail.default',
+    backendResponseContractKey: 'GET:/api/v1/appeals/:id#staff',
+    method: 'GET',
+    path: `/api/v1/appeals/${appealId}`,
+    route: { routeTemplate: '/api/v1/appeals/:id', pathParams: { id: appealId } },
+    migratedFrom: ['backend/api/v1/appeals/appeals.mts'],
+  }),
 ]

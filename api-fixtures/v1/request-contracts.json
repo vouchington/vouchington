@@ -11706,7 +11706,7 @@
       },
       "type": "object"
     },
-    "Omit_ModerationAppealResponse__case_id_____resolved_by_id_____recommended_action_____ai_public_response_____ai_internal_response_____model_____ai_drafted_at_____internal_notes_____drafted_at_____edited_at_____edited_by_id_____approved_by_id_____latest_lifecycle_change_id_____staff_context_____appellant_id_____appeal_reason_": {
+    "Omit_ModerationAppealResponse__case_id_____resolved_by_id_____appellant_id_____recommended_action_____ai_public_response_____ai_internal_response_____model_____ai_drafted_at_____internal_notes_____drafted_at_____edited_at_____edited_by_id_____approved_by_id_____latest_lifecycle_change_id_____staff_context_____appeal_reason_": {
       "additionalProperties": false,
       "properties": {
         "approved_at": {

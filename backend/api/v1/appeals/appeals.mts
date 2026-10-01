@@ -95,5 +95,9 @@ app.route('/api/v1/appeals/:id').get(async (ctx: Context) => {
 
   ctx.assert(isStaff || isOwner, 403, 'Forbidden')
 
-  ctx.json({ appeal: isStaff ? appeal : redactModerationAppeal(appeal) })
+  if (isStaff) {
+    ctx.json(apiResponse('GET:/api/v1/appeals/:id#staff', { appeal }))
+    return
+  }
+  ctx.json({ appeal: redactModerationAppeal(appeal) })
 })

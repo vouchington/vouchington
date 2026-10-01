@@ -32,12 +32,16 @@ describe('registered admin read projections', () => {
     const batch = imported.structuredContent!['batch'] as { id: string }
     const history = await readStaffActionHistory(admin.id)
     const result = await invoke('get_import_batch', { batch_id: batch.id })
-    expect(result.isError).not.toBe(true)
+    expect(result).not.toMatchObject({ isError: true })
     expect(result.structuredContent).toMatchObject({
       batch: { id: batch.id, total_rows: 1 },
       rows: [expect.objectContaining({ batch_id: batch.id })],
     })
     expect(result.structuredContent).toHaveProperty('progress')
+    for (const row of result.structuredContent!['rows'] as Record<string, unknown>[]) {
+      expect(row).not.toHaveProperty('topic_id')
+      expect(row).not.toHaveProperty('rss_feed_id')
+    }
     const categories = await invoke('list_unmapped_rss_categories', { status: 'all', limit: 1 })
     expect(categories.isError).not.toBe(true)
     const pages = await invoke('list_user_landing_pages', { user_id: user.id, limit: 1 })

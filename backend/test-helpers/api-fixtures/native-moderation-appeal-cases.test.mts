@@ -24,6 +24,20 @@ describe('native moderation appeal and dispute cursor fixtures', () => {
     })
   })
 
+  it('binds full staff detail to its own response carrier', () => {
+    const fixture = nativeModerationAppealApiFixtureCases.find(
+      candidate => candidate.id === 'native.moderation.appeals.detail.default',
+    )!
+    expect(fixture.backendResponseContractKey).toBe('GET:/api/v1/appeals/:id#staff')
+    expect(fixture.body).toMatchObject({
+      appeal: {
+        appellant_id: 'user-1',
+        appeal_reason: 'Please review this again.',
+        staff_context: { appellant: { id: 'user-1' } },
+      },
+    })
+  })
+
   it('gives a nonempty terminal dispute page a scoped start cursor', () => {
     const body = responseBody('native.moderation.disputes.default') as DisputeBody
     expect(decodeCursor(body.page_info.start_cursor)).toEqual({

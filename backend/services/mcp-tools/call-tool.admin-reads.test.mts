@@ -90,7 +90,19 @@ describe.each(['appeal', 'dispute'] as const)('registered %s staff reads', kind 
     const scope =
       kind === 'appeal' ? 'appeals:pending:staff-all:id-desc' : 'disputes:pending:staff:all:id-desc'
     const detail = await success(admin, get, { id })
-    expect(detail).toMatchObject({ [kind]: { id, status: 'pending' } })
+    const detailProjections = {
+      appeal: {
+        appeal: {
+          id,
+          status: 'pending',
+          staff_context: expect.any(Object),
+          appellant_id: expect.any(String),
+          appeal_reason: expect.stringContaining('<external-content'),
+        },
+      },
+      dispute: { dispute: { id, status: 'pending' } },
+    }
+    expect(detail).toMatchObject(detailProjections[kind])
     const page = await success(admin, list, {
       after: encodeScopedUuidCursor(id, scope),
       limit: 1,

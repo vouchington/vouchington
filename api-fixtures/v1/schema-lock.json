@@ -92,6 +92,10 @@
       "fixtureIds": ["native.moderation.appeals.default", "native.moderation.appeals.page-2"],
       "hash": "d07ee46c4b78884ac52da4932f247da697852887b1594494814fb4b3e164206f"
     },
+    "GET:/api/v1/appeals/:id#staff": {
+      "fixtureIds": ["native.moderation.appeals.detail.default"],
+      "hash": "54f90b6506e84506f3c428ea89922b6e0e911c36d7c9aba15859b99edad9ba64"
+    },
     "GET:/api/v1/article-syncs/:jobId#active": {
       "fixtureIds": ["web.admin.article-syncs.status.active"],
       "hash": "c9bf7660ac3eaa4e709e87979c50378e1e1dba5889ca5e83050ea99808775962"
@@ -1860,6 +1864,10 @@
     "native.moderation.appeals.delivery.default": {
       "fixtureIds": ["native.moderation.appeals.delivery.default"],
       "hash": "f1f3a961934227c95cfb26d00c05500f046e9acb1e51713ce559391ac516597b"
+    },
+    "native.moderation.appeals.detail.default": {
+      "fixtureIds": ["native.moderation.appeals.detail.default"],
+      "hash": "18e3beab81d3a8b4246cfac03ce06bc6c53bc99e0a494614dbf10eddf2e5b9d6"
     },
     "native.moderation.appeals.page-2": {
       "fixtureIds": ["native.moderation.appeals.page-2"],
