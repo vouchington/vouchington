@@ -2,7 +2,7 @@ import { beginTransaction } from '@voucha/test-helpers'
 import {
   lockAuthorPublicationLifecycle,
   recordAuthorDeletionBeforePostReassignment,
-} from '@services/post-publication'
+} from '../../services/post-publication/index.mts'
 
 export async function recordAuthorDeletionWithLockTimeout(userId: string): Promise<void> {
   await using transaction = await beginTransaction()

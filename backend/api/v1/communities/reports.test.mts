@@ -12,7 +12,7 @@ import {
 } from '@voucha/test-helpers'
 import type { Community } from '@services/communities/types'
 import type { PrivateUser } from '@services/users/types'
-import { expectPendingReportsPagination } from './reports-pagination-test-support.mts'
+import { expectPendingReportsPagination } from '@voucha/test-helpers/api/v1/communities/reports-pagination-test-support'
 
 describe('community moderation reports routes', () => {
   let moderator: PrivateUser

@@ -31,7 +31,7 @@ import {
   acquirePublicationLifecycleLockWithTimeout,
   holdAuthorPublicationLifecycleLock,
   recordAuthorDeletionWithLockTimeout,
-} from './post-publication-lifecycle-test-support.mts'
+} from '@voucha/test-helpers/api/post-publication-lifecycle-test-support'
 
 describe('post publication lifecycle capture integration', () => {
   it('captures an author and every authored post before user deletion reassignment', async () => {

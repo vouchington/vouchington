@@ -3,7 +3,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { createApiKey } from '@services/api-keys'
 import type { PrivateUser } from '@services/users/types'
-import { expectApiKeyPagination } from './api-keys-pagination-test-support.mts'
+import { expectApiKeyPagination } from '@voucha/test-helpers/api/v1/my/api-keys-pagination-test-support'
 
 describe('GET /api/v1/my/api-keys', () => {
   let user: PrivateUser

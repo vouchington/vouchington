@@ -20,7 +20,7 @@ import {
   approveFediverseInstance,
   createRemoteActorFixture,
   randomSuffix,
-} from './inbox.test-helpers.mts'
+} from '@voucha/test-helpers/api/activitypub/inbox.test-helpers'
 import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 // The signature and the actual TCP destination don't need to match — Node reports whatever Host

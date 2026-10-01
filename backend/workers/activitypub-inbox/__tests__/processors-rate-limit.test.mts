@@ -4,7 +4,7 @@ import { activitypubInbox } from '@queues/activitypub-inbox/queues'
 import {
   claimTestDelivery,
   rejectTestDelivery,
-} from '@services/ap-inbox-activities/durable-delivery-transitions.test-support'
+} from '@voucha/test-helpers/services/ap-inbox-activities/durable-delivery-transitions.test-support'
 import {
   recordActivityPubInboxSenderDelivery,
   recordActivityPubInboxSenderDeliveryOnce,
@@ -13,7 +13,10 @@ import {
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import { processDelivery } from '../processors.mts'
-import { createApprovedRemoteActor, createSignedDelivery } from '../test-support.mts'
+import {
+  createApprovedRemoteActor,
+  createSignedDelivery,
+} from '@voucha/test-helpers/workers/activitypub-inbox/test-support'
 
 describe('ActivityPub inbox processor sender rate limit', () => {
   it('delays a valid signed delivery when the sender allowance races to exhausted', async () => {

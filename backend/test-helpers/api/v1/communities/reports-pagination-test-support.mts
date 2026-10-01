@@ -1,8 +1,8 @@
 import { expect } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestModerationReport, insertTestPost } from '@voucha/test-helpers'
-import type { Community } from '@services/communities/types'
-import type { PrivateUser } from '@services/users/types'
+import type { Community } from '../../../../services/communities/types.mts'
+import type { PrivateUser } from '../../../../services/users/types.mts'
 
 export async function expectPendingReportsPagination(
   moderator: PrivateUser,

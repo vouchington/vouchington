@@ -7,7 +7,10 @@ import {
   insertTestUrlHostname,
 } from '@voucha/test-helpers'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
-import { getOrFetchRemoteActorByKeyId, type RemoteActorRow } from '@services/remote-actors'
+import {
+  getOrFetchRemoteActorByKeyId,
+  type RemoteActorRow,
+} from '../../../services/remote-actors/index.mts'
 
 export const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 

@@ -105,13 +105,6 @@ exports backend/services/agents/get.mts getAgentModeratorConfig
 exports backend/services/agents/moderator-configs.mts MODERATOR_CONFIGS
 exports backend/services/ai-usage/daily-total.mts clearDailyAiCostTotalCacheForTesting
 exports backend/services/analytics/cache.mts trackCacheCall
-exports backend/services/ap-inbox-activities/durable-delivery-transitions.test-support.mts acceptTestDelivery
-exports backend/services/ap-inbox-activities/durable-delivery-transitions.test-support.mts claimTestDelivery
-exports backend/services/ap-inbox-activities/durable-delivery-transitions.test-support.mts deferTestDelivery
-exports backend/services/ap-inbox-activities/durable-delivery-transitions.test-support.mts exhaustTestDelivery
-exports backend/services/ap-inbox-activities/durable-delivery-transitions.test-support.mts rejectTestDelivery
-exports backend/services/ap-inbox-activities/durable-delivery-transitions.test-support.mts releaseTestDelivery
-exports backend/services/ap-inbox-activities/durable-delivery-transitions.test-support.mts verifyTestDelivery
 exports backend/services/ap-inbox-activities/test-fixtures.mts acceptJobsFor
 exports backend/services/ap-inbox-activities/test-fixtures.mts createFederatedUser
 exports backend/services/ap-inbox-activities/test-fixtures.mts createRemoteActorFixture
@@ -388,10 +381,6 @@ exports backend/services/vote-integrity/config.mts VOTE_INTEGRITY_FLAG_TYPES
 exports backend/services/web-risk/state.mts configureWebRiskStateForTest
 exports backend/services/web-risk/state.mts resetWebRiskStateForTest
 exports backend/workers/account-data-requests/processors.mts publishTerminalStatus
-exports backend/workers/activitypub-inbox/test-support.mts approveInstance
-exports backend/workers/activitypub-inbox/test-support.mts createApprovedRemoteActor
-exports backend/workers/activitypub-inbox/test-support.mts createSignedDelivery
-exports backend/workers/activitypub-inbox/test-support.mts makeUnavailableActor
 exports backend/workers/ai-agents/processors/process-appeal-resolution.test-helpers.mts rerunAppealResolutionThroughQueueForTest
 exports backend/workers/ai-agents/processors/process-reconcile-post-classifier-applications.mts POST_CLASSIFIER_RECEIPT_AGE_ALARM_MS
 exports backend/workers/ai-agents/processors/spend-cap-recheck.mts getOpenAiSpendCapRecheckAt

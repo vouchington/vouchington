@@ -15,7 +15,7 @@ import {
   approveFediverseInstance,
   createRemoteActorFixture,
   randomSuffix,
-} from './inbox.test-helpers.mts'
+} from '@voucha/test-helpers/api/activitypub/inbox.test-helpers'
 
 const INBOX_URL = 'http://inbox-test.example/ap/inbox'
 
