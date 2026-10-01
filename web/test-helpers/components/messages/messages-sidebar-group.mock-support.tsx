@@ -57,6 +57,7 @@ vi.mock(
         children: ReactNode
         [k: string]: unknown
       }) => (
+        // ast-grep-ignore: web-no-raw-form-elements -- test double replaces CollapsibleTrigger with a button the sidebar tests click
         <button
           type='button'
           {...props}
