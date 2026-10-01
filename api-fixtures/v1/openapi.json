@@ -37721,8 +37721,22 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "No Content"
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "reply_queued": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["reply_queued"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"

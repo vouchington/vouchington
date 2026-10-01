@@ -4,7 +4,6 @@ import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
-import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import {
   queryCopyrightSweepIdPage,
   type CopyrightSweepIdPage,
@@ -26,8 +25,7 @@ export class CopyrightEmailIntakeResponseNotClaimedError extends Error {
 export async function createCopyrightEmailIntakeResponseInTransaction(
   input: {
     intakeId: string
-    intakeSesMessageId: string
-    senderEmailCiphertext: string
+    recipientEmail: string
     responseKind: 'rejected' | 'needs_information'
     responseMessage: string | null
   },
@@ -42,7 +40,7 @@ export async function createCopyrightEmailIntakeResponseInTransaction(
       subject_ciphertext, body_ciphertext, idempotency_key
     ) VALUES (
       ${id}, ${input.intakeId}, ${input.responseKind},
-      ${encryptSecret(decryptSecret(input.senderEmailCiphertext, copyrightEmailIntakePurpose(input.intakeSesMessageId)), purpose)},
+      ${encryptSecret(input.recipientEmail, purpose)},
       ${encryptSecret(copyrightEmailIntakeResponseSubject(input.responseKind), purpose)},
       ${encryptSecret(copyrightEmailIntakeResponseBody(input.responseKind, input.responseMessage), purpose)},
       ${`copyright-email-intake-response:${input.intakeId}`}

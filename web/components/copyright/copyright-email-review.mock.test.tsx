@@ -147,6 +147,7 @@ describe('CopyrightEmailReview', () => {
         'The notice is incomplete.',
         '019f0000-0000-7000-8000-000000000002',
         null,
+        null,
       )
     })
     expect(screen.getByRole('alert')).toHaveTextContent('API rejected the action')

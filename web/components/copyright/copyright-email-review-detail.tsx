@@ -6,6 +6,7 @@ import {
   type CopyrightEmailApprovalDraft,
 } from './copyright-email-approval-model'
 import type { CopyrightEmailIntake } from '@/lib/api/client/copyright-email-intakes'
+import { CopyrightEmailReplyAddressField } from './copyright-email-reply-address-field'
 import { CopyrightEmailCorrespondenceFields } from './copyright-email-correspondence-fields'
 import {
   isCompleteCopyrightEmailCorrespondenceDraft,
@@ -18,10 +19,12 @@ export function CopyrightEmailReviewDetail({
   loading,
   rationale,
   manualFallbackReason,
+  replyEmail,
   correspondenceDraft,
   onChangeDraft,
   onChangeRationale,
   onChangeManualFallbackReason,
+  onChangeReplyEmail,
   onChangeCorrespondenceDraft,
   onApproveInitial,
   onRejectInitial,
@@ -33,10 +36,12 @@ export function CopyrightEmailReviewDetail({
   loading: boolean
   rationale: string
   manualFallbackReason: string
+  replyEmail: string
   correspondenceDraft: CopyrightEmailCorrespondenceDraft
   onChangeDraft: (draft: CopyrightEmailApprovalDraft) => void
   onChangeRationale: (value: string) => void
   onChangeManualFallbackReason: (value: string) => void
+  onChangeReplyEmail: (value: string) => void
   onChangeCorrespondenceDraft: (draft: CopyrightEmailCorrespondenceDraft) => void
   onApproveInitial: () => void
   onRejectInitial: () => void
@@ -83,6 +88,12 @@ export function CopyrightEmailReviewDetail({
           onChange={event => onChangeManualFallbackReason(event.target.value)}
           placeholder='Why staff is proceeding without an agent recommendation'
           value={manualFallbackReason}
+        />
+      )}
+      {detail.review_path === 'initial' && !detail.parsed_email && (
+        <CopyrightEmailReplyAddressField
+          onChange={onChangeReplyEmail}
+          value={replyEmail}
         />
       )}
       <div className='flex flex-wrap gap-2'>
