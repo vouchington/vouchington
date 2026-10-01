@@ -61,9 +61,9 @@ environment:
 - the repeat-infringer policy, retention schedule, templates, staffing, and legal review are approved.
 
 This switch is the intake kill switch. It stops only new claimant intake: the notice forms, staff
-approval of an emailed notice (which would open a new case), and the AI recommendation for a new
-submission (an emailed notice or a form screening). Existing complaint pages, all ongoing statutory
-casework, and designated-agent email ingest remain available; use the individual
+approval of an emailed notice (which would open a new case), the AI email-intake recommendation
+job, and the reconciler's start of a form screening. Existing complaint pages, all ongoing
+statutory casework, and designated-agent email ingest remain available; use the individual
 delivery/enforcement controls and incident procedures rather than the intake switch to manage a
 downstream outage.
 
@@ -106,13 +106,15 @@ a case already open:
 | Dispatch                                     | While the switch is off | Why                                                                                                                      |
 | -------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | Email-intake recommendation (`email`)        | Waits                   | A new emailed notice has not been decided, so its contents must not reach a model                                        |
-| Form screening (`form-screening`)            | Waits                   | A form received before the pause and not yet screened must not reach a model until intake is on                          |
+| Form screening (`form-screening`)            | Waits                   | The sweep does not start or retry a screening for a form that was received but not yet screened                          |
 | Appeal recommendation (`appeal`)             | Runs                    | An appeal answers a restriction on an open case. Appeals stay open, so the advisory recommendation for staff keeps going |
 | Saved form screening applied (`form-effect`) | Runs                    | The form was received and screened before the pause. Applying it calls no model and the effect has its own switch        |
 
 A held-back dispatch is not lost. It stays pending, and the first sweep after the switch is on
-sends it. The `form-effect` step applies only a saved clear screen of an already received form, and
-only while `automaticProvisionalWithholding` is on. To stop automated withholding during an
+sends it. Only the email-intake processor checks the switch itself, so a form-screening job that
+was already on the queue when the switch went off can still run. The `form-effect` step applies only
+a saved clear screen of an already received form, and only while
+`automaticProvisionalWithholding` is on. To stop automated withholding during an
 incident, turn that dynamic-config switch off (see
 [Automatic provisional withholding](#automatic-provisional-withholding)); the intake switch does
 not stop it.
