@@ -83,6 +83,9 @@ only the web consumer. Staff email-intake review is web-only staff tooling too. 
 response (`web.copyright.email-intake-rejection.reply-queued` and `.no-reply`) has only the web
 consumer; the
 [request and response contract](api/v1/copyright-notices/README.md) is owned by the API page.
+Table B lists every web copyright surface (policy pages, member cases, notice filing, poster
+responses, guest filing, and the four staff surfaces). Swift and .NET render none of them, and
+Table C tracks each `copyright-*` capability as a native gap.
 
 ### Agent tool manifest handoff
 
