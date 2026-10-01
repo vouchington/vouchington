@@ -10,10 +10,7 @@ export function CopyrightEmailReplyAddressField({
   onChange: (value: string) => void
 }) {
   return (
-    <div
-      className='space-y-1'
-      data-pw='copyright-email-reply-address'
-    >
+    <div className='space-y-1'>
       <Input
         aria-label='Reply address'
         onChange={event => onChange(event.target.value)}
