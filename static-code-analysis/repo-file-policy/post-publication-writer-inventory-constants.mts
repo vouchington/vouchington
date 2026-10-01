@@ -29,6 +29,7 @@ export const CAPTURE_IMPORT_MODULE_SPECIFIERS = new Set([
   './delete-publication-capture.mts',
   './delete-entity-relation-votes.mts',
   './publication-change.mts',
+  '../publication-change.mts',
   './publication-mutation.mts',
   './post-topic-publication.mts',
   './story-publication-change.mts',

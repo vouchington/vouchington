@@ -40,6 +40,7 @@ async function readStoryRepresentatives(
       FROM rss_feed_items candidate
       CROSS JOIN rss_feed_items subject
       WHERE subject.id = ${subjectItemId}
+        AND story.id IS NOT NULL
         AND candidate.story_id = wanted.story_id
         AND candidate.deleted_at IS NULL
       ORDER BY

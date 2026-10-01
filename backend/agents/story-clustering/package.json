@@ -34,8 +34,10 @@
     "@voucha/types": "workspace:^"
   },
   "devDependencies": {
+    "@services/ai-usage": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/urls": "workspace:^",
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "undici": "^8.11.2"
   }
 }

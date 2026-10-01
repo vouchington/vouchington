@@ -27,7 +27,6 @@
     "@data-stores/valkey": "workspace:^",
     "@modules/feed-query-builders": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@queues/crawler": "workspace:^",
