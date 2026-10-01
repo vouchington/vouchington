@@ -109,10 +109,12 @@ export async function runIsolatedDatabaseCase(caseId: IsolatedDatabaseCaseId): P
   }
   if (created) {
     try {
+      // A forced drop outlasted the default 10s while other suites loaded the same server.
       await command(
         'psql',
         ['-v', 'ON_ERROR_STOP=1', '-qc', `DROP DATABASE IF EXISTS ${databaseName} WITH (FORCE)`],
         adminEnv,
+        30_000,
       )
     } catch (cleanupFailure) {
       if (primaryFailure) {

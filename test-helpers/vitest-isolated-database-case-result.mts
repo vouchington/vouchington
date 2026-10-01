@@ -3,7 +3,7 @@ import {
   type IsolatedDatabaseCaseId,
 } from './vitest-isolated-database-cases.mts'
 
-export type IsolatedDatabaseCaseTestResult = { fullName: string; state: string }
+type IsolatedDatabaseCaseTestResult = { fullName: string; state: string }
 
 const resultMarker = '[isolated-database-case-result]'
 
