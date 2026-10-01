@@ -1,11 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  projectScheduledJobs,
-  upsertScheduledJobManifest,
-  type ScheduledJobQueue,
-} from '@modules/scheduled-job-manifest'
+import { projectScheduledJobs, upsertScheduledJobManifest } from '@modules/scheduled-job-manifest'
 import type { DeployEnvironmentSource } from '@ts-shared/deploy-environment'
 import { SCHEDULED_JOB_MANIFESTS } from './scheduled-job-manifests.mts'
+
+type ScheduledJobQueue = Parameters<typeof upsertScheduledJobManifest>[0]
 
 const NON_PRODUCTION_CLAMP_JOBS = [
   'account-data-requests/accountDataRequestRecovery',

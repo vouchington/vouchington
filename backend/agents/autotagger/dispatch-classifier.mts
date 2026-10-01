@@ -15,10 +15,7 @@ import { executeAndPersistAutotaggerDecision } from './dispatch-classifier-execu
 import { buildAutotaggerClassifierBindingsAndDigest } from './dispatch-classifier-bindings.mts'
 import { createAutotaggerStructuredDecisionHooks } from './structured-decision-attempt-hooks.mts'
 import type { AutotaggerClassifierDispatchInput } from './dispatch-classifier-types.mts'
-export type {
-  AutotaggerClassifierCandidate,
-  AutotaggerClassifierDispatchInput,
-} from './dispatch-classifier-types.mts'
+export type { AutotaggerClassifierDispatchInput } from './dispatch-classifier-types.mts'
 
 const TAGGING_CLASSIFIER_SLUG = 'tagging'
 

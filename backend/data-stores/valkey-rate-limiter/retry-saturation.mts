@@ -1,7 +1,7 @@
 import { retrySaturationError as retryPublicRateLimiterSaturation } from 'valkyries'
 import { config } from '@data-stores/valkey-core/config'
 
-export type RetryRateLimiterSaturationDependencies = {
+type RetryRateLimiterSaturationDependencies = {
   config: Pick<typeof config, 'inflight_retry_attempts' | 'inflight_retry_delay_ms'>
   retryRateLimiterSaturation: typeof retryPublicRateLimiterSaturation
 }

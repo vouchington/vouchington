@@ -20,7 +20,17 @@ All records share base fields: `event_id UUID`, `event_time TIMESTAMP`, `event_d
 | `pg_query_timing`     | `recordQueryTiming` (per psql query/cursor, sampled)                 | `annotation`, `pool`, `duration_ms`, `row_count`, `error`, optional `cursor_batches`, optional `pipelined`, optional `batch_size`                                                                                            |
 | `pg_pool_stats`       | `startPoolStatsSampler` (per-process gauge)                          | `pool` (`read`, `write`, or `advisory-lock`), `total`, `idle`, `waiting`, `max`                                                                                                                                              |
 | `pg_vote_drift`       | `reconcilePostVoteDrift` job (`trackVoteDrift`)                      | `entity_table`, `sampled`, `drifted`, `sample_entity_id`                                                                                                                                                                     |
+| `api_usage`           | `trackApiUsage` (via `settleUsage` for each settled MCP request)     | `surface`, `credential`, `user_id`, `api_key_id`, `oauth_client_id`, `oauth_grant_id`, `plan`, `scope_class`, `unit`, `units`, `status_code`, `quota_limit`, `duration_ms`                                                   |
 
 For `pg_pool_stats`, `max` is each process pool's effective configured ceiling, including the
 `PG_ADVISORY_LOCK_POOL_MAX` override. Pool connections are opened lazily; the ceiling is not an
 eager reservation.
+
+`api_usage` is one row per settled authenticated MCP request, attributed to the validated identity:
+the owner `user_id` plus the `api_key_id` (API key credential) or the public `oauth_client_id` and
+`oauth_grant_id` (OAuth credential). `trackApiUsage` names each stored field, so no raw bearer
+token or API key can reach the table. `units` is `1` for a served 2xx or 4xx and `0` for a 429 or an
+actual 5xx; `quota_limit` is the request limit selected for the surface, plan, and scope class. See
+[MCP usage quota](reference-rate-limiting-layer-4-per-route-rate-limiting-backend.md#mcp-usage-quota).
+The `api_usage` Firehose stream and S3 Tables table are tracked in
+[#1556](https://github.com/vouchington/vouchington/issues/1556).
