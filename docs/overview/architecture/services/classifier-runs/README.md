@@ -2,8 +2,8 @@
 
 Source entrypoint: [backend/services/classifier-runs/README.md](../../../../../backend/services/classifier-runs/README.md)
 
-`@services/classifier-runs` is the one lifecycle every fixed classifier (C5, C6 and C9 today, C8
-later) runs on. A classifier supplies a `ClassifierRunAdapter`: how to lock and read a subject's
+`@services/classifier-runs` is the one lifecycle every fixed classifier (C5, C6, C8 and C9)
+runs on. A classifier supplies a `ClassifierRunAdapter`: how to lock and read a subject's
 current content, how to resolve its configuration, and how to turn durable outcomes into effects.
 Receipt, lease, reclaim, provider-attempt reservation and cap, terminal failure, completion,
 supersession, dispatch and sweep are shared, so a new classifier is input building plus outcome
@@ -152,7 +152,7 @@ raises a throttled `run-age` or `request-age` alarm through `recordClassifierRun
 
 ## Adding a classifier
 
-C5, C6 and C9 are the adapters registered today. A classifier (C8 next) adds a `classifiers` row, an
+C5, C6, C8 and C9 are the adapters registered today. A new classifier adds a `classifiers` row, an
 adapter, an input builder for `@agents/classifier-runs`, and a registration in the worker's
 classifier-run registry (a registration may add an idempotent `afterCompleted` hook for post-commit
 work, as C9's story refresh does). It adds no lifecycle code, queue, table or sweep.
