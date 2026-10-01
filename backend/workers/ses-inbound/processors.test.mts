@@ -2,11 +2,23 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureMessageMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { SES_INBOUND_RECONCILE_JOB_NAME } from '@ts-shared/ses-inbound-contract'
 import { reconcileSesInboundEmails } from './processors.mts'
+import { listCopyrightSesInboundObjects } from './processors/s3.mts'
 
 describe('reconcileSesInboundEmails without an SES inbound bucket', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
   })
+
+  it.each([undefined, '', '   '])(
+    'still fails an S3 operation that needs the bucket when S3_BUCKET_SES_INBOUND is %j',
+    async bucket => {
+      vi.stubEnv('S3_BUCKET_SES_INBOUND', bucket)
+
+      await expect(listCopyrightSesInboundObjects()).rejects.toThrow(
+        'S3_BUCKET_SES_INBOUND is required',
+      )
+    },
+  )
 
   it.each([undefined, '', '   '])(
     'skips loudly instead of throwing when S3_BUCKET_SES_INBOUND is %j',
