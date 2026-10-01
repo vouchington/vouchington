@@ -73,15 +73,21 @@ the resolved current state means the run is obsolete and is superseded, never re
    (`APPROVAL_CLASSIFIER_SLUGS`); a post approved at creation requests C6 from
    `processPostCreated` (`requestApprovedPostClassifierRuns`); an RSS upsert requests C6 and C9 for each
    written feed item (`requestRssFeedItemClassifierRuns`, which has no approval gate).
-2. **Reserve.** `reserveClassifierRun` locks the subject, checks the adapter's optional `ready`
-   gate (C6, C9: the subject's embedding was built from its current content), resolves configuration,
-   captures the candidate set for a classifier that has one (`adapter.captureCandidates` for topics,
-   `adapter.captureStoryCandidates` for stories, reusing an existing receipt's set instead of
-   searching again), and inserts the receipt with a
-   pre-generated decision batch. Outcomes are `reserved`, `no-work`, `stale` and `not-ready`. A
-   missing or unresolvable configuration never blocks approval: the request stays for the sweep.
-   An adapter that resolves no configuration (the C6 kill switch) or captures no candidates settles
-   the request as no work.
+2. **Reserve.** `reserveClassifierRun` first prepares the candidate set for a classifier that has
+   one (`adapter.captureCandidates` for topics, `adapter.captureStoryCandidates` for stories,
+   skipped when the identity already has a receipt, whose set is reused instead of searching
+   again), with no subject lock held, so the vector search and its lookups never block a writer of
+   the subject. It then locks the subject, checks the adapter's optional `ready` gate (C6, C9: the
+   subject's embedding was built from its current content), resolves configuration, and
+   re-validates only what correctness needs: the prepared candidates are used only while the locked
+   content hash and configuration hash still equal the ones they were chosen for. Otherwise the
+   transaction rolls back and the reservation prepares again, at most
+   `CLASSIFIER_RUN_RESERVE_ATTEMPTS` (3) times, then reports `not-ready` and leaves the request for
+   the sweep. The receipt is inserted with a pre-generated decision batch. Outcomes are `reserved`,
+   `no-work`, `stale` and `not-ready`. A missing or unresolvable configuration never blocks
+   approval: the request stays for the sweep. An adapter that resolves no configuration (the C6
+   kill switch) or captures no candidates settles the request as no work. The capture hooks and
+   `ready` take any `QueryExecutor` and must be pure reads, because they also run outside the lock.
 3. **Claim.** `claimClassifierRun` takes a 60-second fenced lease. Order of checks: completed,
    terminal, live lease, then reclaim. A superseded run whose identity is current again is
    revived.
@@ -96,7 +102,8 @@ the resolved current state means the run is obsolete and is superseded, never re
 6. **Complete.** `completeClassifierRun` applies the adapter's effects and stamps completion in one
    transaction; a replay returns `replay`.
 7. **Supersede.** `supersedeStaleClassifierRun` retires an obsolete run and reserves the current
-   one.
+   one. Its replacement prepares candidates the same way, before the transaction and with the same
+   bounded re-preparation; an unsettled subject leaves the stale run for the next sweep.
 
 Terminal kinds are `provider-error`, `invalid-result`, `context-rejected`, `attempts-exhausted`,
 `client-unavailable` and `sweep-bound-exceeded`. A terminal kind is immutable, and the run's local

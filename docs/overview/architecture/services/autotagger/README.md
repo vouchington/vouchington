@@ -30,6 +30,10 @@ per-classifier input building and outcome application that lifecycle asks for:
   plan change cannot alter what an existing receipt asks or mint a second receipt.
   Posts use the author's tiered cap and the post embedding; feed items use the
   discoverable-source budget with feed-declared categories first. `null` means nothing to classify.
+  The search runs before the reservation takes the subject lock and holds no lock while it reads
+  (the plan, discoverability and vector lookups run on their own connections); the locked
+  reservation keeps its result only while the content and configuration hashes it was chosen for
+  are still current, and otherwise prepares again.
 - **Readiness** (`readiness.mts`) — a subject is ready only once its embedding was built from its
   current content. `hasCurrentAutotaggerEmbedding` gates reservation (an unready request stays
   unsettled); `autotaggerRequestEligibility` puts the same predicate in the sweep query, so the wait

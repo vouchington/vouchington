@@ -112,21 +112,32 @@ export type ClassifierRunAdapter<C, L = never, E = void> = {
   ): Promise<ResolvedClassifierRun<C> | null>
   /**
    * Chooses the topic candidates of a run that captures its own, once, when its receipt is first
-   * reserved; a later search result can never change them. Null or empty means no work.
+   * reserved; a later search result can never change them. Null or empty means no work. It runs
+   * before the subject lock is taken, so it reads on its own connection and must not rely on the
+   * lock; the reservation keeps its result only if the content and configuration it was chosen for
+   * are still current under the lock.
    */
   captureCandidates?(
-    query: OwnedTransaction,
+    query: QueryExecutor,
     subject: ClassifierRunSubject,
     current: CurrentClassifierRunInput,
   ): Promise<readonly string[] | null>
-  /** The story-clustering counterpart of `captureCandidates`: stories and standalone items. */
+  /**
+   * The story-clustering counterpart of `captureCandidates`: stories and standalone items. It has
+   * the same contract: it runs before the subject lock on its own connection, and the reservation
+   * keeps its result only if the content and configuration it was chosen for are still current
+   * under the lock.
+   */
   captureStoryCandidates?(
-    query: OwnedTransaction,
+    query: QueryExecutor,
     subject: ClassifierRunSubject,
     current: CurrentClassifierRunInput,
   ): Promise<readonly StoryRunCandidate[] | null>
-  /** Reservation-time prerequisite (for example an embedding); false leaves the request unsettled. */
-  ready?(query: OwnedTransaction, subject: ClassifierRunSubject): Promise<boolean>
+  /**
+   * Reservation-time prerequisite (for example an embedding); false leaves the request unsettled.
+   * It runs both before and under the subject lock, so it must be a pure read.
+   */
+  ready?(query: QueryExecutor, subject: ClassifierRunSubject): Promise<boolean>
   /** SQL over `request` (classifier_run_requests) selecting only requests the sweep may dispatch. */
   requestEligibility(): SQLStatement
   /** Throws unless `local` is present exactly when the configuration asks for one. */

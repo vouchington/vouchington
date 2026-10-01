@@ -1,4 +1,4 @@
-import type { OwnedTransaction } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql'
 import {
   approvedPostRequestEligibility,
   type ClassifierRunSubject,
@@ -14,7 +14,7 @@ function currentEmbedding(alias: string): string {
 
 /** Reservation-time gate: a candidate search before the embedding exists would find nothing. */
 export async function hasCurrentAutotaggerEmbedding(
-  query: OwnedTransaction,
+  query: QueryExecutor,
   subject: ClassifierRunSubject,
 ): Promise<boolean> {
   const { rows } =

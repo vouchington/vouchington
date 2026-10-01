@@ -1,4 +1,4 @@
-import type { OwnedTransaction } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql'
 import type { ClassifierRunSubject } from '@services/classifier-runs'
 import { getUserActivePlan } from '@services/memberships'
 import { getRssFeedItemMappedTopics } from '@services/rss-feed-items/category-relations'
@@ -16,7 +16,7 @@ type CandidateTopic = { id: string; name: string }
  * everyone else (including an authorless post) the free cap, which defaults to no autotagging.
  */
 async function resolvePostMaxTopics(
-  query: OwnedTransaction,
+  query: QueryExecutor,
   postId: string,
   limits: AutotaggerPaidLimitsFields,
 ): Promise<number> {
@@ -39,7 +39,7 @@ async function resolvePostMaxTopics(
  * deduplicated by id and capped at the discoverable-source budget.
  */
 async function searchFeedItemTopics(
-  query: OwnedTransaction,
+  query: QueryExecutor,
   rssFeedItemId: string,
   limit: number,
 ): Promise<CandidateTopic[]> {
@@ -59,7 +59,7 @@ async function searchFeedItemTopics(
  * what an existing receipt asks. Null means there is nothing to classify.
  */
 export async function captureAutotaggerCandidateTopicIds(
-  query: OwnedTransaction,
+  query: QueryExecutor,
   subject: ClassifierRunSubject,
 ): Promise<readonly string[] | null> {
   const limits = getAutotaggerPaidLimitsFields()

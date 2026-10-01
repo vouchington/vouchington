@@ -1,4 +1,4 @@
-import type { OwnedTransaction } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql'
 import type { ClassifierRunSubject } from '@services/classifier-runs'
 import sql, { type SQLStatement } from 'sql-template-strings'
 
@@ -11,7 +11,7 @@ function currentEmbedding(alias: string): string {
 
 /** Reservation-time gate: a neighbor search before the embedding exists would find nothing. */
 export async function hasCurrentStoryClusteringEmbedding(
-  query: OwnedTransaction,
+  query: QueryExecutor,
   subject: ClassifierRunSubject,
 ): Promise<boolean> {
   if (subject.rssFeedItemId === null) return false

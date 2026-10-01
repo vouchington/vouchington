@@ -1,4 +1,4 @@
-import type { OwnedTransaction } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql'
 import type { ClassifierRunSubject, StoryRunCandidate } from '@services/classifier-runs'
 import { itemHasDiscoverableSourceSql } from '@services/rss-feeds/discoverability-sql'
 import {
@@ -19,7 +19,7 @@ type NeighborRow = { id: string; story_id: string | null }
 
 /** The classified item, only when it can still cluster: live, embedded, unlocked and unclustered. */
 async function readClusterableItem(
-  query: OwnedTransaction,
+  query: QueryExecutor,
   rssFeedItemId: string,
 ): Promise<SubjectRow | null> {
   const { rows } = await query<SubjectRow>(
@@ -47,7 +47,7 @@ async function readClusterableItem(
  * is suppressed from clustering, that are story-locked, or whose story is deleted are excluded.
  */
 async function findNeighbors(
-  query: OwnedTransaction,
+  query: QueryExecutor,
   rssFeedItemId: string,
   publishedAt: Date,
 ): Promise<NeighborRow[]> {
@@ -98,14 +98,16 @@ async function findNeighbors(
 }
 
 /**
- * Chooses what one run asks about, once, when its receipt is first reserved: each distinct story
+ * Chooses what one run asks about, once, when its receipt is first reserved, before the item's row
+ * lock is taken (a pure read; the reservation keeps the result only while the item's content and
+ * the classifier configuration are still the ones it was chosen for): each distinct story
  * among the nearest neighbors (its nearest member stands in for the story) and each standalone
  * neighbor. Null means there is nothing to classify, so the request settles as no work and no
  * model call is made: the item is gone, already in a story, story-locked, from no discoverable
  * source, or has no neighbor inside the window.
  */
 export async function captureStoryClusteringCandidates(
-  query: OwnedTransaction,
+  query: QueryExecutor,
   subject: ClassifierRunSubject,
 ): Promise<readonly StoryRunCandidate[] | null> {
   if (subject.rssFeedItemId === null) return null
