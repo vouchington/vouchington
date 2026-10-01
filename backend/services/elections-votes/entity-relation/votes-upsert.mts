@@ -141,7 +141,7 @@ export async function upsertEntityRelationElectionVotes(
           key: `${getEntityRelationVoteTableName(metadata)}:${userId}:${value.entityId}`,
         })),
       )
-      .sort((left, right) => left.key.localeCompare(right.key))
+      .toSorted((left, right) => left.key.localeCompare(right.key))
     await transaction(sql`/* lockEntityRelationElectionVoteMutations */
       SELECT pg_advisory_xact_lock(hashtextextended(ordered.lock_key, 0))
       FROM (SELECT unnest(${locks.map(lock => lock.key)}::text[]) AS lock_key ORDER BY lock_key) ordered
