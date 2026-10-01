@@ -55,6 +55,7 @@ Semantic filtering (`semantic_search_query` and the `similar_*` options) is a di
 
 - `sort=relevance` with a semantic query (alone or hybrid) computes the distance for every candidate row and sorts by the ranking score; cost grows with the number of embedded posts that pass the other filters.
 - `sort=new`, and `similar_*` requests with either sort, walk `posts.id DESC` and filter on distance until the page fills. `similar_*` requests have no ranking expression, so `sort=relevance` is recency-ordered within the threshold.
+- Hybrid requests can also switch to a slower generic plan on a long-lived pooled connection, because the query runs as a named prepared statement.
 
 The plan evidence, the reasoning, and the open candidate-window decision are in the [search-utils plan notes](../../../backend/modules/search-utils/README.md#semantic-post-search-plan).
 

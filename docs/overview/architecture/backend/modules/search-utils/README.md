@@ -44,7 +44,7 @@ Why:
 - The shared query filters with a distance threshold (`EMBEDDING_DISTANCE_THRESHOLD`, via `appendEmbeddingDistance` in the posts query builder) and orders by `ranking_score DESC, posts.id DESC` or `posts.id DESC`. A threshold predicate is not an index-ordered scan, and `1/(1+distance)` (or `ts_rank` times it for hybrid search) is a computed expression, so the planner cannot use the index for either.
 - The other filters (privacy, moderation, post type, cursor) all run as ordinary predicates over the same rows, so the page fills exactly as for any non-vector search.
 
-Plan shapes, captured with `EXPLAIN (ANALYZE, BUFFERS)` on a disposable database holding about 40k synthetic embedded posts (the stock explain seed leaves `posts` embeddings null, which makes semantic plans meaningless):
+Custom-plan shapes (see the generic-plan note below), captured with `EXPLAIN (ANALYZE, BUFFERS)` on a disposable database holding about 40k synthetic embedded posts (the stock explain seed leaves `posts` embeddings null, which makes semantic plans meaningless):
 
 | Query shape                                                 | Plan                                                            | Cost                                                       |
 | ----------------------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------- |
@@ -58,7 +58,7 @@ What this means:
 - Relevance-sorted semantic and hybrid pages are linear in the number of embedded posts that pass the other filters. The distance needs the full stored vector, so block reads dominate.
 - Recency-sorted pages stay cheap only while enough rows fall under the threshold. A sparse match set makes the backward scan walk further before the page fills.
 - Similar-item requests have no ranking expression, so `sort=relevance` falls back to `posts.id DESC` within the threshold. This is current behavior, not a plan artifact.
-- `read` sends unnamed statements, so production plans each execution with its own parameters. The explain tooling's forced generic-plan mode can pick a different plan for hybrid queries; that divergence is a tooling artifact.
+- Production sends this query as a named prepared statement (`@vouchington/postgres` names every annotated query), and nothing forces `plan_cache_mode`, so under the default `auto` a pooled connection can switch to a generic plan after several executions. For hybrid queries the generic plan can differ from the custom one: it picked a `search_vector` bitmap scan, which took `sort=new` from about 2 ms to about 214 ms and `sort=relevance` from about 92 ms to about 146 ms on the seed. Semantic-only and `similar_*` plans did not change. The explain tooling's `EXPLAIN_PLAN_CACHE_MODE=compare` mode exists to catch exactly this, so check both plans when changing the query.
 - Do not add `hnsw.iterative_scan` to this query. It only matters for an ordered nearest-neighbour scan with post-filters.
 
 Whether relevance and hybrid search need a distance-ordered candidate window is tracked in [#1549](https://github.com/vouchington/vouchington/issues/1549). Any such window must keep exact ordering for semantic-only relevance (an approximate index window is a ranking change), stay one shared query for REST and MCP, and keep cursor pagination on `ranking_score`.
