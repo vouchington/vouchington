@@ -12299,6 +12299,9 @@ importers:
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config

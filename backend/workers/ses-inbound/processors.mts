@@ -1,3 +1,4 @@
+import { recordScheduledJobConfigMissing } from '@modules/on-error'
 import { UnrecoverableError } from '@modules/queue-errors'
 import { enqueueOrRetryBulkSesInboundProcess } from '@queues/ses-inbound/enqueues'
 import { enqueueCopyrightEmailIntakeAndWait } from '@queues/ai-agents/enqueues/copyright-email-intake'
@@ -6,6 +7,7 @@ import {
   assertSesInboundProcessJobData,
   getSesInboundKindFromObjectKey,
   getSesMessageIdFromObjectKey,
+  SES_INBOUND_RECONCILE_JOB_NAME,
   type SesInboundProcessJobData,
 } from '@ts-shared/ses-inbound-contract'
 import { parseSesInboundMime, SesInboundTerminalError } from './processors/mime.mts'
@@ -21,6 +23,7 @@ import {
   loadSesInboundObjectVersion,
   loadSesInboundObject,
   moveSesInboundObjectToFailed,
+  readSesInboundBucket,
   type SesInboundObjectPage,
 } from './processors/s3.mts'
 
@@ -68,6 +71,13 @@ export async function processSesInboundEmail(
 export async function reconcileSesInboundEmails(
   dependencies?: Partial<ReconcileDependencies>,
 ): Promise<{ enqueued: number }> {
+  // The sweep has nothing to scan without the bucket. Skip loudly (local dev has none) instead of
+  // throwing, which would be retried and logged as an error every five minutes. Ingest of a real
+  // email still fails on a missing bucket because that job only exists once mail arrived.
+  if (!readSesInboundBucket()) {
+    recordScheduledJobConfigMissing(SES_INBOUND_RECONCILE_JOB_NAME, 'S3_BUCKET_SES_INBOUND')
+    return { enqueued: 0 }
+  }
   const listCopyrightObjects =
     dependencies?.listCopyrightSesInboundObjects ?? listCopyrightSesInboundObjects
   const enqueueOrRetry =

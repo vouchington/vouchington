@@ -20,6 +20,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
   useCopyrightIntakeEnvironment({ enabled: false })
 
   it('reconciles every copyright evidence page', async () => {
+    vi.stubEnv('S3_BUCKET_SES_INBOUND', 'ses-inbound-test')
     const listCopyrightObjects = vi
       .fn<
         (
