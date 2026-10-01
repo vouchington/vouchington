@@ -46,7 +46,7 @@
     "@ts-shared/money": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/typed-entities": "0.1.0",
+    "@vouchington/typed-entities": "^0.1.0",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "pgvector": "^0.3.0",

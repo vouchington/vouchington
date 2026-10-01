@@ -52,7 +52,7 @@
     "@ts-shared/url-signing": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/embeds": "0.0.2",
+    "@vouchington/embeds": "^0.0.2",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "pgvector": "^0.3.0",

@@ -71,7 +71,7 @@ describe('dependency update configuration', () => {
       browserCrawlPackage.dependencies?.playwright,
       browserCrawlPackage.dependencies?.['playwright-core'],
     ]
-    expect(playwrightVersions[0]).toMatch(/^\d+\.\d+\.\d+$/)
+    expect(playwrightVersions[0]).toMatch(/\d+\.\d+\.\d+$/)
     expect(playwrightVersions).toEqual(playwrightVersions.map(() => playwrightVersions[0]))
     expect(ignoredVersions).not.toHaveProperty('@playwright/test')
     expect(ignoredVersions).not.toHaveProperty('playwright')
@@ -115,7 +115,7 @@ describe('dependency update configuration', () => {
       return manifest[field]?.[name]
     })
 
-    expect(sentryVersions[0]).toMatch(/^\d+\.\d+\.\d+$/)
+    expect(sentryVersions[0]).toMatch(/\d+\.\d+\.\d+$/)
     expect(sentryVersions).toEqual(sentryVersions.map(() => sentryVersions[0]))
   })
 

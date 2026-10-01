@@ -39,7 +39,7 @@
     "@services/stories": "workspace:^",
     "@services/topics": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
-    "@vouchington/image-resize": "0.2.0",
+    "@vouchington/image-resize": "^0.2.0",
     "pg-copy-streams": "^7.0.0"
   },
   "devDependencies": {
