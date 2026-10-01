@@ -43,7 +43,7 @@ describe('copyright submission request contracts', () => {
     const schema = resolve(carriersOf(operation).body)
     expect(schema.type).toBe('object')
     expect(schema.additionalProperties).toBe(false)
-    expect([...(schema.required as string[])].sort()).toEqual(required)
+    expect((schema.required as string[]).toSorted()).toEqual(required)
   })
 
   it.each(Object.keys(REQUIRED_KEYS))('%s keeps the CAPTCHA token optional', operation => {

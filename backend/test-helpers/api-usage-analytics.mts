@@ -48,5 +48,5 @@ export async function readApiUsageRows(userId: string) {
 export async function readAnonymousApiUsageRows() {
   await flush()
   const rows = await query(`SELECT * FROM api_usage WHERE surface = 'rest_anonymous'`)
-  return rows.sort((a, b) => Number(a.status_code) - Number(b.status_code))
+  return rows.toSorted((a, b) => Number(a.status_code) - Number(b.status_code))
 }
