@@ -7,14 +7,9 @@ import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { readCopyrightEmailIntakeReview } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
+import type { HostedPostAudience } from '@voucha/test-helpers/services/copyright-notices/hosted-post-audience'
 
 type Fixture = Awaited<ReturnType<typeof createCopyrightFormFixture>>
-
-const NON_PUBLIC_POSTS = {
-  private: { privacy: 'private', broadcast: 'users' },
-  draft: { clearanceStatus: 'pending' },
-  'followers-only': { broadcast: 'followers' },
-} as const
 
 async function submitForm(fixture: Fixture, form: Fixture['form'], key = crypto.randomUUID()) {
   const request = createRequest()
@@ -34,7 +29,7 @@ function withMissingTarget(form: Fixture['form']): Fixture['form'] {
   }
 }
 
-describe('copyright notice targets on posts that are not publicly visible', () => {
+describe('copyright notice targets are limited to posts the claimant can view', () => {
   useCopyrightIntakeEnvironment()
 
   beforeEach(() => {
@@ -45,55 +40,90 @@ describe('copyright notice targets on posts that are not publicly visible', () =
     vi.restoreAllMocks()
   })
 
-  it.each(Object.entries(NON_PUBLIC_POSTS))(
-    'answers a claimant naming a %s post exactly like a target that does not exist',
-    async (_name, visibility) => {
-      const fixture = await createCopyrightFormFixture(visibility)
+  it.each([
+    ['a public post', 'public'],
+    ['a signed-in-only post', 'users'],
+    ['a followers-only post, as a follower', 'followers'],
+    ['a private-community post, as a member', 'private-community'],
+    ['an archived post', 'archived'],
+    ["a suspended author's post", 'suspended-author'],
+  ] as const)('accepts a claimant naming %s', async (_name, audience) => {
+    const fixture = await createCopyrightFormFixture(audience, { claimantHasAccess: true })
+    const { response } = await submitForm(fixture, fixture.form)
+    expect(response.status).toBe(202)
+  })
+
+  it.each([
+    ['a followers-only post, as a non-follower', 'followers', false],
+    ['a private-community post, as a non-member', 'private-community', false],
+    ['a post awaiting community review, even as a member', 'awaiting-community-review', true],
+    ['an unapproved draft, as a non-author', 'draft', false],
+  ] as const)(
+    'answers a claimant naming %s exactly like a target that does not exist',
+    async (_name, audience, claimantHasAccess) => {
+      const fixture = await createCopyrightFormFixture(audience, { claimantHasAccess })
       const missing = await submitForm(fixture, withMissingTarget(fixture.form))
-      const nonPublic = await submitForm(fixture, fixture.form)
+      const hidden = await submitForm(fixture, fixture.form)
 
       expect(missing.response.status).toBe(422)
-      expect(nonPublic.response.status).toBe(missing.response.status)
-      expect(nonPublic.response.body).toEqual(missing.response.body)
-      expect(nonPublic.response.text).toBe(missing.response.text)
+      expect(hidden.response.status).toBe(missing.response.status)
+      expect(hidden.response.body).toEqual(missing.response.body)
+      expect(hidden.response.text).toBe(missing.response.text)
       // A recorded notice would make a replay of the same key return 200 with `is_duplicate`.
-      const replay = await nonPublic.request
+      const replay = await hidden.request
         .post('/api/v1/copyright-notices')
-        .set('Idempotency-Key', nonPublic.key)
+        .set('Idempotency-Key', hidden.key)
         .send(fixture.form)
       expect(replay.status).toBe(422)
       expect(replay.text).toBe(missing.response.text)
     },
   )
 
-  it('still accepts a claimant naming a publicly visible post', async () => {
-    const fixture = await createCopyrightFormFixture()
-    const { response } = await submitForm(fixture, fixture.form)
-    expect(response.status).toBe(202)
-  })
+  it.each([
+    'users',
+    'followers',
+    'private-community',
+    'awaiting-community-review',
+    'draft',
+    'archived',
+    'suspended-author',
+  ] satisfies HostedPostAudience[])(
+    'lets staff approve an emailed notice naming a %s post',
+    async audience => {
+      const fixture = await createCopyrightFormFixture(audience)
+      const intake = await createParsedCopyrightEmailIntake()
+      const staff = createRequest()
+      await staff.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
 
-  it('tells staff when an emailed notice names a post that is not publicly visible', async () => {
-    const fixture = await createCopyrightFormFixture(NON_PUBLIC_POSTS.private)
-    const publicFixture = await createCopyrightFormFixture()
+      const approved = await staff
+        .post(`/api/v1/copyright-email-intakes/${intake.id}/approvals`)
+        .send({
+          ...fixture.form,
+          rationale: 'The email supplies a complete notice.',
+          manual_fallback_reason: 'No recommendation is available.',
+        })
+
+      expect(approved.status).toBe(201)
+      await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.not.toEqual([])
+    },
+  )
+
+  it('still reports a missing target to staff as not found', async () => {
+    const fixture = await createCopyrightFormFixture()
     const intake = await createParsedCopyrightEmailIntake()
     const staff = createRequest()
     await staff.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
-    const approve = (form: Fixture['form']) =>
-      staff.post(`/api/v1/copyright-email-intakes/${intake.id}/approvals`).send({
-        ...form,
+
+    const refused = await staff
+      .post(`/api/v1/copyright-email-intakes/${intake.id}/approvals`)
+      .send({
+        ...withMissingTarget(fixture.form),
         rationale: 'The email supplies a complete notice.',
         manual_fallback_reason: 'No recommendation is available.',
       })
 
-    const refused = await approve(fixture.form)
     expect(refused.status).toBe(422)
-    expect(refused.body.message).toBe('Hosted image placement is not publicly visible')
+    expect(refused.body.message).toBe('Hosted image placement was not found')
     await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([])
-
-    expect((await approve(withMissingTarget(publicFixture.form))).body.message).toBe(
-      'Hosted image placement was not found',
-    )
-    // The refusal consumed nothing, so staff can still approve the intake with a visible target.
-    expect((await approve(publicFixture.form)).status).toBe(201)
   })
 })

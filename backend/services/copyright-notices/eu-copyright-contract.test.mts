@@ -102,7 +102,7 @@ describe('EU copyright notice contracts', () => {
     ).rejects.toMatchObject({ status: 422, message: 'Only US DMCA notices use this aggregate' })
     await expect(
       createCopyrightFormIntake({
-        requesterUserId: claimant.id,
+        currentUser: claimant,
         requesterIdentity: `user:${claimant.id}`,
         idempotencyKey: crypto.randomUUID(),
         request: {

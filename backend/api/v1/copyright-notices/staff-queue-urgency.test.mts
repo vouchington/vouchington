@@ -41,7 +41,7 @@ describe('copyright staff queue urgency', () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const createGuestNotice = async () => {
       const { intake } = await createCopyrightFormIntake({
-        requesterUserId: null,
+        currentUser: null,
         requesterIdentity: `guest:${crypto.randomUUID()}`,
         idempotencyKey: crypto.randomUUID(),
         request: {

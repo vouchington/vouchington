@@ -44,10 +44,11 @@ describe('findCopyrightImageSimilarityCandidates', () => {
       workDescription: 'Original image',
       policyVersion: 'test',
       targets: [
-        await resolveCopyrightImagePlacement(
-          { postId: source.postId, imageId: source.image.id, hostedUseUrl: 'https://voucha.ai' },
-          { audience: 'staff' },
-        ),
+        await resolveCopyrightImagePlacement({
+          postId: source.postId,
+          imageId: source.image.id,
+          hostedUseUrl: 'https://voucha.ai',
+        }),
       ],
       initialSubmission: { kind: 'notice', sourceKind: 'staff', bodyCiphertext: 'ciphertext' },
     })
@@ -88,10 +89,11 @@ describe('findCopyrightImageSimilarityCandidates', () => {
       workDescription: 'Original image',
       policyVersion: 'test',
       targets: [
-        await resolveCopyrightImagePlacement(
-          { postId: source.postId, imageId: source.image.id, hostedUseUrl: 'https://voucha.ai' },
-          { audience: 'staff' },
-        ),
+        await resolveCopyrightImagePlacement({
+          postId: source.postId,
+          imageId: source.image.id,
+          hostedUseUrl: 'https://voucha.ai',
+        }),
       ],
       initialSubmission: { kind: 'notice', sourceKind: 'staff', bodyCiphertext: 'ciphertext' },
     })

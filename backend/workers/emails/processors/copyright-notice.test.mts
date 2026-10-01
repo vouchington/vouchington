@@ -26,7 +26,7 @@ async function createEmailDeliveryIntent(): Promise<{ intentId: string; noticeId
   const imageId = await insertTestImage(claimant.id)
   await insertTestPostImage({ postId, imageId })
   const intake = await createCopyrightFormIntake({
-    requesterUserId: claimant.id,
+    currentUser: claimant,
     requesterIdentity: `user:${claimant.id}`,
     idempotencyKey: crypto.randomUUID(),
     request: {

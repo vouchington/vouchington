@@ -120,7 +120,7 @@ app.route('/api/v1/copyright-notices').post(async (ctx: Context) => {
     'Client IP required',
   )
   const { intake, isDuplicate } = await createCopyrightFormIntake({
-    requesterUserId: currentUser?.id ?? null,
+    currentUser,
     requesterIdentity: currentUser
       ? `user:${currentUser.id}`
       : createCopyrightGuestIdentity(guestIp as string),

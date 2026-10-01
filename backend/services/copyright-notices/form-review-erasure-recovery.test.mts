@@ -35,7 +35,7 @@ async function createAutomatedCopyrightForm() {
   const imageId = await insertTestImage(claimant.id)
   await insertTestPostImage({ postId, imageId })
   const notice = await createCopyrightFormIntake({
-    requesterUserId: claimant.id,
+    currentUser: claimant,
     requesterIdentity: `user:${claimant.id}`,
     idempotencyKey: crypto.randomUUID(),
     request: {

@@ -46,7 +46,7 @@ async function createRestrictedFixture(targetCount = 1, detachBeforeScreening = 
   )
   await Promise.all(imageIds.map(imageId => insertTestPostImage({ postId, imageId })))
   const intake = await createCopyrightFormIntake({
-    requesterUserId: claimant.id,
+    currentUser: claimant,
     requesterIdentity: `user:${claimant.id}`,
     idempotencyKey: crypto.randomUUID(),
     request: {

@@ -21,7 +21,7 @@ describe('copyright guest form intake review', () => {
     const imageId = await insertTestImage(poster.id)
     await insertTestPostImage({ postId, imageId })
     const notice = await createCopyrightFormIntake({
-      requesterUserId: null,
+      currentUser: null,
       requesterIdentity: `guest:${crypto.randomUUID()}`,
       idempotencyKey: crypto.randomUUID(),
       request: {

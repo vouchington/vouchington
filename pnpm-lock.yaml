@@ -4852,6 +4852,9 @@ importers:
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
+      '@services/posts':
+        specifier: workspace:^
+        version: link:../posts
       '@services/users':
         specifier: workspace:^
         version: link:../users
