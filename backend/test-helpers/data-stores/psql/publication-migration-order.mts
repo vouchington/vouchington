@@ -36,7 +36,7 @@ export async function readPublicationMigrationColumnOrders() {
             : [],
         ),
         committed: Object.entries(metadata.columns)
-          .sort(([, a], [, b]) => a.ordinalPosition - b.ordinalPosition)
+          .toSorted(([, a], [, b]) => a.ordinalPosition - b.ordinalPosition)
           .map(([name]) => name),
       },
     ]

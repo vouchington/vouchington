@@ -55,8 +55,8 @@ describe('Vitest project ownership <-> workflow --project commands', () => {
   it.each(literalJobs.map(job => [job.orchestratorJob, job] as const))(
     '%s: workflow --project tokens match the model exactly',
     (_orchestratorJob, job) => {
-      const actual = [...literalProjectsInvokedBy(job.workflow)].sort()
-      expect(actual).toEqual([...modelProjectNames(job)].sort())
+      const actual = [...literalProjectsInvokedBy(job.workflow)].toSorted()
+      expect(actual).toEqual([...modelProjectNames(job)].toSorted())
     },
   )
 
@@ -65,8 +65,8 @@ describe('Vitest project ownership <-> workflow --project commands', () => {
     const literalProjects = new Set(
       job.projects.filter(project => !project.browserRunner).map(project => project.project),
     )
-    const actual = [...literalProjectsInvokedBy(job.workflow)].sort()
-    expect(actual).toEqual([...literalProjects].sort())
+    const actual = [...literalProjectsInvokedBy(job.workflow)].toSorted()
+    expect(actual).toEqual([...literalProjects].toSorted())
   })
 
   it('storybook: the browser-runner project is assembled at runtime, never literal workflow text', () => {

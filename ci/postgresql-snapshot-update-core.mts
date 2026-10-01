@@ -122,8 +122,8 @@ export async function assertSnapshotManifest(
     throw new Error('Snapshot artifact provenance is malformed')
   }
   const actual = await describeGeneratedSnapshotFiles(root)
-  const actualPaths = Object.keys(actual).sort()
-  const declaredPaths = Object.keys(manifest.files).sort()
+  const actualPaths = Object.keys(actual).toSorted()
+  const declaredPaths = Object.keys(manifest.files).toSorted()
   if (JSON.stringify(actualPaths) !== JSON.stringify(declaredPaths)) {
     throw new Error('Snapshot artifact file inventory differs from manifest')
   }

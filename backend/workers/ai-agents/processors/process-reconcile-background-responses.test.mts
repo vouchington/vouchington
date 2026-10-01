@@ -39,7 +39,7 @@ describe('processReconcileBackgroundResponses', () => {
       reconcileExpiredBackgroundResponse,
     })
 
-    expect(reconciled.sort()).toEqual(['resp_one', 'resp_three', 'resp_two'])
+    expect(reconciled.toSorted()).toEqual(['resp_one', 'resp_three', 'resp_two'])
     expect(reconcileExpiredBackgroundResponse).toHaveBeenCalledTimes(3)
   })
 

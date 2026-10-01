@@ -44,7 +44,7 @@ describe('sideload-thumbnails', () => {
       makeItem('item-c', 'https://example.com/c.jpg'),
     ]
     const result = proxyThumbnailUrls(items)
-    expect(Object.keys(result).sort()).toEqual(['item-a', 'item-c'])
+    expect(Object.keys(result).toSorted()).toEqual(['item-a', 'item-c'])
     expect(result['item-a']).toMatch(/^https?:\/\/[^/]+\/sideload\//)
     expect(result['item-c']).toMatch(/^https?:\/\/[^/]+\/sideload\//)
   })

@@ -40,7 +40,7 @@ const NON_PRODUCTION_CLAMP_JOBS = [
   'rss-feeds/dispatchRssFeeds',
   'ses_inbound/ses-inbound-reconciliation',
   'user-deletions/userDeletionRecovery',
-].sort() as `${string}/${string}`[]
+].toSorted() as `${string}/${string}`[]
 
 describe('staging hourly-floor clamp', () => {
   afterEach(() => vi.restoreAllMocks())
@@ -55,7 +55,7 @@ describe('staging hourly-floor clamp', () => {
     const clamped = [...baseline.keys()].filter(
       key => JSON.stringify(staging.get(key)) !== JSON.stringify(baseline.get(key)),
     )
-    expect(clamped.sort()).toEqual(NON_PRODUCTION_CLAMP_JOBS)
+    expect(clamped.toSorted()).toEqual(NON_PRODUCTION_CLAMP_JOBS)
     for (const key of clamped) expect(isExactlyAtHourlyFloor(staging.get(key))).toBe(true)
   })
 
@@ -93,7 +93,7 @@ describe('staging hourly-floor clamp', () => {
     const expectedClampedIds = NON_PRODUCTION_CLAMP_JOBS.flatMap(key => {
       const id = surfaceIdByJobKey.get(key)
       return id === undefined ? [] : [id]
-    }).sort()
+    }).toSorted()
     const baseline = projectScheduledJobs(SCHEDULED_JOB_MANIFESTS)
     const staging = projectScheduledJobs(SCHEDULED_JOB_MANIFESTS, undefined, {
       applyHourlyFloor: true,
@@ -102,7 +102,7 @@ describe('staging hourly-floor clamp', () => {
     const actualClampedIds = staging
       .filter(job => job.schedule !== baselineById.get(job.id))
       .map(job => job.id)
-      .sort()
+      .toSorted()
     expect(actualClampedIds).toEqual(expectedClampedIds)
     expect(
       staging.filter(job => actualClampedIds.includes(job.id)).map(job => job.schedule),

@@ -126,7 +126,7 @@ export function rollUpReleasedModerationTransparencyByMonth(
     }
     monthlyBuckets.set(key, { ...bucket, date })
   }
-  return [...monthlyBuckets.values()].sort(
+  return [...monthlyBuckets.values()].toSorted(
     (left, right) =>
       right.date.localeCompare(left.date) ||
       left.metric.localeCompare(right.metric) ||

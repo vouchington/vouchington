@@ -29,8 +29,8 @@ function siteKey(site: { workflow: string; job: string }): string {
 
 describe('listSourceRunSites', () => {
   it('extracts exactly the real workflow_run-derived jobs, no more and no fewer', () => {
-    const actual = listSourceRunSites().map(siteKey).sort()
-    const expected = EXPECTED_SITES.map(siteKey).sort()
+    const actual = listSourceRunSites().map(siteKey).toSorted()
+    const expected = EXPECTED_SITES.map(siteKey).toSorted()
     expect(actual).toEqual(expected)
   })
 

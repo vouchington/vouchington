@@ -62,7 +62,7 @@ describe('discoverTranscriptFiles repo scoping', () => {
       repoRoots: [inRepoRoot],
     })
 
-    expect([...result.claudeFiles].sort()).toEqual([inRepoFileA, inRepoFileB].sort())
+    expect([...result.claudeFiles].toSorted()).toEqual([inRepoFileA, inRepoFileB].toSorted())
     expect(result.skippedOtherRepo.claude).toBe(3)
     expect(result.skippedUnknownCwd.claude).toBe(0)
   })

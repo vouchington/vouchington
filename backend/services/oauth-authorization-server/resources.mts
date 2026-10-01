@@ -59,7 +59,7 @@ export function buildOAuthAuthorizationServerMetadata() {
     code_challenge_methods_supported: ['S256'],
     token_endpoint_auth_methods_supported: ['client_secret_basic', 'none'],
     revocation_endpoint_auth_methods_supported: ['client_secret_basic', 'none'],
-    scopes_supported: OAUTH_RESOURCE_AUDIENCES.flatMap(listOAuthResourceScopes).sort(),
+    scopes_supported: OAUTH_RESOURCE_AUDIENCES.flatMap(listOAuthResourceScopes).toSorted(),
     authorization_response_iss_parameter_supported: true,
     client_id_metadata_document_supported: true,
   }

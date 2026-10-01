@@ -19,7 +19,7 @@ export async function getUserTagTopics(): Promise<UserTagTopic[]> {
       slug: row.slug as UserTagSlug,
       label: labelBySlug.get(row.slug as UserTagSlug)!,
     }))
-    .sort((a, b) => USER_TAG_SLUGS.indexOf(a.slug) - USER_TAG_SLUGS.indexOf(b.slug))
+    .toSorted((a, b) => USER_TAG_SLUGS.indexOf(a.slug) - USER_TAG_SLUGS.indexOf(b.slug))
 }
 
 export async function isUserTagTopicId(topicId: string): Promise<boolean> {

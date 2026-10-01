@@ -28,15 +28,15 @@ app.route('/rss/news').get(async (ctx: Context) => {
     topicSlugs: topics
       ?.split(',')
       .flatMap(s => (s.trim() ? [s.trim()] : []))
-      .sort(),
+      .toSorted(),
     sourceTopicSlugs: sources
       ?.split(',')
       .flatMap(s => (s.trim() ? [s.trim()] : []))
-      .sort(),
+      .toSorted(),
     categoryTopicSlugs: categoryTopic
       ?.split(',')
       .flatMap(s => (s.trim() ? [s.trim()] : []))
-      .sort(),
+      .toSorted(),
   })
 
   if (apikey) {

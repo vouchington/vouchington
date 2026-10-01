@@ -9,7 +9,7 @@ describe('GET /api/v1/scopes', () => {
 
     expect(response.headers['cache-control']).toContain('public')
     const scopes = response.body.scopes as { scope: string }[]
-    expect(scopes.map(entry => entry.scope)).toEqual(Object.keys(SCOPE_DEFINITIONS).sort())
+    expect(scopes.map(entry => entry.scope)).toEqual(Object.keys(SCOPE_DEFINITIONS).toSorted())
     expect(scopes.find(entry => entry.scope === 'mcp.user:write')).toEqual({
       scope: 'mcp.user:write',
       resource: 'mcp.user',

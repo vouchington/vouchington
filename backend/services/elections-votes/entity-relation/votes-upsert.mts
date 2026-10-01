@@ -50,7 +50,7 @@ export async function upsertEntityRelationElectionVotes(
   for (const vote of votes) deduplicated.set(vote.entityId, vote.score)
   const values = [...deduplicated]
     .map(([entityId, score]) => ({ entityId, score }))
-    .sort((left, right) => left.entityId.localeCompare(right.entityId))
+    .toSorted((left, right) => left.entityId.localeCompare(right.entityId))
   const { enqueueVoteStats = true, ...queryOptions } = options
   const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, queryOptions)
 

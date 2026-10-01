@@ -152,7 +152,7 @@ describe('GET /api/v1/users?q=', () => {
     const created = [userA!, userB!, userC!]
     const prefix = longestCommonPrefix(created.map(u => u.username!.toLowerCase()))
     const expectedIds = [...created]
-      .sort((a, b) => a.username!.toLowerCase().localeCompare(b.username!.toLowerCase()))
+      .toSorted((a, b) => a.username!.toLowerCase().localeCompare(b.username!.toLowerCase()))
       .map(u => u.id)
 
     const requester = await createTestUser({ username: safeUsername('users-qmulti-requester') })

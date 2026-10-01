@@ -24,7 +24,7 @@ describe('moderator configs', () => {
 
   it('carries only the identity, prompt text and baseline flag', () => {
     for (const config of MODERATOR_CONFIGS) {
-      expect(Object.keys(config).sort()).toEqual(['baseline', 'prompt', 'slug'])
+      expect(Object.keys(config).toSorted()).toEqual(['baseline', 'prompt', 'slug'])
       expect(config.slug).toBeTruthy()
       expect(config.prompt).toBeTruthy()
     }

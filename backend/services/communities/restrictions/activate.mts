@@ -116,7 +116,7 @@ function normalizeRestrictionTypes(
       normalized.push(restrictionType)
     }
   }
-  return normalized.sort(
+  return normalized.toSorted(
     (a, b) => COMMUNITY_RESTRICTION_TYPES.indexOf(a) - COMMUNITY_RESTRICTION_TYPES.indexOf(b),
   )
 }

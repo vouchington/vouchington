@@ -28,7 +28,7 @@ app.route('/rss/posts').get(async (ctx: Context) => {
     topicSlugs: topics
       ?.split(',')
       .flatMap(s => (s.trim() ? [s.trim()] : []))
-      .sort(),
+      .toSorted(),
     postType,
     username: user,
   })

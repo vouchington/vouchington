@@ -52,7 +52,7 @@ describe('bounded publication receipt retention and reclamation', () => {
       expect(result.snapshots).toBeLessThanOrEqual(10)
       expect(result.keys).toBeLessThanOrEqual(10)
     }
-    expect(await readTestPublicationSnapshotIds(ids)).toEqual([...ids].sort())
+    expect(await readTestPublicationSnapshotIds(ids)).toEqual([...ids].toSorted())
     await lock.commit()
     const bound = await getTestPublicationCleanupTraversalBound(10)
     let remaining = ids

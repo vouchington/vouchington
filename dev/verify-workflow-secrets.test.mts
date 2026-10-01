@@ -52,7 +52,7 @@ describe('collectLiveSecretNames', () => {
       new Set(),
     )
     expect(listedRepository).toBe('acme/widgets')
-    expect([...names].sort()).toEqual([
+    expect([...names].toSorted()).toEqual([
       'ALREADY_PROVISIONED',
       'ORGANIZATION_ONLY_SECRET',
       'STAGING_ONLY_SECRET',

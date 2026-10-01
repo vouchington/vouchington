@@ -72,7 +72,7 @@ function scrubArray(value: unknown[], depth: number): unknown {
 
 function scrubObject(value: Record<string, unknown>, depth: number): unknown {
   if (depth >= MAX_DEPTH) return SENTRY_FILTERED_VALUE
-  const keys = Object.keys(value).sort()
+  const keys = Object.keys(value).toSorted()
   const result: Record<string, unknown> = {}
   for (const key of keys.slice(0, MAX_OBJECT_KEYS)) {
     result[key] = isSensitiveKey(key) ? SENTRY_FILTERED_VALUE : scrubValue(value[key], depth + 1)

@@ -32,7 +32,7 @@ describe('package-json-workspace-coverage config', () => {
         .split('\n')
         .filter(Boolean),
     )
-    expect([...trackedTopLevelDirs].filter(dir => !roots.has(dir)).sort()).toEqual([])
+    expect([...trackedTopLevelDirs].filter(dir => !roots.has(dir)).toSorted()).toEqual([])
 
     const workspaceYaml = parseYaml(readFileSync(`${repoRoot}/pnpm-workspace.yaml`, 'utf8')) as {
       packages?: string[]
@@ -40,7 +40,7 @@ describe('package-json-workspace-coverage config', () => {
     const workspacePrefixes = new Set(
       (workspaceYaml.packages ?? []).map(pattern => pattern.replaceAll('\\', '/').split('/')[0]),
     )
-    const extraRoots = [...roots].filter(root => !trackedTopLevelDirs.has(root)).sort()
+    const extraRoots = [...roots].filter(root => !trackedTopLevelDirs.has(root)).toSorted()
     expect(extraRoots.every(root => workspacePrefixes.has(root))).toBe(true)
   })
 })

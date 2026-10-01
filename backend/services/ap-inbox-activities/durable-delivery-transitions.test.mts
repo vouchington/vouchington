@@ -10,7 +10,7 @@ import {
 
 describe('ActivityPub inbox durable-delivery transition facade', () => {
   it('exposes exactly one implementation for every named transition', () => {
-    expect(Object.keys(activityPubInboxDeliveryTransitions).sort()).toEqual([
+    expect(Object.keys(activityPubInboxDeliveryTransitions).toSorted()).toEqual([
       'accept',
       'acknowledgeEnqueue',
       'admitSender',
@@ -28,7 +28,7 @@ describe('ActivityPub inbox durable-delivery transition facade', () => {
   })
 
   it('describes the accepted lifecycle and checkpoint edges exhaustively', () => {
-    expect(Object.keys(ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT).sort()).toEqual([
+    expect(Object.keys(ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT).toSorted()).toEqual([
       'accept',
       'acknowledge-enqueue',
       'admit-sender',

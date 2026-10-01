@@ -85,7 +85,7 @@ function discoverWorkspacePackageRoots() {
     )
   }
 
-  return [...roots].sort()
+  return [...roots].toSorted()
 }
 
 module.exports = discoverWorkspacePackageRoots().map(packageRoot => {

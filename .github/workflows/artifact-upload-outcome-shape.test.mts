@@ -42,7 +42,7 @@ describe('artifact-upload-outcome.mts call sites', () => {
 
     for (const step of steps) {
       expect(step.run).toBe(EXPECTED_RUN)
-      expect(Object.keys(step.env ?? {}).sort()).toEqual([
+      expect(Object.keys(step.env ?? {}).toSorted()).toEqual([
         'FAMILY',
         'FIRST_OUTCOME',
         'RETRY_OUTCOME',

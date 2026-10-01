@@ -74,7 +74,7 @@ export async function adminAssignItemToStory(
           (candidate): candidate is string => candidate !== null,
         ),
       ),
-    ].sort()
+    ].toSorted()
     for (const affectedStoryId of affectedStoryIds) {
       // oxlint-disable-next-line no-await-in-loop -- sorted refreshes acquire story relation locks in one global order.
       const refreshResult = await refreshStoryPost(

@@ -26,7 +26,7 @@ describe('Microsoft Store service tickets', () => {
       collections_service_ticket: 'ticket-1',
       purchase_service_ticket: 'ticket-2',
     })
-    expect(resources.sort()).toEqual([
+    expect(resources.toSorted()).toEqual([
       'https://onestore.microsoft.com/b2b/keys/create/collections/.default',
       'https://onestore.microsoft.com/b2b/keys/create/purchase/.default',
     ])

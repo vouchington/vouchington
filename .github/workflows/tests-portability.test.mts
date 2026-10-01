@@ -113,7 +113,7 @@ describe('portability path filters', () => {
       readFileSync(join(repoRoot, '.github/workflows/tests-portability.yml'), 'utf8'),
     ) as { on: Record<string, unknown>; concurrency?: unknown }
 
-    expect(Object.keys(workflow.on).sort()).toEqual(['workflow_call', 'workflow_dispatch'])
+    expect(Object.keys(workflow.on).toSorted()).toEqual(['workflow_call', 'workflow_dispatch'])
     expect(workflow.concurrency).toBeUndefined()
   })
 })

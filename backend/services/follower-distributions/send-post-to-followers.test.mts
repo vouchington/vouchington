@@ -121,7 +121,7 @@ describe('sendPostToFollowers', () => {
         .flatMap(notification =>
           notification && notification.post_id === post.id ? [notification.delivery_type] : [],
         )
-        .sort(),
+        .toSorted(),
     ).toEqual(['manual_send', 'subscription'])
   })
 

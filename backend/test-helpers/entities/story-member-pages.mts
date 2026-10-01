@@ -38,7 +38,7 @@ export async function createTestStoryMembers(
     urlId,
     itemIds: rows
       .map(row => row.id)
-      .sort()
+      .toSorted()
       .reverse(),
   }
 }

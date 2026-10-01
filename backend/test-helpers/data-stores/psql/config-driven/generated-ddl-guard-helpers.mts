@@ -21,7 +21,7 @@ export async function loadGeneratedConfigDrivenSql(
 ): Promise<{ file: string; sql: string }[]> {
   const generatorFiles = getFilesFromFolder(configDrivenDir)
     .filter(file => file.endsWith('.mts'))
-    .sort()
+    .toSorted()
 
   return Promise.all(
     generatorFiles.map(async file => {

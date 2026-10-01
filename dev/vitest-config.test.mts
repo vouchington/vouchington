@@ -26,7 +26,7 @@ const vitestProjects = (rootConfig.test?.projects ?? []) as VitestProjectConfig[
 const configHelperDir = new URL('../test-helpers/vitest-config/', import.meta.url)
 const configHelperFiles = readdirSync(configHelperDir)
   .filter(f => f.endsWith('.mts'))
-  .sort()
+  .toSorted()
 const projectConfigPaths = configHelperFiles.reduce<string[]>((paths, file) => {
   if (file.endsWith('projects.mts')) paths.push(`test-helpers/vitest-config/${file}`)
   return paths

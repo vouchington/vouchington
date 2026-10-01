@@ -46,7 +46,7 @@ describe('OpenRouter Decisions', () => {
     expect(['food', 'sports']).toContain(choice.choice)
     expect(choice.confidence).toBeGreaterThanOrEqual(0)
     expect(choice.confidence).toBeLessThanOrEqual(1)
-    expect(Object.keys(choice.probabilities).sort()).toEqual(['food', 'sports'])
+    expect(Object.keys(choice.probabilities).toSorted()).toEqual(['food', 'sports'])
     expect(Object.values(choice.probabilities).every(value => value >= 0 && value <= 1)).toBe(true)
     expect(Object.values(choice.probabilities).reduce((sum, value) => sum + value, 0)).toBeCloseTo(
       1,
@@ -66,7 +66,7 @@ describe('OpenRouter Decisions', () => {
     expect(score.confidence).toBeGreaterThanOrEqual(0)
     expect(score.confidence).toBeLessThanOrEqual(1)
     expect(score.legend).toEqual(['low', 'high'])
-    expect(Object.keys(score.probabilities).sort()).toEqual(['0', '1'])
+    expect(Object.keys(score.probabilities).toSorted()).toEqual(['0', '1'])
     expect(Object.values(score.probabilities).every(value => value >= 0 && value <= 1)).toBe(true)
     expect(Object.values(score.probabilities).reduce((sum, value) => sum + value, 0)).toBeCloseTo(1)
     expect(score.raw).toMatchObject({

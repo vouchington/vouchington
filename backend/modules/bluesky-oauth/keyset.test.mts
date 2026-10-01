@@ -49,7 +49,7 @@ describe('getBlueskyKeyset', () => {
     const env = toEnvValue([customJwk('custom-key-1'), customJwk('custom-key-2')])
     const keyset = await getBlueskyKeyset({ mode: 'production', env })
     expect(keyset.size).toBe(2)
-    expect(keyset.publicJwks.keys.map(key => key.kid).sort()).toEqual([
+    expect(keyset.publicJwks.keys.map(key => key.kid).toSorted()).toEqual([
       'custom-key-1',
       'custom-key-2',
     ])

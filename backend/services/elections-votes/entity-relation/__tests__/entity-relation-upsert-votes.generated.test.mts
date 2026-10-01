@@ -241,7 +241,7 @@ describe('upsert.generated (votes)', () => {
     expect(
       (await getEntityRelationVoteStorageRows([topicPostRelation.id!, postTopicRelation.id!]))
         .map(row => row.storage_table)
-        .sort(),
+        .toSorted(),
     ).toEqual([
       'relation__post__category__topic__votes__default',
       'relation__topic__related__post__votes__default',

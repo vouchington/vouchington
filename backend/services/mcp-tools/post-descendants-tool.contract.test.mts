@@ -60,7 +60,7 @@ describe('get_post_descendants — real DB', () => {
       const replies = []
       for (let index = 0; index < 5; index += 1) replies.push(await comment(other, root.id))
       replies.push(await comment(author, replies[0]!.id))
-      const expected = replies.map(reply => reply.id).sort()
+      const expected = replies.map(reply => reply.id).toSorted()
 
       const seen: unknown[] = []
       let after: string | undefined
@@ -85,7 +85,7 @@ describe('get_post_descendants — real DB', () => {
 
       const { body } = await call(other, { post_id: root.id })
 
-      expect(ids(body)).toEqual([first.id, second.id].sort())
+      expect(ids(body)).toEqual([first.id, second.id].toSorted())
       expect(body.page_info).toMatchObject({ has_next_page: false, end_cursor: null })
     })
 

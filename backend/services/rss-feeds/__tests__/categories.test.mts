@@ -137,7 +137,7 @@ describe('rss-feed categories', () => {
       await upsertRssFeedCategories(feed.id, ['Science', 'Arts', 'Business'])
       const rows = await getRssFeedCategories(feed.id)
       const texts = rows.map(r => r.category_text)
-      expect(texts).toEqual([...texts].sort())
+      expect(texts).toEqual([...texts].toSorted())
     }, 30_000)
 
     it('returns empty array for a feed with no categories', async () => {

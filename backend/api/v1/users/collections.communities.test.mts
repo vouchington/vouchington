@@ -86,7 +86,7 @@ describe('GET /api/v1/users/:idOrSlug communities collections', () => {
       .expect(200)
     expect(anonResponse.body.results).toHaveLength(1)
     expect(anonResponse.body.results[0].id).toBe(community.id)
-    expect(Object.keys(anonResponse.body.results[0]).sort()).toEqual([
+    expect(Object.keys(anonResponse.body.results[0]).toSorted()).toEqual([
       'allow_data_point_posts',
       'allow_review_posts',
       'archived_at',

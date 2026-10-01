@@ -50,7 +50,7 @@ describe('openModmailThread', () => {
         if (p.role === 'admin') acc.push(p.user_id)
         return acc
       }, [])
-      .sort()
+      .toSorted()
 
     expect(adminUserIds).toContain(owner.id)
     expect(adminUserIds).toContain(mod1.id)

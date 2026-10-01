@@ -35,7 +35,7 @@ export function validateGrantTypes(value: unknown): Array<'authorization_code' |
   ) {
     throw invalidClientMetadata('grant_types is not supported')
   }
-  return [...unique].sort() as Array<'authorization_code' | 'refresh_token'>
+  return [...unique].toSorted() as Array<'authorization_code' | 'refresh_token'>
 }
 
 export function validateResponseTypes(value: unknown): ['code'] {

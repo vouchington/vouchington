@@ -64,7 +64,7 @@ describe('fix-main workflow', () => {
     ]
 
     expect(expected.length).toBeGreaterThan(0)
-    expect([...subscribed].sort()).toEqual([...expected].sort())
+    expect([...subscribed].toSorted()).toEqual([...expected].toSorted())
   })
 
   it('finds related open PRs or issues before dispatching, without gating on them', () => {

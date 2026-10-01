@@ -63,8 +63,8 @@ describe('getRssFeedItemFeedIds dedup pagination', () => {
       setTestRssFeedItemVotes(items[1].id, 1),
     ])
     const page = await getRssFeedItemFeedIds(user, { feed_type: 'follow_rss_feeds', limit: 10 })
-    expect(page.results.map(row => row.entity_id).sort()).toEqual(
-      [items[0].id, [items[2].id, items[3].id].sort().at(-1)!].sort(),
+    expect(page.results.map(row => row.entity_id).toSorted()).toEqual(
+      [items[0].id, [items[2].id, items[3].id].toSorted().at(-1)!].toSorted(),
     )
     expect(page.page_info.has_next_page).toBe(false)
   })

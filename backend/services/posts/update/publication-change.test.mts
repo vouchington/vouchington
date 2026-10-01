@@ -97,7 +97,7 @@ describe('post update publication capture', () => {
     expect(work).toBeDefined()
     expect(work!.reasons).toContain('post_updated')
     await expect(listTestPostPublicationImpactTopicIds(work!.id)).resolves.toEqual(
-      [...topicIds].sort(),
+      [...topicIds].toSorted(),
     )
   })
 

@@ -100,7 +100,7 @@ describe('createFediverseAdapters', () => {
   it('returns an adapter for every Fediverse search provider, keyed to its own provider', () => {
     const adapters = createFediverseAdapters()
 
-    expect(Object.keys(adapters).sort()).toEqual(['bluesky', 'lemmy', 'mastodon', 'peertube'])
+    expect(Object.keys(adapters).toSorted()).toEqual(['bluesky', 'lemmy', 'mastodon', 'peertube'])
     expect(adapters.peertube.provider).toBe('peertube')
     expect(adapters.mastodon.provider).toBe('mastodon')
     expect(adapters.lemmy.provider).toBe('lemmy')

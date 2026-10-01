@@ -24,7 +24,7 @@ import { POST_LIST_TABLES } from '@services/users/profile-collection-tables'
 
 describe('route-classification reconciliation — backend collection privacy', () => {
   it('keeps the closed post relation table map aligned with the catalog route list', () => {
-    expect(Object.keys(POST_LIST_TABLES).sort()).toEqual([...POST_LIST_TYPES].sort())
+    expect(Object.keys(POST_LIST_TABLES).toSorted()).toEqual([...POST_LIST_TYPES].toSorted())
   })
   describe('PRIVATE_TOPIC_LIST_TYPES alignment', () => {
     it('every private topic list type resolves to a private discovery path', () => {

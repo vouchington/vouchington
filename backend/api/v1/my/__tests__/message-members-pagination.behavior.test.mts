@@ -108,7 +108,7 @@ describe('direct-message thread and participant cursor behavior', () => {
     )
     const ids = [...second.results, ...first.results].map(result => result.id)
     expect(new Set(ids)).toEqual(new Set(messages.map(message => message.id)))
-    expect(ids).toEqual([...ids].sort())
+    expect(ids).toEqual([...ids].toSorted())
   })
 
   it('keeps conversation scope when a valid message cursor is replayed', async () => {

@@ -65,7 +65,7 @@ describe('helper file basename policy', () => {
       )
       expect(result.status).toBe(1)
       const diagnostics = JSON.parse(result.stdout).rules as { file: string; message: string }[]
-      expect(diagnostics.map(item => item.file).sort()).toEqual(rejected.sort())
+      expect(diagnostics.map(item => item.file).toSorted()).toEqual(rejected.toSorted())
       expect(diagnostics.every(item => item.message === guard.message)).toBe(true)
     } finally {
       await rm(directory, { force: true, recursive: true })

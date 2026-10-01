@@ -45,7 +45,7 @@ export async function getPublisherTypeTopics(): Promise<PublisherTypeTopic[]> {
       slug: row.slug as PublisherTypeSlug,
       label: labelBySlug.get(row.slug as PublisherTypeSlug) ?? (row.slug as string),
     }))
-    .sort((a, b) => PUBLISHER_TYPE_SLUGS.indexOf(a.slug) - PUBLISHER_TYPE_SLUGS.indexOf(b.slug))
+    .toSorted((a, b) => PUBLISHER_TYPE_SLUGS.indexOf(a.slug) - PUBLISHER_TYPE_SLUGS.indexOf(b.slug))
   // Only cache when all publisher-type topics are present. An incomplete result indicates
   // a partially-seeded database; caching it would reject valid publisher types for the
   // lifetime of the process.

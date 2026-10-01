@@ -31,8 +31,8 @@ describe('copyright repeat-infringer incidents', () => {
       account.incidents
         .filter(incident => incident.operative)
         .map(incident => incident.copyright_notice_id)
-        .sort(),
-    ).toEqual([firstNoticeId, secondNoticeId].sort())
+        .toSorted(),
+    ).toEqual([firstNoticeId, secondNoticeId].toSorted())
     expect(account.open_review_id).toEqual(expect.any(String))
     await expect(getPrivateUserByAny(poster.id)).resolves.toEqual(
       expect.objectContaining({ suspended_at: null }),

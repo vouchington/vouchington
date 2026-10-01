@@ -14,7 +14,7 @@ export async function preparePostPublicationIdentityBridges(
 ): Promise<void> {
   const locks = [
     ...new Set(changes.map(change => postPublicationScopeLockKey(change.scope))),
-  ].sort()
+  ].toSorted()
   for (let offset = 0; offset < locks.length; offset += 100) {
     // oxlint-disable-next-line no-await-in-loop -- multi-call transactions prelock their complete declared scope set.
     await query(
@@ -41,7 +41,7 @@ export async function preparePostPublicationIdentityBridges(
   for (const family of Object.keys(
     PUBLICATION_IDENTITY_BRIDGES,
   ) as PublicationIdentityBridgeFamily[]) {
-    const ids = [...(families.get(family) ?? [])].sort()
+    const ids = [...(families.get(family) ?? [])].toSorted()
     for (let offset = 0; offset < ids.length; offset += 100) {
       // oxlint-disable-next-line no-await-in-loop -- first creation follows one global family/native-ID order.
       await retainPublicationIdentityBridges(query, family, ids.slice(offset, offset + 100))

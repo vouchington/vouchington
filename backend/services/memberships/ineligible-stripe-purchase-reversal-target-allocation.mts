@@ -64,7 +64,7 @@ export function getInvoicePaymentTargets(invoice: StripeInvoiceForReversal): Rev
       existing.qualifyingAmountMinorUnits += target.qualifyingAmountMinorUnits
     } else targets.set(targetId, target)
   }
-  return [...targets.values()].sort((left, right) =>
+  return [...targets.values()].toSorted((left, right) =>
     getReversalTargetId(left).localeCompare(getReversalTargetId(right)),
   )
 }

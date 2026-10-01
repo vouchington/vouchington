@@ -47,7 +47,7 @@ describe('listReferralLinkValidationsForProgram', () => {
 
     // Results should be ordered by slug ASC
     const slugs = results.map(v => v.slug)
-    assert.deepEqual(slugs, [...slugs].sort(), 'results should be ordered by slug ASC')
+    assert.deepEqual(slugs, [...slugs].toSorted(), 'results should be ordered by slug ASC')
   })
 
   it('returns empty array for a program with no linked validations', async () => {

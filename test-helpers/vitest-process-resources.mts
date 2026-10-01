@@ -38,7 +38,7 @@ export function countResourcesByType(resources: readonly string[]): Map<string, 
 export function formatResourceCounts(counts: ReadonlyMap<string, number>): string {
   if (counts.size === 0) return '(none)'
   return [...counts.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
+    .toSorted(([a], [b]) => a.localeCompare(b))
     .map(([type, count]) => `${type}=${count}`)
     .join(' ')
 }

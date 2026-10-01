@@ -81,7 +81,10 @@ describe('copyright email intake queue pagination', () => {
       return
     }
     const receivedAt = new Date()
-    const ids = [await createParsedIntake(receivedAt), await createParsedIntake(receivedAt)].sort()
+    const ids = [
+      await createParsedIntake(receivedAt),
+      await createParsedIntake(receivedAt),
+    ].toSorted()
     const request = await createModeratorRequest()
 
     const after = encodeScopedPreciseTimestampCursor(

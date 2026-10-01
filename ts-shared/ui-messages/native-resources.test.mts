@@ -33,7 +33,7 @@ describe('native UI message resources', () => {
     const second = generateNativeResourceFiles()
 
     expect(second).toEqual(first)
-    expect(first.map(file => file.path)).toEqual([...first.map(file => file.path)].sort())
+    expect(first.map(file => file.path)).toEqual([...first.map(file => file.path)].toSorted())
     expect(first.some(file => file.path.endsWith('/en.lproj/Localizable.strings'))).toBe(true)
     expect(first.some(file => file.path.endsWith('/UiMessages.resx'))).toBe(true)
     expect(first.some(file => file.path.endsWith('/UiMessageKey.swift'))).toBe(true)

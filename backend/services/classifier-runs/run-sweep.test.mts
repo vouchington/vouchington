@@ -111,7 +111,7 @@ describe('classifier run sweep discovery (real PG)', () => {
     expect(ids).not.toContain(doneRun.runId)
     expect(ids).not.toContain(failedRun.runId)
     expect(new Set(ids).size).toBe(ids.length)
-    expect([...ids].sort()).toEqual(ids)
+    expect([...ids].toSorted()).toEqual(ids)
     const found = listed.find(run => run.runId === openRun.runId)!
     expect(found).toMatchObject({
       classifier: open.slug,

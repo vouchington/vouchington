@@ -55,7 +55,7 @@ describe('topic alias publication reconciliation', () => {
 
     expect(firstPage).toMatchObject({ hasMorePosts: true, topicIds: [] })
     expect(firstPage.posts.map(post => post.id)).toEqual(
-      [...posts.map(post => post.id)].sort().slice(0, 2),
+      [...posts.map(post => post.id)].toSorted().slice(0, 2),
     )
     expect((await getTestPublicationProjectionIdentity(firstPage.posts[0]!)).topicIds).toEqual([
       owner.id,
@@ -76,7 +76,7 @@ describe('topic alias publication reconciliation', () => {
 
     expect(finalPage).toMatchObject({ hasMorePosts: false, hasMoreTopics: false })
     expect(finalPage.posts.map(post => post.id)).toEqual(
-      [...posts.map(post => post.id)].sort().slice(2),
+      [...posts.map(post => post.id)].toSorted().slice(2),
     )
     expect(finalPage.topicIds).toEqual(expect.arrayContaining([owner.id, priorOwner.id]))
   })

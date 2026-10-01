@@ -6,7 +6,7 @@ export function buildUpsertRssFeedItemsQuery(
 ) {
   const rows = itemsToUpsert
     .map(item => ({ id: identityIdsByGuid.get(item.feedItem.guid)!, item }))
-    .sort((left, right) => left.id.localeCompare(right.id))
+    .toSorted((left, right) => left.id.localeCompare(right.id))
   return {
     text: `/* upsertRssFeedItems */
       INSERT INTO rss_feed_items (

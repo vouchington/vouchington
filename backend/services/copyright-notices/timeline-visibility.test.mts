@@ -11,8 +11,8 @@ describe('copyright timeline audience decisions', () => {
   it('decides an audience for every database event type and for nothing else', async () => {
     const databaseEventTypes = await readCopyrightLifecycleEventTypes()
 
-    expect(Object.keys(copyrightTimelineEventAudience).sort()).toEqual(
-      [...databaseEventTypes].sort(),
+    expect(Object.keys(copyrightTimelineEventAudience).toSorted()).toEqual(
+      [...databaseEventTypes].toSorted(),
     )
   })
 

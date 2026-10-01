@@ -143,7 +143,7 @@ describe('copyright guest lifecycle guards', () => {
     expect(projected).not.toContain('ciphertext')
     expect(projected).not.toContain(capability.token)
     expect(projected).not.toContain(statement)
-    expect(Object.keys(publicDetail ?? {}).sort()).toEqual([
+    expect(Object.keys(publicDetail ?? {}).toSorted()).toEqual([
       'accepted_at',
       'claimant',
       'id',

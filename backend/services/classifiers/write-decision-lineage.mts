@@ -190,5 +190,5 @@ export async function insertClassifierDecisionCalls(
   }
   return rows
     .map(row => ({ id: row.id, shardOrdinal: row.shard_ordinal }))
-    .sort((left, right) => left.shardOrdinal - right.shardOrdinal)
+    .toSorted((left, right) => left.shardOrdinal - right.shardOrdinal)
 }

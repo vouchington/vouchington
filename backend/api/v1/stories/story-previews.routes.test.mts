@@ -27,9 +27,11 @@ describe('bounded story routes', () => {
     const peers = fixture.itemIds.filter(id => id !== primary).slice(0, 3)
     expect(response.body.story_member_pages[fixture.story.id].item_ids).toEqual(peers)
     expect(response.body.story_member_pages[fixture.story.id].page_info.has_next_page).toBe(true)
-    expect(Object.keys(response.body.rss_feed_items).sort()).toEqual([primary, ...peers].sort())
-    expect(Object.keys(response.body.rss_feed_item_elections).sort()).toEqual(
-      [primary, ...peers].sort(),
+    expect(Object.keys(response.body.rss_feed_items).toSorted()).toEqual(
+      [primary, ...peers].toSorted(),
+    )
+    expect(Object.keys(response.body.rss_feed_item_elections).toSorted()).toEqual(
+      [primary, ...peers].toSorted(),
     )
     expect(response.body.story_member_ids).toBeUndefined()
   })
@@ -107,7 +109,9 @@ describe('bounded story routes', () => {
       'rss_feed_item_embeds',
       'rss_feed_item_content_html',
     ]) {
-      expect(Object.keys(response.body[field]).sort()).toEqual(fixture.itemIds.slice(0, 25).sort())
+      expect(Object.keys(response.body[field]).toSorted()).toEqual(
+        fixture.itemIds.slice(0, 25).toSorted(),
+      )
     }
     for (const field of [
       'rss_feed_item_thumbnail_url',

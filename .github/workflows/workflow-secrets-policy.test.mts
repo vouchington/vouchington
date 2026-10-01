@@ -39,7 +39,7 @@ describe('workflow secret inventory (fixtures)', () => {
 
   it('reports every inventory entry as stale when no workflow references it', () => {
     expect(staleInventoryEntries(fixtureTopology([], []))).toEqual(
-      Object.keys(SECRET_INVENTORY).sort(),
+      Object.keys(SECRET_INVENTORY).toSorted(),
     )
   })
 

@@ -99,7 +99,7 @@ describe('households', () => {
     ])
     const expected = rows
       .map(row => row.id)
-      .sort()
+      .toSorted()
       .reverse()
 
     const first = await getHouseholdsByUser(user, { access: 'owned', limit: 1 })

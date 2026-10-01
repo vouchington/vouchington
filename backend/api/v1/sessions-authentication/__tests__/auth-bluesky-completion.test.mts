@@ -75,7 +75,7 @@ describe('POST /api/v1/auth/bluesky/link-completions', () => {
       ),
     )
 
-    expect(responses.map(response => response.status).sort()).toEqual([204, 404])
+    expect(responses.map(response => response.status).toSorted()).toEqual([204, 404])
     expect((await getTestBlueskyLinkedAccountRow(did))?.user_id).toBe(user.id)
     expect(await testBlueskyLinkCompletionExists(flowId)).toBe(false)
   })

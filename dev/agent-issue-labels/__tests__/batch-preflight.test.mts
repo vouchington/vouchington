@@ -83,7 +83,10 @@ describe('executePreflight', () => {
 
     expect(report.status).toBe('pass')
     expect(report.entries[0].status).toBe('pass')
-    expect([...report.entries[0].resolvedLabels].sort()).toEqual(['priority: medium', 'tooling'])
+    expect([...report.entries[0].resolvedLabels].toSorted()).toEqual([
+      'priority: medium',
+      'tooling',
+    ])
     expect(report.entries[0].blocked).toEqual([])
   })
 
@@ -158,7 +161,7 @@ describe('executePreflight', () => {
       makeDeps({ runGh, pathExists: async () => false }),
     )
 
-    const codes = report.entries[0].blocked.map(reason => reason.code).sort()
+    const codes = report.entries[0].blocked.map(reason => reason.code).toSorted()
     expect(codes).toEqual(['missing-paths', 'unknown-label', 'unknown-milestone'])
   })
 

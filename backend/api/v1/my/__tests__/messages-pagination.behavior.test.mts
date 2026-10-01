@@ -100,7 +100,7 @@ describe('direct-message inbox cursor behavior', () => {
     )
     const ids = [...first.results, ...second.results].map(result => result.id)
     expect(new Set(ids)).toEqual(new Set(conversations.map(conversation => conversation.id)))
-    expect(ids).toEqual([...ids].sort().reverse())
+    expect(ids).toEqual([...ids].toSorted().reverse())
   })
 
   it('does not collapse conversations within the same millisecond', async () => {

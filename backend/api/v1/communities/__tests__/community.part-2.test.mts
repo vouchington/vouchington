@@ -139,8 +139,8 @@ describe('community', () => {
           'updated_at',
           'visibility',
         ]
-        expect(Object.keys(patched.body.community).sort()).toEqual(expectedKeys)
-        expect(Object.keys(shown.body.community).sort()).toEqual(expectedKeys)
+        expect(Object.keys(patched.body.community).toSorted()).toEqual(expectedKeys)
+        expect(Object.keys(shown.body.community).toSorted()).toEqual(expectedKeys)
       })
 
       it('updates list_type to follow', async () => {

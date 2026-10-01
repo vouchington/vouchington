@@ -89,7 +89,7 @@ describe('listRemoteFollowerInboxPage', () => {
       createFollowingRemoteActor(`page-b-${randomSuffix()}.example`, user.id),
       createFollowingRemoteActor(`page-c-${randomSuffix()}.example`, user.id),
     ])
-    const orderedIds = actors.map(actor => actor.id).sort()
+    const orderedIds = actors.map(actor => actor.id).toSorted()
 
     const firstPage = await listRemoteFollowerInboxPage(user.id, null, 2)
     const secondPage = await listRemoteFollowerInboxPage(
@@ -106,7 +106,7 @@ describe('listRemoteFollowerInboxPage', () => {
     const user = await createTestUserDirect()
     const first = await createFollowingRemoteActor(`first-${randomSuffix()}.example`, user.id)
     const second = await createFollowingRemoteActor(`second-${randomSuffix()}.example`, user.id)
-    const ordered = [first, second].sort((a, b) => a.id.localeCompare(b.id))
+    const ordered = [first, second].toSorted((a, b) => a.id.localeCompare(b.id))
 
     const page = await listRemoteFollowerInboxPage(user.id, ordered[0]!.id, 501)
 

@@ -78,7 +78,7 @@ async function createTestNotificationPushRecoveryBacklog(input: {
   userId: string
   count: number
 }): Promise<CreatedNotificationPushRecoveryFixture> {
-  const ownedNotificationIds = Array.from({ length: input.count }, () => v7()).sort()
+  const ownedNotificationIds = Array.from({ length: input.count }, () => v7()).toSorted()
   const notificationIds = Object.freeze([...ownedNotificationIds])
   const updatedAt = createTestNotificationPushRecoveryTimestamp(input.userId)
   const afterUpdatedAt = new Date(updatedAt.getTime() - 1)

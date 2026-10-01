@@ -99,7 +99,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'urls-domains-blacklist/blacklistDispatcher',
   'user-deletions/userDeletionRecovery',
   'vote-weight/dailyVoteWeightRecalculation',
-].sort()
+].toSorted()
 
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
@@ -109,7 +109,7 @@ describe('scheduled job manifest catalog', () => {
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),
-      ).sort(),
+      ).toSorted(),
     ).toEqual(EXPECTED_SCHEDULED_JOBS)
   })
 
@@ -149,8 +149,8 @@ describe('scheduled job manifest catalog', () => {
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest => manifest.jobs)
         .flatMap(job => job.operatorSurfaces)
         .flatMap(surface => (surface.kind === 'psql' ? [surface.jobType] : []))
-        .sort(),
-    ).toEqual([...PSQL_SCHEDULED_ADMIN_JOB_TYPES].sort())
+        .toSorted(),
+    ).toEqual([...PSQL_SCHEDULED_ADMIN_JOB_TYPES].toSorted())
   })
 
   it('projects every scheduled API surface', () => {

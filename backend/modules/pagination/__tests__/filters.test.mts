@@ -57,7 +57,7 @@ describe('validateTopicTypes', () => {
   it('keeps the public filter catalog aligned with canonical topic types', () => {
     const canonicalTopicTypes = Object.keys(topicTypes)
 
-    expect([...VALID_TOPIC_TYPES].sort()).toEqual([...canonicalTopicTypes].sort())
+    expect([...VALID_TOPIC_TYPES].toSorted()).toEqual([...canonicalTopicTypes].toSorted())
     expect(validateTopicTypes(canonicalTopicTypes.join(','))).toEqual(canonicalTopicTypes)
   })
 

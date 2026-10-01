@@ -80,8 +80,8 @@ describe('checkPostClearance requests a classifier run on approval', () => {
     await checkPostClearance(postId)
 
     const requests = await getClassifierRunRequestFacts(postId)
-    expect(requests.map(request => request.classifier_slug).sort()).toEqual(
-      [POST_CLASSIFIER_SLUG, TAGGING_CLASSIFIER_SLUG].sort(),
+    expect(requests.map(request => request.classifier_slug).toSorted()).toEqual(
+      [POST_CLASSIFIER_SLUG, TAGGING_CLASSIFIER_SLUG].toSorted(),
     )
     expect(await readClassifierRunDispatcherJobsForTest(postId)).toHaveLength(2)
   })

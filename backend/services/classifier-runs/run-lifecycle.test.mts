@@ -31,7 +31,7 @@ describe('classifier run claim and completion (real PG)', () => {
       claimSyntheticRun(setup, run),
     ])
 
-    expect([left.kind, right.kind].sort()).toEqual(['claimed', 'in_progress'])
+    expect([left.kind, right.kind].toSorted()).toEqual(['claimed', 'in_progress'])
     const busy = left.kind === 'in_progress' ? left : right
     expect(busy.kind === 'in_progress' && busy.retryAfterSeconds).toBeGreaterThan(0)
     expect(await getClassifierRunFacts(setup.post.id, setup.slug)).toHaveLength(1)

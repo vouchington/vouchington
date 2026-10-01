@@ -53,7 +53,7 @@ describe('Stripe membership catalog reconciliation', () => {
     const active = mappings.filter(mapping => mapping.retired_at === null)
     const retired = mappings.filter(mapping => mapping.retired_at !== null)
     expect(active).toHaveLength(4)
-    expect(active.map(mapping => mapping.sku_id).sort()).toEqual(expected)
+    expect(active.map(mapping => mapping.sku_id).toSorted()).toEqual(expected)
     expect(active.every(mapping => mapping.provider_product_id.includes('_second_'))).toBe(true)
     expect(retired).toHaveLength(4)
     await expect(getActivePlansCached(context)).resolves.toSatisfy(plans =>
@@ -153,7 +153,7 @@ describe('Stripe membership catalog reconciliation', () => {
       await getTestStripeCatalogMappings(context.applicationId, context.environment)
     ).filter(mapping => mapping.retired_at === null)
     expect(active).toHaveLength(4)
-    expect(active.map(mapping => mapping.sku_id).sort()).toEqual(expected)
+    expect(active.map(mapping => mapping.sku_id).toSorted()).toEqual(expected)
   })
 
   it('serializes a failed run before a later successful run', async () => {

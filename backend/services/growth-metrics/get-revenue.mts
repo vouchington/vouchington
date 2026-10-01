@@ -186,7 +186,7 @@ export function calculateMrrByCurrency(
   >,
 ): ScaledMoneyAggregate[] {
   return [...amountsByCurrency.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
+    .toSorted(([left], [right]) => left.localeCompare(right))
     .map(([currency, totals]) => {
       const scaleFactor = 10n ** BigInt(MONEY_SCALE - totals.minorUnitExponent)
       const annualizedScaled = (totals.monthly * 12n + totals.yearly) * scaleFactor

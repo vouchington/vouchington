@@ -54,7 +54,7 @@ export async function retainPostPublicationKeys(
             : [],
         ),
       ),
-    ].sort()
+    ].toSorted()
     for (
       let offset = 0;
       offset < ids.length;

@@ -42,7 +42,9 @@ describe('content route request contracts', () => {
       const schema = resolve(carriersOf(operation).body)
       expect(schema.type).toBe('object')
       expect(schema.additionalProperties).toBe(false)
-      expect([...((schema.required as string[] | undefined) ?? [])].sort()).toEqual([...required])
+      expect([...((schema.required as string[] | undefined) ?? [])].toSorted()).toEqual([
+        ...required,
+      ])
     },
   )
 

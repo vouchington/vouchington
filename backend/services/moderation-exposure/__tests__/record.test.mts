@@ -72,7 +72,7 @@ describe('recordMediaReveal', () => {
       ),
     )
 
-    expect(states.map(state => state.count).sort((a, b) => a - b)).toEqual(
+    expect(states.map(state => state.count).toSorted((a, b) => a - b)).toEqual(
       Array.from({ length: EXPOSURE_BREAK_THRESHOLD }, (_, index) => index + 1),
     )
     expect(states.filter(state => state.in_cooldown)).toHaveLength(1)

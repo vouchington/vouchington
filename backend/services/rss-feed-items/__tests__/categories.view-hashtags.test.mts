@@ -36,7 +36,7 @@ describe('RSS feed item category view', () => {
         return observed?.categories
           ?.filter(category => category.topic?.id === topic.id)
           .flatMap(category => (category.hashtag ? [category.hashtag.key] : []))
-          .sort()
+          .toSorted()
       })
       .toEqual(authoredHashtags.toSorted())
   })

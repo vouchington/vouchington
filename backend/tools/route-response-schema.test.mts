@@ -115,7 +115,7 @@ describe('generated route contracts', () => {
     const schema = routeResponseSchema({ method: 'GET', path: '/api/v1/my/cards' })
 
     expect(schema.type).toBe('object')
-    expect(Object.keys(schema['properties'] as object).sort()).toEqual(['page_info', 'results'])
+    expect(Object.keys(schema['properties'] as object).toSorted()).toEqual(['page_info', 'results'])
     expect(JSON.stringify(schema)).not.toContain('$ref')
   })
 

@@ -67,9 +67,9 @@ describe('durable media registry recovery hardening', () => {
       ).toEqual({ enqueued: 1 })
       expect(continuations).toHaveLength(1)
       const jobs = await Promise.all(children.map(child => readEnqueuedJob(notifications, child)))
-      expect(jobs.map(child => (child.data as { deliveryKey: string }).deliveryKey).sort()).toEqual(
-        deliveryKeys.slice(1),
-      )
+      expect(
+        jobs.map(child => (child.data as { deliveryKey: string }).deliveryKey).toSorted(),
+      ).toEqual(deliveryKeys.slice(1))
       expect(
         isDeduplicatedEnqueue(
           await enqueueContinueMediaDeliveryRegistryReconciliation(

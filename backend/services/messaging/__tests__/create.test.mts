@@ -19,8 +19,8 @@ describe('findOrCreateDirectConversation', () => {
 
     const participants = await getConversationParticipants(conversation.id)
     expect(participants).toHaveLength(2)
-    const userIds = participants.map(p => p.user_id).sort()
-    expect(userIds).toEqual([sender.id, recipient.id].sort())
+    const userIds = participants.map(p => p.user_id).toSorted()
+    expect(userIds).toEqual([sender.id, recipient.id].toSorted())
   })
 
   it('returns existing conversation on second call (idempotent)', async () => {
@@ -65,8 +65,8 @@ describe('createGroupConversation', () => {
         if (p.role === 'member') acc.push(p.user_id)
         return acc
       }, [])
-      .sort()
-    expect(memberIds).toEqual([recipient1.id, recipient2.id].sort())
+      .toSorted()
+    expect(memberIds).toEqual([recipient1.id, recipient2.id].toSorted())
   })
 })
 

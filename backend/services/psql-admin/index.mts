@@ -30,7 +30,7 @@ export async function getMigrationStatus(): Promise<MigrationStatus> {
       const ext = path.extname(file)
       return ['.sql', '.mts'].includes(ext)
     })
-    .sort((a, b) => a.localeCompare(b))
+    .toSorted((a, b) => a.localeCompare(b))
 
   const applied: string[] = []
   const pending: string[] = []

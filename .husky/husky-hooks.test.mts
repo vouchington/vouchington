@@ -26,7 +26,7 @@ describe('husky-hooks', () => {
   it('keeps commit-msg, post-checkout, post-merge, and post-rewrite as the active hooks', () => {
     const activeHooks = readdirSync(huskyDir)
       .filter((name: string) => !['AGENTS.md', '_'].includes(name) && !name.endsWith('.test.mts'))
-      .sort()
+      .toSorted()
 
     expect(activeHooks).toEqual([
       'commit-msg',

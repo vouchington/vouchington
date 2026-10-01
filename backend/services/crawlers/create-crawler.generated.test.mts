@@ -176,8 +176,8 @@ describe('create-crawler.generated', () => {
       10,
     )
 
-    expect(candidates.map(candidate => candidate.id).sort()).toEqual(
-      [newer304UrlId, recentUrlId].sort(),
+    expect(candidates.map(candidate => candidate.id).toSorted()).toEqual(
+      [newer304UrlId, recentUrlId].toSorted(),
     )
 
     const mostRecentCandidate = await searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId(

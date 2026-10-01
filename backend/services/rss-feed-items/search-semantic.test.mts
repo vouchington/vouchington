@@ -155,7 +155,7 @@ describe('searchRssFeedItemsBySemantic', () => {
     expect(result.results.map(item => item.id)).toEqual(
       items
         .map(item => item.id)
-        .sort()
+        .toSorted()
         .reverse(),
     )
   })

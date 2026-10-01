@@ -86,7 +86,7 @@ describe('dev/tmux', () => {
         'cloudflare\t0',
         'lambdas\t0',
       ])
-      expect(result.execLog.trim().split('\n').sort()).toEqual([
+      expect(result.execLog.trim().split('\n').toSorted()).toEqual([
         'node',
         'node',
         'node',

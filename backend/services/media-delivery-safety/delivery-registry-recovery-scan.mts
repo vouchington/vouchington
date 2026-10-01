@@ -59,7 +59,7 @@ export async function listRecoverableMediaDeliveryRegistryKeys(input: {
     input.limit > MEDIA_DELIVERY_RECOVERY_PAGE_SIZE
   )
     throw new TypeError('Media recovery page limit must be between one and the page maximum')
-  const deliveryKeys = input.deliveryKeys ? [...new Set(input.deliveryKeys)].sort() : null
+  const deliveryKeys = input.deliveryKeys ? [...new Set(input.deliveryKeys)].toSorted() : null
   const scope = JSON.stringify({
     scanBefore: input.scanBefore,
     order: 'media-delivery-key-asc',

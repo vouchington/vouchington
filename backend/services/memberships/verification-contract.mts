@@ -63,7 +63,7 @@ export function canonicalizeMembershipEvidence(value: unknown): unknown {
   if (value !== null && typeof value === 'object')
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>)
-        .sort(([a], [b]) => a.localeCompare(b))
+        .toSorted(([a], [b]) => a.localeCompare(b))
         .map(([key, child]) => [key, canonicalizeMembershipEvidence(child)]),
     )
   return value

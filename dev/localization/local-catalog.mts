@@ -28,7 +28,7 @@ function catalogFiles(directory: string): string[] {
       if (entry.isDirectory()) return catalogFiles(path)
       return entry.isFile() ? [path] : []
     })
-    .sort()
+    .toSorted()
 }
 
 export function catalogRevision(

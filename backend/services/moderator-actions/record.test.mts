@@ -126,7 +126,7 @@ describe('recordModeratorAction', () => {
 
     const [row] = await getModeratorActionRowsForTest({ communityId: restrictionCommunity.id })
     expect(await getTestModeratorActionRestrictionIds(row!.id)).toEqual(
-      [noLinks.id, approval.id].sort(),
+      [noLinks.id, approval.id].toSorted(),
     )
     expect(row!.metadata).toEqual({ restriction_types: ['no_links', 'require_post_approval'] })
   })

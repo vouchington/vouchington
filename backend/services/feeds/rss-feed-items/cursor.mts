@@ -74,5 +74,5 @@ export function buildRssFeedItemFeedPageInfo(
 }
 
 function normalizeArray(values: readonly string[] | undefined): string[] {
-  return [...new Set(values ?? [])].sort()
+  return [...new Set(values ?? [])].toSorted()
 }

@@ -45,7 +45,7 @@ export async function listArticleMarkdownFiles(): Promise<ArticleMarkdownFile[]>
     continuationToken = page.NextContinuationToken
   } while (continuationToken)
 
-  return files.sort((left, right) => left.file.localeCompare(right.file))
+  return files.toSorted((left, right) => left.file.localeCompare(right.file))
 }
 
 export async function getArticleMarkdown(article: ArticleMarkdownFile): Promise<string> {

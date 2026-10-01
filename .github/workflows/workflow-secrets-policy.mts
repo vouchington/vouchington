@@ -63,7 +63,7 @@ function groupWorkflowsByName(references: readonly SecretReference[]): Map<strin
 /** Secret names referenced in workflow YAML with no `SECRET_INVENTORY` entry. */
 export function missingInventoryEntries(topology: WorkflowTopology): string[] {
   const byName = groupWorkflowsByName(collectSecretReferences(topology))
-  return [...byName.keys()].filter(name => !Object.hasOwn(SECRET_INVENTORY, name)).sort()
+  return [...byName.keys()].filter(name => !Object.hasOwn(SECRET_INVENTORY, name)).toSorted()
 }
 
 /** `SECRET_INVENTORY` entries no longer referenced by any workflow. */
@@ -71,7 +71,7 @@ export function staleInventoryEntries(topology: WorkflowTopology): string[] {
   const byName = groupWorkflowsByName(collectSecretReferences(topology))
   return Object.keys(SECRET_INVENTORY)
     .filter(name => !byName.has(name))
-    .sort()
+    .toSorted()
 }
 
 /** Workflow paths that reference each name, for readiness-step checks and diagnostics. */
@@ -85,5 +85,5 @@ export function unprovisionedEntries(): string[] {
   for (const [name, entry] of Object.entries(SECRET_INVENTORY)) {
     if (!entry.provisioned) names.push(name)
   }
-  return names.sort()
+  return names.toSorted()
 }

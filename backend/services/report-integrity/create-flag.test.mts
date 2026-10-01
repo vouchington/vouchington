@@ -94,7 +94,7 @@ describe('createReportIntegrityFlag', () => {
     const reporters = await Promise.all(
       [1, 2, 3].map(() => createTestUserDirect({ username: randomUsername() })),
     )
-    const reporterIds = reporters.map(reporter => reporter.id).sort()
+    const reporterIds = reporters.map(reporter => reporter.id).toSorted()
 
     const flag = await createReportIntegrityFlag(
       'user',

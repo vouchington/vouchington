@@ -62,7 +62,7 @@ describe('community id cursor pages', () => {
         invitedUserId: secondInvitee.id,
       }),
     ])
-    const expected = [firstInvite.id, secondInvite.id].sort((left, right) =>
+    const expected = [firstInvite.id, secondInvite.id].toSorted((left, right) =>
       left < right ? 1 : -1,
     )
 
@@ -77,7 +77,7 @@ describe('community id cursor pages', () => {
       insertPendingPost(pendingCommunity.id, owner.id),
       insertPendingPost(pendingCommunity.id, owner.id),
     ])
-    const expected = [...postIds].sort((left, right) => (left < right ? -1 : 1))
+    const expected = [...postIds].toSorted((left, right) => (left < right ? -1 : 1))
 
     const ids = await collectIdPages(after =>
       searchPendingPosts(pendingCommunity.id, { limit: 1, after }),

@@ -25,7 +25,7 @@ export function assertCatalogAliases(
   aliases: Iterable<string>,
   knownAliases: ReadonlySet<string>,
 ): void {
-  const unknown = [...new Set(aliases)].filter(alias => !knownAliases.has(alias)).sort()
+  const unknown = [...new Set(aliases)].filter(alias => !knownAliases.has(alias)).toSorted()
   if (unknown.length === 0) return
   throw new Error(`Quoted alias literals are not web catalog aliases: ${unknown.join(', ')}`)
 }
@@ -45,14 +45,14 @@ export function assembleRouteAliasMap(
     for (const alias of chrome) if (!route.aliases.has(alias)) chrome.delete(alias)
   }
   for (const alias of globalAliases) if (knownAliases.has(alias)) chrome.add(alias)
-  const chromeAliases = [...chrome].sort()
+  const chromeAliases = [...chrome].toSorted()
   const chromeSelector = chromeSelectorId(chromeAliases)
   const routes = matchedRouteAliases.map(route => ({
     pattern: route.pattern,
-    aliases: [...route.aliases].filter(alias => !chrome.has(alias)).sort(),
+    aliases: [...route.aliases].filter(alias => !chrome.has(alias)).toSorted(),
     selectorId: routeSelectorId(
       route.pattern,
-      [...route.aliases].filter(alias => !chrome.has(alias)).sort(),
+      [...route.aliases].filter(alias => !chrome.has(alias)).toSorted(),
     ),
   }))
   if (new Set(routes.map(route => route.selectorId)).size !== routes.length)

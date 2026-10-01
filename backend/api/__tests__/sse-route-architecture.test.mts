@@ -36,7 +36,7 @@ function productionModules(): string[] {
     }
   }
 
-  return modules.sort()
+  return modules.toSorted()
 }
 
 function productionStartSSERoutes(): string[] {
@@ -87,6 +87,6 @@ describe('SSE route architecture', () => {
   })
 
   it('keeps the canonical SSE route inventory complete', () => {
-    expect(productionStartSSERoutes()).toEqual([...CANONICAL_SSE_ROUTES].sort())
+    expect(productionStartSSERoutes()).toEqual([...CANONICAL_SSE_ROUTES].toSorted())
   })
 })

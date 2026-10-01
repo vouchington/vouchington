@@ -82,7 +82,7 @@ describe('GET /api/v1/reports?cluster=entity', () => {
         { reason: 'harassment', count: 1 },
       ]),
     )
-    expect(cluster.reports.map((report: { id: string }) => report.id).sort()).toEqual(
+    expect(cluster.reports.map((report: { id: string }) => report.id).toSorted()).toEqual(
       reportIds.toSorted(),
     )
     expect(cluster.reports.map((report: { case_id: string }) => report.case_id).toSorted()).toEqual(

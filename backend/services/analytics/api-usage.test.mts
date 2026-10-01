@@ -101,7 +101,7 @@ describe('api-usage', () => {
 
       const [row] = await query(`SELECT * FROM api_usage WHERE user_id = '${request.user_id}'`)
 
-      expect(Object.keys(row!).sort()).toEqual(
+      expect(Object.keys(row!).toSorted()).toEqual(
         [
           'api_key_id',
           'credential',
@@ -120,7 +120,7 @@ describe('api-usage', () => {
           'unit',
           'units',
           'user_id',
-        ].sort(),
+        ].toSorted(),
       )
       expect(
         JSON.stringify(row, (_key, value) => (typeof value === 'bigint' ? 0 : value)),
