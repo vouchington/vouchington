@@ -17,7 +17,13 @@ const WITH_METACHARACTERS = (key: string) => `fake-${key} spaced $HOME \\n back\
 const WITH_APOSTROPHE = (key: string) => `fake-${key} it's spaced=eq # hash`
 
 // Shell variable names write_worktree_env reads, mapped to the .env key it writes.
-const SHARED_KEYS: Array<{ shellVar: string; envKey: string; value: (key: string) => string }> = [
+interface KeySpec {
+  shellVar: string
+  envKey: string
+  value: (key: string) => string
+}
+
+const SHARED_KEYS: KeySpec[] = [
   { shellVar: 'WORKTREE_DIR', envKey: 'WORKTREE_DIR', value: WITH_METACHARACTERS },
   {
     shellVar: 'API_KEY_CHECKSUM_SECRET',
@@ -36,7 +42,7 @@ const SHARED_KEYS: Array<{ shellVar: string; envKey: string; value: (key: string
   },
 ]
 
-const WEB_KEYS: typeof SHARED_KEYS = [
+const WEB_KEYS: KeySpec[] = [
   { shellVar: 'CF_WORKER_SECRET', envKey: 'CF_WORKER_SECRET', value: WITH_METACHARACTERS },
   { shellVar: 'FINAL_WEB_PUSH_PUBLIC_KEY', envKey: 'WEB_PUSH_PUBLIC_KEY', value: WITH_APOSTROPHE },
   {
@@ -69,7 +75,7 @@ const WEB_KEYS: typeof SHARED_KEYS = [
   { shellVar: 'S3_AWS_SESSION_TOKEN', envKey: 'S3_AWS_SESSION_TOKEN', value: WITH_METACHARACTERS },
 ]
 
-const BACKEND_KEYS: typeof SHARED_KEYS = [
+const BACKEND_KEYS: KeySpec[] = [
   { shellVar: 'NODE_EXTRA_CA_CERTS', envKey: 'NODE_EXTRA_CA_CERTS', value: WITH_METACHARACTERS },
   { shellVar: 'AWS_ACCESS_KEY_ID', envKey: 'AWS_ACCESS_KEY_ID', value: WITH_APOSTROPHE },
   {
@@ -96,7 +102,7 @@ async function writeAndReadEnv({
 }: {
   cwd: string
   mode: 'backend' | 'web'
-  keys: typeof SHARED_KEYS
+  keys: readonly KeySpec[]
 }) {
   const expected: Record<string, string> = {}
   const shellValues: Record<string, string> = {}
