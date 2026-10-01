@@ -49,8 +49,7 @@ const isolatedDatabaseCases = {
   },
   'copyright-dev-seed': {
     file: 'backend/scripts/seed/copyright.test.mts',
-    // Joined with ' > ' because that is what Vitest 5 matches; the space-joined names above do not
-    // match, so their child runs are skipped (#1638).
+    // Joined with ' > ' because that is what Vitest 5 matches.
     fullName:
       'seedCopyright > fills both staff queues with every review state and adds nothing when run again',
   },
