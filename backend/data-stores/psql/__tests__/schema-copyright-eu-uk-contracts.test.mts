@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import {
-  countTerritorialContractTables,
+  readTerritorialContractTableNames,
   readTerritorialClockColumnNames,
   rejectEuReceiptForUsNotice,
   rejectUsTerritorialPolicyApproval,
@@ -13,7 +13,19 @@ describe('copyright EU and UK contract schema', () => {
   })
 
   it('stores the territorial contract tables without US clock columns', async () => {
-    await expect(countTerritorialContractTables()).resolves.toBe(9)
+    await expect(readTerritorialContractTableNames()).resolves.toEqual([
+      'copyright_eu_supervised_complaints',
+      'copyright_eu_transparency_reports',
+      'copyright_territorial_decisions',
+      'copyright_territorial_escalations',
+      'copyright_territorial_notice_acknowledgments',
+      'copyright_territorial_notice_receipts',
+      'copyright_territorial_notice_routings',
+      'copyright_territorial_policy_approvals',
+      'copyright_territorial_policy_withdrawals',
+      'copyright_territorial_redress_decisions',
+      'copyright_territorial_redress_requests',
+    ])
     await expect(readTerritorialClockColumnNames()).resolves.toEqual([])
   })
 
@@ -22,6 +34,9 @@ describe('copyright EU and UK contract schema', () => {
   })
 
   it('rejects an EU receipt for a US DMCA notice', async () => {
-    await expect(rejectEuReceiptForUsNotice()).rejects.toMatchObject({ code: '23514' })
+    await expect(rejectEuReceiptForUsNotice()).rejects.toMatchObject({
+      code: '23503',
+      constraint: 'fk_copyright_territorial_notice_receipts__notice',
+    })
   })
 })

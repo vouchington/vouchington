@@ -15,7 +15,7 @@ export async function submitEuCopyrightRedress(
   idempotencyKey: string,
   explanation: string,
 ): Promise<EuCopyrightRedressRequest> {
-  return submitTerritorialCopyrightRedress(actor, noticeId, idempotencyKey, explanation, 'eu')
+  return submitTerritorialCopyrightRedress(actor, noticeId, idempotencyKey, explanation, 'eu_dsa')
 }
 
 export async function recordEuCopyrightRedressDecision(
@@ -24,5 +24,5 @@ export async function recordEuCopyrightRedressDecision(
   redressId: string,
   input: { disposition: unknown; rationale: string },
 ): Promise<EuCopyrightRedressDecision> {
-  return recordTerritorialCopyrightRedressDecision(actor, noticeId, redressId, input, 'eu')
+  return recordTerritorialCopyrightRedressDecision(actor, noticeId, redressId, input, 'eu_dsa')
 }

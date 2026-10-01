@@ -5,32 +5,16 @@ import {
   receiveTerritorialCopyrightNotice,
   receiveTerritorialCopyrightNoticeInTransaction,
   type TerritorialCopyrightNoticeReceipt,
-  type TerritorialNoticeReceiptContract,
 } from './territorial-notice-receipt.mts'
 
 export type UkCopyrightNoticeReceipt = TerritorialCopyrightNoticeReceipt
-
-const UK_COPYRIGHT_NOTICE_RECEIPT = {
-  jurisdiction: 'uk',
-  label: 'UK',
-  purposePrefix: 'copyright-uk-notice',
-  receipts: 'copyright_uk_notice_receipts',
-  acknowledgments: 'copyright_uk_notice_acknowledgments',
-  routings: 'copyright_uk_notice_routings',
-  receiptForeignKey: 'copyright_uk_notice_receipt_id',
-} as const satisfies TerritorialNoticeReceiptContract
 
 export async function receiveUkCopyrightNotice(
   actor: PrivateUser,
   idempotencyKey: string,
   request: TerritorialNoticeRequest,
 ): Promise<UkCopyrightNoticeReceipt> {
-  return receiveTerritorialCopyrightNotice(
-    actor,
-    UK_COPYRIGHT_NOTICE_RECEIPT,
-    idempotencyKey,
-    request,
-  )
+  return receiveTerritorialCopyrightNotice(actor, 'uk', idempotencyKey, request)
 }
 
 export async function receiveUkCopyrightNoticeInTransaction(
@@ -41,7 +25,7 @@ export async function receiveUkCopyrightNoticeInTransaction(
 ): Promise<UkCopyrightNoticeReceipt> {
   return receiveTerritorialCopyrightNoticeInTransaction(
     actor,
-    UK_COPYRIGHT_NOTICE_RECEIPT,
+    'uk',
     idempotencyKey,
     request,
     transaction,
