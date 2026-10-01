@@ -33,11 +33,18 @@ describe('API-key reminder enqueues with real GlideMQ', () => {
   })
 
   it('deduplicates dispatcher jobs and persists no credential payload', async () => {
-    await enqueueDispatchApiKeyExpiryReminders()
-    await enqueueDispatchApiKeyExpiryReminders()
+    const first = await enqueueDispatchApiKeyExpiryReminders()
+    await expect(enqueueDispatchApiKeyExpiryReminders()).resolves.toBeNull()
     const jobs = (await Promise.all(QUEUE_STATES.map(state => emails.getJobs(state, 0, -1)))).flat()
-    const dispatchers = jobs.filter(job => job.name === 'dispatchApiKeyExpiryReminders')
-    expect(dispatchers).toHaveLength(1)
-    expect(dispatchers[0]).toMatchObject({ data: {}, opts: { attempts: 3, priority: 100 } })
+    const dispatcher = first ?? jobs.find(job => job.name === 'dispatchApiKeyExpiryReminders')
+    expect(dispatcher).toMatchObject({
+      name: 'dispatchApiKeyExpiryReminders',
+      data: {},
+      opts: {
+        attempts: 3,
+        priority: 100,
+        deduplication: { id: 'api-key-expiry-dispatch', mode: 'throttle', ttl: 60_000 },
+      },
+    })
   })
 })
