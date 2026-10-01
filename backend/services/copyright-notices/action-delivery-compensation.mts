@@ -12,13 +12,6 @@ export async function compensateCopyrightActionFailure(
   dependencies: CopyrightActionDeliveryDependencies,
   error: unknown,
 ): Promise<'blocked'> {
-  if (intent.action === 'withhold')
-    await repairFailedImageDeliveryMutation({ imageIds: [intent.image_id] })
-  if (restorePublishedTuple) {
-    await dependencies.prepublishImagePlacementDenial({
-      ...restorePublishedTuple,
-    })
-  }
   const failureMessage = error instanceof Error ? error.message : String(error)
   const result = await failCopyrightActionIntent({
     intentId: intent.id,
@@ -26,6 +19,14 @@ export async function compensateCopyrightActionFailure(
     failedAt: now,
     failureMessage,
   })
+  if (result === 'not_claimed') throw error
+  if (intent.action === 'withhold')
+    await repairFailedImageDeliveryMutation({ imageIds: [intent.image_id] })
+  if (restorePublishedTuple) {
+    await dependencies.prepublishImagePlacementDenial({
+      ...restorePublishedTuple,
+    })
+  }
   if (result === 'retrying') throw error
   if (result === 'failed') return 'blocked'
   throw error

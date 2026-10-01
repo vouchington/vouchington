@@ -24,6 +24,7 @@ import {
   processCopyrightEnforcementRequest,
 } from './index.mts'
 import { claimCopyrightActionIntent, failCopyrightActionIntent } from './action-delivery-state.mts'
+import { compensateCopyrightActionFailure } from './action-delivery-compensation.mts'
 import { executeCopyrightActionIntent } from './action-delivery-execution.mts'
 import { getCopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
 import {
@@ -146,6 +147,26 @@ describe('copyright queue lease fencing', () => {
         ),
       ),
     ).toBe('not_claimed')
+    const failure = new Error('expired worker failed')
+    let denialPublished = false
+    await expect(
+      compensateCopyrightActionFailure(
+        old,
+        later,
+        {
+          placementId: old.placement_id,
+          revision: old.expected_placement_revision,
+          imageId: old.image_id,
+        },
+        getCopyrightActionDeliveryDependencies({
+          prepublishImagePlacementDenial: async () => {
+            denialPublished = true
+          },
+        }),
+        failure,
+      ),
+    ).rejects.toBe(failure)
+    expect(denialPublished).toBe(false)
     expect((await getCopyrightNoticePrivateAggregate(notice.id))!.actionIntents[0]!.state).toBe(
       'claimed',
     )
