@@ -153,6 +153,8 @@ describe('workflow runner policy (real workflows)', () => {
       'tests-playwright-credentialed.yml#playwright-credentialed-tests',
       'tests-playwright.yml#playwright-tests',
       'tests-playwright.yml#shards',
+      'tests-web-api.yml#prep',
+      'tests-web-api.yml#web-api-tests',
       'tests-web-integration.yml#prep',
       'tests-web-integration.yml#web-integration-tests',
       'tests-web.yml#web-tests',

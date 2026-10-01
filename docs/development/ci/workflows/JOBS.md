@@ -148,8 +148,8 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `tests-tooling.yml`                    | `i18n-route-bounds`             | job    | `ubuntu-latest`                       | 10            |
 | `tests-tooling.yml`                    | `tooling`                       | job    | `ubuntu-latest`                       | 32            |
 | `tests-ts-shared.yml`                  | `ts-shared`                     | job    | `ubuntu-latest`                       | 17            |
-| `tests-web-api.yml`                    | `prep`                          | job    | `ubuntu-latest`                       | 8             |
-| `tests-web-api.yml`                    | `web-api-tests`                 | matrix | `ubuntu-latest`                       | 27            |
+| `tests-web-api.yml`                    | `prep`                          | job    | `ubuntu-24.04-arm`                    | 8             |
+| `tests-web-api.yml`                    | `web-api-tests`                 | matrix | `ubuntu-24.04-arm`                    | 27            |
 | `tests-web-integration.yml`            | `prep`                          | job    | `ubuntu-24.04-arm`                    | 20            |
 | `tests-web-integration.yml`            | `web-integration-tests`         | matrix | `ubuntu-24.04-arm`                    | 26            |
 | `tests-web.yml`                        | `prep`                          | job    | `ubuntu-latest`                       | 8             |
