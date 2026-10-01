@@ -379,7 +379,6 @@ types backend/services/ap-inbox-activities/durable-delivery-transition-contract.
 types backend/services/copyright-notices/index.mts CopyrightAgentDispatchPage
 types backend/services/copyright-notices/index.mts CopyrightReviewTargetBreaches
 types backend/services/post-publication/capture-keys.mts PostPublicationRetainedKey
-types backend/services/review-disputes/index.mts ReviewDispute
 types backend/services/topic-claims/index.mts TopicClaim
 types backend/services/topic-claims/index.mts TopicClaimState
 types backend/services/topic-claims/index.mts TopicClaimVerificationMethod
