@@ -66,10 +66,12 @@ describe('copyright email threading', () => {
       recipientEmail: `claimant-${crypto.randomUUID()}@example.test`,
     })
     const outboundMessageId = `ses-outbound-${crypto.randomUUID()}`
-    expect((await claimCopyrightDeliveryIntent(intent.id))?.state).toBe('claimed')
+    const claim = await claimCopyrightDeliveryIntent(intent.id)
+    expect(claim?.state).toBe('claimed')
     expect(
       await markCopyrightDeliveryIntentSent({
         intentId: intent.id,
+        leaseToken: claim!.lease_token,
         sesMessageId: outboundMessageId,
       }),
     ).toBe(true)

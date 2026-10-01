@@ -4,6 +4,7 @@ import { lockAssessmentForm } from './compliance.mts'
 import { isAutomaticProvisionalWithholdingEnabled } from './config.mts'
 
 export type EnforcementRequest = {
+  lease_token: string
   assessment_id: string
   notice_id: string
   imposed_by_id: string | null
@@ -25,6 +26,7 @@ export async function claimCopyrightEnforcementRequest(
     assessment_id: string
     notice_id: string | null
     imposed_by_id: string | null
+    lease_token: string
     terminalized: boolean
   }>(sql`/* claimCopyrightEnforcementRequest */
     WITH enforceable AS (
@@ -71,7 +73,7 @@ export async function claimCopyrightEnforcementRequest(
       RETURNING request.copyright_notice_submission_assessment_id AS assessment_id
     ), claimed AS (
       UPDATE copyright_notice_enforcement_requests request
-      SET state = 'claimed', claimed_at = CURRENT_TIMESTAMP,
+      SET lease_token = uuidv7(), state = 'claimed', claimed_at = CURRENT_TIMESTAMP,
         last_attempt_at = CURRENT_TIMESTAMP, attempt_count = attempt_count + 1,
         updated_at = CURRENT_TIMESTAMP
       WHERE request.copyright_notice_submission_assessment_id = ${assessmentId}
@@ -85,12 +87,12 @@ export async function claimCopyrightEnforcementRequest(
             AND (${automaticWithholding}::boolean OR NOT automated)
         )
       RETURNING request.copyright_notice_submission_assessment_id AS assessment_id,
-        request.copyright_notice_id AS notice_id, request.imposed_by_id
+        request.copyright_notice_id AS notice_id, request.imposed_by_id, request.lease_token
     )
-    SELECT assessment_id, NULL::uuid AS notice_id, NULL::uuid AS imposed_by_id, true AS terminalized
+    SELECT assessment_id, NULL::uuid AS notice_id, NULL::uuid AS imposed_by_id, NULL::uuid AS lease_token, true AS terminalized
     FROM terminalized
     UNION ALL
-    SELECT assessment_id, notice_id, imposed_by_id, false AS terminalized
+    SELECT assessment_id, notice_id, imposed_by_id, lease_token, false AS terminalized
     FROM claimed
   `)
   await transaction.commit()
@@ -99,6 +101,7 @@ export async function claimCopyrightEnforcementRequest(
   if (claim.terminalized) return 'completed'
   if (!claim.notice_id) throw new Error('Claimed copyright enforcement request has no notice')
   return {
+    lease_token: claim.lease_token,
     assessment_id: claim.assessment_id,
     notice_id: claim.notice_id,
     imposed_by_id: claim.imposed_by_id,
@@ -107,6 +110,7 @@ export async function claimCopyrightEnforcementRequest(
 
 export async function completeNonEnforceableCopyrightEnforcementRequest(
   assessmentId: string,
+  leaseToken: string,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
   await lockEnforcementForm(assessmentId, transaction)
@@ -115,7 +119,7 @@ export async function completeNonEnforceableCopyrightEnforcementRequest(
     SET state = 'completed', claimed_at = NULL, completed_at = CURRENT_TIMESTAMP,
       updated_at = CURRENT_TIMESTAMP
     WHERE request.copyright_notice_submission_assessment_id = ${assessmentId}
-      AND request.state = 'claimed'
+      AND request.state = 'claimed' AND request.lease_token = ${leaseToken}
       AND NOT EXISTS (
         SELECT 1
         FROM copyright_notice_submission_assessments assessment

@@ -1,5 +1,6 @@
 export type CopyrightDeliveryIntentRecord = {
   id: string
+  lease_token: string | null
   copyright_notice_id: string
   copyright_notice_submission_id: string | null
   copyright_notice_correspondence_message_id: string | null

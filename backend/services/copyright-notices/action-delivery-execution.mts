@@ -11,6 +11,7 @@ import {
   getCopyrightActionPlacementKey,
   hasCopyrightActionBlocker,
   lockCopyrightActionDelivery,
+  lockCopyrightActionClaim,
   type CopyrightClaimedActionIntent,
 } from './action-delivery-state.mts'
 import {
@@ -48,6 +49,7 @@ export async function executeCopyrightActionIntent(
     else await dependencies.prepublishImagePlacementDenial({ ...tuple })
     const finalized = await finalizeCopyrightActionAfterDelivery(
       intent.id,
+      intent.lease_token,
       legal.action,
       now,
       dependencies,
@@ -80,13 +82,19 @@ async function prepareCopyrightAction(
     }
 > {
   await using transaction = await beginTransaction()
-  const placementId = await getCopyrightActionPlacementKey(intent.id, transaction)
+  await lockCopyrightActionClaim(intent.id, transaction)
+  const placementId = await getCopyrightActionPlacementKey(
+    intent.id,
+    intent.lease_token,
+    transaction,
+  )
   if (placementId) await lockCopyrightActionPlacement(placementId, transaction)
-  const legal = await lockCopyrightActionDelivery(intent.id, transaction)
+  const legal = await lockCopyrightActionDelivery(intent.id, intent.lease_token, transaction)
   if (!legal) return await commitOutcome(transaction, 'not_claimed')
   if (legal.action === 'withhold' && legal.restriction_lifted_at !== null) {
     await completeCopyrightActionIntentInTransaction({
       intentId: intent.id,
+      leaseToken: intent.lease_token,
       outcome: 'stale',
       completedAt: now,
       failureMessage: 'The copyright restriction was lifted before its withhold delivery began.',
@@ -111,6 +119,7 @@ async function prepareCopyrightAction(
   if (!isCurrentPlacementForIntent(current, legal)) {
     await completeCopyrightActionIntentInTransaction({
       intentId: intent.id,
+      leaseToken: intent.lease_token,
       outcome: 'stale',
       completedAt: now,
       failureMessage: 'Authoritative placement no longer matches the intent revision and asset.',
@@ -128,6 +137,7 @@ async function prepareCopyrightAction(
     })
     await completeCopyrightActionIntentInTransaction({
       intentId: intent.id,
+      leaseToken: intent.lease_token,
       outcome: 'blocked',
       completedAt: now,
       failureMessage:

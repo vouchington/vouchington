@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- A declined email intake is not a copyright case and must never acquire a public case record.
 -- Its response still has to be a durable, private legal communication with bounded delivery.
 
@@ -11,6 +12,7 @@ CREATE TABLE copyright_notice_email_intake_responses (
   idempotency_key text NOT NULL UNIQUE CHECK (char_length(idempotency_key) BETWEEN 1 AND 512),
   state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'sent', 'failed', 'bounced')),
   delivery_attempt_count integer NOT NULL DEFAULT 0 CHECK (delivery_attempt_count BETWEEN 0 AND 5),
+  lease_token uuid,
   claimed_at timestamptz,
   delivery_attempted_at timestamptz,
   sent_at timestamptz,
@@ -86,3 +88,5 @@ COMMENT ON COLUMN copyright_notice_email_intake_responses.failure_ciphertext IS 
 CREATE INDEX IF NOT EXISTS idx_copyright_email_intake_responses__recoverable
   ON copyright_notice_email_intake_responses (id)
   WHERE state IN ('pending', 'claimed');
+
+COMMENT ON COLUMN copyright_notice_email_intake_responses.lease_token IS 'Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.';

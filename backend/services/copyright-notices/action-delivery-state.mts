@@ -6,6 +6,7 @@ import {
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
 import type { CopyrightActionIntentRecord } from './types.mts'
+import { tryLockCopyrightActionClaim } from './action-delivery-locking.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 export {
   completeCopyrightActionIntentInTransaction,
@@ -15,6 +16,7 @@ export {
   insertCopyrightActionLifecycleEvent,
   liftCopyrightRestrictionInTransaction,
   lockCopyrightActionDelivery,
+  lockCopyrightActionClaim,
 } from './action-delivery-locking.mts'
 export type { LockedCopyrightActionDelivery } from './action-delivery-locking.mts'
 export { failCopyrightActionIntent } from './action-delivery-completion.mts'
@@ -23,6 +25,7 @@ const MAX_ATTEMPTS = 5
 const CLAIM_TIMEOUT_MS = 5 * 60 * 1000
 
 export type CopyrightClaimedActionIntent = CopyrightActionIntentRecord & {
+  lease_token: string
   placement_id: string
   image_id: string
 }
@@ -32,6 +35,7 @@ export async function claimCopyrightActionIntent(
   now: Date,
 ): Promise<CopyrightClaimedActionIntent | null> {
   await using transaction = await beginTransaction()
+  if (!(await tryLockCopyrightActionClaim(intentId, transaction))) return null
   const { rows } = await transaction<CopyrightClaimedActionIntent>(sql`
     /* claimCopyrightActionIntent */
     WITH exhausted AS (
@@ -54,7 +58,7 @@ export async function claimCopyrightActionIntent(
       FOR UPDATE SKIP LOCKED
     ), claimed AS (
       UPDATE copyright_notice_action_intents intent
-    SET state = 'claimed', delivery_attempt_count = intent.delivery_attempt_count + 1,
+    SET lease_token = uuidv7(), state = 'claimed', delivery_attempt_count = intent.delivery_attempt_count + 1,
       claimed_at = ${now}, next_attempt_at = NULL, failure_message = NULL
     FROM candidate
     WHERE intent.id = candidate.id

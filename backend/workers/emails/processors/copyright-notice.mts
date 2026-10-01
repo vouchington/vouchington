@@ -14,8 +14,9 @@ export async function processSendCopyrightNoticeEmail(data: {
   intentId?: string
   intakeResponseId?: string
 }): Promise<boolean> {
+  let prepared: Awaited<ReturnType<typeof prepareCopyrightEmail>> | undefined
   try {
-    const prepared = await prepareCopyrightEmail(data)
+    prepared = await prepareCopyrightEmail(data)
     const result = (await sendClassifiedEmail('processSendCopyrightNoticeEmail', {
       to: prepared.recipientEmail,
       subject: prepared.subject,
@@ -34,7 +35,7 @@ export async function processSendCopyrightNoticeEmail(data: {
       error instanceof CopyrightEmailIntakeResponseNotClaimedError
     )
       return false
-    await markCopyrightEmailFailed(data, error)
+    if (prepared) await markCopyrightEmailFailed(data, prepared.leaseToken, error)
     throw error
   }
 }
@@ -56,27 +57,31 @@ async function markCopyrightEmailSent(
   if (data.intentId && prepared.correspondenceId)
     return markCopyrightDeliveryIntentEmailSent({
       intentId: data.intentId,
+      leaseToken: prepared.leaseToken,
       correspondenceId: prepared.correspondenceId,
       sesMessageId,
     })
   return markCopyrightEmailIntakeResponseSent({
     responseId: data.intakeResponseId!,
+    leaseToken: prepared.leaseToken,
     sesMessageId,
   })
 }
 
 async function markCopyrightEmailFailed(
   data: { intentId?: string; intakeResponseId?: string },
+  leaseToken: string,
   error: unknown,
 ): Promise<void> {
   const message = error instanceof Error ? error.message : String(error)
   if (data.intentId && !data.intakeResponseId) {
-    await markCopyrightDeliveryIntentFailed({ intentId: data.intentId, error: message })
+    await markCopyrightDeliveryIntentFailed({ intentId: data.intentId, leaseToken, error: message })
     return
   }
   if (data.intakeResponseId && !data.intentId) {
     await markCopyrightEmailIntakeResponseFailed({
       responseId: data.intakeResponseId,
+      leaseToken,
       error: message,
     })
   }

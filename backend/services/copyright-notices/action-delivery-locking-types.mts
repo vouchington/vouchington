@@ -1,4 +1,5 @@
 export type LockedCopyrightActionDelivery = {
+  lease_token: string
   copyright_notice_id: string
   copyright_restriction_id: string
   placement_id: string

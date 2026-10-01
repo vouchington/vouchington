@@ -65,10 +65,12 @@ async function recordHistoricalResolution(
 async function exhaustDelivery(intentId: string, now: Date) {
   for (const attempt of [1, 2, 3, 4, 5]) {
     const attemptedAt = new Date(now.getTime() + attempt * 60 * 60 * 1000)
-    await expect(claimCopyrightActionIntent(intentId, attemptedAt)).resolves.not.toBeNull()
+    const claim = await claimCopyrightActionIntent(intentId, attemptedAt)
+    expect(claim).not.toBeNull()
     await expect(
       failCopyrightActionIntent({
         intentId,
+        leaseToken: claim!.lease_token,
         failedAt: attemptedAt,
         failureMessage: 'External provider unavailable.',
       }),

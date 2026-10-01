@@ -41,8 +41,10 @@ export async function createCopyrightDeliveryIntent(
 
 export async function claimCopyrightDeliveryIntent(
   intentId: string,
-): Promise<CopyrightDeliveryIntentRecord | null> {
-  const { rows } = await write<CopyrightDeliveryIntentRecord>(sql`/* claimCopyrightDeliveryIntent */
+): Promise<(CopyrightDeliveryIntentRecord & { lease_token: string }) | null> {
+  const { rows } = await write<
+    CopyrightDeliveryIntentRecord & { lease_token: string }
+  >(sql`/* claimCopyrightDeliveryIntent */
     WITH exhausted AS (
       UPDATE copyright_notice_delivery_intents
       SET state = 'failed', claimed_at = NULL, failed_at = CURRENT_TIMESTAMP, next_attempt_at = NULL
@@ -52,14 +54,14 @@ export async function claimCopyrightDeliveryIntent(
         AND delivery_attempt_count >= 5
     )
     UPDATE copyright_notice_delivery_intents
-    SET state = 'claimed', claimed_at = CURRENT_TIMESTAMP,
+    SET lease_token = uuidv7(), state = 'claimed', claimed_at = CURRENT_TIMESTAMP,
       delivery_attempted_at = CURRENT_TIMESTAMP, next_attempt_at = NULL,
       delivery_attempt_count = delivery_attempt_count + 1, failure_ciphertext = NULL
     WHERE id = ${intentId}
       AND delivery_attempt_count < 5
       AND ((state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP))
         OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'))
-    RETURNING id, copyright_notice_id, copyright_notice_submission_id,
+    RETURNING id, lease_token, copyright_notice_id, copyright_notice_submission_id,
       copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind,
       channel, state, ses_message_id, delivery_attempt_count
   `)
@@ -67,6 +69,7 @@ export async function claimCopyrightDeliveryIntent(
 }
 
 export async function markCopyrightDeliveryIntentSent(input: {
+  leaseToken: string
   intentId: string
   sesMessageId?: string
 }): Promise<boolean> {
@@ -74,13 +77,14 @@ export async function markCopyrightDeliveryIntentSent(input: {
     UPDATE copyright_notice_delivery_intents
     SET state = 'sent', sent_at = CURRENT_TIMESTAMP,
       ses_message_id = ${input.sesMessageId ?? null}
-    WHERE id = ${input.intentId} AND state = 'claimed'
+    WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken}
     RETURNING id
   `)
   return rows.length === 1
 }
 
 export async function markCopyrightDeliveryIntentEmailSent(input: {
+  leaseToken: string
   intentId: string
   correspondenceId: string
   sesMessageId: string
@@ -90,7 +94,7 @@ export async function markCopyrightDeliveryIntentEmailSent(input: {
     UPDATE copyright_notice_delivery_intents
     SET state = 'sent', sent_at = CURRENT_TIMESTAMP,
       ses_message_id = ${input.sesMessageId}
-    WHERE id = ${input.intentId} AND state = 'claimed' AND channel = 'email'
+    WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken} AND channel = 'email'
       AND copyright_notice_correspondence_message_id = ${input.correspondenceId}
     RETURNING id
   `)
@@ -107,6 +111,7 @@ export async function markCopyrightDeliveryIntentEmailSent(input: {
 }
 
 export async function markCopyrightDeliveryIntentFailed(input: {
+  leaseToken: string
   intentId: string
   error: string
 }): Promise<boolean> {
@@ -119,7 +124,7 @@ export async function markCopyrightDeliveryIntentFailed(input: {
       next_attempt_at = CASE WHEN delivery_attempt_count >= 5 THEN NULL
         ELSE CURRENT_TIMESTAMP + make_interval(mins => (2 ^ (delivery_attempt_count - 1))::integer) END,
       failure_ciphertext = ${encryptSecret(boundedError, `copyright-delivery:${input.intentId}`)}
-    WHERE id = ${input.intentId} AND state = 'claimed'
+    WHERE id = ${input.intentId} AND state = 'claimed' AND lease_token = ${input.leaseToken}
     RETURNING id
   `)
   return rows.length === 1
@@ -185,7 +190,7 @@ async function insertCopyrightDeliveryIntent(
         WHERE id = ${input.correspondenceId} AND copyright_notice_id = ${input.noticeId}
       ))
     ON CONFLICT (idempotency_key) DO NOTHING
-    RETURNING id, copyright_notice_id, copyright_notice_submission_id,
+    RETURNING id, lease_token, copyright_notice_id, copyright_notice_submission_id,
       copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind,
       channel, state, ses_message_id, delivery_attempt_count
   `)
@@ -196,7 +201,7 @@ async function insertCopyrightDeliveryIntent(
   }
   const { rows: existingRows } =
     await transaction<CopyrightDeliveryIntentRecord>(sql`/* createCopyrightDeliveryIntent:existing */
-    SELECT id, copyright_notice_id, copyright_notice_submission_id,
+    SELECT id, lease_token, copyright_notice_id, copyright_notice_submission_id,
       copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind,
       channel, state, ses_message_id, delivery_attempt_count
     FROM copyright_notice_delivery_intents

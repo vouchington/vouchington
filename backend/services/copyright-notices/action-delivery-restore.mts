@@ -27,6 +27,7 @@ export async function completeUnavailableRestore(input: {
     () =>
       completeCopyrightActionIntentInTransaction({
         intentId: input.intentId,
+        leaseToken: input.legal.lease_token,
         outcome: 'completed',
         completedAt: input.now,
         failureMessage:
@@ -67,6 +68,7 @@ export async function completeRestoreRetainingPlacement(input: {
     () =>
       completeCopyrightActionIntentInTransaction({
         intentId: input.intentId,
+        leaseToken: input.legal.lease_token,
         outcome: 'completed',
         completedAt: input.now,
         query: input.query,

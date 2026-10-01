@@ -32,10 +32,12 @@ async function exhaustedRestoreWithSibling() {
   )
   for (const attempt of [1, 2, 3, 4, 5]) {
     const attemptedAt = new Date(scene.restorationAt.getTime() + attempt * 60 * 60 * 1000)
-    await expect(claimCopyrightActionIntent(scene.restore.id, attemptedAt)).resolves.not.toBeNull()
+    const claim = await claimCopyrightActionIntent(scene.restore.id, attemptedAt)
+    expect(claim).not.toBeNull()
     await expect(
       failCopyrightActionIntent({
         intentId: scene.restore.id,
+        leaseToken: claim!.lease_token,
         failedAt: attemptedAt,
         failureMessage: 'External provider unavailable.',
       }),

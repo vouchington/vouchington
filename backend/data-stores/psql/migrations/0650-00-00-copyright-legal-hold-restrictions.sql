@@ -1,3 +1,4 @@
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_enforcement_requests (
   copyright_notice_submission_assessment_id uuid PRIMARY KEY REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT,
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
@@ -8,6 +9,7 @@ CREATE TABLE copyright_notice_enforcement_requests (
   completed_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  lease_token uuid,
   claimed_at timestamptz,
   CHECK ((state = 'completed') = (completed_at IS NOT NULL)),
   CHECK ((state = 'claimed') = (claimed_at IS NOT NULL))
@@ -50,3 +52,5 @@ COMMENT ON COLUMN copyright_legal_hold_restrictions.copyright_notice_legal_hold_
 CREATE INDEX IF NOT EXISTS idx_copyright_notice_enforcement_requests__reconcilable
   ON copyright_notice_enforcement_requests (copyright_notice_submission_assessment_id)
   WHERE state IN ('pending', 'claimed');
+
+COMMENT ON COLUMN copyright_notice_enforcement_requests.lease_token IS 'Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.';

@@ -61,12 +61,14 @@ export async function createCopyrightEmailIntakeResponseInTransaction(
 }
 
 export async function prepareCopyrightEmailIntakeResponseDelivery(responseId: string): Promise<{
+  leaseToken: string
   recipientEmail: string
   subject: string
   text: string
 }> {
   const { rows } = await write<{
     id: string
+    lease_token: string
     recipient_email_ciphertext: string
     subject_ciphertext: string
     body_ciphertext: string
@@ -78,20 +80,30 @@ export async function prepareCopyrightEmailIntakeResponseDelivery(responseId: st
         AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes' AND delivery_attempt_count >= 5
     )
     UPDATE copyright_notice_email_intake_responses
-    SET state = 'claimed', claimed_at = CURRENT_TIMESTAMP, delivery_attempted_at = CURRENT_TIMESTAMP,
+    SET lease_token = uuidv7(), state = 'claimed', claimed_at = CURRENT_TIMESTAMP, delivery_attempted_at = CURRENT_TIMESTAMP,
       next_attempt_at = NULL, delivery_attempt_count = delivery_attempt_count + 1, failure_ciphertext = NULL
     WHERE id = ${responseId} AND delivery_attempt_count < 5
       AND ((state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP))
         OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'))
-    RETURNING id, recipient_email_ciphertext, subject_ciphertext, body_ciphertext
+    RETURNING id, lease_token, recipient_email_ciphertext, subject_ciphertext, body_ciphertext
   `)
   const response = rows[0]
   if (!response) throw new CopyrightEmailIntakeResponseNotClaimedError()
-  const purpose = copyrightEmailIntakeResponsePurpose(response.id)
-  return {
-    recipientEmail: decryptSecret(response.recipient_email_ciphertext, purpose),
-    subject: decryptSecret(response.subject_ciphertext, purpose),
-    text: decryptSecret(response.body_ciphertext, purpose),
+  try {
+    const purpose = copyrightEmailIntakeResponsePurpose(response.id)
+    return {
+      leaseToken: response.lease_token,
+      recipientEmail: decryptSecret(response.recipient_email_ciphertext, purpose),
+      subject: decryptSecret(response.subject_ciphertext, purpose),
+      text: decryptSecret(response.body_ciphertext, purpose),
+    }
+  } catch (error) {
+    await markCopyrightEmailIntakeResponseFailed({
+      responseId,
+      leaseToken: response.lease_token,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    throw error
   }
 }
 
@@ -131,19 +143,21 @@ export async function markCopyrightEmailIntakeResponseBouncedBySesMessageId(
 }
 
 export async function markCopyrightEmailIntakeResponseSent(input: {
+  leaseToken: string
   responseId: string
   sesMessageId: string
 }): Promise<boolean> {
   const { rows } = await write(sql`/* markCopyrightEmailIntakeResponseSent */
     UPDATE copyright_notice_email_intake_responses
     SET state = 'sent', sent_at = CURRENT_TIMESTAMP, ses_message_id = ${input.sesMessageId}
-    WHERE id = ${input.responseId} AND state = 'claimed'
+    WHERE id = ${input.responseId} AND state = 'claimed' AND lease_token = ${input.leaseToken}
     RETURNING id
   `)
   return rows.length === 1
 }
 
 export async function markCopyrightEmailIntakeResponseFailed(input: {
+  leaseToken: string
   responseId: string
   error: string
 }): Promise<boolean> {
@@ -155,7 +169,7 @@ export async function markCopyrightEmailIntakeResponseFailed(input: {
       next_attempt_at = CASE WHEN delivery_attempt_count >= 5 THEN NULL
         ELSE CURRENT_TIMESTAMP + make_interval(mins => (2 ^ (delivery_attempt_count - 1))::integer) END,
       failure_ciphertext = ${encryptSecret(input.error.slice(0, 10_000), `copyright-email-intake-response:${input.responseId}`)}
-    WHERE id = ${input.responseId} AND state = 'claimed'
+    WHERE id = ${input.responseId} AND state = 'claimed' AND lease_token = ${input.leaseToken}
     RETURNING id
   `)
   return rows.length === 1

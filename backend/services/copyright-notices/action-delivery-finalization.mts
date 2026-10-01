@@ -11,18 +11,21 @@ import {
   hasOtherActiveCopyrightRestrictions,
   insertCopyrightActionLifecycleEvent,
   lockCopyrightActionDelivery,
+  lockCopyrightActionClaim,
 } from './action-delivery-state.mts'
 
 export async function finalizeCopyrightActionAfterDelivery(
   intentId: string,
+  leaseToken: string,
   action: 'withhold' | 'restore',
   now: Date,
   dependencies: CopyrightActionDeliveryDependencies,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
-  const placementId = await getCopyrightActionPlacementKey(intentId, transaction)
+  await lockCopyrightActionClaim(intentId, transaction)
+  const placementId = await getCopyrightActionPlacementKey(intentId, leaseToken, transaction)
   if (placementId) await lockCopyrightActionPlacement(placementId, transaction)
-  const legal = await lockCopyrightActionDelivery(intentId, transaction)
+  const legal = await lockCopyrightActionDelivery(intentId, leaseToken, transaction)
   if (!legal) {
     await transaction.commit()
     return false
@@ -36,6 +39,7 @@ export async function finalizeCopyrightActionAfterDelivery(
   if (action === 'withhold' && legal.restriction_lifted_at !== null) {
     await completeCopyrightActionIntentInTransaction({
       intentId,
+      leaseToken,
       outcome: 'stale',
       completedAt: now,
       failureMessage:
@@ -53,6 +57,7 @@ export async function finalizeCopyrightActionAfterDelivery(
   ) {
     await completeCopyrightActionIntentInTransaction({
       intentId,
+      leaseToken,
       outcome: 'stale',
       completedAt: now,
       failureMessage: 'Placement changed while its exact delivery tuple was being projected.',
@@ -75,6 +80,7 @@ export async function finalizeCopyrightActionAfterDelivery(
       () =>
         completeCopyrightActionIntentInTransaction({
           intentId,
+          leaseToken,
           outcome: 'blocked',
           completedAt: now,
           failureMessage:
@@ -109,6 +115,7 @@ async function completeCopyrightActionAndInvalidate(input: {
     () =>
       completeCopyrightActionIntentInTransaction({
         intentId: input.intentId,
+        leaseToken: input.legal.lease_token,
         outcome: 'completed',
         completedAt: input.now,
         query: input.transaction,

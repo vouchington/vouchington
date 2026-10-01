@@ -129,6 +129,7 @@ export type CopyrightCorrespondenceRecord = {
 }
 
 export type CopyrightActionIntentRecord = {
+  lease_token: string | null
   id: string
   copyright_restriction_id: string
   copyright_notice_deadline_id: string | null

@@ -21432,7 +21432,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "text"
         },
         "claimed_at": {
@@ -21443,7 +21443,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "completed_at": {
@@ -21454,7 +21454,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "completed_at_reason": {
@@ -21465,7 +21465,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "copyright_notice_deadline_id": {
@@ -21476,7 +21476,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "uuid"
         },
         "copyright_restriction_id": {
@@ -21487,7 +21487,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "created_at": {
@@ -21498,7 +21498,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "delivery_attempt_count": {
@@ -21520,7 +21520,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "integer"
         },
         "failure_message": {
@@ -21531,7 +21531,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "id": {
@@ -21545,6 +21545,17 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
+        "lease_token": {
+          "collation": null,
+          "comment": "Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
         "next_attempt_at": {
           "collation": null,
           "comment": "Earliest durable retry time after a retryable media-delivery failure.",
@@ -21553,7 +21564,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "state": {
@@ -21575,7 +21586,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         }
       },
@@ -23366,7 +23377,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "channel": {
@@ -23388,7 +23399,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "copyright_notice_correspondence_message_id": {
@@ -23432,7 +23443,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "delivery_attempt_count": {
@@ -23454,7 +23465,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "delivery_kind": {
@@ -23476,7 +23487,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "failure_ciphertext": {
@@ -23487,7 +23498,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "text"
         },
         "id": {
@@ -23512,6 +23523,17 @@
           "ordinalPosition": 12,
           "type": "text"
         },
+        "lease_token": {
+          "collation": null,
+          "comment": "Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "uuid"
+        },
         "next_attempt_at": {
           "collation": null,
           "comment": "Earliest retry time after a retryable transport failure; NULL for terminal states.",
@@ -23520,7 +23542,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "recipient_role": {
@@ -23564,7 +23586,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "ses_message_id": {
@@ -23575,7 +23597,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "text"
         },
         "state": {
@@ -23597,7 +23619,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         }
       },
@@ -25332,7 +25354,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "claimed_at": {
@@ -25343,7 +25365,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "copyright_notice_email_intake_id": {
@@ -25365,7 +25387,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "delivery_attempt_count": {
@@ -25387,7 +25409,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "failed_at": {
@@ -25398,7 +25420,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "failure_ciphertext": {
@@ -25409,7 +25431,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "text"
         },
         "id": {
@@ -25434,6 +25456,17 @@
           "ordinalPosition": 7,
           "type": "text"
         },
+        "lease_token": {
+          "collation": null,
+          "comment": "Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "uuid"
+        },
         "next_attempt_at": {
           "collation": null,
           "comment": "Earliest retry time after a retryable failure.",
@@ -25442,7 +25475,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "recipient_email_ciphertext": {
@@ -25475,7 +25508,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "ses_message_id": {
@@ -25486,7 +25519,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "text"
         },
         "state": {
@@ -25519,7 +25552,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         }
       },
@@ -26387,7 +26420,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "completed_at": {
@@ -26455,6 +26488,17 @@
           "nullable": true,
           "ordinalPosition": 6,
           "type": "timestamp with time zone"
+        },
+        "lease_token": {
+          "collation": null,
+          "comment": "Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "uuid"
         },
         "state": {
           "collation": null,
@@ -27314,7 +27358,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "completed_at": {
@@ -27325,7 +27369,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "copyright_notice_form_intake_id": {
@@ -27348,6 +27392,17 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "lease_token": {
+          "collation": null,
+          "comment": "Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "started_at": {
@@ -27380,7 +27435,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         }
       },

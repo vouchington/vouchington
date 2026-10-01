@@ -50,7 +50,7 @@ export async function processCopyrightEnforcementRequest(
       SET state = 'completed', claimed_at = NULL, completed_at = CURRENT_TIMESTAMP,
         updated_at = CURRENT_TIMESTAMP
       WHERE request.copyright_notice_submission_assessment_id = ${request.assessment_id}
-        AND request.state = 'claimed'
+        AND request.state = 'claimed' AND request.lease_token = ${request.lease_token}
         AND NOT EXISTS (
           SELECT 1 FROM copyright_notice_targets target
           WHERE target.copyright_notice_id = request.copyright_notice_id
@@ -78,14 +78,19 @@ export async function processCopyrightEnforcementRequest(
     if (!rows[0]) throw new Error('Copyright enforcement request still has unrestricted targets')
     return 'completed'
   } catch (error) {
-    if (await completeNonEnforceableCopyrightEnforcementRequest(request.assessment_id)) {
+    if (
+      await completeNonEnforceableCopyrightEnforcementRequest(
+        request.assessment_id,
+        request.lease_token,
+      )
+    ) {
       return 'completed'
     }
     await write(sql`/* processCopyrightEnforcementRequest:release */
       UPDATE copyright_notice_enforcement_requests
       SET state = 'pending', claimed_at = NULL, updated_at = CURRENT_TIMESTAMP
       WHERE copyright_notice_submission_assessment_id = ${request.assessment_id}
-        AND state = 'claimed'
+        AND state = 'claimed' AND lease_token = ${request.lease_token}
     `)
     throw error
   }

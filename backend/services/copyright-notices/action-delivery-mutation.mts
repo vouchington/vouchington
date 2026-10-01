@@ -47,6 +47,7 @@ export async function mutateCopyrightPlacement(input: {
   }
   await completeCopyrightActionIntentInTransaction({
     intentId: input.intentId,
+    leaseToken: input.legal.lease_token,
     outcome: 'stale',
     completedAt: input.now,
     failureMessage: `Placement transition was ${mutation.status}.`,
