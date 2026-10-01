@@ -35,6 +35,9 @@ candidate topics are captured once, when the receipt is reserved, and stored wit
 candidate set that would change later (a fresher embedding, a plan change, another search result)
 cannot create a second receipt for the same content.
 
+A remote plan is a topic plan (C5, C6) or a community-prompt plan (C8). The latter pins prompt ids,
+stores and captures no candidates, and puts its rule set in the configuration hash.
+
 The identity admits one receipt per classifier scope and content version, the receipt owns one
 pre-reserved C3 decision batch, and the attempt counter is capped and monotone. Provider spend per
 run is bounded by that cap, not by one call: a crash or lease loss between the provider returning

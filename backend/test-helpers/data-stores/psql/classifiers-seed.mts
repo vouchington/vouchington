@@ -48,3 +48,37 @@ export async function countLocalAgentsForSystemUsername(username: string): Promi
   `)
   return rows[0]?.count ?? 0
 }
+
+type LocalClassifierSeedFacts = {
+  candidate_kind: string
+  stored_candidates: number
+  active_prompts: number
+  prompt: string | null
+  model_provider: string | null
+  default_lower_threshold: string | null
+  default_upper_threshold: string | null
+  created_by_username: string | null
+}
+
+// The seeded shape of a classifier: its candidate kind, its stored candidates (none for a
+// community_prompt classifier) and the one active prompt revision with its default thresholds.
+export async function getLocalClassifierSeedFacts(slug: string): Promise<LocalClassifierSeedFacts> {
+  const { rows } = await write<LocalClassifierSeedFacts>(sql`
+    SELECT classifier.candidate_kind::text,
+      (SELECT COUNT(*)::int FROM classifier_candidates
+        WHERE classifier_id = classifier.id) AS stored_candidates,
+      (SELECT COUNT(*)::int FROM classifier_prompt_versions active
+        WHERE active.classifier_id = classifier.id AND active.activated_at IS NOT NULL
+          AND active.deactivated_at IS NULL AND active.deleted_at IS NULL) AS active_prompts,
+      prompt.prompt, prompt.model_provider,
+      prompt.default_lower_threshold::text, prompt.default_upper_threshold::text,
+      actor.username AS created_by_username
+    FROM classifiers classifier
+    LEFT JOIN classifier_prompt_versions prompt ON prompt.classifier_id = classifier.id
+      AND prompt.activated_at IS NOT NULL AND prompt.deactivated_at IS NULL
+      AND prompt.deleted_at IS NULL
+    LEFT JOIN users actor ON actor.id = classifier.created_by_id
+    WHERE classifier.slug = ${slug}
+  `)
+  return rows[0]!
+}

@@ -41,7 +41,7 @@
       "values": ["everyone", "users", "followers", "mutual_followers"]
     },
     "classifier_candidate_kind": {
-      "values": ["topic", "story"]
+      "values": ["topic", "story", "community_prompt"]
     },
     "classifier_model_provider": {
       "values": ["typesafe", "openrouter"]
@@ -980,6 +980,9 @@
     },
     "fn_require_classifier_result_batch_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_result_batch_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  candidate classifier_candidates%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\n  batch_candidate classifier_decision_batch_candidates%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO candidate FROM classifier_candidates WHERE id = NEW.candidate_id FOR SHARE;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  IF NEW.candidate_id IS NOT NULL THEN\n    SELECT * INTO batch_candidate FROM classifier_decision_batch_candidates\n    WHERE batch_id = NEW.batch_id AND candidate_id = NEW.candidate_id\n    FOR SHARE;\n  END IF;\n  IF NEW.scope_category IS DISTINCT FROM batch.scope_category\n    OR NEW.scope_community_id IS DISTINCT FROM batch.scope_community_id THEN\n    RAISE EXCEPTION 'classifier result scope must match its batch' USING ERRCODE = '23514';\n  END IF;\n  IF candidate.community_id IS NOT NULL\n    AND (\n      batch.scope_category <> 'community_ai'\n      OR batch.scope_community_id IS DISTINCT FROM candidate.community_id\n    ) THEN\n    RAISE EXCEPTION 'community classifier candidate scope must match its owning community' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.candidate_id IS NOT NULL AND batch_candidate.batch_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n  effective_lower := COALESCE(\n    batch_candidate.effective_lower_threshold,\n    prompt.default_lower_threshold\n  );\n  effective_upper := COALESCE(\n    batch_candidate.effective_upper_threshold,\n    prompt.default_upper_threshold\n  );\n  IF NEW.effective_lower_threshold IS DISTINCT FROM effective_lower\n    OR NEW.effective_upper_threshold IS DISTINCT FROM effective_upper THEN\n    RAISE EXCEPTION 'classifier result thresholds must match prompt and candidate configuration' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.threshold_id IS DISTINCT FROM batch_candidate.threshold_id THEN\n    RAISE EXCEPTION 'classifier result threshold revision must match its batch candidate snapshot' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_require_community_prompt_result_configuration": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_community_prompt_result_configuration()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  IF batch.post_id IS NULL THEN\n    RAISE EXCEPTION 'community prompt classifier results require a post batch' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.effective_lower_threshold IS DISTINCT FROM prompt.default_lower_threshold\n    OR NEW.effective_upper_threshold IS DISTINCT FROM prompt.default_upper_threshold THEN\n    RAISE EXCEPTION 'community prompt classifier result thresholds must match the prompt revision defaults' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_require_copyright_human_actor": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_copyright_human_actor()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF to_jsonb(NEW) ->> TG_ARGV[0] IS NULL THEN\n    RAISE EXCEPTION 'copyright human decisions require an identified actor' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -13344,6 +13347,33 @@
           "ready": true,
           "unique": false,
           "valid": true
+        },
+        "uq_community_agent_prompts__id__community": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_community_agent_prompts__id__community ON public.community_agent_prompts USING btree (id, community_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "partition": null,
@@ -13356,7 +13386,12 @@
       "triggers": {
         "moderation_transparency_community_prompts_lock": "CREATE TRIGGER moderation_transparency_community_prompts_lock BEFORE INSERT OR DELETE OR UPDATE ON public.community_agent_prompts FOR EACH ROW EXECUTE FUNCTION fn_lock_agent_moderation_transparency_community_prompt()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "uq_community_agent_prompts__id__community": {
+          "columns": ["id", "community_id"],
+          "definition": "UNIQUE (id, community_id)"
+        }
+      }
     },
     "community_application_answers": {
       "checkConstraints": {
@@ -17548,6 +17583,397 @@
       },
       "relationKind": "table",
       "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "community_prompt_classifier_results": {
+      "checkConstraints": {
+        "chk_community_prompt_classifier_results__effective_thresholds": "CHECK (((effective_lower_threshold >= (0)::numeric) AND (effective_upper_threshold <= (1)::numeric) AND (effective_lower_threshold < effective_upper_threshold)))",
+        "community_prompt_classifier_results_candidate_kind_check": "CHECK ((candidate_kind = 'community_prompt'::classifier_candidate_kind))",
+        "community_prompt_classifier_results_probability_check": "CHECK (((probability >= (0)::numeric) AND (probability <= (1)::numeric)))",
+        "community_prompt_classifier_results_scope_category_check": "CHECK ((scope_category = 'community_ai'::text))"
+      },
+      "columns": {
+        "batch_id": {
+          "collation": null,
+          "comment": "Logical decision batch that produced this result and the partition key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "candidate_kind": {
+          "collation": null,
+          "comment": "Fixed community_prompt discriminator used only for the classifier-kind foreign key.",
+          "defaultExpression": "'community_prompt'::classifier_candidate_kind",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "classifier_candidate_kind"
+        },
+        "classifier_id": {
+          "collation": null,
+          "comment": "Classifier copied from the owning batch for relational enforcement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "community_prompt_id": {
+          "collation": null,
+          "comment": "Community moderation prompt scored by this result; its community must equal the batch scope.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        },
+        "decision_call_id": {
+          "collation": null,
+          "comment": "Specific provider call that produced this result.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "effective_lower_threshold": {
+          "collation": null,
+          "comment": "Prompt-revision lower boundary used for this immutable decision result.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "numeric(5,4)"
+        },
+        "effective_upper_threshold": {
+          "collation": null,
+          "comment": "Prompt-revision upper boundary above which this prompt counts as flagged.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "numeric(5,4)"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "probability": {
+          "collation": null,
+          "comment": "Native per-prompt probability preserved without threshold mapping.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "numeric"
+        },
+        "prompt_version_id": {
+          "collation": null,
+          "comment": "Prompt revision copied from the owning batch for relational enforcement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "raw_response": {
+          "collation": null,
+          "comment": "Full native structured-decision answer for audit and diagnostics.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "jsonb"
+        },
+        "scope_category": {
+          "collation": null,
+          "comment": "Always community_ai, copied from the owning batch.",
+          "defaultExpression": "'community_ai'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "text"
+        },
+        "scope_community_id": {
+          "collation": null,
+          "comment": "Community provenance copied from the owning batch; deleting the community cascades to its results.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 13,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 15,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Per-prompt classifier results for community moderation prompts, RANGE-partitioned by batch_id.",
+      "foreignKeys": {
+        "fk_community_prompt_classifier_results__batch_classifier": {
+          "columns": ["batch_id", "classifier_id"],
+          "definition": "FOREIGN KEY (batch_id, classifier_id) REFERENCES classifier_decision_batches(id, classifier_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_community_prompt_classifier_results__batch_prompt": {
+          "columns": ["batch_id", "prompt_version_id"],
+          "definition": "FOREIGN KEY (batch_id, prompt_version_id) REFERENCES classifier_decision_batches(id, prompt_version_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "prompt_version_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_community_prompt_classifier_results__batch_scope": {
+          "columns": ["batch_id", "scope_category", "scope_community_id"],
+          "definition": "FOREIGN KEY (batch_id, scope_category, scope_community_id) REFERENCES classifier_decision_batches(id, scope_category, scope_community_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "scope_category", "scope_community_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_community_prompt_classifier_results__call_batch": {
+          "columns": ["decision_call_id", "batch_id"],
+          "definition": "FOREIGN KEY (decision_call_id, batch_id) REFERENCES classifier_decision_calls(id, batch_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "batch_id"],
+          "referencedTable": "classifier_decision_calls",
+          "validated": true
+        },
+        "fk_community_prompt_classifier_results__classifier_kind": {
+          "columns": ["classifier_id", "candidate_kind"],
+          "definition": "FOREIGN KEY (classifier_id, candidate_kind) REFERENCES classifiers(id, candidate_kind) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "candidate_kind"],
+          "referencedTable": "classifiers",
+          "validated": true
+        },
+        "fk_community_prompt_classifier_results__prompt_community": {
+          "columns": ["community_prompt_id", "scope_community_id"],
+          "definition": "FOREIGN KEY (community_prompt_id, scope_community_id) REFERENCES community_agent_prompts(id, community_id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "community_id"],
+          "referencedTable": "community_agent_prompts",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "community_prompt_classifier_results_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX community_prompt_classifier_results_pkey ON ONLY public.community_prompt_classifier_results USING btree (batch_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_community_prompt_classifier_results__batch_prompt_unique": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_community_prompt_classifier_results__batch_prompt_unique ON ONLY public.community_prompt_classifier_results USING btree (batch_id, community_prompt_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_prompt_id",
+              "descending": false,
+              "expression": "community_prompt_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_community_prompt_classifier_results__call_batch": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_prompt_classifier_results__call_batch ON ONLY public.community_prompt_classifier_results USING btree (decision_call_id, batch_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "decision_call_id",
+              "descending": false,
+              "expression": "decision_call_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_prompt_classifier_results__classifier_kind": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_prompt_classifier_results__classifier_kind ON ONLY public.community_prompt_classifier_results USING btree (classifier_id, candidate_kind)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "candidate_kind",
+              "descending": false,
+              "expression": "candidate_kind",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_prompt_classifier_results__prompt_community": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_prompt_classifier_results__prompt_community ON ONLY public.community_prompt_classifier_results USING btree (community_prompt_id, scope_community_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_prompt_id",
+              "descending": false,
+              "expression": "community_prompt_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "scope_community_id",
+              "descending": false,
+              "expression": "scope_community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": {
+        "accessClass": "target-scoped",
+        "children": "default",
+        "key": "batch_id",
+        "retentionOwner": null,
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (batch_id)",
+        "strategy": "range"
+      },
+      "primaryKey": {
+        "columns": ["batch_id", "id"],
+        "definition": "PRIMARY KEY (batch_id, id)"
+      },
+      "relationKind": "partitioned table",
+      "triggers": {
+        "trigger_community_prompt_classifier_results_append_only": "CREATE TRIGGER trigger_community_prompt_classifier_results_append_only BEFORE UPDATE ON public.community_prompt_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()",
+        "trigger_community_prompt_classifier_results_configuration": "CREATE TRIGGER trigger_community_prompt_classifier_results_configuration BEFORE INSERT OR UPDATE OF batch_id, prompt_version_id, effective_lower_threshold, effective_upper_threshold ON public.community_prompt_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_require_community_prompt_result_configuration()"
+      },
       "uniqueConstraints": {}
     },
     "community_restrictions": {

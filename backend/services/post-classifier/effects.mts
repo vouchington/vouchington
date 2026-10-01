@@ -28,17 +28,17 @@ export async function applyPostClassifierEffects(
 ): Promise<PostClassifierEffects> {
   const postId = lease.subject.postId
   if (postId === null) throw new Error('post classifier run must have a post subject')
-  const remote = lease.resolved.remote
+  const remoteQuestions = lease.resolved.configuration.remote?.questions
   const appliedTopicIds =
-    outcomes.remoteDecision && remote
+    outcomes.remoteDecision && remoteQuestions
       ? (
           await applyTopicClassifierDecisionVotes(
             {
               batchId: outcomes.remoteDecision.batchId,
               sharedActorId: lease.resolved.actorId,
-              expectedBindings: remote.candidates.map(candidate => ({
-                topicId: candidate.topicId,
-                storedCandidateId: candidate.candidateId,
+              expectedBindings: remoteQuestions.map(question => ({
+                topicId: question.topicId,
+                storedCandidateId: question.candidateId,
               })),
             },
             { query },

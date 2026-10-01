@@ -62,6 +62,8 @@ export async function resolveAutotaggerRunConfiguration(
     remote: {
       classifierId: configuration.classifierId,
       promptVersionId: configuration.promptVersionId,
+      scope: { scopeCategory: 'global', scopeCommunityId: null },
+      candidateKind: 'topic',
       capturedCandidates: true,
       candidates: [],
     },

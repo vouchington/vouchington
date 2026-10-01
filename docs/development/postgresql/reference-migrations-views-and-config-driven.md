@@ -189,6 +189,11 @@ config-driven operations, and views. After migration the database contains:
   The seed writes no `agent_prompts` rows: only community prompts create them, and the built-in
   classifier's prompt, model, and provider are seeded by
   [`config-driven/0635-00-03-seed-post-classifier.mts`](../../../backend/data-stores/psql/config-driven/0635-00-03-seed-post-classifier.mts).
+  The global `community-moderation` classifier (C8, candidate kind `community_prompt`) and its one
+  prompt version are seeded against the existing `automod` system user by
+  [`config-driven/0635-00-04-seed-community-moderation-classifier.mts`](../../../backend/data-stores/psql/config-driven/0635-00-04-seed-community-moderation-classifier.mts);
+  it has no stored candidates or threshold revisions because each community prompt is its own
+  candidate.
   Agent users have **no** `administrator` role.
 - **Admin user** — `jong` user with primary email `jong@voucha.ai` and the `administrator`
   role, seeded by

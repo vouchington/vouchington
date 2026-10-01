@@ -1,5 +1,8 @@
 import type { OwnedTransaction, QueryExecutor } from '@data-stores/psql'
-import type { PersistedClassifierDecision } from '@services/classifiers/types'
+import type {
+  ClassifierDecisionScope,
+  PersistedClassifierDecision,
+} from '@services/classifiers/types'
 import type { SQLStatement } from 'sql-template-strings'
 
 /** Exactly one of the two subject columns is set. */
@@ -16,14 +19,32 @@ export type RemoteCandidate = {
   upper: number
 }
 
-export type RemotePlan = {
+type RemotePlanBase = {
   classifierId: string
   promptVersionId: string
+  /** The scope of the run's decision batch; every remote input and persisted result must carry it. */
+  scope: ClassifierDecisionScope
+}
+
+/** Topic candidates, pinned by the configuration or captured when the receipt is reserved. */
+export type TopicRemotePlan = RemotePlanBase & {
+  candidateKind: 'topic'
   /** Candidates and thresholds pinned by the configuration; empty when the run captures its own. */
   candidates: readonly RemoteCandidate[]
   /** True when the run's topic candidates are captured at reservation instead of pinned. */
   capturedCandidates: boolean
 }
+
+/**
+ * Community moderation prompts, pinned by the configuration. They have no stored candidate or
+ * threshold revision: every result carries the prompt version's default thresholds.
+ */
+export type CommunityPromptRemotePlan = RemotePlanBase & {
+  candidateKind: 'community_prompt'
+  promptIds: readonly string[]
+}
+
+export type RemotePlan = TopicRemotePlan | CommunityPromptRemotePlan
 
 /** The replay snapshot of one classifier's configuration for a subject, produced by its adapter. */
 export type ResolvedClassifierRun<C> = {

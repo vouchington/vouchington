@@ -1,5 +1,5 @@
 export type ClassifierPrimitive = 'noul' | 'choice' | 'score'
-export type ClassifierCandidateKind = 'topic' | 'story'
+export type ClassifierCandidateKind = 'topic' | 'story' | 'community_prompt'
 export type ClassifierScopeCategory = 'global' | 'community_ai'
 export type ClassifierModelProvider = 'typesafe' | 'openrouter'
 
@@ -128,4 +128,12 @@ export type TopicClassifierResult = ClassifierResult & {
 export type StoryClassifierResult = ClassifierResult & {
   candidate_kind: 'story'
   story_id: string
+}
+
+/** One community moderation prompt result: no stored candidate or threshold revision exists. */
+export type CommunityPromptClassifierResult = ClassifierResultBase & {
+  candidate_kind: 'community_prompt'
+  community_prompt_id: string
+  scope_category: 'community_ai'
+  scope_community_id: string
 }

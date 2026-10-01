@@ -1,4 +1,5 @@
 import type { OwnedTransaction } from '@data-stores/psql'
+import type { ClassifierCandidateKind } from '@voucha/types'
 import sql from 'sql-template-strings'
 import {
   assertClassifierDecisionBatchIdentity,
@@ -6,6 +7,7 @@ import {
   type NormalizedClassifierDecisionInput,
 } from './decision-input.mts'
 import { assertCandidateKindMatchesSubject } from './classifier-decision-persistence-validation.mts'
+import type { ClassifierDecisionSnapshot } from './classifier-decision-snapshot.mts'
 import type {
   ClassifierDecisionReservationInput,
   PersistClassifierDecisionInput,
@@ -13,17 +15,16 @@ import type {
 } from './types.mts'
 
 type PromptThresholdRow = {
-  candidate_kind: 'topic' | 'story'
+  candidate_kind: ClassifierCandidateKind
   default_lower_threshold: number
   default_upper_threshold: number
 }
 
 export type ClassifierDecisionConfiguration = {
-  candidateKind: 'topic' | 'story'
+  candidateKind: ClassifierCandidateKind
   thresholds: { lower: number; upper: number }
 }
 
-import type { ClassifierDecisionSnapshot } from './classifier-decision-snapshot.mts'
 type SnapshotRow = ClassifierDecisionSnapshot
 
 type CallRow = { id: string; shard_ordinal: number }
@@ -55,7 +56,12 @@ export async function reserveClassifierDecisionBatch(
   assertClassifierDecisionBatchIdentity(input)
   assertClassifierDecisionStoredCandidateIds(input.storedCandidateIds)
   const configuration = await loadClassifierDecisionPromptThresholds(query, input)
-  assertCandidateKindMatchesSubject(configuration.candidateKind, input.candidateKind, input.subject)
+  assertCandidateKindMatchesSubject(
+    configuration.candidateKind,
+    input.candidateKind,
+    input.subject,
+    input.scope,
+  )
   const inserted = await insertClassifierDecisionBatch(query, input)
   if (!inserted) return false
   await captureClassifierDecisionStoredCandidateSnapshots(query, {
@@ -125,7 +131,7 @@ export async function captureClassifierDecisionStoredCandidateSnapshots(
     batchId: string
     classifierId: string
     promptVersionId: string
-    candidateKind: 'topic' | 'story'
+    candidateKind: ClassifierCandidateKind
     storedCandidateIds: readonly string[]
   },
 ): Promise<ReadonlyMap<string, SnapshotRow>> {

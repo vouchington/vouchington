@@ -6,8 +6,15 @@ Source entrypoint: [backend/services/classifiers/README.md](../../../../../backe
 The agent-owned caller supplies a stable UUIDv7 batch identity. It may reserve that identity and its
 active stored-candidate threshold snapshots before provider execution; otherwise, after every shard
 has completed and candidate coverage has been validated, the service creates it while persisting.
-Completion locks a reserved empty batch, writes its calls and concrete topic or story result rows,
-then marks the batch complete in the same transaction.
+Completion locks a reserved empty batch, writes its calls and concrete topic, story or community
+prompt result rows, then marks the batch complete in the same transaction.
+
+A classifier has one candidate kind. A `community_prompt` classifier (C8) scores each community
+moderation prompt of one post's community: its results live in
+`community_prompt_classifier_results`, carry no stored candidate or threshold revision, and always
+use the prompt version's default thresholds (the table's trigger rejects any other value). Such a
+batch requires a post subject and a `community_ai` scope, and a composite foreign key rejects a
+prompt that belongs to a different community than the batch scope.
 
 Reusing a completed batch ID returns the existing decision only when its subject, scope, shards,
 candidate identity, probabilities, and native responses match exactly. A reserved empty batch is

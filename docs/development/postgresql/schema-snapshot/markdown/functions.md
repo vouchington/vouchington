@@ -1142,6 +1142,14 @@ CREATE OR REPLACE FUNCTION public.fn_require_classifier_result_batch_scope()
  LANGUAGE plpgsql
 ```
 
+## `fn_require_community_prompt_result_configuration`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_community_prompt_result_configuration()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_require_copyright_human_actor`
 
 ```sql
