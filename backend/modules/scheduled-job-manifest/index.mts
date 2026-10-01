@@ -1,4 +1,4 @@
-export type { ScheduledJobManifest, ScheduledJobQueue, ProjectedScheduledJob } from './types.mts'
+export type { ScheduledJobManifest, ProjectedScheduledJob } from './types.mts'
 
 export { defineScheduledJobManifest } from './manifest.mts'
 export { projectScheduledJobs } from './projection.mts'

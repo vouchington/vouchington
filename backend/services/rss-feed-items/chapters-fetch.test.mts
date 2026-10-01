@@ -2,8 +2,10 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { UnsafeUrlError } from 'ssrf-guard/node'
 import { TEST_SIDELOAD_SIGNING_KEY } from '@ts-shared/url-signing/test-key'
 import { getPodcastEpisodeChaptersById, type ChaptersSafeFetch } from './chapters.mts'
-import type { ReadResponseBodyOptions } from '@modules/utils/http'
+import type { readResponseBodyAsBuffer } from '@modules/utils/http'
 import type { ViewRssFeedItem } from './types.mts'
+
+type ReadResponseBodyOptions = Parameters<typeof readResponseBodyAsBuffer>[0]
 
 describe('getPodcastEpisodeChaptersById', () => {
   beforeAll(() => {

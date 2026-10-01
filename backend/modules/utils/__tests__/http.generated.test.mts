@@ -1,11 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { Response as UndiciResponse } from 'undici'
-import {
-  readResponseBody,
-  handleHttpErrors,
-  type ReadResponseBodyOptions,
-  type HandleHttpErrorsOptions,
-} from '../http.mts'
+import { readResponseBody, handleHttpErrors, type HandleHttpErrorsOptions } from '../http.mts'
+
+type ReadResponseBodyOptions = Parameters<typeof readResponseBody>[0]
 
 const createMockResponse = (body: string, chunkSize = body.length || 1): Response => {
   const encoder = new TextEncoder()
