@@ -79,7 +79,7 @@ describe('GET /api/v1/users/:idOrSlug/data-request/stream', () => {
 
   it('sets SSE headers and sends initial terminal status when request is already ready', async () => {
     const user = await createTestUser({ username: safeUsername('dr-stream-ready') })
-    await createDataRequest(user.id)
+    await createDataRequest(user.id, user.id)
 
     const request = createRequest()
     await request.authenticateAs(user)
@@ -93,7 +93,7 @@ describe('GET /api/v1/users/:idOrSlug/data-request/stream', () => {
 
   it('sends ready status with a download URL when completed export has an s3 key', async () => {
     const user = await createTestUser({ username: safeUsername('dr-stream-ready-url') })
-    const dr = await createDataRequest(user.id)
+    const dr = await createDataRequest(user.id, user.id)
     await markDataRequestProcessing(dr.id)
     await markDataRequestReady(
       dr.id,
@@ -121,7 +121,7 @@ describe('GET /api/v1/users/:idOrSlug/data-request/stream', () => {
 
   it('sends failed status as initial terminal value when request has already failed', async () => {
     const user = await createTestUser({ username: safeUsername('dr-stream-failed') })
-    const dr = await createDataRequest(user.id)
+    const dr = await createDataRequest(user.id, user.id)
     await markDataRequestProcessing(dr.id)
     await markDataRequestFailed(dr.id)
 
@@ -136,7 +136,7 @@ describe('GET /api/v1/users/:idOrSlug/data-request/stream', () => {
 
   it('subscribes before re-reading status to avoid race conditions', async () => {
     const user = await createTestUser({ username: safeUsername('dr-stream-race') })
-    await createDataRequest(user.id)
+    await createDataRequest(user.id, user.id)
 
     const request = createRequest()
     await request.authenticateAs(user)
@@ -151,7 +151,7 @@ describe('GET /api/v1/users/:idOrSlug/data-request/stream', () => {
 
   it('binds the stream to the request_id query parameter', async () => {
     const user = await createTestUser({ username: safeUsername('dr-stream-bound') })
-    const dr = await createDataRequest(user.id)
+    const dr = await createDataRequest(user.id, user.id)
 
     const request = createRequest()
     await request.authenticateAs(user)
@@ -165,7 +165,7 @@ describe('GET /api/v1/users/:idOrSlug/data-request/stream', () => {
 
   it('closes the subscription in finally block on success', async () => {
     const user = await createTestUser({ username: safeUsername('dr-stream-finally') })
-    await createDataRequest(user.id)
+    await createDataRequest(user.id, user.id)
 
     let capturedSub: ReturnType<typeof makeSubscription> | null = null
     subscribeSpy.mockImplementation(() => {

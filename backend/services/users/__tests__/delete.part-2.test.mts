@@ -137,7 +137,7 @@ describe('deleteUser — data export cleanup', () => {
 
   it('marks pending exports failed without deleting S3 objects', async () => {
     const user = await createTestUser()
-    const request = await accountDataRequests.createDataRequest(user.id)
+    const request = await accountDataRequests.createDataRequest(user.id, user.id)
 
     await deleteUserAndDrainForTest(user, user, cleanupDeps())
 
@@ -150,7 +150,7 @@ describe('deleteUser — data export cleanup', () => {
 
   it('clears ready export S3 keys after durable object deletion', async () => {
     const user = await createTestUser()
-    const request = await accountDataRequests.createDataRequest(user.id)
+    const request = await accountDataRequests.createDataRequest(user.id, user.id)
     expect(await accountDataRequests.markDataRequestProcessing(request.id)).toBe(true)
     const s3Key = `active-export-${Math.random().toString(36).slice(2, 10)}.zip`
     expect(
@@ -172,7 +172,7 @@ describe('deleteUser — data export cleanup', () => {
 
   it('deletes S3 objects of ready exports whose deadline has already passed', async () => {
     const user = await createTestUser()
-    const request = await accountDataRequests.createDataRequest(user.id)
+    const request = await accountDataRequests.createDataRequest(user.id, user.id)
     expect(await accountDataRequests.markDataRequestProcessing(request.id)).toBe(true)
     const s3Key = `expired-export-${Math.random().toString(36).slice(2, 10)}.zip`
     expect(
@@ -195,7 +195,7 @@ describe('deleteUser — data export cleanup', () => {
 
   it('deletes S3 objects of currently-active ready exports', async () => {
     const user = await createTestUser()
-    const request = await accountDataRequests.createDataRequest(user.id)
+    const request = await accountDataRequests.createDataRequest(user.id, user.id)
     expect(await accountDataRequests.markDataRequestProcessing(request.id)).toBe(true)
     const s3Key = `active-export-${Math.random().toString(36).slice(2, 10)}.zip`
     expect(

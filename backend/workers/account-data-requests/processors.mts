@@ -16,6 +16,7 @@ import {
   deleteExportsFromS3,
   getExportDownloadUrl,
   claimRecoverableDataRequests,
+  wasDataRequestMadeBySubject,
   SEVEN_DAYS_SECONDS,
 } from '@services/account-data-requests'
 import { enqueueBulkExportRequests } from '@queues/account-data-requests/enqueues'
@@ -38,6 +39,7 @@ type ExportRequestDependencies = {
   markDataRequestReady: typeof markDataRequestReady
   publishTerminalStatus: typeof publishTerminalStatus
   uploadExportToS3: typeof uploadExportToS3
+  wasDataRequestMadeBySubject: typeof wasDataRequestMadeBySubject
   writeExportFiles: typeof writeExportFiles
   zipDir: typeof zipDir
 }
@@ -71,6 +73,7 @@ export async function processExportRequest(
     markDataRequestReady,
     publishTerminalStatus,
     uploadExportToS3,
+    wasDataRequestMadeBySubject,
     writeExportFiles,
     zipDir,
     ...dependencies,
@@ -125,9 +128,12 @@ export async function processExportRequest(
     // regardless of how long the email notification takes.
     await deps.publishTerminalStatus(requestId, 'ready')
 
-    // Best-effort: send email notification; do not fail the export if this errors
+    // Best-effort: send email notification; do not fail the export if this errors. Only the
+    // subject's own export is announced: an administrator-run export must stay invisible to them.
     try {
-      const user = await deps.getPrivateUserByAny(userId)
+      const user = (await deps.wasDataRequestMadeBySubject(requestId))
+        ? await deps.getPrivateUserByAny(userId)
+        : null
       if (user) {
         const downloadUrl = await deps.getExportDownloadUrl(s3Key, SEVEN_DAYS_SECONDS)
         await deps.enqueueSendDataExportReadyEmail(

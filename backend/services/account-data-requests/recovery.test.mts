@@ -16,7 +16,7 @@ import {
 describe('account data request recovery', () => {
   it('reuses the token for an unstarted attempt and rotates stale attempts', async () => {
     const user = await createTestUser()
-    const request = await createDataRequest(user.id)
+    const request = await createDataRequest(user.id, user.id)
     await makeUserDataRequestRecoverableForTest(request.id, 'unstarted')
     const unstarted = (await claimRecoverableDataRequests()).find(
       candidate => candidate.requestId === request.id,
@@ -32,7 +32,7 @@ describe('account data request recovery', () => {
 
   it('fences stale completion and failure writes by processing attempt id', async () => {
     const user = await createTestUser()
-    const request = await createDataRequest(user.id)
+    const request = await createDataRequest(user.id, user.id)
     const staleAttemptId = request.id
     expect(await markDataRequestProcessing(request.id, staleAttemptId)).toBe(false)
     expect(await markDataRequestProcessing(request.id, request.processing_attempt_id)).toBe(true)
@@ -51,7 +51,7 @@ describe('account data request recovery', () => {
 
   it('does not recover an export after its owner is deleted', async () => {
     const user = await createTestUser()
-    const request = await createDataRequest(user.id)
+    const request = await createDataRequest(user.id, user.id)
     await makeUserDataRequestRecoverableForTest(request.id, 'unstarted')
     try {
       await softDeleteUser(user.id)

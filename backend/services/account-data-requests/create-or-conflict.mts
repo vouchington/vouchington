@@ -24,21 +24,22 @@ const defaultDeps: CreateDataRequestOrConflictDeps = {
 
 export async function createDataRequestOrConflict(
   userId: string,
+  requestedById: string,
   deps: CreateDataRequestOrConflictDeps = defaultDeps,
 ): Promise<CreateDataRequestOrConflictResult> {
-  const existing = await deps.getLatestDataRequest(userId)
+  const existing = await deps.getLatestDataRequest(userId, requestedById)
   if (existing && isActiveDataRequest(existing)) {
     return { type: 'conflict', existing }
   }
 
   try {
-    const request = await deps.createDataRequest(userId)
+    const request = await deps.createDataRequest(userId, requestedById)
     return { type: 'created', request }
   } catch (error) {
     if (isActiveRequestUniqueViolation(error)) {
       // Intentional extra read after the write race so API callers can return the
       // current active request metadata in a 409 response.
-      const racedExisting = await deps.getLatestDataRequest(userId)
+      const racedExisting = await deps.getLatestDataRequest(userId, requestedById)
       return {
         type: 'conflict',
         existing: racedExisting && isActiveDataRequest(racedExisting) ? racedExisting : null,
@@ -52,6 +53,7 @@ function isActiveRequestUniqueViolation(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false
   const pgError = error as PostgresError
   return (
-    pgError.code === '23505' && pgError.constraint === 'idx_user_data_requests__active_per_user'
+    pgError.code === '23505' &&
+    pgError.constraint === 'idx_user_data_requests__active_per_requester'
   )
 }

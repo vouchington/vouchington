@@ -24,6 +24,7 @@ ON CONFLICT (id) DO UPDATE SET
 CREATE TABLE IF NOT EXISTS user_data_requests (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID REFERENCES users ON DELETE SET NULL,
+  requested_by_id UUID REFERENCES users ON DELETE SET NULL,
   queued_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   processing_attempt_id UUID NOT NULL DEFAULT uuidv7(),
   dispatched_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -55,19 +56,25 @@ BEFORE UPDATE ON user_data_requests
 FOR EACH ROW
 EXECUTE FUNCTION fn_guard_terminal_lifecycle('completed_at', 'failed_at');
 
--- Lookup by user to find latest request
-CREATE INDEX IF NOT EXISTS idx_user_data_requests__user_id
-ON user_data_requests (user_id, id DESC);
+-- Lookup by subject and requester to find the latest request a caller is allowed to see
+CREATE INDEX IF NOT EXISTS idx_user_data_requests__user_id_requested_by_id
+ON user_data_requests (user_id, requested_by_id, id DESC);
+
+CREATE INDEX IF NOT EXISTS idx_user_data_requests__requested_by_id
+ON user_data_requests (requested_by_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_data_requests__processing_attempt_id
 ON user_data_requests (processing_attempt_id);
 
--- Enforce at most one active (pending or processing) request per user
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_data_requests__active_per_user
-ON user_data_requests (user_id) WHERE completed_at IS NULL AND failed_at IS NULL;
+-- Enforce at most one active (pending or processing) request per subject and requester. The
+-- requester is part of the key so an administrator-run export never blocks, or is revealed by a
+-- conflict on, the account holder's own request.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_data_requests__active_per_requester
+ON user_data_requests (user_id, requested_by_id) WHERE completed_at IS NULL AND failed_at IS NULL;
 
 COMMENT ON TABLE user_data_requests IS 'Tracks user data export requests with lifecycle from queued through download or expiration. Status is derived from timestamp columns.';
-COMMENT ON COLUMN user_data_requests.user_id IS 'The user who requested the data export.';
+COMMENT ON COLUMN user_data_requests.user_id IS 'The subject: the user whose data is exported.';
+COMMENT ON COLUMN user_data_requests.requested_by_id IS 'The user who requested the export: the subject, or an administrator acting on their behalf. Only the requester may read the request; NULL (requester deleted) is visible to no one.';
 COMMENT ON COLUMN user_data_requests.queued_at IS 'When the request was queued; always set on insert.';
 COMMENT ON COLUMN user_data_requests.processing_attempt_id IS 'Durable token fencing one export generation attempt from stale workers.';
 COMMENT ON COLUMN user_data_requests.dispatched_at IS 'When the current processing attempt was most recently enqueued.';

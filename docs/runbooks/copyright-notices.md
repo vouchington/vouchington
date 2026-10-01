@@ -424,10 +424,12 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
    If counsel directs preservation, an administrator requests an
    [account data export](../requirements/users/ACCOUNT-DATA-EXPORT.md) for the account and saves
    the download to the matter file before its link expires. The export omits session IP
-   addresses, so capture any that counsel needs from `user_sessions`. The account holder can see
-   this export: their data page shows the latest request, whoever made it, along with its status
-   and download link, and blocks the account holder's own request while it runs. Counsel decides
-   whether to request the export together with the user-notice decision in step 4.
+   addresses, so capture any that counsel needs from `user_sessions`. The account holder cannot see
+   this export: it is recorded against the administrator who requested it, so their data page, its
+   status stream and its download link do not return it, no ready email is sent, and it does not
+   block their own export request. Only that administrator can read its status and download link,
+   through the data-request route on the account. Counsel still decides separately, in step 4,
+   whether to give the user notice of the legal process.
 
 6. **Records that may exist.** Produce only what counsel approves.
    - Account: the export categories (username, profile, creation date, email addresses, phone

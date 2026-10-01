@@ -10,7 +10,7 @@ This service handles the full lifecycle of user data export requests: creating a
 
 ## Key Files
 
-- `create.mts` — Creates a `user_data_requests` record with `pending` status
+- `create.mts` — Creates a `user_data_requests` record with `pending` status, recording the subject (`user_id`) and the requester (`requested_by_id`)
 - `create-or-conflict.mts` — Idempotent request creation (prevents duplicate in-flight requests)
 - `export.mts` — Orchestrates CSV generation: streams each data category, writes CSV files, merges multi-source CSVs, creates ZIP archive
 - `stream.mts` — PostgreSQL cursor-based streaming for profile, posts, votes, emails, phones, passkeys
@@ -24,7 +24,7 @@ This service handles the full lifecycle of user data export requests: creating a
 - `stream-copyright-cases.mts` — Streams accepted copyright cases as the in-app participant projection shows them to a member
 - `stream-copyright-incidents.mts` — Streams repeat-infringer incidents and decided reviews about the account
 - `s3.mts` — S3 operations: upload ZIP, generate presigned download URL (1-hour default), and delete expired exports in serial S3 batches of at most 1,000 objects
-- `get.mts` — Query request status and metadata
+- `get.mts` — Query request status and metadata, scoped to the requester so an admin-run export never reaches the subject; `wasDataRequestMadeBySubject` gates the ready email
 - `update.mts` — Status transitions (pending → processing → ready/failed/expired)
 - `types.mts` — `UserDataRequest` type with status lifecycle
 
