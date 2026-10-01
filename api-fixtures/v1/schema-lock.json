@@ -1038,6 +1038,13 @@
       "fixtureIds": ["native.chat.unauthorized"],
       "hash": "6993c8ec7b82251702f5afa7a59e011559585b4f9ec85967d770be7707aa1ac2"
     },
+    "POST:/api/v1/copyright-email-intakes/:id/rejections": {
+      "fixtureIds": [
+        "web.copyright.email-intake-rejection.no-reply",
+        "web.copyright.email-intake-rejection.reply-queued"
+      ],
+      "hash": "d81af763a6b5292cd93713b5a050477f1ed3768407c1ce23a21126f1dcd4b59c"
+    },
     "POST:/api/v1/copyright-notices/:id/guest-capabilities": {
       "fixtureIds": ["web.copyright.guest-capability.issued"],
       "hash": "d020364fa55f17a7d92aa47b6df59fa93651e78fcd65be6691cb9593e0fb0387"
@@ -2691,6 +2698,14 @@
     "web.copyright.email-intake-queue.default": {
       "fixtureIds": ["web.copyright.email-intake-queue.default"],
       "hash": "8a1b695335a766e2a4b3a708026f9bb34cad58eb05e3fc788bb90cfd8cb2513b"
+    },
+    "web.copyright.email-intake-rejection.no-reply": {
+      "fixtureIds": ["web.copyright.email-intake-rejection.no-reply"],
+      "hash": "b1d883f88b6afb685bde0e61dde5a6d4f86437e8d587d34d77f59216e18d1386"
+    },
+    "web.copyright.email-intake-rejection.reply-queued": {
+      "fixtureIds": ["web.copyright.email-intake-rejection.reply-queued"],
+      "hash": "b1d883f88b6afb685bde0e61dde5a6d4f86437e8d587d34d77f59216e18d1386"
     },
     "web.copyright.guest-capabilities.listed": {
       "fixtureIds": ["web.copyright.guest-capabilities.listed"],

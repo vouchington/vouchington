@@ -71,7 +71,7 @@ MIME object. A reviewer's decision refreshes the queue from its first page.
 
 `POST /api/v1/copyright-email-intakes/:id/rejections` rejects an email or, with
 `response_kind: needs_information`, asks the sender for more information. It returns `200` with
-`{ reply_queued: boolean }`, never a bare `204`, so staff learn whether a reply was queued. With a
+`{ reply_queued: boolean }`, so staff learn whether a reply was queued. With a
 succeeded parse the reply goes to the parsed sender. With no parse row or a failed parse there is
 no sender, so the optional `reply_email` (a valid address of at most 254 characters, or null)
 names the recipient. Without it no reply is queued and `reply_queued` is `false`. On a new

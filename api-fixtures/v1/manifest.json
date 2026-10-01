@@ -66310,6 +66310,31 @@
       "statusCodes": [401],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/copyright-email-intakes/:id/rejections": {
+      "bodyKind": "content",
+      "hash": "d81af763a6b5292cd93713b5a050477f1ed3768407c1ce23a21126f1dcd4b59c",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/copyright-email-intakes/:id/rejections",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "reply_queued": {
+              "required": true,
+              "schema": {
+                "type": "boolean"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/moderator-routes.mts",
+      "statusKnowledge": "default"
+    },
     "POST:/api/v1/copyright-notices/:id/guest-capabilities": {
       "bodyKind": "content",
       "hash": "d020364fa55f17a7d92aa47b6df59fa93651e78fcd65be6691cb9593e0fb0387",
@@ -83701,6 +83726,72 @@
         "caseFile": "backend/test-helpers/api-fixtures/web-copyright-guest-cases.mts"
       },
       "status": 201
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/copyright-email-intakes/:id/rejections",
+      "bodyFile": "responses/web.copyright.email-intake-rejection.reply-queued.json",
+      "consumers": ["web"],
+      "id": "web.copyright.email-intake-rejection.reply-queued",
+      "method": "POST",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/moderator-routes.mts",
+        "web/lib/api/client/copyright-email-intakes.ts"
+      ],
+      "path": "/api/v1/copyright-email-intakes/00000000-0000-7000-8000-000000000840/rejections",
+      "requestBody": {
+        "manual_fallback_reason": "No agent output.",
+        "rationale": "The message is not a copyright notice.",
+        "recommendation_id": null,
+        "reply_email": "reporter@example.test"
+      },
+      "responseSchema": {
+        "hash": "b1d883f88b6afb685bde0e61dde5a6d4f86437e8d587d34d77f59216e18d1386",
+        "key": "web.copyright.email-intake-rejection.reply-queued"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000840"
+        },
+        "routeTemplate": "/api/v1/copyright-email-intakes/:id/rejections"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-email-intake-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/copyright-email-intakes/:id/rejections",
+      "bodyFile": "responses/web.copyright.email-intake-rejection.no-reply.json",
+      "consumers": ["web"],
+      "id": "web.copyright.email-intake-rejection.no-reply",
+      "method": "POST",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/moderator-routes.mts",
+        "web/lib/api/client/copyright-email-intakes.ts"
+      ],
+      "path": "/api/v1/copyright-email-intakes/00000000-0000-7000-8000-000000000840/rejections",
+      "requestBody": {
+        "manual_fallback_reason": "No agent output.",
+        "rationale": "The message is not a copyright notice.",
+        "recommendation_id": null,
+        "reply_email": null
+      },
+      "responseSchema": {
+        "hash": "b1d883f88b6afb685bde0e61dde5a6d4f86437e8d587d34d77f59216e18d1386",
+        "key": "web.copyright.email-intake-rejection.no-reply"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000840"
+        },
+        "routeTemplate": "/api/v1/copyright-email-intakes/:id/rejections"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-email-intake-cases.mts"
+      },
+      "status": 200
     },
     {
       "auth": "fixture-admin",

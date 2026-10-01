@@ -5,6 +5,7 @@ import { nativeDomainUrlApiFixtureCases } from './native-domain-url-cases.mts'
 import { nativePaidCrawlApiFixtureCases } from './native-paid-crawl-cases.mts'
 import { nativeCopyrightApiFixtureCases } from './native-copyright-cases.mts'
 import { webCopyrightGuestApiFixtureCases } from './web-copyright-guest-cases.mts'
+import { webCopyrightEmailIntakeApiFixtureCases } from './web-copyright-email-intake-cases.mts'
 import { nativeHouseholdApiFixtureCases } from './native-household-cases.mts'
 import { nativeCardApiFixtureCases } from './native-card-cases.mts'
 import { nativePointValuationApiFixtureCases } from './native-point-valuation-cases.mts'
@@ -164,6 +165,10 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/web-copyright-guest-cases.mts',
     webCopyrightGuestApiFixtureCases,
+  ),
+  ...fromCaseFile(
+    'backend/test-helpers/api-fixtures/web-copyright-email-intake-cases.mts',
+    webCopyrightEmailIntakeApiFixtureCases,
   ),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/engineering-ops-cases.mts',
