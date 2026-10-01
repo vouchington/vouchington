@@ -17,6 +17,16 @@ export function assertSemanticPostCandidatePlan(result: ExplainResult): void {
   ) {
     throw new Error(`${result.name} must materialize a bounded semantic candidate window`)
   }
+  const candidateNodes = new Set(collectPlanNodes(candidate))
+  const unboundedOuterPostScan = nodes.some(
+    node =>
+      !candidateNodes.has(node) &&
+      /^posts(?:_|$)/.test(String(node['Relation Name'])) &&
+      ['Seq Scan', 'Bitmap Heap Scan'].includes(String(node['Node Type'])),
+  )
+  if (unboundedOuterPostScan) {
+    throw new Error(`${result.name} must look up outer posts from the bounded candidates`)
+  }
   // Runtime forces custom plans; generic plans remain measured to expose prepared-plan regressions.
   if (result.plan_cache_mode === 'force_generic_plan') return
   const orderedVectorScan = collectPlanNodes(candidate).some(

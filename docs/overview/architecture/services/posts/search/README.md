@@ -59,6 +59,9 @@ ordering and finite search limits; its settings and a forced custom plan are sco
 read transaction and do not leak into pooled connections.
 The parameter-only embedding CTE is not materialized, so the custom planner sees the same
 constant embedding in eligibility filters and distance ordering even with repeated references.
+The parameter-only text query is also inlined so hybrid planning sees its real selectivity.
+After candidate selection, ranking and cursor filters read posts by candidate ID through bounded
+lateral lookups; the outer query cannot rescan the corpus to recompute embedding distances.
 
 Approximate recall and a capped result window are intentional ([#1549](https://github.com/vouchington/vouchington/issues/1549)).
 The candidate cap is defined by `SEMANTIC_POST_CANDIDATE_LIMIT` in the query builder. Ranking

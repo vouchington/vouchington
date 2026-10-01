@@ -15,16 +15,21 @@ describe('semantic candidate window', () => {
       limit: 26,
     })
     const windowStart = query.sql.indexOf('semantic_post_candidates AS MATERIALIZED')
-    const outerStart = query.sql.indexOf('JOIN semantic_post_candidates')
+    const outerStart = query.sql.indexOf('FROM semantic_post_candidates')
     const candidateSql = query.sql.slice(windowStart, outerStart)
     expect(candidateSql).toContain('posts.search_vector @@ text_search_tsquery.tsquery')
     expect(candidateSql).toContain('deleted_at IS NULL')
     expect(candidateSql).toContain('ORDER BY posts.bedrock_nova_multimodal_v1_embedding <=>')
     expect(candidateSql).not.toContain(', posts.id DESC')
     expect(query.sql).toContain('semantic_search_embedding AS NOT MATERIALIZED')
+    expect(query.sql).toContain('text_search_tsquery AS NOT MATERIALIZED')
     expect(candidateSql).toContain('semantic_search_embedding.embedding\n    LIMIT')
     expect(candidateSql).not.toContain('posts.id) <')
     expect(query.sql.slice(outerStart)).toContain('posts.id) <')
+    expect(query.sql.slice(outerStart)).toContain('CROSS JOIN LATERAL')
+    expect(query.sql.slice(outerStart)).toContain(
+      'semantic_selected_post.id = semantic_post_candidates.id',
+    )
     expect(query.values).toContain(SEMANTIC_POST_CANDIDATE_LIMIT)
     expect(query.values).toContain(26)
   })
@@ -36,7 +41,7 @@ describe('semantic candidate window', () => {
       omitLimit: true,
       omitOrderBy: true,
     })
-    expect(query.sql.match(/LIMIT/g)).toHaveLength(1)
+    expect(query.sql.match(/LIMIT/g)).toHaveLength(2)
     expect(query.values).toContain(SEMANTIC_POST_CANDIDATE_LIMIT)
   })
 
