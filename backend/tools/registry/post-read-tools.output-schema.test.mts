@@ -16,7 +16,7 @@ type OpenApi = {
 }
 
 const openApi = JSON.parse(
-  readFileSync(new URL('../../api-fixtures/v1/openapi.json', import.meta.url), 'utf8'),
+  readFileSync(new URL('../../../api-fixtures/v1/openapi.json', import.meta.url), 'utf8'),
 ) as OpenApi
 
 // The read tools return a leaner shape than their REST twins, so each owns its result schema. Every

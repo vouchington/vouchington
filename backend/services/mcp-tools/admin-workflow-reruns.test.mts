@@ -19,7 +19,7 @@ const invoke = (user: PrivateUser, name: string, id: string) =>
     name,
     { id },
     { ...user, membership_plan: null },
-    ['moderation:ai-rerun'],
+    ['moderation:read', 'moderation:ai-rerun'],
     ADMIN_MCP_SERVER_CONFIG,
   )
 

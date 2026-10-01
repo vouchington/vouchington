@@ -21,7 +21,7 @@ const invoke = (user: PrivateUser, name: string, args: unknown) =>
     name,
     args,
     { ...user, membership_plan: null },
-    ['moderation:write', 'moderation:approve'],
+    ['moderation:read', 'moderation:write', 'moderation:approve'],
     ADMIN_MCP_SERVER_CONFIG,
   )
 function error(result: Awaited<ReturnType<typeof invoke>>, status: number) {

@@ -1,6 +1,6 @@
 /**
  * Tool calls on POST /api/v1/admin/mcp: which admin tokens may invoke which tools, and the audit
- * row each call leaves. No production tool is on the admin_mcp surface yet, so fixtures stand in.
+ * row each call leaves. Dedicated fixture tools isolate scope filtering and audit behavior.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -103,7 +103,10 @@ describe('POST /api/v1/admin/mcp tool calls', () => {
     const names = async (token: string) => {
       const response = await postAdminMcp(token, { jsonrpc: '2.0', id: 1, method: 'tools/list' })
       const tools = (response.body as { result: { tools: Array<{ name: string }> } }).result.tools
-      return tools.map(tool => tool.name).sort()
+      return tools
+        .map(tool => tool.name)
+        .filter(name => name.startsWith('admin_audit_fixture_'))
+        .sort()
     }
 
     expect(await names(readOnly.token)).toEqual([FAIL_TOOL, READ_TOOL])

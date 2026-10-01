@@ -18650,6 +18650,22 @@
         },
         "type": "object"
       },
+      "StaffClearanceDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "private_note": {
+            "type": "string"
+          },
+          "reason_code": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ClearanceStatus"
+          }
+        },
+        "required": ["reason_code", "status"],
+        "type": "object"
+      },
       "Story": {
         "additionalProperties": false,
         "properties": {
@@ -27606,7 +27622,580 @@
                   "additionalProperties": false,
                   "properties": {
                     "appeal": {
-                      "$ref": "#/components/schemas/ModerationAppeal"
+                      "additionalProperties": false,
+                      "properties": {
+                        "ai_drafted_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "ai_internal_response": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "ai_public_response": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "appeal_reason": {
+                          "type": "string"
+                        },
+                        "appellant_id": {
+                          "type": "string"
+                        },
+                        "approved_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "approved_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "case_id": {
+                          "type": "string"
+                        },
+                        "community_ban_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "community_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "drafted_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "edited_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "edited_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "internal_notes": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "is_overdue": {
+                          "type": "boolean"
+                        },
+                        "latest_lifecycle_change_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "model": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "post_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "post_removal_kind": {
+                          "anyOf": [
+                            {
+                              "const": "community"
+                            },
+                            {
+                              "const": "platform"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "public_response": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "recommended_action": {
+                          "anyOf": [
+                            {
+                              "const": "accept"
+                            },
+                            {
+                              "const": "deny"
+                            },
+                            {
+                              "const": "reduce"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "resolution_action": {
+                          "anyOf": [
+                            {
+                              "const": "accept"
+                            },
+                            {
+                              "const": "deny"
+                            },
+                            {
+                              "const": "reduce"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "resolved_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "resolved_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "sent_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "staff_context": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "appellant": {
+                              "$ref": "#/components/schemas/ModerationActorSummary"
+                            },
+                            "original_decision": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "actor": {
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/ModerationActorSummary"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "internal_reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": ["actor", "internal_reason"],
+                              "type": "object"
+                            }
+                          },
+                          "required": ["appellant", "original_decision"],
+                          "type": "object"
+                        },
+                        "status": {
+                          "enum": ["dismissed", "pending", "resolved"],
+                          "type": "string"
+                        },
+                        "target_context": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["id", "name"],
+                                  "type": "object"
+                                },
+                                "created_at": {
+                                  "type": "string"
+                                },
+                                "expires_at": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "type": {
+                                  "const": "community_ban"
+                                }
+                              },
+                              "required": [
+                                "community",
+                                "created_at",
+                                "expires_at",
+                                "id",
+                                "reason",
+                                "type"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["id", "name"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "created_at": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "public_message": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "type": {
+                                  "const": "warning"
+                                }
+                              },
+                              "required": [
+                                "community",
+                                "created_at",
+                                "id",
+                                "public_message",
+                                "type"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["id", "name"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "decided_at": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "declared_language": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "enum": ["community", "platform"],
+                                  "type": "string"
+                                },
+                                "lingua_rs_detected_language": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "public_reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "type": {
+                                  "const": "post_removal"
+                                }
+                              },
+                              "required": [
+                                "community",
+                                "decided_at",
+                                "declared_language",
+                                "id",
+                                "kind",
+                                "lingua_rs_detected_language",
+                                "public_reason",
+                                "title",
+                                "type"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "created_at": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "type": {
+                                  "const": "suspension"
+                                }
+                              },
+                              "required": ["created_at", "id", "reason", "type"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        },
+                        "user_suspension_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "user_warning_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "ai_drafted_at",
+                        "ai_internal_response",
+                        "ai_public_response",
+                        "appeal_reason",
+                        "appellant_id",
+                        "approved_at",
+                        "approved_by_id",
+                        "case_id",
+                        "community_ban_id",
+                        "community_id",
+                        "created_at",
+                        "drafted_at",
+                        "edited_at",
+                        "edited_by_id",
+                        "id",
+                        "internal_notes",
+                        "latest_lifecycle_change_id",
+                        "model",
+                        "post_id",
+                        "post_removal_kind",
+                        "public_response",
+                        "recommended_action",
+                        "resolution_action",
+                        "resolved_at",
+                        "resolved_by_id",
+                        "sent_at",
+                        "status",
+                        "updated_at",
+                        "user_suspension_id",
+                        "user_warning_id"
+                      ],
+                      "type": "object"
                     }
                   },
                   "required": ["appeal"],
@@ -27643,7 +28232,580 @@
                   "additionalProperties": false,
                   "properties": {
                     "appeal": {
-                      "$ref": "#/components/schemas/ModerationAppeal"
+                      "additionalProperties": false,
+                      "properties": {
+                        "ai_drafted_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "ai_internal_response": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "ai_public_response": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "appeal_reason": {
+                          "type": "string"
+                        },
+                        "appellant_id": {
+                          "type": "string"
+                        },
+                        "approved_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "approved_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "case_id": {
+                          "type": "string"
+                        },
+                        "community_ban_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "community_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "drafted_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "edited_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "edited_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "internal_notes": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "is_overdue": {
+                          "type": "boolean"
+                        },
+                        "latest_lifecycle_change_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "model": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "post_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "post_removal_kind": {
+                          "anyOf": [
+                            {
+                              "const": "community"
+                            },
+                            {
+                              "const": "platform"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "public_response": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "recommended_action": {
+                          "anyOf": [
+                            {
+                              "const": "accept"
+                            },
+                            {
+                              "const": "deny"
+                            },
+                            {
+                              "const": "reduce"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "resolution_action": {
+                          "anyOf": [
+                            {
+                              "const": "accept"
+                            },
+                            {
+                              "const": "deny"
+                            },
+                            {
+                              "const": "reduce"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "resolved_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "resolved_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "sent_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "staff_context": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "appellant": {
+                              "$ref": "#/components/schemas/ModerationActorSummary"
+                            },
+                            "original_decision": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "actor": {
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/ModerationActorSummary"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "internal_reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": ["actor", "internal_reason"],
+                              "type": "object"
+                            }
+                          },
+                          "required": ["appellant", "original_decision"],
+                          "type": "object"
+                        },
+                        "status": {
+                          "enum": ["dismissed", "pending", "resolved"],
+                          "type": "string"
+                        },
+                        "target_context": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["id", "name"],
+                                  "type": "object"
+                                },
+                                "created_at": {
+                                  "type": "string"
+                                },
+                                "expires_at": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "type": {
+                                  "const": "community_ban"
+                                }
+                              },
+                              "required": [
+                                "community",
+                                "created_at",
+                                "expires_at",
+                                "id",
+                                "reason",
+                                "type"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["id", "name"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "created_at": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "public_message": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "type": {
+                                  "const": "warning"
+                                }
+                              },
+                              "required": [
+                                "community",
+                                "created_at",
+                                "id",
+                                "public_message",
+                                "type"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["id", "name"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "decided_at": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "declared_language": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "enum": ["community", "platform"],
+                                  "type": "string"
+                                },
+                                "lingua_rs_detected_language": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "public_reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "type": {
+                                  "const": "post_removal"
+                                }
+                              },
+                              "required": [
+                                "community",
+                                "decided_at",
+                                "declared_language",
+                                "id",
+                                "kind",
+                                "lingua_rs_detected_language",
+                                "public_reason",
+                                "title",
+                                "type"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "created_at": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "type": {
+                                  "const": "suspension"
+                                }
+                              },
+                              "required": ["created_at", "id", "reason", "type"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        },
+                        "user_suspension_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "user_warning_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "ai_drafted_at",
+                        "ai_internal_response",
+                        "ai_public_response",
+                        "appeal_reason",
+                        "appellant_id",
+                        "approved_at",
+                        "approved_by_id",
+                        "case_id",
+                        "community_ban_id",
+                        "community_id",
+                        "created_at",
+                        "drafted_at",
+                        "edited_at",
+                        "edited_by_id",
+                        "id",
+                        "internal_notes",
+                        "latest_lifecycle_change_id",
+                        "model",
+                        "post_id",
+                        "post_removal_kind",
+                        "public_response",
+                        "recommended_action",
+                        "resolution_action",
+                        "resolved_at",
+                        "resolved_by_id",
+                        "sent_at",
+                        "status",
+                        "updated_at",
+                        "user_suspension_id",
+                        "user_warning_id"
+                      ],
+                      "type": "object"
                     }
                   },
                   "required": ["appeal"],
@@ -27680,7 +28842,580 @@
                   "additionalProperties": false,
                   "properties": {
                     "appeal": {
-                      "$ref": "#/components/schemas/ModerationAppeal"
+                      "additionalProperties": false,
+                      "properties": {
+                        "ai_drafted_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "ai_internal_response": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "ai_public_response": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "appeal_reason": {
+                          "type": "string"
+                        },
+                        "appellant_id": {
+                          "type": "string"
+                        },
+                        "approved_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "approved_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "case_id": {
+                          "type": "string"
+                        },
+                        "community_ban_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "community_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "drafted_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "edited_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "edited_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "internal_notes": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "is_overdue": {
+                          "type": "boolean"
+                        },
+                        "latest_lifecycle_change_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "model": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "post_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "post_removal_kind": {
+                          "anyOf": [
+                            {
+                              "const": "community"
+                            },
+                            {
+                              "const": "platform"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "public_response": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "recommended_action": {
+                          "anyOf": [
+                            {
+                              "const": "accept"
+                            },
+                            {
+                              "const": "deny"
+                            },
+                            {
+                              "const": "reduce"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "resolution_action": {
+                          "anyOf": [
+                            {
+                              "const": "accept"
+                            },
+                            {
+                              "const": "deny"
+                            },
+                            {
+                              "const": "reduce"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "resolved_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "resolved_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "sent_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "staff_context": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "appellant": {
+                              "$ref": "#/components/schemas/ModerationActorSummary"
+                            },
+                            "original_decision": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "actor": {
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/ModerationActorSummary"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "internal_reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": ["actor", "internal_reason"],
+                              "type": "object"
+                            }
+                          },
+                          "required": ["appellant", "original_decision"],
+                          "type": "object"
+                        },
+                        "status": {
+                          "enum": ["dismissed", "pending", "resolved"],
+                          "type": "string"
+                        },
+                        "target_context": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["id", "name"],
+                                  "type": "object"
+                                },
+                                "created_at": {
+                                  "type": "string"
+                                },
+                                "expires_at": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "type": {
+                                  "const": "community_ban"
+                                }
+                              },
+                              "required": [
+                                "community",
+                                "created_at",
+                                "expires_at",
+                                "id",
+                                "reason",
+                                "type"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["id", "name"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "created_at": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "public_message": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "type": {
+                                  "const": "warning"
+                                }
+                              },
+                              "required": [
+                                "community",
+                                "created_at",
+                                "id",
+                                "public_message",
+                                "type"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["id", "name"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "decided_at": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "declared_language": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "enum": ["community", "platform"],
+                                  "type": "string"
+                                },
+                                "lingua_rs_detected_language": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "public_reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "type": {
+                                  "const": "post_removal"
+                                }
+                              },
+                              "required": [
+                                "community",
+                                "decided_at",
+                                "declared_language",
+                                "id",
+                                "kind",
+                                "lingua_rs_detected_language",
+                                "public_reason",
+                                "title",
+                                "type"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "created_at": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "type": {
+                                  "const": "suspension"
+                                }
+                              },
+                              "required": ["created_at", "id", "reason", "type"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        },
+                        "user_suspension_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "user_warning_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "ai_drafted_at",
+                        "ai_internal_response",
+                        "ai_public_response",
+                        "appeal_reason",
+                        "appellant_id",
+                        "approved_at",
+                        "approved_by_id",
+                        "case_id",
+                        "community_ban_id",
+                        "community_id",
+                        "created_at",
+                        "drafted_at",
+                        "edited_at",
+                        "edited_by_id",
+                        "id",
+                        "internal_notes",
+                        "latest_lifecycle_change_id",
+                        "model",
+                        "post_id",
+                        "post_removal_kind",
+                        "public_response",
+                        "recommended_action",
+                        "resolution_action",
+                        "resolved_at",
+                        "resolved_by_id",
+                        "sent_at",
+                        "status",
+                        "updated_at",
+                        "user_suspension_id",
+                        "user_warning_id"
+                      ],
+                      "type": "object"
                     }
                   },
                   "required": ["appeal"],
@@ -27726,7 +29461,580 @@
                   "additionalProperties": false,
                   "properties": {
                     "appeal": {
-                      "$ref": "#/components/schemas/ModerationAppeal"
+                      "additionalProperties": false,
+                      "properties": {
+                        "ai_drafted_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "ai_internal_response": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "ai_public_response": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "appeal_reason": {
+                          "type": "string"
+                        },
+                        "appellant_id": {
+                          "type": "string"
+                        },
+                        "approved_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "approved_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "case_id": {
+                          "type": "string"
+                        },
+                        "community_ban_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "community_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "drafted_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "edited_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "edited_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "internal_notes": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "is_overdue": {
+                          "type": "boolean"
+                        },
+                        "latest_lifecycle_change_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "model": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "post_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "post_removal_kind": {
+                          "anyOf": [
+                            {
+                              "const": "community"
+                            },
+                            {
+                              "const": "platform"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "public_response": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "recommended_action": {
+                          "anyOf": [
+                            {
+                              "const": "accept"
+                            },
+                            {
+                              "const": "deny"
+                            },
+                            {
+                              "const": "reduce"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "resolution_action": {
+                          "anyOf": [
+                            {
+                              "const": "accept"
+                            },
+                            {
+                              "const": "deny"
+                            },
+                            {
+                              "const": "reduce"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "resolved_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "resolved_by_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "sent_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "staff_context": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "appellant": {
+                              "$ref": "#/components/schemas/ModerationActorSummary"
+                            },
+                            "original_decision": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "actor": {
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/ModerationActorSummary"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "internal_reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": ["actor", "internal_reason"],
+                              "type": "object"
+                            }
+                          },
+                          "required": ["appellant", "original_decision"],
+                          "type": "object"
+                        },
+                        "status": {
+                          "enum": ["dismissed", "pending", "resolved"],
+                          "type": "string"
+                        },
+                        "target_context": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["id", "name"],
+                                  "type": "object"
+                                },
+                                "created_at": {
+                                  "type": "string"
+                                },
+                                "expires_at": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "type": {
+                                  "const": "community_ban"
+                                }
+                              },
+                              "required": [
+                                "community",
+                                "created_at",
+                                "expires_at",
+                                "id",
+                                "reason",
+                                "type"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["id", "name"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "created_at": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "public_message": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "type": {
+                                  "const": "warning"
+                                }
+                              },
+                              "required": [
+                                "community",
+                                "created_at",
+                                "id",
+                                "public_message",
+                                "type"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "anyOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["id", "name"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "decided_at": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "declared_language": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "enum": ["community", "platform"],
+                                  "type": "string"
+                                },
+                                "lingua_rs_detected_language": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "public_reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "type": {
+                                  "const": "post_removal"
+                                }
+                              },
+                              "required": [
+                                "community",
+                                "decided_at",
+                                "declared_language",
+                                "id",
+                                "kind",
+                                "lingua_rs_detected_language",
+                                "public_reason",
+                                "title",
+                                "type"
+                              ],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "created_at": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "type": {
+                                  "const": "suspension"
+                                }
+                              },
+                              "required": ["created_at", "id", "reason", "type"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        },
+                        "user_suspension_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "user_warning_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "ai_drafted_at",
+                        "ai_internal_response",
+                        "ai_public_response",
+                        "appeal_reason",
+                        "appellant_id",
+                        "approved_at",
+                        "approved_by_id",
+                        "case_id",
+                        "community_ban_id",
+                        "community_id",
+                        "created_at",
+                        "drafted_at",
+                        "edited_at",
+                        "edited_by_id",
+                        "id",
+                        "internal_notes",
+                        "latest_lifecycle_change_id",
+                        "model",
+                        "post_id",
+                        "post_removal_kind",
+                        "public_response",
+                        "recommended_action",
+                        "resolution_action",
+                        "resolved_at",
+                        "resolved_by_id",
+                        "sent_at",
+                        "status",
+                        "updated_at",
+                        "user_suspension_id",
+                        "user_warning_id"
+                      ],
+                      "type": "object"
                     }
                   },
                   "required": ["appeal"],
@@ -49635,8 +51943,11 @@
               "schema": {
                 "additionalProperties": false,
                 "properties": {
-                  "csv": {}
+                  "csv": {
+                    "type": "string"
+                  }
                 },
+                "required": ["csv"],
                 "type": "object"
               }
             }
@@ -59481,7 +61792,9 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/StaffClearanceDecision"
+              }
             }
           }
         },

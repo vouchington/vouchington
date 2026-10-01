@@ -18617,6 +18617,22 @@
       },
       "type": "object"
     },
+    "StaffClearanceDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "private_note": {
+          "type": "string"
+        },
+        "reason_code": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/components/schemas/ClearanceStatus"
+        }
+      },
+      "required": ["reason_code", "status"],
+      "type": "object"
+    },
     "Story": {
       "additionalProperties": false,
       "properties": {
@@ -30875,8 +30891,11 @@
       "body": {
         "additionalProperties": false,
         "properties": {
-          "csv": {}
+          "csv": {
+            "type": "string"
+          }
         },
+        "required": ["csv"],
         "type": "object"
       }
     },
@@ -31365,7 +31384,9 @@
       }
     },
     "POST:/api/v1/posts/:idOrSlug/clearances": {
-      "body": {},
+      "body": {
+        "$ref": "#/components/schemas/StaffClearanceDecision"
+      },
       "path": {
         "properties": {
           "idOrSlug": {

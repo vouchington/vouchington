@@ -76,8 +76,11 @@ describe('registered account and integrity writes', () => {
     })
     const penalties = await getTestReportAbusePenaltiesByUserId(reporter.id)
     expect(penalties).toEqual([
-      expect.objectContaining({ source_flag_id: id, created_by_id: admin.id }),
+      expect.objectContaining({ source_flag_id: id, user_id: reporter.id, revoked_at: null }),
     ])
+    expect(await readStaffActionTarget('report_penalty', penalties[0]!.id)).toMatchObject({
+      created_by_id: admin.id,
+    })
     const history = await readStaffActionHistory(admin.id)
     expect(history).toEqual([
       expect.objectContaining({ action_type: 'report_integrity_penalty_apply' }),

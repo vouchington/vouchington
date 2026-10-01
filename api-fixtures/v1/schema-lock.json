@@ -878,7 +878,7 @@
     },
     "PATCH:/api/v1/appeals/:id#staff": {
       "fixtureIds": ["native.moderation.appeals.update.default"],
-      "hash": "547b7eebe70fed93f2298b431f068e3060ab0a9ef07add3d1b9aa1ec9af33a9e"
+      "hash": "54f90b6506e84506f3c428ea89922b6e0e911c36d7c9aba15859b99edad9ba64"
     },
     "PATCH:/api/v1/communities/:communitySlug": {
       "fixtureIds": ["web.communities.archive.default"],
@@ -960,11 +960,11 @@
     },
     "POST:/api/v1/appeals/:id/approval#staff": {
       "fixtureIds": ["native.moderation.appeals.approval.default"],
-      "hash": "547b7eebe70fed93f2298b431f068e3060ab0a9ef07add3d1b9aa1ec9af33a9e"
+      "hash": "54f90b6506e84506f3c428ea89922b6e0e911c36d7c9aba15859b99edad9ba64"
     },
     "POST:/api/v1/appeals/:id/delivery#staff": {
       "fixtureIds": ["native.moderation.appeals.delivery.default"],
-      "hash": "547b7eebe70fed93f2298b431f068e3060ab0a9ef07add3d1b9aa1ec9af33a9e"
+      "hash": "54f90b6506e84506f3c428ea89922b6e0e911c36d7c9aba15859b99edad9ba64"
     },
     "POST:/api/v1/appeals/:id/resolution#staff": {
       "fixtureIds": [
@@ -972,7 +972,7 @@
         "native.moderation.appeals.resolution.deny",
         "native.moderation.appeals.resolution.reduce"
       ],
-      "hash": "547b7eebe70fed93f2298b431f068e3060ab0a9ef07add3d1b9aa1ec9af33a9e"
+      "hash": "54f90b6506e84506f3c428ea89922b6e0e911c36d7c9aba15859b99edad9ba64"
     },
     "POST:/api/v1/appeals/:id/resolution-drafts#staff": {
       "fixtureIds": ["native.moderation.appeals.resolution-drafts.default"],

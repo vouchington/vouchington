@@ -9,6 +9,7 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestPost,
+  insertTestModerationReport,
   insertTestAgentModeration,
   insertTestAgentPrompt,
   setTestPostClearanceStatus,
@@ -40,8 +41,14 @@ describe('moderation-training feedback', () => {
       createdById: actor.id,
       markdown: 'Evidence',
     })
+    const moderationReportId = await insertTestModerationReport({
+      reporterUserId: actor.id,
+      entityType: 'post',
+      entityId: postId,
+    })
     const input = {
       postId,
+      moderationReportId,
       sourceType: 'moderation_report',
       eventType: 'report_resolved',
       label: 'accepted',

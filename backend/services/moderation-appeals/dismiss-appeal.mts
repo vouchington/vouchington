@@ -1,5 +1,5 @@
+import type { ModerationAppealResponse } from './types.mts'
 import type { ModerationTrainingEvidence } from '@services/moderation-training'
-import type { ModerationAppeal } from './config.mts'
 import {
   DISMISS_DELIVERED_APPEAL_RESOLUTION,
   finalizeDeliveredModerationAppeal,
@@ -9,7 +9,7 @@ export async function dismissModerationAppeal(
   staffUserId: string,
   appealId: string,
   trainingEvidence: ModerationTrainingEvidence,
-): Promise<ModerationAppeal> {
+): Promise<ModerationAppealResponse> {
   return finalizeDeliveredModerationAppeal(
     staffUserId,
     appealId,

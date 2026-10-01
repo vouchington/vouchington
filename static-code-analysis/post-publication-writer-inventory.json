@@ -178,6 +178,10 @@
       "reason": "spam signal is a precursor; clearance captures the transition"
     },
     {
+      "path": "backend/services/stories/clear-moved-official-item.mts",
+      "reason": "The captured assignment/removal caller clears the selection and records affected story publication scopes inside the same transaction."
+    },
+    {
       "path": "backend/services/stories/update.mts",
       "reason": "story metadata refresh does not itself change story-post eligibility"
     },

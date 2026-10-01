@@ -30,7 +30,7 @@ describe('registered issue_user_warning tool', () => {
       'issue_user_warning',
       { userId: target.id, reason: 'Fixture warning', reportId, resolveReport: true },
       { ...admin, membership_plan: null },
-      ['moderation:write'],
+      ['moderation:read', 'moderation:write'],
       ADMIN_MCP_SERVER_CONFIG,
     )
     expect(result.isError).not.toBe(true)
@@ -58,7 +58,7 @@ describe('registered issue_user_warning tool', () => {
       'issue_user_warning',
       { userId: other.id, reason: 'Fixture warning', reportId, resolveReport: true },
       { ...admin, membership_plan: null },
-      ['moderation:write'],
+      ['moderation:read', 'moderation:write'],
       ADMIN_MCP_SERVER_CONFIG,
     )
     expect(result.isError).toBe(true)

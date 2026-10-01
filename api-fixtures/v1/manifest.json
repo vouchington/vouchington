@@ -60096,13 +60096,67 @@
     },
     "PATCH:/api/v1/appeals/:id#staff": {
       "bodyKind": "content",
-      "hash": "547b7eebe70fed93f2298b431f068e3060ab0a9ef07add3d1b9aa1ec9af33a9e",
+      "hash": "54f90b6506e84506f3c428ea89922b6e0e911c36d7c9aba15859b99edad9ba64",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "PATCH",
       "routeTemplate": "/api/v1/appeals/:id",
       "schema": {
         "definitions": {
+          "ModerationActorSummary": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "profile_image_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "username": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "verified_display_name": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
           "ModerationAppeal": {
             "additionalProperties": false,
             "properties": {
@@ -60523,8 +60577,391 @@
             "appeal": {
               "required": true,
               "schema": {
-                "name": "ModerationAppeal",
-                "type": "ref"
+                "type": "intersection",
+                "variants": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "staff_context": {
+                        "required": false,
+                        "schema": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "appellant": {
+                              "required": true,
+                              "schema": {
+                                "name": "ModerationActorSummary",
+                                "type": "ref"
+                              }
+                            },
+                            "original_decision": {
+                              "required": true,
+                              "schema": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "actor": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "name": "ModerationActorSummary",
+                                          "type": "ref"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "internal_reason": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "type": "null"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "type": "object"
+                              }
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "target_context": {
+                        "required": false,
+                        "schema": {
+                          "type": "union",
+                          "variants": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "required": true,
+                                  "schema": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "id": {
+                                        "required": true,
+                                        "schema": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "name": {
+                                        "required": true,
+                                        "schema": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "type": "object"
+                                  }
+                                },
+                                "created_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "expires_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "reason": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "community_ban"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "id": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "name": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "type": "object"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "created_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "public_message": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "warning"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "id": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "name": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "type": "object"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "decided_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "declared_language": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "kind": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "literal",
+                                        "value": "community"
+                                      },
+                                      {
+                                        "type": "literal",
+                                        "value": "platform"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "lingua_rs_detected_language": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "public_reason": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "title": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "post_removal"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "created_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "reason": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "suspension"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "name": "ModerationAppeal",
+                    "type": "ref"
+                  }
+                ]
               }
             }
           },
@@ -64415,13 +64852,67 @@
     },
     "POST:/api/v1/appeals/:id/approval#staff": {
       "bodyKind": "content",
-      "hash": "547b7eebe70fed93f2298b431f068e3060ab0a9ef07add3d1b9aa1ec9af33a9e",
+      "hash": "54f90b6506e84506f3c428ea89922b6e0e911c36d7c9aba15859b99edad9ba64",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
       "routeTemplate": "/api/v1/appeals/:id/approval",
       "schema": {
         "definitions": {
+          "ModerationActorSummary": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "profile_image_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "username": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "verified_display_name": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
           "ModerationAppeal": {
             "additionalProperties": false,
             "properties": {
@@ -64842,8 +65333,391 @@
             "appeal": {
               "required": true,
               "schema": {
-                "name": "ModerationAppeal",
-                "type": "ref"
+                "type": "intersection",
+                "variants": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "staff_context": {
+                        "required": false,
+                        "schema": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "appellant": {
+                              "required": true,
+                              "schema": {
+                                "name": "ModerationActorSummary",
+                                "type": "ref"
+                              }
+                            },
+                            "original_decision": {
+                              "required": true,
+                              "schema": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "actor": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "name": "ModerationActorSummary",
+                                          "type": "ref"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "internal_reason": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "type": "null"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "type": "object"
+                              }
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "target_context": {
+                        "required": false,
+                        "schema": {
+                          "type": "union",
+                          "variants": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "required": true,
+                                  "schema": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "id": {
+                                        "required": true,
+                                        "schema": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "name": {
+                                        "required": true,
+                                        "schema": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "type": "object"
+                                  }
+                                },
+                                "created_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "expires_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "reason": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "community_ban"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "id": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "name": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "type": "object"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "created_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "public_message": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "warning"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "id": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "name": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "type": "object"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "decided_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "declared_language": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "kind": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "literal",
+                                        "value": "community"
+                                      },
+                                      {
+                                        "type": "literal",
+                                        "value": "platform"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "lingua_rs_detected_language": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "public_reason": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "title": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "post_removal"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "created_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "reason": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "suspension"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "name": "ModerationAppeal",
+                    "type": "ref"
+                  }
+                ]
               }
             }
           },
@@ -64856,13 +65730,67 @@
     },
     "POST:/api/v1/appeals/:id/delivery#staff": {
       "bodyKind": "content",
-      "hash": "547b7eebe70fed93f2298b431f068e3060ab0a9ef07add3d1b9aa1ec9af33a9e",
+      "hash": "54f90b6506e84506f3c428ea89922b6e0e911c36d7c9aba15859b99edad9ba64",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
       "routeTemplate": "/api/v1/appeals/:id/delivery",
       "schema": {
         "definitions": {
+          "ModerationActorSummary": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "profile_image_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "username": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "verified_display_name": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
           "ModerationAppeal": {
             "additionalProperties": false,
             "properties": {
@@ -65283,8 +66211,391 @@
             "appeal": {
               "required": true,
               "schema": {
-                "name": "ModerationAppeal",
-                "type": "ref"
+                "type": "intersection",
+                "variants": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "staff_context": {
+                        "required": false,
+                        "schema": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "appellant": {
+                              "required": true,
+                              "schema": {
+                                "name": "ModerationActorSummary",
+                                "type": "ref"
+                              }
+                            },
+                            "original_decision": {
+                              "required": true,
+                              "schema": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "actor": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "name": "ModerationActorSummary",
+                                          "type": "ref"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "internal_reason": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "type": "null"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "type": "object"
+                              }
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "target_context": {
+                        "required": false,
+                        "schema": {
+                          "type": "union",
+                          "variants": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "required": true,
+                                  "schema": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "id": {
+                                        "required": true,
+                                        "schema": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "name": {
+                                        "required": true,
+                                        "schema": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "type": "object"
+                                  }
+                                },
+                                "created_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "expires_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "reason": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "community_ban"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "id": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "name": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "type": "object"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "created_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "public_message": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "warning"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "id": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "name": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "type": "object"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "decided_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "declared_language": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "kind": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "literal",
+                                        "value": "community"
+                                      },
+                                      {
+                                        "type": "literal",
+                                        "value": "platform"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "lingua_rs_detected_language": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "public_reason": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "title": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "post_removal"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "created_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "reason": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "suspension"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "name": "ModerationAppeal",
+                    "type": "ref"
+                  }
+                ]
               }
             }
           },
@@ -65297,13 +66608,67 @@
     },
     "POST:/api/v1/appeals/:id/resolution#staff": {
       "bodyKind": "content",
-      "hash": "547b7eebe70fed93f2298b431f068e3060ab0a9ef07add3d1b9aa1ec9af33a9e",
+      "hash": "54f90b6506e84506f3c428ea89922b6e0e911c36d7c9aba15859b99edad9ba64",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
       "routeTemplate": "/api/v1/appeals/:id/resolution",
       "schema": {
         "definitions": {
+          "ModerationActorSummary": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "profile_image_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "username": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "verified_display_name": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
           "ModerationAppeal": {
             "additionalProperties": false,
             "properties": {
@@ -65724,8 +67089,391 @@
             "appeal": {
               "required": true,
               "schema": {
-                "name": "ModerationAppeal",
-                "type": "ref"
+                "type": "intersection",
+                "variants": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "staff_context": {
+                        "required": false,
+                        "schema": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "appellant": {
+                              "required": true,
+                              "schema": {
+                                "name": "ModerationActorSummary",
+                                "type": "ref"
+                              }
+                            },
+                            "original_decision": {
+                              "required": true,
+                              "schema": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "actor": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "name": "ModerationActorSummary",
+                                          "type": "ref"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "internal_reason": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "type": "null"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "type": "object"
+                              }
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "target_context": {
+                        "required": false,
+                        "schema": {
+                          "type": "union",
+                          "variants": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "required": true,
+                                  "schema": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "id": {
+                                        "required": true,
+                                        "schema": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "name": {
+                                        "required": true,
+                                        "schema": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "type": "object"
+                                  }
+                                },
+                                "created_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "expires_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "reason": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "community_ban"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "id": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "name": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "type": "object"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "created_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "public_message": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "warning"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "community": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "id": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "name": {
+                                            "required": true,
+                                            "schema": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        },
+                                        "type": "object"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "decided_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "declared_language": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "kind": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "literal",
+                                        "value": "community"
+                                      },
+                                      {
+                                        "type": "literal",
+                                        "value": "platform"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "lingua_rs_detected_language": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "public_reason": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "title": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "post_removal"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "created_at": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "id": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "string"
+                                  }
+                                },
+                                "reason": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "union",
+                                    "variants": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "type": {
+                                  "required": true,
+                                  "schema": {
+                                    "type": "literal",
+                                    "value": "suspension"
+                                  }
+                                }
+                              },
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "name": "ModerationAppeal",
+                    "type": "ref"
+                  }
+                ]
               }
             }
           },

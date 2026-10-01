@@ -1,7 +1,7 @@
 import assert from 'http-assert'
 import { isAdminUser, assertNotSuspended } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
-import type { ApiScope } from '@modules/scopes'
+import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import type {
   Tool,
   ToolAnnotations,
@@ -24,6 +24,7 @@ type AdminToolConfig<TArgs> = {
 }
 
 export function createAdminTool<TArgs>(config: AdminToolConfig<TArgs>): Tool<TArgs> {
+  const prerequisite = SCOPE_DEFINITIONS[config.scope].requires
   return {
     schema: {
       name: config.name,
@@ -36,7 +37,9 @@ export function createAdminTool<TArgs>(config: AdminToolConfig<TArgs>): Tool<TAr
     meta: {
       title: config.name[0]!.toUpperCase() + config.name.slice(1).replaceAll('_', ' '),
       surfaces: ['admin_mcp'],
-      requiredScopes: { admin_mcp: [config.scope] },
+      requiredScopes: {
+        admin_mcp: prerequisite ? [prerequisite as ApiScope, config.scope] : [config.scope],
+      },
       annotations: config.annotations,
       api: [config.api],
       outputSchema: adminOutputSchema(config.outputSchema) as ToolOutputSchema,

@@ -93,7 +93,16 @@ describe('MCP output schema contract for trending reads — real DB', () => {
         callRejectedMcpTool(caller, 'get_trending_posts', { after: 'not-a-cursor' }, [
           'posts:read',
         ]),
-      ).resolves.toContain('Tool execution failed')
+      ).resolves.toBe(
+        JSON.stringify({
+          error: {
+            status: 400,
+            code: 'INVALID_INPUT',
+            message: 'Invalid cursor format: expected score cursor',
+            retryable: false,
+          },
+        }),
+      )
     })
   })
 

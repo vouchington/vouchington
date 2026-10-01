@@ -13,7 +13,7 @@ const invoke = (user: PrivateUser, name: string, args: unknown) =>
     name,
     args,
     { ...user, membership_plan: null },
-    ['account-enforcement:suspend', 'account-enforcement:vote-weight'],
+    ['account-enforcement:read', 'account-enforcement:suspend', 'account-enforcement:vote-weight'],
     ADMIN_MCP_SERVER_CONFIG,
   )
 function error(result: Awaited<ReturnType<typeof invoke>>, status: number) {

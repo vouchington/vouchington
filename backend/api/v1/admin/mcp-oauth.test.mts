@@ -8,6 +8,8 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
+import { createCopyrightNoticeSchemaFixture } from '@voucha/test-helpers/data-stores/psql/copyright-notice-schema'
+import { readCopyrightStaffQueueCursorBefore } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { readTestMcpCallAuditEvents } from '@voucha/test-helpers/entities/mcp-call-audit'
 import {
   revokeTestOAuthGrant,
@@ -78,11 +80,13 @@ describe('POST /api/v1/admin/mcp with OAuth access tokens', () => {
     expect(listed.body.result.tools.map((tool: { name: string }) => tool.name)).not.toContain(
       'list_copyright_review_queue',
     )
+    const fixture = await createCopyrightNoticeSchemaFixture()
+    const after = await readCopyrightStaffQueueCursorBefore([fixture.noticeId])
     const call = {
       jsonrpc: '2.0',
       id: 2,
       method: 'tools/call',
-      params: { name: 'list_copyright_review_queue', arguments: { limit: 1 } },
+      params: { name: 'list_copyright_review_queue', arguments: { limit: 1, after } },
     }
     const denied = await postAdminMcp(umbrella.access_token, call).expect(403)
     expect(denied.headers['www-authenticate']).toContain('copyright-notices:read')

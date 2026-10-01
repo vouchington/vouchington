@@ -20,7 +20,7 @@ app.route('/api/v1/imports/topics').post(async (ctx: Context) => {
   // 4mb comfortably fits 1000 rows of realistic topic data (markdown descriptions) without
   // rejecting valid admin batches, while staying well under the former 10mb cap. The endpoint
   // is admin-only and rate-limited, so the event-loop cost of parsing is bounded.
-  const body = await parseJsonBody<{ csv?: unknown }>(ctx, '4mb')
+  const body = await parseJsonBody<{ csv: string }>(ctx, '4mb')
   ctx.assert(
     body !== null && typeof body === 'object' && !Array.isArray(body),
     400,

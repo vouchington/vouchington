@@ -19,7 +19,7 @@ const invoke = (user: PrivateUser, name: string, args: unknown) =>
     name,
     args,
     { ...user, membership_plan: null },
-    ['moderation:agent-votes'],
+    ['moderation:read', 'moderation:agent-votes'],
     ADMIN_MCP_SERVER_CONFIG,
   )
 

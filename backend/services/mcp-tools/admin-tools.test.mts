@@ -42,9 +42,14 @@ describe('admin tool authorization contract', () => {
     expect(
       listMcpToolsForUser(admin, [broad], ADMIN_MCP_SERVER_CONFIG).some(tool => tool.name === name),
     ).toBe(false)
-    expect(resolveMcpToolCall(name, admin, [exact], ADMIN_MCP_SERVER_CONFIG).status).toBe('allowed')
+    const prerequisite = SCOPE_DEFINITIONS[exact].requires
+    const grants: ApiScope[] = prerequisite ? [prerequisite as ApiScope, exact] : [exact]
+    expect(resolveMcpToolCall(name, admin, [exact], ADMIN_MCP_SERVER_CONFIG).status).toBe(
+      prerequisite ? 'insufficient_scope' : 'allowed',
+    )
+    expect(resolveMcpToolCall(name, admin, grants, ADMIN_MCP_SERVER_CONFIG).status).toBe('allowed')
     expect(
-      listMcpToolsForUser(admin, [exact], ADMIN_MCP_SERVER_CONFIG).some(tool => tool.name === name),
+      listMcpToolsForUser(admin, grants, ADMIN_MCP_SERVER_CONFIG).some(tool => tool.name === name),
     ).toBe(true)
   })
   it('advertises only the successful topic import contract', () => {

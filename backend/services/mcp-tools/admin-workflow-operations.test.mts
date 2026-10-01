@@ -25,7 +25,7 @@ describe('registered operations guard boundaries', () => {
       name,
       args,
       { ...admin, membership_plan: null },
-      [scope],
+      ['site-operations:read', scope],
       ADMIN_MCP_SERVER_CONFIG,
     )
     expect(result.isError).toBe(true)
@@ -48,7 +48,7 @@ describe('registered operations guard boundaries', () => {
         config: { [`unknown-${randomUUID()}`]: true },
       },
       { ...admin, membership_plan: null },
-      ['site-operations:config'],
+      ['site-operations:read', 'site-operations:config'],
       ADMIN_MCP_SERVER_CONFIG,
     )
     expect(result.isError).toBe(true)

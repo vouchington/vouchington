@@ -1,3 +1,4 @@
+import type { ModerationAppealResponse } from './types.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
@@ -24,7 +25,7 @@ export async function updateModerationAppealDraft(
   staffUserId: string,
   appealId: string,
   input: UpdateAppealDraftInput,
-): Promise<ModerationAppeal> {
+): Promise<ModerationAppealResponse> {
   assert(
     input.publicResponse !== undefined || input.internalNotes !== undefined,
     422,

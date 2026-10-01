@@ -175,7 +175,16 @@ describe('get_topic_details hierarchy — real DB', () => {
         { topic_id: bank, hierarchy: 'children', children_after: 'not-a-cursor' },
         SCOPES,
       ),
-    ).resolves.toContain('Tool execution failed')
+    ).resolves.toBe(
+      JSON.stringify({
+        error: {
+          status: 400,
+          code: 'INVALID_INPUT',
+          message: 'Invalid cursor format',
+          retryable: false,
+        },
+      }),
+    )
     await expect(
       callRejectedMcpTool(
         caller,
@@ -183,7 +192,16 @@ describe('get_topic_details hierarchy — real DB', () => {
         { topic_id: otherBank, hierarchy: 'children', children_after: cursor },
         SCOPES,
       ),
-    ).resolves.toContain('Tool execution failed')
+    ).resolves.toBe(
+      JSON.stringify({
+        error: {
+          status: 400,
+          code: 'INVALID_INPUT',
+          message: 'Invalid cursor format',
+          retryable: false,
+        },
+      }),
+    )
   })
 
   it('still reports an unknown topic as a normal result when hierarchy is set', async () => {

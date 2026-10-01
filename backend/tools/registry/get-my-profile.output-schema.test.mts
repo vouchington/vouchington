@@ -13,7 +13,7 @@ type OpenApi = {
 }
 
 const openApi = JSON.parse(
-  readFileSync(new URL('../../api-fixtures/v1/openapi.json', import.meta.url), 'utf8'),
+  readFileSync(new URL('../../../api-fixtures/v1/openapi.json', import.meta.url), 'utf8'),
 ) as OpenApi
 
 // get_my_profile flattens three REST bodies into one result, so it owns its result schema. Each
