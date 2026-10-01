@@ -4040,6 +4040,28 @@
         "required": ["copyright_notices", "page_info"],
         "type": "object"
       },
+      "CopyrightTerritorialNoticeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "cf_turnstile_response": {
+            "type": "string"
+          },
+          "contact": {
+            "type": "string"
+          },
+          "content_description": {
+            "type": "string"
+          },
+          "grounds": {
+            "type": "string"
+          },
+          "hosted_use_url": {
+            "type": "string"
+          }
+        },
+        "required": ["contact", "content_description", "grounds", "hosted_use_url"],
+        "type": "object"
+      },
       "CopyrightTerritorialPolicyApproval": {
         "additionalProperties": false,
         "properties": {
@@ -4054,6 +4076,93 @@
           }
         },
         "required": ["id", "jurisdiction", "policy_version"],
+        "type": "object"
+      },
+      "CopyrightTerritorialPolicyRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "jurisdiction": {
+            "enum": ["eu_dsa", "uk"],
+            "type": "string"
+          },
+          "policy_version": {
+            "type": "string"
+          }
+        },
+        "required": ["jurisdiction", "policy_version"],
+        "type": "object"
+      },
+      "CopyrightTerritorialRedressDecisionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "type": "string"
+          },
+          "staff_disposition": {
+            "enum": ["maintain", "revoke"],
+            "type": "string"
+          }
+        },
+        "required": ["rationale", "staff_disposition"],
+        "type": "object"
+      },
+      "CopyrightTerritorialRedressRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "cf_turnstile_response": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          }
+        },
+        "required": ["explanation"],
+        "type": "object"
+      },
+      "CopyrightTerritorialReportRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "period_end": {
+            "type": "string"
+          },
+          "period_start": {
+            "type": "string"
+          }
+        },
+        "required": ["period_end", "period_start"],
+        "type": "object"
+      },
+      "CopyrightTerritorialReviewRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "rationale": {
+            "type": "string"
+          }
+        },
+        "required": ["rationale"],
+        "type": "object"
+      },
+      "CopyrightTerritorialStatementRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "statement": {
+            "type": "string"
+          }
+        },
+        "required": ["statement"],
+        "type": "object"
+      },
+      "CopyrightTerritorialSupervisedComplaintRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "authority_reference": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          }
+        },
+        "required": ["authority_reference", "explanation"],
         "type": "object"
       },
       "Country": {
@@ -38771,7 +38880,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightTerritorialNoticeRequest"
               }
             }
           }
@@ -38877,7 +38986,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightTerritorialRedressRequest"
               }
             }
           }
@@ -38948,7 +39057,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightTerritorialRedressDecisionRequest"
               }
             }
           }
@@ -38994,7 +39103,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightTerritorialStatementRequest"
               }
             }
           }
@@ -39040,7 +39149,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightTerritorialSupervisedComplaintRequest"
               }
             }
           }
@@ -39076,7 +39185,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightTerritorialReportRequest"
               }
             }
           }
@@ -40895,7 +41004,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightTerritorialPolicyRequest"
               }
             }
           }
@@ -40975,7 +41084,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightTerritorialNoticeRequest"
               }
             }
           }
@@ -41081,7 +41190,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightTerritorialRedressRequest"
               }
             }
           }
@@ -41152,7 +41261,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightTerritorialRedressDecisionRequest"
               }
             }
           }
@@ -41198,7 +41307,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightTerritorialReviewRequest"
               }
             }
           }

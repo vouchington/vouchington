@@ -4012,6 +4012,28 @@
       "required": ["copyright_notices", "page_info"],
       "type": "object"
     },
+    "CopyrightTerritorialNoticeRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "cf_turnstile_response": {
+          "type": "string"
+        },
+        "contact": {
+          "type": "string"
+        },
+        "content_description": {
+          "type": "string"
+        },
+        "grounds": {
+          "type": "string"
+        },
+        "hosted_use_url": {
+          "type": "string"
+        }
+      },
+      "required": ["contact", "content_description", "grounds", "hosted_use_url"],
+      "type": "object"
+    },
     "CopyrightTerritorialPolicyApproval": {
       "additionalProperties": false,
       "properties": {
@@ -4026,6 +4048,93 @@
         }
       },
       "required": ["id", "jurisdiction", "policy_version"],
+      "type": "object"
+    },
+    "CopyrightTerritorialPolicyRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "jurisdiction": {
+          "enum": ["eu_dsa", "uk"],
+          "type": "string"
+        },
+        "policy_version": {
+          "type": "string"
+        }
+      },
+      "required": ["jurisdiction", "policy_version"],
+      "type": "object"
+    },
+    "CopyrightTerritorialRedressDecisionRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "rationale": {
+          "type": "string"
+        },
+        "staff_disposition": {
+          "enum": ["maintain", "revoke"],
+          "type": "string"
+        }
+      },
+      "required": ["rationale", "staff_disposition"],
+      "type": "object"
+    },
+    "CopyrightTerritorialRedressRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "cf_turnstile_response": {
+          "type": "string"
+        },
+        "explanation": {
+          "type": "string"
+        }
+      },
+      "required": ["explanation"],
+      "type": "object"
+    },
+    "CopyrightTerritorialReportRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "period_end": {
+          "type": "string"
+        },
+        "period_start": {
+          "type": "string"
+        }
+      },
+      "required": ["period_end", "period_start"],
+      "type": "object"
+    },
+    "CopyrightTerritorialReviewRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "rationale": {
+          "type": "string"
+        }
+      },
+      "required": ["rationale"],
+      "type": "object"
+    },
+    "CopyrightTerritorialStatementRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "statement": {
+          "type": "string"
+        }
+      },
+      "required": ["statement"],
+      "type": "object"
+    },
+    "CopyrightTerritorialSupervisedComplaintRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "authority_reference": {
+          "type": "string"
+        },
+        "explanation": {
+          "type": "string"
+        }
+      },
+      "required": ["authority_reference", "explanation"],
       "type": "object"
     },
     "Country": {
@@ -30304,7 +30413,7 @@
     },
     "POST:/api/v1/copyright-eu-notices": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightTerritorialNoticeRequest"
       }
     },
     "POST:/api/v1/copyright-eu-notices/:id/acknowledgment-failures": {
@@ -30320,7 +30429,7 @@
     },
     "POST:/api/v1/copyright-eu-notices/:id/redress-requests": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightTerritorialRedressRequest"
       },
       "path": {
         "properties": {
@@ -30334,7 +30443,7 @@
     },
     "POST:/api/v1/copyright-eu-notices/:id/redress-requests/:redressId/decisions": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightTerritorialRedressDecisionRequest"
       },
       "path": {
         "properties": {
@@ -30351,7 +30460,7 @@
     },
     "POST:/api/v1/copyright-eu-notices/:id/statements-of-reasons": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightTerritorialStatementRequest"
       },
       "path": {
         "properties": {
@@ -30365,7 +30474,7 @@
     },
     "POST:/api/v1/copyright-eu-notices/:id/supervised-complaints": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightTerritorialSupervisedComplaintRequest"
       },
       "path": {
         "properties": {
@@ -30379,7 +30488,7 @@
     },
     "POST:/api/v1/copyright-eu-reports": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightTerritorialReportRequest"
       }
     },
     "POST:/api/v1/copyright-form-intakes/:id/reviews": {
@@ -30627,7 +30736,7 @@
     },
     "POST:/api/v1/copyright-territorial-policies": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightTerritorialPolicyRequest"
       }
     },
     "POST:/api/v1/copyright-territorial-policies/:id/withdrawals": {
@@ -30643,7 +30752,7 @@
     },
     "POST:/api/v1/copyright-uk-notices": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightTerritorialNoticeRequest"
       }
     },
     "POST:/api/v1/copyright-uk-notices/:id/acknowledgment-failures": {
@@ -30659,7 +30768,7 @@
     },
     "POST:/api/v1/copyright-uk-notices/:id/redress-requests": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightTerritorialRedressRequest"
       },
       "path": {
         "properties": {
@@ -30673,7 +30782,7 @@
     },
     "POST:/api/v1/copyright-uk-notices/:id/redress-requests/:redressId/decisions": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightTerritorialRedressDecisionRequest"
       },
       "path": {
         "properties": {
@@ -30690,7 +30799,7 @@
     },
     "POST:/api/v1/copyright-uk-notices/:id/reviews": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightTerritorialReviewRequest"
       },
       "path": {
         "properties": {

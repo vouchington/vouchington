@@ -115,6 +115,16 @@ checked by the route and never passed to the schema validator, so it cannot appe
 Existing field-named `422` and the capability `403` are unchanged; see
 [request validation](../../reference-copyright-guest-request-validation.md).
 
+The EU, UK, and territorial policy routes validate their path and JSON body against closed
+generated schemas: an unknown body key answers 422 before anything is written, and the
+field-named 422 messages for missing or mistyped fields are unchanged. `cf_turnstile_response` is
+an optional string on the notice and redress bodies; an explicit `null` or non-string value now
+answers 422 instead of being ignored when CAPTCHA verification does not read it (an attested
+caller or an always-approve configuration). Authentication, staff role, and the kill switch
+answer before the schema. The service still decides ownership, territorial availability, and
+existence, so a malformed body answers 422 before those 403, 404, and 409 outcomes. See
+[Copyright EU, UK, and territorial request validation](../../reference-copyright-territorial-request-validation.md).
+
 ## Performance
 
 Mutation routes are uncached. An EU or UK receipt writes the notice, routing, and acknowledgment
