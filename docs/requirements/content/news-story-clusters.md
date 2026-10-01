@@ -1,6 +1,6 @@
 # Source Stories
 
-A **source story** (news cluster) is a group of related RSS feed items (1 primary + N related members) sharing the same news event, clustered by the `@story-teller` agent. Key fields: `story.id`, `story.title`, `story.cluster_reason`, `story.published_at`, `story.official_rss_feed_item_id`.
+A **source story** (news cluster) is a group of related RSS feed items (1 primary + N related members) sharing the same news event, clustered by the story-clustering Choice classifier. Key fields: `story.id`, `story.title`, `story.cluster_reason`, `story.published_at`, `story.official_rss_feed_item_id`.
 
 See [stories.md](stories.md) for the `stories` table schema and clustering algorithm.
 

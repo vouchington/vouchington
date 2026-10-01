@@ -1,12 +1,10 @@
 # `rss_feed_item`
 
 An RSS item's current Bedrock embedding is eligible for story clustering when its input SHA matches
-its content SHA and its embedding vector exists. The nullable
-`story_clustering_embedding_input_sha256` records the exact input for which GlideMQ accepted a
-story-clustering job. It is a delivery marker, not a record of clustering completion. A content
-change makes an older marker stale. Failed or deduplicated delivery leaves the current input
-pending; the bounded `rss_story_trigger_recovery` scan revisits it from a scheduled cursorless root
-or the `bedrock-embedding-reconciliation` operator backfill. See the
+its content SHA and its embedding vector exists. Clustering is a `story-clustering-classifier` run
+keyed by the item and its content digest. The RSS upsert writes the durable run request, so no
+per-item delivery marker is stored on the row; a failed or deduplicated dispatch leaves the request
+for the `reconcile-classifier-runs` sweep. See the
 [stories service](../overview/architecture/services/stories/README.md#trigger-sources).
 
 [Back to Entity × Action Matrix reference](reference-entity-action-matrix-table-b-entity-action-description.md)

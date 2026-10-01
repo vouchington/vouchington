@@ -34,7 +34,7 @@ const EXPECTED_EXISTING_DISPATCHER_BACKFILL_IDS = new Set([
 ])
 
 describe('BACKFILL_REGISTRY', () => {
-  it('starts all five embedding reconciliation roots from its operator entry', async () => {
+  it('starts all four embedding reconciliation roots from its operator entry', async () => {
     const entry = BACKFILL_REGISTRY.find(
       candidate => candidate.id === 'bedrock-embedding-reconciliation',
     )

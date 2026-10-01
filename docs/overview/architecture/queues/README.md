@@ -2,8 +2,8 @@
 
 Source entrypoint: [backend/queues/README.md](../../../../backend/queues/README.md)
 
-The [Bedrock batch queue](bedrock-embeddings-batch/README.md) also runs five provider-free
-reconciliation roots. They copy reusable text embeddings and recover post/RSS follow-up delivery
+The [Bedrock batch queue](bedrock-embeddings-batch/README.md) also runs four provider-free
+reconciliation roots. They copy reusable text embeddings and recover post follow-up delivery
 in bounded pages, independent of Bedrock capacity.
 
 Media-registry recovery in the [notifications queue](notifications/README.md) dispatches bounded
