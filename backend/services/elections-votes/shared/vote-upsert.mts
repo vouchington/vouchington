@@ -7,7 +7,7 @@ import type {
   EntityElectionConfig,
   VoteEventContext,
 } from './types.mts'
-import { upsertVoteUserAgent } from './upsert-vote-user-agent.mts'
+import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
 
 /** Append-only simple-entity vote events; current votes are latest per user and entity. */
 const NULL_VOTE_CONTEXT: VoteEventContext = {
@@ -59,7 +59,7 @@ export async function upsertElectionVotesShared(
     `)
     // Keep every vote mutation query on this transaction's client. In particular, a user-agent
     // lookup cannot acquire a second write-pool client while an outer caller already holds one.
-    const userAgentId = await upsertVoteUserAgent(context.userAgent, { query })
+    const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, { query })
     await query(sql`/* lockElectionVoteMutations */
       SELECT pg_advisory_xact_lock(
         hashtextextended(${config.voteTable} || ':' || ${userId} || ':' || ordered.entity_id::text, 0)

@@ -33,7 +33,7 @@ _none_
 **Foreign keys:**
 
 - `hostname_votes_hostname_id_fkey`: `FOREIGN KEY (hostname_id) REFERENCES url_hostnames(id) ON DELETE CASCADE`
-- `hostname_votes_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES vote_user_agents(id) ON DELETE SET NULL`
+- `hostname_votes_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL`
 - `hostname_votes_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**

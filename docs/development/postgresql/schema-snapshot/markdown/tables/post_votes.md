@@ -34,7 +34,7 @@ _none_
 **Foreign keys:**
 
 - `post_votes_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
-- `post_votes_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES vote_user_agents(id) ON DELETE SET NULL`
+- `post_votes_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL`
 - `post_votes_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
