@@ -2,8 +2,8 @@
 
 Source entrypoint: [backend/services/classifier-runs/README.md](../../../../../backend/services/classifier-runs/README.md)
 
-`@services/classifier-runs` is the one lifecycle every fixed classifier (C5, and later C6, C8 and
-C9) runs on. A classifier supplies a `ClassifierRunAdapter`: how to lock and read a subject's
+`@services/classifier-runs` is the one lifecycle every fixed classifier (C5 and C6 today, C8 and
+C9 later) runs on. A classifier supplies a `ClassifierRunAdapter`: how to lock and read a subject's
 current content, how to resolve its configuration, and how to turn durable outcomes into effects.
 Receipt, lease, reclaim, provider-attempt reservation and cap, terminal failure, completion,
 supersession, dispatch and sweep are shared, so a new classifier is input building plus outcome
@@ -22,15 +22,18 @@ A run's attempt reservation and cap stay a monotone `provider_attempts_started` 
 receipt, reserved inside the client's `beforeAttempt` hook after the shared spend-cap check. There
 is no child attempts table: the counter, the C3 decision batch and the billing hooks already
 bound provider spend per run at `maxAttempts` and short-circuit a replay of persisted outcomes, and
-a ledger would only re-derive them.
+a ledger would only re-derive them. C6's former per-claim attempts ledger
+(`autotagger_receipt_attempts`) is dropped for the same reason.
 
 ## Identity
 
 A run is identified by `(classifier, subject, input SHA-256, configuration SHA-256)`, enforced by
 one partial unique index per subject kind. The input hash is the subject's content digest and the
 configuration hash is over PostgreSQL's canonical `jsonb::text`, so JavaScript key ordering is not
-an identity boundary. A run's candidate set is deliberately not part of its identity: a candidate
-set that changes after first claim cannot create a second receipt for the same content.
+an identity boundary. A run's candidate set is deliberately not part of its identity: the C6
+candidate topics are captured once, when the receipt is reserved, and stored with it, so a
+candidate set that would change later (a fresher embedding, a plan change, another search result)
+cannot create a second receipt for the same content.
 
 The identity admits one receipt per classifier scope and content version, the receipt owns one
 pre-reserved C3 decision batch, and the attempt counter is capped and monotone. Provider spend per
@@ -45,6 +48,7 @@ creates a second receipt.
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `classifier_runs`                | The receipt: identity, snapshot, pre-reserved batch, attempt and sweep counters, lease, terminal kind, persisted-outcomes, completion and supersession timestamps.                 |
 | `classifier_run_requests`        | The durable "this subject wants a run" row, written where the subject becomes eligible and independent of configuration. It is what lets the sweep find a subject with no receipt. |
+| `classifier_run_candidates`      | Insert-only, ordered candidate topic ids a run captured at reservation (C6). Not part of the identity; a replay reads them and never searches again.                               |
 | `post_classifier_local_outcomes` | Insert-only C5 local detector outcome, one row per run, written on every terminal kind that has one.                                                                               |
 
 A request is settled by exactly one of: a run, `no_work_at`, or `stale_at`. Re-approving a
@@ -58,11 +62,18 @@ actor, and then the adapter's configuration is re-resolved. A mismatch between t
 the resolved current state means the run is obsolete and is superseded, never repaired in place.
 
 1. **Request.** `requestClassifierRuns` writes one request per classifier in the caller's
-   transaction (post approval, RSS upsert) and marks older-hash requests stale.
-2. **Reserve.** `reserveClassifierRun` locks the subject, checks `ready`, resolves configuration
-   and inserts the receipt with a pre-generated decision batch. Outcomes are `reserved`, `no-work`,
-   `stale` and `not-ready`. A missing or unresolvable configuration never blocks approval: the
-   request stays for the sweep.
+   transaction and marks older-hash requests stale. Post approval requests C5 and C6 together
+   (`APPROVAL_CLASSIFIER_SLUGS`); a post approved at creation requests C6 from
+   `processPostCreated` (`requestApprovedPostClassifierRuns`); an RSS upsert requests C6 for each
+   written feed item (`requestRssFeedItemClassifierRuns`, which has no approval gate).
+2. **Reserve.** `reserveClassifierRun` locks the subject, checks the adapter's optional `ready`
+   gate (C6: the subject's embedding was built from its current content), resolves configuration,
+   captures the candidate set for a classifier that has one (`adapter.captureCandidates`, reusing
+   an existing receipt's set instead of searching again), and inserts the receipt with a
+   pre-generated decision batch. Outcomes are `reserved`, `no-work`, `stale` and `not-ready`. A
+   missing or unresolvable configuration never blocks approval: the request stays for the sweep.
+   An adapter that resolves no configuration (the C6 kill switch) or captures no candidates settles
+   the request as no work.
 3. **Claim.** `claimClassifierRun` takes a 60-second fenced lease. Order of checks: completed,
    terminal, live lease, then reclaim. A superseded run whose identity is current again is
    revived.
@@ -70,7 +81,10 @@ the resolved current state means the run is obsolete and is superseded, never re
    call, at most `maxAttempts` per receipt. At the cap it persists the local outcome and marks the
    receipt terminal `attempts-exhausted`.
 5. **Outcomes.** `persistClassifierRunOutcomes` writes the local outcome and the C3 decision
-   batch atomically. A run with persisted outcomes never calls the provider again.
+   batch atomically. A run with persisted outcomes never calls the provider again. A run that
+   captures its own candidates and has none left (every captured topic was hard-deleted, and the
+   captured rows cascade with it) has no remote work: it persists without a decision and completes
+   with no effects, instead of waiting for a question set that can no longer exist.
 6. **Complete.** `completeClassifierRun` applies the adapter's effects and stamps completion in one
    transaction; a replay returns `replay`.
 7. **Supersede.** `supersedeStaleClassifierRun` retires an obsolete run and reserves the current
@@ -120,13 +134,14 @@ raises a throttled `run-age` or `request-age` alarm through `recordClassifierRun
 
 ## Adding a classifier
 
-C8 and C9 add a `classifiers` row, an adapter, an input builder for `@agents/classifier-runs`, and
-a registration in the worker's classifier-run registry. They add no lifecycle code, queue, table or
-sweep.
+C5 and C6 are the two adapters today. C8 and C9 add a `classifiers` row, an adapter, an input
+builder for `@agents/classifier-runs`, and a registration in the worker's classifier-run registry.
+They add no lifecycle code, queue, table or sweep.
 
 ## Related
 
 - [Classifier runs agent executor](../../ai-agents/classifier-runs/README.md)
 - [Post classifier service (C5 adapter)](../post-classifier/README.md)
+- [Autotagger service (C6 adapter)](../autotagger/README.md)
 - [Classifier persistence service](../classifiers/README.md)
 - [AI agents queue](../../queues/ai-agents/README.md)

@@ -14,6 +14,35 @@ function remotePlan<C>(lease: ClassifierRunLease<C>): RemotePlan {
   return remote
 }
 
+/**
+ * A run that captures its own candidates and has none left asks no question. The captured rows
+ * cascade with their topic, so this means every topic the receipt captured has since been deleted:
+ * there is nothing to ask and nothing to apply, so no provider call and no decision are needed.
+ */
+export function hasNoCapturedCandidates<C>(lease: ClassifierRunLease<C>): boolean {
+  return lease.resolved.remote?.capturedCandidates === true && lease.capturedTopicIds.length === 0
+}
+
+type ExpectedCandidate = { thresholdId: string | null; lower: number; upper: number } | null
+
+/**
+ * The exact candidates a run may ask about, keyed by topic and stored candidate. Pinned candidates
+ * carry the thresholds the configuration froze. Captured topics carry none: they have no stored
+ * candidate and are judged by the thresholds the decision itself recorded.
+ */
+function expectedCandidates<C>(lease: ClassifierRunLease<C>): Map<string, ExpectedCandidate> {
+  const remote = remotePlan(lease)
+  if (remote.capturedCandidates) {
+    return new Map(lease.capturedTopicIds.map(topicId => [`${topicId}:`, null]))
+  }
+  return new Map(
+    remote.candidates.map(candidate => [
+      `${candidate.topicId}:${candidate.candidateId}`,
+      candidate,
+    ]),
+  )
+}
+
 function sameSubject(subject: DecisionSubject, expected: ClassifierRunLease<unknown>['subject']) {
   return subject.postId === expected.postId && subject.rssFeedItemId === expected.rssFeedItemId
 }
@@ -44,9 +73,7 @@ export function assertRemoteInputCandidates<C>(
   lease: ClassifierRunLease<C>,
   decision: PersistClassifierDecisionInput,
 ): void {
-  const expected = new Set(
-    remotePlan(lease).candidates.map(candidate => `${candidate.topicId}:${candidate.candidateId}`),
-  )
+  const expected = expectedCandidates(lease)
   const results = decision.calls.flatMap(call => call.results)
   if (decision.calls.length !== 1 || results.length !== expected.size) {
     throw new Error('classifier run remote input does not cover its exact reserved candidates')
@@ -77,12 +104,7 @@ export function assertPersistedDecisionMatchesRun<C>(
   ) {
     throw new Error('classifier run remote decision identity does not match its receipt')
   }
-  const expected = new Map(
-    remote.candidates.map(candidate => [
-      `${candidate.topicId}:${candidate.candidateId}`,
-      candidate,
-    ]),
-  )
+  const expected = expectedCandidates(lease)
   if (decision.results.length !== expected.size || decision.calls.length !== 1) {
     throw new Error('classifier run remote decision does not cover its exact reserved candidates')
   }
@@ -93,21 +115,30 @@ export function assertPersistedDecisionMatchesRun<C>(
       throw new Error('classifier run remote decision contains a non-topic result')
     }
     const key = `${result.topicId}:${result.storedCandidateId ?? ''}`
-    const candidate = expected.get(key)
     if (
-      !candidate ||
+      !expected.has(key) ||
       seen.has(key) ||
       !callIds.has(result.decisionCallId) ||
       result.batchId !== decision.batchId ||
       result.classifierId !== remote.classifierId ||
       result.promptVersionId !== remote.promptVersionId ||
-      result.thresholdId !== candidate.thresholdId ||
-      result.effectiveThresholds.lower !== candidate.lower ||
-      result.effectiveThresholds.upper !== candidate.upper ||
+      !matchesExpectedThresholds(expected.get(key) ?? null, result) ||
       !isGlobal(result.scope)
     ) {
       throw new Error('classifier run remote decision lineage does not match its receipt')
     }
     seen.add(key)
   }
+}
+
+function matchesExpectedThresholds(
+  candidate: ExpectedCandidate,
+  result: PersistedClassifierDecision['results'][number],
+): boolean {
+  return (
+    candidate === null ||
+    (result.thresholdId === candidate.thresholdId &&
+      result.effectiveThresholds.lower === candidate.lower &&
+      result.effectiveThresholds.upper === candidate.upper)
+  )
 }

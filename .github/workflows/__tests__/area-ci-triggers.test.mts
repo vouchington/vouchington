@@ -131,13 +131,12 @@ describe('Area CI triggers', () => {
     }
   })
 
-  it('runs backend tests for runtime queue worker and flow packages', () => {
+  it('runs backend tests for runtime queue and worker packages', () => {
     expectFilterMatches('backend', [
       'backend/entrypoints/api/package.json',
       'backend/entrypoints/worker-cpu/package.json',
       'backend/entrypoints/worker-io/package.json',
       'backend/worker-runtime/index.mts',
-      'backend/flows/core/enqueues.mts',
       'backend/queues/crawler/enqueues.mts',
       'backend/workers/crawler/workers.mts',
       'backend/api/v1/check-api-message-safety.real-glide.mock.test.mts',

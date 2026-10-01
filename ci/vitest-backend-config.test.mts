@@ -201,7 +201,7 @@ describe('backend Vitest project config', () => {
 
     expect(noDataMocks?.include).toEqual(['backend/**/*.no-data.mock.test.mts'])
     expect(dataMocks?.include).toContain(
-      'backend/{agents,api,modules,data-stores,entrypoints,flows,queues,scripts,services,sitemaps,tools,worker-runtime,workers}/**/*.mock.test.mts',
+      'backend/{agents,api,modules,data-stores,entrypoints,queues,scripts,services,sitemaps,tools,worker-runtime,workers}/**/*.mock.test.mts',
     )
     expect(dataMocks?.exclude).toContain('**/*.no-data.mock.test.mts')
   })

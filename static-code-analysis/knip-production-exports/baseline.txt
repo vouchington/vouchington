@@ -1,6 +1,7 @@
 exports backend/agents/_shared/create-response.mts getBackgroundResponseHooks
 exports backend/agents/_shared/create-response.mts getOpenAIResponseAttemptHooks
 exports backend/agents/chat/stream.mts streamChatResponse
+exports backend/agents/classifiers/execute-single-call.mts executeSingleCallClassifierDecision
 exports backend/agents/classifiers/execute.mts executeClassifierDecision
 exports backend/agents/classifiers/safe-content.mts classifierChoiceKey
 exports backend/agents/classifiers/safe-content.mts classifierPrompt
@@ -25,6 +26,7 @@ exports backend/data-stores/psql/schema-growth-registry.mts buildSchemaGrowthReg
 exports backend/data-stores/psql/schema-growth-retained-identities.mts RETAINED_MISSING_UPDATED_AT
 exports backend/data-stores/valkey-core/app-integration.mts getValkeyAnalyticsPromiseForTest
 exports backend/data-stores/valkey-core/app-integration.mts resetValkeyAnalyticsLoaderForTest
+exports backend/data-stores/valkey-glide-mq/glide-mq-factory.mts createFlowProducer
 exports backend/data-stores/valkey-glide-mq/index.mts buildWorkerQueueSettings
 exports backend/data-stores/valkey/clients.mts closeDynamicConfigValkeySubscriptionClient
 exports backend/data-stores/valkey/dynamic-config.mts dynamicConfigs
@@ -301,6 +303,7 @@ exports backend/services/route-rate-limits/activitypub-inbox.mts isActivityPubIn
 exports backend/services/route-rate-limits/config.mts ROUTE_REGISTRY
 exports backend/services/rss-feed-items/categories.mts buildRssFeedItemCategorySqlBatches
 exports backend/services/rss-feed-items/categories.mts getRssFeedItemCategories
+exports backend/services/rss-feed-items/categories.mts getRssFeedItemMappedTopics
 exports backend/services/rss-feed-items/category-topic-votes.mts clearCategorizerVotesForUnreferencedCategoryTopicRelations
 exports backend/services/rss-feed-items/chapters.mts normalizePodcastChapters
 exports backend/services/rss-feed-items/get.mts getRssFeedItemKeyByGuid

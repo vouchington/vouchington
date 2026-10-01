@@ -26,7 +26,6 @@
     "data-stores/*",
     "queues/*",
     "workers/*",
-    "flows/*",
     "agents/*",
     "api",
     "entrypoints/api",

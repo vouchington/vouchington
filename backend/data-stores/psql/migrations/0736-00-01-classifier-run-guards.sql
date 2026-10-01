@@ -72,3 +72,8 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 CREATE OR REPLACE TRIGGER post_classifier_local_outcomes_append_only
 BEFORE UPDATE ON post_classifier_local_outcomes
 FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update();
+
+-- The captured candidate set is written once with the run and never revised.
+CREATE OR REPLACE TRIGGER classifier_run_candidates_append_only
+BEFORE UPDATE ON classifier_run_candidates
+FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update();

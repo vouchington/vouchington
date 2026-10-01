@@ -852,7 +852,6 @@
           "@data-stores/**",
           "@email-templates/**",
           "@entrypoints/**",
-          "@flows/**",
           "@lambdas/**",
           "@local/**",
           "@modules/**",
@@ -902,7 +901,6 @@
           "@data-stores/**",
           "@email-templates/**",
           "@entrypoints/**",
-          "@flows/**",
           "@lambdas/**",
           "@local/**",
           "@modules/**",
@@ -1170,12 +1168,7 @@
           {
             "targets": [
               {
-                "sourceSpecifierPatterns": [
-                  "@queues/**/enqueues",
-                  "@queues/**/enqueues/**",
-                  "@flows/**/enqueues",
-                  "@flows/**/enqueues/**"
-                ],
+                "sourceSpecifierPatterns": ["@queues/**/enqueues", "@queues/**/enqueues/**"],
                 "calleeNamePatterns": ["/^enqueue[A-Z].*/"]
               }
             ]

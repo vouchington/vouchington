@@ -16,7 +16,6 @@ module.exports = [
         '^backend/data-stores/',
         '^backend/queues/',
         '^backend/workers/',
-        '^backend/flows/',
         '^backend/api/',
         '^backend/rss/',
         '^backend/entrypoints/api/',

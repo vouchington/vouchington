@@ -77,3 +77,38 @@ export function deleteClassifierRunForSchemaTest(runId: string) {
     DELETE FROM classifier_runs WHERE id = ${runId}
   `)
 }
+
+/** Raw `classifier_run_candidates` rows, to prove the constraints without the lifecycle service. */
+export function insertClassifierRunCandidateForSchemaTest(
+  runId: string,
+  topicId: string,
+  ordinal: number,
+) {
+  return write(sql`/* insertClassifierRunCandidateForSchemaTest */
+    INSERT INTO classifier_run_candidates (run_id, topic_id, ordinal)
+    VALUES (${runId}, ${topicId}, ${ordinal})
+  `)
+}
+
+export function reviseClassifierRunCandidateForSchemaTest(
+  runId: string,
+  topicId: string,
+  ordinal: number,
+) {
+  return write(sql`/* reviseClassifierRunCandidateForSchemaTest */
+    UPDATE classifier_run_candidates SET ordinal = ${ordinal}
+    WHERE run_id = ${runId} AND topic_id = ${topicId}
+  `)
+}
+
+export async function readClassifierRunCandidateOrdinalsForSchemaTest(runId: string) {
+  const { rows } = await read<{ topic_id: string; ordinal: number }>(sql`
+    /* readClassifierRunCandidateOrdinalsForSchemaTest */
+    SELECT topic_id, ordinal FROM classifier_run_candidates WHERE run_id = ${runId} ORDER BY ordinal
+  `)
+  return rows.map(row => ({ topicId: row.topic_id, ordinal: row.ordinal }))
+}
+
+export function deleteTopicForSchemaTest(topicId: string) {
+  return write(sql`/* deleteTopicForSchemaTest */ DELETE FROM topics WHERE id = ${topicId}`)
+}
