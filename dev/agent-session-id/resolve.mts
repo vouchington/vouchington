@@ -8,12 +8,7 @@ import {
 import { isValidSessionId } from './valid-id.mts'
 
 export { resolveAmbientBlackboardIdentity } from './ambient.mts'
-export type {
-  BlackboardAgent,
-  BlackboardAgentHints,
-  BlackboardIdentity,
-  ResolveOptions,
-} from './identity.mts'
+export type { BlackboardAgent, BlackboardAgentHints, ResolveOptions } from './identity.mts'
 export { validateRootCodexOptions } from './root-codex-options.mts'
 
 const MISSING_AGENT_ERROR =
