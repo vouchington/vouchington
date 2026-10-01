@@ -6,7 +6,7 @@ const isolatedDatabaseCases = {
   'retained-relation-cursors': {
     file: 'backend/services/data-retention/__tests__/relation-cleanup-cursors.test.mts',
     fullName:
-      'retained relation cleanup cursors creates all missing cursors and reuses them on replay',
+      'retained relation cleanup cursors > creates all missing cursors and reuses them on replay',
   },
   'media-replay': {
     file: 'backend/api/v1/copyright-notices/copyright-notices.replay.isolated.test.mts',
