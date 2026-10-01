@@ -34,7 +34,7 @@ export function buildSemanticPostCandidates(
   appendPostSearchWhereClause(query, context)
   query.append(sql`
     ORDER BY posts.bedrock_nova_multimodal_v1_embedding <=>
-      (SELECT embedding FROM semantic_search_embedding), posts.id DESC
+      (SELECT embedding FROM semantic_search_embedding)
     LIMIT ${SEMANTIC_POST_CANDIDATE_LIMIT}
   )`)
   return query

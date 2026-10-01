@@ -67,6 +67,10 @@ also operate within that same window.
 Page cursors apply after candidate selection, so later pages never refill the window with new
 candidates. Pagination ends at its boundary; facets count that window rather than the exhaustive
 match set. Approximate recall can under-fill a page after the finite scan budget is exhausted.
+Only distance orders candidate selection so HNSW can serve the window; final ranking breaks
+ties by post ID. Inclusion at a tied distance boundary is arbitrary. Each request recomputes
+the window: cursors and facets use the same selection query, not a persisted candidate snapshot,
+so concurrent corpus changes or approximate index traversal can change membership across requests.
 Text-only and `similar_*` requests retain their existing query paths; similar-item relevance
 remains recency-ordered within the threshold.
 

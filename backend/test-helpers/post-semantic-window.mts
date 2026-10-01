@@ -1,11 +1,19 @@
+import { randomBytes } from 'node:crypto'
 import sql from 'sql-template-strings'
 import { beginTransaction } from '@data-stores/psql'
+
+/** Random direction keeps persistent ANN fixtures apart without duplicate vectors. */
+export function createSemanticWindowEmbedding(): number[] {
+  const coordinates = [...randomBytes(32)].map(value => value / 255 - 0.5)
+  const magnitude = Math.hypot(...coordinates)
+  return [...coordinates.map(value => value / magnitude), ...Array<number>(992).fill(0)]
+}
 
 /** Ownership-scoped embedded rows for candidate caps and selective post-filter tests. */
 export async function insertSemanticWindowPosts(
   userId: string,
   count: number,
-  equalDistances = false,
+  embedding: number[],
 ): Promise<string[]> {
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{ id: string }>(sql`/* insertSemanticWindowPosts */
@@ -16,8 +24,8 @@ export async function insertSemanticWindowPosts(
     )
     SELECT 'discussion', 'Semantic window fixture', 'Semantic window fixture', ${userId}::uuid,
       'system', decode(repeat('00', 32), 'hex'), decode(repeat('00', 32), 'hex'),
-      (ARRAY[1::real, CASE WHEN ${equalDistances} THEN 0::real ELSE ordinal::real / 1000 END]
-        || array_fill(0::real, ARRAY[1022]))::vector(1024)
+      (${embedding.slice(0, 32)}::real[] || ARRAY[ordinal::real / ${count}::real]
+        || array_fill(0::real, ARRAY[991]))::vector(1024)
     FROM generate_series(1, ${count}::integer) AS ordinal
     RETURNING id
   `)

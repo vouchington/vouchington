@@ -1,17 +1,23 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTestUser, seedSearchEmbeddingCache } from '@voucha/test-helpers'
-import { insertSemanticWindowPosts } from '../../../../test-helpers/post-semantic-window.mts'
+import {
+  createSemanticWindowEmbedding,
+  insertSemanticWindowPosts,
+} from '../../../../test-helpers/post-semantic-window.mts'
 import { getPostIds } from '../get-ids.mts'
 import { getPostFacets } from '../get-facets.mts'
 import { SEMANTIC_POST_CANDIDATE_LIMIT } from '../query-builder/semantic-candidates.mts'
 
-const embedding = [1, ...Array<number>(1023).fill(0)]
-
 describe('semantic search candidate paging', () => {
   it('ends pagination at the fixed window and counts the same candidates', async () => {
     const user = await createTestUser()
-    const ids = await insertSemanticWindowPosts(user.id, SEMANTIC_POST_CANDIDATE_LIMIT + 3, true)
+    const embedding = createSemanticWindowEmbedding()
+    const ids = await insertSemanticWindowPosts(
+      user.id,
+      SEMANTIC_POST_CANDIDATE_LIMIT + 3,
+      embedding,
+    )
     const query = randomUUID()
     await seedSearchEmbeddingCache(query, embedding)
     const seen = new Set<string>()
@@ -33,7 +39,7 @@ describe('semantic search candidate paging', () => {
       after = page.page_info.end_cursor ?? undefined
     }
     expect(seen.size).toBe(SEMANTIC_POST_CANDIDATE_LIMIT)
-    expect([...seen]).toEqual([...ids].sort().reverse().slice(0, SEMANTIC_POST_CANDIDATE_LIMIT))
+    expect([...seen]).toEqual(ids.slice(0, SEMANTIC_POST_CANDIDATE_LIMIT))
     expect(await getPostFacets(user, { user_id: user.id, semantic_search_query: query })).toEqual({
       total_count: SEMANTIC_POST_CANDIDATE_LIMIT,
     })
@@ -41,9 +47,10 @@ describe('semantic search candidate paging', () => {
 
   it('fills a selective page and preserves distance ranking for semantic and hybrid queries', async () => {
     const other = await createTestUser()
-    await insertSemanticWindowPosts(other.id, 100)
+    const embedding = createSemanticWindowEmbedding()
+    await insertSemanticWindowPosts(other.id, 100, embedding)
     const user = await createTestUser()
-    const ids = await insertSemanticWindowPosts(user.id, 30)
+    const ids = await insertSemanticWindowPosts(user.id, 30, embedding)
     const query = randomUUID()
     await seedSearchEmbeddingCache(query, embedding)
     for (const text of [undefined, 'fixture']) {
