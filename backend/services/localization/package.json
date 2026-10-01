@@ -20,7 +20,7 @@
     "./*/__tests__/*": null
   },
   "dependencies": {
-    "@vouchington/localization": "0.2.0",
-    "@vouchington/localization-compiler": "0.2.2"
+    "@vouchington/localization": "^0.2.0",
+    "@vouchington/localization-compiler": "^0.2.2"
   }
 }

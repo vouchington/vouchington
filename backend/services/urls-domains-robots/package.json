@@ -28,7 +28,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",
-    "@vouchington/robots": "0.0.1",
+    "@vouchington/robots": "^0.0.1",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {

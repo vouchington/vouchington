@@ -27,7 +27,7 @@
     "@ts-shared/feed-capabilities": "workspace:^",
     "@ts-shared/money": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@vouchington/embeds": "0.0.2",
+    "@vouchington/embeds": "^0.0.2",
     "sql-template-strings": "^2.2.2"
   }
 }
