@@ -13,9 +13,7 @@ Administrator MCP access is not an API-key type; see [Admin MCP is OAuth-only](#
 
 ## Key Format
 
-All keys follow `voucha_<type>_<32 hex random>_<16 hex HMAC checksum>`.
-
-Example: `voucha_rss_a1b2c3d4e5f6789012345678abcdef01_a3f29c7e4d8b1f05`
+All keys follow `voucha_<type>_<32 hex random>_<16 hex HMAC checksum>`, for example `voucha_rss_a1b2c3d4e5f6789012345678abcdef01_a3f29c7e4d8b1f05`.
 
 - **Brand prefix**: `voucha_`
 - **Type segment**: `rss` (typed enum, extensible)
