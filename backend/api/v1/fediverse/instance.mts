@@ -4,6 +4,7 @@ import {
   getOptionalAuthAndRateLimit,
   requireAuthAndRateLimit,
   parseJsonBody,
+  validateRequestContract,
   validateUUIDParam,
   setAnonymousPublicCacheHeaders,
 } from '../../response-helpers.mts'
@@ -20,7 +21,6 @@ import {
 import { currentUserCanModifyFediverseInstanceIntegrationStatus } from '@services/fediverse-instances/authorization'
 import { assertNotSuspended } from '@services/users'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
-import { apiRequest } from '../../response-contract.mts'
 
 type PublicFediverseInstanceAttributes = Omit<
   FediverseInstanceAttributes,
@@ -48,6 +48,7 @@ type FediverseIntegrationChangeRequest = {
 
 app.route('/api/v1/fediverse/instances/:id').get(async (ctx: Context) => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/fediverse/instances/:id')
+  validateRequestContract(ctx, 'GET:/api/v1/fediverse/instances/:id', { path: ctx.params })
   const topic = await getTopicByAnyCached(ctx.params.id!)
   ctx.assert(
     topic && topic.topic_type === 'fediverse_instance',
@@ -89,25 +90,11 @@ app.route('/api/v1/fediverse/instances/:id/integration-changes').post(async (ctx
     'Fediverse instance not found',
   )
 
-  const rawBody = await parseJsonBody<Record<string, unknown>>(ctx)
-  const integrationStatus = rawBody.integration_status
-  ctx.assert(
-    integrationStatus === 'pending' ||
-      integrationStatus === 'approved' ||
-      integrationStatus === 'blocked',
-    422,
-    'integration_status must be one of: pending, approved, blocked',
-  )
-  ctx.assert(
-    rawBody.reason === undefined || rawBody.reason === null || typeof rawBody.reason === 'string',
-    422,
-    'reason must be a string',
-  )
-  const requestBody: FediverseIntegrationChangeRequest = {
-    integration_status: integrationStatus,
-    ...(rawBody.reason !== undefined && { reason: rawBody.reason }),
-  }
-  const body = apiRequest('POST:/api/v1/fediverse/instances/:id/integration-changes', requestBody)
+  const body = await parseJsonBody<FediverseIntegrationChangeRequest>(ctx)
+  validateRequestContract(ctx, 'POST:/api/v1/fediverse/instances/:id/integration-changes', {
+    body,
+    path: ctx.params,
+  })
 
   const status = await setIntegrationStatusAsAdmin(currentUser, {
     topicId,
@@ -115,5 +102,5 @@ app.route('/api/v1/fediverse/instances/:id/integration-changes').post(async (ctx
     reason: body.reason,
   })
 
-  ctx.json({ status, topic_id: topicId, integration_status: integrationStatus })
+  ctx.json({ status, topic_id: topicId, integration_status: body.integration_status })
 })

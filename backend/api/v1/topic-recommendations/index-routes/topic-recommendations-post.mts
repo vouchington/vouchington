@@ -15,8 +15,12 @@ import {
   type CreateTopicRecommendationInput,
 } from '@services/topic-recommendations'
 import app from '../../../app.mts'
-import { requireAuth } from '../../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { apiHeaders } from '../../../response-contract.mts'
+
+type CreateTopicRecommendationRequest = CreateTopicRecommendationInput & {
+  cf_turnstile_response?: string
+}
 
 app.route('/api/v1/topic-recommendations').post(async (ctx: Context) => {
   apiHeaders('POST:/api/v1/topic-recommendations', {
@@ -53,7 +57,10 @@ app.route('/api/v1/topic-recommendations').post(async (ctx: Context) => {
 
   const membershipPlan = await getUserActivePlan(currentUser.id)
   await assertCanContribute(currentUser, { membershipPlan })
-  const body: unknown = await ctx.request.json<CreateTopicRecommendationInput>('1mb')
+  const body: unknown = await ctx.request.json<CreateTopicRecommendationRequest>('1mb')
+  // The Idempotency-Key header is not run through the contract: the admission layer answers a
+  // malformed key with its coded 400, which is the documented status.
+  validateRequestContract(ctx, 'POST:/api/v1/topic-recommendations', { body })
   assertValidCreateTopicRecommendationInput(body)
   const admission = await admitRouteContribution({
     currentUser,

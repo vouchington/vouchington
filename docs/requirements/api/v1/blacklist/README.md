@@ -41,8 +41,10 @@ Triggers a source sync job for a specific blacklist source.
 | ---------- | ----------------- | -------- | --------------------------------- |
 | `sourceId` | integer or string | Yes      | Positive integer ID of the source |
 
-Returns 400 if `sourceId` is missing, not an integer/integer string, or not positive.
-Returns 415 if `Content-Type` is not `application/json`.
+Returns 422 if the body is not an object with only `sourceId`, or `sourceId` is missing or neither a
+string nor a number. Returns 400 if `sourceId` is not an integer/integer string or not positive.
+Returns 415 if `Content-Type` is not `application/json`. The role gate answers first, so anonymous and
+non-staff callers see 401 and 403 without a schema diagnostic.
 
 **Response:**
 

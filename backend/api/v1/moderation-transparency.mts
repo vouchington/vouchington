@@ -7,7 +7,7 @@ import {
 } from '@services/moderation-analytics'
 import { defineQueryContract, queryEnum, queryString } from '@modules/pagination'
 import { apiQuery } from '../response-contract.mts'
-import { requireAuth } from '../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../response-helpers.mts'
 
 const RANGE_VALUES = ['today', '7d', '30d', '90d', 'all'] as const
 const VALID_RANGES = new Set<ModerationAnalyticsRange>(RANGE_VALUES)
@@ -26,9 +26,13 @@ app.route('/api/v1/moderation-transparency').get(async (ctx: Context) => {
   ctx.assert(await currentUserCanViewModerationTransparency(currentUser), 403, 'Forbidden')
   apiQuery('GET:/api/v1/moderation-transparency', rangeQuery)
   const range = parseRange(ctx.query.range)
-  ctx.json(
-    await getModerationTransparency(range, new Date(), getAfter(ctx, ctx.query.after, range)),
-  )
+  const after = getAfter(ctx, ctx.query.after, range)
+  // An invalid range falls back to 30d and an unused cursor is ignored, so the contract checks the
+  // settled values.
+  validateRequestContract(ctx, 'GET:/api/v1/moderation-transparency', {
+    query: { range, ...(after !== undefined && { after }) },
+  })
+  ctx.json(await getModerationTransparency(range, new Date(), after))
 })
 
 function parseRange(raw: unknown): ModerationAnalyticsRange {

@@ -7936,7 +7936,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/moderator-stats": {
       "bodyKind": "content",
-      "hash": "217c7e4b0aa8bbadd3ebf978f8d6e550d3000bb339d14f3a1bce07a8e2e6b769",
+      "hash": "7bfd85c72ee5b271377a6c93db7d035bd3290ee682b50f2b418190af12e567f8",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -7955,7 +7955,7 @@
               "counts": {
                 "required": true,
                 "schema": {
-                  "name": "Partial<Record<\"remove\" | \"warn\" | \"approve\" | \"reject\" | \"ban\" | \"lift_ban\" | \"activate_restriction\" | \"lift_restriction\" | \"lock\" | \"unlock\" | \"pin\" | \"unpin\" | \"tag\" | \"suspend\" | \"unsuspend\" | \"remove_member\" | \"change_role\" | \"resolve_report\" | \"dismiss_report\" | \"resolve_appeal\" | \"dismiss_appeal\" | \"topic_claim_verify\" | \"topic_claim_reject\" | \"topic_claim_revoke\" | \"report_claim\" | \"report_unclaim\" | \"report_escalate\" | \"report_deescalate\" | \"report_integrity_flag_review\" | \"report_integrity_penalty_apply\" | \"report_integrity_penalty_revoke\" | \"vote_integrity_flag_review\" | \"vote_integrity_penalty_apply\" | \"vote_integrity_penalty_revoke\" | \"vote_weight_set\" | \"vote_weight_reset\" | \"agent_moderation_vote_set\" | \"agent_moderation_vote_delete\" | \"mod_note_delete\" | \"report_judgement_rerun\" | \"appeal_resolution_draft_rerun\" | \"dispute_resolution_draft_rerun\" | \"oauth_client_verify\" | \"oauth_client_unverify\" | \"crawler_create\" | \"crawler_update\" | \"crawler_delete\" | \"rss_category_assign\" | \"rss_category_reject\" | \"rss_category_unreject\" | \"queue_pause\" | \"queue_resume\" | \"queue_retry_failed\" | \"scheduled_job_run\" | \"backfill_run\" | \"article_sync_run\" | \"import_batch_create\",number>>",
+                  "name": "Partial<Record<\"remove\" | \"warn\" | \"reject\" | \"approve\" | \"ban\" | \"lift_ban\" | \"activate_restriction\" | \"lift_restriction\" | \"lock\" | \"unlock\" | \"pin\" | \"unpin\" | \"tag\" | \"suspend\" | \"unsuspend\" | \"remove_member\" | \"change_role\" | \"resolve_report\" | \"dismiss_report\" | \"resolve_appeal\" | \"dismiss_appeal\" | \"topic_claim_verify\" | \"topic_claim_reject\" | \"topic_claim_revoke\" | \"report_claim\" | \"report_unclaim\" | \"report_escalate\" | \"report_deescalate\" | \"report_integrity_flag_review\" | \"report_integrity_penalty_apply\" | \"report_integrity_penalty_revoke\" | \"vote_integrity_flag_review\" | \"vote_integrity_penalty_apply\" | \"vote_integrity_penalty_revoke\" | \"vote_weight_set\" | \"vote_weight_reset\" | \"agent_moderation_vote_set\" | \"agent_moderation_vote_delete\" | \"mod_note_delete\" | \"report_judgement_rerun\" | \"appeal_resolution_draft_rerun\" | \"dispute_resolution_draft_rerun\" | \"oauth_client_verify\" | \"oauth_client_unverify\" | \"crawler_create\" | \"crawler_update\" | \"crawler_delete\" | \"rss_category_assign\" | \"rss_category_reject\" | \"rss_category_unreject\" | \"queue_pause\" | \"queue_resume\" | \"queue_retry_failed\" | \"scheduled_job_run\" | \"backfill_run\" | \"article_sync_run\" | \"import_batch_create\",number>>",
                   "type": "ref"
                 }
               },
@@ -7968,7 +7968,7 @@
             },
             "type": "object"
           },
-          "Partial<Record<\"remove\" | \"warn\" | \"approve\" | \"reject\" | \"ban\" | \"lift_ban\" | \"activate_restriction\" | \"lift_restriction\" | \"lock\" | \"unlock\" | \"pin\" | \"unpin\" | \"tag\" | \"suspend\" | \"unsuspend\" | \"remove_member\" | \"change_role\" | \"resolve_report\" | \"dismiss_report\" | \"resolve_appeal\" | \"dismiss_appeal\" | \"topic_claim_verify\" | \"topic_claim_reject\" | \"topic_claim_revoke\" | \"report_claim\" | \"report_unclaim\" | \"report_escalate\" | \"report_deescalate\" | \"report_integrity_flag_review\" | \"report_integrity_penalty_apply\" | \"report_integrity_penalty_revoke\" | \"vote_integrity_flag_review\" | \"vote_integrity_penalty_apply\" | \"vote_integrity_penalty_revoke\" | \"vote_weight_set\" | \"vote_weight_reset\" | \"agent_moderation_vote_set\" | \"agent_moderation_vote_delete\" | \"mod_note_delete\" | \"report_judgement_rerun\" | \"appeal_resolution_draft_rerun\" | \"dispute_resolution_draft_rerun\" | \"oauth_client_verify\" | \"oauth_client_unverify\" | \"crawler_create\" | \"crawler_update\" | \"crawler_delete\" | \"rss_category_assign\" | \"rss_category_reject\" | \"rss_category_unreject\" | \"queue_pause\" | \"queue_resume\" | \"queue_retry_failed\" | \"scheduled_job_run\" | \"backfill_run\" | \"article_sync_run\" | \"import_batch_create\",number>>": {
+          "Partial<Record<\"remove\" | \"warn\" | \"reject\" | \"approve\" | \"ban\" | \"lift_ban\" | \"activate_restriction\" | \"lift_restriction\" | \"lock\" | \"unlock\" | \"pin\" | \"unpin\" | \"tag\" | \"suspend\" | \"unsuspend\" | \"remove_member\" | \"change_role\" | \"resolve_report\" | \"dismiss_report\" | \"resolve_appeal\" | \"dismiss_appeal\" | \"topic_claim_verify\" | \"topic_claim_reject\" | \"topic_claim_revoke\" | \"report_claim\" | \"report_unclaim\" | \"report_escalate\" | \"report_deescalate\" | \"report_integrity_flag_review\" | \"report_integrity_penalty_apply\" | \"report_integrity_penalty_revoke\" | \"vote_integrity_flag_review\" | \"vote_integrity_penalty_apply\" | \"vote_integrity_penalty_revoke\" | \"vote_weight_set\" | \"vote_weight_reset\" | \"agent_moderation_vote_set\" | \"agent_moderation_vote_delete\" | \"mod_note_delete\" | \"report_judgement_rerun\" | \"appeal_resolution_draft_rerun\" | \"dispute_resolution_draft_rerun\" | \"oauth_client_verify\" | \"oauth_client_unverify\" | \"crawler_create\" | \"crawler_update\" | \"crawler_delete\" | \"rss_category_assign\" | \"rss_category_reject\" | \"rss_category_unreject\" | \"queue_pause\" | \"queue_resume\" | \"queue_retry_failed\" | \"scheduled_job_run\" | \"backfill_run\" | \"article_sync_run\" | \"import_batch_create\",number>>": {
             "additionalProperties": false,
             "properties": {
               "activate_restriction": {
@@ -22853,6 +22853,154 @@
       "source": "backend/api/v1/memberships/plans.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/memberships/refundable-charges": {
+      "bodyKind": "content",
+      "hash": "bf878e84ccda08299095c294160fd3a2500b551ff42b843ee3d5f39a7ca8ec01",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/memberships/refundable-charges",
+      "schema": {
+        "definitions": {
+          "Money": {
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "currency": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "aud"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "cad"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "eur"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "gbp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "jpy"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "usd"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "RefundableCharge": {
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "required": true,
+                "schema": {
+                  "name": "Money",
+                  "type": "ref"
+                }
+              },
+              "amount_refunded": {
+                "required": true,
+                "schema": {
+                  "name": "Money",
+                  "type": "ref"
+                }
+              },
+              "charge_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "description": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "invoice_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "payment_intent_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "charges": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "name": "RefundableCharge",
+                  "type": "ref"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/memberships/refundable-charges.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/moderation-transparency": {
       "bodyKind": "content",
       "hash": "8888e2d3e3c82038d9b1845d906a9fc924d555058e57fe870eb3b612c09ad598",
@@ -37228,6 +37376,107 @@
         }
       },
       "source": "backend/api/v1/reports/reports.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/rss-feed-categories": {
+      "bodyKind": "content",
+      "hash": "e255aaa5d397655be446d4f667626cbe402af7cf5e1c230dd648b10b0c3f7d1b",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/rss-feed-categories",
+      "schema": {
+        "definitions": {
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "UnmappedCategory": {
+            "additionalProperties": false,
+            "properties": {
+              "category_text": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "item_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "rejected": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            },
+            "results": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "name": "UnmappedCategory",
+                  "type": "ref"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/admin/rss-feed-categories/categories.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/rss-feed-items/:id": {
@@ -76612,6 +76861,33 @@
     },
     {
       "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/memberships/refundable-charges",
+      "bodyFile": "responses/web.memberships.refundable-charges.default.json",
+      "consumers": ["web"],
+      "id": "web.memberships.refundable-charges.default",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/memberships/refundable-charges.mts",
+        "web/lib/api/client/memberships.ts"
+      ],
+      "path": "/api/v1/memberships/refundable-charges",
+      "query": {
+        "user_id": "019fafb8-a44c-73e2-890a-497ff3dd27a6"
+      },
+      "responseSchema": {
+        "hash": "70a5b1fefab31c029255c79973f64d34787a1001ce26af5ce5fc1cefa6b3d7a1",
+        "key": "web.memberships.refundable-charges.default"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/memberships/refundable-charges"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
       "backendResponseContractKey": "POST:/api/v1/memberships/refunds#completed",
       "bodyFile": "responses/web.memberships.refund.completed.json",
       "consumers": ["web"],
@@ -76667,6 +76943,34 @@
         "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
       },
       "status": 202
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/rss-feed-categories",
+      "bodyFile": "responses/web.rss-feed-categories.default.json",
+      "consumers": ["web"],
+      "id": "web.rss-feed-categories.default",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/admin/rss-feed-categories/categories.mts",
+        "web/lib/api/server/rss-feed-categories.ts"
+      ],
+      "path": "/api/v1/rss-feed-categories",
+      "query": {
+        "limit": "2",
+        "status": "pending"
+      },
+      "responseSchema": {
+        "hash": "b28740e22d7f107b0d5c7b1206e9ccd28419ce0950b5070fe029c7edd623ae69",
+        "key": "web.rss-feed-categories.default"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/rss-feed-categories"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
     },
     {
       "auth": "fixture-user",

@@ -5,7 +5,7 @@ import {
   currentUserCanManageRecommendations,
 } from '@services/topic-recommendations'
 import app from '../../../app.mts'
-import { requireAuth } from '../../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
 import { assertTopicRecommendationPost } from './shared.mts'
 
@@ -13,6 +13,9 @@ app.route('/api/v1/topic-recommendations/:id/approvals').post(async (ctx: Contex
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/topic-recommendations/:id/approvals')
   ctx.assert(currentUserCanManageRecommendations(currentUser), 403, 'Admin access required')
+  validateRequestContract(ctx, 'POST:/api/v1/topic-recommendations/:id/approvals', {
+    path: ctx.params,
+  })
 
   const post = assertTopicRecommendationPost(await getPostByAnyCached(ctx.params.id!))
   ctx.assert(post, 404, 'Recommendation not found')

@@ -103,6 +103,10 @@ export interface WebFixtureServerEndpointContext {
     'getCommunityPendingModerationReports'
   >
   readonly scopes: Pick<typeof import('@/lib/api/server/scopes'), 'getScopeCatalog'>
+  readonly rssFeedCategories: Pick<
+    typeof import('@/lib/api/server/rss-feed-categories'),
+    'getAdminRssFeedCategories'
+  >
   readonly rssFeedItems: Pick<
     typeof import('@/lib/api/server/rss-feed-items'),
     'getRssFeedItem' | 'getUserRssFeedItemBookmarkReferences'

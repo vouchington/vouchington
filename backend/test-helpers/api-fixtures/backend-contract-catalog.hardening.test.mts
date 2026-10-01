@@ -6,8 +6,11 @@ import { getBackendProgramBuildCount, getBackendProgramEntryCount } from './back
 
 const expectedParameters = {
   'GET:/api/v1/admin/ai-costs': ['after', 'limit'],
+  'GET:/api/v1/admin/moderation-analytics': ['range'],
+  'GET:/api/v1/admin/modlog': ['action_type', 'actor_id', 'after', 'community_id', 'limit'],
   'GET:/api/v1/admin/oauth-clients': ['after', 'limit', 'verification'],
   'GET:/api/v1/agent-moderations/:id/votes': ['after', 'limit'],
+  'GET:/api/v1/appeals': ['after', 'limit', 'mine', 'status'],
   'GET:/api/v1/auth/passkeys': ['after', 'limit'],
   'GET:/api/v1/auth/sessions': ['after', 'limit'],
   'GET:/api/v1/auth/totp': ['after', 'limit'],
@@ -19,6 +22,7 @@ const expectedParameters = {
   'GET:/api/v1/copyright-notices/:id/guest-capabilities': ['after', 'limit'],
   'GET:/api/v1/copyright-notices/review-queue': ['after', 'limit'],
   'GET:/api/v1/currencies': ['after', 'limit'],
+  'GET:/api/v1/disputes': ['after', 'limit', 'mine', 'status'],
   'GET:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType': [
     'after',
     'limit',
@@ -57,6 +61,7 @@ const expectedParameters = {
     'text_search_query',
     'time_range',
   ],
+  'GET:/api/v1/growth-metrics': ['range'],
   'GET:/api/v1/hostnames': [
     'after',
     'blocked',
@@ -75,6 +80,7 @@ const expectedParameters = {
   'GET:/api/v1/households/:id/memberships': ['after', 'limit'],
   'GET:/api/v1/lists': ['after', 'limit'],
   'GET:/api/v1/lists/:id/items': ['after', 'limit', 'media_type', 'read'],
+  'GET:/api/v1/memberships/refundable-charges': ['user_id'],
   'GET:/api/v1/moderation-transparency': ['after', 'range'],
   'GET:/api/v1/my/api-keys': ['after', 'limit'],
   'GET:/api/v1/my/bans': ['after', 'limit'],
@@ -125,9 +131,12 @@ const expectedParameters = {
   'GET:/api/v1/posts/:id/votes': ['after', 'limit'],
   'GET:/api/v1/posts/:idOrSlug/ancestors': ['after', 'limit'],
   'GET:/api/v1/posts/:idOrSlug/descendants': ['after', 'limit'],
+  'GET:/api/v1/posts/review-queue': ['after', 'limit'],
   'GET:/api/v1/referral-link-validations': ['after', 'limit', 'search'],
   'GET:/api/v1/referral-link-validations/:validationId/rules': ['after', 'limit'],
   'GET:/api/v1/referral-links': ['after', 'limit', 'referral_program_id', 'user_id'],
+  'GET:/api/v1/reports': ['after', 'before', 'cluster', 'limit', 'sort', 'status'],
+  'GET:/api/v1/rss-feed-categories': ['after', 'limit', 'status'],
   'GET:/api/v1/rss-feed-items': [
     'after',
     'category_topic',
