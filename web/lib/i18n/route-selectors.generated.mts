@@ -288,7 +288,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/referral-program/[id]/validations/[validationId]", selectorId: "web.route.be830cbc301faa46.0071037ee7d1cfe0", hasMembership: true },
   { pattern: "/referral-program/[id]/validations/new", selectorId: "web.route.2c539dad893f5122.0071037ee7d1cfe0", hasMembership: true },
   { pattern: "/referral-programs", selectorId: "web.route.065ac5051f65d0bf.1d5305eda96644b5", hasMembership: true },
-  { pattern: "/report-integrity/flags", selectorId: "web.route.4d3e15fd814efa0e.2c65e97306c59de2", hasMembership: true },
+  { pattern: "/report-integrity/flags", selectorId: "web.route.4d3e15fd814efa0e.36a6773857be9783", hasMembership: true },
   { pattern: "/report-integrity/penalties", selectorId: "web.route.8bfc1269fe731164.d5cca061a138f4a7", hasMembership: true },
   { pattern: "/reports", selectorId: "web.route.884c69774049d7ad.6583176f9af4b49e", hasMembership: true },
   { pattern: "/review/[id]", selectorId: "web.route.c1a11e6f39341f20.1619dd52b32de66d", hasMembership: true },
@@ -417,7 +417,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/user/[idOrUsername]/users/muted", selectorId: "web.route.defcc6b30d2332d9.6c0d4a140dd139c5", hasMembership: true },
   { pattern: "/users", selectorId: "web.route.7bb4b8130dc5d606.fb0a979f15c110f0", hasMembership: true },
   { pattern: "/videos", selectorId: "web.route.f61c940d6457cc8a.5495dcc27d787b87", hasMembership: true },
-  { pattern: "/vote-integrity/flags", selectorId: "web.route.241b8a9634d8e2c8.ef66322dc45a77e5", hasMembership: true },
+  { pattern: "/vote-integrity/flags", selectorId: "web.route.241b8a9634d8e2c8.ab2425b9be4a492b", hasMembership: true },
   { pattern: "/vote-integrity/penalties", selectorId: "web.route.d0dbddb5736968ea.d5cca061a138f4a7", hasMembership: true },
   { pattern: "/web-search", selectorId: "web.route.fde432d5db9fdf3f.f2b02526beb2bcc7", hasMembership: true },
 ]
