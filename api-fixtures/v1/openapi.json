@@ -2800,6 +2800,43 @@
         "required": ["elements", "risk_notes", "suggested_action", "summary"],
         "type": "object"
       },
+      "CopyrightGuestCapabilityIssueRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expires_at": {
+            "type": "string"
+          }
+        },
+        "required": ["expires_at"],
+        "type": "object"
+      },
+      "CopyrightGuestFilingRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "cf_turnstile_response": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": ["court_or_ccb_hold", "supplement", "withdrawal"],
+            "type": "string"
+          },
+          "statement": {
+            "type": "string"
+          }
+        },
+        "required": ["kind", "statement"],
+        "type": "object"
+      },
+      "CopyrightGuestInformationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "statement": {
+            "type": "string"
+          }
+        },
+        "required": ["statement"],
+        "type": "object"
+      },
       "CopyrightHoldResolutionKind": {
         "enum": ["dismissed", "proceeding_ended", "superseded"],
         "type": "string"
@@ -39964,14 +40001,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "expires_at": {
-                    "type": "string"
-                  }
-                },
-                "required": ["expires_at"],
-                "type": "object"
+                "$ref": "#/components/schemas/CopyrightGuestCapabilityIssueRequest"
               }
             }
           }
@@ -40038,14 +40068,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "statement": {
-                    "type": "string"
-                  }
-                },
-                "required": ["statement"],
-                "type": "object"
+                "$ref": "#/components/schemas/CopyrightGuestInformationRequest"
               }
             }
           }
@@ -40162,28 +40185,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "cf_turnstile_response": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "kind": {
-                    "enum": ["court_or_ccb_hold", "supplement", "withdrawal"],
-                    "type": "string"
-                  },
-                  "statement": {
-                    "type": "string"
-                  }
-                },
-                "required": ["cf_turnstile_response", "kind", "statement"],
-                "type": "object"
+                "$ref": "#/components/schemas/CopyrightGuestFilingRequest"
               }
             }
           }

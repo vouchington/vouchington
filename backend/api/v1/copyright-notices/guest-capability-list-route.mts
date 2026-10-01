@@ -10,6 +10,7 @@ import { buildPageInfo, createPaginationParser, decodeScopedUuidCursor } from '@
 import { requireAuthAndRateLimit, validateUUIDParam } from '../../response-helpers.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 
 const guestCapabilitiesParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -28,7 +29,12 @@ app.route('/api/v1/copyright-notices/:id/guest-capabilities').get(async (ctx: Co
   )
   assertNotSuspended(currentUser)
   const noticeId = validateUUIDParam(ctx, 'id')
-  const options = guestCapabilitiesParser.parse(ctx.query)
+  const options = parseAndValidatePaginatedRequest(
+    ctx,
+    'GET:/api/v1/copyright-notices/:id/guest-capabilities',
+    guestCapabilitiesParser,
+    { path: true },
+  )
   const scope = copyrightGuestCapabilityCursorScope(noticeId)
   const afterId = options.after
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid cursor format').id
