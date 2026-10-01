@@ -2,14 +2,12 @@ import type {
   OpenAIResponseInput,
   OpenAIResponse,
   createOpenAIResponse,
-  streamOpenAIResponse,
 } from '../create-response.mts'
 import type { createOpenRouterResponse } from '@modules/openrouter-utils'
 import type {
   AgentTool,
   OpenAIFunctionCallOutput,
   OpenAIFunctionCall,
-  dispatchOneToolCall,
   executeToolCalls,
   getFunctionCallsFromOutput,
 } from '@services/openai-agents'
@@ -25,10 +23,8 @@ export interface RunToolLoopDeps {
   agentToolsToSchemas?: typeof agentToolsToSchemas
   createOpenAIResponse?: typeof createOpenAIResponse
   createOpenRouterResponse?: typeof createOpenRouterResponse
-  streamOpenAIResponse?: typeof streamOpenAIResponse
   getFunctionCallsFromOutput?: typeof getFunctionCallsFromOutput
   executeToolCalls?: typeof executeToolCalls
-  dispatchOneToolCall?: typeof dispatchOneToolCall
   assertOpenAiSpendCapNotBreached?: typeof assertOpenAiSpendCapNotBreached
   latchAccountingUncertainty?: typeof latchAccountingUncertainty
   recordAgentResponseUsage?: typeof recordAgentResponseUsage

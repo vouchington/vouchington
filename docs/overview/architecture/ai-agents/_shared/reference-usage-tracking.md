@@ -7,9 +7,9 @@
 `AsyncLocalStorage`-scoped per-job TPM accumulator (`token-accumulator.mts`), so a glide-mq
 `tokenLimiter` can throttle on real token consumption instead of staying permanently inert.
 `recordAgentResponseUsage` (below) calls `addAccumulatedTokens` on every OpenAI response it
-records — direct calls, the tool loop, and the streaming tool loop all flow through it — so no
-call site needs to opt in individually. `addAccumulatedTokens` is a no-op outside an active scope
-(e.g. a script run directly, or most existing tests).
+records — direct calls and the tool loop both flow through it — so no call site needs to opt in
+individually. `addAccumulatedTokens` is a no-op outside an active scope (e.g. a script run
+directly, or most existing tests).
 
 ```typescript
 import { runWithJobTokenAccumulator } from '@agents/_shared'

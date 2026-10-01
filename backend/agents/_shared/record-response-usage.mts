@@ -46,8 +46,9 @@ interface RecordAgentResponseUsageDeps {
 
 /**
  * Settles cost-ledger recording for a single completed OpenAI call. Shared by
- * callRecordingAgentResponseUsage (below) and run-tool-loop/record-usage.mts's
- * recordToolLoopUsage, so direct calls and the tool loop share one recording policy.
+ * callRecordingAgentResponseUsage (below), which direct calls and the tool loop
+ * (run-tool-loop/record-usage.mts's callRecordingToolLoopUsage) both go through, so they share one
+ * recording policy.
  *
  * Records from `response.model`/`response.service_tier` — what OpenAI actually served — not the
  * requested model/tier, falling back to a distinguishable sentinel when either is missing so a

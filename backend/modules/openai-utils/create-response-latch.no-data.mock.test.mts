@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { streamOpenAIResponse } from './create-response.mts'
+import { createOpenAIResponse } from './create-response.mts'
 import { runWithOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
 import { OpenAIResponseNotCompletedError } from './response-errors.mts'
 import {
@@ -10,8 +10,8 @@ import {
 } from '../../test-helpers/modules/openai-utils/responses.mts'
 
 type CreateMock = (
-  params: Parameters<typeof streamOpenAIResponse>[0],
-  options: Parameters<typeof streamOpenAIResponse>[1],
+  params: Parameters<typeof createOpenAIResponse>[0],
+  options: Parameters<typeof createOpenAIResponse>[1],
 ) => Promise<unknown>
 
 const openAIMocks = vi.hoisted(() => ({ create: vi.fn<CreateMock>() }))
@@ -44,49 +44,15 @@ describe('OpenAI response stream latch decisions', () => {
           onUnknownBilledAttempt,
         },
         async () =>
-          streamOpenAIResponse(
+          createOpenAIResponse(
             { model: 'gpt-4.1-mini', input: 'hello' },
             { signal: controller.signal },
-          ).next(),
+          ),
       ),
     ).rejects.toThrow('This operation was aborted')
 
     expect(openAIMocks.create).not.toHaveBeenCalled()
     expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
-  })
-
-  it('latches a terminal failed stream that omitted usage', async () => {
-    openAIMocks.create.mockResolvedValueOnce(
-      makeResponseStream([
-        makeStreamEvent({
-          type: 'response.failed',
-          sequence_number: 1,
-          response: makeSdkResponse({ status: 'failed', usage: undefined }),
-        }),
-      ]),
-    )
-    const onUnknownBilledAttempt = vi.fn<
-      (value: { requestStartedAt: Date; error: unknown }) => Promise<void>
-    >(() => Promise.resolve())
-
-    await expect(
-      runWithOpenAIResponseAttemptHooks(
-        { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
-      ),
-    ).rejects.toBeInstanceOf(OpenAIResponseNotCompletedError)
-
-    expect(onUnknownBilledAttempt).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ error: expect.any(OpenAIResponseNotCompletedError) }),
-    )
-    const firstCall = onUnknownBilledAttempt.mock.calls[0]
-    expect(firstCall).toBeDefined()
-    const latchedError = firstCall[0].error
-    expect(latchedError).toBeInstanceOf(OpenAIResponseNotCompletedError)
-    if (!(latchedError instanceof OpenAIResponseNotCompletedError)) {
-      throw new Error('expected OpenAIResponseNotCompletedError')
-    }
-    expect(latchedError.usage).toBeUndefined()
   })
 
   it('does not latch a terminal failed stream that carries usage', async () => {
@@ -106,7 +72,7 @@ describe('OpenAI response stream latch decisions', () => {
     await expect(
       runWithOpenAIResponseAttemptHooks(
         { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
+        async () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
       ),
     ).rejects.toBeInstanceOf(OpenAIResponseNotCompletedError)
 
@@ -130,7 +96,7 @@ describe('OpenAI response stream latch decisions', () => {
     await expect(
       runWithOpenAIResponseAttemptHooks(
         { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }).next(),
+        async () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
       ),
     ).rejects.toMatchObject({
       code: 'previous_response_not_found',
@@ -162,17 +128,12 @@ describe('OpenAI response stream latch decisions', () => {
       (value: { requestStartedAt: Date; error: unknown }) => Promise<void>
     >(() => Promise.resolve())
 
-    await runWithOpenAIResponseAttemptHooks(
-      { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-      async () => {
-        const generator = streamOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' })
-        await expect(generator.next()).resolves.toEqual({
-          done: false,
-          value: { delta: 'partial' },
-        })
-        await expect(generator.next()).rejects.toBe(abort)
-      },
-    )
+    await expect(
+      runWithOpenAIResponseAttemptHooks(
+        { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
+        () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
+      ),
+    ).rejects.toBe(abort)
 
     expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })

@@ -6,10 +6,7 @@ Durable registry and crash-recovery sweeper for OpenAI `background: true` respon
 `@modules/openai-utils/create-response.mts`'s `createOpenAIResponse()` always creates in the
 background internally — see that module's README — so every OpenAI call that goes through it can
 be cancelled and its usage recovered even if the process that started it crashes, OOM-kills, or is
-replaced mid-call by an ECS rolling deploy. `streamOpenAIResponse()` (chat's streamed assistant
-response) is the one call that stays foreground and is out of scope for this registry; that
-accepted gap is recorded with the usage-ledger coverage notes in the private
-`vouchington/vouchington-docs` repository.
+replaced mid-call by an ECS rolling deploy.
 This package owns the durable side of the background-mode guarantee; it never calls
 `openai.responses.create()` itself (that stays in `backend/agents/*`, per
 [`backend/agents/AGENTS.md`](../../../../../backend/agents/AGENTS.md)) — only `retrieveOpenAIResponse` /
@@ -21,7 +18,7 @@ This package owns the durable side of the background-mode guarantee; it never ca
 `lease_token`, and a PostgreSQL-clock `lease_expires_at`. `created_at` remains audit metadata; it
 does not decide liveness. The creator holds a three-minute lease and renews it every 60 seconds.
 If renewal is temporarily unavailable it retries after five seconds; `stopAndSettle()` waits for an
-in-flight renewal before the drain can finalize. This prevents a healthy, long-running non-chat
+in-flight renewal before the drain can finalize. This prevents a healthy, long-running
 response from being mistaken for an orphan simply because it is old.
 
 `ai_usage_openai_response_keys` is a separate, non-partitioned map from an OpenAI response ID to

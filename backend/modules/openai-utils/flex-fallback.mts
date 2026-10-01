@@ -34,28 +34,6 @@ export async function withOpenAIFlexFallback<P extends FlexFallbackParams, T>(
   }
 }
 
-/**
- * Generator form of {@link withOpenAIFlexFallback} for foreground streams. Once any delta has
- * reached the consumer the attempt can no longer be replaced without duplicating visible output,
- * so a failure after that point is rethrown instead of resent.
- */
-export async function* streamWithOpenAIFlexFallback<P extends FlexFallbackParams, Y, R>(
-  params: P,
-  provider: OpenAiFlexFallbackContext['provider'],
-  run: OpenAIFlexFallbackAttempt<P, AsyncGenerator<Y, R>>,
-): AsyncGenerator<Y, R> {
-  let yielded = false
-  try {
-    return yield* trackYields(run(params, 0), () => {
-      yielded = true
-    })
-  } catch (error) {
-    const fallback = yielded ? null : getOpenAIFlexFallbackParams(params, error, provider)
-    if (!fallback) throw error
-    return yield* run(fallback, 1)
-  }
-}
-
 function getOpenAIFlexFallbackParams<P extends FlexFallbackParams>(
   params: P,
   error: unknown,
@@ -71,22 +49,4 @@ function getOpenAIFlexFallbackParams<P extends FlexFallbackParams>(
     return null
   }
   return { ...params, service_tier: 'default' }
-}
-
-async function* trackYields<Y, R>(
-  events: AsyncGenerator<Y, R>,
-  onYield: () => void,
-): AsyncGenerator<Y, R> {
-  try {
-    for (;;) {
-      // oxlint-disable-next-line no-await-in-loop -- each .next() advances the stream's cursor; it cannot resolve until the previous yield has
-      const step = await events.next()
-      if (step.done) return step.value
-      onYield()
-      yield step.value
-    }
-  } finally {
-    // A consumer that stops early must still close the underlying stream; a no-op once finished.
-    await events.return(undefined as R)
-  }
 }

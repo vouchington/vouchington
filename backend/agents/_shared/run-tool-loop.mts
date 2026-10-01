@@ -18,7 +18,6 @@ import {
 import { callRecordingToolLoopUsage } from './run-tool-loop/record-usage.mts'
 
 export type { RunToolLoopConfig, RunToolLoopResult } from './run-tool-loop/types.mts'
-export { tryExtractText } from './run-tool-loop/response-summary.mts'
 
 /**
  * Runs an OpenAI tool-calling loop until the model stops requesting tool calls
