@@ -99,6 +99,13 @@ hidden ancestor hides the whole thread. Paged tools (`get_post_descendants`, `ge
 malformed cursor returns `{ success: false, error: "Invalid cursor" }`. Post and article text is
 wrapped as external content.
 
+`search_posts` follows the same rule: it lists only posts that `get_post` would return to the
+credential owner, so the owner's private, audience-limited and unapproved posts and the comments of
+a thread `get_post` refuses are never listed, even to their author or an administrator. A
+`similar_post_id` that `get_post` would refuse returns an empty page, like an id that matches
+nothing. Muted and blocked users, topics and hostnames are still left out. `GET /api/v1/posts` is
+unchanged.
+
 The [community read tools](../../../../overview/architecture/services/mcp-tools/read-tools.md#community-read-tools)
 (`search_communities`, `get_community`, `get_community_posts`, `get_community_pinned_posts`,
 `get_community_members`, each requiring the `communities:read` scope) return the same

@@ -16,8 +16,9 @@ type Caller = PrivateUser & { membership_plan: null }
 const SCOPES = ['posts:read'] as const
 const asCaller = (user: PrivateUser): Caller => ({ ...user, membership_plan: null })
 
-// Visibility comes from the shared REST query, so this checks the semantic path through the real
-// call path: only the embedding can match these fixtures, and each one has its own nearby vector.
+// Visibility is the MCP read policy (see the privacy and agreement tests), so this checks the
+// semantic path through the real call path: only the embedding can match these fixtures, and each
+// one has its own nearby vector.
 describe('search_posts semantic visibility — real DB', () => {
   const query = `semantic visibility ${crypto.randomUUID()}`
   let author: Caller
@@ -64,14 +65,14 @@ describe('search_posts semantic visibility — real DB', () => {
     }
   })
 
-  it('shows the caller their own flagged post and hides other callers flagged posts', async () => {
-    const authorIds = await search(author)
+  it('hides a flagged post from every caller, including its own author', async () => {
+    for (const caller of [author, viewer]) {
+      const callerIds = await search(caller)
 
-    expect(authorIds).toEqual(expect.arrayContaining([ids.open, ids.ownFlagged]))
-    expect(authorIds).not.toContain(ids.otherFlagged)
-    const viewerIds = await search(viewer)
-    expect(viewerIds).toEqual(expect.arrayContaining([ids.open, ids.otherFlagged]))
-    expect(viewerIds).not.toContain(ids.ownFlagged)
+      expect(callerIds).toContain(ids.open)
+      expect(callerIds).not.toContain(ids.ownFlagged)
+      expect(callerIds).not.toContain(ids.otherFlagged)
+    }
   })
 
   it('leaves topic recommendations out of the results', async () => {
