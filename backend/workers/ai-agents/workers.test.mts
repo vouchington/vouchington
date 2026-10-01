@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RateLimitError } from 'openai'
 import type { Job, Worker } from 'glide-mq'
+import { StructuredDecisionError } from '@modules/structured-decisions'
 import { AI_AGENTS_QUEUE_NAME, CLASSIFIER_RUN_BACKOFF } from '@queues/ai-agents/config'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { classifierRunBackoffMs } from './processors/classifier-run-backoff.mts'
@@ -89,5 +90,23 @@ describe('ai-agents workers', () => {
     ).resolves.toBeUndefined()
 
     expect(mockHandleOpenAIRateLimit).toHaveBeenCalledWith(rateLimitError, worker)
+  })
+
+  it('rethrows a provider outage unchanged so the backoff strategy sees its Retry-After', async () => {
+    const outage = new StructuredDecisionError('provider-error', 'HTTP 429', 429, {
+      failure: { retryClass: 'transient', retryAfterMs: 5 * 60_000 },
+    })
+    mockProcessAIAgent.mockRejectedValue(outage)
+    const rateLimit = vi.fn<() => Promise<void>>()
+    const worker = { rateLimit } as unknown as Worker
+
+    const thrown: unknown = await processAIAgentWorkerJob(makeJob(), worker, {
+      ...spendCapDisabled,
+      processAIAgent: mockProcessAIAgent as typeof processAIAgent,
+    }).catch((error: unknown) => error)
+
+    expect(thrown).toBe(outage)
+    expect(rateLimit).not.toHaveBeenCalled()
+    expect(classifierRunBackoffMs(1, thrown as Error, () => 0)).toBe(5 * 60_000)
   })
 })

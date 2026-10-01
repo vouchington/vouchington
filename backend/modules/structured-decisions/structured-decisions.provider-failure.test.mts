@@ -65,6 +65,8 @@ describe('structured-decision provider failure', () => {
     expect(String(error)).not.toContain(FLAGGED_INPUT)
     expect(JSON.stringify(error)).not.toContain(FLAGGED_INPUT)
     expect(JSON.stringify(error.detail)).not.toContain('flagged_input')
+    // Sentry serializes a `cause` too: a rejected response has none, so no body can ride along.
+    expect(error.cause).toBeUndefined()
   })
 
   it('classifies an outage 403 as transient and a moderation 403 as permanent', async () => {
