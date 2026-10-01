@@ -1,93 +1,30 @@
 import type { Job } from 'glide-mq'
-import type { AutotaggerPostJobData, AutotaggerRssFeedItemJobData } from '@queues/ai-agents/types'
-import type { Post } from '@services/posts/types'
-import { getPostByAny } from '@services/posts/get'
+import type { AutotaggerRssFeedItemJobData } from '@queues/ai-agents/types'
+import { applyCollaborativeTopicRelations } from '@services/rss-feed-items/collaborative-topic-relations'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
-import { hasRssFeedItemEmbedding } from '@services/bedrock-embeddings'
-import { runAutotaggerOnPost, runAutotaggerOnRssFeedItem } from '@agents/autotagger'
-import { enqueueAutotaggerRssFeedItem } from '@queues/ai-agents/enqueues/autotagger'
-import {
-  getAutotaggerPaidLimitsFields,
-  type AutotaggerPaidLimitsFields,
-} from '@services/autotagger'
-import { getPrivateUserByAny } from '@services/users'
-import { getUserActivePlan } from '@services/memberships'
-
-type AutotaggerDependencies = {
-  enqueueAutotaggerRssFeedItem: typeof enqueueAutotaggerRssFeedItem
-  runAutotaggerOnPost: typeof runAutotaggerOnPost
-  runAutotaggerOnRssFeedItem: typeof runAutotaggerOnRssFeedItem
-}
-
-export async function processAutotaggerPost(
-  job: Job<AutotaggerPostJobData>,
-  dependencies?: Partial<AutotaggerDependencies>,
-): Promise<unknown> {
-  const runOnPost = dependencies?.runAutotaggerOnPost ?? runAutotaggerOnPost
-  const post = await getPostByAny(job.data.id)
-  if (!post) return null
-  if (!post.approved_at || post.rejected_at || post.in_review_at) return null
-
-  const limits = getAutotaggerPaidLimitsFields()
-  if (!limits.enabled) return null
-
-  const maxTopics = await resolvePostAutotaggerMaxTopics(post, limits)
-  // Free-tier authors (including authorless posts) get zero autotagger topics -- skip before any
-  // content is built or the classifier is dispatched, since there is nothing further to do at
-  // max_topics: 0.
-  if (maxTopics === 0) return null
-
-  return runOnPost(post, { max_topics: maxTopics })
-}
-
-export async function processAutotaggerRssFeedItem(
-  job: Job<AutotaggerRssFeedItemJobData>,
-  dependencies?: Partial<AutotaggerDependencies>,
-): Promise<unknown> {
-  const enqueueRssFeedItem =
-    dependencies?.enqueueAutotaggerRssFeedItem ?? enqueueAutotaggerRssFeedItem
-  const runOnRssFeedItem = dependencies?.runAutotaggerOnRssFeedItem ?? runAutotaggerOnRssFeedItem
-  const rssFeedItem = await getRssFeedItemById(job.data.rss_feed_item_id)
-  if (!rssFeedItem) return null
-
-  const hasEmbedding = await hasRssFeedItemEmbedding(job.data.rss_feed_item_id)
-  if (!hasEmbedding) {
-    const retries = job.data.embedding_retries ?? 0
-    if (retries >= 10)
-      throw new Error(
-        `Embeddings never generated for rss_feed_item ${job.data.rss_feed_item_id} after ${retries} retries`,
-      )
-    enqueueRssFeedItem(job.data.rss_feed_item_id, retries + 1)
-    return null
-  }
-
-  // Kill-switch, discoverability gating, tiered max_topics, and the collaborative-follower pass
-  // all live inside runAutotaggerOnRssFeedItem (@agents/autotagger/run-rss-feed-item.mts) rather
-  // than here: the collaborative pass is idempotent and unconditional (gated only on the
-  // kill-switch) and must run before -- and independently of -- the classifier dispatch, so both
-  // orderings have to live together inside that one function, not be split across this processor.
-  return runOnRssFeedItem(rssFeedItem)
-}
+import { getAutotaggerPaidLimitsFields } from '@services/autotagger'
 
 /**
- * Resolves the post author's autotagger topic cap: admins and pro-plan authors get the pro cap,
- * plus-plan authors get the plus cap, everyone else (including posts with no author) gets the
- * free cap -- which defaults to 0, i.e. no autotagging.
+ * The collaborative-follower pass for one RSS feed item, gated only on the autotagger kill switch.
+ * It derives topics from current follow and vote relations, not from classifier output, so it
+ * needs no embedding and no model call. The topic classification of the same item is C6 on the
+ * shared classifier-run lifecycle (`classifier-run-autotagger.mts`), requested at upsert and
+ * recovered by its sweep; nothing here dispatches or waits for it. The pass is idempotent, so a
+ * queue retry re-applying it is safe.
  */
-async function resolvePostAutotaggerMaxTopics(
-  post: Post,
-  limits: AutotaggerPaidLimitsFields,
-): Promise<number> {
-  const authorId = post.created_by_id
-  if (!authorId) return limits.post_free_max_topics
+export async function processAutotaggerRssFeedItem(
+  job: Job<AutotaggerRssFeedItemJobData>,
+): Promise<null> {
+  const { enabled, rss_collaborative_plus_max_topics, rss_collaborative_pro_max_topics } =
+    getAutotaggerPaidLimitsFields()
+  if (!enabled) return null
 
-  const [author, plan] = await Promise.all([
-    getPrivateUserByAny(authorId),
-    getUserActivePlan(authorId),
-  ])
+  const item = await getRssFeedItemById(job.data.rss_feed_item_id)
+  if (!item) return null
 
-  if (author?.roles.includes('administrator')) return limits.post_pro_max_topics
-  if (plan === 'pro') return limits.post_pro_max_topics
-  if (plan === 'plus') return limits.post_plus_max_topics
-  return limits.post_free_max_topics
+  await applyCollaborativeTopicRelations(item.id, {
+    plusLimit: rss_collaborative_plus_max_topics,
+    proLimit: rss_collaborative_pro_max_topics,
+  })
+  return null
 }

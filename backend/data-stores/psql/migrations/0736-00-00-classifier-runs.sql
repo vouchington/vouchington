@@ -157,6 +157,19 @@ CREATE INDEX IF NOT EXISTS idx_classifier_run_requests__pending
   ON classifier_run_requests (id)
   WHERE run_id IS NULL AND no_work_at IS NULL AND stale_at IS NULL;
 
+-- C6's topic candidate set, captured once when the run is reserved. The set is deliberately outside
+-- the run identity, so a later search that finds different topics can only reuse this receipt.
+CREATE TABLE IF NOT EXISTS classifier_run_candidates (
+  run_id UUID NOT NULL REFERENCES classifier_runs (id) ON DELETE CASCADE,
+  topic_id UUID NOT NULL REFERENCES topics (id) ON DELETE CASCADE,
+  ordinal INTEGER NOT NULL CHECK (ordinal >= 0),
+  CONSTRAINT pk_classifier_run_candidates PRIMARY KEY (run_id, topic_id),
+  CONSTRAINT uq_classifier_run_candidates__ordinal UNIQUE (run_id, ordinal)
+);
+
+CREATE INDEX IF NOT EXISTS idx_classifier_run_candidates__topic
+  ON classifier_run_candidates (topic_id, run_id);
+
 -- C5's local detector outcome, retained once per run so every terminal kind can keep it.
 CREATE TABLE IF NOT EXISTS post_classifier_local_outcomes (
   run_id UUID NOT NULL REFERENCES classifier_runs (id) ON DELETE CASCADE,
@@ -231,6 +244,15 @@ COMMENT ON COLUMN classifier_run_requests.no_work_at IS
   'Time the classifier resolved to no configured work for the subject; a settled request is not swept again until a new approval re-arms it.';
 COMMENT ON COLUMN classifier_run_requests.stale_at IS
   'Time the request was superseded by a newer content version of the same subject.';
+
+COMMENT ON TABLE classifier_run_candidates IS
+  'Insert-only topic candidate set a run captured when it was reserved; outside the run identity, so a changed search result never creates a second receipt.';
+COMMENT ON COLUMN classifier_run_candidates.run_id IS
+  'Run whose remote decision covers exactly these topics; the set is removed with the run.';
+COMMENT ON COLUMN classifier_run_candidates.topic_id IS
+  'Topic asked about in the run''s single provider call; a topic removed from the platform leaves the set with it.';
+COMMENT ON COLUMN classifier_run_candidates.ordinal IS
+  'Zero-based position of the topic in the captured candidate order, preserved for deterministic question order.';
 
 COMMENT ON TABLE post_classifier_local_outcomes IS
   'Insert-only C5 local detector outcome retained once per run, including runs that ended terminal before their remote outcomes became durable.';

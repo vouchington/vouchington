@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { currentUserCanTriggerCrawl } from '@services/urls'
 import {
@@ -72,8 +73,10 @@ app.route('/api/v1/urls/:id').get(async ctx => {
   ctx.json(canTriggerCrawl ? apiResponse('GET:/api/v1/urls/:id#privileged', response) : response)
 })
 
-app.route('/api/v1/urls/:id/crawl').post(async ctx => {
+app.route('/api/v1/urls/:id/crawl').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/urls/:id/crawl')
+  ctx.assert(currentUserCanTriggerCrawl(currentUser), 403, 'Admin access required')
+  validateRequestContract(ctx, 'POST:/api/v1/urls/:id/crawl', { path: ctx.params })
 
   const result = await enqueueManualUrlCrawlAsCurrentUser(currentUser, ctx.params.id!)
 

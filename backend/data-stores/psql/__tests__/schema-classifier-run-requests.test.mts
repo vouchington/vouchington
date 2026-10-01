@@ -1,21 +1,24 @@
 import { afterAll, afterEach, describe, expect, it } from 'vitest'
 import { createClassifierFixture } from '../../../test-helpers/data-stores/psql/classifiers.mts'
 import { createTestTopic } from '../../../test-helpers/entities/create-test-entities.mts'
-import { hardDeleteTestTopic } from '../../../test-helpers/entities/topics/deletion.mts'
 import { createClassifierRunSchemaFixture } from '../../../test-helpers/data-stores/psql/classifier-runs/schema-fixture.mts'
 import {
   deleteClassifierRunForSchemaTest,
   deletePostForSchemaTest,
+  deleteTopicForSchemaTest,
+  insertClassifierRunCandidateForSchemaTest,
   insertClassifierRunRequestForSchemaTest,
   insertPostClassifierLocalOutcomeForSchemaTest,
+  readClassifierRunCandidateOrdinalsForSchemaTest,
   readClassifierRunRequestForSchemaTest,
+  reviseClassifierRunCandidateForSchemaTest,
   revisePostClassifierLocalOutcomeForSchemaTest,
   settleClassifierRunRequestForSchemaTest,
 } from '../../../test-helpers/data-stores/psql/classifier-runs/schema-satellites.mts'
 import { getPostClassifierLocalOutcomeFacts } from '../../../test-helpers/data-stores/psql/post-classifier/run-facts.mts'
 import { onGracefulShutdown } from '../index.mts'
 
-describe('classifier run request and local outcome schema', () => {
+describe('classifier run request, candidate set and local outcome schema', () => {
   const fixtures: { dispose: () => Promise<unknown> }[] = []
 
   async function createFixture(...options: Parameters<typeof createClassifierRunSchemaFixture>) {
@@ -125,9 +128,41 @@ describe('classifier run request and local outcome schema', () => {
     const topic = await createTestTopic()
 
     await insertPostClassifierLocalOutcomeForSchemaTest(fixture.id, topic.id)
-    await hardDeleteTestTopic(topic.id)
+    await deleteTopicForSchemaTest(topic.id)
 
     expect(await getPostClassifierLocalOutcomeFacts(fixture.id)).toBeNull()
     expect(await fixture.read()).toBeDefined()
+  })
+
+  it('captures one insert-only, ordered candidate set per run and drops it with the run or a topic', async () => {
+    const classifier = await createClassifierFixture()
+    const fixture = await createFixture({ classifierId: classifier.classifierId })
+    const [first, second, third] = await Promise.all([1, 2, 3].map(() => createTestTopic({})))
+
+    await insertClassifierRunCandidateForSchemaTest(fixture.id, first!.id, 0)
+    await insertClassifierRunCandidateForSchemaTest(fixture.id, second!.id, 1)
+    await expect(
+      insertClassifierRunCandidateForSchemaTest(fixture.id, first!.id, 2),
+    ).rejects.toMatchObject({ code: '23505' })
+    await expect(
+      insertClassifierRunCandidateForSchemaTest(fixture.id, third!.id, 1),
+    ).rejects.toMatchObject({ code: '23505' })
+    await expect(
+      insertClassifierRunCandidateForSchemaTest(fixture.id, third!.id, -1),
+    ).rejects.toMatchObject({ code: '23514' })
+    await expect(
+      reviseClassifierRunCandidateForSchemaTest(fixture.id, first!.id, 5),
+    ).rejects.toMatchObject({ code: '23514' })
+    expect(await readClassifierRunCandidateOrdinalsForSchemaTest(fixture.id)).toEqual([
+      { topicId: first!.id, ordinal: 0 },
+      { topicId: second!.id, ordinal: 1 },
+    ])
+
+    await deleteTopicForSchemaTest(second!.id)
+    expect(await readClassifierRunCandidateOrdinalsForSchemaTest(fixture.id)).toEqual([
+      { topicId: first!.id, ordinal: 0 },
+    ])
+    await deleteClassifierRunForSchemaTest(fixture.id)
+    expect(await readClassifierRunCandidateOrdinalsForSchemaTest(fixture.id)).toEqual([])
   })
 })

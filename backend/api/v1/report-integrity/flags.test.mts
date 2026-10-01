@@ -205,10 +205,12 @@ describe('report-integrity flags API', () => {
 
       const request = createRequest()
       await request.authenticateAs(admin)
-      await request
+      const res = await request
         .patch(`/api/v1/report-integrity/flags/${flagId}`)
         .send({ resolution: 'penalized' })
         .expect(422)
+
+      expect(res.body.message).toContain('POST /api/v1/report-integrity/flags/:id/penalties')
     }, 60_000)
 
     it('returns 422 for invalid resolution value', async () => {

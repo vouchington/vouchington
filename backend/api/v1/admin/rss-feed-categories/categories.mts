@@ -1,14 +1,27 @@
 import app from '../../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { createPaginationParser } from '@modules/pagination'
+import { createPaginationParser, defineQueryContract, queryEnum } from '@modules/pagination'
 import {
   getUnmappedRssFeedItemCategories,
   currentUserCanManageRssFeedCategories,
   type UnmappedCategoryStatus,
 } from '@services/rss-feed-items'
 import { requireAuthAndRateLimit } from '../../../response-helpers.mts'
+import { apiQuery, apiResponse } from '../../../response-contract.mts'
+import { parseAndValidatePaginatedRequest } from '../../../validate-paginated-query.mts'
 
-const VALID_STATUSES = new Set<UnmappedCategoryStatus>(['pending', 'rejected', 'all'])
+const STATUS_VALUES = [
+  'pending',
+  'rejected',
+  'all',
+] as const satisfies readonly UnmappedCategoryStatus[]
+const VALID_STATUSES = new Set<UnmappedCategoryStatus>(STATUS_VALUES)
+const statusQuery = defineQueryContract({
+  status: queryEnum(STATUS_VALUES, {
+    default: 'pending',
+    description: 'Category status; unknown values use pending.',
+  }),
+})
 
 const parser = createPaginationParser({
   cursor: { type: 'score' },
@@ -21,15 +34,21 @@ const parser = createPaginationParser({
  * Query params: status (pending|rejected|all, default: pending), limit, after
  */
 app.route('/api/v1/rss-feed-categories').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/rss-feed-categories', parser, statusQuery)
   await requireAuthAndRateLimit(
     ctx,
     currentUserCanManageRssFeedCategories,
     'GET:/api/v1/rss-feed-categories',
   )
 
-  // Intentional carrier skip: no registered response contract and an integer `limit`; the shared
-  // pagination parser owns the range and cursor checks, and unknown `status` values fall back.
-  const { limit, after } = parser.parse(ctx.query)
+  // Unknown `status` values fall back to pending instead of failing, so the raw value is left out
+  // of the contract check and the settled status below is always valid.
+  const { limit, after } = parseAndValidatePaginatedRequest(
+    ctx,
+    'GET:/api/v1/rss-feed-categories',
+    parser,
+    { extraQueryContracts: [statusQuery.queryContract], ignoredKeys: ['status'] },
+  )
 
   const statusRaw = typeof ctx.query.status === 'string' ? ctx.query.status : 'pending'
   const status = VALID_STATUSES.has(statusRaw as UnmappedCategoryStatus)
@@ -37,5 +56,5 @@ app.route('/api/v1/rss-feed-categories').get(async (ctx: Context) => {
     : 'pending'
 
   const { results, page_info } = await getUnmappedRssFeedItemCategories({ status, limit, after })
-  ctx.json({ results, page_info })
+  ctx.json(apiResponse('GET:/api/v1/rss-feed-categories', { results, page_info }))
 })

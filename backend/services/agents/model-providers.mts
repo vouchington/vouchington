@@ -1,6 +1,5 @@
 import type { AgentModel, AgentModelProvider } from './types.mts'
 
-export type HostedChatModelProvider = Extract<AgentModelProvider, 'openai' | 'anthropic'>
 export type ClientGeneratedChatModelProvider = Extract<
   AgentModelProvider,
   'apple_foundation' | 'windows_foundry' | 'android_aicore' | 'openai_compatible'
@@ -22,11 +21,6 @@ const LEGACY_CLIENT_GENERATED_CHAT_MODEL_BY_PROVIDER: Partial<
 > = {
   windows_foundry: 'phi-silica',
 }
-
-export const HOSTED_CHAT_MODEL_BY_PROVIDER = {
-  openai: 'gpt-5.4-nano',
-  anthropic: 'claude-sonnet-5',
-} as const satisfies Record<HostedChatModelProvider, AgentModel>
 
 export function parseClientGeneratedChatModelProvider(
   value: unknown,

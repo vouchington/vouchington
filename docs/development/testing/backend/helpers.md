@@ -39,6 +39,15 @@ Each file keeps its queue name, payload, and expected job options.
 Post and topic revision diffs share
 [`revision-change-detection-tests.mts`](../../../../backend/test-helpers/revision-change-detection-tests.mts).
 The post and topic field tables stay separate.
+Staff route request-contract suites share
+[`registerStaffRequestContractTests`](../../../../backend/test-helpers/staff-request-contract-matrix.mts):
+each case is a malformed request that must answer `401` for an anonymous caller and `403` for a
+caller without the role, both with no schema diagnostic, and a bounded status (default `422`) for
+staff. Each suite keeps its own routes and bodies.
+The appeals and disputes list query suites share
+[`registerCaseListQueryContractTests`](../../../../backend/test-helpers/case-list-query-contract-tests.mts):
+each file passes its list path and response key, and the registrar owns the `401`, fractional-limit
+`422`, lenient-fallback, and cursor `400` cases.
 Post, topic, domain, and URL list-item mutations share
 [`describeCommunityListItemRoutes`](../../../../backend/test-helpers/community-list-item-routes.mts).
 Topic list reads stay in the topics suite.
@@ -267,6 +276,20 @@ stubs `COPYRIGHT_INTAKE_ENABLED` plus the evidence, email, and media-delivery se
 test. Pass `{ enabled: false }` to keep that configuration but turn the switch off, so a 503 proves
 the switch alone closed intake. The helper does not mock AWS; add `installTestMediaDeliveryEdge()`
 when the test publishes delivery changes.
+
+## REST Usage Metering
+
+REST usage-quota suites share `@voucha/test-helpers/rest-usage-meter`.
+`registerRestUsageRoutes(base)` registers the read, 404, 500, IP-only, repeated-boundary, and 202
+write routes a suite calls, all under its own `base` so two suites on one app never collide. Call
+`useRestUsageMetering(analyticsPrefix)` inside a `describe`: route rate limiting is off under test,
+so it switches the kill switch on for each test, restores the config afterward, and starts a local
+analytics directory. `waitForUsageRows(userId, count)` and `waitForAnonymousUsageRows(count)` wait
+for the `api_usage` rows, which land just after the response closes, and `usageQuotaKeys()` lists
+every usage-quota Valkey key so a test can prove no IP, device, or session id reached one. Valkey
+and the analytics directory are shared across forks, so assert on a user's own bucket and rows;
+anonymous rows have no owner, so count them relative to a prior read. The row readers live in
+`@voucha/test-helpers/api-usage-analytics`.
 
 ## Surviving a Dirty Database
 

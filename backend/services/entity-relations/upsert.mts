@@ -42,7 +42,8 @@ export const upsertEntityRelation = async (
   options?: UpsertEntityRelationOptions,
 ): Promise<EntityRelation[]> => {
   if (objects.length === 0) return []
-  const { deferredNotification, relationOptions } = prepareUpsertEntityRelationOptions(options)
+  const { deferredNotification, relationOptions, suppressNotificationReconcile } =
+    prepareUpsertEntityRelationOptions(options)
   await assertEntityRelationUpsertAllowed(creator, relation, subject, objects, relationOptions)
   const query = buildInsertQuery(
     relation,
@@ -74,8 +75,10 @@ export const upsertEntityRelation = async (
     // Remote-origin writes must not re-trigger outbound-destined enqueues and delivery loops.
     if (relationOptions?.origin !== 'remote') {
       await enqueueRssFeedDiscoverabilityForPublisherTypeRelations(relation, relations)
-      if (deferredNotification) deferredNotification.set(relation, relations)
-      else void enqueueNotificationReconcileForRelations(relation, relations)
+      if (!suppressNotificationReconcile) {
+        if (deferredNotification) deferredNotification.set(relation, relations)
+        else void enqueueNotificationReconcileForRelations(relation, relations)
+      }
       if (
         relation.subject_type === 'user' &&
         relation.predicate === 'follow' &&
@@ -180,8 +183,10 @@ export const upsertEntityRelation = async (
   )
   /* c8 ignore next -- bidirectional relations cannot be remote-actor-sourced. */
   if (relationOptions?.origin !== 'remote') {
-    if (deferredNotification) deferredNotification.set(relation, relations)
-    else void enqueueNotificationReconcileForRelations(relation, relations)
+    if (!suppressNotificationReconcile) {
+      if (deferredNotification) deferredNotification.set(relation, relations)
+      else void enqueueNotificationReconcileForRelations(relation, relations)
+    }
     if (relation.object_type === 'url' && relations.length > 0) {
       void enqueueBulkCrawlUrls(relations.map(r => ({ urlId: r.object_id })))
     }

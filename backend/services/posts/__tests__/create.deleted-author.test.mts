@@ -1,9 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
-  isTestAuthorPublicationLifecycleLockWaiting,
+  getTestPostgresBackendProcessId,
+  lockTestUserMutation,
   restoreUser,
   softDeleteTestUserAndWaitBeforeCommit,
+  waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import { createPost } from '../create.mts'
@@ -15,6 +17,7 @@ describe('createPost deleted author lifecycle', () => {
     const deletionHoldsAuthorLifecycle = Promise.withResolvers<void>()
     let deleting: Promise<void> | undefined
     let creationOutcome: Promise<unknown> | undefined
+    let deletionBackendId = 0
 
     try {
       deleting = softDeleteTestUserAndWaitBeforeCommit(
@@ -22,6 +25,8 @@ describe('createPost deleted author lifecycle', () => {
         releaseDeletion.promise,
         deletionHoldsAuthorLifecycle.resolve,
         async query => {
+          deletionBackendId = await getTestPostgresBackendProcessId(query)
+          await lockTestUserMutation(query, author.id)
           await lockAuthorPublicationLifecycle(query, author.id)
         },
       )
@@ -32,9 +37,7 @@ describe('createPost deleted author lifecycle', () => {
         markdown: 'This post must not be created after the author is deleted.',
         post_type: 'discussion',
       }).catch((error: unknown) => error)
-      await vi.waitFor(async () => {
-        await expect(isTestAuthorPublicationLifecycleLockWaiting(author.id)).resolves.toBe(true)
-      })
+      await waitForTestPostgresLockWaiter(deletionBackendId, 'lockActiveUserSubjectsForMutation')
       releaseDeletion.resolve()
 
       await expect(deleting).resolves.toBeUndefined()

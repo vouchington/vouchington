@@ -2613,6 +2613,79 @@
         ],
         "type": "object"
       },
+      "CopyrightAppealRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "cf_turnstile_response": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "target_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": ["reason", "target_ids"],
+        "type": "object"
+      },
+      "CopyrightCounterNoticeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "cf_turnstile_response": {
+            "type": "string"
+          },
+          "consent_to_federal_jurisdiction": {
+            "const": true
+          },
+          "consent_to_service_of_process": {
+            "const": true
+          },
+          "electronic_signature": {
+            "type": "string"
+          },
+          "good_faith_misidentification_under_penalty_of_perjury": {
+            "const": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "target_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "telephone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "consent_to_federal_jurisdiction",
+          "consent_to_service_of_process",
+          "electronic_signature",
+          "good_faith_misidentification_under_penalty_of_perjury",
+          "name",
+          "target_ids",
+          "telephone"
+        ],
+        "type": "object"
+      },
       "CopyrightEmailIntakeQueueResponse": {
         "additionalProperties": false,
         "properties": {
@@ -2894,6 +2967,84 @@
           "resolved_at",
           "resolved_by_id"
         ],
+        "type": "object"
+      },
+      "CopyrightNoticeFormRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "accuracy_authority_under_penalty_of_perjury": {
+            "const": true
+          },
+          "cf_turnstile_response": {
+            "type": "string"
+          },
+          "claimant_contact": {
+            "type": "string"
+          },
+          "claimant_display_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "claimant_email": {
+            "type": "string"
+          },
+          "electronic_signature": {
+            "type": "string"
+          },
+          "good_faith_belief": {
+            "const": true
+          },
+          "jurisdiction": {
+            "const": "us_dmca"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/CopyrightNoticeTargetRequest"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": false
+          },
+          "work_description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accuracy_authority_under_penalty_of_perjury",
+          "claimant_contact",
+          "claimant_display_name",
+          "claimant_email",
+          "electronic_signature",
+          "good_faith_belief",
+          "jurisdiction",
+          "targets",
+          "work_description"
+        ],
+        "type": "object"
+      },
+      "CopyrightNoticeTargetRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "image_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "post_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "target_url": {
+            "type": "string"
+          }
+        },
+        "required": ["image_id", "post_id", "target_url"],
         "type": "object"
       },
       "CopyrightPublicNotice": {
@@ -4311,6 +4462,32 @@
           }
         ]
       },
+      "CreateCuratedAsideItemRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "aside_type": {
+            "type": "string"
+          },
+          "entity_id": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          }
+        },
+        "required": ["aside_type", "entity_id"],
+        "type": "object"
+      },
+      "CreateFediverseInstanceRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "hostname": {
+            "type": "string"
+          }
+        },
+        "required": ["hostname"],
+        "type": "object"
+      },
       "CreateHouseholdBody": {
         "additionalProperties": false,
         "properties": {},
@@ -5147,6 +5324,26 @@
           }
         },
         "required": ["name", "slug"],
+        "type": "object"
+      },
+      "CreateUserModNoteRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "community_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["body"],
         "type": "object"
       },
       "CreateWebPushSubscriptionRequest": {
@@ -10709,7 +10906,7 @@
             "type": "string"
           },
           "counts": {
-            "$ref": "#/components/schemas/Partial_Record__remove_____warn_____queue_retry_failed_____approve_____reject_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create__number"
+            "$ref": "#/components/schemas/Partial_Record__remove_____warn_____reject_____queue_retry_failed_____approve_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create__number"
           },
           "total": {
             "type": "number"
@@ -13145,7 +13342,7 @@
         },
         "type": "object"
       },
-      "Partial_Record__remove_____warn_____queue_retry_failed_____approve_____reject_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create__number": {
+      "Partial_Record__remove_____warn_____reject_____queue_retry_failed_____approve_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create__number": {
         "additionalProperties": false,
         "properties": {
           "activate_restriction": {
@@ -15691,20 +15888,22 @@
           "postId": {
             "anyOf": [
               {
-                "type": "null"
+                "format": "uuid",
+                "type": "string"
               },
               {
-                "type": "string"
+                "type": "null"
               }
             ]
           },
           "reportId": {
             "anyOf": [
               {
-                "type": "null"
+                "format": "uuid",
+                "type": "string"
               },
               {
-                "type": "string"
+                "type": "null"
               }
             ]
           },
@@ -16804,6 +17003,22 @@
         "required": ["annotation_id"],
         "type": "object"
       },
+      "ReorderCuratedAsideItemsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "aside_type": {
+            "type": "string"
+          },
+          "item_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["aside_type", "item_ids"],
+        "type": "object"
+      },
       "ReorderProfileLinksRequest": {
         "additionalProperties": false,
         "properties": {
@@ -17052,6 +17267,27 @@
           }
         },
         "required": ["status"],
+        "type": "object"
+      },
+      "ResolveReportIntegrityFlagRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "resolution": {
+            "const": "dismissed"
+          }
+        },
+        "required": ["resolution"],
+        "type": "object"
+      },
+      "ResolveVoteIntegrityFlagRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "resolution": {
+            "enum": ["dismissed", "penalized", "suspended"],
+            "type": "string"
+          }
+        },
+        "required": ["resolution"],
         "type": "object"
       },
       "ResolvedEmbed": {
@@ -18453,6 +18689,16 @@
         "required": ["is_primary"],
         "type": "object"
       },
+      "SetVoteWeightRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "weight": {
+            "type": "number"
+          }
+        },
+        "required": ["weight"],
+        "type": "object"
+      },
       "SimilarTopic": {
         "additionalProperties": false,
         "properties": {
@@ -18470,6 +18716,23 @@
           }
         },
         "required": ["id", "name", "slug", "topic_type"],
+        "type": "object"
+      },
+      "SourceSyncRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "sourceId": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": ["sourceId"],
         "type": "object"
       },
       "SpendingCategoryAttributes": {
@@ -18877,6 +19140,15 @@
           }
         },
         "required": ["evidence"],
+        "type": "object"
+      },
+      "SuspendUserRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "TerritorialCopyrightAcknowledgment": {
@@ -19870,6 +20142,16 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "UpdateDynamicConfigNamespaceRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/Record_string_unknown"
+          }
+        },
+        "required": ["config"],
         "type": "object"
       },
       "UpdateHostnameBody": {
@@ -23823,6 +24105,19 @@
     "/api/v1/admin/moderation-analytics": {
       "get": {
         "operationId": "get_api_v1_admin_moderation-analytics",
+        "parameters": [
+          {
+            "description": "Aggregate window; invalid or omitted values use 30d.",
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "30d",
+              "enum": ["today", "7d", "30d", "90d", "all"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -23843,6 +24138,113 @@
     "/api/v1/admin/modlog": {
       "get": {
         "operationId": "get_api_v1_admin_modlog",
+        "parameters": [
+          {
+            "description": "Unknown values are ignored.",
+            "in": "query",
+            "name": "action_type",
+            "required": false,
+            "schema": {
+              "enum": [
+                "remove",
+                "approve",
+                "reject",
+                "ban",
+                "lift_ban",
+                "activate_restriction",
+                "lift_restriction",
+                "warn",
+                "lock",
+                "unlock",
+                "pin",
+                "unpin",
+                "tag",
+                "suspend",
+                "unsuspend",
+                "remove_member",
+                "change_role",
+                "resolve_report",
+                "dismiss_report",
+                "resolve_appeal",
+                "dismiss_appeal",
+                "topic_claim_verify",
+                "topic_claim_reject",
+                "topic_claim_revoke",
+                "report_claim",
+                "report_unclaim",
+                "report_escalate",
+                "report_deescalate",
+                "report_integrity_flag_review",
+                "report_integrity_penalty_apply",
+                "report_integrity_penalty_revoke",
+                "vote_integrity_flag_review",
+                "vote_integrity_penalty_apply",
+                "vote_integrity_penalty_revoke",
+                "vote_weight_set",
+                "vote_weight_reset",
+                "agent_moderation_vote_set",
+                "agent_moderation_vote_delete",
+                "mod_note_delete",
+                "report_judgement_rerun",
+                "appeal_resolution_draft_rerun",
+                "dispute_resolution_draft_rerun",
+                "oauth_client_verify",
+                "oauth_client_unverify",
+                "crawler_create",
+                "crawler_update",
+                "crawler_delete",
+                "rss_category_assign",
+                "rss_category_reject",
+                "rss_category_unreject",
+                "queue_pause",
+                "queue_resume",
+                "queue_retry_failed",
+                "scheduled_job_run",
+                "backfill_run",
+                "article_sync_run",
+                "import_batch_create"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor_id",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "community_id",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -24852,6 +25254,47 @@
     "/api/v1/appeals": {
       "get": {
         "operationId": "get_api_v1_appeals",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only appeals the caller filed; staff otherwise see all.",
+            "in": "query",
+            "name": "mine",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Appeal status; unknown values use pending.",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "pending",
+              "enum": ["pending", "resolved", "dismissed"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -30369,7 +30812,9 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/SourceSyncRequest"
+              }
             }
           }
         },
@@ -38915,7 +39360,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightNoticeFormRequest"
               }
             }
           }
@@ -39226,7 +39671,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightAppealRequest"
               }
             }
           }
@@ -39309,7 +39754,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CopyrightCounterNoticeRequest"
               }
             }
           }
@@ -41640,7 +42085,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateCuratedAsideItemRequest"
               }
             }
           }
@@ -41676,7 +42121,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/ReorderCuratedAsideItemsRequest"
               }
             }
           }
@@ -41758,6 +42203,47 @@
     "/api/v1/disputes": {
       "get": {
         "operationId": "get_api_v1_disputes",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only disputes the caller filed.",
+            "in": "query",
+            "name": "mine",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Dispute status; unknown values use pending.",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "pending",
+              "enum": ["pending", "resolved", "dismissed"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -45103,13 +45589,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "config": {
-                    "$ref": "#/components/schemas/Record_string_unknown"
-                  }
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/UpdateDynamicConfigNamespaceRequest"
               }
             }
           }
@@ -45692,14 +46172,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "additionalProperties": false,
-                "properties": {
-                  "hostname": {
-                    "type": "string"
-                  }
-                },
-                "required": ["hostname"],
-                "type": "object"
+                "$ref": "#/components/schemas/CreateFediverseInstanceRequest"
               }
             }
           }
@@ -46032,6 +46505,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "integration_status": {
+                      "enum": ["approved", "blocked", "pending"],
                       "type": "string"
                     },
                     "status": {
@@ -46067,12 +46541,13 @@
             }
           },
           {
+            "description": "Anonymous callers are capped at 25; larger values are clamped, not rejected.",
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
               "default": 10,
-              "maximum": 25,
+              "maximum": 100,
               "minimum": 1,
               "type": "integer"
             }
@@ -46474,6 +46949,19 @@
     "/api/v1/growth-metrics": {
       "get": {
         "operationId": "get_api_v1_growth-metrics",
+        "parameters": [
+          {
+            "description": "Growth window; invalid or omitted values use 30d.",
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "30d",
+              "enum": ["today", "7d", "30d", "90d", "all"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -50624,6 +51112,18 @@
     "/api/v1/memberships/refundable-charges": {
       "get": {
         "operationId": "get_api_v1_memberships_refundable-charges",
+        "parameters": [
+          {
+            "description": "The member whose refundable charges are listed.",
+            "in": "query",
+            "name": "user_id",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -57751,6 +58251,27 @@
     "/api/v1/posts/review-queue": {
       "get": {
         "operationId": "get_api_v1_posts_review-queue",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -60234,7 +60755,9 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/ResolveReportIntegrityFlagRequest"
+              }
             }
           }
         },
@@ -60380,6 +60903,67 @@
     "/api/v1/reports": {
       "get": {
         "operationId": "get_api_v1_reports",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque cursor for the previous page; exclusive with after.",
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Staff-only entity clustering.",
+            "in": "query",
+            "name": "cluster",
+            "required": false,
+            "schema": {
+              "enum": ["entity"],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Staff sort order (default severity); members always get a created_at order and unknown values use the default.",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "enum": ["created_at_asc", "created_at_desc", "most_reported", "severity"],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Report status; unknown values use pending.",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "pending",
+              "enum": ["pending", "reviewed", "actioned", "dismissed"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -61244,6 +61828,38 @@
     "/api/v1/rss-feed-categories": {
       "get": {
         "operationId": "get_api_v1_rss-feed-categories",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Category status; unknown values use pending.",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "pending",
+              "enum": ["pending", "rejected", "all"],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -63153,7 +63769,57 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTopicRecommendationInput"
+                "additionalProperties": false,
+                "properties": {
+                  "cf_turnstile_response": {
+                    "type": "string"
+                  },
+                  "example_referral_link": {
+                    "type": "string"
+                  },
+                  "landing_page_urls": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "markdown": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "topic_aliases": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "topic_hostname": {
+                    "type": "string"
+                  },
+                  "topic_hostnames": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "topic_markdown": {
+                    "type": "string"
+                  },
+                  "topic_slug": {
+                    "type": "string"
+                  },
+                  "topic_title": {
+                    "type": "string"
+                  },
+                  "topic_type": {
+                    "enum": ["card", "referral_program", "topic"],
+                    "type": "string"
+                  }
+                },
+                "required": ["markdown", "topic_slug", "topic_title"],
+                "type": "object"
               }
             }
           }
@@ -75009,7 +75675,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/CreateUserModNoteRequest"
               }
             }
           }
@@ -75744,7 +76410,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/SuspendUserRequest"
               }
             }
           }
@@ -76335,7 +77001,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Record_string_unknown"
+                "$ref": "#/components/schemas/SetVoteWeightRequest"
               }
             }
           }
@@ -76646,7 +77312,9 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": {}
+              "schema": {
+                "$ref": "#/components/schemas/ResolveVoteIntegrityFlagRequest"
+              }
             }
           }
         },

@@ -35,7 +35,7 @@ const CLASSIFIER_FIXTURES: ReadonlyArray<{
   { path: 'web/AGENTS.md', category: 'tooling', service: 'web' },
   { path: 'docs/development/tests.md', category: 'tooling', service: 'docs' },
   // Nested manifests/configs → tooling
-  { path: 'backend/agents/chat/package.json', category: 'tooling', service: 'backend' },
+  { path: 'backend/agents/story-post/package.json', category: 'tooling', service: 'backend' },
   { path: 'backend/tsconfig.json', category: 'tooling', service: 'backend' },
   // Playwright helpers (non-spec) → tests / web service
   { path: 'playwright/helpers/auth.mts', category: 'tests', service: 'web' },

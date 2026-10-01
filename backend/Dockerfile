@@ -97,7 +97,7 @@ COPY localization/ ./localization/
 # setup and image build steps.
 RUN node email-templates/build.mjs && \
     mkdir -p /app/localization && \
-    node --experimental-strip-types backend/services/localization/compile-cli.mts --source localization/catalog --output /app/localization/catalog.sqlite
+    node backend/services/localization/compile-cli.mts --source localization/catalog --output /app/localization/catalog.sqlite
 
 # Stage 2a: Deploy API production tree.
 # These three deploy-* stages are siblings off builder, so BuildKit executes
@@ -108,7 +108,7 @@ RUN node email-templates/build.mjs && \
 FROM builder AS deploy-api
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store,sharing=shared \
     pnpm deploy --filter @entrypoints/api --prod /prod/api --legacy && \
-    node --experimental-strip-types static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts /prod/api
+    node static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts /prod/api
 # Strip redundant @opentelemetry/semantic-conventions build formats. The package
 # ships src, esm, and esnext; Node resolves one via package.json exports. Drop
 # the two unused alternates to save ~8 MiB per image.
@@ -126,36 +126,36 @@ RUN find /prod/api/node_modules/.pnpm -type d -name 'esm' \
 # Relocate workspace packages, then pin prunedAt and clamp mtimes so the
 # node_modules layer digest is identical across rebuilds of an unchanged
 # dependency graph (#9359). Same RUN to satisfy Hadolint DL3059.
-RUN node --experimental-strip-types static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts /prod/api && \
-    node --experimental-strip-types static-code-analysis/docker-deploy/normalize-deployed-layer.mts /prod/api
+RUN node static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts /prod/api && \
+    node static-code-analysis/docker-deploy/normalize-deployed-layer.mts /prod/api
 
 # Stage 2b: Deploy worker-cpu production tree (parallel with 2a and 2c).
 FROM builder AS deploy-worker-cpu
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store,sharing=shared \
     pnpm deploy --filter @entrypoints/worker-cpu --prod /prod/worker-cpu --legacy && \
-    node --experimental-strip-types static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts /prod/worker-cpu
+    node static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts /prod/worker-cpu
 RUN find /prod/worker-cpu/node_modules/.pnpm -type d -name 'esm' \
         -path '*/@opentelemetry/semantic-conventions/build/esm' \
         -prune -exec rm -rf {} + 2>/dev/null || true && \
     find /prod/worker-cpu/node_modules/.pnpm -type d -name 'esnext' \
         -path '*/@opentelemetry/semantic-conventions/build/esnext' \
         -prune -exec rm -rf {} + 2>/dev/null || true
-RUN node --experimental-strip-types static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts /prod/worker-cpu && \
-    node --experimental-strip-types static-code-analysis/docker-deploy/normalize-deployed-layer.mts /prod/worker-cpu
+RUN node static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts /prod/worker-cpu && \
+    node static-code-analysis/docker-deploy/normalize-deployed-layer.mts /prod/worker-cpu
 
 # Stage 2c: Deploy worker-io production tree (parallel with 2a and 2b).
 FROM builder AS deploy-worker-io
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store,sharing=shared \
     pnpm deploy --filter @entrypoints/worker-io --prod /prod/worker-io --legacy && \
-    node --experimental-strip-types static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts /prod/worker-io
+    node static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts /prod/worker-io
 RUN find /prod/worker-io/node_modules/.pnpm -type d -name 'esm' \
         -path '*/@opentelemetry/semantic-conventions/build/esm' \
         -prune -exec rm -rf {} + 2>/dev/null || true && \
     find /prod/worker-io/node_modules/.pnpm -type d -name 'esnext' \
         -path '*/@opentelemetry/semantic-conventions/build/esnext' \
         -prune -exec rm -rf {} + 2>/dev/null || true
-RUN node --experimental-strip-types static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts /prod/worker-io && \
-    node --experimental-strip-types static-code-analysis/docker-deploy/normalize-deployed-layer.mts /prod/worker-io
+RUN node static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts /prod/worker-io && \
+    node static-code-analysis/docker-deploy/normalize-deployed-layer.mts /prod/worker-io
 
 # Stage 3-prewarm-base: Share the distroless Node setup across every prewarm target.
 # Children inherit this base-node ancestry (they need npx/shell) but spawn serve.mts

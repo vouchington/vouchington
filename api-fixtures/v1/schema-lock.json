@@ -166,7 +166,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/moderator-stats": {
       "fixtureIds": ["web.communities.moderator-stats.default"],
-      "hash": "217c7e4b0aa8bbadd3ebf978f8d6e550d3000bb339d14f3a1bce07a8e2e6b769"
+      "hash": "7bfd85c72ee5b271377a6c93db7d035bd3290ee682b50f2b418190af12e567f8"
     },
     "GET:/api/v1/communities/:communitySlug/moderator-vacation": {
       "fixtureIds": ["web.communities.moderator-vacation.default"],
@@ -413,6 +413,10 @@
     "GET:/api/v1/memberships/plans": {
       "fixtureIds": ["native.memberships.plans.default"],
       "hash": "24c63ed1bda9fba8b12af00086b1978256a0ccc863c76c4dd620844168be7ac1"
+    },
+    "GET:/api/v1/memberships/refundable-charges": {
+      "fixtureIds": ["web.memberships.refundable-charges.default"],
+      "hash": "bf878e84ccda08299095c294160fd3a2500b551ff42b843ee3d5f39a7ca8ec01"
     },
     "GET:/api/v1/moderation-transparency": {
       "fixtureIds": ["native.moderation.transparency.default"],
@@ -677,6 +681,10 @@
     "GET:/api/v1/reports#staff": {
       "fixtureIds": ["native.moderation.reports.default"],
       "hash": "e18172b0f77b83d43f157b58bf6cd1d4663050b5774ad0a0af1dabc59e6f08b6"
+    },
+    "GET:/api/v1/rss-feed-categories": {
+      "fixtureIds": ["web.rss-feed-categories.default"],
+      "hash": "e255aaa5d397655be446d4f667626cbe402af7cf5e1c230dd648b10b0c3f7d1b"
     },
     "GET:/api/v1/rss-feed-items/:id": {
       "fixtureIds": ["native.rss-feed-item.detail.default"],
@@ -2777,6 +2785,10 @@
       "fixtureIds": ["web.memberships.refund.reconciling"],
       "hash": "ae5a6ec7c34dd480b8c56080de416580de44e1d3d642d5568093e5f3641a2c56"
     },
+    "web.memberships.refundable-charges.default": {
+      "fixtureIds": ["web.memberships.refundable-charges.default"],
+      "hash": "70a5b1fefab31c029255c79973f64d34787a1001ce26af5ce5fc1cefa6b3d7a1"
+    },
     "web.my.oauth-apps.create": {
       "fixtureIds": ["web.my.oauth-apps.create"],
       "hash": "24f25262d1cf3cad83e6aa0418f58ae39425abcf30dcf52cf25b4f45e3e4fbde"
@@ -2816,6 +2828,10 @@
     "web.referral-links.prioritized.default": {
       "fixtureIds": ["web.referral-links.prioritized.default"],
       "hash": "862919f82355653bf3ca17daf47d946f6f9f7a310cf20cc82d835be7881153d9"
+    },
+    "web.rss-feed-categories.default": {
+      "fixtureIds": ["web.rss-feed-categories.default"],
+      "hash": "b28740e22d7f107b0d5c7b1206e9ccd28419ce0950b5070fe029c7edd623ae69"
     },
     "web.rss-feed-items.feed.default": {
       "fixtureIds": ["web.rss-feed-items.feed.default"],

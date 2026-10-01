@@ -1,7 +1,6 @@
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url))
+const __dirname = import.meta.dirname
 
 /**
  * Path to the saved authenticated storageState for the shared seeded test user.

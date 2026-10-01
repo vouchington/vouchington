@@ -14,7 +14,7 @@ reports its usage -- and `onUnknownBilledAttempt` fires when a network error, an
 status (408/409/429/5xx), or unreadable usage on a 2xx makes it impossible to know whether the
 provider billed the request. This module never imports `@services/ai-usage` itself; callers wire
 these hooks to the ledger and spend cap at the agent layer (e.g.
-`@agents/autotagger/structured-decision-attempt-hooks.mts`, issue #616). A caller that supplies no
+`@agents/_shared/structured-decision-billing-hooks.mts`, issue #616). A caller that supplies no
 hooks keeps the module's original behavior, including proceeding even when `usage` is absent or
 malformed.
 

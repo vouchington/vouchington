@@ -6,6 +6,7 @@ import {
   markImageDeliveryAuthorityStarted,
 } from '@services/media-delivery-safety'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
+import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
 import { runSequentially } from '@modules/utils/run-sequentially'
 
 export async function lockActivePostAuthorImageAdmission(
@@ -14,9 +15,18 @@ export async function lockActivePostAuthorImageAdmission(
   imageIds: string[],
 ): Promise<void> {
   await runSequentially([
+    async () => {
+      try {
+        await lockActiveUserSubjectsForMutation(query, [creatorId])
+      } catch (error) {
+        if ((error as { code?: string }).code === '23514')
+          throw createHttpError(409, 'Author is not active')
+        throw error
+      }
+    },
+    () => lockAuthorPublicationLifecycle(query, creatorId),
     () => lockImageAssetAdmission(imageIds, query),
     () => markImageDeliveryAuthorityStarted(query),
-    () => lockAuthorPublicationLifecycle(query, creatorId),
   ])
   return assertActivePostAuthor(query, creatorId)
 }

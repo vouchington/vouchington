@@ -54,6 +54,11 @@ describe('isolated database case selection', () => {
         fullName: `copyright email intake queue pagination ${title}`,
       })
     }
+    expect(getIsolatedDatabaseCase('copyright-dev-seed')).toEqual({
+      file: 'backend/scripts/seed/copyright.test.mts',
+      fullName:
+        'seedCopyright > fills both staff queues with every review state and adds nothing when run again',
+    })
     expect(getIsolatedDatabaseCase('copyright-cache-policy')).toEqual({
       file: 'backend/api/v1/copyright-notices/copyright-cache.test.mts',
       fullName:

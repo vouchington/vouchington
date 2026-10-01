@@ -1,6 +1,11 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateUUIDParam, parseJsonBody } from '../../response-helpers.mts'
+import {
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+  parseJsonBody,
+} from '../../response-helpers.mts'
 import {
   createUserModNote,
   listUserModNotes,
@@ -12,19 +17,26 @@ import {
 } from '@services/user-mod-notes'
 import { getPrivateUserByAny } from '@services/users/get'
 import { assertNotSuspended } from '@services/users'
-import { isUUID } from '@modules/utils'
 import { defineQueryContract, queryInteger, queryUuid } from '@modules/pagination'
 import { apiQuery } from '../../response-contract.mts'
 
+const MOD_NOTES_LIMIT = { minimum: 1, maximum: 100, default: 20 } as const
 const modNotesQuery = defineQueryContract({
   after: queryUuid(),
-  limit: queryInteger({ minimum: 1, maximum: 100, default: 20 }),
+  limit: queryInteger(MOD_NOTES_LIMIT),
 })
+
+// Typed as strings: the generated contract checks the carrier shape and unknown keys, while UUID,
+// blank, and length checks in parseCreateUserModNoteInput keep their existing 422 responses.
+type CreateUserModNoteRequest = { body: string; community_id?: string | null }
 
 app.route('/api/v1/users/:userId/moderation-context').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/users/:userId/moderation-context')
   ctx.assert(await currentUserCanAccessUserModNotes(currentUser), 403, 'Forbidden')
   const userId = validateUUIDParam(ctx, 'userId')
+  validateRequestContract(ctx, 'GET:/api/v1/users/:userId/moderation-context', {
+    path: ctx.params,
+  })
   const targetUser = await getPrivateUserByAny(userId)
   ctx.assert(targetUser, 404, 'User not found')
   const isStaff = isModerationStaff(currentUser)
@@ -52,13 +64,22 @@ app.route('/api/v1/users/:userId/mod-notes').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/users/:userId/mod-notes')
   ctx.assert(await currentUserCanAccessUserModNotes(currentUser), 403, 'Forbidden')
   const userId = validateUUIDParam(ctx, 'userId')
-  const limitRaw = ctx.query.limit ? parseInt(ctx.query.limit as string, 10) : undefined
-  const limit = Number.isFinite(limitRaw) ? limitRaw : undefined
   ctx.assert(!Object.hasOwn(ctx.query, 'cursor'), 400, 'Use after instead of cursor')
-  const afterRaw = ctx.query.after
-  ctx.assert(afterRaw === undefined || typeof afterRaw === 'string', 422, 'Invalid after')
-  ctx.assert(!afterRaw || isUUID(afterRaw), 422, 'Invalid after')
-  const beforeId = afterRaw ?? null
+  // A malformed or out-of-range `limit` is clamped and a blank `after` is ignored, as documented;
+  // the contract sees those settled values, so it rejects only a non-UUID or repeated `after`.
+  const limitRaw = ctx.query.limit ? parseInt(ctx.query.limit as string, 10) : undefined
+  const limit = Number.isFinite(limitRaw)
+    ? Math.min(Math.max(limitRaw!, MOD_NOTES_LIMIT.minimum), MOD_NOTES_LIMIT.maximum)
+    : undefined
+  const after = ctx.query.after || undefined
+  validateRequestContract(ctx, 'GET:/api/v1/users/:userId/mod-notes', {
+    path: ctx.params,
+    query: {
+      ...(limit === undefined ? {} : { limit }),
+      ...(after === undefined ? {} : { after }),
+    },
+  })
+  const beforeId = (after as string | undefined) ?? null
   const { notes, hasNextPage } = await listUserModNotes(currentUser, userId, { limit, beforeId })
   ctx.json({ notes, page_info: { has_next_page: hasNextPage } })
 })
@@ -68,7 +89,11 @@ app.route('/api/v1/users/:userId/mod-notes').post(async (ctx: Context) => {
   assertNotSuspended(currentUser)
   ctx.assert(await currentUserCanAccessUserModNotes(currentUser), 403, 'Forbidden')
   const userId = validateUUIDParam(ctx, 'userId')
-  const body = await parseJsonBody<Record<string, unknown>>(ctx)
+  const body = await parseJsonBody<CreateUserModNoteRequest>(ctx)
+  validateRequestContract(ctx, 'POST:/api/v1/users/:userId/mod-notes', {
+    body,
+    path: ctx.params,
+  })
   const input = parseCreateUserModNoteInput({
     targetUserId: userId,
     communityId: body.community_id,
@@ -85,6 +110,9 @@ app.route('/api/v1/users/:userId/mod-notes/:noteId').delete(async (ctx: Context)
   ctx.assert(await currentUserCanAccessUserModNotes(currentUser), 403, 'Forbidden')
   const userId = validateUUIDParam(ctx, 'userId')
   const noteId = validateUUIDParam(ctx, 'noteId')
+  validateRequestContract(ctx, 'DELETE:/api/v1/users/:userId/mod-notes/:noteId', {
+    path: ctx.params,
+  })
   await deleteUserModNote(currentUser, noteId, userId)
   ctx.json({ ok: true })
 })

@@ -35,6 +35,14 @@ Adds or replaces an active curated item. The request body is JSON:
 
 The service validates that the entity exists and matches the aside type before writing.
 
+Mutations check the administrator role first, then the generated request contract, then the semantic
+rules. A body that is not an object, misses `aside_type` or `entity_id` (or `item_ids` on reorder),
+sends a value of the wrong type, or carries an unknown key returns `422`; this includes the
+missing-field cases that used to return `400`. A blank `aside_type` or `entity_id` still returns
+`400`, and an unknown aside type, malformed UUID, duplicate id, or non-integer position still
+returns `422`. The full status list is in
+[Staff and operations validation](../../reference-staff-operations-request-validation.md).
+
 ## Performance
 
 | Endpoint                         | Round Trips | Caching          | Notes                                       |

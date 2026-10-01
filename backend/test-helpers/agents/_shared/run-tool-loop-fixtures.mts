@@ -1,9 +1,5 @@
 import type { OpenAIResponse } from '../../../agents/_shared/create-response.mts'
-import type { RunToolLoopStreamEvent } from '../../../agents/_shared/run-tool-loop-streaming.mts'
-import type {
-  OpenAIFunctionCall,
-  OpenAIFunctionCallOutput,
-} from '../../../services/openai-agents/index.mts'
+import type { OpenAIFunctionCall } from '../../../services/openai-agents/index.mts'
 
 export const makeTextResponse = (text: string, id = 'resp-1'): OpenAIResponse => ({
   id,
@@ -41,42 +37,3 @@ export const makeToolCall = (): OpenAIFunctionCall => ({
   name: 'search_posts',
   arguments: '{}',
 })
-
-export const makeToolResult = (callId = 'call-1'): OpenAIFunctionCallOutput => ({
-  type: 'function_call_output',
-  call_id: callId,
-  output: '{"results":[]}',
-})
-
-export function makeTextStream(delta: string, response: OpenAIResponse) {
-  return async function* () {
-    yield { delta }
-    return response
-  }
-}
-
-export function makeNoTextStream(response: OpenAIResponse) {
-  return async function* (): AsyncGenerator<{ delta: string }, OpenAIResponse> {
-    yield* []
-    return response
-  }
-}
-
-export function makeThrowingStream(error: Error) {
-  return async function* (): AsyncGenerator<{ delta: string }, never> {
-    yield* []
-    throw error
-  }
-}
-
-export async function drainRunToolLoopStream<T = unknown>(
-  gen: AsyncGenerator<RunToolLoopStreamEvent, T>,
-): Promise<{ events: RunToolLoopStreamEvent[]; returnValue: T }> {
-  const events: RunToolLoopStreamEvent[] = []
-  let step = await gen.next()
-  while (!step.done) {
-    events.push(step.value)
-    step = await gen.next()
-  }
-  return { events, returnValue: step.value }
-}

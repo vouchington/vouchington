@@ -19,7 +19,6 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
-    "@flows/core": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/queue-config": "workspace:^",
     "@queues/ai-agents": "workspace:^",
@@ -38,6 +37,7 @@
     "@queues/spam-detection": "workspace:^",
     "@queues/vote-weight": "workspace:^",
     "@services/bookmarks": "workspace:^",
+    "@services/classifier-runs": "workspace:^",
     "@services/comments": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/community-agent-prompts": "workspace:^",
@@ -53,6 +53,7 @@
     "@services/urls": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
+    "@voucha/types": "workspace:^",
     "glide-mq": "^0.15.5"
   },
   "devDependencies": {

@@ -36,7 +36,6 @@ const parsers = {
   processPostCreated: idPayload,
   processPostUpdated: postUpdatedPayload,
   processPostDeleted: idPayload,
-  processReconcilePostCategoryFinalizations: emptyPayload,
   processTopicCreated: topicPayload,
   processTopicUpdated: topicUpdatedPayload,
   processTopicDeleted: topicPayload,

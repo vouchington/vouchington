@@ -1,3 +1,4 @@
+import { createAutotaggerRegistration } from './classifier-run-autotagger.mts'
 import { createClassifierRunHandler, type ClassifierRunHandler } from './classifier-run-handler.mts'
 import { createPostClassifierRegistration } from './classifier-run-post-classifier.mts'
 
@@ -7,6 +8,7 @@ import { createPostClassifierRegistration } from './classifier-run-post-classifi
  */
 const handlers: readonly ClassifierRunHandler[] = [
   createClassifierRunHandler(createPostClassifierRegistration()),
+  createClassifierRunHandler(createAutotaggerRegistration()),
 ]
 
 export function listClassifierRunHandlers(): readonly ClassifierRunHandler[] {

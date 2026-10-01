@@ -4,7 +4,11 @@ Source entrypoint: [backend/api/v1/vote-integrity/README.md](../../../../../back
 
 Admin-only endpoints for reviewing and acting on suspicious voting patterns.
 
-All endpoints require `administrator` role.
+All endpoints require `administrator` role. The role gate runs first, so anonymous and non-admin
+callers see `401` and `403` with no schema diagnostic. The `PATCH` and `POST` bodies are then checked
+against the generated closed contract: a non-object body, a wrong-typed field, or an unknown key
+returns `422` before any write. The list routes have no request contract. See
+[Staff and operations validation](../../reference-staff-operations-request-validation.md).
 
 ## Flags
 

@@ -36,10 +36,10 @@ describe('PUT /api/v1/curated-aside-items/order', () => {
       .expect(415)
   })
 
-  it('returns 400 when aside_type is missing', async () => {
+  it('returns 422 when aside_type is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(admin)
-    await request.put('/api/v1/curated-aside-items/order').send({ item_ids: [] }).expect(400)
+    await request.put('/api/v1/curated-aside-items/order').send({ item_ids: [] }).expect(422)
   })
 
   it('returns 422 when aside_type is not a valid value', async () => {
@@ -51,13 +51,13 @@ describe('PUT /api/v1/curated-aside-items/order', () => {
       .expect(422)
   })
 
-  it('returns 400 when item_ids is not an array of strings', async () => {
+  it('returns 422 when item_ids is not an array of strings', async () => {
     const request = createRequest()
     await request.authenticateAs(admin)
     await request
       .put('/api/v1/curated-aside-items/order')
       .send({ aside_type: 'topic', item_ids: [123] })
-      .expect(400)
+      .expect(422)
   })
 
   it('returns 422 when item_ids contains non-UUID strings', async () => {

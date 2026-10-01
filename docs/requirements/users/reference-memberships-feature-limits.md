@@ -42,7 +42,7 @@ The [autotagger agent](../../overview/architecture/ai-agents/autotagger/README.m
 | Pro   | 10                           |
 | Admin | 10 (treated as pro-level)    |
 
-**Admin authors are treated as pro-level, not unlimited.** `getUserActivePlan` has no concept of an administrator plan, so `resolvePostAutotaggerMaxTopics` (`backend/workers/ai-agents/processors/process-autotagger.mts`) checks the author's `administrator` role directly and maps it to the pro cap — this is a deliberate choice, not an oversight, since leaving admin-authored posts on the free default would silently disable autotagging for staff posts.
+**Admin authors are treated as pro-level, not unlimited.** `getUserActivePlan` has no concept of an administrator plan, so `resolvePostMaxTopics` (`backend/services/autotagger/candidates.mts`) checks the author's `administrator` role directly and maps it to the pro cap — this is a deliberate choice, not an oversight, since leaving admin-authored posts on the free default would silently disable autotagging for staff posts.
 
 These defaults are runtime-tunable via the `autotagger-paid-limits` DynamicConfig namespace (`post_free_max_topics`, `post_plus_max_topics`, `post_pro_max_topics`), the same mechanism used for [contribution rate limits](../trust-safety/CONTRIBUTION-LIMITS.md). RSS feed item topic enrichment is tiered by **follower** plan instead of author plan; see the autotagger README for that flow. Its private Plus/Pro collaborative caps are runtime-tunable but validated as Plus ≤ Pro.
 

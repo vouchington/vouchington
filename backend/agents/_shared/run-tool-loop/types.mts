@@ -2,14 +2,12 @@ import type {
   OpenAIResponseInput,
   OpenAIResponse,
   createOpenAIResponse,
-  streamOpenAIResponse,
 } from '../create-response.mts'
 import type { createOpenRouterResponse } from '@modules/openrouter-utils'
 import type {
   AgentTool,
   OpenAIFunctionCallOutput,
   OpenAIFunctionCall,
-  dispatchOneToolCall,
   executeToolCalls,
   getFunctionCallsFromOutput,
 } from '@services/openai-agents'
@@ -25,10 +23,8 @@ export interface RunToolLoopDeps {
   agentToolsToSchemas?: typeof agentToolsToSchemas
   createOpenAIResponse?: typeof createOpenAIResponse
   createOpenRouterResponse?: typeof createOpenRouterResponse
-  streamOpenAIResponse?: typeof streamOpenAIResponse
   getFunctionCallsFromOutput?: typeof getFunctionCallsFromOutput
   executeToolCalls?: typeof executeToolCalls
-  dispatchOneToolCall?: typeof dispatchOneToolCall
   assertOpenAiSpendCapNotBreached?: typeof assertOpenAiSpendCapNotBreached
   latchAccountingUncertainty?: typeof latchAccountingUncertainty
   recordAgentResponseUsage?: typeof recordAgentResponseUsage
@@ -60,8 +56,7 @@ export interface RunToolLoopConfig {
   /**
    * Application-owned retry budget (default 2) for the known-unbilled flex
    * `resource_unavailable` 429. SDK retries are always disabled; ambiguous potentially billed
-   * failures latch accounting uncertainty and stop. Chat widens this free-capacity budget without
-   * pausing the whole ai-agents worker.
+   * failures latch accounting uncertainty and stop.
    */
   maxRetries?: number
   onCallError?: (toolCall: OpenAIFunctionCall, error: Error) => void

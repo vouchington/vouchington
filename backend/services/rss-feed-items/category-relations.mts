@@ -154,8 +154,9 @@ export async function createCategoryTopicRelationsInTransaction(
 export async function getRssFeedItemMappedTopics(
   rss_feed_item_id: string,
   limit: number,
+  query: QueryExecutor = read,
 ): Promise<{ id: string; name: string }[]> {
-  const { rows } = await read(
+  const { rows } = await query(
     `/* getRssFeedItemMappedTopics */
     SELECT t.id, t.name
     FROM rss_feed_item_categories rfc

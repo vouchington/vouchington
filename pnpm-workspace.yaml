@@ -17,7 +17,6 @@ packages:
   - backend/services/*
   - backend/queues/*
   - backend/workers/*
-  - backend/flows/*
   - backend/test-helpers
   - backend/tools
   - backend/types

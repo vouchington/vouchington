@@ -74,7 +74,7 @@ aws ecs run-task \
   --cluster "$CLUSTER" \
   --task-definition "$BACKEND_TASK_DEFINITION" \
   --network-configuration "$NETWORK_CONFIGURATION" \
-  --overrides '{"containerOverrides":[{"name":"backend","command":["--experimental-strip-types","--disable-warning=ExperimentalWarning","verify-ipv6-egress.mts"]}]}'
+  --overrides '{"containerOverrides":[{"name":"backend","command":["verify-ipv6-egress.mts"]}]}'
 ```
 
 Retrieve its output from the task's CloudWatch Logs stream after it exits.

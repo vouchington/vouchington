@@ -1,9 +1,8 @@
 import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const directory = dirname(fileURLToPath(import.meta.url))
+const directory = import.meta.dirname
 
 const productionSources = [
   '../get-translations.ts',

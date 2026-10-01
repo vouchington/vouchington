@@ -7,12 +7,10 @@ description: Author Voucha GlideMQ queues, payloads, enqueues, workers, retries,
 
 Follow [`docs/checklists/backend-queues.md`](../../../docs/checklists/backend-queues.md) and the
 scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
-[`backend/workers/`](../../../backend/workers/AGENTS.md), and
-[`backend/flows/`](../../../backend/flows/AGENTS.md).
+[`backend/workers/`](../../../backend/workers/AGENTS.md).
 
 1. Keep enqueue configuration and payload types in the queue package, processor orchestration in the
-   worker package, business logic and durable idempotency in services, and flow producers in
-   `backend/flows/core`.
+   worker package, and business logic and durable idempotency in services.
 2. Start from durable source-of-truth state, pass minimal identifiers, make every retry safe, and
    await or explicitly mark every fan-out edge.
 3. Apply the canonical job options, deduplication, backfill, scheduler/admin-trigger, and

@@ -2596,6 +2596,79 @@
       ],
       "type": "object"
     },
+    "CopyrightAppealRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "cf_turnstile_response": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "target_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": ["reason", "target_ids"],
+      "type": "object"
+    },
+    "CopyrightCounterNoticeRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "cf_turnstile_response": {
+          "type": "string"
+        },
+        "consent_to_federal_jurisdiction": {
+          "const": true
+        },
+        "consent_to_service_of_process": {
+          "const": true
+        },
+        "electronic_signature": {
+          "type": "string"
+        },
+        "good_faith_misidentification_under_penalty_of_perjury": {
+          "const": true
+        },
+        "name": {
+          "type": "string"
+        },
+        "target_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "telephone": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "address",
+        "consent_to_federal_jurisdiction",
+        "consent_to_service_of_process",
+        "electronic_signature",
+        "good_faith_misidentification_under_penalty_of_perjury",
+        "name",
+        "target_ids",
+        "telephone"
+      ],
+      "type": "object"
+    },
     "CopyrightEmailIntakeQueueResponse": {
       "additionalProperties": false,
       "properties": {
@@ -2872,6 +2945,84 @@
         "resolved_at",
         "resolved_by_id"
       ],
+      "type": "object"
+    },
+    "CopyrightNoticeFormRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "accuracy_authority_under_penalty_of_perjury": {
+          "const": true
+        },
+        "cf_turnstile_response": {
+          "type": "string"
+        },
+        "claimant_contact": {
+          "type": "string"
+        },
+        "claimant_display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "claimant_email": {
+          "type": "string"
+        },
+        "electronic_signature": {
+          "type": "string"
+        },
+        "good_faith_belief": {
+          "const": true
+        },
+        "jurisdiction": {
+          "const": "us_dmca"
+        },
+        "targets": {
+          "items": {
+            "$ref": "#/components/schemas/CopyrightNoticeTargetRequest"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": false
+        },
+        "work_description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "accuracy_authority_under_penalty_of_perjury",
+        "claimant_contact",
+        "claimant_display_name",
+        "claimant_email",
+        "electronic_signature",
+        "good_faith_belief",
+        "jurisdiction",
+        "targets",
+        "work_description"
+      ],
+      "type": "object"
+    },
+    "CopyrightNoticeTargetRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "image_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "post_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "target_url": {
+          "type": "string"
+        }
+      },
+      "required": ["image_id", "post_id", "target_url"],
       "type": "object"
     },
     "CopyrightPublicNotice": {
@@ -4283,6 +4434,32 @@
         }
       ]
     },
+    "CreateCuratedAsideItemRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "aside_type": {
+          "type": "string"
+        },
+        "entity_id": {
+          "type": "string"
+        },
+        "position": {
+          "type": "number"
+        }
+      },
+      "required": ["aside_type", "entity_id"],
+      "type": "object"
+    },
+    "CreateFediverseInstanceRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "hostname": {
+          "type": "string"
+        }
+      },
+      "required": ["hostname"],
+      "type": "object"
+    },
     "CreateHouseholdBody": {
       "additionalProperties": false,
       "properties": {},
@@ -5119,6 +5296,26 @@
         }
       },
       "required": ["name", "slug"],
+      "type": "object"
+    },
+    "CreateUserModNoteRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "body": {
+          "type": "string"
+        },
+        "community_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": ["body"],
       "type": "object"
     },
     "CreateWebPushSubscriptionRequest": {
@@ -10676,7 +10873,7 @@
           "type": "string"
         },
         "counts": {
-          "$ref": "#/components/schemas/Partial_Record__remove_____warn_____queue_retry_failed_____approve_____reject_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create__number"
+          "$ref": "#/components/schemas/Partial_Record__remove_____warn_____reject_____queue_retry_failed_____approve_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create__number"
         },
         "total": {
           "type": "number"
@@ -13112,7 +13309,7 @@
       },
       "type": "object"
     },
-    "Partial_Record__remove_____warn_____queue_retry_failed_____approve_____reject_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create__number": {
+    "Partial_Record__remove_____warn_____reject_____queue_retry_failed_____approve_____ban_____lift_ban_____activate_restriction_____lift_restriction_____lock_____unlock_____pin_____unpin_____tag_____suspend_____unsuspend_____remove_member_____change_role_____resolve_report_____dismiss_report_____resolve_appeal_____dismiss_appeal_____topic_claim_verify_____topic_claim_reject_____topic_claim_revoke_____report_claim_____report_unclaim_____report_escalate_____report_deescalate_____report_integrity_flag_review_____report_integrity_penalty_apply_____report_integrity_penalty_revoke_____vote_integrity_flag_review_____vote_integrity_penalty_apply_____vote_integrity_penalty_revoke_____vote_weight_set_____vote_weight_reset_____agent_moderation_vote_set_____agent_moderation_vote_delete_____mod_note_delete_____report_judgement_rerun_____appeal_resolution_draft_rerun_____dispute_resolution_draft_rerun_____oauth_client_verify_____oauth_client_unverify_____crawler_create_____crawler_update_____crawler_delete_____rss_category_assign_____rss_category_reject_____rss_category_unreject_____queue_pause_____queue_resume_____scheduled_job_run_____backfill_run_____article_sync_run_____import_batch_create__number": {
       "additionalProperties": false,
       "properties": {
         "activate_restriction": {
@@ -15652,20 +15849,22 @@
         "postId": {
           "anyOf": [
             {
-              "type": "null"
+              "format": "uuid",
+              "type": "string"
             },
             {
-              "type": "string"
+              "type": "null"
             }
           ]
         },
         "reportId": {
           "anyOf": [
             {
-              "type": "null"
+              "format": "uuid",
+              "type": "string"
             },
             {
-              "type": "string"
+              "type": "null"
             }
           ]
         },
@@ -16765,6 +16964,22 @@
       "required": ["annotation_id"],
       "type": "object"
     },
+    "ReorderCuratedAsideItemsRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "aside_type": {
+          "type": "string"
+        },
+        "item_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["aside_type", "item_ids"],
+      "type": "object"
+    },
     "ReorderProfileLinksRequest": {
       "additionalProperties": false,
       "properties": {
@@ -17013,6 +17228,27 @@
         }
       },
       "required": ["status"],
+      "type": "object"
+    },
+    "ResolveReportIntegrityFlagRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "resolution": {
+          "const": "dismissed"
+        }
+      },
+      "required": ["resolution"],
+      "type": "object"
+    },
+    "ResolveVoteIntegrityFlagRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "resolution": {
+          "enum": ["dismissed", "penalized", "suspended"],
+          "type": "string"
+        }
+      },
+      "required": ["resolution"],
       "type": "object"
     },
     "ResolvedEmbed": {
@@ -18414,6 +18650,16 @@
       "required": ["is_primary"],
       "type": "object"
     },
+    "SetVoteWeightRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "weight": {
+          "type": "number"
+        }
+      },
+      "required": ["weight"],
+      "type": "object"
+    },
     "SimilarTopic": {
       "additionalProperties": false,
       "properties": {
@@ -18431,6 +18677,23 @@
         }
       },
       "required": ["id", "name", "slug", "topic_type"],
+      "type": "object"
+    },
+    "SourceSyncRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "sourceId": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": ["sourceId"],
       "type": "object"
     },
     "SpendingCategoryAttributes": {
@@ -18838,6 +19101,15 @@
         }
       },
       "required": ["evidence"],
+      "type": "object"
+    },
+    "SuspendUserRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "TerritorialCopyrightAcknowledgment": {
@@ -19831,6 +20103,16 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "UpdateDynamicConfigNamespaceRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "config": {
+          "$ref": "#/components/schemas/Record_string_unknown"
+        }
+      },
+      "required": ["config"],
       "type": "object"
     },
     "UpdateHostnameBody": {
@@ -24518,6 +24800,104 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/admin/moderation-analytics": {
+      "query": {
+        "properties": {
+          "range": {
+            "default": "30d",
+            "enum": ["today", "7d", "30d", "90d", "all"],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/admin/modlog": {
+      "query": {
+        "properties": {
+          "action_type": {
+            "enum": [
+              "remove",
+              "approve",
+              "reject",
+              "ban",
+              "lift_ban",
+              "activate_restriction",
+              "lift_restriction",
+              "warn",
+              "lock",
+              "unlock",
+              "pin",
+              "unpin",
+              "tag",
+              "suspend",
+              "unsuspend",
+              "remove_member",
+              "change_role",
+              "resolve_report",
+              "dismiss_report",
+              "resolve_appeal",
+              "dismiss_appeal",
+              "topic_claim_verify",
+              "topic_claim_reject",
+              "topic_claim_revoke",
+              "report_claim",
+              "report_unclaim",
+              "report_escalate",
+              "report_deescalate",
+              "report_integrity_flag_review",
+              "report_integrity_penalty_apply",
+              "report_integrity_penalty_revoke",
+              "vote_integrity_flag_review",
+              "vote_integrity_penalty_apply",
+              "vote_integrity_penalty_revoke",
+              "vote_weight_set",
+              "vote_weight_reset",
+              "agent_moderation_vote_set",
+              "agent_moderation_vote_delete",
+              "mod_note_delete",
+              "report_judgement_rerun",
+              "appeal_resolution_draft_rerun",
+              "dispute_resolution_draft_rerun",
+              "oauth_client_verify",
+              "oauth_client_unverify",
+              "crawler_create",
+              "crawler_update",
+              "crawler_delete",
+              "rss_category_assign",
+              "rss_category_reject",
+              "rss_category_unreject",
+              "queue_pause",
+              "queue_resume",
+              "queue_retry_failed",
+              "scheduled_job_run",
+              "backfill_run",
+              "article_sync_run",
+              "import_batch_create"
+            ],
+            "type": "string"
+          },
+          "actor_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "after": {
+            "type": "string"
+          },
+          "community_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/admin/oauth-clients": {
       "query": {
         "properties": {
@@ -24569,6 +24949,30 @@
             "maximum": 100,
             "minimum": 1,
             "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/appeals": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "mine": {
+            "type": "boolean"
+          },
+          "status": {
+            "default": "pending",
+            "enum": ["pending", "resolved", "dismissed"],
+            "type": "string"
           }
         },
         "type": "object"
@@ -25268,6 +25672,30 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/disputes": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "mine": {
+            "type": "boolean"
+          },
+          "status": {
+            "default": "pending",
+            "enum": ["pending", "resolved", "dismissed"],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/disputes/:id": {
       "path": {
         "properties": {
@@ -25391,7 +25819,7 @@
           },
           "limit": {
             "default": 10,
-            "maximum": 25,
+            "maximum": 100,
             "minimum": 1,
             "type": "integer"
           },
@@ -25563,6 +25991,18 @@
           },
           "time_range": {
             "enum": ["1d", "1w", "1m", "1y", "all"],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/growth-metrics": {
+      "query": {
+        "properties": {
+          "range": {
+            "default": "30d",
+            "enum": ["today", "7d", "30d", "90d", "all"],
             "type": "string"
           }
         },
@@ -25844,6 +26284,17 @@
           }
         },
         "required": ["userId"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/memberships/refundable-charges": {
+      "query": {
+        "properties": {
+          "user_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
         "type": "object"
       }
     },
@@ -26571,6 +27022,22 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/posts/review-queue": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/referral-link-validations": {
       "query": {
         "properties": {
@@ -26680,6 +27147,59 @@
           }
         },
         "required": ["id"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/reports": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "before": {
+            "type": "string"
+          },
+          "cluster": {
+            "enum": ["entity"],
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "sort": {
+            "enum": ["created_at_asc", "created_at_desc", "most_reported", "severity"],
+            "type": "string"
+          },
+          "status": {
+            "default": "pending",
+            "enum": ["pending", "reviewed", "actioned", "dismissed"],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/rss-feed-categories": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "status": {
+            "default": "pending",
+            "enum": ["pending", "rejected", "all"],
+            "type": "string"
+          }
+        },
         "type": "object"
       }
     },
@@ -28101,13 +28621,7 @@
     },
     "PATCH:/api/v1/dynamic-config/namespaces/:namespace": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "config": {
-            "$ref": "#/components/schemas/Record_string_unknown"
-          }
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/UpdateDynamicConfigNamespaceRequest"
       },
       "path": {
         "properties": {
@@ -28533,7 +29047,9 @@
       }
     },
     "PATCH:/api/v1/report-integrity/flags/:id": {
-      "body": {},
+      "body": {
+        "$ref": "#/components/schemas/ResolveReportIntegrityFlagRequest"
+      },
       "path": {
         "properties": {
           "id": {
@@ -28715,7 +29231,9 @@
       }
     },
     "PATCH:/api/v1/vote-integrity/flags/:id": {
-      "body": {},
+      "body": {
+        "$ref": "#/components/schemas/ResolveVoteIntegrityFlagRequest"
+      },
       "path": {
         "properties": {
           "id": {
@@ -29045,7 +29563,9 @@
       }
     },
     "POST:/api/v1/blacklist/source-sync": {
-      "body": {}
+      "body": {
+        "$ref": "#/components/schemas/SourceSyncRequest"
+      }
     },
     "POST:/api/v1/communities": {
       "body": {
@@ -29877,7 +30397,7 @@
     },
     "POST:/api/v1/copyright-notices": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightNoticeFormRequest"
       }
     },
     "POST:/api/v1/copyright-notices/:id/action-intents/:intentId/replays": {
@@ -29896,7 +30416,7 @@
     },
     "POST:/api/v1/copyright-notices/:id/appeals": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightAppealRequest"
       },
       "path": {
         "properties": {
@@ -29910,7 +30430,7 @@
     },
     "POST:/api/v1/copyright-notices/:id/counter-notices": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CopyrightCounterNoticeRequest"
       },
       "path": {
         "properties": {
@@ -30210,7 +30730,7 @@
     },
     "POST:/api/v1/curated-aside-items": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateCuratedAsideItemRequest"
       }
     },
     "POST:/api/v1/disputes": {
@@ -30305,14 +30825,7 @@
     },
     "POST:/api/v1/fediverse/instances": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "hostname": {
-            "type": "string"
-          }
-        },
-        "required": ["hostname"],
-        "type": "object"
+        "$ref": "#/components/schemas/CreateFediverseInstanceRequest"
       }
     },
     "POST:/api/v1/fediverse/instances/:id/integration-changes": {
@@ -31168,7 +31681,57 @@
     },
     "POST:/api/v1/topic-recommendations": {
       "body": {
-        "$ref": "#/components/schemas/CreateTopicRecommendationInput"
+        "additionalProperties": false,
+        "properties": {
+          "cf_turnstile_response": {
+            "type": "string"
+          },
+          "example_referral_link": {
+            "type": "string"
+          },
+          "landing_page_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "markdown": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "topic_aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "topic_hostname": {
+            "type": "string"
+          },
+          "topic_hostnames": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "topic_markdown": {
+            "type": "string"
+          },
+          "topic_slug": {
+            "type": "string"
+          },
+          "topic_title": {
+            "type": "string"
+          },
+          "topic_type": {
+            "enum": ["card", "referral_program", "topic"],
+            "type": "string"
+          }
+        },
+        "required": ["markdown", "topic_slug", "topic_title"],
+        "type": "object"
       },
       "header": {
         "properties": {
@@ -31383,7 +31946,7 @@
     },
     "POST:/api/v1/users/:userId/mod-notes": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateUserModNoteRequest"
       },
       "path": {
         "properties": {
@@ -31604,7 +32167,7 @@
     },
     "PUT:/api/v1/curated-aside-items/order": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/ReorderCuratedAsideItemsRequest"
       }
     },
     "PUT:/api/v1/entity-relations/:id/vote": {
@@ -31843,7 +32406,7 @@
     },
     "PUT:/api/v1/users/:userId/suspension": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/SuspendUserRequest"
       },
       "path": {
         "properties": {
@@ -31857,7 +32420,7 @@
     },
     "PUT:/api/v1/users/:userId/vote-weight": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/SetVoteWeightRequest"
       },
       "path": {
         "properties": {

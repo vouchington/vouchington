@@ -63,7 +63,6 @@ The bundled Rust N-API module is compiled for `aarch64-unknown-linux-gnu` with
   - `services/*` aka `@services/*` - services for business logic, re-used across jobs, APIs, and other entry points
   - `queues/*` aka `@queues/*` - GlideMQ queue clients, configuration, and enqueue APIs grouped by domain
   - `workers/*` aka `@workers/*` - worker registrations and processors grouped by domain
-  - `flows/*` aka `@flows/*` - shared flow producers and flow enqueue APIs
   - `agents/*` aka `@agents/*` - LLM Agents
   - `tools/*` aka `@tools/*` - tools for LLM Agents
   - `api/*` aka `@voucha/api` - API route definitions
@@ -98,7 +97,6 @@ When working in backend/, follow the links below to read relevant context. Updat
 - **Business logic**: [services/AGENTS.md](../../../../backend/services/AGENTS.md)
 - **Job queues (GlideMQ)**: [queues/AGENTS.md](../../../../backend/queues/AGENTS.md)
 - **Job workers**: [workers/AGENTS.md](../../../../backend/workers/AGENTS.md)
-- **Flow producers**: [flows/AGENTS.md](../../../../backend/flows/AGENTS.md)
 - **API entry**: [entrypoints/api/AGENTS.md](../../../../backend/entrypoints/api/AGENTS.md)
 - **CPU worker entry**: [entrypoints/worker-cpu/README.md](entrypoints/worker-cpu/README.md)
 - **IO worker entry**: [entrypoints/worker-io/README.md](entrypoints/worker-io/README.md)

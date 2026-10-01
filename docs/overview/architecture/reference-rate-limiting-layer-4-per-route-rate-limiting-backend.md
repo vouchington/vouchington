@@ -135,8 +135,8 @@ quota exceeded` with `Retry-After` set to the full window (900 seconds), records
   counts and none are invented. Model request recording would reuse the existing redacted,
   access-controlled object-recording path when such a call exists.
 - **Deferred**: per-OAuth-client buckets and the structured `RateLimit-Policy` / `RateLimit`
-  headers belong to the Public REST API milestone. REST session-user and anonymous metering is not
-  part of this layer yet.
+  headers belong to the Public REST API milestone. REST requests are metered by the
+  [REST usage quota](reference-rate-limiting-rest-usage-quota.md).
 
 The Firehose stream and S3 Tables table for `api_usage` are provisioned in the infra repository
 ([#1556](https://github.com/vouchington/vouchington/issues/1556)). Until they exist, the
@@ -147,9 +147,11 @@ backend is unaffected.
 
 `POST /api/v1/auth/logout` is exempt from backend per-route rate limiting. Logout must clear or
 revoke the current session even if the browser or IP has already exhausted mutating-route buckets.
+It never reaches the REST usage meter either.
 
 **Files:** `backend/services/route-rate-limits/`, `backend/api/context/rate-limit.mts`,
-`backend/api/mcp-usage-helpers.mts`
+`backend/api/mcp-usage-helpers.mts`, `backend/api/rest-usage-meter.mts`,
+`backend/api/usage-meter-helpers.mts`
 
 **CF Worker bindings**: staging declares the shared GET/HEAD, mutating, and nested Server Action
 bindings in the private Worker deployment manifest; Vouchington is not their source of

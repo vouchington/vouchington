@@ -8,7 +8,11 @@ import {
   getReportAbusePenaltyByIdFromPrimary,
   revokeReportAbusePenalty,
 } from '@services/report-integrity'
-import { requireAuthAndRateLimit, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  requireAuthAndRateLimit,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 
 const penaltiesParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -48,6 +52,7 @@ app.route('/api/v1/report-integrity/penalties/:id').get(async (ctx: Context) => 
     'GET:/api/v1/report-integrity/penalties/:id',
   )
   const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'GET:/api/v1/report-integrity/penalties/:id', { path: ctx.params })
   const penalty = await getReportAbusePenaltyByIdFromPrimary(id)
   ctx.assert(penalty, 404, 'Report abuse penalty not found')
   ctx.json({ penalty })
@@ -63,6 +68,9 @@ app.route('/api/v1/report-integrity/penalties/:id').delete(async (ctx: Context) 
   )
 
   const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'DELETE:/api/v1/report-integrity/penalties/:id', {
+    path: ctx.params,
+  })
   const result = await revokeReportAbusePenalty(currentUser.id, id)
   ctx.json(result)
 })

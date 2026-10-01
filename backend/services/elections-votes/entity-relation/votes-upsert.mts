@@ -77,7 +77,9 @@ export async function upsertEntityRelationElectionVotes(
       assertWhitelistedSqlIdentifier(metadata.table_name, relationTables, 'entityRelationTable'),
     )
     query.append(sql` relation ON relation.id = input.entity_relation_id
-      WHERE relation.deleted_at IS NULL`)
+      -- A zero vote may neutralize a retained vote after the relation is soft-deleted.
+      -- Positive votes remain restricted to active relations.
+      WHERE relation.deleted_at IS NULL OR input.score = 0`)
   })
   query.append(sql`), `)
 

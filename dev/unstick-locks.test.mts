@@ -2,12 +2,11 @@ import { execFile } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
 
 const execFileAsync = promisify(execFile)
-const devDir = fileURLToPath(new URL('.', import.meta.url))
+const devDir = import.meta.dirname
 
 async function makeRepo() {
   const repo = await mkdtemp(join(tmpdir(), 'voucha-unstick-locks-'))

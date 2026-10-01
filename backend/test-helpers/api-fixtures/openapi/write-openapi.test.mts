@@ -24,6 +24,7 @@ import { loadRegisteredRouteCatalog } from '../backend-contract-catalog.mts'
 import { COLD_OPENAPI_BUILD_TIMEOUT_MS } from '../cold-build-budget.mts'
 import { getBackendProgramBuildCount, getBackendProgramEntryCount } from '../backend-program.mts'
 import { assertContentRequestContractCoverage } from './content-request-contract-coverage.mts'
+import { assertModerationOperationsRequestContractCoverage } from './moderation-operations-request-contract-coverage.mts'
 import { assertStaffRequestContractCoverage } from './staff-request-contract-coverage.mts'
 
 const run = promisify(execFile)
@@ -140,6 +141,7 @@ describe('openapi document generation', () => {
 
   it('retains executable staff, admin and operations request carriers', () => {
     expect(() => assertStaffRequestContractCoverage(doc)).not.toThrow()
+    expect(() => assertModerationOperationsRequestContractCoverage(doc)).not.toThrow()
   })
 
   it('marks membership-grant request fields required in OpenAPI', () => {

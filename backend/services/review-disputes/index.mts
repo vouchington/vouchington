@@ -1,6 +1,5 @@
 export type {
   ReviewDispute,
-  ReviewDisputeStatus,
   ReviewDisputeReason,
   ReviewDisputeRecommendedAction,
   ReviewDisputeResolutionAction,

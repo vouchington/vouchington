@@ -159,6 +159,8 @@
     "unicorn/prefer-dom-node-text-content": "error",
     "unicorn/prefer-event-target": "off",
     "unicorn/prefer-global-this": "off",
+    // Active only where the unicorn plugin runs (web/, email-templates/); see the static-code-analysis README.
+    "unicorn/prefer-import-meta-properties": "error",
     "unicorn/prefer-includes": "error",
     "unicorn/prefer-keyboard-event-key": "error",
     "unicorn/prefer-logical-operator-over-ternary": "off",
@@ -852,7 +854,6 @@
           "@data-stores/**",
           "@email-templates/**",
           "@entrypoints/**",
-          "@flows/**",
           "@lambdas/**",
           "@local/**",
           "@modules/**",
@@ -902,7 +903,6 @@
           "@data-stores/**",
           "@email-templates/**",
           "@entrypoints/**",
-          "@flows/**",
           "@lambdas/**",
           "@local/**",
           "@modules/**",
@@ -1170,12 +1170,7 @@
           {
             "targets": [
               {
-                "sourceSpecifierPatterns": [
-                  "@queues/**/enqueues",
-                  "@queues/**/enqueues/**",
-                  "@flows/**/enqueues",
-                  "@flows/**/enqueues/**"
-                ],
+                "sourceSpecifierPatterns": ["@queues/**/enqueues", "@queues/**/enqueues/**"],
                 "calleeNamePatterns": ["/^enqueue[A-Z].*/"]
               }
             ]
