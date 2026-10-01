@@ -21511,7 +21511,7 @@
         },
         "lease_token": {
           "collation": null,
-          "comment": null,
+          "comment": "Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -23489,7 +23489,7 @@
         },
         "lease_token": {
           "collation": null,
-          "comment": null,
+          "comment": "Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -25422,7 +25422,7 @@
         },
         "lease_token": {
           "collation": null,
-          "comment": null,
+          "comment": "Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -26455,7 +26455,7 @@
         },
         "lease_token": {
           "collation": null,
-          "comment": null,
+          "comment": "Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27360,7 +27360,7 @@
         },
         "lease_token": {
           "collation": null,
-          "comment": null,
+          "comment": "Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
