@@ -232,6 +232,7 @@ describe('Google Play subscriptionsv2 verification', () => {
   })
 
   it('requests acknowledgement only for a purchased, still-entitled term', () => {
+    const now = new Date('2026-09-01T00:00:00.000Z')
     expect(
       verifyGooglePlaySubscription({
         subscription: {
@@ -242,6 +243,7 @@ describe('Google Play subscriptionsv2 verification', () => {
         applicationId: 'ai.voucha.android',
         environment: 'test',
         expectedProduct: expected,
+        now,
       }),
     ).toMatchObject({ accepted: true, acknowledgementPending: false })
     expect(
@@ -255,6 +257,7 @@ describe('Google Play subscriptionsv2 verification', () => {
         applicationId: 'ai.voucha.android',
         environment: 'test',
         expectedProduct: expected,
+        now,
       }),
     ).toEqual({ accepted: false, reasonCode: 'purchase_pending', bindablePending: true })
     expect(
@@ -264,6 +267,7 @@ describe('Google Play subscriptionsv2 verification', () => {
         applicationId: 'ai.voucha.android',
         environment: 'test',
         expectedProduct: expected,
+        now,
       }),
     ).toMatchObject({ accepted: true, acknowledgementPending: true })
     expect(
@@ -276,6 +280,7 @@ describe('Google Play subscriptionsv2 verification', () => {
         applicationId: 'ai.voucha.android',
         environment: 'test',
         expectedProduct: expected,
+        now,
       }),
     ).toMatchObject({ accepted: true, acknowledgementPending: false })
   })
