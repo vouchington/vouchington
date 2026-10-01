@@ -17,6 +17,7 @@ Not partitioned — growth: unbounded.
 | `idempotency_key`                  | `text`                     | no       |                              |          |           |           | Stable key preventing duplicate responses to one intake.        |
 | `state`                            | `text`                     | no       | `'pending'::text`            |          |           |           | Bounded durable email delivery lifecycle.                       |
 | `delivery_attempt_count`           | `integer`                  | no       | `0`                          |          |           |           | Number of claimed send attempts, capped at five.                |
+| `lease_token`                      | `uuid`                     | yes      |                              |          |           |           |                                                                 |
 | `claimed_at`                       | `timestamp with time zone` | yes      |                              |          |           |           | Time a worker claimed this response.                            |
 | `delivery_attempted_at`            | `timestamp with time zone` | yes      |                              |          |           |           | Time the latest send attempt began.                             |
 | `sent_at`                          | `timestamp with time zone` | yes      |                              |          |           |           | Time SES accepted this response.                                |
