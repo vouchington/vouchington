@@ -59,8 +59,12 @@ describe('bookmark mutation authorization', () => {
       createdById: owner.id,
       markdown: 'private post',
       privacy: 'private',
-      broadcast: 'users',
+      broadcast: 'followers',
     })
+
+    const request = createRequest()
+    await request.authenticateAs(viewer)
+    await request.get(`/api/v1/posts/${postId}`).expect(404)
 
     await expectHiddenTarget(viewer, 'post', postId, 'save')
   })
@@ -106,6 +110,7 @@ describe('bookmark mutation authorization', () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
+    await request.get(`/api/v1/posts/${postId}`).expect(200)
     await request.put(`/api/v1/bookmarks/post/${postId}/save`).expect(200)
   })
 
