@@ -157,8 +157,12 @@ examples describe the review baseline, rather than the current generated snapsho
     (`copyright_notice_intents` for `copyright_notice_action_intents`); a word under 3 letters
     (`comm_app_q`).
 
-  Abbreviating is allowed at any length. NM-4 `postgres-identifier-length` (jonathanong/no-mistakes#1058) still rejects names over 63 bytes. Today 1,108 of
-  1,394 non-constraint indexes use the full table name, and 22 use a valid abbreviation.
+  A shortened word must not be a denylisted token, even though it expands: `user_mod_notes` for
+  `user_moderator_notes` is an error because `mod` is denied, so spell that word out.
+
+  Abbreviating is allowed at any length. NM-4 `postgres-identifier-length` (jonathanong/no-mistakes#1058) still rejects names over 63 bytes. Today 1,125 of
+  1,398 non-constraint indexes use the full table name, and 20 use an abbreviation that expands; 8 of
+  those use a denylisted word (`conv`, `msg`, `pub`).
 
 - In table names, `__` has one meaning: generated entity-relation tables
   (`relation__<s>__<verb>__<o>`, and `retained_relation__…`). Everything else uses plain names:
