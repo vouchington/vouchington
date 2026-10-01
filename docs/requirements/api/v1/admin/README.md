@@ -17,7 +17,7 @@ Most endpoints require administrator access (`isAdminUser`). The growth metrics 
 | PUT    | `/api/v1/stories/:storyId/items/:itemId`                     | Add item to story                             |
 | DELETE | `/api/v1/stories/:storyId/items/:itemId`                     | Remove item from story                        |
 | PUT    | `/api/v1/stories/:storyId/official`                          | Set official item for story                   |
-| PATCH  | `/api/v1/stories/:storyId`                                   | Update story title                            |
+| PATCH  | `/api/v1/stories/:id`                                        | Update story title                            |
 | POST   | `/api/v1/admin/users/:userId/identity-verification-attempts` | Grant an audited identity-verification retry  |
 | GET    | `/api/v1/admin/users/:userId/landing-pages`                  | List landing pages for a user                 |
 | GET    | `/api/v1/admin/landing-pages/:pageId/analytics`              | Get landing page detail and analytics         |
@@ -68,7 +68,7 @@ limited), and `503` (the audit row could not be stored, so the call did not run)
 | PUT /api/v1/stories/:storyId/items/:itemId                      | 3           | None (write) | Auth, story lookup, assign item                                        |
 | DELETE /api/v1/stories/:storyId/items/:itemId                   | 4           | None (write) | Auth, story lookup, membership check, remove item                      |
 | PUT /api/v1/stories/:storyId/official                           | 4           | None (write) | Auth, story lookup, membership check, set official                     |
-| PATCH /api/v1/stories/:storyId                                  | 2           | None (write) | Auth, update title                                                     |
+| PATCH /api/v1/stories/:id                                       | 2           | None (write) | Auth, update title                                                     |
 | POST /api/v1/admin/users/:userId/identity-verification-attempts | 2           | None (write) | Auth, validated support note, durable attempt grant                    |
 | GET /api/v1/admin/users/:userId/landing-pages                   | 2           | None         | Auth, opaque cursor-paginated user-scoped landing page list            |
 | GET /api/v1/admin/landing-pages/:pageId/analytics               | 3           | None         | Auth, page lookup, analytics + signup attribution                      |

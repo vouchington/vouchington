@@ -132,18 +132,18 @@ describe('story-management', () => {
       expect(response.body.story.official_locked_at).toBeDefined()
     })
 
-    it('returns 400 for invalid rss_feed_item_id', async () => {
+    it('returns 422 for invalid rss_feed_item_id', async () => {
       const story = await insertTestStory()
       const request = createRequest()
       await request.authenticateAs(admin)
       await request
         .put(`/api/v1/stories/${story.id}/official`)
         .send({ rss_feed_item_id: 'not-a-uuid' })
-        .expect(400)
+        .expect(422)
     })
   })
 
-  describe('PATCH /api/v1/stories/:storyId', () => {
+  describe('PATCH /api/v1/stories/:id', () => {
     it('returns 401 when not authenticated', async () => {
       const story = await insertTestStory()
       const request = createRequest()

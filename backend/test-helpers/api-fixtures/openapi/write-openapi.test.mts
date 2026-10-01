@@ -24,6 +24,7 @@ import { loadRegisteredRouteCatalog } from '../backend-contract-catalog.mts'
 import { COLD_OPENAPI_BUILD_TIMEOUT_MS } from '../cold-build-budget.mts'
 import { getBackendProgramBuildCount, getBackendProgramEntryCount } from '../backend-program.mts'
 import { assertContentRequestContractCoverage } from './content-request-contract-coverage.mts'
+import { assertStaffRequestContractCoverage } from './staff-request-contract-coverage.mts'
 
 const run = promisify(execFile)
 const repoRoot = fileURLToPath(new URL('../../../..', import.meta.url))
@@ -102,15 +103,10 @@ describe('openapi document generation', () => {
     expect(doc.components.schemas.UpdateCrawlerUpdates).toMatchObject({ type: 'object' })
 
     // Inline-literal body -> a plain object schema, not a $ref.
-    const inlineBody = doc.paths['/api/v1/crawlers/referral-program']!.put!.requestBody!
+    const inlineBody =
+      doc.paths['/api/v1/admin/users/{userId}/identity-verification-attempts']!.post!.requestBody!
     expect(inlineBody.content['application/json'].schema).toMatchObject({ type: 'object' })
     expect(inlineBody.content['application/json'].schema.$ref).toBeUndefined()
-
-    // Record<string, unknown> body -> a permissive object schema (a shared named component,
-    // since Record<string, unknown> is structurally identical wherever it's used).
-    const resolvedRecordSchema = productionRequestSchema('/api/v1/images/upload-url')
-    expect(resolvedRecordSchema.type).toBe('object')
-    expect(resolvedRecordSchema.additionalProperties).not.toBe(false)
 
     // A bodyless mutation route omits requestBody entirely (not even the key present).
     expect(doc.paths['/api/v1/households/{id}']!.delete).not.toHaveProperty('requestBody')
@@ -142,9 +138,12 @@ describe('openapi document generation', () => {
     expect(() => assertContentRequestContractCoverage(doc)).not.toThrow()
   })
 
+  it('retains executable staff, admin and operations request carriers', () => {
+    expect(() => assertStaffRequestContractCoverage(doc)).not.toThrow()
+  })
+
   it('marks membership-grant request fields required in OpenAPI', () => {
-    const schema =
-      doc.paths['/api/v1/membership-grants']!.post!.requestBody!.content['application/json'].schema
+    const schema = productionRequestSchema('/api/v1/membership-grants')
     expect(schema).toMatchObject({
       type: 'object',
       required: ['duration_days', 'plan', 'sku_id', 'user_id'],

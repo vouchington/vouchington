@@ -21,6 +21,8 @@ function parseRange(raw: unknown): GrowthRange {
 app.route('/api/v1/growth-metrics').get(async (ctx: Context) => {
   await requireAuthAndRateLimit(ctx, currentUserCanViewGrowthMetrics, 'GET:/api/v1/growth-metrics')
 
+  // Intentional carrier skip: this route has no registered response contract, so `apiQuery` (and
+  // `validateRequestContract`) cannot describe its query. `parseRange` documents the fallback.
   const range = parseRange(ctx.query.range)
   const metrics = await getGrowthMetrics(range)
 

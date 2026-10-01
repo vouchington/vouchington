@@ -53,7 +53,7 @@ uses the same seven-value enum as the request; `keysRemoved` is `null` when the 
 (`clearAllCaches()`, `RateLimiter.invalidate()`, `Queue.obliterate()`) doesn't report a count.
 
 `concern: 'sessions'` returns 400 unless `force: true` is also passed — it logs out every user and
-invalidates in-flight passkey/MFA/OAuth challenges. An unrecognized `concern` also returns 400.
+invalidates in-flight passkey/MFA/OAuth challenges. An unrecognized or missing `concern` returns 422.
 
 ## Performance
 

@@ -10,8 +10,10 @@ import {
   enqueueCreatePartitions,
   enqueueCleanupPartitions,
 } from '@queues/psql/enqueues'
-import { requireAuthAndRateLimit } from '../../response-helpers.mts'
-import { PSQL_ADMIN_JOB_TYPES, type PsqlAdminJobType } from '@queues/psql/types'
+import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import type { PsqlAdminJobType } from '@queues/psql/types'
+
+type PsqlJobRequest = { type: PsqlAdminJobType }
 
 // GET /api/v1/psql/partitions - Get partition status
 app.route('/api/v1/psql/partitions').get(async (ctx: Context) => {
@@ -33,13 +35,9 @@ app.route('/api/v1/psql/migrations').get(async (ctx: Context) => {
 app.route('/api/v1/psql/jobs').post(async (ctx: Context) => {
   await requireAuthAndRateLimit(ctx, currentUserCanAccessPsqlAdmin, 'POST:/api/v1/psql/jobs')
 
-  const body = (await ctx.request.json('1mb')) as Record<string, unknown>
-  const type = body.type as string
-  ctx.assert(
-    PSQL_ADMIN_JOB_TYPES.includes(type as PsqlAdminJobType),
-    400,
-    `Invalid job type. Must be one of: ${PSQL_ADMIN_JOB_TYPES.join(', ')}`,
-  )
+  const body = (await ctx.request.json('1mb')) as PsqlJobRequest
+  validateRequestContract(ctx, 'POST:/api/v1/psql/jobs', { body })
+  const { type } = body
 
   switch (type) {
     case 'runMigrations':

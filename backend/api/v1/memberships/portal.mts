@@ -1,15 +1,17 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { getManageableStripeSubscriptionByUserId } from '@services/memberships'
 import { createBillingPortalSession } from '../../stripe-helpers.mts'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 
+type BillingPortalSessionRequest = { return_url: string }
+
 app.route('/api/v1/memberships/billing-portal-sessions').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/memberships/billing-portal-sessions')
 
-  const body = (await ctx.request.json('1mb')) as { return_url?: string }
-  ctx.assert(body.return_url && typeof body.return_url === 'string', 400, 'Missing return_url')
+  const body = (await ctx.request.json('1mb')) as BillingPortalSessionRequest
+  validateRequestContract(ctx, 'POST:/api/v1/memberships/billing-portal-sessions', { body })
   ctx.assert(body.return_url.startsWith('/'), 400, 'return_url must be a relative path')
 
   const subscription = await getManageableStripeSubscriptionByUserId(currentUser.id)

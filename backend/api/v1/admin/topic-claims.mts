@@ -2,6 +2,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
   requireAuthAndRateLimit,
+  validateRequestContract,
   validateUUIDParam,
   parseJsonBody,
 } from '../../response-helpers.mts'
@@ -12,6 +13,9 @@ import {
   revokeTopicClaim,
   currentUserCanReviewTopicClaims,
 } from '@services/topic-claims'
+
+type RejectTopicClaimRequest = { rejection_reason: string }
+type RevokeTopicClaimRequest = { revocation_reason: string }
 
 // GET /api/v1/admin/topic-claims — pending claims queue (moderation staff only)
 app.route('/api/v1/admin/topic-claims').get(async (ctx: Context) => {
@@ -32,6 +36,9 @@ app.route('/api/v1/admin/topic-claims/:id/verification').post(async (ctx: Contex
     'POST:/api/v1/admin/topic-claims/:id/verification',
   )
   const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'POST:/api/v1/admin/topic-claims/:id/verification', {
+    path: ctx.params,
+  })
   const claim = await adminVerifyTopicClaim(currentUser.id, id)
   ctx.json({ claim })
 })
@@ -44,8 +51,11 @@ app.route('/api/v1/admin/topic-claims/:id/rejection').post(async (ctx: Context) 
     'POST:/api/v1/admin/topic-claims/:id/rejection',
   )
   const id = validateUUIDParam(ctx, 'id')
-  const body = await parseJsonBody<{ rejection_reason?: unknown }>(ctx)
-  ctx.assert(typeof body.rejection_reason === 'string', 422, 'rejection_reason is required')
+  const body = await parseJsonBody<RejectTopicClaimRequest>(ctx)
+  validateRequestContract(ctx, 'POST:/api/v1/admin/topic-claims/:id/rejection', {
+    body,
+    path: ctx.params,
+  })
   const claim = await rejectTopicClaim(currentUser.id, id, body.rejection_reason)
   ctx.json({ claim })
 })
@@ -58,8 +68,11 @@ app.route('/api/v1/admin/topic-claims/:id/revocation').post(async (ctx: Context)
     'POST:/api/v1/admin/topic-claims/:id/revocation',
   )
   const id = validateUUIDParam(ctx, 'id')
-  const body = await parseJsonBody<{ revocation_reason?: unknown }>(ctx)
-  ctx.assert(typeof body.revocation_reason === 'string', 422, 'revocation_reason is required')
+  const body = await parseJsonBody<RevokeTopicClaimRequest>(ctx)
+  validateRequestContract(ctx, 'POST:/api/v1/admin/topic-claims/:id/revocation', {
+    body,
+    path: ctx.params,
+  })
   const claim = await revokeTopicClaim(currentUser.id, id, body.revocation_reason)
   ctx.json({ claim })
 })
