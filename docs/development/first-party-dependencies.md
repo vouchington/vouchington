@@ -6,7 +6,9 @@ The authoritative registry is `pnpm-release-age-policy.permanentPackages` in [`.
 
 The [scheduled first-party dependency audit](../prompts/scheduled/first-party-dependencies.md)
 rechecks this registry and local workarounds against current upstream releases, then tracks one
-confirmed root cause per run without changing dependencies or code.
+confirmed root cause per run without changing dependencies or code. The
+[scheduled upstream adoption prompt](../prompts/scheduled/upstream-adoption.md) removes one local
+workaround or copied package feature per run once the upstream fix or capability is released.
 
 | Package(s)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Repository                                                                                      |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
