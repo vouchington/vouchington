@@ -118,10 +118,10 @@ export async function downloadCrawlHtmlToTempFile(
         cleanedUp = true
       },
     }
-  } catch (error) {
+  } catch (err) {
     await rm(tempDir, { recursive: true, force: true })
-    if (error instanceof Error && error.name === 'NoSuchKey') return null
-    throw error
+    if (err instanceof Error && err.name === 'NoSuchKey') return null
+    throw err
   }
 }
 
@@ -150,9 +150,9 @@ async function createTemporaryGzipFile(
     await pipeline(Readable.from([htmlBuffer]), createGzip(), createWriteStream(filePath))
     const fileStats = await stat(filePath)
     return { filePath, byteLength: fileStats.size, tempDir }
-  } catch (error) {
+  } catch (err) {
     await rm(tempDir, { recursive: true, force: true })
-    throw error
+    throw err
   }
 }
 
@@ -165,8 +165,8 @@ async function createTemporaryGzipFileFromPath(
     await pipeline(createReadStream(sourcePath), createGzip(), createWriteStream(filePath))
     const fileStats = await stat(filePath)
     return { filePath, byteLength: fileStats.size, tempDir }
-  } catch (error) {
+  } catch (err) {
     await rm(tempDir, { recursive: true, force: true })
-    throw error
+    throw err
   }
 }

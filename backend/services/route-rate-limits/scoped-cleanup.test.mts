@@ -60,8 +60,8 @@ describe('deleteRouteRateLimitKeys', () => {
     let assertionError: unknown
     try {
       throw new Error('simulated assertion failure')
-    } catch (error) {
-      assertionError = error
+    } catch (err) {
+      assertionError = err
     } finally {
       await cleanup.cleanup()
     }

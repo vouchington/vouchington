@@ -45,12 +45,10 @@ export async function processBrowserCrawl(
   if (isLocalOrPrivateHostname(url.hostname.hostname)) return
 
   const doIsUrlCrawlable = dependencies?.isUrlCrawlable ?? isUrlCrawlable
-  const isCrawlable = await doIsUrlCrawlable(url.url, CRAWLER_USER_AGENT).catch(
-    (error: unknown) => {
-      onError(error instanceof Error ? error : new Error(String(error)))
-      return false
-    },
-  )
+  const isCrawlable = await doIsUrlCrawlable(url.url, CRAWLER_USER_AGENT).catch((err: unknown) => {
+    onError(err instanceof Error ? err : new Error(String(err)))
+    return false
+  })
   if (!isCrawlable) return
 
   try {
@@ -59,10 +57,10 @@ export async function processBrowserCrawl(
       dependencies?.handleBrowserCrawlResult ?? handleBrowserCrawlResult
     const result = await doCrawlWithBrowser(url.url)
     await doHandleBrowserCrawlResult(url.id, linkId, crawler, result)
-  } catch (error) {
+  } catch (err) {
     const doHandleBrowserCrawlError =
       dependencies?.handleBrowserCrawlError ?? handleBrowserCrawlError
-    await doHandleBrowserCrawlError(linkId, error)
+    await doHandleBrowserCrawlError(linkId, err)
   }
 }
 

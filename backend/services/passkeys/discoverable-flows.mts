@@ -55,8 +55,8 @@ export async function verifyDiscoverablePasskeyAuthentication(opts: {
       expectedOrigin: opts.expectedOrigin,
       response: opts.response,
     })
-  } catch (error) {
-    return throwDiscoverableAuthenticationError(error, opts)
+  } catch (err) {
+    return throwDiscoverableAuthenticationError(err, opts)
   }
 
   /* v8 ignore start — success path requires a real WebAuthn ceremony (not unit-testable) */

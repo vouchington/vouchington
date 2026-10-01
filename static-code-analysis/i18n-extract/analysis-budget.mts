@@ -54,11 +54,11 @@ export async function withI18nAnalysisBudget<T>(
   timeout?.catch(() => undefined)
   try {
     return await (timeout === undefined ? work : Promise.race([work, timeout]))
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
     if (isHostLockMessage(message)) {
-      throw new Error(`no-mistakes ${label} blocked on host lock: ${message}`, { cause: error })
+      throw new Error(`no-mistakes ${label} blocked on host lock: ${message}`, { cause: err })
     }
-    throw error
+    throw err
   }
 }

@@ -43,8 +43,8 @@ export function CommunityModeratorStatsPanel({ communitySlug, initialData }: Pro
       try {
         const result = await fetchCommunityModeratorStats(communitySlug, window)
         if (latestWindowRef.current === window) setData(result)
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t(
             'extracted.communities.communityModeratorStatsPanel.couldNotLoadModeratorStats_0247a677',
           ),

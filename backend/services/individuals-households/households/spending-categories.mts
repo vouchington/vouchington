@@ -77,15 +77,15 @@ export async function createHouseholdSpendingCategory(
     `,
       values,
     ))
-  } catch (error) {
-    const pgError = error as { code?: string; constraint?: string }
+  } catch (err) {
+    const pgError = err as { code?: string; constraint?: string }
     if (pgError.code === '23503') {
       if (pgError.constraint?.includes('household_id')) {
         assert(false, 422, 'Invalid household_id')
       }
       assert(false, 422, 'Invalid spending_category_id')
     }
-    throw error
+    throw err
   }
   return getHouseholdSpendingCategoryById(currentUser, user, rows[0].id, { readOnly: false })
 }

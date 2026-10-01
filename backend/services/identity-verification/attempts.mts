@@ -164,10 +164,10 @@ export async function attachCheckoutToIdentityVerificationAttempt(
     `)
     await query.commit()
     ;({ rowCount } = result)
-  } catch (error) {
+  } catch (err) {
     const { rows } = await attachmentExists()
     if (rows.length === 1) return
-    throw error
+    throw err
   }
   if (rowCount === 1) return
   const { rows } = await attachmentExists()

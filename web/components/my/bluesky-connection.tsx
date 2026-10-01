@@ -83,9 +83,9 @@ function BlueskyConnectionContent({ initialAccount }: Props) {
         return
       }
       window.location.assign(redirect_url)
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 3 -- error path requires injecting a Bluesky link-begin failure */
-      const message = error instanceof ApiError ? error.message : 'Failed to start Bluesky sign-in'
+      const message = err instanceof ApiError ? err.message : 'Failed to start Bluesky sign-in'
       toast.error(message)
       setLinking(false)
     }
@@ -97,10 +97,9 @@ function BlueskyConnectionContent({ initialAccount }: Props) {
       await disconnectBlueskyAccount()
       setAccount(null)
       toast.success('Bluesky account disconnected')
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 3 -- error path requires injecting a Bluesky disconnect failure */
-      const message =
-        error instanceof ApiError ? error.message : 'Failed to disconnect Bluesky account'
+      const message = err instanceof ApiError ? err.message : 'Failed to disconnect Bluesky account'
       toast.error(message)
     } finally {
       setDisconnecting(false)

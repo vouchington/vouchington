@@ -84,9 +84,9 @@ export default async function CommunitiesPage({ searchParams }: PageProps) {
   let searchError: string | undefined = undefined
   try {
     data = await getCommunities({ searchParams: queryParams })
-  } catch (error) {
-    if (error instanceof ApiError && (error.status === 400 || error.status === 422)) {
-      const errorData = error.data as Record<string, unknown> | undefined
+  } catch (err) {
+    if (err instanceof ApiError && (err.status === 400 || err.status === 422)) {
+      const errorData = err.data as Record<string, unknown> | undefined
       searchError =
         typeof errorData?.error === 'string'
           ? errorData.error
@@ -94,7 +94,7 @@ export default async function CommunitiesPage({ searchParams }: PageProps) {
             ? errorData.message
             : t('extracted.communities.page.invalidSearchQuery_7a4e91cd')
     } else {
-      throw error
+      throw err
     }
   }
 

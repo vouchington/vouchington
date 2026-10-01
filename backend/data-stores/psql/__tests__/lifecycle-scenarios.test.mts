@@ -129,7 +129,7 @@ async function runModerationAppealScenario(
   if (input.preconditions.viewerRole === 'moderator') {
     const status = await resolveModerationAppealAccept(moderator.id, appeal.id, 'staff_or_user')
       .then(() => null)
-      .catch((error: { status?: number }) => error.status)
+      .catch((err: { status?: number }) => err.status)
     if (status !== 403)
       throw new Error(`Expected moderator suspension acceptance to fail with 403, got ${status}`)
     const persisted = await getModerationAppealByIdFromPrimary(appeal.id)

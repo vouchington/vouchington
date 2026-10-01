@@ -123,9 +123,9 @@ export function createWorker(
           cacheDisposition: securedResponse.headers.get('x-voucha-cache'),
         })
         return securedResponse
-      } catch (error) {
+      } catch (err) {
         try {
-          captureException(error, { routeTarget, botTier, requestId })
+          captureException(err, { routeTarget, botTier, requestId })
         } catch {
           // Error reporting must never replace the secured fallback response.
         }

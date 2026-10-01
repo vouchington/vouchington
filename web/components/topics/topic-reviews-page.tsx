@@ -27,9 +27,9 @@ export async function TopicReviewsPage({
     sort,
     limit: 25,
   }
-  const dataResult = await getPosts({ searchParams: queryParams }).catch(error => {
-    const message = getListSearchErrorMessage(error)
-    if (!message) throw error
+  const dataResult = await getPosts({ searchParams: queryParams }).catch(err => {
+    const message = getListSearchErrorMessage(err)
+    if (!message) throw err
     return { error: message }
   })
   const hasSearchError = isListSearchErrorResult(dataResult)

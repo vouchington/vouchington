@@ -111,7 +111,7 @@ describe('resolveModerationAppealAccept — suspension', () => {
     await deletionHoldsAuthorLifecycle.promise
 
     const resolving = resolveModerationAppealAccept(admin.id, appeal.id, 'staff_or_user')
-    const resolvingRejection = resolving.catch((error: unknown) => error)
+    const resolvingRejection = resolving.catch((err: unknown) => err)
     try {
       await vi.waitFor(async () => {
         await expect(isTestAuthorPublicationLifecycleLockWaiting(suspensionUser.id)).resolves.toBe(

@@ -44,8 +44,8 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
     try {
       const result = await setupTotp<TotpSetupData>({ name: setupName.trim() || undefined })
       setSetupData(result)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.totpManager.failedToStartSetup_7f474813'),
         tags: { form: 'my-totp-setup' },
       })
@@ -68,8 +68,8 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
       setSetupCode('')
       setSetupName('')
       onSuccess(t('extracted.my.totpManager.authenticatorAddedSuccessfully_960de9d4'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.totpManager.failedToVerifyCode_eff1b93c'),
         tags: { form: 'my-totp-setup' },
       })
@@ -87,8 +87,8 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
       setRenamingId(null)
       setRenameName('')
       onSuccess(t('extracted.my.totpManager.authenticatorRenamed_10c7a3d6'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.totpManager.failedToRenameAuthenticator_373f9607'),
         tags: { form: 'my-totp' },
       })
@@ -122,13 +122,13 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
       removeAuthenticatorLocally(authenticatorId)
       setConfirmingDeleteId(null)
       onSuccess(t('extracted.my.totpManager.authenticatorRemoved_151cad93'))
-    } catch (error) {
-      if (error instanceof ApiError && error.code === 'MFA_REAUTH_REQUIRED') {
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'MFA_REAUTH_REQUIRED') {
         pendingDeleteIdRef.current = authenticatorId
         setConfirmingDeleteId(null)
         setReauthDialogOpen(true)
       } else {
-        onError(error, {
+        onError(err, {
           fallback: t('extracted.my.totpManager.failedToRemoveAuthenticator_07cfc08f'),
           tags: { form: 'my-totp' },
         })

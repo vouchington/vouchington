@@ -53,11 +53,14 @@ export async function createOpenRouterResponse(
     )
     try {
       return await drainOpenRouterResponse(stream)
-    } catch (error) {
-      if (shouldLatchUnknownBilledOpenAIAttempt(error)) {
-        await getOpenAIResponseAttemptHooks()?.onUnknownBilledAttempt({ requestStartedAt, error })
+    } catch (err) {
+      if (shouldLatchUnknownBilledOpenAIAttempt(err)) {
+        await getOpenAIResponseAttemptHooks()?.onUnknownBilledAttempt({
+          requestStartedAt,
+          error: err,
+        })
       }
-      throw error
+      throw err
     }
   })
 }

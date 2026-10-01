@@ -87,9 +87,9 @@ const tool: Tool<ToolArgs, ToolResult> = {
       ]
       const pages = await getStoryMemberPagesBatch(currentUser, requests, {
         limit: clampToolLimit(args.limit, MAX_LIMIT, MAX_LIMIT),
-      }).catch((error: unknown) => {
-        if (createHttpError.isHttpError(error) && error.status === 400) return null
-        throw error
+      }).catch((err: unknown) => {
+        if (createHttpError.isHttpError(err) && err.status === 400) return null
+        throw err
       })
       const page = pages?.[story.id]
       if (!page) return { success: false, error: 'Invalid cursor' }

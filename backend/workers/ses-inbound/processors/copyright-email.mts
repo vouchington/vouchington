@@ -51,8 +51,8 @@ export async function processCopyrightInboundEmail(
         sha256: attachment.sha256,
       })),
     })
-  } catch (error) {
-    if (!(error instanceof SesInboundTerminalError) && !isUntrustedShapeError(error)) throw error
+  } catch (err) {
+    if (!(err instanceof SesInboundTerminalError) && !isUntrustedShapeError(err)) throw err
     await dependencies.recordCopyrightEmailParse(intake, {
       status: 'failed',
       error: 'The original email could not be parsed as RFC 5322 MIME.',

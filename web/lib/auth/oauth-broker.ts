@@ -63,10 +63,10 @@ export async function startOAuthBrokerAuthorization(
         window.location.assign(returnTo)
       },
     )
-  } catch (error) {
+  } catch (err) {
     cancelPopupWait?.()
     popup.close()
-    throw error
+    throw err
   }
 }
 

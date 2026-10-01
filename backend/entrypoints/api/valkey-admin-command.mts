@@ -108,8 +108,8 @@ export async function runValkeyAdminCommand(
   let command: ParsedValkeyAdminCommand
   try {
     command = parseValkeyAdminCommand(argv, env)
-  } catch (error) {
-    io.stderr(`${errorMessage(error)}\n\n${VALKEY_ADMIN_USAGE}`)
+  } catch (err) {
+    io.stderr(`${errorMessage(err)}\n\n${VALKEY_ADMIN_USAGE}`)
     return 2
   }
 
@@ -129,8 +129,8 @@ export async function runValkeyAdminCommand(
     })
     result = await executeValkeyAdminOperation(command, runtime, operationSignal)
     operationSignal.throwIfAborted()
-  } catch (error) {
-    operationalError = error
+  } catch (err) {
+    operationalError = err
   }
 
   if (operationalError === undefined && result !== undefined) {
@@ -141,8 +141,8 @@ export async function runValkeyAdminCommand(
   if (shutdown) {
     try {
       await shutdown()
-    } catch (error) {
-      operationalError ??= error
+    } catch (err) {
+      operationalError ??= err
     }
   }
 

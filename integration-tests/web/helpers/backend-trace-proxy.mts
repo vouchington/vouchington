@@ -90,16 +90,14 @@ export async function createTraceProxy(
         signal: abortController.signal,
       }
       response = await fetch(requestUrl, requestInit)
-    } catch (error) {
+    } catch (err) {
       if (abortController.signal.aborted || outgoing.destroyed || outgoing.writableEnded) {
         incoming.off('aborted', abort)
         outgoing.off('close', abort)
         return
       }
       outgoing.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' })
-      outgoing.end(
-        `Trace proxy failed: ${error instanceof Error ? error.message : 'unknown error'}`,
-      )
+      outgoing.end(`Trace proxy failed: ${err instanceof Error ? err.message : 'unknown error'}`)
       incoming.off('aborted', abort)
       outgoing.off('close', abort)
       return
@@ -125,8 +123,8 @@ export async function createTraceProxy(
       if (response.body)
         await pipeline(Readable.from(response.body as AsyncIterable<Uint8Array>), outgoing)
       else outgoing.end()
-    } catch (error) {
-      if (!abortController.signal.aborted) outgoing.destroy(error as Error)
+    } catch (err) {
+      if (!abortController.signal.aborted) outgoing.destroy(err as Error)
     } finally {
       incoming.off('aborted', abort)
       outgoing.off('close', abort)

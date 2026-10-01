@@ -131,7 +131,7 @@ describe('deleteImagesFromS3', () => {
     const { deleteImagesFromS3 } = await import('./s3.mts')
 
     const error = await deleteImagesFromS3([{ s3_key: 'first' }, { s3_key: 'second' }]).catch(
-      (caught: unknown) => caught,
+      (err: unknown) => err,
     )
 
     expect(error).toBeInstanceOf(AggregateError)
@@ -166,7 +166,7 @@ describe('deleteImagesFromS3', () => {
 
     const error = await deleteImagesFromS3(
       Array.from({ length: 2001 }, (_, index) => ({ s3_key: `image-${index}` })),
-    ).catch((caught: unknown) => caught)
+    ).catch((err: unknown) => err)
 
     expect(mockS3Send).toHaveBeenCalledTimes(3)
     expect(error).toBeInstanceOf(AggregateError)

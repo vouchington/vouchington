@@ -71,10 +71,8 @@ export async function runNotificationPushDelivery(input: {
               return
             }
             if (persistence === 'persisted') outcomes.push(outcome)
-          } catch (error) {
-            keeper.fail(
-              error instanceof Error ? error : new Error('Push outcome persistence failed'),
-            )
+          } catch (err) {
+            keeper.fail(err instanceof Error ? err : new Error('Push outcome persistence failed'))
           }
         }
       },
@@ -110,8 +108,8 @@ async function sendSubscription(
       { agent, timeout: policy.socketTimeoutMs },
     )
     return { kind: 'delivered', subscription }
-  } catch (error) {
-    return { kind: getFailureKind(error), subscription }
+  } catch (err) {
+    return { kind: getFailureKind(err), subscription }
   }
 }
 

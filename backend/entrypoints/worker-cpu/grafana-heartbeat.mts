@@ -98,9 +98,9 @@ export function startGrafanaHeartbeat(
     activeRequest = new AbortController()
     try {
       await sendGrafanaHeartbeat(heartbeatUrl, dependencies.fetch, activeRequest.signal)
-    } catch (reason) {
+    } catch (err) {
       if (!stopped) {
-        dependencies.onError(reason instanceof Error ? reason : new Error(String(reason)))
+        dependencies.onError(err instanceof Error ? err : new Error(String(err)))
       }
     } finally {
       activeRequest = undefined

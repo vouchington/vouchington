@@ -250,7 +250,7 @@ describe('completeBlueskyAccountLink', () => {
       user.id,
       flowId,
     )
-    const completionRejection = completion.catch((error: unknown) => error)
+    const completionRejection = completion.catch((err: unknown) => err)
 
     suspension.release()
     await suspension.completed

@@ -28,8 +28,8 @@ export async function deleteFlaggedImage(imageId: string): Promise<boolean> {
     if (!image.quarantined_at) {
       try {
         await imageS3.copyImageToQuarantine(image)
-      } catch (error) {
-        onError(error as Error)
+      } catch (err) {
+        onError(err as Error)
         return false
       }
 
@@ -47,15 +47,15 @@ export async function deleteFlaggedImage(imageId: string): Promise<boolean> {
 
     try {
       await deleteKnownImageRenders(image)
-    } catch (error) {
-      onError(error as Error)
+    } catch (err) {
+      onError(err as Error)
     }
 
     try {
       await recordImageAutoRemoval(imageId, { reason: 'openai_image_quarantine_csam' })
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next -- defensive audit failure isolation after deletion */
-      onError(error as Error)
+      onError(err as Error)
     }
     return true
   }
@@ -63,9 +63,9 @@ export async function deleteFlaggedImage(imageId: string): Promise<boolean> {
   await deleteImageById(imageId)
   try {
     await recordImageAutoRemoval(imageId)
-  } catch (error) {
+  } catch (err) {
     /* c8 ignore next -- defensive audit failure isolation after deletion */
-    onError(error as Error)
+    onError(err as Error)
   }
   return true
 }

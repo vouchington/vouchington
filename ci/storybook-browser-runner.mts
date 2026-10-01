@@ -607,8 +607,8 @@ async function runUpstreamAttempt(
       },
       browserDeps,
     )
-  } catch (error) {
-    if (!spawnFailed) throw error
+  } catch (err) {
+    if (!spawnFailed) throw err
     completed = failedSpawnAttempt(startedAt, lastOutputAt, bootstrapTelemetry, deps)
   }
   return (

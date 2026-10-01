@@ -33,8 +33,8 @@ export function AddSourceForm({
       onSuccess?.()
       onSuccessToast(t('extracted.sources.addSourceForm.sourceAddedSuccessfully_1817e3b7'))
       push(topicHref({ topic_type: 'rss_feed', slug: result.topic_slug }))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.sources.addSourceForm.failedToAddSource_206b335b'),
         tags: { form: 'add-source' },
       })

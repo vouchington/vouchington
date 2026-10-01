@@ -67,25 +67,25 @@ export function CreateSourceForm({ onSuccess }: { onSuccess?: () => void }) {
             controller.signal,
           )
           if (!controller.signal.aborted) setLoading(false)
-        } catch (error) {
+        } catch (err) {
           /* c8 ignore next -- error paths require injecting network/abort failures */
-          if (error instanceof Error && error.name === 'AbortError') return
+          if (err instanceof Error && err.name === 'AbortError') return
           if (!controller.signal.aborted) {
             /* c8 ignore next 2 -- if-aborted branch is untestable in jsdom */
             setError(
-              error instanceof ApiError
-                ? error.message
+              err instanceof ApiError
+                ? err.message
                 : t('extracted.sources.createSourceForm.importStreamDisconnected_2a261662'),
             )
             setLoading(false)
           }
         }
       }
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 2 -- error path requires injecting a submission failure */
       setError(
-        error instanceof ApiError
-          ? error.message
+        err instanceof ApiError
+          ? err.message
           : t('extracted.sources.createSourceForm.failedToSubmitSource_aaa91562'),
       )
       setLoading(false)

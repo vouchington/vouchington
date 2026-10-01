@@ -62,8 +62,8 @@ export function OAuthBrokerButton({
     if (!acquireBrokerLease(provider)) return
     try {
       await startOAuthBrokerAuthorization({ provider, purpose, returnTo })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: `Unable to connect ${label}. Please try again.`,
         tags: { form: 'oauth-broker', provider, purpose },
       })

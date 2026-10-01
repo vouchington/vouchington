@@ -32,16 +32,16 @@ async function invalidateReadyMarkerAndEnqueueRebuild(): Promise<void> {
     if (removed > 0) {
       await enqueueRebuildBloomFilter({ filter: 'embedding' })
     }
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 
 export async function addEmbeddingHashesToBloomFilter(hexHashes: string[]): Promise<void> {
   try {
     await embeddingBloomFilter.addOrThrow(hexHashes)
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
     await invalidateReadyMarkerAndEnqueueRebuild()
   }
 }

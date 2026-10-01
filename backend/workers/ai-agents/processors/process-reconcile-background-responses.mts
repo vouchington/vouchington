@@ -37,8 +37,8 @@ export async function processReconcileBackgroundResponses(
   await pMap(
     rows,
     row =>
-      deps.reconcileExpiredBackgroundResponse(row).catch(error => {
-        onError(error)
+      deps.reconcileExpiredBackgroundResponse(row).catch(err => {
+        onError(err)
       }),
     { concurrency: RECONCILE_CONCURRENCY, stopOnError: false },
   )

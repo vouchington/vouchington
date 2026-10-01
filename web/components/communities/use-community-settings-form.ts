@@ -68,9 +68,9 @@ export function useCommunitySettingsForm(
         })
         setLoading(false)
       }
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 2 -- error path requires injecting an update failure */
-      setError(error instanceof Error ? error.message : 'Failed to update community')
+      setError(err instanceof Error ? err.message : 'Failed to update community')
       setLoading(false)
     }
   }
@@ -100,9 +100,9 @@ export function useCommunitySettingsForm(
           router.push('/communities')
         }
       })
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 2 -- error path requires injecting an archive failure */
-      setError(error instanceof Error ? error.message : 'Failed to update archive state')
+      setError(err instanceof Error ? err.message : 'Failed to update archive state')
       setLoading(false)
     }
   }

@@ -38,8 +38,8 @@ export function ServiceWorkerRegistrar({ currentUserId }: { currentUserId?: stri
           try {
             await getMyWebPushSubscriptionsClient({ limit: 1 })
             return
-          } catch (error) {
-            if (!(error instanceof ApiError) || error.status !== 401) throw error
+          } catch (err) {
+            if (!(err instanceof ApiError) || err.status !== 401) throw err
           }
           if (cancelled) return
           await clearPushBinding(activeRegistration)
@@ -55,8 +55,8 @@ export function ServiceWorkerRegistrar({ currentUserId }: { currentUserId?: stri
       bootstrapInFlight.set(currentUserId, next)
       try {
         return await next
-      } catch (error) {
-        if (!(error instanceof ApiError) || error.status !== 401) throw error
+      } catch (err) {
+        if (!(err instanceof ApiError) || err.status !== 401) throw err
         await withWebPushOwnershipLock(async () => {
           if (cancelled) return
           await clearPushBinding(activeRegistration)

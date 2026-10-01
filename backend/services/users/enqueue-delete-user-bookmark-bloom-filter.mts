@@ -6,8 +6,8 @@ import onError from '@modules/on-error'
 export function enqueueDeleteUserBookmarkBloomFilterBestEffort(userId: string): void {
   try {
     void enqueueDeleteUserBookmarkBloomFilter({ userId })
-  } catch (error) {
+  } catch (err) {
     /* v8 ignore next 2 -- Valkey remains real in tests; forcing the queue's internal add() to throw synchronously would destabilize shared test state. */
-    onError(error instanceof Error ? error : new Error(String(error)))
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }

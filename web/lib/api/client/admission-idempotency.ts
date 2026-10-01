@@ -119,7 +119,7 @@ export class AdmissionIdempotency {
         }
       }
       return response
-    } catch (error) {
+    } catch (err) {
       if (this.#entries.get(storageKey) === entry && entry.inFlight === inFlight) {
         if (storageKey.startsWith(ADMISSION_STORAGE_PREFIX)) {
           let persistenceConfirmed = false,
@@ -138,7 +138,7 @@ export class AdmissionIdempotency {
           else if (this.#entries.get(storageKey) === entry) entry.inFlight = undefined
         } else entry.inFlight = undefined
       }
-      throw error
+      throw err
     }
   }
 

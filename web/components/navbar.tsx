@@ -59,10 +59,8 @@ export function Navbar({
     }
     try {
       await logout()
-    } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, t('extracted.components.navbar.failedToLogOut_c746b6a2')),
-      )
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, t('extracted.components.navbar.failedToLogOut_c746b6a2')))
     }
   }
 

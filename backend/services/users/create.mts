@@ -64,9 +64,9 @@ export const upsertUser = async ({
           oauthAccount.account.provider_user_id,
         )
         await runOAuthAccountConnectionPostCommitEffects(existingUser.id)
-      } catch (error) {
+      } catch (err) {
         // Handle race condition: account was connected to another user in parallel request
-        if (isHttpError(error) && error.status === 409) {
+        if (isHttpError(err) && err.status === 409) {
           const currentAccount = await getOAuthAccountByProviderUserId(
             oauthAccount.provider,
             oauthAccount.account.provider_user_id,
@@ -80,7 +80,7 @@ export const upsertUser = async ({
             return connectedUser
           }
         }
-        throw error
+        throw err
       }
       const user = await getPrivateUserByAny(existingUser.id)
       assert(user, 500, 'User not found after connecting oauth account')
@@ -104,11 +104,11 @@ export const upsertUser = async ({
       phoneNumber,
       referrerId,
     })
-  } catch (error) {
+  } catch (err) {
     // Handle race condition: a concurrent request created the same email/phone user.
     // Wrap the refetch in its own try/catch so a validation error from getPrivateUserByAny
     // (e.g. 422 invalid identifier) does not mask the original USER_CREATION_RACE error.
-    if ((error as { code?: string }).code === USER_CREATION_RACE) {
+    if ((err as { code?: string }).code === USER_CREATION_RACE) {
       const identifier = effectiveEmailAddress ?? phoneNumber
       if (identifier) {
         let racedUser: PrivateUser | null = null
@@ -124,7 +124,7 @@ export const upsertUser = async ({
         }
       }
     }
-    throw error
+    throw err
   }
   void entityCacheBloomFilters.users.add([
     normalizeKey(newUser.id),

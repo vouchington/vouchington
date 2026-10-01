@@ -224,10 +224,10 @@ describe('retryOnConnectionLost', () => {
       () => {
         throw new Error('Expected retryOnConnectionLost to reject after the budget expires')
       },
-      error => {
-        expect(error).toBeInstanceOf(Error)
+      err => {
+        expect(err).toBeInstanceOf(Error)
         expect(() => {
-          throw error
+          throw err
         }).toThrow('retryOnConnectionLost: connection retry budget exceeded')
       },
     )

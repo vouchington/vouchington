@@ -30,7 +30,7 @@ describe('fetchImageFromUrl size limits', () => {
 
     const error = await fetchImageFromUrl('https://example.com/image.jpg', 30000, 10, {
       fetchWithPinnedDns: mockFetchWithPinnedDns,
-    }).catch((caught: unknown) => caught)
+    }).catch((err: unknown) => err)
 
     expect(error).toBeInstanceOf(HttpOperationError)
     expect((error as HttpOperationError).statusCode).toBe(413)
@@ -50,7 +50,7 @@ describe('fetchImageFromUrl size limits', () => {
 
     const error = await fetchImageFromUrl('https://example.com/image.jpg', 30000, 1024, {
       fetchWithPinnedDns: mockFetchWithPinnedDns,
-    }).catch((caught: unknown) => caught)
+    }).catch((err: unknown) => err)
 
     expect(error).toBeInstanceOf(HttpOperationError)
     expect((error as HttpOperationError).statusCode).toBe(500)
@@ -83,7 +83,7 @@ describe('fetchImageFromUrl size limits', () => {
 
     const error = await fetchImageFromUrl('https://example.com/image.jpg', 20, 1024, {
       fetchWithPinnedDns: mockFetchWithPinnedDns,
-    }).catch((caught: unknown) => caught)
+    }).catch((err: unknown) => err)
 
     expect(error).toBeInstanceOf(HttpOperationError)
     expect((error as HttpOperationError).statusCode).toBe(504)

@@ -12,8 +12,8 @@ describe('assertValidProvider', () => {
     let caughtError: (Error & { status: number }) | undefined
     try {
       assertValidProvider('myspace')
-    } catch (error) {
-      caughtError = error as Error & { status: number }
+    } catch (err) {
+      caughtError = err as Error & { status: number }
     }
     expect(caughtError).toBeDefined()
     const error = caughtError!
@@ -27,8 +27,8 @@ describe('assertValidProvider', () => {
     let caughtError: (Error & { status: number }) | undefined
     try {
       assertValidProvider('')
-    } catch (error) {
-      caughtError = error as Error & { status: number }
+    } catch (err) {
+      caughtError = err as Error & { status: number }
     }
     expect(caughtError).toBeDefined()
     const error = caughtError!

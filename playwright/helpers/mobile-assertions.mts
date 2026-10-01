@@ -44,7 +44,7 @@ export async function assertNoHorizontalScroll(page: Page): Promise<void> {
         { timeout: 5000, intervals: [50, 100] },
       )
       .toBe(false)
-  } catch (error) {
+  } catch (err) {
     // Log only once after all retries are exhausted
     const { lastResult } = state
     if (lastResult?.overflow) {
@@ -53,6 +53,6 @@ export async function assertNoHorizontalScroll(page: Page): Promise<void> {
         JSON.stringify(lastResult.offenders, null, 2),
       )
     }
-    throw error
+    throw err
   }
 }

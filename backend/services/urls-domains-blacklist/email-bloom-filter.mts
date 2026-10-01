@@ -50,16 +50,16 @@ async function enqueueRebuildAndInvalidateReadyMarker(
     }
     await enqueueRebuildBloomFilter({ filter: 'email-blocklist' })
     await unlinkReadyMarkerIfValue(BLOOM_READY_KEY, readyValue)
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 
 async function getReadyMarkerValueForEmailBlocklistInvalidation(): Promise<ReadyMarkerValue | null> {
   try {
     return await bloomValkeyClient.get(BLOOM_READY_KEY)
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
     await repairEmailBlocklistUnavailableRead()
     return null
   }
@@ -76,16 +76,16 @@ async function repairStaleReadyMarkerIfFilterUnavailable(): Promise<void> {
       await enqueueRebuildAndInvalidateReadyMarker(false, readyValue)
       await unlinkReadyMarkerIfValue(BLOOM_READY_KEY, readyValue)
     }
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 
 export async function enqueueEmailBlocklistRebuild(): Promise<void> {
   try {
     await enqueueRebuildBloomFilter({ filter: 'email-blocklist' })
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 
@@ -118,8 +118,8 @@ export async function addDomainsToEmailBloomFilter(domains: string[]): Promise<v
 
   try {
     await emailBloomFilter.addOrThrow(validDomains)
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
     await enqueueRebuildAndInvalidateReadyMarker()
   }
 }

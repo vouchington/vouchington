@@ -127,14 +127,14 @@ describe('parseSideloadRequest — signature verification', () => {
     const url = 'https://example.com/image.jpg'
     const base64url = toBase64Url(url)
     const event = createMockEvent(base64url, { w: '800' })
-    let err: RequestParseError | undefined
+    let expectedErr: RequestParseError | undefined
     try {
       parseSideloadRequest(event)
-    } catch (caught) {
-      err = caught as RequestParseError
+    } catch (err) {
+      expectedErr = err as RequestParseError
     }
-    expect(err).toBeInstanceOf(RequestParseError)
-    const error = err!
+    expect(expectedErr).toBeInstanceOf(RequestParseError)
+    const error = expectedErr!
     expect(error.statusCode).toBe(403)
     expect(() => {
       throw new RequestParseError(error.message, error.statusCode)

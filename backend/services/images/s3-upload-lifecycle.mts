@@ -62,8 +62,8 @@ async function putFrozenImageToS3AtKey(key: string, image: FrozenImageFile): Pro
       }),
     )
     return true
-  } catch (error) {
-    if (!isPreconditionFailed(error)) throw error
+  } catch (err) {
+    if (!isPreconditionFailed(err)) throw err
   }
 
   const existing = await S3ImagesClient.send(

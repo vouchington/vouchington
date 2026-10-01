@@ -69,9 +69,9 @@ async function runConfigDrivenStatementsWithWriterTransaction(
   try {
     await runConfigDrivenStatementsWithLocalLockTimeout(statements, writer, lockTimeoutMs)
     await writer('/* runConfigDrivenStatementsInTransaction */ COMMIT')
-  } catch (error) {
+  } catch (err) {
     await writer('/* runConfigDrivenStatementsInTransaction */ ROLLBACK').catch(onError)
-    throw error
+    throw err
   }
 }
 

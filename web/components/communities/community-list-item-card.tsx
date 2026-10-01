@@ -48,8 +48,8 @@ export function CommunityListItemCard({
       onSuccess(
         t('extracted.communities.communityListItemCard.labelRemovedFromList_02b1f933', { label }),
       )
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.communities.communityListItemCard.failedToRemoveLabelFromList_fc3847da',
           {

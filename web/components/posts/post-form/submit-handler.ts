@@ -58,8 +58,8 @@ export function usePostFormSubmit({
           : getCanonicalPostPath(saved.post)
       onSubmitted?.(href)
       router.push(href)
-    } catch (error) {
-      shouldResetSubmitting = handleSubmitError(error, router)
+    } catch (err) {
+      shouldResetSubmitting = handleSubmitError(err, router)
     } finally {
       if (shouldResetSubmitting) setIsSubmitting(false)
     }

@@ -44,8 +44,8 @@ export const passkeyProtocol = createStringPasskeys<string, PublicPasskey, strin
           7,
         )
         return !result.limited
-      } catch (error) /* v8 ignore next 2 -- Valkey outage path fails open */ {
-        onError(error instanceof Error ? error : new Error(String(error)))
+      } catch (err) /* v8 ignore next 2 -- Valkey outage path fails open */ {
+        onError(err instanceof Error ? err : new Error(String(err)))
         return true
       }
     },

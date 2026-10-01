@@ -52,18 +52,18 @@ test.describe('Hacker News discussions aside', () => {
     const errors: unknown[] = []
     try {
       await write(`DELETE FROM rss_feeds WHERE id = $1`, [feedId])
-    } catch (error) {
-      errors.push(error)
+    } catch (err) {
+      errors.push(err)
     }
     try {
       await write(`DELETE FROM rss_feed_item_ids WHERE id = $1`, [rssItemId])
-    } catch (error) {
-      errors.push(error)
+    } catch (err) {
+      errors.push(err)
     }
     try {
       await write(`DELETE FROM topics WHERE id = $1`, [topicId])
-    } catch (error) {
-      errors.push(error)
+    } catch (err) {
+      errors.push(err)
     }
     if (errors.length > 0) {
       throw new AggregateError(errors, 'hn-discussions-aside cleanup failed')

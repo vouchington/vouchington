@@ -87,17 +87,17 @@ export async function processMicrosoftStoreMembershipVerification(
       query: finalize,
     })
     await finalize.commit()
-  } catch (error) {
-    if (error instanceof MicrosoftStoreResponseError && error.invalidStoreIdKey) {
+  } catch (err) {
+    if (err instanceof MicrosoftStoreResponseError && err.invalidStoreIdKey) {
       await using query = await beginTransaction()
       const context = await getContext(claim.id, claim.processingClaimToken, query)
       if (context) await reject(context, claim.processingClaimToken, 'invalid_evidence', query)
       return
     }
-    if (error instanceof DirectMembershipSourceRejectedError)
+    if (err instanceof DirectMembershipSourceRejectedError)
       return terminalizeConflict(claim.id, claim.processingClaimToken, 'competing_direct_source')
-    if (error instanceof ProviderMembershipSourceConflictError)
+    if (err instanceof ProviderMembershipSourceConflictError)
       return terminalizeConflict(claim.id, claim.processingClaimToken, 'wrong_account')
-    await defer(claim.id, claim.processingClaimToken, error)
+    await defer(claim.id, claim.processingClaimToken, err)
   }
 }

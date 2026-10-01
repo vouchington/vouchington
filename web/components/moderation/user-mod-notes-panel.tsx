@@ -50,8 +50,8 @@ export function UserModNotesPanel({ targetUserId, communityId }: UserModNotesPan
       await deleteUserModNote(targetUserId, noteId)
       dispatch({ type: 'remove', noteId })
       startRefresh(() => router.refresh())
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.moderation.userModNotesPanel.failedToDeleteNote_6dbf20cd'),
         tags: { form: 'mod-note-delete' },
       })
@@ -74,8 +74,8 @@ export function UserModNotesPanel({ targetUserId, communityId }: UserModNotesPan
       setBody('')
       onSuccess(t('extracted.moderation.userModNotesPanel.noteAdded_a7886ebc'))
       startRefresh(() => router.refresh())
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.moderation.userModNotesPanel.failedToAddNote_dfde4403'),
         tags: { form: 'mod-note-create' },
       })

@@ -50,12 +50,12 @@ export async function reportSection(kind: string, run: () => Promise<void>): Pro
   try {
     await run()
     return true
-  } catch (error) {
+  } catch (err) {
     console.error(
       JSON.stringify({
         kind: 'error',
         section: kind,
-        message: error instanceof Error ? error.message : String(error),
+        message: err instanceof Error ? err.message : String(err),
       }),
     )
     return false
@@ -111,8 +111,8 @@ export async function checkTlsReachable(
     // route succeeded; only a network-level throw (abort, ECONNREFUSED, DNS failure) means unreachable.
     await getExternalFetch()(`https://${host}/`, { method: 'HEAD', signal: controller.signal })
     return { tlsReachable: true }
-  } catch (error) {
-    return { tlsReachable: false, tlsError: error instanceof Error ? error.message : String(error) }
+  } catch (err) {
+    return { tlsReachable: false, tlsError: err instanceof Error ? err.message : String(err) }
   } finally {
     clearTimeout(timeout)
   }

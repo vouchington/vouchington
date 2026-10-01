@@ -62,8 +62,8 @@ export async function processCrawlReferralLinksJob(job: Job): Promise<unknown> {
             })
             if (crawlResult !== null)
               await handleCrawlReferralLinkResult(linkId, url.id, crawler.id, crawlResult)
-          } catch (error) {
-            await handleCrawlReferralLinkError(linkId, error)
+          } catch (err) {
+            await handleCrawlReferralLinkError(linkId, err)
           }
           return
         }

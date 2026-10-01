@@ -95,14 +95,14 @@ export function useVoteIntegrityFlags(
     try {
       const data = await resolveVoteIntegrityFlag<{ flag: VoteIntegrityFlag }>(flagId, resolution)
       applyConfirmedFlag(data.flag)
-    } catch (error) {
-      if (isAmbiguousIntegrityMutationFailure(error)) {
+    } catch (err) {
+      if (isAmbiguousIntegrityMutationFailure(err)) {
         await mutations.reconcile(flagId, 'resolve')
         return
       }
       mutations.fail(
         flagId,
-        getApiErrorMessage(error, t('extracted.flags.integrityActions.resolveFailed_bac8e0fb')),
+        getApiErrorMessage(err, t('extracted.flags.integrityActions.resolveFailed_bac8e0fb')),
       )
       return
     }
@@ -113,11 +113,11 @@ export function useVoteIntegrityFlags(
     if (!mutations.acquire(flagId, 'penalty')) return
     try {
       penaltyBaselineIds.current.set(flagId, await getExactVotePenaltyIds(flagId))
-    } catch (error) {
+    } catch (err) {
       penaltyBaselineIds.current.delete(flagId)
       mutations.fail(
         flagId,
-        getApiErrorMessage(error, t('extracted.flags.integrityActions.penaltyFailed_2a87b1f6')),
+        getApiErrorMessage(err, t('extracted.flags.integrityActions.penaltyFailed_2a87b1f6')),
       )
       return
     }
@@ -126,8 +126,8 @@ export function useVoteIntegrityFlags(
       data = await applyVoteRingPenalty<{ flag: VoteIntegrityFlag; penalized_user_count: number }>(
         flagId,
       )
-    } catch (error) {
-      if (isAmbiguousIntegrityMutationFailure(error)) {
+    } catch (err) {
+      if (isAmbiguousIntegrityMutationFailure(err)) {
         mutations.preventPenaltyRetry(flagId)
         await mutations.reconcile(flagId, 'penalty')
         return
@@ -135,7 +135,7 @@ export function useVoteIntegrityFlags(
       penaltyBaselineIds.current.delete(flagId)
       mutations.fail(
         flagId,
-        getApiErrorMessage(error, t('extracted.flags.integrityActions.penaltyFailed_2a87b1f6')),
+        getApiErrorMessage(err, t('extracted.flags.integrityActions.penaltyFailed_2a87b1f6')),
       )
       return
     }

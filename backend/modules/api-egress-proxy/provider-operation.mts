@@ -28,8 +28,8 @@ export function withProviderOperationTimeout<T>(
   parentSignal?: AbortSignal,
 ): Promise<T> {
   const signal = createProviderOperationSignal(parentSignal)
-  return raceOperationWithAbort(operation(signal), signal).catch(error =>
-    rethrowProviderTransportError(provider, error),
+  return raceOperationWithAbort(operation(signal), signal).catch(err =>
+    rethrowProviderTransportError(provider, err),
   )
 }
 

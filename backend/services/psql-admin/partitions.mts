@@ -34,9 +34,9 @@ export async function getPartitionStatus(): Promise<PartitionStatus> {
       [],
     )
     rows = result.rows
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
-    throw error
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
+    throw err
   }
 
   const tableMap = new Map<string, PartitionInfo[]>()

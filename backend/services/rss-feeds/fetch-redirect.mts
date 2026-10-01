@@ -64,12 +64,10 @@ export async function handleRssFeedRedirect(params: {
   }
 
   const isHttpRedirect = new URL(resolvedUrl).protocol === 'http:'
-  const targetUrl = await addUrl(null, resolvedUrl, { preserveHttp: isHttpRedirect }).catch(
-    error => {
-      if (isHttpError(error) && error.status === 400) return null
-      throw error
-    },
-  )
+  const targetUrl = await addUrl(null, resolvedUrl, { preserveHttp: isHttpRedirect }).catch(err => {
+    if (isHttpError(err) && err.status === 400) return null
+    throw err
+  })
   if (!targetUrl) {
     // Blocked host: record redirect status without following
     await persistFetchResult({ responseCode: data.responseCode, headers: data.headers })
@@ -89,9 +87,9 @@ export async function handleRssFeedRedirect(params: {
 
     try {
       await setCanonicalUrl(rssFeedUrlId, targetUrl.id)
-    } catch (error) {
-      if (!(error instanceof CircularCanonicalReferenceError)) {
-        onError(error instanceof Error ? error : new Error(String(error)))
+    } catch (err) {
+      if (!(err instanceof CircularCanonicalReferenceError)) {
+        onError(err instanceof Error ? err : new Error(String(err)))
       }
     }
 
@@ -100,9 +98,9 @@ export async function handleRssFeedRedirect(params: {
       // Canonical feed already exists: set canonical chain and disable source
       try {
         await setCanonicalRssFeed(rssFeedId, existingFeed.id)
-      } catch (error) {
-        if (!(error instanceof CircularRssFeedCanonicalError)) {
-          onError(error instanceof Error ? error : new Error(String(error)))
+      } catch (err) {
+        if (!(err instanceof CircularRssFeedCanonicalError)) {
+          onError(err instanceof Error ? err : new Error(String(err)))
         }
       }
       await disableAndHideSource(rssFeedId)

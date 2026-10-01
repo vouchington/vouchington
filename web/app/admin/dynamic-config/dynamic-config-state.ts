@@ -55,8 +55,8 @@ export function useDynamicConfigState() {
           ? currentNamespace
           : data.namespaces[0]?.namespace
       if (nextNamespace) await loadNamespace(nextNamespace)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: 'Failed to load dynamic config',
         tags: { form: 'admin-dynamic-config' },
       })
@@ -79,8 +79,8 @@ export function useDynamicConfigState() {
     setLoading(true)
     try {
       await loadNamespace(namespace)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: 'Failed to load dynamic config namespace',
         tags: { form: 'admin-dynamic-config' },
       })
@@ -103,12 +103,12 @@ export function useDynamicConfigState() {
         setHistory(historyData.history)
       }
       onSuccess(data.changed ? 'Dynamic config updated' : 'No change to save')
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: 'Failed to update dynamic config',
         tags: { form: 'admin-dynamic-config' },
       })
-      throw error
+      throw err
     } finally {
       savingRef.current = false
       setSavingFields(prev => ({ ...prev, [field]: false }))

@@ -18,17 +18,17 @@ describe('ses.generated', () => {
         text: 'This is a test email',
       })
       expect(result).toBeDefined()
-    } catch (error) {
+    } catch (err) {
       if (
-        error instanceof Error &&
-        (error.name === 'AccessDenied' ||
-          error.name === 'AccessDeniedException' ||
-          error.name === 'CredentialsProviderError')
+        err instanceof Error &&
+        (err.name === 'AccessDenied' ||
+          err.name === 'AccessDeniedException' ||
+          err.name === 'CredentialsProviderError')
       ) {
         context.skip()
         return
       }
-      throw error
+      throw err
     }
   })
 })

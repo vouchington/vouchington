@@ -107,8 +107,8 @@ export async function classifyFediverseInstance(
 
     const nodeinfo = await fetchNodeInfoDocument(schemaUrl, budgetSignal)
     return { status: 'ok', metadata: mapNodeInfoDocument(nodeinfo) }
-  } catch (error) {
-    onError(error as Error)
+  } catch (err) {
+    onError(err as Error)
     return { status: 'error', error_code: 'provider_error' }
   }
 }

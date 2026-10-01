@@ -128,18 +128,17 @@ export async function processGooglePlayMembershipVerification(
     })
     if (finalized.acknowledgementId)
       await enqueueAcknowledgeGooglePlayPurchase({ acknowledgementId: finalized.acknowledgementId })
-  } catch (error) {
+  } catch (err) {
     if (
-      error instanceof GooglePlaySubscriptionLookupError &&
-      error.invalidPurchaseToken &&
+      err instanceof GooglePlaySubscriptionLookupError &&
+      err.invalidPurchaseToken &&
       submittedPurchaseToken !== null &&
-      error.purchaseTokenDigest ===
-        createHash('sha256').update(submittedPurchaseToken).digest('hex')
+      err.purchaseTokenDigest === createHash('sha256').update(submittedPurchaseToken).digest('hex')
     ) {
       if (
-        error.status === 404 ||
-        error.status === 410 ||
-        (error.status === 400 && error.reason === 'subscriptionExpired')
+        err.status === 404 ||
+        err.status === 410 ||
+        (err.status === 400 && err.reason === 'subscriptionExpired')
       ) {
         try {
           if (
@@ -147,17 +146,13 @@ export async function processGooglePlayMembershipVerification(
             (await terminalizeKnownGooglePlaySource({
               verificationId: claim.id,
               claimToken: claim.processingClaimToken,
-              purchaseTokenDigest: error.purchaseTokenDigest,
+              purchaseTokenDigest: err.purchaseTokenDigest,
               providerOrder,
             }))
           )
             return
-        } catch (terminalizationError) {
-          await deferGooglePlayVerification(
-            claim.id,
-            claim.processingClaimToken,
-            terminalizationError,
-          )
+        } catch (err) {
+          await deferGooglePlayVerification(claim.id, claim.processingClaimToken, err)
           return
         }
       }
@@ -166,7 +161,7 @@ export async function processGooglePlayMembershipVerification(
       if (context) await reject(context, claim.processingClaimToken, 'invalid_evidence', query)
       return
     }
-    if (error instanceof DirectMembershipSourceRejectedError) {
+    if (err instanceof DirectMembershipSourceRejectedError) {
       await terminalizeGooglePlayConflict(
         claim.id,
         claim.processingClaimToken,
@@ -175,12 +170,12 @@ export async function processGooglePlayMembershipVerification(
       return
     }
     if (
-      error instanceof GooglePlayLineageConflictError ||
-      error instanceof ProviderMembershipSourceConflictError
+      err instanceof GooglePlayLineageConflictError ||
+      err instanceof ProviderMembershipSourceConflictError
     ) {
       await terminalizeGooglePlayConflict(claim.id, claim.processingClaimToken, 'wrong_account')
       return
     }
-    await deferGooglePlayVerification(claim.id, claim.processingClaimToken, error)
+    await deferGooglePlayVerification(claim.id, claim.processingClaimToken, err)
   }
 }

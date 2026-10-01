@@ -14,8 +14,8 @@ describe('assertValidRedirectUri', () => {
     let caughtError: (Error & { status: number }) | undefined
     try {
       assertValidRedirectUri('not-a-url', 'github', origin)
-    } catch (error) {
-      caughtError = error as Error & { status: number }
+    } catch (err) {
+      caughtError = err as Error & { status: number }
     }
     expect(caughtError).toBeDefined()
     const error = caughtError!

@@ -176,8 +176,8 @@ function FlatReportsClient(props: FlatReportsClientProps) {
       // remaining rows. The submitted row never re-enables because it is removed.
       setResolvedIds(current => new Set(current).add(reportId))
       clearSelected(reportId)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.admin.reportsClient.failedToUpdateReport_61bf19b3'),
         tags: { form: 'moderation-resolve' },
       })
@@ -206,8 +206,8 @@ function FlatReportsClient(props: FlatReportsClientProps) {
         // Note: because the rerun is async (202), the new judgement may not be
         // immediately visible until the background worker completes.
         router.refresh()
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t('extracted.admin.reportsClient.failedToReRunJudgement_5650de2a'),
           tags: { form: 'moderation-rerun' },
         })

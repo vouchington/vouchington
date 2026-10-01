@@ -56,15 +56,15 @@ export function usePasskeyManager(initialData: ListResponse<Passkey>, mfaStatus:
       setStep('list')
       setNewName('')
       onSuccess(t('extracted.my.passkeyManager.passkeyAddedSuccessfully_6cfc7389'))
-    } catch (error) {
-      if (error instanceof Error && error.name === 'NotAllowedError') {
-        onError(error, {
+    } catch (err) {
+      if (err instanceof Error && err.name === 'NotAllowedError') {
+        onError(err, {
           fallback: t('extracted.my.passkeyManager.passkeyRegistrationWasCancelled_230bcff5'),
           tags: { form: 'my-passkey' },
           skipSentry: true,
         })
       } else {
-        onError(error, {
+        onError(err, {
           fallback: t('extracted.my.passkeyManager.failedToAddPasskey_ae611a4c'),
           tags: { form: 'my-passkey' },
         })
@@ -82,8 +82,8 @@ export function usePasskeyManager(initialData: ListResponse<Passkey>, mfaStatus:
       setRenamingId(null)
       setRenameName('')
       onSuccess(t('extracted.my.passkeyManager.passkeyRenamed_9bfc231d'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.passkeyManager.failedToRenamePasskey_bfdf3db4'),
         tags: { form: 'my-passkey' },
       })
@@ -116,14 +116,14 @@ export function usePasskeyManager(initialData: ListResponse<Passkey>, mfaStatus:
       removePasskeyLocally(passkeyId)
       setConfirmingDeleteId(null)
       onSuccess(t('extracted.my.passkeyManager.passkeyRemoved_11097d9d'))
-    } catch (error) {
-      if (error instanceof ApiError && error.code === 'MFA_REAUTH_REQUIRED') {
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'MFA_REAUTH_REQUIRED') {
         // Server says this is the last MFA method (mfaStatus may have been stale)
         pendingDeleteIdRef.current = passkeyId
         setConfirmingDeleteId(null)
         setReauthDialogOpen(true)
       } else {
-        onError(error, {
+        onError(err, {
           fallback: t('extracted.my.passkeyManager.failedToRemovePasskey_5c94cb38'),
           tags: { form: 'my-passkey' },
         })

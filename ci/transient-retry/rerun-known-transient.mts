@@ -52,9 +52,9 @@ export function parseArgs(args: string[], env: NodeJS.ProcessEnv): ParsedArgs {
     dryRun = parsed.values['dry-run'] ?? false
     repository = parsed.values.repo ?? env.GITHUB_REPOSITORY
     positionals = parsed.positionals
-  } catch (error) {
-    throw new Error(`${error instanceof Error ? error.message : String(error)}\n\n${usage()}`, {
-      cause: error,
+  } catch (err) {
+    throw new Error(`${err instanceof Error ? err.message : String(err)}\n\n${usage()}`, {
+      cause: err,
     })
   }
 
@@ -170,8 +170,8 @@ if (import.meta.main) {
     .then(exitCode => {
       process.exitCode = exitCode
     })
-    .catch(error => {
-      console.error(error instanceof Error ? error.message : String(error))
+    .catch(err => {
+      console.error(err instanceof Error ? err.message : String(err))
       process.exitCode = 1
     })
 }

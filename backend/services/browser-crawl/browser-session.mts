@@ -15,9 +15,9 @@ export async function openBrowserSession(
   try {
     const opened = await openBrowserContext(browser)
     return { browser, ...opened }
-  } catch (error) {
+  } catch (err) {
     await browser.close().catch(onError)
-    throw error
+    throw err
   }
 }
 
@@ -28,8 +28,8 @@ async function openBrowserContext(
   try {
     const page = await context.newPage()
     return { context, page }
-  } catch (error) {
+  } catch (err) {
     await context.close().catch(onError)
-    throw error
+    throw err
   }
 }

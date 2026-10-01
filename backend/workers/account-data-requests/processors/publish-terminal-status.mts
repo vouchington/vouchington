@@ -22,8 +22,8 @@ export async function publishTerminalStatus(
       // oxlint-disable-next-line no-await-in-loop -- the next publish attempt runs only after the prior attempt fails
       await publish(requestId, { status })
       return
-    } catch (error) {
-      lastError = error
+    } catch (err) {
+      lastError = err
     }
   }
   reportError(lastError instanceof Error ? lastError : new Error(String(lastError)))

@@ -63,11 +63,11 @@ export default function MembershipsAdminPage() {
         skuOptions: [],
         userKey: s.userKey + 1,
       }))
-    } catch (error) {
+    } catch (err) {
       dispatch({
         errorMessage:
-          error instanceof Error
-            ? error.message
+          err instanceof Error
+            ? err.message
             : t('extracted.grants.membershipsAdminClient.unknownError_2c3d4e5f'),
       })
     } finally {

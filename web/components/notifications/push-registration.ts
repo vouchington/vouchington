@@ -61,9 +61,9 @@ async function bindSavedPushGeneration(
       barrierRevision,
     )
     return saved
-  } catch (error) {
+  } catch (err) {
     await deleteMyWebPushSubscription(saved.id).catch(Sentry.captureException)
-    throw error
+    throw err
   }
 }
 

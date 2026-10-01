@@ -113,8 +113,8 @@ export function useIntegrityPenalties<P extends IntegrityPenaltyRecord>(
       applyConfirmedPenalty(penalty)
       completeReconciliation(id)
       return true
-    } catch (error) {
-      if (isNotFoundIntegrityPenalty(error)) {
+    } catch (err) {
+      if (isNotFoundIntegrityPenalty(err)) {
         removePenalty(id)
         completeReconciliation(id)
         return true
@@ -122,7 +122,7 @@ export function useIntegrityPenalties<P extends IntegrityPenaltyRecord>(
       setActionErrors(previous => ({
         ...previous,
         [id]: getApiErrorMessage(
-          error,
+          err,
           t('extracted.flags.integrityPenalties.reloadFailed_a52df981'),
         ),
       }))
@@ -146,8 +146,8 @@ export function useIntegrityPenalties<P extends IntegrityPenaltyRecord>(
       applyConfirmedPenalty(response.penalty)
       setActionLoading(previous => ({ ...previous, [id]: false }))
       releaseLock(id)
-    } catch (error) {
-      if (isAmbiguousIntegrityMutationFailure(error) || isNotFoundIntegrityPenalty(error)) {
+    } catch (err) {
+      if (isAmbiguousIntegrityMutationFailure(err) || isNotFoundIntegrityPenalty(err)) {
         setReconciliationRequired(previous => ({ ...previous, [id]: true }))
         setActionErrors(previous => ({
           ...previous,
@@ -158,7 +158,7 @@ export function useIntegrityPenalties<P extends IntegrityPenaltyRecord>(
         setActionErrors(previous => ({
           ...previous,
           [id]: getApiErrorMessage(
-            error,
+            err,
             t('extracted.flags.integrityPenalties.revokeFailed_c719e9c2'),
           ),
         }))

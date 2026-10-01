@@ -33,7 +33,7 @@ describe('AdmissionIdempotency stale settlement', () => {
         .run(intent, () => staleRequest.promise)
         .then(
           value => ({ value }),
-          error => ({ error }),
+          err => ({ error: err }),
         )
       await vi.waitFor(() => expect(storage.length).toBe(1))
 

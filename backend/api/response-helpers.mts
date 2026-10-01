@@ -67,7 +67,7 @@ export const EMPTY_PAGE_INFO: PageInfo = {
 function captureSignatureVerificationError(ctx: Context): Promise<unknown | null> {
   return ctx.verifyAttestedRequestSignature().then(
     () => null,
-    error => error,
+    err => err,
   )
 }
 async function requireUserAfterAnonRateLimit(ctx: Context, routeId: string): Promise<PrivateUser> {

@@ -40,9 +40,7 @@ export async function finalizePostUpdateAndDeliver(
 
   await resolvedDependencies
     .invalidatePosts(previousPost, updatedPost)
-    .catch(error =>
-      resolvedDependencies.onError(error instanceof Error ? error : new Error(String(error))),
-    )
+    .catch(err => resolvedDependencies.onError(err instanceof Error ? err : new Error(String(err))))
   if (shouldEnqueuePostUpdated)
     void resolvedDependencies.enqueueOnPostUpdated(updatedPost.id, { contentChanged })
 

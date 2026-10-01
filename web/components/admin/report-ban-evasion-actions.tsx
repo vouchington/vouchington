@@ -43,8 +43,8 @@ export function ReportBanEvasionActions({
         await dismissCommunityBanEvasion(communityId, report.entity_id)
       }
       onAction?.(report.id)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback:
           action === 'confirm'
             ? t('extracted.admin.adminReportRow.failedToConfirmBanEvasion_60f5579d')

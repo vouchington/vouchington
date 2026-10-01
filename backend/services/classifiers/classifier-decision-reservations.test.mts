@@ -289,9 +289,9 @@ async function expectStoryReservationFailure(
 async function getReservationError(reservation: Promise<unknown>): Promise<Error> {
   try {
     await reservation
-  } catch (error) {
-    if (error instanceof Error) return error
-    throw error
+  } catch (err) {
+    if (err instanceof Error) return err
+    throw err
   }
   throw new Error('Expected classifier decision reservation to fail')
 }

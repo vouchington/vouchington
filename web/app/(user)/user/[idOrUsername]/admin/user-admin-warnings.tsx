@@ -38,9 +38,9 @@ export function UserAdminWarnings({ userId }: UserAdminWarningsProps) {
       .then(data => {
         if (!cancelled) dispatch({ type: 'loaded', warnings: data.warnings })
       })
-      .catch((error: unknown) => {
+      .catch((err: unknown) => {
         if (!cancelled) {
-          onError(error, {
+          onError(err, {
             fallback: t('extracted.admin.userAdminWarnings.failedToLoadWarnings_9ea8e81e'),
           })
           dispatch({ type: 'error' })

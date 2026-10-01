@@ -36,13 +36,13 @@ export function TopicClaimReview({ claim }: TopicClaimReviewProps) {
       startTransition(() => {
         router.refresh()
       })
-    } catch (error) {
+    } catch (err) {
       setError(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.admin.topicClaimReview.failedToVerifyClaim_97a65960'),
       )
-      onError(error, { fallback: t('extracted.admin.topicClaimReview.anErrorOccurred_ddf785b7') })
+      onError(err, { fallback: t('extracted.admin.topicClaimReview.anErrorOccurred_ddf785b7') })
     } finally {
       setLoading(null)
     }
@@ -57,13 +57,13 @@ export function TopicClaimReview({ claim }: TopicClaimReviewProps) {
       startTransition(() => {
         router.refresh()
       })
-    } catch (error) {
+    } catch (err) {
       setError(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.admin.topicClaimReview.failedToRejectClaim_93d4aec4'),
       )
-      onError(error, { fallback: t('extracted.admin.topicClaimReview.anErrorOccurred_ddf785b7') })
+      onError(err, { fallback: t('extracted.admin.topicClaimReview.anErrorOccurred_ddf785b7') })
     } finally {
       setLoading(null)
     }
@@ -78,13 +78,13 @@ export function TopicClaimReview({ claim }: TopicClaimReviewProps) {
       startTransition(() => {
         router.refresh()
       })
-    } catch (error) {
+    } catch (err) {
       setError(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.admin.topicClaimReview.failedToRevokeClaim_776b0940'),
       )
-      onError(error, { fallback: t('extracted.admin.topicClaimReview.anErrorOccurred_ddf785b7') })
+      onError(err, { fallback: t('extracted.admin.topicClaimReview.anErrorOccurred_ddf785b7') })
     } finally {
       setLoading(null)
     }

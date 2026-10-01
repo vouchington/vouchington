@@ -56,9 +56,9 @@ export async function isTestUserRowLocked(
           sql`/* isTestUserRowLocked:noKeyUpdate */ SELECT id FROM users WHERE id = ${userId} FOR NO KEY UPDATE NOWAIT`,
         ))
     return false
-  } catch (error) {
-    if ((error as { code?: string }).code === '55P03') return true
-    throw error
+  } catch (err) {
+    if ((err as { code?: string }).code === '55P03') return true
+    throw err
   }
 }
 

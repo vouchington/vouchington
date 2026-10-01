@@ -60,14 +60,14 @@ export const createBatch = async (
       submittedJobArn,
       batchDocument('Submitted', inputS3Uri, outputS3Uri, batchMetadata, submittedJobArn),
     )
-  } catch (error) {
+  } catch (err) {
     let canReleaseLocks = !submittedJobArn
     if (submittedJobArn) {
       try {
         await stopBedrockBatch(submittedJobArn)
         canReleaseLocks = true
-      } catch (stopError) {
-        onError(stopError instanceof Error ? stopError : new Error(String(stopError)))
+      } catch (err) {
+        onError(err instanceof Error ? err : new Error(String(err)))
         await markBatchSubmittedForPolling(
           batchId,
           submittedJobArn,
@@ -89,7 +89,7 @@ export const createBatch = async (
         [batchId],
       ).catch(onError)
     }
-    throw error
+    throw err
   } finally {
     await unlink(filePath).catch(onError)
     await unlink(entityIdsFilePath).catch(onError)

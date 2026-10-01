@@ -26,9 +26,9 @@ export async function TopicDataPointsPage({
     limit: 25,
   }
   const [dataResult, currentUser] = await Promise.all([
-    getPosts({ searchParams: queryParams }).catch(error => {
-      const message = getListSearchErrorMessage(error)
-      if (!message) throw error
+    getPosts({ searchParams: queryParams }).catch(err => {
+      const message = getListSearchErrorMessage(err)
+      if (!message) throw err
       return { error: message }
     }),
     getCurrentUser(),

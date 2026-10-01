@@ -24,10 +24,10 @@ export function IdentityVerificationAttemptGrant({ userId }: { userId: string })
       await grantIdentityVerificationAttempt(userId, trimmedNote)
       setNote('')
       toast.success(t('extracted.admin.identityVerificationAttemptGrant.retryGranted_89ad4ef2'))
-    } catch (error) {
+    } catch (err) {
       toast.error(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.admin.identityVerificationAttemptGrant.retryFailed_d1edc4b9'),
       )
     } finally {

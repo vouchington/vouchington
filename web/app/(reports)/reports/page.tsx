@@ -62,9 +62,9 @@ export default async function ReportsPage({ searchParams }: PageProps) {
           ...(useClusteredReports ? { cluster: 'entity' as const } : {}),
         },
       })
-    } catch (error) {
-      if (!useClusteredReports) throw error
-      Sentry.captureException(error)
+    } catch (err) {
+      if (!useClusteredReports) throw err
+      Sentry.captureException(err)
       effectiveAfter = undefined
       effectiveClusterMode = 'none'
       data = await getStaffPendingModerationReports({

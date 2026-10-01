@@ -51,8 +51,8 @@ export async function isActivityPubInboxAttemptRateLimited(
       getActivityPubInboxAttemptMaxRequests() + 1,
       getActivityPubInboxAttemptWindowSeconds(),
     )
-  } catch (error) /* v8 ignore next 3 */ {
-    dependencies.reportError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) /* v8 ignore next 3 */ {
+    dependencies.reportError(err instanceof Error ? err : new Error(String(err)))
     return false
   }
 }
@@ -68,8 +68,8 @@ export async function recordActivityPubInboxAttempt(
       getActivityPubInboxAttemptWindowSeconds(),
     )
     return limited
-  } catch (error) /* v8 ignore next 3 */ {
-    dependencies.reportError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) /* v8 ignore next 3 */ {
+    dependencies.reportError(err instanceof Error ? err : new Error(String(err)))
     return false
   }
 }
@@ -84,8 +84,8 @@ export async function isActivityPubInboxSenderRateLimited(
       getActivityPubInboxMaxRequests() + 1,
       getActivityPubInboxWindowSeconds(),
     )
-  } catch (error) /* v8 ignore next 3 */ {
-    dependencies.reportError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) /* v8 ignore next 3 */ {
+    dependencies.reportError(err instanceof Error ? err : new Error(String(err)))
     return false
   }
 }
@@ -101,8 +101,8 @@ export async function recordActivityPubInboxSenderDelivery(
       getActivityPubInboxWindowSeconds(),
     )
     return limited
-  } catch (error) /* v8 ignore next 3 */ {
-    dependencies.reportError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) /* v8 ignore next 3 */ {
+    dependencies.reportError(err instanceof Error ? err : new Error(String(err)))
     return false
   }
 }
@@ -124,8 +124,8 @@ export async function recordActivityPubInboxSenderDeliveryOnce(
       }),
     )
     return normalizeActivityPubInboxSenderLimitResult(result)
-  } catch (error) /* v8 ignore next 3 -- the internal Valkey boundary is exercised with real Valkey */ {
-    dependencies.reportError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) /* v8 ignore next 3 -- the internal Valkey boundary is exercised with real Valkey */ {
+    dependencies.reportError(err instanceof Error ? err : new Error(String(err)))
     return false
   }
 }

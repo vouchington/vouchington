@@ -79,9 +79,9 @@ export async function runCheck(
   try {
     const entries = await getEntries({ sessionId, connection, entries: entriesClient })
     return formatCheckResult(sessionId, entries, parsed.sourceEventId)
-  } catch (error) {
-    if (isBlackboardNotFound(error))
+  } catch (err) {
+    if (isBlackboardNotFound(err))
       return `No retrospective saved yet for agent-blackboard session ${sessionId} (session not created).`
-    throw error
+    throw err
   }
 }

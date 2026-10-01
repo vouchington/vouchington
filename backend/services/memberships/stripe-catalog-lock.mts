@@ -20,8 +20,8 @@ export async function withStripeCatalogReconciliationLock<Result>(
     )
     try {
       result = await operation()
-    } catch (error) {
-      operationError = toError(error)
+    } catch (err) {
+      operationError = toError(err)
     }
 
     let unlockError: Error | undefined
@@ -32,8 +32,8 @@ export async function withStripeCatalogReconciliationLock<Result>(
       )
       if (!unlock.rows[0]?.unlocked)
         unlockError = new Error('Stripe catalog reconciliation lock was not held at release')
-    } catch (error) {
-      unlockError = toError(error)
+    } catch (err) {
+      unlockError = toError(err)
     }
 
     if (unlockError) {
@@ -49,9 +49,9 @@ export async function withStripeCatalogReconciliationLock<Result>(
     released = true
     if (operationError) throw operationError
     return result as Result
-  } catch (error) {
+  } catch (err) {
     if (!released) client.release(true)
-    throw toError(error)
+    throw toError(err)
   }
 }
 

@@ -80,8 +80,8 @@ export async function deleteExportsFromS3(s3Keys: string[]): Promise<void> {
           ),
         )
       }
-    } catch (error) {
-      errors.push(error instanceof Error ? error : new Error(String(error)))
+    } catch (err) {
+      errors.push(err instanceof Error ? err : new Error(String(err)))
     }
   }
   if (errors.length > 0) throw new AggregateError(errors, 'Failed to delete one or more exports')

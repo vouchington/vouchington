@@ -34,9 +34,9 @@ function expectStructuredDataAccepted(vertical: string, data: unknown) {
   let thrown: unknown
   try {
     assertValidStructuredData(vertical, data)
-  } catch (error) {
+  } catch (err) {
     didThrow = true
-    thrown = error
+    thrown = err
   }
   expect({ didThrow, thrown }).toEqual({ didThrow: false, thrown: undefined })
 }

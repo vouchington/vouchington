@@ -38,8 +38,8 @@ export function cacheAdapter(adapter: FediverseProviderAdapter): FediverseProvid
     provider: adapter.provider,
     async search(options: FediverseSearchOptions): Promise<FediverseSearchBucket> {
       const key = stableSerialize(options)
-      const cached = (await cache.get(key).catch((error: unknown) => {
-        onError(error as Error)
+      const cached = (await cache.get(key).catch((err: unknown) => {
+        onError(err as Error)
         return null
       })) as FediverseSearchBucket | null
       if (cached) return cached

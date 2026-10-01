@@ -66,9 +66,9 @@ export function PrivacyForm({ initialUser }: { initialUser: PrivacyFormInitialUs
     try {
       await updateMyUser(userId, { third_party_marketing: enabled })
       onSuccess(t('extracted.my.privacyForm.privacySettingUpdated_3c09f089'))
-    } catch (error) {
+    } catch (err) {
       setSettings(s => ({ ...s, third_party_marketing: prev }))
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.my.privacyForm.failedToUpdatePrivacySetting_d08bc692'),
         tags: { form: 'my-privacy', field: 'third_party_marketing' },
       })
@@ -90,9 +90,9 @@ export function PrivacyForm({ initialUser }: { initialUser: PrivacyFormInitialUs
     try {
       await updateMyUser(userId, { [field]: value })
       onSuccess(t('extracted.my.privacyForm.privacySettingUpdated_3c09f089'))
-    } catch (error) {
+    } catch (err) {
       setSettings(s => ({ ...s, [field]: prev }))
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.my.privacyForm.failedToUpdatePrivacySetting_d08bc692'),
         tags: { form: 'my-privacy', field },
       })
@@ -114,9 +114,9 @@ export function PrivacyForm({ initialUser }: { initialUser: PrivacyFormInitialUs
     try {
       await updateMyUser(userId, { processing_restricted_at: enabled })
       onSuccess(t('extracted.my.privacyForm.privacySettingUpdated_3c09f089'))
-    } catch (error) {
+    } catch (err) {
       setSettings(s => ({ ...s, processing_restricted_at: prev }))
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.my.privacyForm.failedToUpdatePrivacySetting_d08bc692'),
         tags: { form: 'my-privacy', field: 'processing_restricted_at' },
       })

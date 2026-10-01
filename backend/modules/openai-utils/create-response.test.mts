@@ -168,7 +168,7 @@ describe('streamOpenAIResponseEvents', () => {
     )
 
     await expect(gen.next()).resolves.toEqual({ done: false, value: { delta: 'partial' } })
-    const error: unknown = await gen.next().catch((caught: unknown) => caught)
+    const error: unknown = await gen.next().catch((err: unknown) => err)
     expect(error).toBeInstanceOf(OpenAIResponseNotCompletedError)
     const notCompleted = error as OpenAIResponseNotCompletedError
     expect(notCompleted.code).toBe('server_error')
@@ -190,7 +190,7 @@ describe('streamOpenAIResponseEvents', () => {
       ]),
     )
 
-    const error: unknown = await gen.next().catch((caught: unknown) => caught)
+    const error: unknown = await gen.next().catch((err: unknown) => err)
     expect(error).toBeInstanceOf(OpenAIResponseNotCompletedError)
     const notCompleted = error as OpenAIResponseNotCompletedError
     expect(notCompleted.reason).toBe('max_output_tokens')

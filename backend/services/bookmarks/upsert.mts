@@ -77,8 +77,8 @@ const invalidateFollowMetrics = async (
       default:
         break
     }
-  } catch (error) {
-    onError(error as Error)
+  } catch (err) {
+    onError(err as Error)
   }
 }
 
@@ -143,13 +143,13 @@ export const bookmarkEntity = async (
         if (contributionStatus.allowed && withinQuota && !limited && target) {
           await upsertUserVouchElectionVotes(user.id, [{ entityId: entity.id, score: 1 }])
         }
-      } catch (error) {
+      } catch (err) {
         // Unreachable without mocking (banned for @services/* in backend tests): the membership,
         // contribution-status/quota, and target lookups plus the rate limiter only throw on infra
         // outages, and the vouch upsert shares the same users(id) FK as the follow-relation insert
         // above, so a real target-FK failure would already reject that earlier, uncaught insert first.
         /* c8 ignore next -- see comment above; no realistic non-mocked trigger */
-        onError(error as Error)
+        onError(err as Error)
       }
     }
   }

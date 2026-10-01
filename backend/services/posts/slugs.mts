@@ -24,10 +24,10 @@ export const createPostSlug = async (
       options,
     )
     return result
-  } catch (error: unknown) {
-    if (isUniqueViolation(error)) {
+  } catch (err: unknown) {
+    if (isUniqueViolation(err)) {
       assert(false, 409, `Slug "${slug}" already exists`)
     }
-    throw error
+    throw err
   }
 }

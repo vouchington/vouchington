@@ -121,10 +121,9 @@ export async function createInstanceInTransaction(
 
     await query.commit()
     return result
-  } catch (error) {
-    if (isUniqueViolation(error) || topicAliasClaim.isTopicAliasOwnershipConflict(error))
-      return null
-    throw error
+  } catch (err) {
+    if (isUniqueViolation(err) || topicAliasClaim.isTopicAliasOwnershipConflict(err)) return null
+    throw err
   }
 }
 

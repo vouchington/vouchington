@@ -32,7 +32,7 @@ async function main() {
   process.stdout.write(`export VOUCHA_TEST_ST=${sessionToken.token}\n`)
 }
 
-main().catch(error => {
-  console.error('seed-swift-integration failed:', error)
+main().catch(err => {
+  console.error('seed-swift-integration failed:', err)
   process.exit(1)
 })

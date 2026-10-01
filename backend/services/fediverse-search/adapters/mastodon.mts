@@ -85,8 +85,8 @@ export function createMastodonAdapter(
         )
         const items = response.accounts.map(account => mapMastodonAccount(account, host))
         return buildMastodonBucket(items, offset, limit, accessToken)
-      } catch (error) {
-        onError(error as Error)
+      } catch (err) {
+        onError(err as Error)
         return { provider: 'mastodon', status: 'error', items: [], error_code: 'provider_error' }
       }
     },

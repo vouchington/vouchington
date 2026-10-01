@@ -85,8 +85,8 @@ export function useFacebookSDK(): UseFacebookSDK {
           },
           { scope: 'email' },
         )
-      } catch (error) {
-        reject(error instanceof Error ? error : new Error('Facebook login failed'))
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error('Facebook login failed'))
       }
     })
   }

@@ -9,11 +9,11 @@ export async function getPasskeyAuthenticationOptions(userId: string, deviceId: 
     return toPasskeyAuthenticationOptions(
       await passkeyProtocol.authentication.createOptions(userId, deviceId),
     )
-  } catch (error) {
-    if (error instanceof AuthError && error.code === 'invalid_request') {
+  } catch (err) {
+    if (err instanceof AuthError && err.code === 'invalid_request') {
       throw createHttpError(400, 'No passkeys registered for this user')
     }
-    throw error
+    throw err
   }
 }
 
@@ -31,12 +31,12 @@ export async function verifyPasskeyAuthentication(
       response,
     })
     return { verified: true, passkeyId: result.passkeyId }
-  } catch (error) {
-    if (!(error instanceof AuthError)) throw error
-    if (error.code === 'challenge_expired') {
+  } catch (err) {
+    if (!(err instanceof AuthError)) throw err
+    if (err.code === 'challenge_expired') {
       throw createHttpError(400, 'Authentication challenge expired or not found')
     }
-    if (error.code !== 'invalid_credentials') throw error
+    if (err.code !== 'invalid_credentials') throw err
   }
 
   const responseObj = response as { id?: string }

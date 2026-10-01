@@ -55,8 +55,8 @@ export function CommunityRaidModePanel({ community, initialData }: Props) {
       onSuccess(t('extracted.communities.communityRaidModePanel.raidModeActivated_acf3cc24'))
       startNavigation(() => router.refresh())
       dispatch({ type: 'resetBusy' })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.communities.communityRaidModePanel.couldNotActivateRaidMode_7d70c331',
         ),
@@ -74,8 +74,8 @@ export function CommunityRaidModePanel({ community, initialData }: Props) {
       onSuccess(t('extracted.communities.communityRaidModePanel.restrictionLifted_032247f0'))
       startNavigation(() => router.refresh())
       dispatch({ type: 'resetBusy' })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.communities.communityRaidModePanel.couldNotLiftRestriction_2c663aa1',
         ),

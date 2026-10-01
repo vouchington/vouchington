@@ -85,8 +85,8 @@ export function CommunityAgentPromptTestPanel({ prompt, communitySlug }: Props) 
           limit: 25,
         })
         setSimulation(response)
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t(
             'extracted.communities.communityAgentPromptTestPanel.failedToRunSimulation_4f23a97e',
           ),

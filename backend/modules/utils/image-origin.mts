@@ -27,8 +27,8 @@ function parsePureHttpOrigin(value: string): string {
   let url: URL
   try {
     url = new URL(value)
-  } catch (cause) {
-    throw new Error(`${IMAGE_ORIGIN_ENV} must be a valid URL`, { cause })
+  } catch (err) {
+    throw new Error(`${IMAGE_ORIGIN_ENV} must be a valid URL`, { cause: err })
   }
 
   if (

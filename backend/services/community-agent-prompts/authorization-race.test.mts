@@ -25,7 +25,7 @@ describe('community agent prompt authorization races', () => {
     await holder.ready
 
     const update = updateCommunityAgentPrompt(creator, prompt.id, { prompt: 'Raced update' })
-    const updateRejection = update.catch((error: unknown) => error)
+    const updateRejection = update.catch((err: unknown) => err)
     await waitForTestPostgresLockWaiter(await holder.processId, 'getLockedActiveCommunityMember')
     releaseRemoval.resolve()
     await holder.done
@@ -43,7 +43,7 @@ describe('community agent prompt authorization races', () => {
     await holder.ready
 
     const deletion = deleteCommunityAgentPrompt(creator, prompt.id)
-    const deletionRejection = deletion.catch((error: unknown) => error)
+    const deletionRejection = deletion.catch((err: unknown) => err)
     await waitForTestPostgresLockWaiter(await holder.processId, 'getLockedActiveCommunityMember')
     releaseRemoval.resolve()
     await holder.done

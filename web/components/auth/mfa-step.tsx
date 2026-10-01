@@ -54,8 +54,8 @@ export default function MfaStep({ loginAttemptId, onSuccess, onBack }: Props) {
       await verifyMfaTotp<{ user: { id: string } }>(loginAttemptId, totpCode)
       notifySuccess(t('extracted.auth.mfaStep.verified_4f783840'))
       onSuccess()
-    } catch (error) {
-      reportTotpError(error)
+    } catch (err) {
+      reportTotpError(err)
     }
   }
 
@@ -69,15 +69,15 @@ export default function MfaStep({ loginAttemptId, onSuccess, onBack }: Props) {
       await verifyMfaPasskey(loginAttemptId, authResponse)
       notifySuccess(t('extracted.auth.mfaStep.verified_4f783840'))
       onSuccess()
-    } catch (error) {
-      if (error instanceof Error && error.name === 'NotAllowedError') {
-        onError(error, {
+    } catch (err) {
+      if (err instanceof Error && err.name === 'NotAllowedError') {
+        onError(err, {
           fallback: t('extracted.auth.mfaStep.passkeyVerificationWasCancelled_11c1e88a'),
           tags: { form: 'auth-mfa' },
           skipSentry: true,
         })
       } else {
-        onError(error, {
+        onError(err, {
           fallback: t('extracted.auth.mfaStep.unableToVerifyPleaseTryAgain_b7979b96'),
           tags: { form: 'auth-mfa' },
         })
@@ -95,8 +95,8 @@ export default function MfaStep({ loginAttemptId, onSuccess, onBack }: Props) {
           notifySuccess(t('extracted.auth.mfaStep.verified_4f783840'))
           onSuccess()
         })
-        .catch((error: unknown) => {
-          reportTotpError(error)
+        .catch((err: unknown) => {
+          reportTotpError(err)
         })
     }
   }

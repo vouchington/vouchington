@@ -54,8 +54,8 @@ export async function syncBlacklistSourceById(
 
   try {
     await syncBlacklistSource(sourceId, source.url, source.type, syncDependencies)
-  } catch (error) {
-    onError(error instanceof Error ? error : createSyncFailedError(source.url, error))
+  } catch (err) {
+    onError(err instanceof Error ? err : createSyncFailedError(source.url, err))
   }
 }
 

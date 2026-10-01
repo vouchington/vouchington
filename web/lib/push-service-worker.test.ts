@@ -125,7 +125,7 @@ describe('push service worker protocol', () => {
 
   it('fails closed after five seconds without an acknowledgement', async () => {
     vi.useFakeTimers()
-    const result = bindPushBinding(registrationWithReply(), binding, revision).catch(error => error)
+    const result = bindPushBinding(registrationWithReply(), binding, revision).catch(err => err)
 
     await vi.advanceTimersByTimeAsync(5000)
 

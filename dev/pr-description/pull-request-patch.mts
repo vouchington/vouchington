@@ -92,13 +92,13 @@ export async function readPullRequestPatch(
       reduceDiffBlock(summary, block)
     })
     return { summary, source: 'unified-diff' }
-  } catch (diffError: unknown) {
-    if (!(diffError instanceof DiffCommandError)) throw diffError
+  } catch (err: unknown) {
+    if (!(err instanceof DiffCommandError)) throw err
     try {
       const summary = await readPullRequestFileSummary(runGh, target)
       return { summary, source: 'files-api' }
     } catch {
-      throw diffError
+      throw err
     }
   }
 }

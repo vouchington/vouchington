@@ -35,9 +35,9 @@ export async function browserErrorsFixture(
   try {
     try {
       await run(monitor)
-    } catch (error) {
+    } catch (err) {
       await monitor.attachIssuesIfAny()
-      throw error
+      throw err
     }
 
     if (testInfo.status === testInfo.expectedStatus) {
@@ -74,9 +74,9 @@ export async function withMonitoredPage<T>(
     let result: T
     try {
       result = await callback(page)
-    } catch (error) {
+    } catch (err) {
       await monitor.attachIssuesIfAny()
-      throw error
+      throw err
     }
 
     await monitor.assertNoIssues()

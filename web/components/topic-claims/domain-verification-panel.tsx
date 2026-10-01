@@ -80,15 +80,15 @@ export function DomainVerificationPanel({
     try {
       const result = await issueVerificationToken(topicIdOrSlug, claim.id)
       dispatch({ type: 'set_token', token: result })
-    } catch (error) {
+    } catch (err) {
       dispatch({
         type: 'set_error',
         message:
-          error instanceof Error
-            ? error.message
+          err instanceof Error
+            ? err.message
             : t('extracted.topicClaims.domainVerificationPanel.failedToIssueToken_b76a4335'),
       })
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.topicClaims.domainVerificationPanel.anErrorOccurred_ddf785b7'),
       })
     } finally {
@@ -102,18 +102,18 @@ export function DomainVerificationPanel({
     try {
       const result = await verifyDomain(topicIdOrSlug, claim.id)
       onVerified(result.claim)
-    } catch (error) {
+    } catch (err) {
       dispatch({
         type: 'set_error',
         message:
-          error instanceof Error
-            ? error.message
+          err instanceof Error
+            ? err.message
             : t(
                 'extracted.topicClaims.domainVerificationPanel.verificationFailedEnsureTheRecordOr_f6f70347',
               ),
       })
       /* c8 ignore next -- error path requires injecting a verification failure */
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.topicClaims.domainVerificationPanel.anErrorOccurred_ddf785b7'),
       })
     } finally {
@@ -128,15 +128,15 @@ export function DomainVerificationPanel({
     try {
       const result = await submitForManualReview(topicIdOrSlug, claim.id, state.evidence)
       onVerified(result.claim)
-    } catch (error) {
+    } catch (err) {
       dispatch({
         type: 'set_error',
         message:
-          error instanceof Error
-            ? error.message
+          err instanceof Error
+            ? err.message
             : t('extracted.topicClaims.domainVerificationPanel.failedToSubmitForReview_6a8b0d31'),
       })
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.topicClaims.domainVerificationPanel.anErrorOccurred_ddf785b7'),
       })
     } finally {

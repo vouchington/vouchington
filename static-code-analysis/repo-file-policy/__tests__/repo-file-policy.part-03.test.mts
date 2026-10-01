@@ -109,8 +109,8 @@ describe('repo-file-policy', () => {
     let failure: unknown
     try {
       await run(dir)
-    } catch (error) {
-      failure = error
+    } catch (err) {
+      failure = err
     }
     expect(failure).toMatchObject({ code: 1 })
     expect((failure as { stdout: string }).stdout).toContain(

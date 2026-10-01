@@ -22,13 +22,13 @@ export async function resolveTxtRecords(hostname: string): Promise<string[]> {
       retries: DNS_MAX_RETRIES,
       timeoutMs: DNS_TIMEOUT_MS,
     })
-  } catch (error) {
+  } catch (err) {
     if (
-      error instanceof UpstreamDnsTimeoutError ||
-      (error instanceof Error && error.name === 'DnsTimeoutError')
+      err instanceof UpstreamDnsTimeoutError ||
+      (err instanceof Error && err.name === 'DnsTimeoutError')
     ) {
-      throw new DnsTimeoutError({ cause: error })
+      throw new DnsTimeoutError({ cause: err })
     }
-    throw error
+    throw err
   }
 }

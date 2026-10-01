@@ -126,8 +126,8 @@ async function attemptImmediateUserDeletionCacheEviction(
     await Promise.all(
       tags.map(tag => completeUserDeletionExternalWork(requestId, 'cloudflare-cache-tag', tag)),
     )
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 
@@ -174,8 +174,8 @@ export async function deleteUser(
       requestId: deletion.request.id,
       processingAttemptId: deletion.request.processingAttemptId,
     })
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
   return {
     requestId: deletion.request.id,

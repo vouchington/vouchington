@@ -170,8 +170,8 @@ describe('normalizeUrlForUrlTable', () => {
     let caughtError: TypeError | undefined
     try {
       normalizeUrlForUrlTable('not a url')
-    } catch (error) {
-      caughtError = error as TypeError
+    } catch (err) {
+      caughtError = err as TypeError
     }
     expect(caughtError).toBeInstanceOf(TypeError)
     expect(caughtError?.message).toContain('Invalid URL')

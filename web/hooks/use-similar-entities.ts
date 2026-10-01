@@ -66,10 +66,10 @@ export function useSimilarEntities<T>({
             setResult({ query: trimmed, data: result, isLoading: false })
           }
         })
-        .catch(error => {
+        .catch(err => {
           if (!controller.signal.aborted) {
             setResult({ query: trimmed, data: null, isLoading: false })
-            onError(error, { fallback: 'Failed to load similar items', skipSentry: true })
+            onError(err, { fallback: 'Failed to load similar items', skipSentry: true })
           }
         })
     }, debounceMs)

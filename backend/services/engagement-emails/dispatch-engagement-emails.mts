@@ -103,10 +103,10 @@ async function dispatchFollowTopicsEmail(recipient: EngagementRecipientRow): Pro
       },
       props,
     )
-  } catch (error) {
+  } catch (err) {
     /* c8 ignore start -- Defensive cleanup/observability for per-recipient recommendation or enqueue failures. */
     if (claimed) await releaseEngagementClaim(recipient.id, 'follow_topics')
-    reportEngagementDispatchError(error, 'follow_topics', recipient.id)
+    reportEngagementDispatchError(err, 'follow_topics', recipient.id)
     /* c8 ignore stop */
   }
 }
@@ -152,10 +152,10 @@ async function dispatchPostReferralLinkEmail(
       },
       props,
     )
-  } catch (error) {
+  } catch (err) {
     /* c8 ignore start -- Defensive cleanup/observability for per-recipient enqueue failures. */
     if (claimed) await releaseEngagementClaim(recipient.id, 'post_referral_link')
-    reportEngagementDispatchError(error, 'post_referral_link', recipient.id)
+    reportEngagementDispatchError(err, 'post_referral_link', recipient.id)
     /* c8 ignore stop */
   }
 }
@@ -199,10 +199,10 @@ async function dispatchFollowNewsSourcesEmail(recipient: EngagementRecipientRow)
       },
       props,
     )
-  } catch (error) {
+  } catch (err) {
     /* c8 ignore start -- Defensive cleanup/observability for per-recipient enqueue failures. */
     if (claimed) await releaseEngagementClaim(recipient.id, 'follow_news_sources')
-    reportEngagementDispatchError(error, 'follow_news_sources', recipient.id)
+    reportEngagementDispatchError(err, 'follow_news_sources', recipient.id)
     /* c8 ignore stop */
   }
 }
@@ -214,9 +214,9 @@ async function releaseEngagementClaim(
 ): Promise<void> {
   try {
     await releaseUnsentEngagementEmailClaim(userId, emailType)
-  } catch (error) {
+  } catch (err) {
     /* c8 ignore next 2 -- Defensive observability for rare cleanup failures after enqueue errors. */
-    reportEngagementDispatchError(error, emailType, userId)
+    reportEngagementDispatchError(err, emailType, userId)
   }
 }
 

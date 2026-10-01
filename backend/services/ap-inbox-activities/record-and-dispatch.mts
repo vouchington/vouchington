@@ -47,11 +47,11 @@ export async function recordAndDispatchInboundActivity(
       result = { duplicate: false as const, postCommitAction }
     }
     await query.commit()
-  } catch (error) {
-    if (error instanceof StaleDurableInboxCompletionError) {
+  } catch (err) {
+    if (err instanceof StaleDurableInboxCompletionError) {
       return { outcome: 'stale', duplicate: false }
     }
-    throw error
+    throw err
   }
   if (result.duplicate) {
     if (result.postCommitAction) dispatchInboundPostCommitAction(result.postCommitAction)

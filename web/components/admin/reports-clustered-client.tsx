@@ -120,8 +120,8 @@ export function ClusteredReportsClient({
           `${t('shared.countLabel.format', { count: pendingReports.length, unit: 'loadedReport' })} ${statusLabel}`,
         )
         router.refresh()
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t(
             'extracted.admin.reportsClusteredClient.failedToUpdateReportCluster_aee0929f',
           ),
@@ -145,8 +145,8 @@ export function ClusteredReportsClient({
         setRemovedClusterKeys(current => new Set(current).add(clusterVisibilityKey(cluster)))
         onSuccess(t('extracted.admin.reportsClusteredClient.targetRemoved_cbaa90e7'))
         router.refresh()
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t('extracted.admin.reportsClusteredClient.failedToRemoveTarget_2a3280c7'),
         })
       } finally {
@@ -174,8 +174,8 @@ export function ClusteredReportsClient({
           `${t('shared.countLabel.format', { count: postIds.length, unit: 'post' })} ${t('extracted.admin.reportsClusteredClient.removed_e1f79758')}`,
         )
         router.refresh()
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t(
             'extracted.admin.reportsClusteredClient.failedToRemoveDuplicateCluster_7e623a38',
           ),
@@ -193,8 +193,8 @@ export function ClusteredReportsClient({
         await rerunReportJudgement(report.id)
         onSuccess(t('extracted.admin.reportsClusteredClient.judgementReRunQueued_ac6c0160'))
         router.refresh()
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t('extracted.admin.reportsClusteredClient.failedToReRunJudgement_5650de2a'),
         })
       } finally {

@@ -59,10 +59,10 @@ export async function retireExpiredMonthlyPartitions(
       await using transaction = await startTransaction()
       await retireMonthlyPartition(transaction, partition)
       await transaction.commit()
-    } catch (cause) {
+    } catch (err) {
       // Disposal has rolled back this partition's referential actions before the next starts.
       reportError(
-        new Error(`Failed to retire monthly partition ${partition.partitionName}`, { cause }),
+        new Error(`Failed to retire monthly partition ${partition.partitionName}`, { cause: err }),
       )
     }
     await retireAt(index + 1)

@@ -45,8 +45,8 @@ export function ReferralLinksShowAll({ referralProgramId }: ReferralLinksShowAll
     try {
       const result = await getAllReferralLinks(referralProgramId)
       setData(result)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.referralLinks.referralLinksShowAll.failedToLoadReferralLinks_3e9e7e3a',
         ),

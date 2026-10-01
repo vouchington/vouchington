@@ -185,7 +185,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       })
       await teardownDataStores()
     }
-  } catch (error) {
+  } catch (err) {
     await cleanupGlobalSetupState({
       existingWorkerDevVars,
       processes,
@@ -194,6 +194,6 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       workerDevVarsPath: WORKER_DEV_VARS_PATH,
     })
     await teardownDataStores()
-    throw error
+    throw err
   }
 }

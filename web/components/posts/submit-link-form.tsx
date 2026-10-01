@@ -42,15 +42,15 @@ export function SubmitLinkForm({ onCreated }: { onCreated?: (href: string) => vo
         onCreated?.(href)
         router.push(href)
       }
-    } catch (error) {
-      if (isEmailVerificationRequired(error)) {
+    } catch (err) {
+      if (isEmailVerificationRequired(err)) {
         emailRecovery?.openEmailVerificationRecovery()
         turnstile.reset()
         return
       }
       setError(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.posts.submitLinkForm.failedToSubmitLinkPleaseTry_9e15315e'),
       )
       turnstile.reset()

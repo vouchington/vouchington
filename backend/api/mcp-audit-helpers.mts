@@ -37,8 +37,8 @@ export function startMcpRequestAudit(
     async record(events) {
       try {
         await recordMcpCallAudit(context, events)
-      } catch (error) {
-        onError(error instanceof Error ? error : new Error(String(error)))
+      } catch (err) {
+        onError(err instanceof Error ? err : new Error(String(err)))
         ctx.throw(503, 'Audit log unavailable')
       }
     },
@@ -47,8 +47,8 @@ export function startMcpRequestAudit(
         await recordMcpCallAudit(context, [
           { jsonrpcMethod: 'tools/call', toolName, outcome: 'tool_error' },
         ])
-      } catch (error) {
-        onError(error instanceof Error ? error : new Error(String(error)))
+      } catch (err) {
+        onError(err instanceof Error ? err : new Error(String(err)))
       }
     },
   }

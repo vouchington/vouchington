@@ -81,11 +81,11 @@ export async function loadOptionalFeedCommunityScope(
 
   try {
     return await loadCommunityForViewer(currentUser, communityParam)
-  } catch (error) {
+  } catch (err) {
     const status =
-      (error as { status?: number; statusCode?: number }).status ??
-      (error as { status?: number; statusCode?: number }).statusCode
+      (err as { status?: number; statusCode?: number }).status ??
+      (err as { status?: number; statusCode?: number }).statusCode
     if (status === 403 || status === 404) return undefined
-    throw error
+    throw err
   }
 }

@@ -57,9 +57,9 @@ export async function removeCommentAsAgent(commentId: string): Promise<AgentRemo
 
     if (result === 'removed') void enqueueOnPostDeleted(commentId)
     return result
-  } catch (error) {
+  } catch (err) {
     await repairFailedImageDeliveryMutation({ postIds: [commentId] }).catch(onError)
-    throw error
+    throw err
   }
 }
 

@@ -46,10 +46,10 @@ export function ApplicationForm({ communitySlug, questions }: ApplicationFormPro
     try {
       await applyToCommunity(communitySlug, answers, message || undefined)
       push(createCommunityPathname(communitySlug))
-    } catch (error) {
+    } catch (err) {
       setError(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.communities.applicationForm.failedToSubmitApplication_f7750bae'),
       )
       setLoading(false)

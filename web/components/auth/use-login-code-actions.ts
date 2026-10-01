@@ -52,8 +52,8 @@ export function useLoginCodeActions({
       }
       shouldResetLoading = false
       handleLoginSuccess()
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
         toast.error('Invalid or expired verification code')
       } else {
         toast.error('Unable to connect. Please try again.')
@@ -81,10 +81,10 @@ export function useLoginCodeActions({
       )
       toast.info(`Verification code resent to ${email}`)
       handleTurnstileReset()
-    } catch (error) {
+    } catch (err) {
       const message =
-        error instanceof ApiError
-          ? ((error.data as { message?: string })?.message ?? error.message)
+        err instanceof ApiError
+          ? ((err.data as { message?: string })?.message ?? err.message)
           : 'Failed to resend verification code'
       toast.error(message)
     } finally {

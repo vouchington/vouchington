@@ -33,8 +33,8 @@ export function CategoryRowActions({ category }: Props) {
       await rejectRssFeedCategory(category.category_text)
       onSuccess(t('extracted.rssFeedCategories.categoryRowActions.categoryRejected_99bd8f6f'))
       refresh()
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.rssFeedCategories.categoryRowActions.failedToRejectCategory_b2bfbb7b',
         ),
@@ -49,8 +49,8 @@ export function CategoryRowActions({ category }: Props) {
       await unrejectRssFeedCategory(category.category_text)
       onSuccess(t('extracted.rssFeedCategories.categoryRowActions.categoryRestored_f53f365f'))
       refresh()
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.rssFeedCategories.categoryRowActions.failedToRestoreCategory_536038ff',
         ),
@@ -69,8 +69,8 @@ export function CategoryRowActions({ category }: Props) {
         }),
       )
       refresh()
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.rssFeedCategories.categoryRowActions.failedToAssignCategory_c179fdad',
         ),

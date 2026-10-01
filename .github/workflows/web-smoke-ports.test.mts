@@ -53,8 +53,8 @@ async function runSmoke(allocatorOutput: string, allocatorExit = 0): Promise<Smo
         timeout: 15_000,
       })
       output = result.stdout + result.stderr
-    } catch (error) {
-      const failure = error as { code: number; stdout: string; stderr: string }
+    } catch (err) {
+      const failure = err as { code: number; stdout: string; stderr: string }
       code = failure.code
       output = failure.stdout + failure.stderr
     }

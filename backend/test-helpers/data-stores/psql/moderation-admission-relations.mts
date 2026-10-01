@@ -25,8 +25,8 @@ export async function countTestRelationRows(
 export async function rejectionCode(run: () => Promise<unknown>): Promise<string | undefined> {
   try {
     await run()
-  } catch (error) {
-    return (error as { code?: string }).code
+  } catch (err) {
+    return (err as { code?: string }).code
   }
   return undefined
 }

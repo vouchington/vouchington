@@ -44,8 +44,8 @@ export function CommunityAiAgentsPanel({ agents, communitySlug }: CommunityAiAge
             }),
       )
       startRefreshing(() => router.refresh())
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.communities.communityAiAgentsPanel.failedToUpdateCommunityAiAgent_e8326c8a',
         ),

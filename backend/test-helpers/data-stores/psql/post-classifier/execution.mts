@@ -28,9 +28,9 @@ export async function initializePostClassifierExecutionTests() {
     await moderationConfig.waitForInitialization()
     await runConfigDrivenStatementsInTransaction(generateSeed(), undefined)
     return release
-  } catch (error) {
+  } catch (err) {
     await release()
-    throw error
+    throw err
   }
 }
 

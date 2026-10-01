@@ -59,12 +59,12 @@ export async function getOrCreateActorKeyPair(userId: string): Promise<ActorKeyP
       RETURNING user_id, key_id, public_key_pem, private_key_ciphertext, created_at, updated_at
     `)
     return rows[0] as ActorKeyPairRow
-  } catch (error) {
-    if (isKeyIdUniqueViolation(error)) {
+  } catch (err) {
+    if (isKeyIdUniqueViolation(err)) {
       const existing = await getActorKeyPairRow(userId)
       if (existing) return existing
     }
-    throw error
+    throw err
   }
 }
 

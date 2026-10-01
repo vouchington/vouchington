@@ -73,8 +73,8 @@ export async function runOAuthAccountConnectionPostCommitEffects(
 ): Promise<void> {
   try {
     await dependencies.enqueueVoteWeightRecalculation(userId)
-  } catch (error) {
-    dependencies.reportError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    dependencies.reportError(err instanceof Error ? err : new Error(String(err)))
   }
   try {
     await dependencies.invalidateVerifiedEmail(userId)

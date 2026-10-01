@@ -23,11 +23,11 @@ app.route('/api/v1/memberships/apple-app-store/notifications').post(async (ctx: 
     })
     ctx.setStatus(notification.replayed ? 200 : 202)
     ctx.json({ received: true })
-  } catch (error) {
-    if (error instanceof InvalidAppleNotificationError) {
-      ctx.throw(400, error.message)
+  } catch (err) {
+    if (err instanceof InvalidAppleNotificationError) {
+      ctx.throw(400, err.message)
       return
     }
-    throw error
+    throw err
   }
 })

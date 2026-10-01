@@ -83,10 +83,10 @@ export function DirectMessagePageClient({
       setMessages(prev => prependUniqueMessages(prev, result.results))
       setHasMore(result.page_info.has_next_page)
       endCursorRef.current = result.page_info.end_cursor
-    } catch (error) {
+    } catch (err) {
       if (generation === generationRef.current && contextConversationId === conversationId) {
-        setLoadMoreError(error instanceof Error ? error : new Error(String(error)))
-        onError(error, {
+        setLoadMoreError(err instanceof Error ? err : new Error(String(err)))
+        onError(err, {
           fallback: t(
             'extracted.conversationid.conversationPageClient.failedToLoadOlderMessages_a326f2e3',
           ),
@@ -130,9 +130,9 @@ export function DirectMessagePageClient({
             : m,
         ),
       )
-    } catch (error) {
+    } catch (err) {
       setMessages(prev => prev.filter(m => m.id !== optimistic.id))
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.conversationid.conversationPageClient.failedToSendMessage_66b8e077'),
       })
     } finally {

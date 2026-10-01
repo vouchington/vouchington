@@ -88,8 +88,8 @@ describe('crawl-url.errors', () => {
       let thrownError: any
       try {
         await crawlUrlForTest(url!.id)
-      } catch (error) {
-        thrownError = error
+      } catch (err) {
+        thrownError = err
       }
 
       expect(thrownError).toBeInstanceOf(CrawlerRateLimitError)

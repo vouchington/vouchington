@@ -24,9 +24,9 @@ export async function lockRssFetchHostnameOnRateLimit(
   try {
     const lockMs = await setDomainRateLimited(hostnameId, error.retryAfterMs ?? undefined)
     trackDomainRateLimitLocked('rss', getFeedUrlHostnameForAnalytics(feedUrl), lockMs)
-  } catch (lockError) {
+  } catch (err) {
     /* v8 ignore next 2 -- Valkey remains real in tests; forced client failures would destabilize shared test state. */
-    onError(lockError instanceof Error ? lockError : new Error(String(lockError)))
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 

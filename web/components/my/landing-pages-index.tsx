@@ -40,8 +40,8 @@ export function LandingPagesIndex({ username, initialPages }: Props) {
       })
       onSuccess(t('extracted.my.landingPagesIndex.landingPageCreated_528c1170'))
       router.push(myLandingPageHref(landing_page))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.landingPagesIndex.failedToCreateLandingPage_d83f2483'),
       })
       setLoading(false)

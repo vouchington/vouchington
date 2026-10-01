@@ -37,8 +37,8 @@ export function CopyrightStaffGuestCapability({ noticeId }: { noticeId: string }
     void (async () => {
       try {
         await action()
-      } catch (error) {
-        onError(error, { fallback })
+      } catch (err) {
+        onError(err, { fallback })
       } finally {
         pendingRef.current = false
         setPending(false)

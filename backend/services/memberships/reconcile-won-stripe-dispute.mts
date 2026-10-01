@@ -86,9 +86,9 @@ export async function reconcileWonStripeDispute(options: {
   let recovery
   try {
     recovery = await claimWonStripeDisputeRecovery(reversalCase, options.disputeId, target)
-  } catch (error) {
-    if (error instanceof IneligiblePurchaseReversalInProgressError) return true
-    throw error
+  } catch (err) {
+    if (err instanceof IneligiblePurchaseReversalInProgressError) return true
+    throw err
   }
   if (!recovery) return false
   await executeIneligibleStripePurchaseReversal(

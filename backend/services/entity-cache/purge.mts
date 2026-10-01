@@ -41,8 +41,8 @@ export async function purgeCacheTags(tags: readonly string[]): Promise<void> {
       body: JSON.stringify({ tags: tags.slice(0, MAX_TAGS_PER_REQUEST) }),
       signal: AbortSignal.timeout(5000),
     })
-  } catch (error) {
-    throw createHttpError(502, 'Cache purge request failed', { cause: error })
+  } catch (err) {
+    throw createHttpError(502, 'Cache purge request failed', { cause: err })
   }
   if (!response.ok) {
     throw createHttpError(response.status, 'Cache purge request failed', {

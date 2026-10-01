@@ -13,9 +13,9 @@ export async function autoSubscribePostCreator(post: Post, creator?: PrivateUser
 
   try {
     await bookmarkEntity(creator, 'post', { id: post.id }, 'subscribe')
-  } catch (error) {
-    if (error instanceof Error) {
-      const enrichedError = error as ReportableError
+  } catch (err) {
+    if (err instanceof Error) {
+      const enrichedError = err as ReportableError
       enrichedError.tags = { creatorId: creator.id, postId: post.id }
       enrichedError.extra = { context: 'processPostCreated.autoSubscribe' }
       onError(enrichedError)
@@ -23,7 +23,7 @@ export async function autoSubscribePostCreator(post: Post, creator?: PrivateUser
     }
 
     const fallbackError = new Error('Failed to auto-subscribe post creator', {
-      cause: error,
+      cause: err,
     }) as ReportableError
     fallbackError.tags = { creatorId: creator.id, postId: post.id }
     fallbackError.extra = { context: 'processPostCreated.autoSubscribe' }

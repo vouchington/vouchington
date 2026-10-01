@@ -36,9 +36,9 @@ describe('validations', () => {
         user_help_text: 'Test',
       })
       assert.fail('Should have thrown')
-    } catch (error: unknown) {
-      assert.ok(error && typeof error === 'object' && 'status' in error)
-      assert.equal(error.status, 422)
+    } catch (err: unknown) {
+      assert.ok(err && typeof err === 'object' && 'status' in err)
+      assert.equal(err.status, 422)
     }
   })
 
@@ -49,9 +49,9 @@ describe('validations', () => {
         user_help_text: 'Test',
       })
       assert.fail('Should have thrown')
-    } catch (error: unknown) {
-      assert.ok(error && typeof error === 'object' && 'status' in error)
-      assert.equal(error.status, 422)
+    } catch (err: unknown) {
+      assert.ok(err && typeof err === 'object' && 'status' in err)
+      assert.equal(err.status, 422)
     }
   })
 
@@ -141,9 +141,9 @@ describe('validations', () => {
         user_help_text: 'Test',
       })
       assert.fail('Should have thrown')
-    } catch (error: unknown) {
-      assert.ok(error && typeof error === 'object' && 'status' in error)
-      assert.equal(error.status, 403)
+    } catch (err: unknown) {
+      assert.ok(err && typeof err === 'object' && 'status' in err)
+      assert.equal(err.status, 403)
     }
   })
 })

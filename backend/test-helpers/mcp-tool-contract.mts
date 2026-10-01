@@ -47,7 +47,7 @@ export async function callRejectedMcpTool(
     callMcpTool(name, args, caller, scopes, USER_MCP_SERVER_CONFIG),
   ).then(
     result => result,
-    (error: unknown) => error,
+    (err: unknown) => err,
   )
   if (outcome instanceof Error) return outcome.message
   const result = outcome as Awaited<ReturnType<typeof callMcpTool>>

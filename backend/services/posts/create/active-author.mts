@@ -18,10 +18,10 @@ export async function lockActivePostAuthorImageAdmission(
     async () => {
       try {
         await lockActiveUserSubjectsForMutation(query, [creatorId])
-      } catch (error) {
-        if ((error as { code?: string }).code === '23514')
+      } catch (err) {
+        if ((err as { code?: string }).code === '23514')
           throw createHttpError(409, 'Author is not active')
-        throw error
+        throw err
       }
     },
     () => lockAuthorPublicationLifecycle(query, creatorId),

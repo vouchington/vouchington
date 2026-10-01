@@ -120,16 +120,16 @@ export const crawlUrl = async (
     } finally {
       await htmlResult.htmlFile?.cleanup()
     }
-  } catch (error) {
-    const hasRecordedStatus = crawlStatusRecorded || hasRedirectStatusRecorded(error)
+  } catch (err) {
+    const hasRecordedStatus = crawlStatusRecorded || hasRedirectStatusRecorded(err)
     await recordCrawlError({
       crawlId: crawl.id,
       crawlStatusRecorded: hasRecordedStatus,
       dependencies,
-      error,
+      error: err,
       hostname,
       urlId: url.id,
     })
-    throw error
+    throw err
   }
 }

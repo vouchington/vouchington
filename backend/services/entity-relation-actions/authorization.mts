@@ -62,10 +62,10 @@ export async function canLoadBookmarkCommunity(load: () => Promise<unknown>): Pr
   try {
     await load()
     return true
-  } catch (error) {
+  } catch (err) {
     const status =
-      typeof error === 'object' && error !== null && 'status' in error ? error.status : undefined
+      typeof err === 'object' && err !== null && 'status' in err ? err.status : undefined
     if (status === 404) return false
-    throw error
+    throw err
   }
 }

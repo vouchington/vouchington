@@ -1,16 +1,16 @@
 async function loadHusky() {
   try {
     return await import('husky')
-  } catch (error) {
+  } catch (err) {
     if (
-      error instanceof Error &&
-      'code' in error &&
-      error.code === 'ERR_MODULE_NOT_FOUND' &&
-      error.message.includes("package 'husky'")
+      err instanceof Error &&
+      'code' in err &&
+      err.code === 'ERR_MODULE_NOT_FOUND' &&
+      err.message.includes("package 'husky'")
     ) {
       return null
     }
-    throw error
+    throw err
   }
 }
 

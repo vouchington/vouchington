@@ -48,8 +48,8 @@ export async function processUserDeletionExternalWork(
             undefined,
             `user-deletion__${requestId}__stripe__${work.work_key}`,
           )
-        } catch (error) {
-          if (!isStripeMissingCustomerError(error)) throw error
+        } catch (err) {
+          if (!isStripeMissingCustomerError(err)) throw err
         }
       } else if (work.work_kind === 'entity-relation-effects') {
         await processEntityRelationEffects(requestId, work.relation_impact_id)
@@ -57,9 +57,9 @@ export async function processUserDeletionExternalWork(
         throw new Error(`Unsupported user deletion external work kind: ${work.work_kind}`)
       }
     })
-  } catch (error) {
-    await recordExternalWorkFailure(work.id, requestId, processingAttemptId, error)
-    throw error
+  } catch (err) {
+    await recordExternalWorkFailure(work.id, requestId, processingAttemptId, err)
+    throw err
   }
   if (!(await completeExternalWork(work.id, requestId, processingAttemptId))) {
     throw new Error('User deletion attempt lost ownership before completing external work')

@@ -71,12 +71,12 @@ export async function createIndividualCard(
       )
       RETURNING id
     `))
-  } catch (error) {
-    const pgError = error as { code?: string }
+  } catch (err) {
+    const pgError = err as { code?: string }
     if (pgError.code === '23503') {
       assert(false, 422, 'Invalid card_id')
     }
-    throw error
+    throw err
   }
   const card = await getIndividualCardById(currentUser, user, rows[0].id, { readOnly: false })
   assert(card, 500, 'Created card could not be loaded')

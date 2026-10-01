@@ -74,8 +74,8 @@ export async function isLocallyRateLimited(): Promise<boolean> {
       mode: 'stop-on-limited',
     })
     return limited
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
     return false
   }
 }

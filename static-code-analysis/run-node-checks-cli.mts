@@ -27,8 +27,8 @@ export function parseArgs(
     })
     checksCsv = parsed.values.checks ?? ''
     repoRoot = parsed.values['repo-root'] ?? defaultRepoRoot
-  } catch (error) {
-    throw new Error(error instanceof Error ? error.message : String(error), { cause: error })
+  } catch (err) {
+    throw new Error(err instanceof Error ? err.message : String(err), { cause: err })
   }
 
   const checks = checksCsv.split(',').flatMap(check => (check.trim() ? [check.trim()] : []))
@@ -63,8 +63,8 @@ export async function runNodeChecksCli(options: NodeChecksCliOptions): Promise<v
       if (result.errors.length === 0) options.log(`[${result.name}] passed.`)
     }
     if (failed) options.exit(1)
-  } catch (error) {
-    options.error(error instanceof Error ? error.message : String(error))
+  } catch (err) {
+    options.error(err instanceof Error ? err.message : String(err))
     options.exit(2)
   }
 }

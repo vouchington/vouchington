@@ -37,22 +37,22 @@ export async function resolveSafeCrawlerAddresses(
   const startedAt = Date.now()
   try {
     return await dependencies.validateUrl(url, { timeoutMs })
-  } catch (ssrfError) {
+  } catch (err) {
     const duration = Date.now() - startedAt
-    if (ssrfError instanceof dependencies.unsafeUrlError) {
-      throw new CrawlerSsrfError(url, ssrfError.reason)
+    if (err instanceof dependencies.unsafeUrlError) {
+      throw new CrawlerSsrfError(url, err.reason)
     }
     // ssrf-guard rejects a DNS timeout with an Error named `AbortError` whose message is "DNS
     // lookup for … timed out after Nms" — it contains no ENOTFOUND/getaddrinfo/DNS_NULL_ROUTE
     // substring, so the generic CrawlerNetworkError fallback below would misrecord it as
     // network_error: null instead of 'timeout'. Must be checked before that fallback.
-    if (isTimeoutError(ssrfError)) {
-      throw new CrawlerTimeoutError(url, timeoutMs, duration, ssrfError)
+    if (isTimeoutError(err)) {
+      throw new CrawlerTimeoutError(url, timeoutMs, duration, err)
     }
     throw new CrawlerNetworkError(
       url,
       duration,
-      ssrfError instanceof Error ? ssrfError : new Error(String(ssrfError)),
+      err instanceof Error ? err : new Error(String(err)),
     )
   }
 }

@@ -125,9 +125,9 @@ function errorResponse(
 async function captureApiError(request: Promise<unknown>): Promise<ApiError> {
   try {
     await request
-  } catch (error) {
-    if (error instanceof ApiError) return error
-    throw error
+  } catch (err) {
+    if (err instanceof ApiError) return err
+    throw err
   }
   throw new Error('Expected API request to reject')
 }

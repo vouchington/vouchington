@@ -93,8 +93,8 @@ function declaredRepositoryOwner(root: string): string | null | undefined {
   let manifest: unknown
   try {
     manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code === 'ENOENT' ? null : undefined
+  } catch (err) {
+    return (err as NodeJS.ErrnoException).code === 'ENOENT' ? null : undefined
   }
   const repository = (manifest as { repository?: unknown } | null)?.repository
   if (repository === undefined) {

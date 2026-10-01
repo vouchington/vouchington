@@ -100,8 +100,8 @@ function EntityAutocompleteInner<T>({
         const nextResults = await search(q, signal)
         if (signal.aborted) return
         setResults(nextResults)
-      } catch (error) {
-        if (signal.aborted || isAbortError(error)) return
+      } catch (err) {
+        if (signal.aborted || isAbortError(err)) return
         setResults([])
         onSearchError?.()
       }

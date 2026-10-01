@@ -76,8 +76,8 @@ async function handleApiRequest(req: http.IncomingMessage, res: http.ServerRespo
     let isAdmin = false
     try {
       isAdmin = await isAdminDashboardRequest(req)
-    } catch (error) {
-      onError(error instanceof Error ? error : new Error(String(error)))
+    } catch (err) {
+      onError(err instanceof Error ? err : new Error(String(err)))
     }
     if (!isAdmin) {
       res.writeHead(401, { 'Content-Type': 'application/json' })

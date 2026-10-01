@@ -55,9 +55,9 @@ export function getDailyAiCostTotalMicrounits(day = getCurrentUtcDay()): Promise
     return dailyAiCostTotalCache.promise
   }
 
-  const promise = loadDailyAiCostTotalMicrounits(day).catch(error => {
+  const promise = loadDailyAiCostTotalMicrounits(day).catch(err => {
     if (dailyAiCostTotalCache?.promise === promise) dailyAiCostTotalCache = null
-    throw error as Error
+    throw err as Error
   })
   dailyAiCostTotalCache = { day, expiresAt: now + DAILY_AI_COST_TOTAL_CACHE_TTL_MS, promise }
   return promise
@@ -69,9 +69,9 @@ export function refreshDailyAiCostTotalMicrounits(): Promise<DailyAiCostTotal> {
   if (dailyAiCostTotalRefresh?.day === day) return dailyAiCostTotalRefresh.promise
 
   const promise = loadDailyAiCostTotalMicrounits(day)
-    .catch(error => {
+    .catch(err => {
       if (dailyAiCostTotalCache?.promise === promise) dailyAiCostTotalCache = null
-      throw error as Error
+      throw err as Error
     })
     .finally(() => {
       if (dailyAiCostTotalRefresh?.promise === promise) dailyAiCostTotalRefresh = null
@@ -115,9 +115,9 @@ async function loadDailyAiCostTotalMicrounits(day: string): Promise<DailyAiCostT
 export function parseDailyTotalMicrounits(value: string): number {
   try {
     return parsePostgresMoneyAmount(value)
-  } catch (error) {
-    if (error instanceof RangeError) return MAX_MONEY_AMOUNT
-    throw error as Error
+  } catch (err) {
+    if (err instanceof RangeError) return MAX_MONEY_AMOUNT
+    throw err as Error
   }
 }
 

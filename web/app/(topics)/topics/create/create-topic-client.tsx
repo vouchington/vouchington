@@ -74,8 +74,8 @@ function CreateTopicPageContent() {
         source_topic_alias_id: sourceTopicAliasId,
       })
       push(topicManagementHref(topic))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.create.createTopicClient.failedToCreateTopic_f25ea5ce'),
         tags: { form: 'create-topic' },
       })

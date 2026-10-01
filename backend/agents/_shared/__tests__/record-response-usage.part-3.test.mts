@@ -112,7 +112,7 @@ describe('callRecordingAgentResponseUsage attempt hooks', () => {
         recordAgentResponseUsage: vi.fn<typeof recordAgentResponseUsage>(),
       },
     )
-    const callRejection = call.catch((error: unknown) => error)
+    const callRejection = call.catch((err: unknown) => err)
 
     await vi.waitFor(() =>
       expect(latchAccountingUncertainty).toHaveBeenCalledExactlyOnceWith({

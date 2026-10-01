@@ -56,16 +56,16 @@ async function performDomainValidation(normalizedDomain: string): Promise<Domain
     const mxRecords = await resolveMxRecordsForValidation(normalizedDomain)
     if (!mxRecords || mxRecords.length === 0)
       return { success: false, reason: 'no MX records found' }
-  } catch (error) {
+  } catch (err) {
     // DnsTimeoutError is transient — throw EmailDomainInvalidError so it propagates
     // uncached: cacheGetByAny does not cache thrown errors. Caching a timeout would
     // mark a valid domain as invalid for the full TTL.
-    if (error instanceof DnsTimeoutError) {
-      throw new EmailDomainInvalidError(normalizedDomain, `DNS error: ${error.message}`)
+    if (err instanceof DnsTimeoutError) {
+      throw new EmailDomainInvalidError(normalizedDomain, `DNS error: ${err.message}`)
     }
     return {
       success: false,
-      reason: `DNS error: ${error instanceof Error ? error.message : 'unknown error'}`,
+      reason: `DNS error: ${err instanceof Error ? err.message : 'unknown error'}`,
     }
   }
 

@@ -47,11 +47,11 @@ function retryDelayMs(error: unknown): number {
 export async function withSingleRetry<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation()
-  } catch (error) {
-    if (!isRetryableDispatchError(error)) {
-      throw error
+  } catch (err) {
+    if (!isRetryableDispatchError(err)) {
+      throw err
     }
-    await new Promise(resolve => setTimeout(resolve, retryDelayMs(error)))
+    await new Promise(resolve => setTimeout(resolve, retryDelayMs(err)))
     return operation()
   }
 }

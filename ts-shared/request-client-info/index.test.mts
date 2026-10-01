@@ -27,8 +27,8 @@ describe('request client information contract', () => {
     let caught: unknown
     try {
       parseClientHeaders({})
-    } catch (error) {
-      caught = error
+    } catch (err) {
+      caught = err
     }
 
     expect(caught).toBeInstanceOf(ClientInfoValidationError)

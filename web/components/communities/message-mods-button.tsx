@@ -26,8 +26,8 @@ export default function MessageModsButton({ communitySlug, onOpened }: Props) {
       const href = modmailThreadHref(communitySlug, thread)
       onOpened?.(href)
       router.push(href)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.communities.messageModsButton.failedToOpenMessageThreadWith_eeb857ec',
         ),

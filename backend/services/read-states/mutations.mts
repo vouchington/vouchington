@@ -8,11 +8,11 @@ export async function markRead(
   entityId: string,
 ): Promise<void> {
   const query = markReadSql(type)
-  await write(query, [currentUserId, entityId]).catch((error: unknown) => {
-    if ((error as { code?: string }).code === '23503') {
+  await write(query, [currentUserId, entityId]).catch((err: unknown) => {
+    if ((err as { code?: string }).code === '23503') {
       assert(false, 404, 'Target entity not found')
     }
-    throw error
+    throw err
   })
 }
 

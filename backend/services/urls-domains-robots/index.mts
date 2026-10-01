@@ -60,9 +60,9 @@ const fetchRobotsTxtWithRetry = async (
             url,
             maxSizeBytes: MAX_ROBOTS_TXT_BYTES,
           })
-        } catch (error) {
-          if (error instanceof HttpResponseSizeError) return ALLOW_ROBOTS_TXT
-          throw error
+        } catch (err) {
+          if (err instanceof HttpResponseSizeError) return ALLOW_ROBOTS_TXT
+          throw err
         }
       }
 
@@ -83,8 +83,8 @@ const fetchRobotsTxtWithRetry = async (
       throw new Error(
         `Failed to fetch robots.txt for ${domain}: ${status}${statusText ? ` ${statusText}` : ''}`,
       )
-    } catch (error) {
-      if (dependencies.isNetworkError(error)) {
+    } catch (err) {
+      if (dependencies.isNetworkError(err)) {
         if (attempt < MAX_RETRIES) {
           // oxlint-disable-next-line no-await-in-loop -- network retry backoff must finish before the next request
           await delay(RETRY_DELAY_MS)
@@ -93,13 +93,13 @@ const fetchRobotsTxtWithRetry = async (
         return ALLOW_ROBOTS_TXT
       }
 
-      if (dependencies.isRetryableError(error, lastStatus) && attempt < MAX_RETRIES) {
+      if (dependencies.isRetryableError(err, lastStatus) && attempt < MAX_RETRIES) {
         // oxlint-disable-next-line no-await-in-loop -- retryable-error backoff must finish before the next request
         await delay(RETRY_DELAY_MS)
         continue
       }
 
-      throw error
+      throw err
     }
   }
 

@@ -98,15 +98,15 @@ export function DisputeReviewDialog({
       })
       dispatch({ type: 'set_submitted' })
       turnstile.reset()
-    } catch (error) {
+    } catch (err) {
       dispatch({
         type: 'set_error',
         value:
-          error instanceof Error
-            ? error.message
+          err instanceof Error
+            ? err.message
             : t('extracted.disputes.disputeReviewDialog.failedToSubmit_7ad354a8'),
       })
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.disputes.disputeReviewDialog.anErrorOccurred_ddf785b7'),
       })
       turnstile.reset()

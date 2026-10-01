@@ -47,8 +47,8 @@ export async function sanitizeRssFeedItemContentHtml(
     })
     const result = absolutizeSideloadImageSources(sanitized.html.toString('utf8').trim())
     return result || null
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
     return null
   }
 }
@@ -115,8 +115,8 @@ export async function sanitizeRssFeedItemContentHtmlBatch(
           const html = serialized ? absolutizeSideloadImageSources(serialized) : undefined
           if (html) result[chunk[i]!.id] = html
         }
-      } catch (error) {
-        onError(error instanceof Error ? error : new Error(String(error)))
+      } catch (err) {
+        onError(err instanceof Error ? err : new Error(String(err)))
       }
     }),
   )

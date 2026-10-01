@@ -31,8 +31,8 @@ const server = createServer((request, response) => {
     response.setHeader('ETag', result.etag)
     response.setHeader('Cache-Control', `public, max-age=${result.ttlSeconds}`)
     response.writeHead(result.status).end(result.body)
-  } catch (error) {
-    console.error(error)
+  } catch (err) {
+    console.error(err)
     response.writeHead(500).end()
   }
 })

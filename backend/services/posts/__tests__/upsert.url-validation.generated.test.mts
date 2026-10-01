@@ -34,7 +34,9 @@ describe('upsert.generated (url validation)', () => {
       m => m.subject_type === 'post' && m.object_type === 'url' && m.predicate === 'related',
     )!
 
-    const error = await upsertEntityRelation(user!, metadata, post, [{ id: urlId }]).catch(e => e)
+    const error = await upsertEntityRelation(user!, metadata, post, [{ id: urlId }]).catch(
+      err => err,
+    )
     expect(error.status).toBe(422)
     expect(error.message).toMatch(/blocked/)
   }, 60_000)
@@ -59,7 +61,9 @@ describe('upsert.generated (url validation)', () => {
       m => m.subject_type === 'post' && m.object_type === 'url' && m.predicate === 'related',
     )!
 
-    const error = await upsertEntityRelation(user!, metadata, post, [{ id: urlId }]).catch(e => e)
+    const error = await upsertEntityRelation(user!, metadata, post, [{ id: urlId }]).catch(
+      err => err,
+    )
     expect(error.status).toBe(422)
     expect(error.message).toMatch(/referral/i)
 
@@ -106,7 +110,7 @@ describe('upsert.generated (url validation)', () => {
     const error = await upsertEntityRelation(user!, metadata, post, [
       { id: okUrlId },
       { id: refUrlId },
-    ]).catch(e => e)
+    ]).catch(err => err)
     expect(error.status).toBe(422)
     expect(error.message).toMatch(/referral/i)
 

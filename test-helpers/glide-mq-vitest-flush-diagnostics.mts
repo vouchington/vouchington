@@ -58,13 +58,13 @@ export function captureFlushDiagnostics(
       workers,
       pendingJobs,
     }
-  } catch (captureError) {
+  } catch (err) {
     return {
       isPaused: false,
       waitingQueueLength: -1,
       workers: [],
       pendingJobs: pendingJobIds.map(jobId => ({ jobId, state: undefined, inWaitingQueue: false })),
-      captureError: captureError instanceof Error ? captureError.message : String(captureError),
+      captureError: err instanceof Error ? err.message : String(err),
     }
   }
 }

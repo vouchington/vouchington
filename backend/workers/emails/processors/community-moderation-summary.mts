@@ -76,9 +76,9 @@ export const processSendCommunityModerationSummaryEmail = async (
         /* c8 ignore next -- Defensive observability for concurrent processor races. */
         reportModerationMarkSkipped(input.userId, input.trackingKey)
       }
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next -- Avoid retrying after SES accepted the message. */
-      reportModerationMarkFailed(error, input.userId, input.trackingKey)
+      reportModerationMarkFailed(err, input.userId, input.trackingKey)
     }
   }
   return result

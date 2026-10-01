@@ -33,13 +33,13 @@ export default class GlideMqWorkerAttachmentGuardRunner extends SharedDbScopeGua
     this.#baselines.set(filepath, baseline)
     try {
       await super.importFile(filepath, source)
-    } catch (error) {
+    } catch (err) {
       const queueNames = getUnexpectedAttachedTestWorkerQueueNames(baseline)
-      if (queueNames.length === 0) throw error
+      if (queueNames.length === 0) throw err
       const leakError = createWorkerAttachmentLeakError(queueNames)
       throw new Error(
-        `${error instanceof Error ? error.message : String(error)}\n\n${leakError.message}`,
-        { cause: error },
+        `${err instanceof Error ? err.message : String(err)}\n\n${leakError.message}`,
+        { cause: err },
       )
     }
   }
@@ -54,14 +54,14 @@ export default class GlideMqWorkerAttachmentGuardRunner extends SharedDbScopeGua
       const queueNames = getUnexpectedAttachedTestWorkerQueueNames(baseline)
       if (queueNames.length === 0) return
       throw createWorkerAttachmentLeakError(queueNames)
-    } catch (error) {
+    } catch (err) {
       const result = suite.result
-      if (!result) throw error
+      if (!result) throw err
       if (!result.errors) result.errors = []
       result.errors.push(
-        error instanceof Error
-          ? { message: error.message, name: error.name, stack: error.stack }
-          : { message: String(error) },
+        err instanceof Error
+          ? { message: err.message, name: err.name, stack: err.stack }
+          : { message: String(err) },
       )
       result.state = 'fail'
     }

@@ -42,13 +42,13 @@ app.route('/api/v1/membership-grants').post(async (ctx: Context) => {
       body.sku_id,
       body.duration_days,
     )
-  } catch (error) {
-    if (error instanceof InvalidMembershipGrantSkuError) ctx.throw(400, 'Invalid sku_id')
-    if (error instanceof InvalidMembershipGrantUserError) ctx.throw(400, 'Invalid user_id')
-    if (error instanceof Error && 'code' in error && (error as { code: string }).code === '23503') {
+  } catch (err) {
+    if (err instanceof InvalidMembershipGrantSkuError) ctx.throw(400, 'Invalid sku_id')
+    if (err instanceof InvalidMembershipGrantUserError) ctx.throw(400, 'Invalid user_id')
+    if (err instanceof Error && 'code' in err && (err as { code: string }).code === '23503') {
       ctx.throw(400, 'Invalid user_id')
     }
-    throw error
+    throw err
   }
 
   ctx.setStatus(201)

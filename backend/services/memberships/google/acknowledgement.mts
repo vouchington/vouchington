@@ -100,12 +100,12 @@ export async function acknowledgeGooglePlayPurchase(options: {
     }
     await completeGoogleAcknowledgement(claim)
     return 'acknowledged'
-  } catch (error) {
-    if (error instanceof GooglePlaySubscriptionLookupError && error.invalidPurchaseToken) {
+  } catch (err) {
+    if (err instanceof GooglePlaySubscriptionLookupError && err.invalidPurchaseToken) {
       await skipGoogleAcknowledgement(claim)
       return 'skipped'
     }
-    await deferGoogleAcknowledgement(claim, error)
+    await deferGoogleAcknowledgement(claim, err)
     return 'deferred'
   }
 }

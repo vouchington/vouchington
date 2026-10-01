@@ -63,8 +63,8 @@ export function RewardsProgramStatusesManager({ initialPage }: Props) {
         setNewStatusLabel('')
         onSuccess(t('extracted.my.rewardsProgramStatusesManager.statusAdded_f8b22451'))
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.rewardsProgramStatusesManager.failedToAddStatus_1388f323'),
       })
     } finally {
@@ -109,8 +109,8 @@ export function RewardsProgramStatusesManager({ initialPage }: Props) {
         setEditingId(currentEditingId => (currentEditingId === id ? null : currentEditingId))
         onSuccess(t('extracted.my.rewardsProgramStatusesManager.statusUpdated_b8220be6'))
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.rewardsProgramStatusesManager.failedToUpdateStatus_9e93be01'),
       })
     } finally {
@@ -133,14 +133,14 @@ export function RewardsProgramStatusesManager({ initialPage }: Props) {
         })
         onSuccess(t('extracted.my.rewardsProgramStatusesManager.statusRemoved_ce6378df'))
       })
-    } catch (error) {
+    } catch (err) {
       setDeletedIds(previous => {
         const next = new Set(previous)
         next.delete(id)
         return next
       })
       if (status) setUpserts(previous => new Map(previous).set(id, status))
-      onError(error, {
+      onError(err, {
         fallback: t('extracted.my.rewardsProgramStatusesManager.failedToRemoveStatus_9bb59413'),
       })
     } finally {

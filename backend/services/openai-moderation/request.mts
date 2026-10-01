@@ -48,8 +48,8 @@ export const createOpenAIModeration = async (
       success: true,
     })
     return response.results
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error'
     trackAIModerationCall({
       service: 'openai',
       model,
@@ -58,6 +58,6 @@ export const createOpenAIModeration = async (
       success: false,
       errorType: errorMessage,
     })
-    throw error
+    throw err
   }
 }

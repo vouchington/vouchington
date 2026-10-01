@@ -58,14 +58,14 @@ export async function deliverActivityToInbox(
   let resolvedAddresses
   try {
     resolvedAddresses = await deps.validateUrl(input.inboxUrl, { timeoutMs: DNS_TIMEOUT_MS })
-  } catch (error) {
-    if (error instanceof UnsafeUrlError) {
-      throw createHttpError(422, `Unsafe delivery inbox URL: ${error.reason}`)
+  } catch (err) {
+    if (err instanceof UnsafeUrlError) {
+      throw createHttpError(422, `Unsafe delivery inbox URL: ${err.reason}`)
     }
     // A DNS/SSRF resolution timeout must stay status-less so the worker's wrapHttpForRetry
     // (processors.mts) keeps this delivery job retryable rather than treating it as a permanent
     // failure — mirrors the same contract for a non-2xx delivery response below.
-    throw error
+    throw err
   }
 
   const body = JSON.stringify(input.activity)

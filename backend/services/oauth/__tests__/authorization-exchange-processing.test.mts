@@ -94,7 +94,7 @@ describe('OAuth authorization provider exchange processing', () => {
     vi.mocked(dependencies.releaseClaim).mockRejectedValue(releaseFailure)
 
     const error = await processOAuthAuthorizationExchange('flow-id', dependencies).catch(
-      caught => caught as AggregateError,
+      err => err as AggregateError,
     )
 
     expect(error).toBeInstanceOf(AggregateError)

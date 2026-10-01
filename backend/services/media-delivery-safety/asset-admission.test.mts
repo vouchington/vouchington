@@ -162,7 +162,7 @@ describe('asset admission root domain', () => {
             })
       ).then(
         () => null,
-        error => error as Error,
+        err => err as Error,
       )
       try {
         await vi.waitFor(async () =>

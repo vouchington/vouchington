@@ -99,8 +99,8 @@ exit 0
         },
       })
       stdout = result.stdout
-    } catch (error: unknown) {
-      const execError = error as { stdout?: string; code?: number }
+    } catch (err: unknown) {
+      const execError = err as { stdout?: string; code?: number }
       stdout = execError.stdout ?? ''
       exitCode = execError.code ?? 1
     }

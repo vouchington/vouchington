@@ -87,7 +87,7 @@ describe('processReconcileCopyrightAgentDispatches', () => {
 
       const failure = await processReconcileCopyrightAgentDispatches({ ...deps, getPending }).then(
         () => null,
-        (error: unknown) => error,
+        (err: unknown) => err,
       )
 
       expect(failure).toBeInstanceOf(AggregateError)

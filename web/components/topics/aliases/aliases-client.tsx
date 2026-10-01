@@ -66,8 +66,8 @@ export function AliasesClient({
       setRemovedAliases(new Set())
       form.reset()
       onSuccess(t('extracted.aliases.aliasesClient.aliasesAdded_4d79744f'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.aliases.aliasesClient.failedToAddAliases_a95c6117'),
         tags: { form: 'admin-topic-aliases' },
       })
@@ -86,8 +86,8 @@ export function AliasesClient({
           alias: alias.alias,
         }),
       )
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.aliases.aliasesClient.failedToDeleteAlias_1aa98dd4'),
         tags: { form: 'admin-topic-aliases' },
       })

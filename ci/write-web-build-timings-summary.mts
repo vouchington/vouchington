@@ -54,10 +54,10 @@ function main(): void {
 
 try {
   main()
-} catch (error) {
+} catch (err) {
   process.stderr.write(
     `write-web-build-timings-summary: best-effort instrumentation failed, continuing: ${
-      error instanceof Error ? error.message : String(error)
+      err instanceof Error ? err.message : String(err)
     }\n`,
   )
 }

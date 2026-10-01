@@ -96,8 +96,8 @@ export function createLogFetchers({
         // A fresh collector per attempt drops partial diagnostics from a failed stream.
         const log = await collectDiagnosticWindow(streamLog(path))
         return fitDiagnosticWindow(log, maxRetainedBytes)
-      } catch (error) {
-        if (attempt === 3 || !isRetryableGhApiError(error)) throw error
+      } catch (err) {
+        if (attempt === 3 || !isRetryableGhApiError(err)) throw err
         await (sleep ?? (ms => new Promise(resolve => setTimeout(resolve, ms))))(attempt * 1000)
       }
     }

@@ -60,9 +60,9 @@ async function isUtf8File(filePath: string): Promise<boolean> {
     }
     decoder.decode()
     return true
-  } catch (error) {
-    if (error instanceof TypeError) return false
-    throw error
+  } catch (err) {
+    if (err instanceof TypeError) return false
+    throw err
   }
 }
 

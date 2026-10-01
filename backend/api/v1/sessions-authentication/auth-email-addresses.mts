@@ -41,9 +41,9 @@ app.route('/api/v1/auth/email-address/tokens').post(async (ctx: Context) => {
   let body: EmailAddressTokenBody
   try {
     body = normalizeEmailAddressJsonBody((await ctx.request.json('100kb')) as EmailAddressTokenBody)
-  } catch (error) {
+  } catch (err) {
     await ctx.applyRouteRateLimit(routeKey)
-    throw error
+    throw err
   }
   await applyEmailAddressRouteRateLimit(ctx, routeKey, body)
 
@@ -80,9 +80,9 @@ app.route('/api/v1/auth/email-address/login').post(async (ctx: Context) => {
   let body: EmailAddressLoginBody
   try {
     body = normalizeEmailAddressJsonBody((await ctx.request.json('100kb')) as EmailAddressLoginBody)
-  } catch (error) {
+  } catch (err) {
     await ctx.applyRouteRateLimit(routeKey)
-    throw error
+    throw err
   }
   await applyEmailAddressRouteRateLimit(ctx, routeKey, body)
 

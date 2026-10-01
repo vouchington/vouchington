@@ -68,16 +68,16 @@ app.route('/api/v1/my/import/topics').post(async (ctx: Context) => {
       callerCanReplayIdempotencyIdentity: importIdentity.callerCanReplay,
       membershipPlan,
     })
-  } catch (error) {
-    if (error instanceof TopicImportInProgressError) {
-      ctx.set('Retry-After', String(error.retryAfterSeconds))
+  } catch (err) {
+    if (err instanceof TopicImportInProgressError) {
+      ctx.set('Retry-After', String(err.retryAfterSeconds))
       ctx.throw(
         409,
         'This topic import is still being processed. Please retry.',
         CONTRIBUTION_ADMISSION_IN_PROGRESS,
       )
     }
-    throw error
+    throw err
   }
   ctx.json(apiResponse('POST:/api/v1/my/import/topics', { results }))
 })

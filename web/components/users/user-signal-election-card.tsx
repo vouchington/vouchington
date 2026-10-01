@@ -80,9 +80,9 @@ function UserSignalElectionCardContent({
       await submitVote(userId, action.choice)
       toast.success(action.successMessage)
       onVoteSubmitted?.(action.choice)
-    } catch (error) {
+    } catch (err) {
       setSelectedChoice(previousChoice)
-      if (isEmailVerificationRequired(error)) {
+      if (isEmailVerificationRequired(err)) {
         emailRecovery?.openEmailVerificationRecovery()
       } else {
         toast.error(errorMessage)
@@ -100,9 +100,9 @@ function UserSignalElectionCardContent({
     try {
       if (!clearVote) return
       await clearVote(userId)
-    } catch (error) {
+    } catch (err) {
       setSelectedChoice(previousChoice)
-      if (isEmailVerificationRequired(error)) {
+      if (isEmailVerificationRequired(err)) {
         emailRecovery?.openEmailVerificationRecovery()
       } else {
         toast.error(errorMessage)

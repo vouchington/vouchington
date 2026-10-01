@@ -104,11 +104,9 @@ export async function recordAgentResponseUsage(
       registration,
       createdAt,
     })
-  } catch (error) {
+  } catch (err) {
     onError(
-      error instanceof Error
-        ? error
-        : new Error('OpenAI usage ledger write failed', { cause: error }),
+      err instanceof Error ? err : new Error('OpenAI usage ledger write failed', { cause: err }),
     )
     const requestDay = getUtcDayFromDate(registration?.lease?.createdAt ?? createdAt ?? new Date())
     await latchUncertainty({ requestDay, source: 'ledger_write_failed' })
@@ -173,16 +171,16 @@ export async function callRecordingAgentResponseUsage<T>(
     response = await runWithOpenAIResponseAttemptHooks(attemptHooks, () =>
       background ? runWithBackgroundResponseHooks(background.hooks, fn) : fn(),
     )
-  } catch (error) {
-    if (error instanceof OpenAIResponseNotCompletedError) {
+  } catch (err) {
+    if (err instanceof OpenAIResponseNotCompletedError) {
       await recordUsage({
-        response: error,
+        response: err,
         ...params,
         registration: background?.getRegistration(),
         createdAt: requestStartedAt,
       })
     }
-    throw error
+    throw err
   }
   await recordUsage({
     response: response as OpenAIResponse,

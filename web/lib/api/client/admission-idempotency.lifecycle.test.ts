@@ -141,7 +141,7 @@ describe('AdmissionIdempotency lifecycle', () => {
       })
       const secondOutcome = secondRequest.then(
         () => ({ error: undefined }),
-        error => ({ error }),
+        err => ({ error: err }),
       )
 
       await vi.waitFor(() => expect(persistedOwnerCount(storage)).toBe(2))

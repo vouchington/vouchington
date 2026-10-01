@@ -184,8 +184,8 @@ function wrap<Keys extends unknown[]>(fn: InvalidateFunction<Keys>): InvalidateF
   return async (...keys: Keys): Promise<void> => {
     try {
       return await fn(...keys)
-    } catch (error) {
-      onError(error as Error)
+    } catch (err) {
+      onError(err as Error)
     }
   }
 }

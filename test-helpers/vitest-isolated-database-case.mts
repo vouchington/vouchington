@@ -104,8 +104,8 @@ export async function runIsolatedDatabaseCase(caseId: IsolatedDatabaseCaseId): P
       120_000,
     )
     assertIsolatedDatabaseCaseRan(caseId, childOutput)
-  } catch (error) {
-    primaryFailure = error
+  } catch (err) {
+    primaryFailure = err
   }
   if (created) {
     try {
@@ -117,15 +117,15 @@ export async function runIsolatedDatabaseCase(caseId: IsolatedDatabaseCaseId): P
         adminEnv,
         60_000,
       )
-    } catch (cleanupFailure) {
+    } catch (err) {
       if (primaryFailure) {
         throw new AggregateError(
-          [primaryFailure, cleanupFailure],
+          [primaryFailure, err],
           `Isolated database case ${caseId} failed: ${stringFromUnknown(primaryFailure)}; cleanup also failed`,
-          { cause: cleanupFailure },
+          { cause: err },
         )
       }
-      throw cleanupFailure
+      throw err
     }
   }
   if (primaryFailure instanceof Error) throw primaryFailure
@@ -141,11 +141,11 @@ async function command(
   try {
     const result = await exec(file, args, { cwd: root, env, timeout, maxBuffer: 4_000_000 })
     return result.stdout
-  } catch (error) {
-    const failure = error as { stdout?: string; stderr?: string }
+  } catch (err) {
+    const failure = err as { stdout?: string; stderr?: string }
     const output = `${failure.stdout ?? ''}\n${failure.stderr ?? ''}`.trim()
     throw new Error(`Isolated database case command ${file} failed:\n${output.slice(-8_000)}`, {
-      cause: error,
+      cause: err,
     })
   }
 }

@@ -30,8 +30,8 @@ export async function publishFailedImageState(
         blocked: false,
       })
       return
-    } catch (error) {
-      lastError = error
+    } catch (err) {
+      lastError = err
       if (attempt < ATTEMPTS) {
         // oxlint-disable-next-line no-await-in-loop -- backoff before the next publish attempt
         await new Promise(resolve => setTimeout(resolve, RETRY_MS))

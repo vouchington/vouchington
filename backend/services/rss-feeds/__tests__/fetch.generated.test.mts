@@ -59,10 +59,10 @@ describe('fetch.generated', () => {
         // Feed should have last_fetched_at set (though update returns undefined if no changes)
         // We can verify by fetching again and checking it doesn't throw the rate limit error immediately
         await expect(fetchRssFeed(feed.id, 0)).resolves.toBeDefined()
-      } catch (error: unknown) {
+      } catch (err: unknown) {
         // Skip test if network is unavailable or external feed returns HTTP error
-        if (isCrawlerOrNetworkError(error)) return
-        throw error
+        if (isCrawlerOrNetworkError(err)) return
+        throw err
       }
     },
     15_000,
@@ -159,10 +159,10 @@ describe('fetch.generated', () => {
         // Should not throw when ttl=0
         const result = await fetchRssFeed(feed.id, 0)
         expect(Array.isArray(result)).toBe(true)
-      } catch (error: unknown) {
+      } catch (err: unknown) {
         // Skip test if network is unavailable or external feed returns HTTP error
-        if (isCrawlerOrNetworkError(error)) return
-        throw error
+        if (isCrawlerOrNetworkError(err)) return
+        throw err
       }
     },
     15_000,

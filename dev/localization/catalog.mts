@@ -46,9 +46,9 @@ export async function runCatalogCli(args: readonly string[]): Promise<void> {
     if (consumer !== undefined) remove.push('--consumer', consumer)
     try {
       return await runLocalizationCli(remove)
-    } catch (error) {
-      if (error instanceof CatalogRowNotFoundError) return
-      throw error
+    } catch (err) {
+      if (err instanceof CatalogRowNotFoundError) return
+      throw err
     }
   }
   throw new Error(usage())
@@ -104,23 +104,23 @@ async function csvImport(input: string, output: string): Promise<void> {
         promoted.push(name)
       }
       committed = true
-    } catch (error) {
+    } catch (err) {
       try {
         for (const name of promoted) rmSync(join(output, name), { recursive: true, force: true })
         for (const name of parked) renameSync(join(backup, name), join(output, name))
       } catch {
         retainBackup = true
       }
-      throw error
+      throw err
     }
-  } catch (error) {
-    failed = error
+  } catch (err) {
+    failed = err
   } finally {
     try {
       rmSync(staging, { recursive: true, force: true })
       if (backup !== undefined && !retainBackup) rmSync(backup, { recursive: true, force: true })
-    } catch (error) {
-      if (failed === undefined && !committed) failed = error
+    } catch (err) {
+      if (failed === undefined && !committed) failed = err
     }
   }
   if (failed instanceof Error) throw failed

@@ -105,20 +105,20 @@ export function useNewsCommunityDiscussionAction({
           : getCanonicalPostPath(response.post)
       onCreated?.(href)
       push(href)
-    } catch (error) {
-      if (isEmailVerificationRequired(error)) {
+    } catch (err) {
+      if (isEmailVerificationRequired(err)) {
         setIsSubmitting(false)
         emailRecovery?.openEmailVerificationRecovery()
         return
       }
-      if (error instanceof ApiError && error.code === 'IDENTITY_REQUIRED') {
+      if (err instanceof ApiError && err.code === 'IDENTITY_REQUIRED') {
         setOpen(false)
         setUsernameDialogOpen(true)
         setIsSubmitting(false)
         return
       }
       turnstile.reset()
-      onError(error, {
+      onError(err, {
         fallback: t(
           'extracted.news.newsCommunityDiscussionAction.couldNotStartDiscussion_6132b3d7',
         ),

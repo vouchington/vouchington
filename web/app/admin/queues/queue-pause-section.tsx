@@ -90,8 +90,8 @@ export function QueuePauseSection({
         setPaused(true)
         onSuccess(copy.disabledMessage)
       }
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: copy.errorFallback,
         tags: { form: errorForm },
       })

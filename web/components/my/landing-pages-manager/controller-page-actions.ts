@@ -54,8 +54,8 @@ export function useLandingPagePageActions({
     try {
       const response = await getMyLandingPageClient(pageId)
       if (requestId === latestLoadRequestId.current) setActivePage(response.landing_page)
-    } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : 'Failed to load landing page')
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed to load landing page')
     } finally {
       if (requestId === latestLoadRequestId.current) setLoading(false)
     }
@@ -109,7 +109,7 @@ export function useLandingPagePageActions({
   }
 
   function selectPage(pageId: string) {
-    loadPage(pageId).catch(error => showLandingPageError(error, 'Failed to load landing page'))
+    loadPage(pageId).catch(err => showLandingPageError(err, 'Failed to load landing page'))
   }
 
   async function deletePage() {

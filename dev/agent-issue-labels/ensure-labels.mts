@@ -106,8 +106,8 @@ if (import.meta.main) {
           ...(update ? ['--force'] : []),
           ...repoArgs,
         ])
-      } catch (createError) {
-        if (update) throw createError
+      } catch (err) {
+        if (update) throw err
         try {
           await execFileAsync('gh', [
             'api',
@@ -115,7 +115,7 @@ if (import.meta.main) {
             '--silent',
           ])
         } catch {
-          throw createError
+          throw err
         }
       }
       existing.add(label)

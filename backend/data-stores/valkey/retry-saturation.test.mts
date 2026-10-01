@@ -15,8 +15,8 @@ describe('retryCacheSaturation', () => {
       retrySaturationError: async operation => {
         try {
           return await operation()
-        } catch (error) {
-          if (!(error instanceof SaturationError)) throw error
+        } catch (err) {
+          if (!(err instanceof SaturationError)) throw err
           return operation()
         }
       },

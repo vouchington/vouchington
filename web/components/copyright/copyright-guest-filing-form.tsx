@@ -45,8 +45,8 @@ export function CopyrightGuestFilingForm({ noticeId }: { noticeId: string }) {
         onSuccess('Filing received. It does not change the original receipt time.')
         setStatement('')
         turnstile.reset()
-      } catch (error) {
-        onError(error, { fallback: 'Could not file' })
+      } catch (err) {
+        onError(err, { fallback: 'Could not file' })
       }
     })
   }

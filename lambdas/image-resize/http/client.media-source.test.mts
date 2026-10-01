@@ -31,7 +31,7 @@ describe('sideload source hops', () => {
       {
         fetchWithPinnedDns,
       },
-    ).catch((error: unknown) => error)
+    ).catch((err: unknown) => err)
 
     expect(err).toBeInstanceOf(HttpOperationError)
     expect((err as HttpOperationError).statusCode).toBe(403)
@@ -45,7 +45,7 @@ describe('sideload source hops', () => {
 
     const err = await fetchImageFromUrl('https://cdn.example/photo.jpg', undefined, undefined, {
       fetchWithPinnedDns,
-    }).catch((error: unknown) => error)
+    }).catch((err: unknown) => err)
 
     expect(err).toBeInstanceOf(HttpOperationError)
     expect((err as HttpOperationError).statusCode).toBe(403)
@@ -59,7 +59,7 @@ describe('sideload source hops', () => {
       undefined,
       undefined,
       { fetchWithPinnedDns },
-    ).catch((error: unknown) => error)
+    ).catch((err: unknown) => err)
 
     expect(err).toBeInstanceOf(HttpOperationError)
     expect((err as HttpOperationError).statusCode).toBe(403)

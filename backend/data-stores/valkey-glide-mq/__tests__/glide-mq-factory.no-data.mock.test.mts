@@ -234,7 +234,7 @@ describe('glide-mq-factory', () => {
         trackJobEnqueue: mockTrackJobEnqueue,
       })
 
-      const promiseRejection = enqueue({ id: '1' }).catch((error: unknown) => error)
+      const promiseRejection = enqueue({ id: '1' }).catch((err: unknown) => err)
       await vi.advanceTimersByTimeAsync(MAX_RETRY_DELAY_MS * 2)
       await expect(promiseRejection).resolves.toBe(transientError)
 

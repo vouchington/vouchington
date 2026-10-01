@@ -172,11 +172,11 @@ export async function handleSentryTunnel(request: Request, env: Env): Promise<Re
       body: envelope,
       headers: { 'content-type': 'application/x-sentry-envelope' },
     })
-  } catch (error) {
+  } catch (err) {
     logSentryTunnelForwardFailure(
       request,
       projectId,
-      error,
+      err,
       readSentryEnvelopeDiagnostics(envelope, MAX_ENVELOPE_BYTES),
     )
     return edgeErrorResponse(502, 'Bad Gateway', 'BAD_GATEWAY')

@@ -15,10 +15,10 @@ export async function recordStaffOperation<T>(
   let result: T
   try {
     result = await execute()
-  } catch (error) {
+  } catch (err) {
     // Do not persist arbitrary provider errors: they can include credentials or private payloads.
     await recordOutcome(actorId, input, operationRequestId, 'failed')
-    throw error
+    throw err
   }
   await recordOutcome(
     actorId,
@@ -43,10 +43,10 @@ async function recordOutcome(
       operationRequestId,
       metadata: { ...summarize?.(), phase: 'finished', outcome },
     })
-  } catch (error) {
+  } catch (err) {
     // Execution is already settled. Retain its result and the unresolved durable intent.
     try {
-      onError(new Error('Staff operation outcome could not be recorded', { cause: error }))
+      onError(new Error('Staff operation outcome could not be recorded', { cause: err }))
     } catch {
       // Telemetry failure must not change the external operation's response either.
     }

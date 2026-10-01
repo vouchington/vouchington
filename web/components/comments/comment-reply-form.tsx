@@ -61,8 +61,8 @@ export function CommentReplyForm({
       setPreviewLoading(true)
       previewMarkdown(markdown, { signal: controller.signal })
         .then(({ html }) => setPreviewHtml(html))
-        .catch(error => {
-          if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        .catch(err => {
+          if (!(err instanceof DOMException && err.name === 'AbortError')) {
             setPreviewHtml(
               `<p class="text-sm text-muted-foreground">${t('extracted.comments.commentReplyForm.previewUnavailableTryAgain_7ece44e2')}</p>`,
             )
@@ -114,8 +114,8 @@ export function CommentReplyForm({
       }
       notifySuccess(t('extracted.comments.commentReplyForm.commentPosted_f79769cc'))
       onSuccess(comment, html)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.comments.commentReplyForm.failedToPostComment_791ab06b'),
         tags: { form: 'comment-reply' },
       })

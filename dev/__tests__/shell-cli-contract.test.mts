@@ -32,8 +32,8 @@ async function runScript(script: string, args: string[], cwd: string, path: stri
       env: { ...process.env, PATH: `${path}:/usr/bin:/bin` },
     })
     return { status: 0, stderr: result.stderr, stdout: result.stdout }
-  } catch (error) {
-    const failure = error as { code: number; stderr: string; stdout: string }
+  } catch (err) {
+    const failure = err as { code: number; stderr: string; stdout: string }
     return { status: failure.code, stderr: failure.stderr, stdout: failure.stdout }
   }
 }

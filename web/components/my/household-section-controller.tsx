@@ -87,9 +87,9 @@ export function HouseholdSectionController({ initialSection, sharedCount, shared
         results: page.results.filter(membership => !removedIdsRef.current.has(membership.id)),
       })
       setRefreshedLoadError(false)
-    } catch (error) {
+    } catch (err) {
       if (initialRetryVersion.current !== requestVersion) return
-      onError(error, { fallback: 'Failed to load household members', extra: { householdId } })
+      onError(err, { fallback: 'Failed to load household members', extra: { householdId } })
     } finally {
       if (initialRetryVersion.current === requestVersion) setRetryingInitial(false)
     }
@@ -113,11 +113,11 @@ export function HouseholdSectionController({ initialSection, sharedCount, shared
     try {
       await removeHouseholdMembership(householdId, membership.id)
       onSuccess('Member removed')
-    } catch (error) {
+    } catch (err) {
       removedIdsRef.current.delete(membership.id)
       setRemovedIds(new Set(removedIdsRef.current))
       setRestoredMemberships(current => new Map(current).set(membership.id, membership))
-      onError(error, {
+      onError(err, {
         fallback: 'Failed to remove member',
         extra: { householdId, membershipId: membership.id },
       })

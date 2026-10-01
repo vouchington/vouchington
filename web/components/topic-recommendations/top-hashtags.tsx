@@ -62,11 +62,11 @@ export function TopHashtags({
         activeFiltersRef.current = filters
         setData(response)
       }
-    } catch (error) {
+    } catch (err) {
       if (generation === fetchGeneration.current) {
         requestedFiltersRef.current = activeFiltersRef.current
         setMapping(activeFiltersRef.current.mapping)
-        throw error
+        throw err
       }
     } finally {
       if (generation === fetchGeneration.current) setLoading(false)
@@ -119,8 +119,8 @@ export function TopHashtags({
           }
         })
       }
-    } catch (error) {
-      if (generation === fetchGeneration.current) throw error
+    } catch (err) {
+      if (generation === fetchGeneration.current) throw err
     } finally {
       if (generation === fetchGeneration.current) setLoading(false)
     }

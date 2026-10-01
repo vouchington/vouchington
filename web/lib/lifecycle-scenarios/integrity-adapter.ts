@@ -53,8 +53,8 @@ async function reconcileControlledMutation<T>(input: {
   try {
     await controlledMutation(input.outcome)
     controller.release(input.flagId)
-  } catch (error) {
-    if (!isAmbiguousIntegrityMutationFailure(error)) {
+  } catch (err) {
+    if (!isAmbiguousIntegrityMutationFailure(err)) {
       controller.fail(input.flagId, 'mutation-outcome-unknown')
       return { controller }
     }

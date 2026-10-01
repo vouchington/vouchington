@@ -7,7 +7,7 @@ async function main() {
   console.log('Done. Dispatcher job enqueued.')
 }
 
-main().catch(error => {
-  onError(error)
+main().catch(err => {
+  onError(err)
   process.exit(1)
 })

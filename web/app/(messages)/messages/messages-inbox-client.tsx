@@ -79,9 +79,9 @@ export function MessagesInboxClient({
       setConversations(prev => mergeByRecentActivity(prev, res.results))
       setHasMore(res.page_info.has_next_page)
       setEndCursor(res.page_info.end_cursor)
-    } catch (error) {
-      setFetchError(error instanceof Error ? error : new Error(String(error)))
-      onError(error, {
+    } catch (err) {
+      setFetchError(err instanceof Error ? err : new Error(String(err)))
+      onError(err, {
         fallback: t(
           'extracted.messages.messagesInboxClient.failedToLoadMoreConversations_f291e2fe',
         ),

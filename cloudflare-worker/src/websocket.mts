@@ -68,8 +68,8 @@ export const handleWebSocket = async (request: Request, url: URL, env: Env): Pro
   let originResponse: Response
   try {
     originResponse = await fetch(originRequest)
-  } catch (error) {
-    console.error('WebSocket origin fetch failed:', error)
+  } catch (err) {
+    console.error('WebSocket origin fetch failed:', err)
     return edgeErrorResponse(502, 'Bad Gateway', 'BAD_GATEWAY')
   }
 

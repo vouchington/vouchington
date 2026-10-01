@@ -119,7 +119,7 @@ describe('deleteExportFromS3', () => {
     const { deleteExportsFromS3 } = await import('./s3.mts')
     const keys = Array.from({ length: 1001 }, (_, index) => `export-${index}.zip`)
 
-    const error = await deleteExportsFromS3(keys).catch((caught: unknown) => caught)
+    const error = await deleteExportsFromS3(keys).catch((err: unknown) => err)
 
     expect(error).toBeInstanceOf(AggregateError)
     expect((error as AggregateError).errors).toHaveLength(2)

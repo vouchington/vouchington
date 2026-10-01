@@ -82,10 +82,10 @@ export async function ghApi(
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
       return await execFile('gh', ['api', ...args], { maxBuffer })
-    } catch (error) {
-      if (attempt === attempts || !isRetryableGhApiError(error)) throw error
+    } catch (err) {
+      if (attempt === attempts || !isRetryableGhApiError(err)) throw err
       console.error(
-        `::warning::gh api attempt ${attempt}/${attempts} failed (${errorText(error).replace(/\n/g, ' ')}); retrying`,
+        `::warning::gh api attempt ${attempt}/${attempts} failed (${errorText(err).replace(/\n/g, ' ')}); retrying`,
       )
       await sleep(attempt * 1000)
     }

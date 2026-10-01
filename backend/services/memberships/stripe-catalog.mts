@@ -54,9 +54,9 @@ export async function reconcileStripeMembershipCatalog({
   await withStripeCatalogReconciliationLock(context, async () => {
     try {
       await reconcileLockedStripeMembershipCatalog(context, resolvePrice, invalidateCaches)
-    } catch (error) {
-      await retireStripeCatalogMappings(context, invalidateCaches, error)
-      throw error
+    } catch (err) {
+      await retireStripeCatalogMappings(context, invalidateCaches, err)
+      throw err
     }
   })
 }
@@ -135,11 +135,11 @@ async function retireStripeCatalogMappings(
     )
     await transaction.commit()
     await invalidateCaches()
-  } catch (disableError) {
+  } catch (err) {
     throw new AggregateError(
-      [providerError, disableError],
+      [providerError, err],
       'Stripe catalog reconciliation failed and the active catalog could not be retired',
-      { cause: disableError },
+      { cause: err },
     )
   }
 }

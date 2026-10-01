@@ -27,21 +27,21 @@ export function usePasskeySignIn({ handleLoginSuccess, setLoading }: UsePasskeyS
       // Navigation unmounts the form — do not reset loading after this point
       shouldResetLoading = false
       handleLoginSuccess()
-    } catch (error) {
-      if (error instanceof Error && error.name === 'NotAllowedError') {
-        onError(error, {
+    } catch (err) {
+      if (err instanceof Error && err.name === 'NotAllowedError') {
+        onError(err, {
           fallback: 'Passkey sign-in was cancelled',
           tags: { form: 'auth-login' },
           skipSentry: true,
         })
-      } else if (error instanceof ApiError && error.status === 401) {
-        onError(error, {
+      } else if (err instanceof ApiError && err.status === 401) {
+        onError(err, {
           fallback: 'Passkey sign-in failed. Please try again.',
           tags: { form: 'auth-login' },
           skipSentry: true,
         })
       } else {
-        onError(error, {
+        onError(err, {
           fallback: 'Unable to sign in with passkey. Please try again.',
           tags: { form: 'auth-login' },
         })

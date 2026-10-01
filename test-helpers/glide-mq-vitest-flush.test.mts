@@ -168,7 +168,7 @@ describe('GlideMQ test drain', () => {
         () => {
           throw new Error('expected addAndFlush to reject')
         },
-        (reason: unknown) => reason,
+        (err: unknown) => err,
       )
       expect(error).toBeInstanceOf(TestQueueFlushTimeoutError)
     } finally {
@@ -201,7 +201,7 @@ describe('GlideMQ test drain', () => {
       () => {
         throw new Error('expected addAndFlush to reject')
       },
-      (reason: unknown) => reason,
+      (err: unknown) => err,
     )
 
     expect(error).toBeInstanceOf(TestQueueFlushTimeoutError)
@@ -252,7 +252,7 @@ describe('GlideMQ test drain', () => {
       () => {
         throw new Error('expected addAndFlush to reject')
       },
-      (reason: unknown) => reason,
+      (err: unknown) => err,
     )
 
     expect(error).toBeInstanceOf(TestQueueFlushTimeoutError)
@@ -283,7 +283,7 @@ describe('GlideMQ test drain', () => {
       () => {
         throw new Error('expected addAndFlush to reject')
       },
-      (reason: unknown) => reason,
+      (err: unknown) => err,
     )
     expect(error).toBeInstanceOf(Error)
     expect(error).not.toBeInstanceOf(TestQueueFlushTimeoutError)

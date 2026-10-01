@@ -58,11 +58,11 @@ export function UserAdminPanel({ user }: UserAdminPanelProps) {
         successfulAction: false,
       }))
       startRefresh(() => refresh())
-    } catch (error) {
+    } catch (err) {
       setFormState(current => ({ ...current, action: null }))
       toast.error(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.admin.userAdminPanel.failedToSuspendUser_1b9e4d63'),
       )
     }
@@ -80,11 +80,11 @@ export function UserAdminPanel({ user }: UserAdminPanelProps) {
         successfulAction: false,
       })
       startRefresh(() => refresh())
-    } catch (error) {
+    } catch (err) {
       setFormState(current => ({ ...current, action: null }))
       toast.error(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.admin.userAdminPanel.failedToUnsuspendUser_7e3a19d5'),
       )
     }

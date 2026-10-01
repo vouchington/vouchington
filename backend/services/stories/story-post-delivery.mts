@@ -51,8 +51,8 @@ export async function deliverStoryPost(
       ...relationEffects,
       handleVotes: false,
     })
-  } catch (error) {
-    resolvedDependencies.onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    resolvedDependencies.onError(err instanceof Error ? err : new Error(String(err)))
   }
   const bloomKeys = [normalizeKey(post.id)]
   if (post.slug) bloomKeys.push(normalizeKey(post.slug))

@@ -174,8 +174,8 @@ if (import.meta.main) {
     await writeJobsInventoryDoc({ check })
     console.log(check ? 'JOBS.md is up to date.' : 'JOBS.md written.')
     process.exit(0)
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error))
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err))
     process.exit(1)
   }
 }

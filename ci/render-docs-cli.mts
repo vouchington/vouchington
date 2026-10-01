@@ -12,8 +12,8 @@ export async function runRenderDocsCli(
   }
   try {
     await render(outputDir)
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error))
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err))
     return 1
   }
   return 0

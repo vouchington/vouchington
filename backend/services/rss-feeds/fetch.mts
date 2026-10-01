@@ -56,8 +56,8 @@ export async function fetchRssFeed(
   await rssRateLimit.assertRssFetchHostnameNotRateLimited(fetchHostnameId, feedUrl)
   try {
     await assertUrlAllowedByWebRisk(feedUrl)
-  } catch (error) {
-    if (!isHttpError(error) || error.status !== 400) throw error
+  } catch (err) {
+    if (!isHttpError(err) || err.status !== 400) throw err
     await updateRssFeedById(rssFeedId, { last_fetched_at: true })
     return []
   }

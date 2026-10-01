@@ -20,8 +20,8 @@ export async function retainRejectedDirectObservation(options: {
       options.query,
     )
     return false
-  } catch (error) {
-    if (options.enabled && error instanceof DirectMembershipSourceRejectedError) return true
-    throw error
+  } catch (err) {
+    if (options.enabled && err instanceof DirectMembershipSourceRejectedError) return true
+    throw err
   }
 }

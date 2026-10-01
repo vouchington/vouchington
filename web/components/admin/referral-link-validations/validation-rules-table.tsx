@@ -53,8 +53,8 @@ export function ValidationRulesTable({ validationId, initialRules }: ValidationR
       await deleteReferralLinkValidationRule(validationId, ruleId)
       setRules(prev => prev.filter(r => r.id !== ruleId))
       onSuccess(t('extracted.referralLinkValidations.validationRulesTable.ruleDeleted_92e561e3'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.referralLinkValidations.validationRulesTable.failedToDeleteRule_eae0494c',
         ),

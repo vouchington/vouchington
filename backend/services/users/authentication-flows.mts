@@ -55,8 +55,8 @@ export async function requestEmailAddressLoginToken(options: {
     const { token, emailAddress } = await createEmailAddressLoginToken(options.emailAddress)
     void enqueueEmailAddressLoginToken(emailAddress, token, normalizeUiLocale(options.uiLocale))
     return { emailAddress }
-  } catch (error) {
-    throw mapEmailAuthenticationError(error)
+  } catch (err) {
+    throw mapEmailAuthenticationError(err)
   }
 }
 
@@ -126,8 +126,8 @@ export async function loginWithEmailAddressToken(options: {
       deviceToken: tokens.deviceToken,
       sessionToken: tokens.sessionToken,
     }
-  } catch (error) {
-    throw mapEmailAuthenticationError(error)
+  } catch (err) {
+    throw mapEmailAuthenticationError(err)
   }
 }
 

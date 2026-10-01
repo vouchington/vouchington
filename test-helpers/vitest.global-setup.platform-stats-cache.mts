@@ -39,10 +39,10 @@ function watchHealth(containerId: string, since: string) {
         if (['health_status: unhealthy', 'die', 'destroy'].includes(event.Action ?? '')) {
           reject(new Error(`Private platform-stats Valkey failed: ${event.Action}`))
         }
-      } catch (cause) {
+      } catch (err) {
         reject(
-          cause instanceof Error
-            ? cause
+          err instanceof Error
+            ? err
             : new Error('Private platform-stats Valkey log line was not valid JSON'),
         )
       }
@@ -120,7 +120,7 @@ export default async function setup(project: Pick<TestProject, 'provide'>) {
     }
     project.provide('platformStatsCache', { url: `redis://127.0.0.1:${port}`, owner })
     return () => removeOwnedContainer(createdId, owner)
-  } catch (cause) {
+  } catch (outerErr) {
     try {
       containerId ??=
         docker([
@@ -136,16 +136,16 @@ export default async function setup(project: Pick<TestProject, 'provide'>) {
         ]) || undefined
       if (containerId) {
         if (!/^[a-f0-9]{64}$/.test(containerId))
-          throw new Error('Ambiguous owned cache container recovery', { cause })
+          throw new Error('Ambiguous owned cache container recovery', { cause: outerErr })
         removeOwnedContainer(containerId, owner)
       }
-    } catch (cleanupError) {
+    } catch (err) {
       throw new AggregateError(
-        [cause, cleanupError],
+        [outerErr, err],
         'Private platform-stats cache startup and cleanup failed',
-        { cause: cleanupError },
+        { cause: err },
       )
     }
-    throw cause
+    throw outerErr
   }
 }

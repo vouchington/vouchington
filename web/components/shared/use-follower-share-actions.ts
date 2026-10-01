@@ -68,9 +68,9 @@ export const useFollowerShareActions = ({
       if (contextGeneration === contextGenerationRef.current) {
         onSuccess(t('extracted.shared.useFollowerShareActions.shareQueued_d32e8704'))
       }
-    } catch (error) {
+    } catch (err) {
       if (contextGeneration === contextGenerationRef.current) {
-        onError(error, {
+        onError(err, {
           fallback: t(
             'extracted.shared.useFollowerShareActions.failedToShareWithFollowers_272673f8',
           ),
@@ -113,9 +113,9 @@ export const useFollowerShareActions = ({
         onSuccess(t('extracted.shared.useFollowerShareActions.sendQueued_11badc4f'))
         resetDialogState(false)
       }
-    } catch (error) {
+    } catch (err) {
       if (contextGeneration === contextGenerationRef.current) {
-        onError(error, {
+        onError(err, {
           fallback: t('extracted.shared.useFollowerShareActions.failedToSendToFollowers_6a759de3'),
         })
       }

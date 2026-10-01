@@ -27,11 +27,11 @@ export async function findPageOrNull<TPage>(
 ): Promise<TPage | null> {
   try {
     return await find()
-  } catch (error: unknown) {
-    if (after !== undefined && createHttpError.isHttpError(error) && error.status === 400) {
+  } catch (err: unknown) {
+    if (after !== undefined && createHttpError.isHttpError(err) && err.status === 400) {
       return null
     }
-    throw error
+    throw err
   }
 }
 

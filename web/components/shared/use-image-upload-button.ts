@@ -91,8 +91,8 @@ export function useImageUploadButton({
         },
       })
       await onUploaded(imageId, file)
-    } catch (error) {
-      showSingleUploadError(error)
+    } catch (err) {
+      showSingleUploadError(err)
     } finally {
       resetUploadState()
     }

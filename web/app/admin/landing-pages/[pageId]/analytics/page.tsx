@@ -19,8 +19,8 @@ export default async function AdminLandingPageAnalyticsPage({ params }: PageProp
   let analyticsData: Awaited<ReturnType<typeof getAdminLandingPageAnalytics>> = null
   try {
     analyticsData = await getAdminLandingPageAnalytics(pageId)
-  } catch (error) {
-    console.error('Failed to load admin landing page analytics:', error)
+  } catch (err) {
+    console.error('Failed to load admin landing page analytics:', err)
   }
 
   if (!analyticsData) {

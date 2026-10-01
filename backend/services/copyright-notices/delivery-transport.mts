@@ -41,13 +41,13 @@ export async function deliverCopyrightInAppNotification(intentId: string): Promi
       deliveryKind: intent.delivery_kind,
     })
     return await markCopyrightDeliveryIntentSent({ intentId, leaseToken: intent.lease_token })
-  } catch (error) {
+  } catch (err) {
     await markCopyrightDeliveryIntentFailed({
       intentId,
       leaseToken: intent.lease_token,
-      error: errorMessage(error),
+      error: errorMessage(err),
     })
-    throw error
+    throw err
   }
 }
 
@@ -75,13 +75,13 @@ export async function prepareCopyrightEmailDelivery(intentId: string): Promise<{
       subject: copyrightEmailSubject(intent.delivery_kind),
       text,
     }
-  } catch (error) {
+  } catch (err) {
     await markCopyrightDeliveryIntentFailed({
       intentId,
       leaseToken: intent.lease_token,
-      error: errorMessage(error),
+      error: errorMessage(err),
     })
-    throw error
+    throw err
   }
 }
 

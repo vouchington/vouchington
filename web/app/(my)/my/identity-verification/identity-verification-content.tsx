@@ -41,12 +41,10 @@ export function IdentityVerificationContent({
       try {
         const { url } = await startMyIdentityVerificationCheckout()
         window.location.href = url
-      } catch (error) {
-        if (isEmailVerificationRequired(error)) emailRecovery?.openEmailVerificationRecovery()
+      } catch (err) {
+        if (isEmailVerificationRequired(err)) emailRecovery?.openEmailVerificationRecovery()
         else
-          setErrorMessage(
-            error instanceof ApiError ? error.message : 'Failed to start verification.',
-          )
+          setErrorMessage(err instanceof ApiError ? err.message : 'Failed to start verification.')
       }
     })
   }
@@ -99,9 +97,9 @@ export function IdentityVerificationContent({
       try {
         const { url } = await getMyIdentityVerificationSessionUrl()
         window.location.href = url
-      } catch (error) {
+      } catch (err) {
         setErrorMessage(
-          error instanceof ApiError ? error.message : 'Failed to retrieve verification session.',
+          err instanceof ApiError ? err.message : 'Failed to retrieve verification session.',
         )
       }
     })

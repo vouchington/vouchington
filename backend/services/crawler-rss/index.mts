@@ -100,8 +100,8 @@ export default async function CrawlerRss(
       ...result,
       contentSha256: result.contentSha256 ? Buffer.from(result.contentSha256) : null,
     }
-  } catch (error) {
-    if (!parsedBody) throw error
+  } catch (err) {
+    if (!parsedBody) throw err
 
     const duration = Date.now() - startedAt.getTime()
     trackCrawlerRequest(
@@ -114,7 +114,7 @@ export default async function CrawlerRss(
     )
     const parseError = new Error(
       `Failed to parse feed XML for ${url} with response code ${parsedBody.response.status}`,
-      { cause: error instanceof Error ? error : undefined },
+      { cause: err instanceof Error ? err : undefined },
     )
     Object.assign(parseError, {
       extra: {

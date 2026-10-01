@@ -58,7 +58,7 @@ async function captureRejection(promise: Promise<unknown>): Promise<unknown> {
     () => {
       throw new Error('expected runAppend to reject')
     },
-    (error: unknown) => error,
+    (err: unknown) => err,
   )
 }
 

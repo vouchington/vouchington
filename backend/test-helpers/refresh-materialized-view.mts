@@ -10,9 +10,9 @@ export async function refreshMaterializedViewForTest(viewName: string): Promise<
     try {
       await refreshMaterializedView(viewName)
       return
-    } catch (error) {
-      if (!(error instanceof Error) || error.message !== RETRYABLE_CONTENTION_MESSAGE) throw error
-      if (Date.now() >= deadline) throw error
+    } catch (err) {
+      if (!(err instanceof Error) || err.message !== RETRYABLE_CONTENTION_MESSAGE) throw err
+      if (Date.now() >= deadline) throw err
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS))
     }
   }

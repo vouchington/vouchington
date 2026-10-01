@@ -194,8 +194,8 @@ describe('copyright action persisted delivery authority', () => {
         result = { status: 'fulfilled', value }
         return value
       },
-      reason => {
-        result = { status: 'rejected', reason }
+      err => {
+        result = { status: 'rejected', reason: err }
       },
     )
     try {

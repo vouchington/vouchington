@@ -77,14 +77,14 @@ export async function flushQueues(
       },
       { concurrency: OBLITERATE_CONCURRENCY, stopOnError: false },
     )
-  } catch (error) {
+  } catch (err) {
     obliterateError =
       signal?.aborted &&
-      error instanceof AggregateError &&
-      error.errors.length > 0 &&
-      error.errors.every(member => member === signal.reason)
+      err instanceof AggregateError &&
+      err.errors.length > 0 &&
+      err.errors.every(member => member === signal.reason)
         ? toError(signal.reason)
-        : toError(error)
+        : toError(err)
   }
 
   const closeResults = await Promise.allSettled(targets.map(closeAndUnregisterGlideMQInstance))

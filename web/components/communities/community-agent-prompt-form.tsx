@@ -45,8 +45,8 @@ export function CommunityAgentPromptForm({ communitySlug, onPromptCreated }: Pro
         onPromptCreated?.(created.community_agent_prompt)
         onSuccess(t('extracted.communities.communityAgentPromptForm.promptCreated_8ce11e7a'))
         startRefreshing(() => router.refresh())
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t(
             'extracted.communities.communityAgentPromptForm.failedToCreatePrompt_fdf3ab4f',
           ),

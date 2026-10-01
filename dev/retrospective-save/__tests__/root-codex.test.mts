@@ -153,7 +153,7 @@ describe('runSave root-Codex identity', () => {
       HOSTED_ENV,
       {},
       dir,
-    ).catch(error => error)
+    ).catch(err => err)
 
     expect(error).toBeInstanceOf(RetrospectiveSaveError)
     expect((error as RetrospectiveSaveError).agent).toBe('codex')
@@ -176,7 +176,7 @@ describe('runSave root-Codex identity', () => {
         }),
       },
       dir,
-    ).catch(error => error)
+    ).catch(err => err)
     expect(error).toBeInstanceOf(RetrospectiveSaveError)
     expect((error as RetrospectiveSaveError).agent).toBe('codex')
     expect((error as RetrospectiveSaveError).sessionIdArg).toMatch(/^codex-/)

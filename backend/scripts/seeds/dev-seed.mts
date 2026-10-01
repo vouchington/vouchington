@@ -28,9 +28,9 @@ if (!process.env['VITEST'] && assertNotProdOrStaging(process.env['NODE_ENV'])) {
   import('@voucha/scripts/seed')
     .then(({ default: seed }) => seed())
     .then(() => process.exit(0))
-    .catch(error => {
+    .catch(err => {
       process.stderr.write(
-        `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
+        `${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`,
         () => process.exit(1),
       )
     })

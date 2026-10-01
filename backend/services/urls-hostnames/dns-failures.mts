@@ -23,11 +23,11 @@ export async function recordHostnameDnsFailure(
 ): Promise<void> {
   try {
     await resolveCanary()
-  } catch (canaryError) {
+  } catch (err) {
     // Our own DNS resolver appears to be down. Do not penalise the target host.
     onError(
       new Error('DNS canary lookup failed — skipping hostname DNS failure counter increment', {
-        cause: canaryError instanceof Error ? canaryError : undefined,
+        cause: err instanceof Error ? err : undefined,
       }),
     )
     return

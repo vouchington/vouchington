@@ -91,8 +91,8 @@ export async function deleteImagesFromS3(images: ImageRecord[]): Promise<void> {
             ),
         ),
       )
-    } catch (error) {
-      errors.push(error instanceof Error ? error : new Error(String(error)))
+    } catch (err) {
+      errors.push(err instanceof Error ? err : new Error(String(err)))
     }
   }
   if (errors.length > 0) {

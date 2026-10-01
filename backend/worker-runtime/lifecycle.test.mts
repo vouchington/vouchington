@@ -215,9 +215,9 @@ describe('worker lifecycle', () => {
       }),
     ).then(
       () => new Error('expected initialization to fail'),
-      error => {
+      err => {
         events.push('thrown')
-        return error
+        return err
       },
     )
 

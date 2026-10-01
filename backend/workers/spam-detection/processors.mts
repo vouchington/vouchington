@@ -35,10 +35,10 @@ export async function processSpamDetection(
 
     await checkPostClearance(postId)
     return true
-  } catch (error) {
-    const failure = await failPostModerationAttempt(attempt, classifyModerationError(error))
+  } catch (err) {
+    const failure = await failPostModerationAttempt(attempt, classifyModerationError(err))
     if (failure.exhausted) await checkPostClearance(postId)
-    throw error
+    throw err
   }
 }
 

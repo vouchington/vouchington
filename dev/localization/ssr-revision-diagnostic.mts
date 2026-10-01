@@ -36,9 +36,9 @@ async function assertSsrPathRevision(url: string, expectedRevision: string): Pro
   let response: Response
   try {
     response = await fetch(url, { signal: AbortSignal.timeout(5_000) })
-  } catch (error) {
+  } catch (err) {
     throw new Error(`Next.js SSR localization diagnostic is unavailable at ${url}`, {
-      cause: error,
+      cause: err,
     })
   }
   if (!response.ok) {

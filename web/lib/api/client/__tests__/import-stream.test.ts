@@ -100,7 +100,7 @@ describe('streamImportProgress', () => {
     const controller = new AbortController()
 
     const promise = streamImportProgress('import-1', () => {}, controller.signal)
-    const promiseRejection = promise.catch((error: unknown) => error)
+    const promiseRejection = promise.catch((err: unknown) => err)
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
 
     controller.abort()
@@ -118,8 +118,8 @@ describe('streamImportProgress', () => {
 
     const promise = streamImportProgress('import-1', () => {})
     let caughtError: unknown
-    const handledPromise = promise.catch((error: unknown) => {
-      caughtError = error
+    const handledPromise = promise.catch((err: unknown) => {
+      caughtError = err
     })
     await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
 

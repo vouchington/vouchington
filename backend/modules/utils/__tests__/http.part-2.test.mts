@@ -40,8 +40,8 @@ describe('handleHttpErrors', () => {
     let error: HttpRateLimitError | undefined
     try {
       handleHttpErrors({ response, url: 'https://example.com' })
-    } catch (e) {
-      error = e as HttpRateLimitError
+    } catch (err) {
+      error = err as HttpRateLimitError
     }
     expect(error?.retryAfterMs).toBe(30_000)
   })
@@ -51,8 +51,8 @@ describe('handleHttpErrors', () => {
     let error: HttpRateLimitError | undefined
     try {
       handleHttpErrors({ response, url: 'https://example.com' })
-    } catch (e) {
-      error = e as HttpRateLimitError
+    } catch (err) {
+      error = err as HttpRateLimitError
     }
     expect(error?.retryAfterMs).toBeNull()
   })

@@ -67,8 +67,8 @@ export async function runViews(rootDir: string, options: RunViewsOptions = {}) {
           logger.log('View %s updated!', pendingView.view)
         }
         attemptedViews.push({ pendingView, success: true })
-      } catch (error) {
-        lastError = error
+      } catch (err) {
+        lastError = err
         attemptedViews.push({ pendingView, success: false })
       }
 

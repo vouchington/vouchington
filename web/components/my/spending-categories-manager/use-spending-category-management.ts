@@ -86,8 +86,8 @@ export function useSpendingCategoryManagement({
         setNewNote('')
         onSuccess(t('extracted.my.spendingCategoriesManager.spendingCategoryAdded_e64ee56b'))
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.spendingCategoriesManager.failedToAddSpendingCategory_0809dda4'),
       })
     } finally {
@@ -124,8 +124,8 @@ export function useSpendingCategoryManagement({
         setEditingId(null)
         onSuccess(t('extracted.my.spendingCategoriesManager.spendingCategoryUpdated_60051d4b'))
       })
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.my.spendingCategoriesManager.failedToUpdateSpendingCategory_be2766c6',
         ),
@@ -150,14 +150,14 @@ export function useSpendingCategoryManagement({
         })
         onSuccess(t('extracted.my.spendingCategoriesManager.spendingCategoryRemoved_3882b8fc'))
       })
-    } catch (error) {
+    } catch (err) {
       setDeletedIds(previous => {
         const next = new Set(previous)
         next.delete(id)
         return next
       })
       if (category) setUpserts(previous => new Map(previous).set(id, category))
-      onError(error, {
+      onError(err, {
         fallback: t(
           'extracted.my.spendingCategoriesManager.failedToRemoveSpendingCategory_a217ac9b',
         ),

@@ -52,8 +52,8 @@ export async function enqueueOpenAiSpendCapRecheckBestEffort(
   let enqueued: ReturnType<typeof enqueueOpenAiSpendCapRecheck>
   try {
     enqueued = enqueue(day, generation, delayMs)
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error), { cause: error }))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err), { cause: err }))
     return
   }
   await enqueued.then(() => undefined, onError)

@@ -72,7 +72,7 @@ describe('resolve-published-images', () => {
       },
     }).then(
       value => ({ ok: true as const, ...value }),
-      (error: { stderr: string }) => ({ ok: false as const, stderr: error.stderr }),
+      (err: { stderr: string }) => ({ ok: false as const, stderr: err.stderr }),
     )
     const read = (path: string) => readFile(path, 'utf8').catch(() => '')
     const calls = (await read(paths.calls)).trim().split('\n').filter(Boolean)

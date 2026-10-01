@@ -99,8 +99,8 @@ app.route('/api/v1/attribution/referrer').post(async (ctx: Context) => {
       userId: sessionData.uid,
       utm: sanitizedUtm,
     })
-  } catch (error: unknown) {
-    if (!isHttpError(error) || (error.status !== 404 && error.status !== 400)) throw error
+  } catch (err: unknown) {
+    if (!isHttpError(err) || (err.status !== 404 && err.status !== 400)) throw err
     // Unknown referrer or self-referral — silently ignore
   }
 

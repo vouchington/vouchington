@@ -55,7 +55,7 @@ describe('notification push final lease renewal', () => {
 
       const result = await delivery.then(
         value => ({ value, error: undefined }),
-        error => ({ value: undefined, error }),
+        err => ({ value: undefined, error: err }),
       )
       expect({
         value: result.value,
@@ -93,7 +93,7 @@ describe('notification push final lease renewal', () => {
       })
       const result = await delivery.then(
         value => ({ value, error: undefined }),
-        error => ({ value: undefined, error }),
+        err => ({ value: undefined, error: err }),
       )
       expect({
         value: result.value,

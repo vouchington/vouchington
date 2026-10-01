@@ -55,9 +55,9 @@ describe('activate', () => {
     try {
       await activateUserReferralLink(null, linkId!)
       assert.fail('Should have thrown')
-    } catch (error: unknown) {
-      assert.ok(error && typeof error === 'object' && 'status' in error)
-      assert.equal(error.status, 401)
+    } catch (err: unknown) {
+      assert.ok(err && typeof err === 'object' && 'status' in err)
+      assert.equal(err.status, 401)
     }
   })
 
@@ -65,9 +65,9 @@ describe('activate', () => {
     try {
       await deactivateUserReferralLink(null, linkId!)
       assert.fail('Should have thrown')
-    } catch (error: unknown) {
-      assert.ok(error && typeof error === 'object' && 'status' in error)
-      assert.equal(error.status, 401)
+    } catch (err: unknown) {
+      assert.ok(err && typeof err === 'object' && 'status' in err)
+      assert.equal(err.status, 401)
     }
   })
 

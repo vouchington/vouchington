@@ -72,8 +72,8 @@ export function checkModerationHistoryGuard(
     let tables: ReturnType<typeof extractCreateTableMetadata>
     try {
       tables = extractCreateTableMetadata(content)
-    } catch (error) {
-      errors.push(`::error file=${file}::${file}: failed to parse SQL: ${String(error)}`)
+    } catch (err) {
+      errors.push(`::error file=${file}::${file}: failed to parse SQL: ${String(err)}`)
       continue
     }
 

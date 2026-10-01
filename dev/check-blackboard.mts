@@ -10,10 +10,10 @@ export async function runCheckBlackboard(options: { env?: NodeJS.ProcessEnv } = 
   const { probeBlackboard } = await loadBlackboardModules()
   try {
     await probeBlackboard(options.env)
-  } catch (error) {
+  } catch (err) {
     throw new Error(
-      `sessions list probe failed: ${error instanceof Error ? error.message : String(error)}`,
-      { cause: error },
+      `sessions list probe failed: ${err instanceof Error ? err.message : String(err)}`,
+      { cause: err },
     )
   }
 }
@@ -25,29 +25,29 @@ class BlackboardModuleUnavailableError extends Error {}
 async function loadBlackboardModules() {
   try {
     return await import('vouchington-tooling/agent-blackboard')
-  } catch (error) {
-    if (!(error instanceof Error) || !('code' in error)) throw error
+  } catch (err) {
+    if (!(err instanceof Error) || !('code' in err)) throw err
     const mentionsBlackboardPackage =
-      error.message.includes('vouchington-tooling') || error.message.includes('agent-blackboard')
-    if (error.code === 'ERR_MODULE_NOT_FOUND' && mentionsBlackboardPackage) {
+      err.message.includes('vouchington-tooling') || err.message.includes('agent-blackboard')
+    if (err.code === 'ERR_MODULE_NOT_FOUND' && mentionsBlackboardPackage) {
       throw new BlackboardModuleUnavailableError(
         'vouchington-tooling agent-blackboard helpers are not installed; run pnpm install from the Vouchington worktree root',
-        { cause: error },
+        { cause: err },
       )
     }
     // A resolved vouchington-tooling install that predates the ./agent-blackboard export — e.g. an
     // uninitialized worktree falling back to a stale copy hoisted from elsewhere on disk. This is a
     // workspace-setup defect, not the package being absent, and needs a different fix (reinstall the
     // worktree's own dependencies, not just "pnpm install").
-    if (error.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED' && mentionsBlackboardPackage) {
+    if (err.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED' && mentionsBlackboardPackage) {
       throw new BlackboardModuleUnavailableError(
         'vouchington-tooling resolved an installed copy that predates the ./agent-blackboard export ' +
           '(a stale or incorrectly hoisted install, not a missing package); run ./dev/initialize monorepo ' +
           'from the Vouchington worktree root',
-        { cause: error },
+        { cause: err },
       )
     }
-    throw error
+    throw err
   }
 }
 
@@ -103,9 +103,9 @@ async function main(): Promise<void> {
 
   try {
     await runCheckBlackboard()
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    if (error instanceof BlackboardModuleUnavailableError) {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    if (err instanceof BlackboardModuleUnavailableError) {
       emitContext(
         `STOP WORK: agent-blackboard is unavailable (${message}). This is a workspace-setup ` +
           'problem in this worktree, not a deployment outage — the hosted agent-blackboard ' +
@@ -127,9 +127,9 @@ async function main(): Promise<void> {
 }
 
 if (import.meta.main) {
-  main().catch((error: unknown) => {
+  main().catch((err: unknown) => {
     process.stderr.write(
-      `check-blackboard failed: ${error instanceof Error ? error.message : String(error)}\n`,
+      `check-blackboard failed: ${err instanceof Error ? err.message : String(err)}\n`,
     )
   })
 }

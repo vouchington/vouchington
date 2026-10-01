@@ -105,9 +105,9 @@ async function decidePendingStoryPostRelatedUrlProjectionRow(
     // No user id: historical RSS URLs must never penalize @story-teller.
     await assertUrlsHaveNoBlockedHostnames([input.row.url_id])
     return true
-  } catch (error) {
-    if (isUnsafeUrlError(error)) return false
-    throw error
+  } catch (err) {
+    if (isUnsafeUrlError(err)) return false
+    throw err
   }
 }
 

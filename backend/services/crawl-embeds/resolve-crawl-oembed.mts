@@ -28,9 +28,9 @@ export async function resolveCrawlOEmbed(
   let metadata = pending.metadata
   try {
     metadata = await dependencies.resolve(plan)
-  } catch (error) {
-    if (!(error instanceof OEmbedHttpError) || (error.status !== 404 && error.status !== 410)) {
-      throw error
+  } catch (err) {
+    if (!(err instanceof OEmbedHttpError) || (err.status !== 404 && err.status !== 410)) {
+      throw err
     }
   }
   const { rowCount } = await write(

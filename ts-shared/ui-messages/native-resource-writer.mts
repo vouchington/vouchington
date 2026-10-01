@@ -43,9 +43,9 @@ async function checkFiles(root: string, expected: ReadonlyMap<string, string>): 
     [...expected].map(async ([path, content]) => {
       try {
         return (await readFile(join(root, path), 'utf8')) === content ? null : `stale ${path}`
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return `missing ${path}`
-        throw error
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === 'ENOENT') return `missing ${path}`
+        throw err
       }
     }),
   )
@@ -61,9 +61,9 @@ async function listFiles(root: string, directory: string): Promise<string[]> {
   let entries
   try {
     entries = await readdir(join(root, directory), { withFileTypes: true })
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []
-    throw error
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return []
+    throw err
   }
   return (
     await Promise.all(

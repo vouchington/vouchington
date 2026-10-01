@@ -63,8 +63,8 @@ export async function fetchRecaptchaAssessment(
       body: JSON.stringify({ event }),
       signal: AbortSignal.timeout(5000),
     },
-  ).catch(error => {
-    throw new Error('reCAPTCHA assessment request failed', { cause: error })
+  ).catch(err => {
+    throw new Error('reCAPTCHA assessment request failed', { cause: err })
   })
 
   if (response.status === 429) {
@@ -79,8 +79,8 @@ export async function fetchRecaptchaAssessment(
   let data: unknown
   try {
     data = await response.json()
-  } catch (error) {
-    throw new Error('reCAPTCHA assessment returned invalid JSON', { cause: error })
+  } catch (err) {
+    throw new Error('reCAPTCHA assessment returned invalid JSON', { cause: err })
   }
   return parseAssessment(data)
 }

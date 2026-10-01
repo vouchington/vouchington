@@ -94,17 +94,17 @@ export async function processImportRow(
 
     const progress = await deps.updateRowCompleted(rowId, createdEntityId)
     void deps.publishImportProgress(progress.batchId, progress).catch(onError)
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
     // UnrecoverableErrors (e.g. URL validation) never succeed on retry — treat as final
     // regardless of isFinalAttempt so the row and batch are marked complete immediately.
-    const isFinalFailure = isFinalAttempt || error instanceof UnrecoverableError
+    const isFinalFailure = isFinalAttempt || err instanceof UnrecoverableError
     const failProgress = await deps.updateRowFailed(rowId, message, {
       isFinalAttempt: isFinalFailure,
     })
     if (failProgress) {
       void deps.publishImportProgress(failProgress.batchId, failProgress).catch(onError)
     }
-    throw error // Let glide-mq handle retries
+    throw err // Let glide-mq handle retries
   }
 }

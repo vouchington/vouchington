@@ -12,8 +12,8 @@ export async function runCopyrightSweepStage(
 ): Promise<void> {
   try {
     tally.errors.push(...(await stage()))
-  } catch (error) {
-    tally.errors.push(error)
+  } catch (err) {
+    tally.errors.push(err)
   }
 }
 
@@ -43,8 +43,8 @@ export async function settleCopyrightSweepSequentially(
     try {
       // oxlint-disable-next-line no-await-in-loop -- each item takes its own row and advisory locks.
       await settle(id)
-    } catch (error) {
-      errors.push(error)
+    } catch (err) {
+      errors.push(err)
     }
   }
   return errors

@@ -81,7 +81,7 @@
     "import/default": "error", // Category-activated safety rule: imports must name a real default export.
     "import/no-absolute-path": "error", // Category-activated safety rule: imports remain portable.
     "import/no-empty-named-blocks": "error", // Category-activated safety rule: empty import bindings are unintended.
-    "unicorn/catch-error-name": ["off", { "name": "err" }], // Staged #1695: 1365 findings / 872 files; scan 2026-10-01.
+    "unicorn/catch-error-name": ["error", { "name": "err" }],
     "unicorn/consistent-assert": "off", // Staged #1692: 39 findings / 16 files; scan 2026-10-01.
     "unicorn/consistent-function-scoping": "off", // Policy: local functions may capture context even when hoisting is possible.
     "unicorn/consistent-date-clone": "off", // Staged #1692: 1 findings / 1 files; scan 2026-10-01.

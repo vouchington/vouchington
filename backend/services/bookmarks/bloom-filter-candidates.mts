@@ -114,8 +114,8 @@ export async function checkBookmarkBloomCandidatesByRelations(
         args: [String(relations.length), String(chunk.itemCount), ...chunk.lookupItems],
       }),
     )
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
     return createUnreadyBookmarkBloomCandidates(relations, normalizedIds.length)
   }
 

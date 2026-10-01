@@ -94,8 +94,8 @@ export async function printRowCounts(): Promise<void> {
 export async function runAnalyze(): Promise<void> {
   console.log('\nRunning ANALYZE on seeded tables...')
   for (const table of ANALYZE_TARGETS) {
-    await write(`/* seedExplainData */ ANALYZE "${table}"`).catch(error =>
-      console.error(`seedExplainData: ANALYZE "${table}" failed`, error),
+    await write(`/* seedExplainData */ ANALYZE "${table}"`).catch(err =>
+      console.error(`seedExplainData: ANALYZE "${table}" failed`, err),
     )
   }
 }

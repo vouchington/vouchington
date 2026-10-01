@@ -21,9 +21,9 @@ export async function createMonthlyPartitionRetirementFixture() {
         `/* monthlyPartitionRetirementFixture */ SET LOCAL search_path TO ${schema}`,
       )
       return transaction
-    } catch (error) {
+    } catch (err) {
       await transaction[Symbol.asyncDispose]()
-      throw error
+      throw err
     }
   }
 

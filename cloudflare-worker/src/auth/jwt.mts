@@ -101,10 +101,10 @@ export const verifyBackendSessionTokens = async (
       sessionPayload,
       sessionCachePayload: deriveSessionCachePayload(devicePayload, sessionPayload),
     }
-  } catch (error) {
+  } catch (err) {
     if (!sessionJwtVerificationErrorLogged) {
       console.error(
-        `Session JWT verification failed: ${error instanceof Error ? error.message : String(error)}`,
+        `Session JWT verification failed: ${err instanceof Error ? err.message : String(err)}`,
       )
       sessionJwtVerificationErrorLogged = true
     }

@@ -37,16 +37,16 @@ export async function completeOAuthAuthorization(
     if (durableResult.newlyCompleted) {
       try {
         await dependencies.runConnectionEffects(durableResult.userId)
-      } catch (error) {
-        reportPostCommitError(error)
+      } catch (err) {
+        reportPostCommitError(err)
       }
       try {
         await dependencies.enqueueFriendSync(
           durableResult.provider,
           durableResult.account.provider_user_id,
         )
-      } catch (error) {
-        reportPostCommitError(error)
+      } catch (err) {
+        reportPostCommitError(err)
       }
     }
     return {

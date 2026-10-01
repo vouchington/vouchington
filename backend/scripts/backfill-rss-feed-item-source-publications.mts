@@ -48,7 +48,7 @@ async function main() {
   }
 }
 
-main().catch(error => {
-  onError(error)
+main().catch(err => {
+  onError(err)
   process.exitCode = 1
 })

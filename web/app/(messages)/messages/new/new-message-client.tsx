@@ -41,8 +41,8 @@ export function NewMessageClient({ currentUserId }: Props) {
       await sendDirectMessage(conversation.id, body.trim())
       sidebar?.prependConversation(conversation)
       router.push(`/messages/${conversation.id}`)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.new.newMessageClient.failedToCreateConversation_73dbb8f1'),
       })
       setSubmitting(false)

@@ -45,9 +45,9 @@ export async function holdClassifierThresholdReplacement(data: ClassifierFixture
       hasBlockedOperation: () => hasBlockedOperation(pidRows[0]!.pid),
       [Symbol.asyncDispose]: rollback,
     }
-  } catch (error) {
+  } catch (err) {
     await rollback()
-    throw error
+    throw err
   }
 }
 
@@ -102,8 +102,8 @@ export async function holdClassifierTopicBatchCapture(data: ClassifierFixtureDat
       hasBlockedOperation: () => hasBlockedOperation(pidRows[0]!.pid),
       [Symbol.asyncDispose]: rollback,
     }
-  } catch (error) {
+  } catch (err) {
     await rollback()
-    throw error
+    throw err
   }
 }

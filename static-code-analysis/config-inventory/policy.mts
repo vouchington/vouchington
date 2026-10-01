@@ -66,8 +66,8 @@ export async function checkConfigInventoryPolicy(
   let inventory: ConfigInventory
   try {
     inventory = await collectConfigInventory(ctx)
-  } catch (error) {
-    errors.push(error instanceof Error ? error.message : String(error))
+  } catch (err) {
+    errors.push(err instanceof Error ? err.message : String(err))
     return { errors }
   }
   errors.push(...checkWorkflowEnvReferences(ctx, inventory))

@@ -7,8 +7,8 @@ export function parseClientIntentParityIds(content: string): ClientIntentParityP
   let value: unknown
   try {
     value = JSON.parse(content)
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
     return { diagnostics: [`$ contains invalid JSON: ${message}`] }
   }
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {

@@ -53,10 +53,10 @@ export function InviteManager({ data, communitySlug, onInviteCreated }: InviteMa
       setEmail('')
       setUsername('')
       refresh()
-    } catch (error) {
+    } catch (err) {
       setError(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.communities.inviteManager.failedToSendInvite_f14597da'),
       )
     } finally {
@@ -71,10 +71,10 @@ export function InviteManager({ data, communitySlug, onInviteCreated }: InviteMa
       await revokeInvite(communitySlug, inviteId)
       setRevokedInviteIds(current => new Set(current).add(inviteId))
       refresh()
-    } catch (error) {
+    } catch (err) {
       setError(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.communities.inviteManager.failedToRevokeInvite_ac674f0b'),
       )
     } finally {

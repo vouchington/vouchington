@@ -17,9 +17,9 @@ export function ConsentActions({ requestId }: { requestId: string }) {
     try {
       const result = await decideOAuthAuthorizationRequest(requestId, decision)
       window.location.assign(result.redirect_uri)
-    } catch (error) {
+    } catch (err) {
       setPendingDecision(null)
-      onError(error, {
+      onError(err, {
         fallback: t('shared.oauth.consent.authorizationError'),
         tags: { form: 'oauth-consent' },
       })

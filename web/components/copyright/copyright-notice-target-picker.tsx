@@ -41,9 +41,9 @@ export function CopyrightNoticeTargetPicker({
       if (request !== resolutionRequest.current) return
       setResolvedTargets(resolved)
       onChange([])
-    } catch (error) {
+    } catch (err) {
       if (request !== resolutionRequest.current) return
-      onError(error, {
+      onError(err, {
         fallback: 'We could not find hosted material at that URL. Check the link and try again.',
         tags: { form: 'copyright-notice-target' },
       })

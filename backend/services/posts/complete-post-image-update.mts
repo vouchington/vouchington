@@ -18,8 +18,8 @@ export async function completePostImageUpdate(input: {
   void enqueueReconcileMediaDeliveryRegistry()
   try {
     await enqueueOnPostUpdated(postId, { contentChanged: true })
-  } catch (error) {
+  } catch (err) {
     await rollbackPostImages(postId, rollback)
-    throw error
+    throw err
   }
 }

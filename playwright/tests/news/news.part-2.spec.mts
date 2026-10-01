@@ -104,8 +104,8 @@ test.describe('News Page', () => {
            WHERE rss_feed_id = $1 AND rss_feed_item_id = $2`,
           [youtubeFeedId, youtubeItemId],
         )
-      } catch (error) {
-        errors.push(error)
+      } catch (err) {
+        errors.push(err)
       }
     }
     if (youtubeFeedId) {
@@ -115,8 +115,8 @@ test.describe('News Page', () => {
           DELETE FROM rss_feeds WHERE id = $1`,
           [youtubeFeedId],
         )
-      } catch (error) {
-        errors.push(error)
+      } catch (err) {
+        errors.push(err)
       }
     }
     if (youtubeItemId) {
@@ -126,8 +126,8 @@ test.describe('News Page', () => {
           DELETE FROM rss_feed_item_ids WHERE id = $1`,
           [youtubeItemId],
         )
-      } catch (error) {
-        errors.push(error)
+      } catch (err) {
+        errors.push(err)
       }
     }
     if (youtubeUrlId) {
@@ -137,8 +137,8 @@ test.describe('News Page', () => {
           DELETE FROM urls WHERE id = $1`,
           [youtubeUrlId],
         )
-      } catch (error) {
-        errors.push(error)
+      } catch (err) {
+        errors.push(err)
       }
     }
     if (errors.length > 0) throw new AggregateError(errors, 'YouTube RSS summary cleanup failed')

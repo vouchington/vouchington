@@ -88,11 +88,11 @@ export function useApiKeysManager(
       setCreating(false)
       setNewLabel('')
       resetSelection()
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next -- error path requires injecting an API key creation failure */
       toast.error(
-        error instanceof ApiError
-          ? error.message
+        err instanceof ApiError
+          ? err.message
           : t('extracted.my.apiKeysManager.failedToCreateApiKey_f38e2ce7'),
       )
     } finally {
@@ -140,11 +140,11 @@ export function useApiKeysManager(
       setLocallyRevokedAtById(prev => new Map(prev).set(id, revokedAt))
       setConfirmingRevokeId(null)
       toast.success(t('extracted.my.apiKeysManager.apiKeyRevoked_be38cb67'))
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next -- error path requires injecting an API key revoke failure */
       toast.error(
-        error instanceof ApiError
-          ? error.message
+        err instanceof ApiError
+          ? err.message
           : t('extracted.my.apiKeysManager.failedToRevokeApiKey_799ea7e5'),
       )
     } finally {

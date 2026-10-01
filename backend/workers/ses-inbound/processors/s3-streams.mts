@@ -16,9 +16,9 @@ export function boundedBodyStream(body: unknown): Readable {
         bytes += chunk.byteLength
         rejectOversizedRawEmail(bytes)
         callback(null, chunk)
-      } catch (error) {
-        source.destroy(error as Error)
-        callback(error as Error)
+      } catch (err) {
+        source.destroy(err as Error)
+        callback(err as Error)
       }
     },
   })

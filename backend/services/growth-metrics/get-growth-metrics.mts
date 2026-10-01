@@ -17,9 +17,9 @@ export function getGrowthMetrics(range: GrowthRange): Promise<GrowthMetrics> {
   const cached = growthMetricsCache.get(range)
   if (cached && cached.expiresAt > now) return cached.promise
 
-  const promise = loadGrowthMetrics(range).catch(error => {
+  const promise = loadGrowthMetrics(range).catch(err => {
     if (growthMetricsCache.get(range)?.promise === promise) growthMetricsCache.delete(range)
-    throw error as Error
+    throw err as Error
   })
   growthMetricsCache.set(range, { expiresAt: now + GROWTH_METRICS_CACHE_TTL_MS, promise })
   return promise

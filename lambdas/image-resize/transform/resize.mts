@@ -15,8 +15,8 @@ import type { TransformOptions } from './options.mts'
 export async function transformImage(input: Buffer, options: TransformOptions): Promise<Buffer> {
   try {
     return await transformImageBytes(input, toPublicOptions(options))
-  } catch (error: unknown) {
-    throw mapTransformError(error)
+  } catch (err: unknown) {
+    throw mapTransformError(err)
   }
 }
 
@@ -32,9 +32,9 @@ export async function transformImageFile(
       path,
       cleanup: async () => rm(directory, { recursive: true, force: true }),
     }
-  } catch (error: unknown) {
+  } catch (err: unknown) {
     await rm(directory, { recursive: true, force: true })
-    throw mapTransformError(error)
+    throw mapTransformError(err)
   }
 }
 

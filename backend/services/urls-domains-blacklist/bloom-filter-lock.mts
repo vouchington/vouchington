@@ -22,8 +22,8 @@ export async function withBlocklistBloomFilterLock<Result>(
 
     try {
       result = await operation()
-    } catch (error) {
-      operationError = toError(error)
+    } catch (err) {
+      operationError = toError(err)
     }
 
     let unlockError: Error | undefined
@@ -35,8 +35,8 @@ export async function withBlocklistBloomFilterLock<Result>(
       if (!unlock.rows[0]?.unlocked) {
         unlockError = new Error(`Blocklist Bloom filter lock was not held for ${filterName}`)
       }
-    } catch (error) {
-      unlockError = toError(error)
+    } catch (err) {
+      unlockError = toError(err)
     }
 
     if (unlockError) {
@@ -53,9 +53,9 @@ export async function withBlocklistBloomFilterLock<Result>(
     released = true
     if (operationError) throwError(operationError)
     return result as Result
-  } catch (error) {
+  } catch (err) {
     if (!released) client.release(true)
-    throw toError(error)
+    throw toError(err)
   }
 }
 

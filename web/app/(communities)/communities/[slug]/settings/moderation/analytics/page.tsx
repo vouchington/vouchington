@@ -46,11 +46,11 @@ async function getRawAnalytics(
       kind: 'available',
       metrics: await getCommunityModerationAnalytics(slug, { range }),
     }
-  } catch (error) {
-    if (!(error instanceof ApiError)) throw error
-    if (error.status === 401) return { kind: 'unauthenticated' }
-    if (error.status === 403 || error.status === 404) return { kind: 'access-denied' }
-    throw error
+  } catch (err) {
+    if (!(err instanceof ApiError)) throw err
+    if (err.status === 401) return { kind: 'unauthenticated' }
+    if (err.status === 403 || err.status === 404) return { kind: 'access-denied' }
+    throw err
   }
 }
 

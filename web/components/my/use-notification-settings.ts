@@ -85,11 +85,11 @@ export function useNotificationSettings(initialSettings: NotificationSettingsSta
       setCurrentSettings(current => ({ ...current, [field]: serverValue }))
       onSuccess('Notification setting updated')
       return true
-    } catch (error) {
+    } catch (err) {
       if (generations.current[field] !== generation) return false
 
       setCurrentSettings(current => ({ ...current, [field]: previousValue }))
-      onError(error, {
+      onError(err, {
         fallback: 'Failed to update notification setting',
         tags: { form: 'my-notification-settings', field },
       })
@@ -151,10 +151,10 @@ export function useNotificationSettings(initialSettings: NotificationSettingsSta
         return
       }
       resolveModerationTimezone()
-    } catch (error) {
+    } catch (err) {
       if (loadGeneration.current !== generation) return
       setLoadError(true)
-      onError(error, {
+      onError(err, {
         fallback: t('settings.notificationSettings.loadErrorFallback'),
         tags: { form: 'my-notification-settings' },
       })

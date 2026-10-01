@@ -44,7 +44,7 @@ describe('transformImage limits and orientation', () => {
       lossless: false,
       progressive: false,
       format: 'jpeg',
-    }).catch((caught: unknown) => caught)
+    }).catch((err: unknown) => err)
 
     expect(error).toBeInstanceOf(TransformError)
     expect((error as TransformError).statusCode).toBe(413)

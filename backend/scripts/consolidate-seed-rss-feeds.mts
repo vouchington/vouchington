@@ -143,7 +143,7 @@ function main() {
 
 try {
   main()
-} catch (error) {
-  console.error(error)
+} catch (err) {
+  console.error(err)
   process.exit(1)
 }

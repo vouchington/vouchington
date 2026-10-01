@@ -56,8 +56,8 @@ export function CreateCommunityForm() {
       })
       window.dispatchEvent(new CustomEvent('communities:created', { detail: result.community }))
       push(communityHref(result.community))
-    } catch (error) {
-      if (error instanceof ApiError && error.code === 'IDENTITY_REQUIRED') {
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'IDENTITY_REQUIRED') {
         // The username gate runs before captcha verification on the backend, so the
         // token is still unconsumed — keep it for the post-username retry.
         setUsernameDialogOpen(true)
@@ -65,8 +65,8 @@ export function CreateCommunityForm() {
         // The token was consumed by the backend's verification; get a fresh one.
         turnstile.reset()
         setError(
-          error instanceof Error
-            ? error.message
+          err instanceof Error
+            ? err.message
             : t('extracted.communities.createCommunityForm.failedToCreateCommunity_fc11ae3b'),
         )
         setLoading(false)

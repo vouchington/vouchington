@@ -43,8 +43,8 @@ export async function repairBloomFilterUnavailableRead({
     }
 
     await repairStaleReadyMarker()
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 
@@ -76,8 +76,8 @@ export async function checkBloomFiltersRead({
       return values.map(() => null)
     }
     return results
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
     await repairUnavailableRead()
     return values.map(() => null)
   }
@@ -98,8 +98,8 @@ export async function checkBloomFilterRead({
       return null
     }
     return result
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
     await repairUnavailableRead()
     return null
   }

@@ -53,7 +53,7 @@ async function captureRejection(promise: Promise<unknown>): Promise<unknown> {
     () => {
       throw new Error('expected runSave to reject')
     },
-    (error: unknown) => error,
+    (err: unknown) => err,
   )
 }
 

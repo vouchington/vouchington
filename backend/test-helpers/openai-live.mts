@@ -32,9 +32,9 @@ function liveOpenAICompatibleTest(
   return async context => {
     try {
       await body()
-    } catch (error) {
-      const upstream = describeOpenAIUpstreamFailure(error)
-      if (upstream === null) throw error
+    } catch (err) {
+      const upstream = describeOpenAIUpstreamFailure(err)
+      if (upstream === null) throw err
       const note = formatOpenAIUpstreamSkip(provider, upstream)
       // Logged as well as attached to the skip: one skipped test is easy to miss in a 50-test
       // summary, and the status and request id are what make a recurrence attributable to OpenAI.

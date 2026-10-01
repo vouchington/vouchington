@@ -64,8 +64,8 @@ describe('validateSlug', () => {
     let caughtError: any
     try {
       validateSlug('Invalid Slug')
-    } catch (error: any) {
-      caughtError = error
+    } catch (err: any) {
+      caughtError = err
     }
     expect(caughtError?.status).toBe(422)
     expect(caughtError?.message).toContain('Slug must only contain lowercase')
@@ -153,8 +153,8 @@ describe('validateUsername', () => {
     let caughtError: any
     try {
       validateUsername('ab')
-    } catch (error: any) {
-      caughtError = error
+    } catch (err: any) {
+      caughtError = err
     }
     expect(caughtError?.status).toBe(422)
   })

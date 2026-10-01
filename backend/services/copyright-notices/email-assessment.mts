@@ -26,8 +26,8 @@ export async function getOrCreateEmailAssessment(
       currentUser,
       substantiallyCompliant: true,
     })
-  } catch (error) {
-    if (!isConflict(error)) throw error
+  } catch (err) {
+    if (!isConflict(err)) throw err
     const { rows: concurrent } = await write<{ id: string }>(
       sql`/* getOrCreateEmailAssessment:concurrent */
         SELECT id FROM copyright_notice_submission_assessments

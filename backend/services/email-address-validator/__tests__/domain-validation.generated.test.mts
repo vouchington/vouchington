@@ -48,7 +48,7 @@ describe('invalid domain validation', () => {
 
   it('error includes domain in message', async () => {
     const domain = 'definitely-invalid-12345.test'
-    const err = await validateEmailDomain(domain).catch(e => e)
+    const err = await validateEmailDomain(domain).catch(err => err)
     expect(err).toBeInstanceOf(EmailDomainInvalidError)
     expect((err as EmailDomainInvalidError).message).toContain(domain)
     expect((err as EmailDomainInvalidError).domain).toBe(domain)
@@ -173,7 +173,7 @@ describe('disposable email blocking', () => {
     await insertTestDomainBlacklist(testDomain, 'test-email-blacklist')
     await addDomainsToEmailBloomFilter([testDomain])
 
-    const err = await validateEmailDomain(testDomain).catch(e => e)
+    const err = await validateEmailDomain(testDomain).catch(err => err)
     expect(err).toBeInstanceOf(EmailDomainInvalidError)
     expect((err as EmailDomainInvalidError).reason).toBe('disposable')
     expect((err as EmailDomainInvalidError).message).toContain('disposable')
@@ -228,7 +228,7 @@ describe('bloom filter integration', () => {
     // Bloom filter returns false → fast path skips the blacklist EXISTS subquery.
     // The domain is in the DB blacklist but not the filter; it reaches DNS validation
     // instead of being caught by the blacklist check.
-    const error = await validateEmailDomain(testDomain).catch(e => e)
+    const error = await validateEmailDomain(testDomain).catch(err => err)
     expect(error).toBeInstanceOf(EmailDomainInvalidError)
     expect((error as EmailDomainInvalidError).message).not.toContain('email blacklist')
   })

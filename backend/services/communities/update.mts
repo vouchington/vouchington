@@ -54,12 +54,12 @@ export async function updateCommunity(
         void enqueueReconcileMediaDeliveryRegistry()
       }
     }
-  } catch (error) {
-    const pgError = error as { code?: string }
+  } catch (err) {
+    const pgError = err as { code?: string }
     if (pgError.code === '23505') {
       throw createHttpError(409, `Slug "${input.slug}" is already taken`)
     }
-    throw error
+    throw err
   }
 
   const updated = await getCommunity(communityId, options)

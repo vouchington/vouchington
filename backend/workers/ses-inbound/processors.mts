@@ -63,10 +63,10 @@ export async function processSesInboundEmail(
   try {
     await processCopyrightInboundEmail(data, deps)
     await deps.deleteSesInboundObject(data.objectKey)
-  } catch (error) {
-    if (!(error instanceof SesInboundTerminalError)) throw error
+  } catch (err) {
+    if (!(err instanceof SesInboundTerminalError)) throw err
     await deps.moveSesInboundObjectToFailed(data.objectKey, data.sesMessageId)
-    throw new UnrecoverableError(error.message)
+    throw new UnrecoverableError(err.message)
   }
 }
 

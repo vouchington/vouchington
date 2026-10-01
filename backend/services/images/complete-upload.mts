@@ -78,12 +78,12 @@ export async function completeImageUpload(
           frozen.sha256,
           imageId,
         )
-      } catch (error) {
-        if (!isUniqueViolation(error)) throw error
+      } catch (err) {
+        if (!isUniqueViolation(err)) throw err
         await deleteDuplicateUpload(image, imageId)
         const winner = await resolvedDependencies.getImageByHash(frozen.sha256)
         if (winner) return winner
-        throw error
+        throw err
       }
     }
 
@@ -100,34 +100,34 @@ export async function completeImageUpload(
 
     try {
       processingImage = await persistPromotedImageKey(imageId, frozen.sha256, promotion.s3Key)
-    } catch (error) {
+    } catch (err) {
       await cleanupRejectedPromotionIfTerminal(imageId, promotion, deliveryAlias)
-      throw error
+      throw err
     }
 
     try {
       await deleteImageUploadSourceFromS3(image)
       await markImageUploadSourceDeleted(imageId)
-    } catch (error) {
-      onError(error as Error)
+    } catch (err) {
+      onError(err as Error)
     }
 
     try {
       await enqueueExtractImageMetadata(imageId)
-    } catch (error) {
-      onError(error as Error)
+    } catch (err) {
+      onError(err as Error)
     }
     return processingImage
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err)
     await markImageUploadFailed(imageId, errorMessage)
-    throw error
+    throw err
   } finally {
     if (frozen) {
       try {
         await frozen.cleanup()
-      } catch (error) {
-        onError(error instanceof Error ? error : new Error(String(error)))
+      } catch (err) {
+        onError(err instanceof Error ? err : new Error(String(err)))
       }
     }
   }
@@ -145,8 +145,8 @@ async function cleanupRejectedPromotionIfTerminal(
       .filter(result => result.created)
       .map(({ s3Key }) => ({ s3_key: s3Key }))
     if (createdKeys.length > 0) await deleteImagesFromS3(createdKeys)
-  } catch (error) {
-    onError(error as Error)
+  } catch (err) {
+    onError(err as Error)
   }
 }
 

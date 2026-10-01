@@ -35,8 +35,8 @@ export const prepareRssFeedItemsForUpsert = async (feedItems: RssFeedItemToUpser
       // Mirrors the isPublicHostname guard inside addUrls — pre-filtering
       // here prevents a spurious 500 log when addUrls silently drops the same hosts.
       return isPublicHostname(url.hostname) ? url.toString() : null
-    } catch (error) {
-      onError(error instanceof Error ? error : new Error(String(error)))
+    } catch (err) {
+      onError(err instanceof Error ? err : new Error(String(err)))
       return null
     }
   })

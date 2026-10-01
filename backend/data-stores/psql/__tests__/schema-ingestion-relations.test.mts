@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest'
 async function rejectionCode(sql: string, values?: unknown[]): Promise<string | undefined> {
   try {
     await write(sql, values)
-  } catch (error) {
-    return (error as { code?: string }).code
+  } catch (err) {
+    return (err as { code?: string }).code
   }
   return undefined
 }

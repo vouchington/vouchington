@@ -46,8 +46,8 @@ app.route('/api/v1/auth/logout').post(async ctx => {
           { userId, issuedAt },
           binding
             ? () =>
-                deleteExactWebPushSubscription(userId, binding).catch(error =>
-                  onError(error instanceof Error ? error : new Error(String(error))),
+                deleteExactWebPushSubscription(userId, binding).catch(err =>
+                  onError(err instanceof Error ? err : new Error(String(err))),
                 )
             : async () => {},
           binding,

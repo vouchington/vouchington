@@ -37,7 +37,7 @@ describe('createPost deleted author lifecycle', () => {
         title: 'Creation blocked by concurrent author deletion',
         markdown: 'This post must not be created after the author is deleted.',
         post_type: 'discussion',
-      }).catch((error: unknown) => error)
+      }).catch((err: unknown) => err)
       await waitForTestPostgresLockWaiter(deletionBackendId, 'lockActiveUserSubjectsForMutation')
       releaseDeletion.resolve()
 

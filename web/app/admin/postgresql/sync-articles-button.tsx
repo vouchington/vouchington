@@ -94,12 +94,12 @@ export function SyncArticlesButton() {
           if (status.status === 'active') return
           finishSync(status, stream)
         })
-        .catch(error => {
+        .catch(err => {
           if (streamRef.current !== stream) return
-          if (!(error instanceof ApiError) || error.status >= 500 || error.status === 429) return
+          if (!(err instanceof ApiError) || err.status >= 500 || err.status === 429) return
           stream.close()
           if (streamRef.current === stream) streamRef.current = null
-          onError(error, {
+          onError(err, {
             fallback: t(
               'extracted.postgresql.syncArticlesButton.failedToTrackArticleSyncStatus_d66a1c43',
             ),
@@ -118,8 +118,8 @@ export function SyncArticlesButton() {
     try {
       const { jobId } = await triggerArticleSync()
       connectStream(jobId)
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 409) {
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
         onError(new Error('An article sync was already triggered recently'), {
           fallback: t(
             'extracted.postgresql.syncArticlesButton.anArticleSyncWasAlreadyTriggered_fb387842',
@@ -128,7 +128,7 @@ export function SyncArticlesButton() {
           skipSentry: true,
         })
       } else {
-        onError(error, {
+        onError(err, {
           fallback: t(
             'extracted.postgresql.syncArticlesButton.failedToTriggerArticleSync_17646b04',
           ),

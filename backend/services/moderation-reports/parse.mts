@@ -64,11 +64,11 @@ export function parseCreateModerationReportInput(raw: {
       reason: draft.reason,
       note: draft.note,
     }
-  } catch (error) {
-    if (error instanceof ReportValidationError) {
-      throw createHttpError(422, reportValidationMessage(error))
+  } catch (err) {
+    if (err instanceof ReportValidationError) {
+      throw createHttpError(422, reportValidationMessage(err))
     }
-    throw error
+    throw err
   }
 }
 

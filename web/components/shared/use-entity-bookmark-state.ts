@@ -127,11 +127,11 @@ export function useEntityBookmarkState({
         }
       }
       onChange?.(next)
-    } catch (error) {
+    } catch (err) {
       setBookmarkState(state => (state.key === requestKey ? { ...state, isActive: !next } : state))
       toast.error(
-        isRateLimitError(error)
-          ? getRateLimitMessage(error)
+        isRateLimitError(err)
+          ? getRateLimitMessage(err)
           : t('extracted.shared.entityBookmarkButton.failedToUpdateLabelPleaseTry_fa7fe6f1', {
               label: resolvedErrorLabel,
             }),

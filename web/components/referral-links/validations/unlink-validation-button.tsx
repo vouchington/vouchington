@@ -44,8 +44,8 @@ export function UnlinkValidationButton({
         }),
       )
       refresh()
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.validations.unlinkValidationButton.failedToUnlinkValidation_99c0a366',
         ),

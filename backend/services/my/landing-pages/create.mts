@@ -33,9 +33,9 @@ export async function createMyLandingPage(
         RETURNING id, user_id, title, subtitle, slug, is_default, created_at, updated_at
     `)
     landingPage = rows[0] as LandingPage
-  } catch (error: unknown) {
-    if (isUniqueViolation(error)) {
-      const constraint = 'constraint' in error ? error.constraint : null
+  } catch (err: unknown) {
+    if (isUniqueViolation(err)) {
+      const constraint = 'constraint' in err ? err.constraint : null
       if (constraint === 'uq_user_landing_pages__user_id_slug') {
         assert(false, 409, 'You already have a landing page with this slug')
       }
@@ -43,7 +43,7 @@ export async function createMyLandingPage(
         assert(false, 409, 'You already have a default landing page')
       }
     }
-    throw error
+    throw err
   }
   await query.commit()
   await invalidate.users(userId)

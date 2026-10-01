@@ -41,8 +41,8 @@ export async function fetchTurnstileVerify(
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: params.toString(),
     signal: AbortSignal.timeout(5000),
-  }).catch(error => {
-    throw createHttpError(502, 'CAPTCHA service unavailable', { cause: error })
+  }).catch(err => {
+    throw createHttpError(502, 'CAPTCHA service unavailable', { cause: err })
   })
   if (!response.ok) {
     throw createHttpError(502, 'CAPTCHA service unavailable', {
@@ -51,8 +51,8 @@ export async function fetchTurnstileVerify(
   }
   try {
     return (await response.json()) as TurnstileResponse
-  } catch (error) {
-    throw createHttpError(502, 'CAPTCHA service unavailable', { cause: error })
+  } catch (err) {
+    throw createHttpError(502, 'CAPTCHA service unavailable', { cause: err })
   }
 }
 

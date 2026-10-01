@@ -43,9 +43,9 @@ export async function completeImageUpload(imageId: string): Promise<CompleteUplo
       `/api/v1/images/${imageId}/completions`,
     )
     return image
-  } catch (error) {
+  } catch (err) {
     /* c8 ignore next -- defensive re-throw for 4xx client errors; retry logic is covered */
-    if (error instanceof ApiError && error.status < 500) throw error
+    if (err instanceof ApiError && err.status < 500) throw err
     const { image } = await clientApi.post<{ image: CompleteUploadResponse }>(
       `/api/v1/images/${imageId}/completions`,
     )

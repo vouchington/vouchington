@@ -85,8 +85,8 @@ async function probeUrl(url: string): Promise<ProbeResult> {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
     finalUrl = response.url || url
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error)
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err)
     return { status: 'transient', httpStatus: null, finalUrl: url, reason }
   }
 
@@ -118,8 +118,8 @@ async function probeUrl(url: string): Promise<ProbeResult> {
   let body: Uint8Array
   try {
     body = await spoolFeedBody(response)
-  } catch (error) {
-    if (error instanceof FeedTooLargeError) {
+  } catch (err) {
+    if (err instanceof FeedTooLargeError) {
       return {
         status: 'permanent',
         httpStatus,
@@ -127,7 +127,7 @@ async function probeUrl(url: string): Promise<ProbeResult> {
         reason: `feed body exceeds ${MAX_FEED_BYTES} bytes`,
       }
     }
-    const reason = error instanceof Error ? error.message : String(error)
+    const reason = err instanceof Error ? err.message : String(err)
     return { status: 'transient', httpStatus, finalUrl, reason }
   }
 
@@ -141,8 +141,8 @@ async function probeUrl(url: string): Promise<ProbeResult> {
         reason: 'parseFeedDocument returned no feed',
       }
     }
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error)
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err)
     return { status: 'permanent', httpStatus, finalUrl, reason: `parseFeed failed: ${reason}` }
   }
 

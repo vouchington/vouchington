@@ -44,7 +44,7 @@ describe('runAppend feedback flags', () => {
         ['--file', noteFile, '--session-id', 'sess-1', '--mode', 'batch'],
         HOSTED_ENV,
         dir,
-      ).catch((error: unknown) => error)
+      ).catch((err: unknown) => err)
       expect(rejection).toBeInstanceOf(BlackboardJournalError)
       expect(() => {
         throw rejection

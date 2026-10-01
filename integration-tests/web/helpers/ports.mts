@@ -47,9 +47,9 @@ export async function allocateReservedPorts(
     }
 
     return reservations
-  } catch (error) {
+  } catch (err) {
     await Promise.allSettled(reservations.map(reservation => reservation.release()))
-    throw error
+    throw err
   }
 }
 
@@ -84,9 +84,9 @@ async function reserveLoopbackPorts(count: number): Promise<ReservedPort[]> {
       const server = await tryReserveLoopback(candidate)
       if (server) servers.push(server)
     }
-  } catch (error) {
+  } catch (err) {
     await Promise.allSettled(servers.map(server => closeServer(server)))
-    throw error
+    throw err
   }
   if (servers.length < count) {
     await Promise.allSettled(servers.map(server => closeServer(server)))
@@ -134,9 +134,9 @@ async function tryReserveLoopback(port: number): Promise<net.Server | null> {
   try {
     await listenOnLoopback(server, port)
     return server
-  } catch (error) {
-    if (isAddrInUse(error)) return null
-    throw error
+  } catch (err) {
+    if (isAddrInUse(err)) return null
+    throw err
   }
 }
 

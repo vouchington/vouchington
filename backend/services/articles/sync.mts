@@ -159,10 +159,10 @@ async function syncArticleFiles<T extends ArticleSyncFile>(
           await tagPostWithTopics(currentUser, post.id, topics)
         }
       }
-    } catch (error) {
+    } catch (err) {
       item.action = 'error'
-      item.error = error instanceof Error ? error.message : String(error)
-      if (error instanceof Error) onError(error)
+      item.error = err instanceof Error ? err.message : String(err)
+      if (err instanceof Error) onError(err)
     }
 
     results.push(item)

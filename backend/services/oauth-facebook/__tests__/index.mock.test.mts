@@ -96,7 +96,7 @@ describe('upsertFacebookAuthorizationCodeAccount', () => {
     const error = await upsertFacebookAuthorizationCodeAccount(
       'provider-code',
       'https://example.com/auth/callback/facebook/broker',
-    ).catch(caught => caught as Error & { status: number })
+    ).catch(err => err as Error & { status: number })
 
     expect(error).toMatchObject({
       status: 502,

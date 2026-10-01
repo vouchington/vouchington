@@ -76,8 +76,8 @@ export function useTopicRecommendationActions(orderedPostIds: string[]) {
       await updateTopicRecommendation(post.id, buildTopicRecommendationUpdatePayload(state))
       onSuccess('Recommendation updated')
       router.refresh()
-    } catch (error) {
-      onError(error, { fallback: 'Failed to update recommendation' })
+    } catch (err) {
+      onError(err, { fallback: 'Failed to update recommendation' })
     } finally {
       setIsSaving(false)
     }
@@ -100,8 +100,8 @@ export function useTopicRecommendationActions(orderedPostIds: string[]) {
         }),
       )
       router.refresh()
-    } catch (error) {
-      onError(error, { fallback: 'Failed to approve recommendation' })
+    } catch (err) {
+      onError(err, { fallback: 'Failed to approve recommendation' })
     } finally {
       setIsSaving(false)
     }
@@ -118,8 +118,8 @@ export function useTopicRecommendationActions(orderedPostIds: string[]) {
       onSuccess('Recommendation rejected')
       navigateToNextOrClose(posts, post.id)
       router.refresh()
-    } catch (error) {
-      onError(error, { fallback: 'Failed to reject recommendation' })
+    } catch (err) {
+      onError(err, { fallback: 'Failed to reject recommendation' })
     } finally {
       setIsSaving(false)
     }
@@ -131,8 +131,8 @@ export function useTopicRecommendationActions(orderedPostIds: string[]) {
       setWithdrawnIds(current => new Set(current).add(post.id))
       onSuccess('Recommendation withdrawn')
       router.refresh()
-    } catch (error) {
-      onError(error, { fallback: 'Failed to withdraw recommendation' })
+    } catch (err) {
+      onError(err, { fallback: 'Failed to withdraw recommendation' })
     }
   }
 
@@ -143,8 +143,8 @@ export function useTopicRecommendationActions(orderedPostIds: string[]) {
       await approveTopicRecommendation(post.id)
       onSuccess('Recommendation approved')
       router.refresh()
-    } catch (error) {
-      onError(error, { fallback: 'Failed to approve recommendation' })
+    } catch (err) {
+      onError(err, { fallback: 'Failed to approve recommendation' })
     } finally {
       quickSavingIdsRef.current.delete(post.id)
     }
@@ -157,8 +157,8 @@ export function useTopicRecommendationActions(orderedPostIds: string[]) {
       await rejectTopicRecommendation(post.id)
       onSuccess('Recommendation rejected')
       router.refresh()
-    } catch (error) {
-      onError(error, { fallback: 'Failed to reject recommendation' })
+    } catch (err) {
+      onError(err, { fallback: 'Failed to reject recommendation' })
     } finally {
       quickSavingIdsRef.current.delete(post.id)
     }

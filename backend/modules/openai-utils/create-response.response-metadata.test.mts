@@ -22,7 +22,7 @@ describe('streamOpenAIResponseEvents response metadata', () => {
         ]),
       )
 
-      const error: unknown = await gen.next().catch((caught: unknown) => caught)
+      const error: unknown = await gen.next().catch((err: unknown) => err)
       expect(error).toBeInstanceOf(OpenAIResponseNotCompletedError)
       const notCompleted = error as OpenAIResponseNotCompletedError
       expect(notCompleted.status).toBe(status ?? 'missing')

@@ -16,8 +16,8 @@ export function UnsubscribeForm({ token }: { token: string }) {
       await unsubscribeEmailToken(token)
       setDone(true)
       onSuccess('Unsubscribed')
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: 'Failed to unsubscribe',
         tags: { form: 'public-email-unsubscribe' },
       })

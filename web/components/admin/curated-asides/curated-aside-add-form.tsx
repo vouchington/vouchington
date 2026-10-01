@@ -40,8 +40,8 @@ export function CuratedAsideAddForm({
       onAdd(result.curated_aside_item)
       setSelected(null)
       setAutocompleteKey(key => key + 1)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.curatedAsides.curatedAsideAddForm.failedToAddCuratedItem_9fa0533f'),
       })
     } finally {

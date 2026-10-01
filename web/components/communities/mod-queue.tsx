@@ -205,12 +205,12 @@ export function ModQueue({
       startTransition(() => {
         refresh()
       })
-    } catch (error) {
+    } catch (err) {
       dispatch({
         type: 'fail',
         message:
-          error instanceof Error
-            ? error.message
+          err instanceof Error
+            ? err.message
             : t('extracted.communities.modQueue.failedToApprovePost_fe0bb0b7'),
       })
     } finally {
@@ -228,12 +228,12 @@ export function ModQueue({
       startTransition(() => {
         refresh()
       })
-    } catch (error) {
+    } catch (err) {
       dispatch({
         type: 'fail',
         message:
-          error instanceof Error
-            ? error.message
+          err instanceof Error
+            ? err.message
             : t('extracted.communities.modQueue.failedToRejectPost_05661041'),
       })
     } finally {
@@ -251,12 +251,12 @@ export function ModQueue({
       startTransition(() => {
         refresh()
       })
-    } catch (error) {
+    } catch (err) {
       dispatch({
         type: 'fail',
         message:
-          error instanceof Error
-            ? error.message
+          err instanceof Error
+            ? err.message
             : t('extracted.communities.modQueue.failedToRejectPost_05661041'),
       })
     } finally {
@@ -273,12 +273,12 @@ export function ModQueue({
       await resolveCommunityModerationReport(communitySlug, report.id, status)
       dispatch({ type: 'report-resolved', reportId: report.id })
       clearSelected(`report:${report.id}`)
-    } catch (error) {
+    } catch (err) {
       dispatch({
         type: 'fail',
         message:
-          error instanceof Error
-            ? error.message
+          err instanceof Error
+            ? err.message
             : t('extracted.communities.modQueue.failedToUpdateReport_61bf19b3'),
       })
     } finally {

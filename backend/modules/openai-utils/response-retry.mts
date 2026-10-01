@@ -67,18 +67,18 @@ export async function createOpenAICompatibleResponseWithRetries<
     try {
       // oxlint-disable-next-line no-await-in-loop -- a retry cannot begin until this physical request settles
       return { stream: await createResponse(params, sdkOptions), requestStartedAt }
-    } catch (error) {
-      const isFlexResourceUnavailable = isOpenAIFlexResourceUnavailableError(error)
+    } catch (err) {
+      const isFlexResourceUnavailable = isOpenAIFlexResourceUnavailableError(err)
       if (isFlexResourceUnavailable && attempt <= maxRetries) {
         // oxlint-disable-next-line no-await-in-loop -- retry delay gates the following physical request
-        await waitForOpenAIResponseRetry(error, attempt - 1, options?.signal ?? undefined)
+        await waitForOpenAIResponseRetry(err, attempt - 1, options?.signal ?? undefined)
         continue
       }
-      if (!isFlexResourceUnavailable && isUnknownBilledOpenAIResponseAttempt(error)) {
+      if (!isFlexResourceUnavailable && isUnknownBilledOpenAIResponseAttempt(err)) {
         // oxlint-disable-next-line no-await-in-loop -- uncertainty must persist before propagating a billed-ambiguous error
-        await hooks?.onUnknownBilledAttempt({ requestStartedAt, error })
+        await hooks?.onUnknownBilledAttempt({ requestStartedAt, error: err })
       }
-      throw error
+      throw err
     }
   }
 }

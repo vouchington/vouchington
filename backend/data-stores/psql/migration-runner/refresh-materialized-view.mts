@@ -32,8 +32,8 @@ export async function refreshMaterializedView(viewName: string): Promise<void> {
       await client.query(
         `/* refreshMaterializedView */ REFRESH MATERIALIZED VIEW CONCURRENTLY ${viewName}`,
       )
-    } catch (error) {
-      refreshError = toError(error)
+    } catch (err) {
+      refreshError = toError(err)
     }
 
     let unlockError: Error | undefined
@@ -47,8 +47,8 @@ export async function refreshMaterializedView(viewName: string): Promise<void> {
           unlockError = new Error('Materialized view advisory lock was not held at release')
         }
       }
-    } catch (error) {
-      unlockError = toError(error)
+    } catch (err) {
+      unlockError = toError(err)
     }
 
     if (unlockError) {
@@ -65,9 +65,9 @@ export async function refreshMaterializedView(viewName: string): Promise<void> {
     if (refreshError) {
       throw refreshError
     }
-  } catch (error) {
-    if (!released) client.release(toError(error))
-    throw toError(error)
+  } catch (err) {
+    if (!released) client.release(toError(err))
+    throw toError(err)
   }
 }
 

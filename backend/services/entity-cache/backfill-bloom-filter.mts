@@ -40,8 +40,8 @@ export async function warmUpEntityCacheBloomFilters(): Promise<void> {
     missingEntityTypes.map(async entityType => {
       try {
         await enqueueBackfillBloomFilter({ entityType })
-      } catch (error) {
-        onError(error instanceof Error ? error : new Error(String(error)))
+      } catch (err) {
+        onError(err instanceof Error ? err : new Error(String(err)))
       }
     }),
   )

@@ -21,10 +21,10 @@ export function getJsonLd(document: Document): unknown[] {
 
       try {
         return [JSON.parse(content) as unknown]
-      } catch (cause) {
+      } catch (err) {
         throw new Error(
           `Failed to parse JSON-LD script ${index} on ${document.URL}: ${content.slice(0, 160)}`,
-          { cause },
+          { cause: err },
         )
       }
     },

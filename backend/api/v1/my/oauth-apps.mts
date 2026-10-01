@@ -43,9 +43,9 @@ const oauthAppsParser = createPaginationParser({
 async function withClientMetadataErrors<T>(ctx: Context, run: () => Promise<T>): Promise<T> {
   try {
     return await run()
-  } catch (error) {
-    if (!(error instanceof OAuthProtocolError)) throw error
-    ctx.throw(422, error.message, error.code)
+  } catch (err) {
+    if (!(err instanceof OAuthProtocolError)) throw err
+    ctx.throw(422, err.message, err.code)
   }
 }
 

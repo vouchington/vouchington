@@ -23,8 +23,8 @@ export function ProfileForm({ initialMarkdown }: Props) {
     try {
       await updateMyProfile({ markdown })
       onSuccess(t('extracted.my.profileForm.profileUpdated_9c5551e8'))
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.my.profileForm.failedToUpdateProfile_eeb7276d'),
         tags: { form: 'my-profile' },
       })

@@ -56,9 +56,9 @@ describe('update', () => {
         label: longLabel,
       })
       assert.fail('Should have thrown')
-    } catch (error: unknown) {
-      assert.ok(error && typeof error === 'object' && 'status' in error)
-      assert.equal(error.status, 422)
+    } catch (err: unknown) {
+      assert.ok(err && typeof err === 'object' && 'status' in err)
+      assert.equal(err.status, 422)
     }
   })
 
@@ -74,9 +74,9 @@ describe('update', () => {
         label: 123 as unknown as string,
       })
       assert.fail('Should have thrown')
-    } catch (error: unknown) {
-      assert.ok(error && typeof error === 'object' && 'status' in error)
-      assert.equal(error.status, 422)
+    } catch (err: unknown) {
+      assert.ok(err && typeof err === 'object' && 'status' in err)
+      assert.equal(err.status, 422)
     }
   })
 
@@ -120,9 +120,9 @@ describe('update', () => {
     try {
       await updateUserReferralLink(regularUser, link.id, { label: 'Hacked' })
       assert.fail('Should have thrown')
-    } catch (error: unknown) {
-      assert.ok(error && typeof error === 'object' && 'status' in error)
-      assert.equal(error.status, 403)
+    } catch (err: unknown) {
+      assert.ok(err && typeof err === 'object' && 'status' in err)
+      assert.equal(err.status, 403)
     }
   })
 
@@ -177,9 +177,9 @@ describe('update', () => {
     try {
       await updateUserReferralLink(null, link.id, { label: 'Hacked' })
       assert.fail('Should have thrown')
-    } catch (error: unknown) {
-      assert.ok(error && typeof error === 'object' && 'status' in error)
-      assert.equal(error.status, 401)
+    } catch (err: unknown) {
+      assert.ok(err && typeof err === 'object' && 'status' in err)
+      assert.equal(err.status, 401)
     }
   })
 })

@@ -161,9 +161,9 @@ describe('classifier run processor (real GlideMQ)', () => {
         }
         try {
           return await processClassifierRun(job)
-        } catch (error) {
-          executionErrors.push(error)
-          throw error
+        } catch (err) {
+          executionErrors.push(err)
+          throw err
         }
       },
       // The production outage backoff is minutes long; this test only needs the attempts to run out.

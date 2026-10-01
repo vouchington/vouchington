@@ -39,7 +39,7 @@ async function deletePointValuationOptimistically({
       })
       onSuccess(successMessage)
     })
-  } catch (error) {
+  } catch (err) {
     setDeletedIds(previous => {
       const next = new Set(previous)
       next.delete(id)
@@ -48,7 +48,7 @@ async function deletePointValuationOptimistically({
     if (valuation) {
       setUpserts(previous => new Map(previous).set(id, valuation))
     }
-    onError(error, { fallback: failureMessage })
+    onError(err, { fallback: failureMessage })
   }
 }
 

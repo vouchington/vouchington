@@ -50,7 +50,7 @@ describe('waitForActiveServiceWorker', () => {
       waiting: null,
     } as unknown as ServiceWorkerRegistration
     const ready = waitForActiveServiceWorker(registration, { timeoutMs: 5000 })
-    const rejection = ready.catch(error => error)
+    const rejection = ready.catch(err => err)
 
     await vi.advanceTimersByTimeAsync(5000)
 
@@ -70,7 +70,7 @@ describe('waitForActiveServiceWorker', () => {
       waiting: null,
     } as unknown as ServiceWorkerRegistration
     const ready = waitForActiveServiceWorker(registration, { timeoutMs: 5000 })
-    const rejection = ready.catch(error => error)
+    const rejection = ready.catch(err => err)
 
     await vi.advanceTimersByTimeAsync(5000)
 

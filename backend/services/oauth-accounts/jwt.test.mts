@@ -14,8 +14,8 @@ describe('decodeJwtPart', () => {
     let thrown: unknown
     try {
       decodeJwtPart('not-valid-jwt-part')
-    } catch (error) {
-      thrown = error
+    } catch (err) {
+      thrown = err
     }
 
     expect(thrown).toMatchObject({ status: 422, message: 'Invalid JWT format' })

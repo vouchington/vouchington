@@ -70,8 +70,8 @@ async function cleanupStagedUploadSourceWhileLocked(imageId: string): Promise<bo
       [image.id, terminal],
     )
     return result.rowCount === 1
-  } catch (error) {
-    onError(error as Error)
+  } catch (err) {
+    onError(err as Error)
     return false
   }
 }

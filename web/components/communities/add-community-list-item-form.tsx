@@ -35,8 +35,8 @@ export function AddCommunityListItemForm({
       onSuccess(
         t('extracted.communities.addCommunityListItemForm.labelAddedToList_6fb6fe6e', { label }),
       )
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.communities.addCommunityListItemForm.failedToAddLabel_22332393', {
           label,
         }),

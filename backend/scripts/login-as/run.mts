@@ -143,8 +143,8 @@ async function main() {
 }
 
 main()
-  .catch(error => {
-    console.error(error)
+  .catch(err => {
+    console.error(err)
     process.exitCode = 1
   })
   .finally(() => {

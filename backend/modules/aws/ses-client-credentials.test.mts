@@ -68,8 +68,8 @@ describe('getSesClientCredentials', () => {
 function getThrownError(fn: () => unknown): Error {
   try {
     fn()
-  } catch (error) {
-    if (error instanceof Error) return error
+  } catch (err) {
+    if (err instanceof Error) return err
   }
 
   throw new Error('Expected function to throw')

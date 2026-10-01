@@ -19,17 +19,17 @@ export function settleBackendProgramBuild<Configuration, Value>(
 ): Value {
   try {
     return settleBuild(initialConfiguration, MAXIMUM_BACKEND_PROGRAM_BUILD_ATTEMPTS, callbacks)
-  } catch (error) {
+  } catch (err) {
     if (
-      error instanceof Error &&
-      error.message ===
+      err instanceof Error &&
+      err.message ===
         `Inputs changed during ${MAXIMUM_BACKEND_PROGRAM_BUILD_ATTEMPTS} consecutive build attempts`
     ) {
       throw new Error(
         `Backend TypeScript inputs changed during ${MAXIMUM_BACKEND_PROGRAM_BUILD_ATTEMPTS} consecutive program builds`,
-        { cause: error },
+        { cause: err },
       )
     }
-    throw error
+    throw err
   }
 }

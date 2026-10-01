@@ -68,7 +68,7 @@ export function emitValkeyAdminResult(
     signal.throwIfAborted()
     stdout(JSON.stringify({ ...result, ...identity }))
     return undefined
-  } catch (error) {
-    return error ?? new Error('Valkey admin result output failed')
+  } catch (err) {
+    return err ?? new Error('Valkey admin result output failed')
   }
 }

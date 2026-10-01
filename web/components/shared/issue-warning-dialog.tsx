@@ -77,8 +77,8 @@ export function IssueWarningDialog({
         setOpen(false)
         reset()
         onIssued?.(result)
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t('extracted.shared.issueWarningDialog.failedToIssueWarning_b967c829'),
         })
       }

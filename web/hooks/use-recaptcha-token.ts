@@ -44,9 +44,9 @@ function executeEnterprise(siteKey: string, action: RecaptchaAction): Promise<st
     grecaptcha.enterprise.ready(() => {
       try {
         grecaptcha.enterprise.execute(siteKey, { action }).then(resolve).catch(reject)
-      } catch (error) {
+      } catch (err) {
         /* c8 ignore next -- error path requires grecaptcha.enterprise.execute to throw */
-        reject(error instanceof Error ? error : new Error('reCAPTCHA execute threw'))
+        reject(err instanceof Error ? err : new Error('reCAPTCHA execute threw'))
       }
     })
   })

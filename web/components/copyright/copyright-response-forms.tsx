@@ -57,8 +57,8 @@ export function CopyrightCounterNoticeForm({
             : 'Counter-notice received. A moderator will review its statutory requirements.',
         )
         router.push(`/copyright/notices/${noticeId}`)
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: 'We could not submit this counter-notice. Please try again.',
           tags: { form: 'copyright-counter-notice' },
         })

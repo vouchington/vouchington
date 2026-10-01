@@ -18,8 +18,8 @@ export function localizationRoute(ctx: Context): void {
       return
     }
     ctx.json(JSON.parse(result.body) as Record<string, unknown>)
-  } catch (error) {
-    if (isLocalizationClientError(error)) ctx.throw(400, error.message)
-    throw error
+  } catch (err) {
+    if (isLocalizationClientError(err)) ctx.throw(400, err.message)
+    throw err
   }
 }

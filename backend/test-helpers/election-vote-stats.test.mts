@@ -55,7 +55,7 @@ describe('onceElectionVoteStatsCompleted', () => {
   it('rejects with a timeout when only a non-matching election completes', async () => {
     const electionId = crypto.randomUUID()
     const promise = onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 50)
-    const promiseRejection = promise.catch((error: unknown) => error)
+    const promiseRejection = promise.catch((err: unknown) => err)
     await flushMicrotasks()
     emitOnWorker('completed', { name: JOB_NAME, data: electionTarget(crypto.randomUUID()) })
 
@@ -76,7 +76,7 @@ describe('onceElectionVoteStatsCompleted', () => {
   it('rejects when the matching job fails, rather than waiting for the timeout', async () => {
     const electionId = crypto.randomUUID()
     const promise = onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 500)
-    const promiseRejection = promise.catch((error: unknown) => error)
+    const promiseRejection = promise.catch((err: unknown) => err)
     await flushMicrotasks()
     emitOnWorker('failed', { name: JOB_NAME, data: electionTarget(electionId) }, new Error('boom'))
 
@@ -141,7 +141,7 @@ describe('onceElectionVoteStatsCompleted', () => {
     ).resolves.toBeUndefined()
 
     const promise = onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 50)
-    const promiseRejection = promise.catch((error: unknown) => error)
+    const promiseRejection = promise.catch((err: unknown) => err)
     await flushMicrotasks()
 
     await expect(promiseRejection).resolves.toMatchObject({
@@ -202,7 +202,7 @@ describe('onceElectionVoteStatsCompleted', () => {
   it('does not match a different election ordering key sharing the same id', async () => {
     const electionId = crypto.randomUUID()
     const promise = onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 50)
-    const outcome = promise.catch((error: unknown) => error)
+    const outcome = promise.catch((err: unknown) => err)
     await flushMicrotasks()
     emitOnWorker('completed', {
       name: JOB_NAME,

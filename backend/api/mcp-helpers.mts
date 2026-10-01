@@ -131,9 +131,9 @@ async function readBody(
 ): Promise<unknown> {
   try {
     return await ctx.request.json('1mb')
-  } catch (error) {
+  } catch (err) {
     await audit?.record([unreadMcpCall('invalid_request')])
-    throw error
+    throw err
   }
 }
 

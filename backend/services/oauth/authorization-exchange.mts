@@ -86,20 +86,20 @@ export async function processOAuthAuthorizationExchange(
         })
       }
     }
-  } catch (error) {
+  } catch (outerErr) {
     if (await dependencies.rejectExhausted(authorization.id, authorization.exchange_claim_id)) {
       return
     }
     await dependencies
       .releaseClaim(authorization.id, authorization.exchange_claim_id)
-      .catch(releaseError => {
+      .catch(err => {
         const aggregateError = new AggregateError(
-          [error, releaseError],
+          [outerErr, err],
           'OAuth exchange failed and its durable claim could not be released',
         )
-        aggregateError.cause = releaseError
+        aggregateError.cause = err
         throw aggregateError
       })
-    throw error
+    throw outerErr
   }
 }

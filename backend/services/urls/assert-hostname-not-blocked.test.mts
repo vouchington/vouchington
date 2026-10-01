@@ -28,7 +28,7 @@ describe('assert-hostname-not-blocked', () => {
       hostnameId,
     })
 
-    const error = await assertUrlsHaveNoBlockedHostnames([urlId]).catch(e => e)
+    const error = await assertUrlsHaveNoBlockedHostnames([urlId]).catch(err => err)
     expect(error.status).toBe(422)
     expect(() => {
       throw error
@@ -53,7 +53,7 @@ describe('assert-hostname-not-blocked', () => {
       username: `ahb-penalty-${random}`,
     })) as PrivateUser
 
-    const error = await assertUrlsHaveNoBlockedHostnames([urlId], testUser.id).catch(e => e)
+    const error = await assertUrlsHaveNoBlockedHostnames([urlId], testUser.id).catch(err => err)
     expect(error.status).toBe(422)
 
     const penalties = await getTestPenaltiesByUserId(testUser.id)

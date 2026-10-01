@@ -59,8 +59,8 @@ export const getLatestHtmlByUrlIds = async (
       // oxlint-disable-next-line no-await-in-loop -- downloading sequentially is the memory bound: concurrent page bodies previously multiplied heap use.
       const html = await downloadCrawlHtml(row.hostname, row.url_id, htmlSha256Hex)
       if (html) results.push(html)
-    } catch (error) {
-      reportError(error instanceof Error ? error : new Error(String(error)))
+    } catch (err) {
+      reportError(err instanceof Error ? err : new Error(String(err)))
     }
   }
   return results

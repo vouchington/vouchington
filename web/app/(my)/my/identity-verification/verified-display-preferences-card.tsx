@@ -53,9 +53,9 @@ export function VerifiedDisplayPreferencesCard({
             'extracted.identityVerification.verifiedDisplayPreferencesCard.displayPreferencesSaved_1a62a267',
           ),
         )
-      } catch (error) {
+      } catch (err) {
         setErrorMessage(
-          onError(error, {
+          onError(err, {
             fallback: t(
               'extracted.identityVerification.verifiedDisplayPreferencesCard.failedToUpdateDisplayPreferences_3610edcd',
             ),

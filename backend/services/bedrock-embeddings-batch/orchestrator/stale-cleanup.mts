@@ -42,8 +42,8 @@ export async function runStaleCleanup(ttlHours: number): Promise<StaleCleanupRes
         try {
           // oxlint-disable-next-line no-await-in-loop -- stop requests remain serial to avoid amplifying Bedrock quota failures
           await stopBedrockBatch(batch.job_arn)
-        } catch (stopError) {
-          onError(stopError instanceof Error ? stopError : new Error(String(stopError)))
+        } catch (err) {
+          onError(err instanceof Error ? err : new Error(String(err)))
           // Stop failed — skip; poll_dispatcher or the next stale-cleanup cycle will reconcile.
           // Do not fall back to processBatch: if Bedrock just moved to Completed, processBatch
           // would set completed_at prematurely and drop the batch from getPendingBatches before
@@ -64,8 +64,8 @@ export async function runStaleCleanup(ttlHours: number): Promise<StaleCleanupRes
         )
         forcedCancellations.push({ id: batch.id, jobArn: batch.job_arn })
       }
-    } catch (error) {
-      onError(error instanceof Error ? error : new Error(String(error)))
+    } catch (err) {
+      onError(err instanceof Error ? err : new Error(String(err)))
     }
   }
 

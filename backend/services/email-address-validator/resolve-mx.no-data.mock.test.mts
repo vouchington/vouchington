@@ -54,7 +54,7 @@ describe('resolve-mx', () => {
     const { resolveMxRecords, DnsTimeoutError } = await import('./resolve-mx.mts')
 
     const resolution = resolveMxRecords('gmail.com')
-    const rejection = resolution.catch((error: unknown) => error)
+    const rejection = resolution.catch((err: unknown) => err)
     await vi.advanceTimersByTimeAsync(15_000)
     await expect(rejection).resolves.toBeInstanceOf(DnsTimeoutError)
     expect(mockResolveMx).toHaveBeenCalledTimes(3)
@@ -79,7 +79,7 @@ describe('resolve-mx', () => {
     const { resolveMxRecords } = await import('./resolve-mx.mts')
 
     const resolution = resolveMxRecords('example.invalid')
-    const rejection = resolution.catch((error: unknown) => error)
+    const rejection = resolution.catch((err: unknown) => err)
     await vi.advanceTimersByTimeAsync(5_000)
     await expect(rejection).resolves.toBe(nxdomainError)
     expect(mockResolveMx).toHaveBeenCalledTimes(2)

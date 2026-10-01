@@ -27,13 +27,13 @@ export async function cancelStripeSubscriptionImmediately(
   const stripe = getStripeClient()
   try {
     return await stripe.subscriptions.cancel(id)
-  } catch (cancelError) {
+  } catch (err) {
     try {
       const subscription = await stripe.subscriptions.retrieve(id)
       if (subscription.status === 'canceled') return subscription
     } catch {
       // Preserve the original DELETE failure. Retrieval is only a convergence check.
     }
-    throw cancelError
+    throw err
   }
 }

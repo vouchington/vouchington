@@ -47,8 +47,8 @@ export async function assertBackendLocalizationReady(
       },
       signal: AbortSignal.timeout(5_000),
     })
-  } catch (error) {
-    throw new Error(`Localization backend is unavailable at ${url}`, { cause: error })
+  } catch (err) {
+    throw new Error(`Localization backend is unavailable at ${url}`, { cause: err })
   }
   if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
     throw new Error(`Localization backend is unavailable at ${url}: HTTP ${response.status}`)

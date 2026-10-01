@@ -125,9 +125,9 @@ export async function PostListPage({ config, searchParams }: PostListPageProps) 
 
   // Fetch page 1 server-side; subsequent pages are fetched client-side by PostList
   const [dataResult, currentUser] = await Promise.all([
-    getPosts({ searchParams: queryParams }).catch(error => {
-      const message = getListSearchErrorMessage(error)
-      if (!message) throw error
+    getPosts({ searchParams: queryParams }).catch(err => {
+      const message = getListSearchErrorMessage(err)
+      if (!message) throw err
       return { error: message }
     }),
     getCurrentUser(),

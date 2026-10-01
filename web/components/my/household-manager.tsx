@@ -101,8 +101,8 @@ export function HouseholdManager({
         membershipLoadError: false,
       })
       onSuccess('Household created')
-    } catch (error) {
-      onError(error, { fallback: 'Failed to create household' })
+    } catch (err) {
+      onError(err, { fallback: 'Failed to create household' })
     } finally {
       createInFlight.current = false
       setCreating(false)
@@ -117,9 +117,9 @@ export function HouseholdManager({
       if (sharedRetryVersion.current !== requestVersion) return
       setSharedPage(page)
       setSharedLoadError(false)
-    } catch (error) {
+    } catch (err) {
       if (sharedRetryVersion.current !== requestVersion) return
-      onError(error, { fallback: 'Failed to load shared households' })
+      onError(err, { fallback: 'Failed to load shared households' })
     } finally {
       if (sharedRetryVersion.current === requestVersion) setRetryingShared(false)
     }

@@ -56,23 +56,23 @@ export async function uploadImageFile(file: File, options: UploadOptions = {}): 
         throw new ApiError(state.upload_error ?? 'Image processing failed', 422)
       }
       if (state.upload_status === 'complete' || state.ready) return result.id
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 404) {
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
         throw new ApiError(CROSS_USER_DEDUP_MESSAGE, 409)
       }
-      if (!(error instanceof ApiError) || (error.status < 500 && error.status !== 429)) {
-        throw error
+      if (!(err instanceof ApiError) || (err.status < 500 && err.status !== 429)) {
+        throw err
       }
       // Transient probe failures should not block the upload wait below.
     }
   }
   try {
     await pollImageUntilUploaded(result.id, { signal: options.signal })
-  } catch (error) {
-    if (dedupedImage && error instanceof ApiError && error.status === 404) {
+  } catch (err) {
+    if (dedupedImage && err instanceof ApiError && err.status === 404) {
       throw new ApiError(CROSS_USER_DEDUP_MESSAGE, 409)
     }
-    throw error
+    throw err
   }
   return result.id
 }

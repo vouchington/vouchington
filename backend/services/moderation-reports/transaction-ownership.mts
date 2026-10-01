@@ -21,8 +21,8 @@ async function isPoolClientInTransaction(client: { query: (sql: string) => Promi
       '/* releaseReportResolutionTransactionProbe */ RELEASE SAVEPOINT voucha_report_resolution_probe',
     )
     return true
-  } catch (error) {
-    if ((error as { code?: string }).code === '25P01') return false
-    throw error
+  } catch (err) {
+    if ((err as { code?: string }).code === '25P01') return false
+    throw err
   }
 }

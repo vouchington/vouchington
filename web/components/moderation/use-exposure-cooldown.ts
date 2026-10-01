@@ -43,7 +43,7 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
         setShowBreakPrompt(res.exposure.in_cooldown)
         revealBlockedRef.current = res.exposure.in_cooldown
       })
-      .catch(error => {
+      .catch(err => {
         if (
           requestRevision !== exposureRequestRevisionRef.current ||
           observedRevealOutcomeRevision !== revealOutcomeRevisionRef.current
@@ -52,7 +52,7 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
         }
         setExposureStateIsStale(true)
         revealBlockedRef.current = true
-        onError(error, { fallback: 'Failed to load exposure state' })
+        onError(err, { fallback: 'Failed to load exposure state' })
       })
   }, [])
 
@@ -93,7 +93,7 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
           setShowBreakPrompt(res.exposure.in_cooldown)
           revealBlockedRef.current = res.exposure.in_cooldown
         })
-        .catch(error => {
+        .catch(err => {
           if (
             cancelled ||
             requestRevision !== exposureRequestRevisionRef.current ||
@@ -103,7 +103,7 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
           }
           setExposureStateIsStale(true)
           revealBlockedRef.current = true
-          onError(error, { fallback: 'Failed to load exposure state' })
+          onError(err, { fallback: 'Failed to load exposure state' })
         })
         .finally(() => {
           confirmationPending = false
@@ -135,7 +135,7 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
       setExposureStateIsStale(false)
       setShowBreakPrompt(res.exposure.in_cooldown)
       revealBlockedRef.current = res.exposure.in_cooldown
-    } catch (error) {
+    } catch (err) {
       if (
         requestRevision !== exposureRequestRevisionRef.current ||
         observedRevealOutcomeRevision !== revealOutcomeRevisionRef.current
@@ -144,7 +144,7 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
       }
       setExposureStateIsStale(true)
       revealBlockedRef.current = true
-      onError(error, { fallback: 'Failed to load exposure state' })
+      onError(err, { fallback: 'Failed to load exposure state' })
     }
   }
 
@@ -162,11 +162,11 @@ export function useExposureCooldown(): UseExposureCooldownReturn {
         setShowBreakPrompt(res.exposure.in_cooldown)
         revealBlockedRef.current = res.exposure.in_cooldown
       })
-      .catch(error => {
+      .catch(err => {
         ++revealOutcomeRevisionRef.current
         setExposureStateIsStale(true)
         revealBlockedRef.current = true
-        onError(error, { fallback: 'Failed to record reveal' })
+        onError(err, { fallback: 'Failed to record reveal' })
         void refreshExposureState()
       })
       .finally(() => setRevealPending(false))

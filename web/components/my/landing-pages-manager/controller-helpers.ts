@@ -31,8 +31,8 @@ export async function withLoading(
   setLoading(true)
   try {
     await action()
-  } catch (error) {
-    showLandingPageError(error, message)
+  } catch (err) {
+    showLandingPageError(err, message)
   } finally {
     setLoading(false)
   }

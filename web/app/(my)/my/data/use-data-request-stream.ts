@@ -167,8 +167,8 @@ export function useDataRequestStream({
           applyRequest(updated)
           es.close()
         })
-        .catch(error => {
-          if (!(error instanceof ApiError) || error.status >= 500 || error.status === 429) return
+        .catch(err => {
+          if (!(err instanceof ApiError) || err.status >= 500 || err.status === 429) return
           setError('Failed to track export status. Please refresh.')
           es.close()
         })

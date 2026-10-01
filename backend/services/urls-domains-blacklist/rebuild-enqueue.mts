@@ -26,8 +26,8 @@ export function enqueueRebuildBloomFilterBestEffortWithEnqueue(
   let result: unknown
   try {
     result = enqueue({ filter })
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
     return
   }
 
@@ -35,8 +35,8 @@ export function enqueueRebuildBloomFilterBestEffortWithEnqueue(
     let settled: Promise<unknown>
     try {
       settled = onEnqueued ? Promise.resolve(onEnqueued()) : Promise.resolve()
-    } catch (error) {
-      onError(error instanceof Error ? error : new Error(String(error)))
+    } catch (err) {
+      onError(err instanceof Error ? err : new Error(String(err)))
       return
     }
     trackPendingRebuildEnqueue(settled)

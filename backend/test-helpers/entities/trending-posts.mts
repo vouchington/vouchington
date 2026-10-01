@@ -104,8 +104,8 @@ export async function withDominantPostFixtures<T>(
     }
     const callbackPostIds = Object.freeze([...ownedPostIds])
     outcome = { ok: true, value: await run(callbackPostIds) }
-  } catch (error) {
-    outcome = { ok: false, error }
+  } catch (err) {
+    outcome = { ok: false, error: err }
   }
 
   const cleanupResults = await Promise.allSettled(

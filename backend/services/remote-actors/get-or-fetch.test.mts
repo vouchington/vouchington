@@ -210,7 +210,7 @@ describe('getOrFetchRemoteActorByKeyId', () => {
     const cutoffError = await getOrFetchRemoteActorByKeyId(keyId, {
       fetchWithTimeout,
       validateUrl,
-    }).catch((error: unknown) => error)
+    }).catch((err: unknown) => err)
     expect(cutoffError).toBeInstanceOf(RemoteActorFetchAvailabilityError)
     expect((cutoffError as Error).cause).toBe(transportError)
   })

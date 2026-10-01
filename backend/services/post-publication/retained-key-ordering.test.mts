@@ -86,17 +86,17 @@ async function assertOverlappingWrites(
   const outcomes = await Promise.allSettled([
     retainPostPublicationKeys(barrieredQuery, workId, firstKeys)
       .then(() => first.commit())
-      .catch(async error => {
-        inserted.reject(error)
+      .catch(async err => {
+        inserted.reject(err)
         await first.rollback()
-        throw error
+        throw err
       }),
     inserted.promise
       .then(() => retainPostPublicationKeys(second, workId, secondKeys))
       .then(() => second.commit())
-      .catch(async error => {
+      .catch(async err => {
         await second.rollback()
-        throw error
+        throw err
       }),
   ])
   expect(outcomes).toEqual([

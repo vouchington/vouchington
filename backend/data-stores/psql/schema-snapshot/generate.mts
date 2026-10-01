@@ -65,8 +65,8 @@ export async function writeSchemaSnapshot({
       format: formatWithOxfmt,
       stringify: stableStringify,
     })
-  } catch (error) {
-    rewriteStaleError(error)
+  } catch (err) {
+    rewriteStaleError(err)
   }
 }
 

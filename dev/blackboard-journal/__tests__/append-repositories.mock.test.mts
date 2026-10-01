@@ -117,7 +117,7 @@ describe('runAppend repository attribution', () => {
         ...FEEDBACK_FLAGS,
       ],
       HOSTED_ENV,
-    ).catch((error: unknown) => error)
+    ).catch((err: unknown) => err)
     expect(appendJournal).toHaveBeenCalledOnce()
     expect(rejection).toBeInstanceOf(BlackboardJournalError)
     if (!(rejection instanceof BlackboardJournalError)) throw new TypeError('unreachable')

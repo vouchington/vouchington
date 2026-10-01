@@ -55,16 +55,16 @@ async function enqueueRebuildAndInvalidateReadyMarker(
     }
     await enqueueRebuildBloomFilter({ filter: 'url-blocklist' })
     await unlinkReadyMarkerIfValue(BLOOM_READY_KEY, readyValue)
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 
 async function getReadyMarkerValueForUrlBlocklistInvalidation(): Promise<ReadyMarkerValue | null> {
   try {
     return await bloomValkeyClient.get(BLOOM_READY_KEY)
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
     await repairUrlBlocklistUnavailableRead()
     return null
   }
@@ -79,16 +79,16 @@ async function repairStaleReadyMarkerIfFilterUnavailable(): Promise<void> {
       await enqueueRebuildAndInvalidateReadyMarker(false, readyValue)
       await unlinkReadyMarkerIfValue(BLOOM_READY_KEY, readyValue)
     }
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 
 export async function enqueueUrlBlocklistRebuild(): Promise<void> {
   try {
     await enqueueRebuildBloomFilter({ filter: 'url-blocklist' })
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 
@@ -120,8 +120,8 @@ export async function addDomainsToBloomFilter(domains: string[]): Promise<void> 
 
   try {
     await bloomFilter.addOrThrow(validDomains)
-  } catch (error) {
-    onError(error instanceof Error ? error : new Error(String(error)))
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
     await enqueueRebuildAndInvalidateReadyMarker()
   }
 }

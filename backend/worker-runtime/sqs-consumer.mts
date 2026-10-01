@@ -110,9 +110,9 @@ class SqsConsumerImpl extends EventEmitter implements SqsConsumer {
       try {
         // oxlint-disable-next-line no-await-in-loop -- long-polling receive is inherently sequential; the next receive can't start until this one resolves or is aborted
         messages = await port.receive(this.#abortController.signal)
-      } catch (error) {
+      } catch (err) {
         if (this.#abortController.signal.aborted) break
-        this.emit('poll-error', error)
+        this.emit('poll-error', err)
         // Prevent CPU starvation and log storms during persistent errors
         // oxlint-disable-next-line no-await-in-loop
         await new Promise(resolve => globalThis.setTimeout(resolve, 5000))
@@ -134,15 +134,15 @@ class SqsConsumerImpl extends EventEmitter implements SqsConsumer {
     this.emit('message-received', message)
     try {
       await handleMessage(message)
-    } catch (error) {
-      this.emit('message-failed', message, error)
+    } catch (err) {
+      this.emit('message-failed', message, err)
       return
     }
 
     try {
       await port.delete(message.receiptHandle)
-    } catch (error) {
-      this.emit('message-delete-failed', message, error)
+    } catch (err) {
+      this.emit('message-delete-failed', message, err)
       return
     }
     this.emit('message-deleted', message)

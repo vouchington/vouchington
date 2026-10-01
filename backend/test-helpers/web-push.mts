@@ -62,17 +62,17 @@ export async function holdTestWebPushEndpointOwnershipReplacement(
             WHERE endpoint = ${input.endpoint}`)
           await release()
           return subscriptionId
-        } catch (error) {
+        } catch (err) {
           await rollbackIfUnsettled()
-          throw error
+          throw err
         }
       },
       hasBlockedOperation: async () => testWebPushTransactionHasWaiter(holderPid),
       [Symbol.asyncDispose]: rollbackIfUnsettled,
     }
-  } catch (error) {
+  } catch (err) {
     await rollbackIfUnsettled()
-    throw error
+    throw err
   }
 }
 
@@ -85,10 +85,10 @@ export async function testWebPushSubscriptionRowLockAvailable(subscriptionId: st
       WHERE id = ${subscriptionId}::uuid
       FOR UPDATE NOWAIT`)
     return true
-  } catch (error) {
-    if (typeof error === 'object' && error !== null && 'code' in error && error.code === '55P03')
+  } catch (err) {
+    if (typeof err === 'object' && err !== null && 'code' in err && err.code === '55P03')
       return false
-    throw error
+    throw err
   }
 }
 

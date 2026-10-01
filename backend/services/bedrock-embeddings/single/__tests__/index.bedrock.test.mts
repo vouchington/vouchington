@@ -14,12 +14,12 @@ describe('Bedrock Nova multimodal embeddings', () => {
         result = await createBedrockEmbedding('A concise semantic embedding smoke test.', {
           entityType: 'search',
         })
-      } catch (error) {
-        if (shouldSkipUnavailableBedrockIntegration(error)) {
+      } catch (err) {
+        if (shouldSkipUnavailableBedrockIntegration(err)) {
           context.skip()
           return
         }
-        throw error
+        throw err
       }
 
       expect(result.embedding).toHaveLength(EMBEDDING_DIMENSION)

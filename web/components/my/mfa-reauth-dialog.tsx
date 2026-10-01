@@ -52,9 +52,9 @@ export function MfaReauthDialog({ open, mfaStatus, onVerified, onClose }: Props)
       const result = await verifyReAuthTotp<{ re_auth_token: string }>(code)
       onVerified(result.re_auth_token)
       handleClose()
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 3 -- error path requires injecting a TOTP verify failure */
-      const message = error instanceof ApiError ? error.message : 'Failed to verify code'
+      const message = err instanceof ApiError ? err.message : 'Failed to verify code'
       toast.error(message)
       setTotpCode('')
     } finally {
@@ -69,9 +69,9 @@ export function MfaReauthDialog({ open, mfaStatus, onVerified, onClose }: Props)
       setSentToEmail(result.email_address)
       setEmailSent(true)
       toast.success('Verification code sent')
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 2 -- error path requires injecting a send email failure */
-      const message = error instanceof ApiError ? error.message : 'Failed to send code'
+      const message = err instanceof ApiError ? err.message : 'Failed to send code'
       toast.error(message)
     } finally {
       setLoading(false)
@@ -92,9 +92,9 @@ export function MfaReauthDialog({ open, mfaStatus, onVerified, onClose }: Props)
       const result = await verifyReAuthEmail<{ re_auth_token: string }>(code)
       onVerified(result.re_auth_token)
       handleClose()
-    } catch (error) {
+    } catch (err) {
       /* c8 ignore next 3 -- error path requires injecting an email verify failure */
-      const message = error instanceof ApiError ? error.message : 'Failed to verify code'
+      const message = err instanceof ApiError ? err.message : 'Failed to verify code'
       toast.error(message)
       setEmailCode('')
     } finally {

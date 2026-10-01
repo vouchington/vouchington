@@ -59,9 +59,9 @@ export function useDataRequest(userId: string) {
           skipSentry: true,
         }),
       )
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 409) {
-        const data = error.data as CreateOrConflictDataRequestResponse
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        const data = err.data as CreateOrConflictDataRequestResponse
         if (isDataRequestResponse(data)) {
           onSuccess('Data export request already in progress')
           setRequest({
@@ -83,7 +83,7 @@ export function useDataRequest(userId: string) {
         }
       }
       setError(
-        onError(error, {
+        onError(err, {
           fallback: 'An unexpected error occurred',
           tags: { form: 'my-data-export' },
         }),

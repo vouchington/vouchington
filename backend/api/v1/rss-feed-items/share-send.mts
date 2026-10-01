@@ -73,8 +73,8 @@ app.route('/api/v1/rss-feed-items/:rssFeedItemId/sends').post(async (ctx: Contex
 async function enqueueDistributionOrMarkFailed(distributionId: string) {
   try {
     await enqueueProcessFollowerDistribution(distributionId)
-  } catch (error) {
+  } catch (err) {
     await markFollowerDistributionFailed(distributionId, 'Failed to enqueue follower distribution')
-    throw error
+    throw err
   }
 }

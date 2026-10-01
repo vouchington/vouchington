@@ -27,8 +27,8 @@ export async function spoolImageToTempFile(
 ): Promise<TempImageFile> {
   try {
     return await spoolMediaBody(chunks, { maxBytes, prefix: 'voucha-image-resize-' })
-  } catch (error: unknown) {
-    if (error instanceof MediaSizeLimitError) throw createTooLargeError(error.size)
-    throw error
+  } catch (err: unknown) {
+    if (err instanceof MediaSizeLimitError) throw createTooLargeError(err.size)
+    throw err
   }
 }

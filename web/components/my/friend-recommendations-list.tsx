@@ -44,12 +44,12 @@ export function FriendRecommendationsList({
     try {
       await bookmarkEntity('user', userId, 'follow')
       toast.success(t('extracted.my.friendRecommendationsList.followedUser_efccdf67'))
-    } catch (error) {
+    } catch (err) {
       setFollowed(prev => without(prev, userId))
       /* c8 ignore next 2 -- error path requires injecting a follow failure */
       const message =
-        error instanceof ApiError
-          ? error.message
+        err instanceof ApiError
+          ? err.message
           : t('extracted.my.friendRecommendationsList.failedToFollowUser_f5a7643b')
       toast.error(message)
     } finally {
@@ -69,12 +69,12 @@ export function FriendRecommendationsList({
     setDismissed(prev => new Set([...prev, userId]))
     try {
       await bookmarkEntity('user', userId, 'dismiss_recommendation')
-    } catch (error) {
+    } catch (err) {
       setDismissed(prev => without(prev, userId))
       /* c8 ignore next 2 -- error path requires injecting a dismiss failure */
       const message =
-        error instanceof ApiError
-          ? error.message
+        err instanceof ApiError
+          ? err.message
           : t('extracted.my.friendRecommendationsList.failedToDismiss_78d9fad2')
       toast.error(message)
     } finally {

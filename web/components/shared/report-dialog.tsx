@@ -87,11 +87,11 @@ export function ReportDialog({ entityType, entityId, open, onOpenChange }: Props
       markAsReported(entityType, entityId)
       keepFormOpen = false
       setSuccess(true)
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 429) {
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 429) {
         toast.error(t('extracted.shared.reportDialog.youAreReportingTooOftenPlease_c85f5e99'))
-      } else if (error instanceof ApiError && (error.status === 404 || error.status === 422)) {
-        setInlineError(error.message)
+      } else if (err instanceof ApiError && (err.status === 404 || err.status === 422)) {
+        setInlineError(err.message)
       } else {
         setInlineError(t('extracted.shared.reportDialog.failedToSubmitReportPleaseTry_88dbc422'))
       }

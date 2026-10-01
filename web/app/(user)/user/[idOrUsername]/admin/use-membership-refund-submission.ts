@@ -108,7 +108,7 @@ export function useMembershipRefundSubmission(options: {
             throw new Error(`Unsupported refund cancellation status: ${unsupportedStatus}`)
           }
         }
-      } catch (error) {
+      } catch (err) {
         if (attempt.reconciliationRetryAt !== null) {
           const pendingAttempt = refundAttemptStorage.persistPendingRefundAttempt(
             { actorUserId, targetUserId: userId },
@@ -119,8 +119,8 @@ export function useMembershipRefundSubmission(options: {
           setReconciliationRetryAt(pendingAttempt.reconciliationRetryAt)
         }
         toast.error(
-          error instanceof Error
-            ? error.message
+          err instanceof Error
+            ? err.message
             : t('extracted.admin.membershipRefundForm.failedToIssueRefund_9a1c4e77'),
         )
       } finally {

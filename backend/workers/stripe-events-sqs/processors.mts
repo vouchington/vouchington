@@ -21,11 +21,11 @@ export async function processStripeEventsSqsMessage(message: SqsMessage): Promis
   let envelope: EventBridgeEnvelope | null
   try {
     envelope = JSON.parse(message.body) as EventBridgeEnvelope | null
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      error.message = `stripe-events-sqs: invalid JSON body: ${error.message}`
+  } catch (err) {
+    if (err instanceof SyntaxError) {
+      err.message = `stripe-events-sqs: invalid JSON body: ${err.message}`
     }
-    throw error
+    throw err
   }
 
   const detail = envelope?.detail

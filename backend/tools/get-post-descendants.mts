@@ -69,9 +69,9 @@ const tool: Tool<ToolArgs, ToolResult> = {
       const page = await getCommentDescendantsPage(null, thread.post, {
         limit: clampToolLimit(args.limit, defaultLimit, max),
         after: args.after,
-      }).catch((error: unknown) => {
-        if (createHttpError.isHttpError(error) && error.status === 400) return null
-        throw error
+      }).catch((err: unknown) => {
+        if (createHttpError.isHttpError(err) && err.status === 400) return null
+        throw err
       })
       if (!page) return { success: false, error: 'Invalid cursor' }
       const posts = await getPostByAnyCachedBatch(page.ids)

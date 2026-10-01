@@ -35,10 +35,10 @@ export function checkMonetaryMigration(file: string, content: string, errors: st
   let tables: SqlTable[]
   try {
     tables = extractSqlTables(content)
-  } catch (error) {
+  } catch (err) {
     errors.push(
       `::error file=${file}::${file}: could not parse monetary migration: ${
-        error instanceof Error ? error.message : String(error)
+        err instanceof Error ? err.message : String(err)
       }`,
     )
     return

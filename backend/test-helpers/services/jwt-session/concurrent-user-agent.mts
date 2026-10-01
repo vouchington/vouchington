@@ -19,8 +19,8 @@ export async function runTestActionsAcrossUserAgentConflict<TFirst, TSecond>(
   let waitFailure: { reason: unknown } | undefined
   try {
     await waitForUserAgentInsertLock(actionOutcome, holderProcessId)
-  } catch (error) {
-    waitFailure = { reason: error }
+  } catch (err) {
+    waitFailure = { reason: err }
   }
   await holder.commit()
 

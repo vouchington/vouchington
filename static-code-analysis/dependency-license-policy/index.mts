@@ -21,11 +21,11 @@ export async function checkDependencyLicensePolicy(
   let report: PnpmLicenseReport
   try {
     report = await collect(ctx.repoRoot)
-  } catch (error) {
+  } catch (err) {
     return {
       errors: [
         `::error::dependency-license-policy: failed to collect the pnpm license report: ${
-          error instanceof Error ? error.message : String(error)
+          err instanceof Error ? err.message : String(err)
         }`,
       ],
     }

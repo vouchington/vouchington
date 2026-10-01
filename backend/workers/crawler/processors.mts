@@ -63,8 +63,8 @@ export async function processCrawlerJob(job: Job): Promise<unknown> {
 
         /* v8 ignore next -- successful network crawls are covered in crawl-url tests; buildCrawlerJobResult covers worker result shaping. */
         return buildCrawlerJobResult(crawlResult)
-      } catch (error) {
-        return handleCrawlerProcessorError(urlId, rateLimitRetryCount, error, {
+      } catch (err) {
+        return handleCrawlerProcessorError(urlId, rateLimitRetryCount, err, {
           crawlTimeoutMs,
           ensureCrawlerForRedirects,
           ignoreRobotsTxt,

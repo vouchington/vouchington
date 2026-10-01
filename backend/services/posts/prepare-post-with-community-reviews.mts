@@ -140,8 +140,8 @@ export const preparePostWithCommunityReviews = async (
   }
   const post = await (
     options.query ? createInTransaction(options.query) : createInOwnedTransaction()
-  ).catch(error => {
-    const pgError = error as { code?: string; constraint?: string }
+  ).catch(err => {
+    const pgError = err as { code?: string; constraint?: string }
     if (pgError.code === '23503') {
       if (
         pgError.constraint === 'post_review_topic_ratings_topic_id_fkey' ||
@@ -151,7 +151,7 @@ export const preparePostWithCommunityReviews = async (
       }
       throw createHttpError(422, 'Image not found or not complete')
     }
-    throw error
+    throw err
   })
 
   const response = { post: post!, communityReviews }

@@ -33,10 +33,10 @@ export async function updateMyLandingPage(
     // ts-shared/cache/cache-tags.mts), so a slug/title/subtitle edit must purge that tag.
     await invalidate.users(userId)
     return rows[0] as LandingPage
-  } catch (error: unknown) {
-    if (isUniqueViolation(error)) {
+  } catch (err: unknown) {
+    if (isUniqueViolation(err)) {
       assert(false, 409, 'You already have a landing page with this slug')
     }
-    throw error
+    throw err
   }
 }

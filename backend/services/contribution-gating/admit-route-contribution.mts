@@ -79,14 +79,14 @@ export async function admitRouteContribution<T>(input: {
       Date.now() - startedAt,
     )
     return result
-  } catch (error) {
+  } catch (err) {
     trackContributionAdmissionIdentity(
       input.source,
       identity.callerSupplied,
-      isIdempotencyMismatch(error) ? 'mismatch' : 'failed',
+      isIdempotencyMismatch(err) ? 'mismatch' : 'failed',
       Date.now() - startedAt,
     )
-    throw error
+    throw err
   }
 }
 

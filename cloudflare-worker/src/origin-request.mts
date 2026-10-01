@@ -149,16 +149,16 @@ export async function fetchOriginResponse(
   try {
     const response = await fetch(firstRequest)
     return { duration: Date.now() - fetchStart, response }
-  } catch (error) {
-    if (!canRetry || !isRetryableOriginConnectionLoss(error)) {
-      return originFetchFailure(error, metadata)
+  } catch (err) {
+    if (!canRetry || !isRetryableOriginConnectionLoss(err)) {
+      return originFetchFailure(err, metadata)
     }
   }
 
   try {
     const response = await fetch(originRequest)
     return { duration: Date.now() - fetchStart, response }
-  } catch (error) {
-    return originFetchFailure(error, metadata)
+  } catch (err) {
+    return originFetchFailure(err, metadata)
   }
 }

@@ -47,11 +47,11 @@ export default function QueuesPage() {
         jobs: jobsResult.jobs,
         backfills: backfillsResult.backfills,
       })
-    } catch (error) {
+    } catch (err) {
       dispatch({
         error:
-          error instanceof Error
-            ? error.message
+          err instanceof Error
+            ? err.message
             : t('extracted.queues.page.failedToLoadScheduledJobs_196d47c6'),
       })
     } finally {
@@ -77,8 +77,8 @@ export default function QueuesPage() {
           description: job.description,
         }),
       )
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.queues.page.failedToTriggerDescription_f09acb12', {
           description: job.description,
         }),
@@ -105,8 +105,8 @@ export default function QueuesPage() {
           description: backfill.description,
         }),
       )
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t('extracted.queues.page.failedToTriggerBackfillDescription_677e1efb', {
           description: backfill.description,
         }),

@@ -51,8 +51,8 @@ export async function checkSccComplexity(
       [...ctx.trackedFileSet].map(file => canonicalRepoPath(ctx.repoRoot, file)),
     )
     return { errors: violations(parseSccFiles(json, ctx.repoRoot), tracked) }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
     return { errors: [`::error::scc-complexity failed: ${escapeWorkflowCommandMessage(message)}`] }
   } finally {
     await rm(dir, { force: true, recursive: true })
@@ -69,11 +69,11 @@ async function runSccJson(repoRoot: string, outputPath: string, command?: string
       cwd: repoRoot,
       maxBuffer: 1024 * 1024,
     })
-  } catch (error) {
-    if (isNodeSystemError(error) && error.code === 'ENOENT') {
-      throw new Error('scc executable not found; install with mise install', { cause: error })
+  } catch (err) {
+    if (isNodeSystemError(err) && err.code === 'ENOENT') {
+      throw new Error('scc executable not found; install with mise install', { cause: err })
     }
-    throw error
+    throw err
   }
   return readFile(outputPath, 'utf8')
 }

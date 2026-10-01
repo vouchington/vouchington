@@ -11,11 +11,11 @@ export async function cleanupRejectedContributionAdmission(
 async function attemptCleanup(cleanup: () => Promise<void>): Promise<void> {
   try {
     await cleanup()
-  } catch (error) {
+  } catch (err) {
     onError(
-      error instanceof Error
-        ? error
-        : new Error('Contribution admission cleanup failed', { cause: error }),
+      err instanceof Error
+        ? err
+        : new Error('Contribution admission cleanup failed', { cause: err }),
     )
   }
 }

@@ -42,13 +42,13 @@ export function OAuthClientVerificationRow({ client }: { client: AdminOAuthClien
       }
       // The page lists one verification filter, so re-fetch it to drop a row that left it.
       router.refresh()
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.oauthClients.oauthClientVerificationRow.failedToUpdateTheVerification_4330b584',
         ),
       })
-      if (error instanceof ApiError && error.status === 409) router.refresh()
+      if (err instanceof ApiError && err.status === 409) router.refresh()
     } finally {
       setBusy(false)
     }

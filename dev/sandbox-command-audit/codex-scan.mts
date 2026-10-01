@@ -30,9 +30,9 @@ async function openWriter(path: string): Promise<ReturnType<typeof createWriteSt
       writer.once('open', onOpen)
       writer.once('error', onError)
     })
-  } catch (error) {
+  } catch (err) {
     writer.destroy()
-    throw error
+    throw err
   }
   // Keep later write failures observed until writeLine/closeWriter surface them.
   writer.on('error', () => undefined)
@@ -164,8 +164,8 @@ export async function scanCodexFile(
       for await (const line of replay.lines) extractor.pushLine(line)
     }
     return extractor.result()
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : String(error) }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : String(err) }
   } finally {
     if (writer) writer.destroy()
     if (spoolDir) await rm(spoolDir, { recursive: true, force: true })

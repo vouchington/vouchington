@@ -81,8 +81,8 @@ export async function runImageResizeSmoke(input: {
         passed: Boolean(passed),
         message: `Expected ${check.status}${check.image ? ' image/*' : ''}; got ${response.status} ${contentType ?? ''}`,
       })
-    } catch (error) {
-      results.push({ name: check.name, passed: false, message: `Request failed: ${String(error)}` })
+    } catch (err) {
+      results.push({ name: check.name, passed: false, message: `Request failed: ${String(err)}` })
     }
   }
   return results
@@ -113,8 +113,8 @@ async function main(): Promise<void> {
 if (import.meta.main) {
   try {
     await main()
-  } catch (error) {
-    console.error(String(error))
+  } catch (err) {
+    console.error(String(err))
     process.exitCode = 1
   }
 }

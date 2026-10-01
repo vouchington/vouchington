@@ -147,11 +147,11 @@ export async function runAppend(
       timestamp,
       ...feedback,
     })
-  } catch (error) {
+  } catch (err) {
     throw new BlackboardJournalError(
-      error instanceof Error ? error.message : String(error),
+      err instanceof Error ? err.message : String(err),
       replayInfo,
-      error,
+      err,
     )
   }
 }

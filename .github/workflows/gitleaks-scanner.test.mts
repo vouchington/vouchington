@@ -91,11 +91,11 @@ describe('gitleaks fixture scanner', () => {
     let report: string
     try {
       report = await readFile(reportPath, 'utf8')
-    } catch (error: unknown) {
-      const detail = error instanceof Error ? error.message : String(error)
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : String(err)
       throw new Error(
         `Gitleaks exited ${scan.status} without writing its JSON report (${detail}).\n${diagnostic}`,
-        { cause: error },
+        { cause: err },
       )
     }
 

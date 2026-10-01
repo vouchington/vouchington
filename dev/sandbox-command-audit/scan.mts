@@ -20,8 +20,8 @@ async function scanClaudeFile(file: string): Promise<ClaudeFileResult> {
   try {
     for await (const line of opened.lines) extractor.pushLine(line)
     return extractor.result()
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : String(error) }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : String(err) }
   }
 }
 

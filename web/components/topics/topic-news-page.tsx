@@ -18,9 +18,9 @@ export async function TopicNewsPage({
   const t = await getTranslations()
   const q = typeof searchParams.q === 'string' ? searchParams.q : undefined
   const queryParams = { category_topic: id, ...(q ? { q } : {}), limit: 25 }
-  const dataResult = await getRssFeedItems({ searchParams: queryParams }).catch(error => {
-    const message = getListSearchErrorMessage(error)
-    if (!message) throw error
+  const dataResult = await getRssFeedItems({ searchParams: queryParams }).catch(err => {
+    const message = getListSearchErrorMessage(err)
+    if (!message) throw err
     return { error: message }
   })
   const hasSearchError = isListSearchErrorResult(dataResult)

@@ -166,9 +166,9 @@ export function registerTmuxFakeHooks(): TmuxFakeBinHooks {
     const dir = await buildTemplate()
     try {
       await warmTemplate(dir)
-    } catch (error) {
+    } catch (err) {
       await rm(dir, { force: true, recursive: true })
-      throw error
+      throw err
     }
     templateDir = dir
   })

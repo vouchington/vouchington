@@ -79,8 +79,8 @@ describe('crawl-url.ssrf', () => {
       let thrownError: unknown
       try {
         await crawlUrlForTest(url!.id)
-      } catch (error) {
-        thrownError = error
+      } catch (err) {
+        thrownError = err
       }
 
       expect(thrownError).toBeInstanceOf(CrawlerSsrfError)

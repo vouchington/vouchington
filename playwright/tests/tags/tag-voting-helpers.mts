@@ -53,8 +53,8 @@ export async function waitForVoteButtonHydration(page: Page): Promise<void> {
   await firstTagVote(page).waitFor({ state: 'attached' })
   try {
     await firstTagVote(page).scrollIntoViewIfNeeded()
-  } catch (error) {
-    if (!(error instanceof Error) || !error.message.includes('not attached to the DOM')) throw error
+  } catch (err) {
+    if (!(err instanceof Error) || !err.message.includes('not attached to the DOM')) throw err
 
     await firstTagVote(page).waitFor({ state: 'attached' })
     await firstTagVote(page).scrollIntoViewIfNeeded()

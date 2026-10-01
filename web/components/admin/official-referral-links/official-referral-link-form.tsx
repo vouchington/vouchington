@@ -68,8 +68,8 @@ export function OfficialReferralLinkForm({
         setUrl('')
         setLabel('')
         router.refresh()
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t(
             'extracted.officialReferralLinks.officialReferralLinkForm.failedToCreateOfficialLink_3db0a648',
           ),
@@ -90,8 +90,8 @@ export function OfficialReferralLinkForm({
           ),
         )
         router.refresh()
-      } catch (error) {
-        onError(error, {
+      } catch (err) {
+        onError(err, {
           fallback: t(
             'extracted.officialReferralLinks.officialReferralLinkForm.failedToDeleteOfficialLink_820d32b6',
           ),

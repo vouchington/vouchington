@@ -30,18 +30,18 @@ export function useStartDiscussionAction(props: StartDiscussionActionProps | nul
       const result = await createLinkPost({ url_id: props.urlId })
       const post = result.post
       router.push(getPostPath(getPostSlugFromType(post.post_type), post))
-    } catch (error) {
-      if (isEmailVerificationRequired(error)) {
+    } catch (err) {
+      if (isEmailVerificationRequired(err)) {
         emailRecovery?.openEmailVerificationRecovery()
         setIsCreating(false)
         return
       }
-      if (error instanceof ApiError && error.code === 'IDENTITY_REQUIRED') {
+      if (err instanceof ApiError && err.code === 'IDENTITY_REQUIRED') {
         setUsernameDialogOpen(true)
         setIsCreating(false)
         return
       }
-      toast.error(getApiErrorMessage(error, 'Failed to create link post'))
+      toast.error(getApiErrorMessage(err, 'Failed to create link post'))
       setIsCreating(false)
     }
   }

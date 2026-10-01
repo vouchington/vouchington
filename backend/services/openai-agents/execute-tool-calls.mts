@@ -107,15 +107,15 @@ export async function* dispatchOneToolCall(
     } else {
       result = await executorResult
     }
-  } catch (error) {
+  } catch (err) {
     // Executor exceptions are converted to error result objects returned to the model.
     // Retriable errors (rate limits, transient failures) thrown inside tool executors
     // will NOT propagate to the outer caller's catch block — tool executors must
     // handle their own retriable errors or avoid throwing them.
-    const err = error instanceof Error ? error : new Error(String(error))
-    result = { error: err.message }
+    const localErr = err instanceof Error ? err : new Error(String(err))
+    result = { error: localErr.message }
     executorFailed = true
-    onCallError?.(toolCall, err)
+    onCallError?.(toolCall, localErr)
   }
 
   // Skip onAfterCall on executor failure — callers should not track failure results

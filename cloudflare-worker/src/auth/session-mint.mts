@@ -86,11 +86,11 @@ export async function isBackendIssuedAnonSession(
     const jwtOptions = { env, mode: isProductionMode(env) ? 'production' : 'development' } as const
     const soloDevicePayload = await verifyDeviceJwt(deviceToken, jwtOptions)
     return soloDevicePayload !== null
-  } catch (error) {
+  } catch (err) {
     if (!backendIssuedAnonSessionVerificationErrorLogged) {
       console.error(
         `Backend-issued-anon-session verification failed: ${
-          error instanceof Error ? error.message : String(error)
+          err instanceof Error ? err.message : String(err)
         }`,
       )
       backendIssuedAnonSessionVerificationErrorLogged = true

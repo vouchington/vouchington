@@ -17,9 +17,9 @@ export async function acquireTestSessionReferralAttributionPairLock(
       '/* acquireTestSessionReferralAttributionPairLock */ SELECT pg_advisory_lock(hashtextextended($1, 0))',
       [key],
     )
-  } catch (error) {
-    client.release(toError(error))
-    throw error
+  } catch (err) {
+    client.release(toError(err))
+    throw err
   }
   return createTestSessionReferralAttributionPairLock(client, key)
 }
@@ -56,9 +56,9 @@ function createTestSessionReferralAttributionPairLock(
           throw new Error('Session referral attribution pair test lock was not held')
         }
         client.release()
-      } catch (error) {
-        client.release(toError(error))
-        throw error
+      } catch (err) {
+        client.release(toError(err))
+        throw err
       }
     },
   }

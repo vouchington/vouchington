@@ -83,10 +83,10 @@ function decodeBase64Json(rawValue: string, envName: string): unknown {
       throw new Error('base64 decoding is unavailable in this runtime')
     }
     return JSON.parse(atobFn(rawValue)) as unknown
-  } catch (error) {
+  } catch (err) {
     throw new Error(
-      `${envName} must be valid base64-encoded JSON: ${error instanceof Error ? error.message : 'unknown error'}`,
-      { cause: error },
+      `${envName} must be valid base64-encoded JSON: ${err instanceof Error ? err.message : 'unknown error'}`,
+      { cause: err },
     )
   }
 }

@@ -60,8 +60,8 @@ export const server = http.createServer(async (req, res) => {
     } else {
       res.end(result.body)
     }
-  } catch (error) {
-    console.error('Lambda dev server error:', req.method, req.url, error)
+  } catch (err) {
+    console.error('Lambda dev server error:', req.method, req.url, err)
     res.statusCode = 500
     res.setHeader('Content-Type', 'application/json')
     res.end(JSON.stringify({ error: 'Internal server error' }))

@@ -35,8 +35,8 @@ export default async function UserAdminPage({ params }: PageProps) {
     try {
       landingPagesData = await getAdminLandingPagesForUser(profileData.user.id)
       showLandingPageAnalytics = landingPagesData !== null
-    } catch (error) {
-      console.error('Failed to load admin landing pages:', error)
+    } catch (err) {
+      console.error('Failed to load admin landing pages:', err)
     }
   }
 

@@ -102,12 +102,12 @@ export function DiscussInCommunityAction({
           : getCanonicalPostPath(discussion)
       onCreated?.(href)
       push(href)
-    } catch (error) {
+    } catch (err) {
       // The token was consumed by the backend's verification; get a fresh one.
       turnstile.reset()
       toast.error(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : t('extracted.posts.discussInCommunityAction.couldNotStartDiscussion_6132b3d7'),
       )
     } finally {

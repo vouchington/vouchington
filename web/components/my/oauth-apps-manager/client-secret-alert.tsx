@@ -23,8 +23,8 @@ export function ClientSecretAlert({ clientId, clientSecret, onDismiss }: ClientS
     try {
       await navigator.clipboard.writeText(clientSecret)
       setCopied(true)
-    } catch (error) {
-      onError(error, {
+    } catch (err) {
+      onError(err, {
         fallback: t(
           'extracted.oauthAppsManager.clientSecretAlert.failedToCopyToClipboard_978a1dc5',
         ),

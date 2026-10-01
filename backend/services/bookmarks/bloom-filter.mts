@@ -117,14 +117,14 @@ export async function backfillUserBookmarkBloomFilter(userId: string): Promise<v
   batch.expire(filter.getKey(), BOOKMARK_BLOOM_FILTER_TTL_SECONDS)
   try {
     await bloomValkeyClient.exec(batch, true)
-  } catch (error) {
+  } catch (err) {
     // rebuildFromStream already atomically RENAMEd the live filter key into place; if this
     // Batch fails, that key is left with no ready markers and no TTL -- reverting to the
     // pre-PR unbounded-memory state until the next backfill. Delete it so reads degrade to the
     // normal "filter absent" fallback (PostgreSQL + re-enqueued backfill) instead.
     /* v8 ignore start -- Valkey remains real in tests; forced client failures would destabilize shared test state. */
     await filter.deleteWithAdditionalKeys(readyKeys).catch(onError)
-    throw error
+    throw err
     /* v8 ignore stop */
   }
 }
