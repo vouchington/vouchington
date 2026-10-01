@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
@@ -6,6 +5,7 @@ import picomatch from 'picomatch'
 import { parse as parseYaml } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
+import { trackedFiles } from '../../ci/test-helpers/tracked-files.mts'
 import { LIVING_DOCS_PIN_CASES } from '../../static-code-analysis/repo-file-policy/living-docs-pin-guard.mts'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
@@ -156,11 +156,7 @@ describe('CI fixture documentation classifier', () => {
 
   it('covers every markdown file under the fixture-doc trees in the classifier and tooling filter', () => {
     for (const tree of FIXTURE_DOC_TREES) {
-      const markdown = execFileSync('git', ['ls-files', '-z', '--', `${tree}/**`], {
-        encoding: 'utf8',
-      })
-        .split('\0')
-        .filter(path => /\.mdx?$/.test(path))
+      const markdown = trackedFiles(repoRoot, [`${tree}/**`]).filter(path => /\.mdx?$/.test(path))
 
       expect(markdown.length).toBeGreaterThan(0) // an empty glob must not pass vacuously
       for (const path of markdown) expect(docsOnly([path])).toBe(false) // (a) -- the new coverage

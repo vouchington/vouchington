@@ -1,10 +1,11 @@
-import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { matchesGlob } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 import { parse as parseYaml } from 'yaml'
+
+import { trackedFiles } from './test-helpers/tracked-files.mts'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 
@@ -62,13 +63,7 @@ describe('PostgreSQL ordering guard config', () => {
       },
     ])
 
-    const trackedBackendPaths = execFileSync('git', ['ls-files', '--', 'backend'], {
-      cwd: repoRoot,
-      encoding: 'utf8',
-    })
-      .trim()
-      .split('\n')
-      .filter(Boolean)
+    const trackedBackendPaths = trackedFiles(repoRoot, ['backend'])
     const includedPaths = trackedBackendPaths.filter(
       path =>
         [...expectedOptions.include, ...expectedOptions.sqlInclude].some(pattern =>

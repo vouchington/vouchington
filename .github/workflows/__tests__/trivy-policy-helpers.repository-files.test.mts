@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 
 import { describe, expect, it } from 'vitest'
 
-import { GIT_LS_FILES_MAX_BUFFER_BYTES } from '../trivy-policy-helpers.mts'
+import { GIT_LS_FILES_MAX_BUFFER_BYTES } from '../../../ci/test-helpers/tracked-files.mts'
 
 describe('trivy-policy-helpers', () => {
   it('allows a bounded tracked-file manifest sufficient for the repository', () => {

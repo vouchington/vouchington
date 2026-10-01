@@ -4,12 +4,12 @@
 // `pnpm run repo-file-policy` and Static Code Analysis — see gh-api-shell-quoting.mts for the
 // shared file predicates both consumers use and `vouchington-tooling/gh-api-shell-quoting`
 // for the detection algorithm and its rationale.
-import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
+import { trackedFiles } from '../../ci/test-helpers/tracked-files.mts'
 import {
   isGhApiShellScriptFile,
   isGhApiWorkflowFile,
@@ -20,9 +20,7 @@ import {
 const root = resolve(import.meta.dirname, '../..')
 
 function allTrackedFiles(): string[] {
-  return execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
-    .split('\0')
-    .filter(Boolean)
+  return trackedFiles(root)
 }
 
 describe('gh api shell-quoting guard', () => {

@@ -1,8 +1,8 @@
-import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 
 import { parse } from 'yaml'
 
+import { trackedFiles } from '../../ci/test-helpers/tracked-files.mts'
 import {
   assertUnfilteredComponentSbom,
   assertVulnerabilityGate,
@@ -25,18 +25,11 @@ export type IgnoreRegistry = { vulnerabilities?: Ignore[] }
 
 type WorkflowStep = { run?: unknown; uses?: unknown }
 
-export const GIT_LS_FILES_MAX_BUFFER_BYTES = 4 * 1024 * 1024
-
 const OS_PURL =
   /^pkg:(deb|apk|rpm)\/(?:[A-Za-z0-9._~+-]|%[0-9A-Fa-f]{2})+\/(?:[A-Za-z0-9._~+-]|%[0-9A-Fa-f]{2})+@(?:[A-Za-z0-9._~+:-]|%[0-9A-Fa-f]{2})+(?:\?(?:[A-Za-z0-9._~+-]|%[0-9A-Fa-f]{2})+=(?:[A-Za-z0-9._~+:-]|%[0-9A-Fa-f]{2})+(?:&(?:[A-Za-z0-9._~+-]|%[0-9A-Fa-f]{2})+=(?:[A-Za-z0-9._~+:-]|%[0-9A-Fa-f]{2})+)*)?$/
 
 function trackedRepositoryFiles(): string[] {
-  return execFileSync('git', ['ls-files', '-z'], {
-    encoding: 'utf8',
-    maxBuffer: GIT_LS_FILES_MAX_BUFFER_BYTES,
-  })
-    .split('\0')
-    .filter(Boolean)
+  return trackedFiles(process.cwd())
 }
 
 export function isShellPolicySource(path: string): boolean {
