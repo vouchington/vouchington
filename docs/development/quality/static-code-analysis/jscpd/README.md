@@ -11,8 +11,8 @@ runs the same command through the `jscpd` package script.
 
 ## How the Threshold Works
 
-The configured `"minLines": 100` and `"exitCode": 1` make jscpd fail when it finds any clone that
-spans roughly 100 lines or more. A clone is one duplicated block shared by two files, so the unit
+The configured `"minLines": 50` and `"exitCode": 1` make jscpd fail when it finds any clone that
+spans roughly 50 lines or more. A clone is one duplicated block shared by two files, so the unit
 that fails is the pair of copies, not one file. jscpd's console reporter lists each clone
 (`Clone found (<format>): <file> [start:end] ... <file> [start:end]`) above a per-format summary
 table. There is no baseline and no base-branch comparison: every run judges the whole tree the same
