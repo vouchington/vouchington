@@ -38,6 +38,13 @@ const isolatedDatabaseCases = {
     fullName:
       'copyright staff queue urgency lists missed then due restoration deadlines ahead of older intake work across pages',
   },
+  'copyright-dev-seed': {
+    file: 'backend/scripts/seed/copyright.test.mts',
+    // Joined with ' > ' because that is what Vitest 5 matches; the space-joined names above do not
+    // match, so their child runs are skipped (#1638).
+    fullName:
+      'seedCopyright > fills both staff queues with every review state and adds nothing when run again',
+  },
   'copyright-cache-policy': {
     file: 'backend/api/v1/copyright-notices/copyright-cache.test.mts',
     fullName:
