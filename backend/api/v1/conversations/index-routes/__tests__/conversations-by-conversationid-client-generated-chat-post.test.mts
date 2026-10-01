@@ -15,7 +15,7 @@ describe('client-generated chat authentication storage failure', () => {
     const { result: response, error } = await withPostgresPoolQueryFailureForTest(
       '/* getPrivateUserByAny */',
       async () => {
-        await request.post(url).set('x-request-id', crypto.randomUUID()).send({}).expect(422)
+        await request.post(url).set('x-request-id', crypto.randomUUID()).send({}).expect(400)
         return request.post(url).set('x-request-id', requestId).send({}).expect(500)
       },
       { requestId },
@@ -28,6 +28,6 @@ describe('client-generated chat authentication storage failure', () => {
       request_id: requestId,
     })
     expect(response.body.message).not.toBe('Unauthorized')
-    await request.post(url).set('x-request-id', requestId).send({}).expect(422)
+    await request.post(url).set('x-request-id', requestId).send({}).expect(400)
   })
 })

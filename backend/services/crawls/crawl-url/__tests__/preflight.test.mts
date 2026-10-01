@@ -15,7 +15,9 @@ describe('crawl preflight blacklist database failure', () => {
   it('rethrows a database failure instead of treating the URL as blocked', async () => {
     const suffix = randomUUID()
     const domain = `preflight-${suffix}.example.com`
-    const sourceName = `preflight-blacklist-${suffix}`
+    const sourceName = `preflight-${suffix.replace(/[0-9a-f]/g, c =>
+      String.fromCharCode(97 + Number.parseInt(c, 16)),
+    )}`
     const sourceId = await createTestBlacklistSource({
       type: 'url',
       name: sourceName,

@@ -6,23 +6,26 @@ import {
   getTopicFollowExistsForTest,
   getTopicImportRequestByRecommendationForTest,
   insertPendingTopicImportRequestForTest,
-  insertTestPost,
 } from '@voucha/test-helpers'
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { autoFollowOnRecommendationApproval } from './auto-follow-on-approval.mts'
+import { createTopicRecommendation } from '@services/topic-recommendations'
 
 describe('recommendation approval auto-follow database failure', () => {
   it('reports a user lookup failure and leaves the request pending for a healthy retry', async () => {
     const user = await createTestUser()
     const topic = await createTestTopic({ user })
-    const recommendationPostId = await insertTestPost({
-      createdById: user.id,
-      postType: 'topic_recommendation',
-      title: 'Pending import recommendation',
-      slug: `auto-follow-recommendation-${randomUUID()}`,
-      markdown: 'Owned import recommendation',
-    })
+    const recommendation = await createTopicRecommendation(
+      user,
+      {
+        topic_title: 'Pending import recommendation',
+        topic_slug: `auto-follow-recommendation-${randomUUID()}`,
+        markdown: 'Owned import recommendation',
+      },
+      { skipCreatedEvents: true },
+    )
+    const recommendationPostId = recommendation.id
     await insertPendingTopicImportRequestForTest(user.id, recommendationPostId, topic.name)
 
     const { result, error } = await withPostgresPoolQueryFailureForTest(

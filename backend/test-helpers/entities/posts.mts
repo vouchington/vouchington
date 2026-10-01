@@ -59,7 +59,7 @@ export async function insertTestPost(data: {
   title: string
   slug: string
   createdById: string
-  markdown: string
+  markdown: string | null
   postType?:
     | 'discussion'
     | 'review'
