@@ -31,6 +31,7 @@ Vouchington-specific policy and pointers.
 - [`skills/playwright-authoring/SKILL.md`](../skills/playwright-authoring/SKILL.md)
 - [`skills/postgres-node-performance-tuning/SKILL.md`](../skills/postgres-node-performance-tuning/SKILL.md)
 - [`skills/postgres-partitioning-uuid-v7/SKILL.md`](../skills/postgres-partitioning-uuid-v7/SKILL.md)
+- [`skills/postgres-schema-design/SKILL.md`](../skills/postgres-schema-design/SKILL.md)
 - [`skills/pr-description/SKILL.md`](../skills/pr-description/SKILL.md)
 - [`skills/ready-and-shepherd/SKILL.md`](../skills/ready-and-shepherd/SKILL.md)
 - [Retrospective distilling reference](../skills/retrospective-distill/distilling.md)

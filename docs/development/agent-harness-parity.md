@@ -35,13 +35,14 @@ The following local adapters are overlays, not standalone workflows:
 `review-github-issue-taxonomy`, `revisit-followups`, `stacked-prs`, and
 `static-analysis-checklist`. The testing adapters are `vitest-test-authoring`,
 `backend-vitest-test-authoring`, `web-vitest-test-authoring`, `playwright-authoring`,
-`storybook-authoring`. The database adapters are `postgres-node-performance-tuning` and
-`postgres-partitioning-uuid-v7`. The bijection between these adapters and
+`storybook-authoring`. The database adapters are `postgres-node-performance-tuning`,
+`postgres-partitioning-uuid-v7`, and `postgres-schema-design`. The bijection between these adapters and
 `.claude/skills` is enforced by `finite-set-consistency` (`.no-mistakes.yml`), not by a count
 here — see [`.agents/catalog/README.md`](../../.agents/catalog/README.md) for the current list.
 
 Claude Code and Codex load each canonical source from the `vouchington-workflow`,
-`vouchington-testing`, or `vouchington-database` plugin. The local
+`vouchington-testing`, or `vouchington-database` plugin, or from the installed tooling package when
+the local adapter specifies that fallback. The local
 `web-vitest-test-authoring` adapter maps to upstream `nextjs-vitest-test-authoring`; other adapter
 names match their canonical skill. Grok, Cursor, and OpenCode load the same sources from
 `node_modules/vouchington-tooling/skills/<name>/SKILL.md` and resolve its supporting resources
