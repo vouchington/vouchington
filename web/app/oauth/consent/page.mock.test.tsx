@@ -2,6 +2,8 @@ import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { OAuthAuthorizationRequestResponse } from '@/types/oauth-authorization'
+import type { ScopeCatalogResponse } from '@/types/scopes'
+import scopeCatalogFixture from '../../../../api-fixtures/v1/responses/shared.scopes.catalog.json'
 
 const { mockGetCurrentUser, mockGetAuthorizationRequest, mockNotFound, mockRedirect } = vi.hoisted(
   () => ({
@@ -48,13 +50,8 @@ vi.mock(import('./consent-actions'), () => ({
 }))
 
 vi.mock(import('@/lib/api/server/scopes'), () => ({
-  getScopeCatalog: async () => ({
-    scopes: [
-      { scope: 'financial-profile:read', description_key: 'financial_profile_read' },
-      { scope: 'spending:read', description_key: 'spending_read' },
-      { scope: 'mcp.user:read', description_key: 'mcp_user_full_access' },
-    ],
-  }),
+  getScopeCatalog: async (): Promise<ScopeCatalogResponse> =>
+    scopeCatalogFixture as ScopeCatalogResponse,
 }))
 
 import OAuthConsentPage from './page'
