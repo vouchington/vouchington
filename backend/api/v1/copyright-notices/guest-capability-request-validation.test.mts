@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
+import { recordTestClaimantEmailReceipt } from '@voucha/test-helpers/services/copyright-notices/claimant-delivery'
 import { openTestGuestCopyrightNotice } from '@voucha/test-helpers/services/copyright-notices/guest-capability'
 
 const NOTICES = '/api/v1/copyright-notices'
@@ -76,6 +77,7 @@ describe('copyright guest capability request contracts', () => {
   describe('POST /copyright-notices/:id/guest-capabilities/:capabilityId/information-requests', () => {
     it('rejects an unknown key, a bad statement, and a malformed id, then records', async () => {
       const { noticeId, staff, capability } = await issuedCapability()
+      await recordTestClaimantEmailReceipt(noticeId)
       const url = `${NOTICES}/${noticeId}/guest-capabilities/${capability.id}/information-requests`
       const statement = 'Send the registration number.'
 
