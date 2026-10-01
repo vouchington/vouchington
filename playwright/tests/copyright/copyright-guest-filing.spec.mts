@@ -64,11 +64,15 @@ test.describe('Signed-out copyright notice filing', () => {
     await page.getByLabel('Email address').pressSequentially(`tests+${suffix}@voucha.ai`)
     await page.getByLabel('Copyrighted work').pressSequentially(`Photograph ${suffix}`)
     await lookUpHostedUse(page, `/discussion/${slug}`)
-    await page.getByRole('checkbox').first().check()
+    // The image choice only exists once the lookup resolves, so wait on it by name instead of
+    // taking the first checkbox, which is a declaration while the lookup is still in flight.
+    await page.getByRole('checkbox', { name: /Image 1/ }).check()
     await page.getByLabel(/good-faith belief/).check()
     await page.getByLabel(/penalty of perjury/).check()
     await page.getByLabel('Electronic signature').pressSequentially(`Rights Holder ${suffix}`)
-    await page.getByRole('button', { name: 'Submit notice' }).click()
+    const submit = page.getByRole('button', { name: 'Submit notice' })
+    await expect(submit).toBeEnabled()
+    await submit.click()
 
     const receipt = page.getByTestId('copyright-guest-receipt')
     await expect(receipt).toContainText(noticeId)
