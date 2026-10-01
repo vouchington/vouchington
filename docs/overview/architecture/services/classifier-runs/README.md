@@ -118,18 +118,28 @@ spend-cap breach.
 
 ## Recovery transitions
 
-| Failure mode                | Durable state and recovery                                                                          | Idempotency evidence                                               |
-| --------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Approval without a receipt  | The request row is written in the approval transaction; the sweep dispatches every pending request. | One request per `(classifier, subject, input hash)`.               |
-| Dispatch failure            | The reservation is durable before the child enqueue; the sweep re-enqueues an incomplete run.       | Receipt identity; stable `classifier_run_<id>` job id.             |
-| Provider non-consumption    | A rejected admission releases the lease; a transient failure retries, a permanent one ends the run. | Lease token fences a later claim.                                  |
-| Provider reply or loss      | Persisted outcomes are read and completed without another provider call.                            | Pre-reserved C3 batch; outcome stamps are immutable.               |
-| Retry and lease expiry      | A live lease delays the duplicate job; an expired lease is reclaimed by the next claim.             | Run id, content hash and configuration hash must all match.        |
-| Content or config drift     | The obsolete run is superseded; the current fingerprint is reserved.                                | Supersession is durable and releases the old lease.                |
-| Missing configuration       | Approval commits; the request stays pending and the sweep retries.                                  | The request is unsettled until a run, no-work or stale settles it. |
-| Provider client unavailable | The remote half ends as `client-unavailable`, keeps the local outcome and alarms once.              | Terminal kind is immutable; local outcome is insert-only.          |
-| Attempt cap                 | The cap check terminates the run as `attempts-exhausted`; the sweep does not re-dispatch it.        | The attempt counter never decreases.                               |
-| Sweep bound                 | Only jobs actually added count; at 10 with the job gone the run is given up and alarms.             | The counter never decreases.                                       |
+Each failure mode below names its durable state and recovery, then the idempotency evidence.
+
+- **Approval without a receipt**: the request row is written in the approval transaction, and the
+  sweep dispatches every pending request. One request per `(classifier, subject, input hash)`.
+- **Dispatch failure**: the reservation is durable before the child enqueue, and the sweep
+  re-enqueues an incomplete run. Receipt identity and the stable `classifier_run_<id>` job id.
+- **Provider non-consumption**: a rejected admission releases the lease; a transient failure
+  retries and a permanent one ends the run. The lease token fences a later claim.
+- **Provider reply or loss**: persisted outcomes are read and completed without another provider
+  call. The C3 batch is pre-reserved and outcome stamps are immutable.
+- **Retry and lease expiry**: a live lease delays the duplicate job, and the next claim reclaims an
+  expired lease. Run id, content hash and configuration hash must all match.
+- **Content or config drift**: the obsolete run is superseded and the current fingerprint is
+  reserved. Supersession is durable and releases the old lease.
+- **Missing configuration**: approval commits, the request stays pending and the sweep retries.
+  The request stays unsettled until a run, no-work or stale settlement settles it.
+- **Provider client unavailable**: the remote half ends as `client-unavailable`, keeps the local
+  outcome and alarms once. The terminal kind is immutable and the local outcome is insert-only.
+- **Attempt cap**: the cap check ends the run as `attempts-exhausted`, and the sweep does not
+  re-dispatch it. The attempt counter never decreases.
+- **Sweep bound**: only jobs actually added count; at the bound, with the job gone, the run is
+  given up and alarms. The counter never decreases.
 
 The oldest incomplete run or pending request older than 26 hours (longer than spend-cap parking)
 raises a throttled `run-age` or `request-age` alarm through `recordClassifierRunAlarm`
