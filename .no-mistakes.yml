@@ -1835,6 +1835,30 @@ rules:
       triggerWrittenColumns:
         fn_update_updated_at: [updated_at]
 
+  - name: runtime queries use cursor pagination
+    rule: postgres-no-offset
+    scope: repository
+    options:
+      include:
+        - backend/**/*.{ts,mts}
+      exclude:
+        - '**/*.test.*'
+        - '**/__tests__/**'
+        - '**/test-helpers/**'
+        - backend/scripts/**
+
+  - name: runtime queries identify executed statements
+    rule: postgres-require-query-annotation
+    scope: repository
+    options:
+      include:
+        - backend/**/*.{ts,mts}
+      exclude:
+        - '**/*.test.*'
+        - '**/__tests__/**'
+        - '**/test-helpers/**'
+        - backend/scripts/**
+
   - name: do not wrap set operations in correlated EXISTS
     rule: postgres-sql-shape-policy
     scope: repository
