@@ -25,6 +25,14 @@ slug prefixes. The invites suite omits visibility and keeps the `invites-get-*` 
 Passkey and TOTP rename routes share
 [`auth-credential-rename-tests.mts`](../../../../backend/test-helpers/auth-credential-rename-tests.mts).
 Each file keeps its path, insert helper, suffix, and renamed label.
+Public and admin MCP rate-limit suites share
+[`registerMcpRateLimitTests`](../../../../backend/test-helpers/mcp-rate-limit.mts).
+Each route keeps its literal suite name, path, and OAuth audience and scope; the registrar owns
+scoped configuration restoration, fresh user/IP fixtures, and rate-limit audit assertions.
+Bookmark bloom-filter suites share
+[`registerBookmarkBloomFixture`](../../../../backend/test-helpers/bookmark-bloom-fixture.mts).
+Its getters expose the user and relation names after setup. Hooks drain pending bloom work before
+deleting that user's filter and restore the original configuration on suite teardown.
 Copyright email-intake and form-screening enqueue tests share
 [`copyright-agent-enqueue-recovery-tests.mts`](../../../../backend/test-helpers/copyright-agent-enqueue-recovery-tests.mts).
 Each file keeps its queue name, payload, and expected job options.
