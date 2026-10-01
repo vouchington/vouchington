@@ -73,10 +73,10 @@ optional because App Attest callers send none.
 
 ## Carriers the generated schema does not check
 
-`GET /copyright-notices` declares its query with `apiQuery` and validates the prepared projection,
-but the shared pagination parser owns every query rejection (`400` for a repeated or malformed
-`after`, and for a `limit` outside 1 to 100) and runs first. The carrier is therefore a drift guard:
-it cannot turn a request the parser accepted into a `422`.
+`GET /copyright-notices` declares its query with `apiQuery` and validates through
+`parseAndValidatePaginatedRequest`, but the shared pagination parser owns every query rejection
+(`400` for a repeated or malformed `after`, and for a `limit` outside 1 to 100) and runs first. The
+carrier is therefore a drift guard: it cannot turn a request the parser accepted into a `422`.
 
 String lengths and email format are not in the generated schema; the field parsers enforce them
 with field-named messages. The `Idempotency-Key` header is checked locally rather than through a

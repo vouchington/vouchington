@@ -6,8 +6,8 @@ import {
   getCopyrightPublicNoticeDetail,
   listAcceptedCopyrightNotices,
 } from '@services/copyright-notices'
-import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
+import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
 import {
@@ -37,10 +37,11 @@ app.route('/api/v1/copyright-notices').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/copyright-notices', acceptedCopyrightNoticesParser)
   setPrivateNoStoreCacheHeaders(ctx)
   await requireAuth(ctx, 'GET:/api/v1/copyright-notices')
-  const options = acceptedCopyrightNoticesParser.parse(ctx.query)
-  const query = prepareQueryForValidation(ctx.query, acceptedCopyrightNoticesParser.queryContract)
-  if (ctx.query.limit !== undefined) query.limit = options.limit
-  validateRequestContract(ctx, 'GET:/api/v1/copyright-notices', { query })
+  const options = parseAndValidatePaginatedRequest(
+    ctx,
+    'GET:/api/v1/copyright-notices',
+    acceptedCopyrightNoticesParser,
+  )
   const after = options.after
     ? decodeScopedPreciseTimestampCursor(
         options.after,
