@@ -15,7 +15,6 @@ export const DEFAULT_PENALTY_MULTIPLIER = 0.2
 export {
   INTEGRITY_FLAG_STATUSES,
   VOTE_INTEGRITY_FLAG_TYPES,
-  VOTE_INTEGRITY_RESOLUTIONS,
   type IntegrityFlagStatus,
   type VoteIntegrityResolution,
 } from '@ts-shared/utils/moderation-catalogs'
