@@ -78,8 +78,6 @@ per the agent conventions ("Do not inject user data into the system prompt"). Us
 | `manage_my_rewards_statuses`  | Track loyalty tier statuses                                      |
 | `manage_my_spending`          | Track spending by category                                       |
 | `search_posts`                | General discussions, reviews, and news                           |
-| `search_crawls`               | External web content by keyword                                  |
-| `search_crawls_semantic`      | External web content by semantic similarity                      |
 | `search_rss_feed_items`       | RSS feed articles                                                |
 
 ## Safety

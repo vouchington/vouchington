@@ -38,7 +38,6 @@ only when its terminal answer includes AAAA.
 | OpenAI API                         | `api.openai.com`                     | Direct moderation transport; retained agents use OpenRouter | No   | No                          |
 | OpenRouter OpenResponses API       | `openrouter.ai`                      | Retained-agent provider transport                           | No   | No                          |
 | Anthropic Messages API             | `api.anthropic.com`                  | Backend worker direct                                       | Yes  | N/A; API does not dial it   |
-| Wikipedia Core API                 | `api.wikimedia.org`                  | Backend worker direct                                       | Yes  | N/A; API does not dial it   |
 | Wikipedia REST API                 | `en.wikipedia.org`                   | Backend worker direct                                       | Yes  | N/A; API does not dial it   |
 | Kagi and blacklist GitHub sources  | `raw.githubusercontent.com`          | Backend worker direct                                       | Yes  | N/A; API does not dial it   |
 | Ubuntu101 domain blacklist         | `hosts.ubuntu101.co.za`              | Backend worker direct                                       | Yes  | N/A; API does not dial it   |

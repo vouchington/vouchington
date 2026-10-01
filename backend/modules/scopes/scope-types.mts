@@ -29,7 +29,6 @@ export type ApiScope =
   | 'spending:read'
   | 'spending:write'
   | 'topics:read'
-  | 'wikipedia:read'
 
 export type ScopeDefinition = {
   action: ScopeAction

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createOpenRouterResponse, OPENROUTER_DEFAULT_AGENT_MODEL } from './create-response.mts'
+import { createOpenRouterResponse } from './create-response.mts'
 
 describe('OpenRouter Responses', () => {
   const apiKey = process.env.OPENROUTER_API_KEY?.trim()
@@ -8,7 +8,7 @@ describe('OpenRouter Responses', () => {
     'accepts the retained structured-output contract and returns billed metadata',
     async () => {
       const response = await createOpenRouterResponse({
-        model: OPENROUTER_DEFAULT_AGENT_MODEL,
+        model: 'openai/gpt-5.4-nano',
         input: 'Reply with exactly OK.',
         max_output_tokens: 64,
         safety_identifier: 'openrouter-credentialed-contract',

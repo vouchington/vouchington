@@ -20,7 +20,6 @@ const NON_TOOL_FILES = new Set([
   'private-user.mts',
   'resolve-topic.mts',
   'route-response-schema.mts',
-  'search-crawl-tool.mts',
   'search-system.mts',
   'topic-hierarchy-result.mts',
   'topic-output-schema-parts.mts',

@@ -97,7 +97,6 @@ minimumReleaseAgeExclude:
   - '@vouchington/typed-entities'
   - '@vouchington/utils'
   - '@vouchington/uuid-v7'
-  - '@vouchington/wikimedia'
   - '@vouchington/worker-runtime'
   - agent-blackboard
   - auto-harness-client

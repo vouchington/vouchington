@@ -20,19 +20,17 @@ The chat orchestrator delegates to this agent when:
 
 ## Tools Available
 
-| Tool                                       | Purpose                                            |
-| ------------------------------------------ | -------------------------------------------------- |
-| `search_topics`                            | Look up card/product topic IDs by name             |
-| `get_topic_details`                        | Card attributes; `hierarchy` adds parents/children |
-| `get_topic_metrics`                        | Engagement counts and ratings for a topic          |
-| `search_data_points`                       | Real approval odds, credit limits from users       |
-| `get_topic_insights`                       | Aggregate statistics for a card                    |
-| `compare_topics`                           | Side-by-side card comparison                       |
-| `get_referral_links`                       | Referral links for recommended cards               |
-| `search_posts`                             | Community discussions and reviews                  |
-| `search_crawls` / `search_crawls_semantic` | External web content                               |
-| `search_rss_feed_items`                    | Recent articles                                    |
-| `get_wikipedia_summary`                    | Background context                                 |
+| Tool                    | Purpose                                            |
+| ----------------------- | -------------------------------------------------- |
+| `search_topics`         | Look up card/product topic IDs by name             |
+| `get_topic_details`     | Card attributes; `hierarchy` adds parents/children |
+| `get_topic_metrics`     | Engagement counts and ratings for a topic          |
+| `search_data_points`    | Real approval odds, credit limits from users       |
+| `get_topic_insights`    | Aggregate statistics for a card                    |
+| `compare_topics`        | Side-by-side card comparison                       |
+| `get_referral_links`    | Referral links for recommended cards               |
+| `search_posts`          | Community discussions and reviews                  |
+| `search_rss_feed_items` | Recent articles                                    |
 
 ## Observability
 

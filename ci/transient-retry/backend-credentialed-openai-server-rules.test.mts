@@ -27,13 +27,12 @@ const matchingOpenAIServerErrorLog = buildBackendCredentialedFailureLog([
   },
   {
     project: 'backend-openai',
-    path: 'backend/agents/autotagger/__tests__/openai-autotagger.openai.test.mts',
-    titlePath:
-      'callOpenAIAutotagger > runs with real OpenAI call and persists conversation run metadata',
+    path: 'backend/agents/_shared/__tests__/create-response.openai.test.mts',
+    titlePath: 'createResponse > completes a provider request',
     markerLines: [
       'Error: 500 The server had an error processing your request. Sorry about that!',
       'OpenAI.makeStatusError node_modules/.pnpm/openai/node_modules/openai/src/client.ts:636:27',
-      'backend/agents/autotagger/__tests__/openai-autotagger.openai.test.mts:35:22',
+      'backend/agents/_shared/__tests__/create-response.openai.test.mts:35:22',
     ],
   },
 ])
@@ -114,9 +113,8 @@ describe('backend-credentialed-provider-smoke-test-transient (OpenAI server erro
     const assertionLog = buildBackendCredentialedFailureLog([
       {
         project: 'backend-openai',
-        path: 'backend/agents/autotagger/__tests__/openai-autotagger.openai.test.mts',
-        titlePath:
-          'callOpenAIAutotagger > runs with real OpenAI call and persists conversation run metadata',
+        path: 'backend/agents/_shared/__tests__/create-response.openai.test.mts',
+        titlePath: 'createResponse > completes a provider request',
         markerLines: [
           'AssertionError: expected metadata to be persisted',
           '##[error]Process completed with exit code 1.',

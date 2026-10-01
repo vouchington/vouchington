@@ -48,7 +48,6 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../modules/structured-decisions/README.md`](../modules/structured-decisions/README.md)
 - [`../modules/utils/README.md`](../modules/utils/README.md)
 - [`../modules/worker-queue-inventory/README.md`](../modules/worker-queue-inventory/README.md)
-- [`../modules/wikipedia-api/README.md`](../modules/wikipedia-api/README.md)
 
 ## Queues
 

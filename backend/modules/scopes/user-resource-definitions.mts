@@ -14,7 +14,6 @@ const USER_RESOURCE_SCOPES = {
   'rewards-statuses': ['read', 'write'],
   spending: ['read', 'write'],
   topics: ['read'],
-  wikipedia: ['read'],
 } as const
 
 export function userResourceDefinitions(): Record<string, ScopeDefinition> {

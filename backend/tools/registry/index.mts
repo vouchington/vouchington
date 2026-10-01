@@ -1,4 +1,3 @@
-import addRelatedTopicTool from '../add-related-topic.mts'
 import addEntityRelationTool from '../add-entity-relation.mts'
 import compareTopicsTool from '../compare-topics.mts'
 import getDomainRatingsTool from '../get-domain-ratings.mts'
@@ -14,25 +13,19 @@ import getTopicInsightsTool from '../get-topic-insights.mts'
 import getTopicMetricsTool from '../get-topic-metrics.mts'
 import getTrendingPostsTool from '../get-trending-posts.mts'
 import getTrendingTopicsTool from '../get-trending-topics.mts'
-import getWikipediaSummaryTool from '../get-wikipedia-summary.mts'
 import manageMyCardsTool from '../manage-my-cards.mts'
 import manageMyPointValuationsTool from '../manage-my-point-valuations.mts'
 import manageMyRewardsStatusesTool from '../manage-my-rewards-statuses.mts'
 import manageMySpendingTool from '../manage-my-spending.mts'
-import searchCrawlChunksTool from '../search-crawl-chunks.mts'
-import searchCrawlsSemanticTool from '../search-crawls-semantic.mts'
-import searchCrawlsTool from '../search-crawls.mts'
 import searchDataPointsTool from '../search-data-points.mts'
 import searchPostsTool from '../search-posts.mts'
 import searchRssFeedItemsTool from '../search-rss-feed-items.mts'
 import searchTopicsTool from '../search-topics.mts'
-import searchWikipediaTool from '../search-wikipedia.mts'
 import updateMyFinancialProfileTool from '../update-my-financial-profile.mts'
 import type { Tool } from '../types.mts'
 
 export const ALL_TOOLS: readonly Tool[] = [
   addEntityRelationTool,
-  addRelatedTopicTool,
   compareTopicsTool,
   getDomainRatingsTool,
   getMyCardsTool,
@@ -47,19 +40,14 @@ export const ALL_TOOLS: readonly Tool[] = [
   getTopicMetricsTool,
   getTrendingPostsTool,
   getTrendingTopicsTool,
-  getWikipediaSummaryTool,
   manageMyCardsTool,
   manageMyPointValuationsTool,
   manageMyRewardsStatusesTool,
   manageMySpendingTool,
-  searchCrawlChunksTool,
-  searchCrawlsSemanticTool,
-  searchCrawlsTool,
   searchDataPointsTool,
   searchPostsTool,
   searchRssFeedItemsTool,
   searchTopicsTool,
-  searchWikipediaTool,
   updateMyFinancialProfileTool,
 ] as unknown as Tool[]
 

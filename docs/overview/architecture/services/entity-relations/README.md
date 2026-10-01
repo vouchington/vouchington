@@ -17,14 +17,6 @@ and generate SQL queries.
 With these relationship types, we can traverse the graph of entities and generate SQL queries to fetch data,
 especially for AI tool calls.
 
-For example, we may provide a few topics to the LLM initially, e.g. `Chase Sapphire Preferred`.
-Via tool call, the LLM might say, `Please return the terms of service pages for this topic`,
-after which it would return the following query:
-
-- Subject: Chase Sapphire Preferred (Topic)
-- Predicate: terms_of_service
-- Object Type: Crawl Embeddings
-
 To create or edit a relation, you only need to update the `entityRelationPredicates` and `entityRelations` configurations in `config.mts`.
 The SQL tables will be created and updated automatically using the idempotent migration.
 

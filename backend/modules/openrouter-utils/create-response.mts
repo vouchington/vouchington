@@ -79,8 +79,6 @@ async function drainOpenRouterResponse(stream: ResponseStreamLike): Promise<Open
   return result.value
 }
 
-export const OPENROUTER_DEFAULT_AGENT_MODEL = 'openai/gpt-5.4-nano' as const
-
 export function toOpenRouterModel(model: string): string {
   return model.includes('/') ? model : `openai/${model}`
 }

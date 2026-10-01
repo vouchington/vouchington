@@ -66,8 +66,7 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // `autotagger-post` and `autotagger-rss-feed-item` (C6) dispatch through the classifier path
 // (`@agents/autotagger/dispatch-classifier.mts`), which calls the seeded `tagging` classifier over
 // OpenRouter/Jev via `createStructuredDecisionClient`, never through the shared `runToolLoop`
-// harness (`backend/agents/_shared/run-tool-loop.mts`) the pre-C6 autotagger used
-// (`openai-autotagger.mts`, no longer wired into dispatch). Both are gated here anyway:
+// harness (`backend/agents/_shared/run-tool-loop.mts`). Both are gated here:
 // `createAutotaggerStructuredDecisionHooks` (`@agents/autotagger/structured-decision-attempt-hooks.mts`)
 // wires the client's `beforeAttempt`/`onBilledResponse`/`onUnknownBilledAttempt` hooks to
 // `assertOpenAiSpendCapNotBreached`/`recordAgentResponseUsage`/`latchAccountingUncertainty`

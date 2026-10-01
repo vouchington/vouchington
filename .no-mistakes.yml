@@ -872,8 +872,6 @@ rules:
           reason: First-party generic utility primitives published by the repo author.
         - name: '@vouchington/uuid-v7'
           reason: First-party UUIDv7 generation, validation, bounds, and conversion primitives published by the repo author.
-        - name: '@vouchington/wikimedia'
-          reason: First-party Wikimedia API client primitives published by the repo author.
         - name: '@vouchington/worker-runtime'
           reason: First-party generic worker queue-selection, loading, and scheduling runtime published by the repo author.
         - name: agent-blackboard
