@@ -45,3 +45,17 @@ export async function withTestApiKeyRotationWriteFailure(userId: string, run: ()
     )
   }
 }
+
+export async function insertTestApiKeysDueForReminder(
+  userId: string,
+  count: number,
+): Promise<string[]> {
+  const { rows } = await write<{ id: string }>(sql`/* insertTestApiKeysDueForReminder */
+    INSERT INTO api_keys (user_id, prefix, key_hash, type, label, permissions, expires_at)
+    SELECT ${userId}::uuid, 'voucha_rss_test', sha256(uuid_send(uuidv7())), 'rss',
+      'Reminder boundary ' || ordinal, ARRAY['rss:read']::text[], NOW() + INTERVAL '6 days'
+    FROM generate_series(1, ${count}::integer) AS ordinal
+    RETURNING id
+  `)
+  return rows.map(row => row.id)
+}
