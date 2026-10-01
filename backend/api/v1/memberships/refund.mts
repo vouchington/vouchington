@@ -51,6 +51,8 @@ app.route('/api/v1/memberships/refunds').post(async (ctx: Context) => {
     400,
     'Must provide charge_id or payment_intent_id',
   )
+  // Reject before the service lists Stripe invoices: a blank id can never match a charge.
+  ctx.assert(body.invoice_id.trim().length > 0, 400, 'invoice_id must not be blank')
   if (body.amount !== undefined) ctx.assert(body.amount.amount > 0, 400, 'Invalid amount')
   const note = body.note?.trim() ?? null
   if (body.note != null) {

@@ -29,7 +29,8 @@ answers `422`. Semantic checks (trim, length, range, cross-field, existence) kee
   stays `400`.
 - `POST /memberships/refunds`: every shape failure is `422`, including negative, fractional,
   scaled, or unsupported-currency money (`{amount: integer >= 0, currency: aud|cad|eur|gbp|jpy|usd}`).
-  `amount > 0`, note length, and "charge or payment intent" stay `400`.
+  `amount > 0`, note length, and "charge or payment intent" stay `400`. A blank or whitespace-only
+  `invoice_id` is `400` (`invoice_id must not be blank`) before any Stripe call.
 - `POST /psql/jobs`, `POST /valkey/flush`, `/valkey/caches/clear`, `/valkey/bloom-filters/rebuild`:
   an unknown `type`, `concern`, `filter`, or a missing `group` is `422`.
 - `POST /admin/users/:userId/identity-verification-attempts`: a non-object body is `422`; a blank

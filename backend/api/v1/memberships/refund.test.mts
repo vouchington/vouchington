@@ -104,6 +104,31 @@ describe('POST /api/v1/memberships/refunds', () => {
     })
     expect(createRefund).toHaveBeenCalledOnce()
   })
+
+  it.each(['', ' \t '])(
+    'returns 400 for a blank invoice_id without calling Stripe or writing a refund',
+    async invoiceId => {
+      const fixture = await seedRefundableMembership()
+      const listInvoices = vi
+        .spyOn(stripeInvoices, 'listStripeSubscriptionInvoices')
+        .mockResolvedValue(fakeInvoiceList(fixture))
+      const createRefund = vi
+        .spyOn(stripeRefunds, 'createStripeRefund')
+        .mockResolvedValue(fakeStripeRefund(fixture, 'succeeded'))
+      const request = createRequest()
+      await request.authenticateAs(admin)
+
+      const response = await request
+        .post('/api/v1/memberships/refunds')
+        .send({ ...refundRequest(fixture), invoice_id: invoiceId })
+        .expect(400)
+
+      expect(response.body.message).toBe('invoice_id must not be blank')
+      expect(listInvoices).not.toHaveBeenCalled()
+      expect(createRefund).not.toHaveBeenCalled()
+      expect(await getMembershipRefunds(fixture.target.id)).toEqual([])
+    },
+  )
 })
 
 type RefundFixture = Awaited<ReturnType<typeof seedRefundableMembership>>

@@ -143,7 +143,7 @@ describe('story-management', () => {
     })
   })
 
-  describe('PATCH /api/v1/stories/:storyId', () => {
+  describe('PATCH /api/v1/stories/:id', () => {
     it('returns 401 when not authenticated', async () => {
       const story = await insertTestStory()
       const request = createRequest()
