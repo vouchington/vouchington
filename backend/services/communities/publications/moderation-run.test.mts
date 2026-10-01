@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
 import type { PrivateUser } from '@services/users/types'
 import {
+  beginTransaction,
   createRandomString,
   createTestUser,
   insertTestCommunity,

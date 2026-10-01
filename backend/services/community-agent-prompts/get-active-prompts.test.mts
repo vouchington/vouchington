@@ -1,7 +1,6 @@
 import { it, expect, describe, beforeAll } from 'vitest'
-import { beginTransaction, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import {
+  beginTransaction,
   createTestMembership,
   createTestUser,
   insertTestCommunity,
@@ -9,6 +8,10 @@ import {
   insertTestCommunityMember,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
+import {
+  activateTestCommunityAgentPromptHoursAgo,
+  deactivateTestCommunityAgentPromptInTransaction,
+} from '@voucha/test-helpers/entities/community-automod-effects'
 import { getActiveCommunityAgentPrompts } from './get-active-prompts.mts'
 import { deleteCommunityAgentPrompt } from './delete.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -122,10 +125,7 @@ describe('get-active-prompts', () => {
           createdById: owner.id,
           slotAllocated: true,
         })
-        await write(sql`/* activatePromptHoursAgo */
-          UPDATE community_agent_prompts
-          SET activated_at = now() - ${hoursAgo} * interval '1 hour'
-          WHERE id = ${prompt.id}`)
+        await activateTestCommunityAgentPromptHoursAgo(prompt.id, hoursAgo)
         prompts.push(prompt)
       }
       return { owner, community: promptCommunity, prompts }
@@ -170,10 +170,7 @@ describe('get-active-prompts', () => {
         hoursAgo: [2, 1],
       })
       await using query = await beginTransaction()
-      await query(sql`/* deactivateOnTransaction */
-        UPDATE community_agent_prompts
-        SET slot_allocated = false, activated_at = NULL, deactivated_at = now()
-        WHERE id = ${prompts[0]!.id}`)
+      await deactivateTestCommunityAgentPromptInTransaction(query, prompts[0]!.id)
 
       const inTransaction = await getActiveCommunityAgentPrompts(locked.id, query)
       const outside = await getActiveCommunityAgentPrompts(locked.id)

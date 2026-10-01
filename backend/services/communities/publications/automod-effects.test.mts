@@ -1,9 +1,8 @@
 import { randomBytes, randomUUID } from 'node:crypto'
-import { beginTransaction, read, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import { describe, expect, it } from 'vitest'
 import { getModerationSystemUserId } from '@services/users/system-users'
 import {
+  beginTransaction,
   createTestUser,
   getCommunityPostReviewAutomodState,
   getCommunityPostReviewStatus,
@@ -15,6 +14,11 @@ import {
   updateTestCommunityPostReviewState,
 } from '@voucha/test-helpers'
 import { setTestCommunityPostReviewPlatformOverride } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-fixture'
+import {
+  countTestRemoveModeratorActions,
+  dismissTestCommunityPostReviewAutomodFlag,
+  readTestCommunityPostReviewHistory,
+} from '@voucha/test-helpers/entities/community-automod-effects'
 import { flagPostForAutomodReview } from './automod-flag.mts'
 import { unpublishPostForAutomodFlag } from './agent-moderate.mts'
 
@@ -34,34 +38,6 @@ async function publishedPost() {
     submittedById: author.id,
   })
   return { author, communityId: community.id, postId, contentSha256: randomBytes(32) }
-}
-
-async function reviewHistory(postId: string) {
-  const { rows } = await read<{
-    action: string
-    actor_user_id: string
-    platform_override: boolean
-  }>(
-    sql`/* reviewHistory */
-    SELECT action, actor_user_id, platform_override FROM community_post_review_changes
-    WHERE post_id = ${postId} ORDER BY id`,
-  )
-  return rows
-}
-
-/** A moderator dismissal, which the schema only allows on a review-queue flag. */
-async function dismissFlag(postId: string, dismissedById: string) {
-  await write(sql`/* dismissFlag */
-    UPDATE community_post_reviews
-    SET automod_dismissed_at = now(), automod_dismissed_by_id = ${dismissedById}
-    WHERE post_id = ${postId}`)
-}
-
-async function removeActionCount(postId: string) {
-  const { rows } = await read<{ count: number }>(sql`/* removeActionCount */
-    SELECT count(*)::integer AS count FROM moderator_actions
-    WHERE post_id = ${postId} AND action_type = 'remove'`)
-  return rows[0]!.count
 }
 
 describe('flagPostForAutomodReview', () => {
@@ -84,14 +60,14 @@ describe('flagPostForAutomodReview', () => {
       unpublished_at: null,
       approved_at: expect.any(Date),
     })
-    expect(await reviewHistory(post.postId)).toEqual([])
+    expect(await readTestCommunityPostReviewHistory(post.postId)).toEqual([])
   })
 
   it('clears an earlier dismissal when it flags again', async () => {
     const post = await publishedPost()
     const moderator = await createTestUser()
     await flag(post)
-    await dismissFlag(post.postId, moderator.id)
+    await dismissTestCommunityPostReviewAutomodFlag(post.postId, moderator.id)
     expect((await getCommunityPostReviewAutomodState(post.postId))?.automod_dismissed_at).not.toBe(
       null,
     )
@@ -164,10 +140,10 @@ describe('unpublishPostForAutomodFlag', () => {
     const state = await getCommunityPostReviewAutomodState(post.postId)
     expect(state?.automod_action).toBe('unpublish')
     expect(state?.automod_flagged_content_sha256?.equals(post.contentSha256)).toBe(true)
-    expect(await reviewHistory(post.postId)).toEqual([
+    expect(await readTestCommunityPostReviewHistory(post.postId)).toEqual([
       { action: 'unpublish', actor_user_id: moderationSystemUserId, platform_override: false },
     ])
-    expect(await removeActionCount(post.postId)).toBe(1)
+    expect(await countTestRemoveModeratorActions(post.postId)).toBe(1)
   })
 
   it('reports an already unpublished post without a second history row or audit action', async () => {
@@ -177,8 +153,8 @@ describe('unpublishPostForAutomodFlag', () => {
     const { result } = await unpublish(post)
 
     expect(result).toBe('already-removed')
-    expect(await reviewHistory(post.postId)).toHaveLength(1)
-    expect(await removeActionCount(post.postId)).toBe(1)
+    expect(await readTestCommunityPostReviewHistory(post.postId)).toHaveLength(1)
+    expect(await countTestRemoveModeratorActions(post.postId)).toBe(1)
   })
 
   it('writes nothing when the transaction that owns it rolls back', async () => {
@@ -196,8 +172,8 @@ describe('unpublishPostForAutomodFlag', () => {
       unpublished_at: null,
     })
     expect((await getCommunityPostReviewAutomodState(post.postId))?.automod_action).toBeNull()
-    expect(await reviewHistory(post.postId)).toEqual([])
-    expect(await removeActionCount(post.postId)).toBe(0)
+    expect(await readTestCommunityPostReviewHistory(post.postId)).toEqual([])
+    expect(await countTestRemoveModeratorActions(post.postId)).toBe(0)
   })
 
   it('never unpublishes a post under platform override, and records no flag', async () => {
@@ -211,7 +187,7 @@ describe('unpublishPostForAutomodFlag', () => {
       unpublished_at: null,
     })
     expect((await getCommunityPostReviewAutomodState(post.postId))?.automod_action).toBeNull()
-    expect(await reviewHistory(post.postId)).toEqual([])
+    expect(await readTestCommunityPostReviewHistory(post.postId)).toEqual([])
   })
 
   it('does not unpublish a rejected post', async () => {
@@ -237,7 +213,7 @@ describe('unpublishPostForAutomodFlag', () => {
     const moderator = await createTestUser()
     await setPostLLMModerationContentSha256(post.postId, post.contentSha256)
     await setTestCommunityPostReviewAutomodFlag({ postId: post.postId, action: 'review_queue' })
-    await dismissFlag(post.postId, moderator.id)
+    await dismissTestCommunityPostReviewAutomodFlag(post.postId, moderator.id)
 
     await unpublish(post)
 

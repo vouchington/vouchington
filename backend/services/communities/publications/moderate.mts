@@ -64,13 +64,15 @@ export async function approvePublication(
   )
   const changed = (rowCount ?? 0) > 0
   if (changed) {
-    await recordPublicationReviewChange(query, {
-      communityId,
-      postId,
-      actorUserId: currentUser.id,
-      action: 'approve',
-    })
-    await recordCommunityPublicationChange(query, communityId, postId)
+    await Promise.all([
+      recordPublicationReviewChange(query, {
+        communityId,
+        postId,
+        actorUserId: currentUser.id,
+        action: 'approve',
+      }),
+      recordCommunityPublicationChange(query, communityId, postId),
+    ])
     await requestCommunityModerationRun(query, postId)
   }
   await query.commit()
