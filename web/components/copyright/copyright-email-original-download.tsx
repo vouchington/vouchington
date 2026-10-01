@@ -1,7 +1,11 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import type { CopyrightEmailSesVerdict } from '@/lib/api/client/copyright-email-intakes'
-import { sesMalwareState, sesVerdictLabel } from './copyright-email-ses-verdicts-model'
+import {
+  availableOriginalUrl,
+  sesMalwareState,
+  sesVerdictLabel,
+} from './copyright-email-ses-verdicts-model'
 
 /**
  * The staff link to the raw `.eml`. SES reporting malware (`fail`) withholds the link and says why;
@@ -15,7 +19,8 @@ export function CopyrightEmailOriginalDownload({
   virus: CopyrightEmailSesVerdict
 }) {
   const state = sesMalwareState(virus)
-  if (state === 'quarantined' || downloadUrl === null) {
+  const originalUrl = availableOriginalUrl(downloadUrl, virus)
+  if (originalUrl === null) {
     return (
       <Alert
         aria-label='Original email withheld'
@@ -46,7 +51,7 @@ export function CopyrightEmailOriginalDownload({
         asChild
         variant='outline'
       >
-        <a href={downloadUrl}>Download original email and attachments</a>
+        <a href={originalUrl}>Download original email and attachments</a>
       </Button>
     </div>
   )

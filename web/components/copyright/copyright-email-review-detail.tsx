@@ -9,7 +9,10 @@ import {
 import type { CopyrightEmailIntake } from '@/lib/api/client/copyright-email-intakes'
 import { CopyrightEmailInformationRequestField } from './copyright-email-information-request-field'
 import { CopyrightEmailOriginalDownload } from './copyright-email-original-download'
+import { CopyrightEmailParsedEmail } from './copyright-email-parsed-email'
+import { CopyrightEmailRecommendation } from './copyright-email-recommendation'
 import { CopyrightEmailSesVerdicts } from './copyright-email-ses-verdicts'
+import { availableOriginalUrl } from './copyright-email-ses-verdicts-model'
 import { isValidCopyrightEmailInformationMessage } from './copyright-email-information-request-model'
 import { CopyrightEmailReplyAddressField } from './copyright-email-reply-address-field'
 import { CopyrightEmailCorrespondenceFields } from './copyright-email-correspondence-fields'
@@ -71,14 +74,14 @@ export function CopyrightEmailReviewDetail({
         downloadUrl={detail.raw_email.download_url}
         virus={detail.ses_verdicts.virus}
       />
-      <h3 className='font-medium'>Parsed email</h3>
-      <pre className='overflow-auto rounded border p-3 text-xs'>
-        {JSON.stringify(detail.parsed_email, null, 2)}
-      </pre>
-      <h3 className='font-medium'>Agent recommendation</h3>
-      <pre className='overflow-auto rounded border p-3 text-xs'>
-        {JSON.stringify(detail.recommendation, null, 2)}
-      </pre>
+      <CopyrightEmailParsedEmail
+        parsedEmail={detail.parsed_email}
+        parserError={detail.parser_error}
+        originalAvailable={
+          availableOriginalUrl(detail.raw_email.download_url, detail.ses_verdicts.virus) !== null
+        }
+      />
+      <CopyrightEmailRecommendation recommendation={detail.recommendation} />
       {detail.review_path === 'initial' && draft && (
         <CopyrightEmailApprovalFields
           draft={draft}

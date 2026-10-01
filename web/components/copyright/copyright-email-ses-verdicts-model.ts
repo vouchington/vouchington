@@ -63,6 +63,14 @@ export function sesMalwareState(
   return virus === 'pass' ? 'clean' : 'unconfirmed'
 }
 
+/** The raw `.eml` link staff may use, or null when SES quarantined the original or none was sent. */
+export function availableOriginalUrl(
+  downloadUrl: string | null,
+  virus: CopyrightEmailSesVerdict,
+): string | null {
+  return sesMalwareState(virus) === 'quarantined' ? null : downloadUrl
+}
+
 export function sesVerdictLabel(verdict: CopyrightEmailSesVerdict): string {
   return VERDICT_LABELS[verdict]
 }
