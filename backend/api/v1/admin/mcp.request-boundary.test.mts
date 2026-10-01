@@ -10,7 +10,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { readTestMcpCallAuditEvents } from '@voucha/test-helpers/entities/mcp-call-audit'
-import { issueTestOAuthTokensForClient } from '@services/oauth-authorization-server/test-support'
+import { issueTestOAuthTokensForClient } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import type { PrivateUser } from '@services/users/types'
 
 function postRaw(token: string | null, payload: string) {

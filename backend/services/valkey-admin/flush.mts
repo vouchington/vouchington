@@ -13,7 +13,7 @@ import { clearAllCaches } from './clear-cache.mts'
 import type { FlushConcern, ServiceFlushConcern } from './concerns.mts'
 import { SERVICE_FLUSH_TARGET_PREFIXES } from './flush-targets.mts'
 
-export { FLUSH_CONCERNS, type FlushConcern } from './concerns.mts'
+export type { FlushConcern } from './concerns.mts'
 
 export type FlushResult = {
   concern: FlushConcern
