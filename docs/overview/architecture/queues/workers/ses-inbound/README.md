@@ -23,7 +23,12 @@ as a failed parse for staff review.
 `COPYRIGHT_INTAKE_ENABLED` does not gate ingest. While it is false, the worker and the reconciler
 still copy, parse, thread-link, and delete each source object, so every email (a new notice or a
 reply on a case) becomes an intake row in the staff email intake queue. The evidence bucket is still
-required. The worker still enqueues the advisory extraction job, but that job returns without a
+required. A stack with no `S3_BUCKET_SES_INBOUND` (local development) has nothing for the five-minute
+reconcile to scan, so the sweep returns `enqueued: 0` and reports the skip through
+`recordScheduledJobConfigMissing` (a console warning in development and CI plus a tagged Sentry
+warning `scheduled_job_config_missing`) instead of failing and retrying. Ingest of a received email
+still fails on a missing SES inbound or evidence bucket, because that job only exists once mail
+arrived. The worker still enqueues the advisory extraction job, but that job returns without a
 model call until the switch is true, and the agent-dispatch reconciler then sends every parsed
 email that has no recommendation and no staff decision to it. See the
 [intake runbook](../../../../../runbooks/copyright-notices.md#intake-activation).

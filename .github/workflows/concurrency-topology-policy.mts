@@ -32,6 +32,7 @@ const cancelling = (scope: readonly ConcurrencyScope[]) =>
 export const concurrencyTopologyPolicy = {
   '.github/workflows/actionlint.yml': conditional(['pull-request', 'sha']),
   '.github/workflows/backend.yml': conditional(['event', 'pull-request', 'sha']),
+  '.github/workflows/cancel-replaced-merge-group-runs.yml': retained(['sha']),
   '.github/workflows/cleanup-artifacts.yml': retained(['fixed-resource']),
   '.github/workflows/cloudflare-worker.yml': conditional(['event', 'pull-request', 'sha']),
   '.github/workflows/dispatch-completed-deploy.yml': retained(['event']),
