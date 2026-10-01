@@ -27,17 +27,22 @@ export interface OpenAICompatibleRequestOptions {
 export async function createOpenAIResponseWithRetries(
   params: ResponseCreateParamsStreaming,
   options?: RawCreateOptions,
+  priorAttempts = 0,
 ): Promise<{ stream: AsyncIterable<ResponseStreamEvent>; requestStartedAt: Date }> {
   return createOpenAICompatibleResponseWithRetries(
     async (request, requestOptions) => openai.responses.create(request, requestOptions),
     params,
     options,
+    priorAttempts,
   )
 }
 
 /**
  * Applies the direct OpenAI transport's retry and uncertainty policy to an OpenAI-compatible
  * Responses endpoint. Callers must supply an endpoint that accepts the same SDK request shape.
+ * A non-zero `priorAttempts` says an earlier call already made a physical request for the same
+ * logical request (the default-tier flex fallback), so `beforeAttempt` sees `attempt > 1` and
+ * re-runs the spend-cap guard; it never consumes this call's own `maxRetries` budget.
  */
 export async function createOpenAICompatibleResponseWithRetries<
   TOptions extends OpenAICompatibleRequestOptions,
@@ -48,6 +53,7 @@ export async function createOpenAICompatibleResponseWithRetries<
   ) => Promise<AsyncIterable<ResponseStreamEvent>>,
   params: ResponseCreateParamsStreaming,
   options?: TOptions,
+  priorAttempts = 0,
 ): Promise<{ stream: AsyncIterable<ResponseStreamEvent>; requestStartedAt: Date }> {
   const maxRetries = options?.maxRetries ?? 2
   const sdkOptions = { ...options, maxRetries: 0 } as TOptions
@@ -56,7 +62,7 @@ export async function createOpenAICompatibleResponseWithRetries<
     options?.signal?.throwIfAborted()
     const requestStartedAt = new Date()
     // oxlint-disable-next-line no-await-in-loop -- each hook belongs to the physical request it precedes
-    await hooks?.beforeAttempt({ attempt, requestStartedAt })
+    await hooks?.beforeAttempt({ attempt: priorAttempts + attempt, requestStartedAt })
     options?.signal?.throwIfAborted()
     try {
       // oxlint-disable-next-line no-await-in-loop -- a retry cannot begin until this physical request settles

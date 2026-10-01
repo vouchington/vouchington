@@ -46,8 +46,10 @@ before rethrowing.
 
 It also installs the physical-attempt accounting hooks used by `@modules/openai-utils`: the first
 attempt has already passed the wrapper's spend-cap check, every known-unbilled flex-capacity retry
-rechecks immediately before dispatch, and an ambiguous potentially billed attempt with no usage
-awaits the request-day `unknown_billed_attempt` latch before the error can escape.
+and the single default-tier resend that follows flex capacity exhaustion recheck immediately before
+dispatch, and an ambiguous potentially billed attempt with no usage awaits the request-day
+`unknown_billed_attempt` latch before the error can escape. A streamed flex capacity failure is
+positively unbilled, so it does not latch; the resend's ledger row carries the served `default` tier.
 
 ### `createStructuredDecisionBillingHooks(subject)`
 

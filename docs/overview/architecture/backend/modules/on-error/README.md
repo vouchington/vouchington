@@ -43,6 +43,15 @@ All error classes are designed to work with the `onError` handler in this module
 
 Errors with a `.status` property will be properly categorized by the error handler.
 
+## recordOpenAiFlexFallback
+
+`recordOpenAiFlexFallback({ provider, model, trigger })` reports that a `service_tier: 'flex'`
+request was resent once on the default tier because flex capacity was unavailable (`trigger` is
+`http_429` or `stream_failed`; see [`@modules/openai-utils`](../openai-utils/README.md)). It logs a
+warning in dev/CI, adds a Sentry breadcrumb, and sends a `captureMessage('openai_flex_fallback')`
+tagged by `provider` and `trigger`, throttled to one per minute per pair. A sustained stream of these
+messages means flex capacity is persistently short and requests are billing at the standard price.
+
 ## Sentry Request-Metadata Scrubbing
 
 `createSentryInitOptions()` filters expected error events first, then scrubs every final non-null

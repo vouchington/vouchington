@@ -1,5 +1,6 @@
 import type { Response } from 'openai/resources/responses/responses'
 import { APIConnectionError, APIError, APIUserAbortError } from 'openai'
+import { findInErrorChain, walkErrorChain } from './error-chain.mts'
 
 type ResponseUsage = NonNullable<Response['usage']>
 export type OpenAIUsage = Pick<ResponseUsage, 'input_tokens' | 'output_tokens'> & {
@@ -125,14 +126,36 @@ function matchUpstreamFailure(current: object): OpenAIUpstreamFailure | null {
   return null
 }
 
+const FLEX_CAPACITY_FAILURE_PATTERN = /flex processing is temporarily unavailable/i
+
+/**
+ * True for the streamed form of flex capacity unavailability: a `response.failed` event carrying
+ * `server_error` "Flex processing is temporarily unavailable. Please try again later or use
+ * standard processing." and no usage. It is the same capacity condition as the HTTP 429
+ * `resource_unavailable` (see `isOpenAIFlexResourceUnavailableError`) — the provider rejected the
+ * flex request before processing it — so it is likewise treated as not billed. Any usage on the
+ * response makes the failure billable and keeps it on the ledger-recording path instead.
+ */
+export function isOpenAIFlexCapacityFailedResponseError(error: unknown): boolean {
+  return (
+    error instanceof OpenAIResponseNotCompletedError &&
+    error.status === 'failed' &&
+    error.code === 'server_error' &&
+    error.usage == null &&
+    FLEX_CAPACITY_FAILURE_PATTERN.test(error.message)
+  )
+}
+
 /**
  * True when a physical attempt may have been billed but left no authoritative usage.
- * `previous_response_not_found` is a deterministic unbilled 400 that chat recovers from.
- * A terminal failed/incomplete/cancelled response only needs the latch when usage is absent —
- * otherwise `recordAgentResponseUsage` writes the ledger row from the error.
+ * `previous_response_not_found` is a deterministic unbilled 400 that chat recovers from, and a
+ * flex capacity failure is positively unbilled. A terminal failed/incomplete/cancelled response
+ * only needs the latch when usage is absent — otherwise `recordAgentResponseUsage` writes the
+ * ledger row from the error.
  */
 export function shouldLatchUnknownBilledOpenAIAttempt(error: unknown): boolean {
   if (isOpenAIMissingPreviousResponseError(error)) return false
+  if (isOpenAIFlexCapacityFailedResponseError(error)) return false
   if (isExplicitClientCancelError(error)) return false
   if (error instanceof OpenAIResponseNotCompletedError) return error.usage == null
   return true
@@ -161,24 +184,4 @@ export function isOpenAIMissingPreviousResponseError(error: unknown): boolean {
       current.param === 'previous_response_id'
     )
   })
-}
-
-function walkErrorChain(error: unknown, match: (current: object) => boolean): boolean {
-  return findInErrorChain(error, current => (match(current) ? true : null)) ?? false
-}
-
-/** Cycle-safe walk down `cause`, returning the first non-null mapping. */
-function findInErrorChain<T>(error: unknown, map: (current: object) => T | null): T | null {
-  const seen = new Set<unknown>()
-  let current: unknown = error
-
-  while (current !== null && (typeof current === 'object' || typeof current === 'function')) {
-    if (seen.has(current)) return null
-    seen.add(current)
-    const mapped = map(current)
-    if (mapped !== null) return mapped
-    current = 'cause' in current ? current.cause : undefined
-  }
-
-  return null
 }
