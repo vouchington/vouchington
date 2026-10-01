@@ -114,6 +114,41 @@ describe('validateScopeSet', () => {
     })
   })
 
+  it.each([['bookmarks'], ['lists']] as const)(
+    'declares %s read and write resource scopes whose write is not satisfied by read',
+    resource => {
+      const read = `${resource}:read` as const
+      const write = `${resource}:write` as const
+
+      expect(SCOPE_DEFINITIONS[read]).toMatchObject({
+        action: 'read',
+        audience: 'user',
+        resource,
+        surfaces: ['api-key', 'oauth'],
+      })
+      expect(SCOPE_DEFINITIONS[write]).toMatchObject({
+        action: 'write',
+        audience: 'user',
+        requires: read,
+        resource,
+        surfaces: ['api-key', 'oauth'],
+      })
+      expect(hasScope([read], write)).toBe(false)
+      expect(hasEveryScope([read], [read, write])).toBe(false)
+      expect(hasScope(['mcp.user:read'], write)).toBe(false)
+      expect(hasScope(['mcp.user:read', 'mcp.user:write'], write)).toBe(true)
+      expect(hasScope(['mcp.user:read'], read)).toBe(true)
+      expect(hasScope(['mcp.admin:read', 'mcp.admin:write'], write)).toBe(false)
+      expect(validateScopeSet([write], { surface: 'oauth', allowMixedAudiences: false })).toEqual({
+        valid: false,
+        code: 'missing-prerequisite',
+        scope: write,
+        requiredScope: read,
+      })
+      expect(withScopePrerequisites([write])).toEqual([read, write])
+    },
+  )
+
   it('requires the complete entity-relation private-delegation chain', () => {
     const privateWrite = 'post-relations.owned-private:write'
     expect(

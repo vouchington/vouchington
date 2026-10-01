@@ -24,6 +24,13 @@ owner can still view their lists.
 | POST   | `/api/v1/lists/:id/items/posts`                    | Required       | Add a post; body: `{ post_id }`                                                  |
 | DELETE | `/api/v1/lists/:id/items/posts/:entityId`          | Required       | Remove a post                                                                    |
 
+## MCP
+
+The `create_list`, `update_list`, `delete_list`, `add_list_item`, and `remove_list_item` MCP tools
+run the same list commands and ownership checks as the routes above. They need the `lists:read` and
+`lists:write` scopes and a Plus plan. `POST /api/v1/lists/:id/import` has no MCP tool. See
+[Bookmark and list write tools](../../../../overview/architecture/agent-tools/README.md#bookmark-and-list-write-tools).
+
 ## Performance
 
 | Endpoint                                     | Round trips                   | Cache | Cache-Control        |

@@ -1,12 +1,14 @@
 import type { ScopeAction, ScopeDefinition, ScopeDescriptionKey } from './scope-types.mts'
 
 const USER_RESOURCE_SCOPES = {
+  bookmarks: ['read', 'write'],
   cards: ['read', 'write'],
   communities: ['read'],
   'data-points': ['read'],
   'domain-ratings': ['read'],
   'entity-relations': ['read', 'write'],
   'financial-profile': ['read', 'write'],
+  lists: ['read', 'write'],
   'point-valuations': ['read', 'write'],
   posts: ['read'],
   profile: ['read'],

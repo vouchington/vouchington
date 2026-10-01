@@ -9,9 +9,9 @@ import {
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   getListForWrite,
-  updateList,
+  getManageableList,
+  updateOwnedList,
   softDeleteList,
-  currentUserCanManageList,
   currentUserCanViewList,
   type ListVisibility,
 } from '@services/lists'
@@ -44,18 +44,12 @@ app
     const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/lists/:id')
     assertNotSuspended(currentUser)
     const listId = validateUUIDParam(ctx, 'id')
-    const list = await getListForWrite(listId)
-    ctx.assert(list, 404, 'List not found')
-    ctx.assert(currentUserCanManageList(currentUser.id, list), 403, 'Forbidden')
+    const list = await getManageableList(currentUser.id, listId)
 
     const body = (await ctx.request.json('1mb')) as UpdateListBody
     validateRequestContract(ctx, 'PATCH:/api/v1/lists/:id', { path: ctx.params, body })
-    if (body.name !== undefined) {
-      ctx.assert(body.name.length > 0, 422, 'name must be a non-empty string')
-      ctx.assert(body.name.length <= 255, 422, 'name must be 255 characters or less')
-    }
 
-    const updated = await updateList(currentUser.id, listId, body)
+    const updated = await updateOwnedList(currentUser.id, list, body)
     ctx.json({ list: updated })
   })
   .delete(async (ctx: Context) => {
@@ -63,10 +57,8 @@ app
     assertNotSuspended(currentUser)
     validateRequestContract(ctx, 'DELETE:/api/v1/lists/:id', { path: ctx.params })
     const listId = validateUUIDParam(ctx, 'id')
-    const list = await getListForWrite(listId)
-    ctx.assert(list, 404, 'List not found')
-    ctx.assert(currentUserCanManageList(currentUser.id, list), 403, 'Forbidden')
+    const list = await getManageableList(currentUser.id, listId)
 
-    await softDeleteList(currentUser.id, listId)
+    await softDeleteList(currentUser.id, list.id)
     ctx.setStatus(204)
   })

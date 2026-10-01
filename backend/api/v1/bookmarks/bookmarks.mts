@@ -2,15 +2,14 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
-import { bookmarkEntity, unbookmarkEntity } from '@services/bookmarks/upsert'
 import { getBookmarksForEntity } from '@services/bookmarks/get'
 import { entityRelationMetadatum } from '@services/entity-relations/metadata'
-import type {
-  EntityRelationEntityType,
-  EntityRelationPredicateType,
-} from '@services/entity-relations/config'
+import type { EntityRelationEntityType } from '@services/entity-relations/config'
 import { isUUID } from '@modules/utils'
-import { currentUserCanBookmarkTarget } from '@services/entity-relation-actions/authorization'
+import {
+  deleteBookmarkAction,
+  upsertBookmarkAction,
+} from '@services/entity-relation-actions/bookmark'
 
 app.route('/api/v1/bookmarks/:entityType/:entityId').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/bookmarks/:entityType/:entityId')
@@ -51,41 +50,13 @@ app
     })
     const { entityType, entityId, predicate } = ctx.params
 
-    ctx.assert(isUUID(entityId!), 422, 'Invalid entity ID')
-    const isBookmarkable = entityRelationMetadatum.some(
-      relation =>
-        relation.subject_type === 'user' &&
-        relation.object_type === entityType &&
-        relation.predicate === predicate &&
-        relation.is_bookmark,
+    const bookmark = await upsertBookmarkAction(
+      currentUser,
+      { kind: 'first_party' },
+      { entityType: entityType!, entityId: entityId!, predicate: predicate! },
     )
-    ctx.assert(isBookmarkable, 422, 'Invalid bookmark type.')
-    ctx.assert(
-      await currentUserCanBookmarkTarget(
-        currentUser,
-        entityType as EntityRelationEntityType,
-        entityId!,
-      ),
-      404,
-      'Entity not found',
-    )
-    const entity = { id: entityId! }
 
-    let relation
-    try {
-      relation = await bookmarkEntity(
-        currentUser,
-        entityType as EntityRelationEntityType,
-        entity,
-        predicate as EntityRelationPredicateType,
-      )
-    } catch (err: unknown) {
-      // FK violation: entity does not exist
-      if ((err as { code?: string }).code === '23503') ctx.throw(404, 'Entity not found')
-      throw err
-    }
-
-    ctx.json({ bookmark: relation })
+    ctx.json({ bookmark })
   })
   .delete(async (ctx: Context) => {
     const currentUser = await requireAuth(
@@ -99,15 +70,11 @@ app
     })
     const { entityType, entityId, predicate } = ctx.params
 
-    ctx.assert(isUUID(entityId!), 422, 'Invalid entity ID')
-    const entity = { id: entityId! }
-
-    await unbookmarkEntity(
-      currentUser,
-      entityType as EntityRelationEntityType,
-      entity,
-      predicate as EntityRelationPredicateType,
-    )
+    await deleteBookmarkAction(currentUser, {
+      entityType: entityType!,
+      entityId: entityId!,
+      predicate: predicate!,
+    })
 
     ctx.setStatus(204)
   })
