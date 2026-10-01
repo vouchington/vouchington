@@ -12,14 +12,12 @@ The flag controls only new claimant intake and new agent disclosure. While it is
 guard returns 503 from the three new-intake routes: the signed-in and guest form
 (`POST /api/v1/copyright-notices`) and EU and UK notice submission. It also guards staff approval of
 an emailed notice (`POST /api/v1/copyright-email-intakes/:id/approvals`), because approval opens a
-new case, and it keeps the AI email-intake recommendation job from running. The dispatch
-reconciler also stops starting a form screening. A screening job already on the queue when the
-switch went off can still run, because only the email-intake processor checks the switch. The
-reconciler still re-enqueues an appeal recommendation and applies a saved form screening for a form
-already received, because both belong to an open case and the second calls no model. Every
-designated-agent
-email, including a reply on an existing case, is still ingested, parsed, and queued for staff while
-the flag is off, so no message waits unseen in storage. Staff can reject an email or record a
+new case, and it keeps the AI email-intake recommendation job and the AI form-screening job from
+running, including a job already on the queue or a retry of one. The dispatch reconciler also stops
+starting either job. It still re-enqueues an appeal recommendation and applies a saved form
+screening for a form already received, because both belong to an open case and the second calls no
+model. Every designated-agent email, including a reply on an existing case, is still ingested,
+parsed, and queued for staff while the flag is off, so no message waits unseen in storage. Staff can reject an email or record a
 matched reply as correspondence, and an email ingested during the pause receives its recommendation
 after the switch is turned on unless staff already decided it (see the
 [runbook](../../runbooks/copyright-notices.md#intake-activation)). Disabling intake must never hide accepted complaints or

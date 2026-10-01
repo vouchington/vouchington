@@ -18,6 +18,9 @@ provider work; duplicates with a live claim and completed executions make no pro
 Sanitization, provider, extraction, or validation failure marks only that attempt failed. A failed
 or expired claim retry advances the token, so stale success and failure cannot replace current
 authority. A completed result recovers its workflow effect without another model call.
+While `COPYRIGHT_INTAKE_ENABLED` is off, the queue job returns before it claims anything, so no
+model call starts and the form stays pending for the dispatch reconciler's first pass after the
+switch is on.
 
 ## Moderator guidance
 

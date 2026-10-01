@@ -41,8 +41,9 @@ restriction decision separately. The five-minute copyright reconciler re-enqueue
 while no recommendation exists. It re-enqueues a parsed email intake only while the intake has no
 recommendation and no staff decision (an initial review or an admitted or rejected correspondence
 review), so an email staff handled while intake was off is never sent to the model afterward.
-While `COPYRIGHT_INTAKE_ENABLED` is off, the email-intake job returns without a model call, and the
-reconciler skips the `email` and `form-screening` dispatches that start work for new intake. It
+While `COPYRIGHT_INTAKE_ENABLED` is off, the email-intake and form-screening jobs return without a
+model call (the form-screening job also leaves a saved screen unapplied), and the reconciler skips
+the `email` and `form-screening` dispatches that start work for new intake. It
 still re-enqueues an `appeal` and applies a saved `form-effect`, because both belong to a case
 already open. The first pass after the switch is on dispatches every email ingested during the pause and every
 form still unscreened.

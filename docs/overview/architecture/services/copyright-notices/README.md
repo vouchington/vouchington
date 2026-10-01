@@ -12,10 +12,10 @@ revision-fenced restore intents. The intake layer adds structured form and prese
 but remains disabled by default with `COPYRIGHT_INTAKE_ENABLED`. `assertCopyrightIntakeEnabled()`
 is the one guard every new-intake route (US form, EU and UK notices) and staff approval of an
 emailed notice call first; in-case responses and every other staff route never call it. Email
-ingest, MIME parsing, and thread linking do not call it either; the email-intake recommendation job
-and the dispatch reconciler check `isCopyrightIntakeEnabled()` instead. The reconciler holds back
-only the `email` and `form-screening` dispatches while the switch is off; an `appeal` and a saved
-`form-effect` stay in scope because they belong to an open case. Later enforcement and delivery
+ingest, MIME parsing, and thread linking do not call it either; the email-intake recommendation job,
+the form-screening job, and the dispatch reconciler check `isCopyrightIntakeEnabled()` instead. The
+reconciler holds back only the `email` and `form-screening` dispatches while the switch is off; an
+`appeal` and a saved `form-effect` stay in scope because they belong to an open case. Later enforcement and delivery
 layers must use these boundaries instead of treating a generic content report or ordinary appeal as
 a statutory notice.
 
