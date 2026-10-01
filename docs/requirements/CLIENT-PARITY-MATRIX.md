@@ -108,6 +108,11 @@ clamped to 100). The default rose from 5 to 25 for `search_posts` and from 10 to
 `search_topics`. A malformed or foreign `after` cursor returns
 `{ success: false, error: "Invalid cursor" }` instead of throwing.
 
+`search_posts` now applies the MCP post read policy on every surface, so its author no longer sees
+their own private, audience-limited or unapproved posts, and a `similar_post_id` seed that
+`get_post` refuses returns an empty page. The arguments and result shape do not change, and native
+clients do not call this tool, so no client work follows.
+
 ### Media placement contract handoff
 
 `api-fixtures/v1` now stages immutable image placement tuples for every persisted public image

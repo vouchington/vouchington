@@ -16,6 +16,7 @@ import {
   type PagedSearchArgs,
   type SearchPageInfo,
 } from './paged-search.mts'
+import { resolveReadableThread } from './mcp-post-access.mts'
 import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'
 import { componentSchema } from './route-response-schema.mts'
 
@@ -110,11 +111,21 @@ const tool: Tool<ToolArgs, ToolResult> = {
         const { shouldReturnEmpty, searchOptions } = await resolvePostsSearchParams(prepared)
         if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
 
-        // Muted and blocked users, topics and hostnames stay out of the caller's results.
+        // A similar-post seed the caller cannot read through get_post answers like a seed that does
+        // not exist: its embedding must not rank anything for them.
+        const { similar_post_id } = searchOptions
+        if (similar_post_id && !(await resolveReadableThread(currentUser, similar_post_id))) {
+          return { results: [], page_info: EMPTY_PAGE_INFO }
+        }
+
+        // Every candidate is judged like get_post judges it (the credential owner minus private
+        // data), so an owner's private or uncleared post is not returned. Muted and blocked users,
+        // topics and hostnames still stay out of the caller's results.
         return getPostIds(currentUser, {
           ...searchOptions,
           omitLimit: false,
           exclude_for_user_id: currentUser?.id,
+          public_eligibility_only: true,
         })
       })
       if (!page) return INVALID_CURSOR_RESULT

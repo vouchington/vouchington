@@ -91,6 +91,12 @@ Route admission verifies only that the credential is for the user or admin audie
 ownership inside a tool, and scope remain independent checks. Legacy `mcp.user:*` grants remain a
 compatible superset while resource-scoped credentials are preferred.
 
+## Post privacy
+
+Every MCP tool that returns posts applies one rule: the credential owner minus private data. The
+post read tools and `search_posts` answer only with posts that pass it, even for their author or an
+administrator. See [Post and Story Read Tools](read-tools.md#privacy).
+
 ## Admin MCP is OAuth-only
 
 `McpServerConfig.acceptsApiKeys` is `true` for the user route and `false` for the admin route.
