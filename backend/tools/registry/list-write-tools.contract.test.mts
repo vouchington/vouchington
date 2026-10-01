@@ -13,10 +13,10 @@ import {
 } from '@voucha/test-helpers'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
 import { createOwnedList, getListForWrite, searchListItems, searchUserLists } from '@services/lists'
-import addListItemTool from './add-list-item.mts'
-import deleteListTool from './delete-list.mts'
-import removeListItemTool from './remove-list-item.mts'
-import updateListTool from './update-list.mts'
+import addListItemTool from '../add-list-item.mts'
+import deleteListTool from '../delete-list.mts'
+import removeListItemTool from '../remove-list-item.mts'
+import updateListTool from '../update-list.mts'
 
 const SCOPES = ['lists:read', 'lists:write'] as const
 const PRIVATE_SCOPES = [...SCOPES, 'post-relations.owned-private:write'] as const

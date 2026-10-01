@@ -8,7 +8,7 @@ import {
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { successSchema } from './output-schema-shapes.mts'
 import { requirePrivateToolUser } from './private-user.mts'
-import type { Tool, ToolInvocationContext } from './types.mts'
+import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
 
 type SetBookmarkResult = {
   success: true

@@ -1,9 +1,9 @@
 import { documentedResponseProperty } from '@voucha/test-helpers/openapi-documented-response'
 import { describe, expect, it } from 'vitest'
-import addListItemTool from './add-list-item.mts'
-import createListTool from './create-list.mts'
-import setBookmarkTool from './set-bookmark.mts'
-import updateListTool from './update-list.mts'
+import addListItemTool from '../add-list-item.mts'
+import createListTool from '../create-list.mts'
+import setBookmarkTool from '../set-bookmark.mts'
+import updateListTool from '../update-list.mts'
 
 type JsonSchema = Record<string, unknown>
 

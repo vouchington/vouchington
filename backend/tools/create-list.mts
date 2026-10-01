@@ -6,7 +6,7 @@ import {
   type ListToolFields,
 } from './list-tool-support.mts'
 import { requireActiveToolUser } from './private-user.mts'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 
 type CreateListArgs = ListToolFields & { name: string }
 

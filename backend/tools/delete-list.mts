@@ -5,7 +5,7 @@ import {
   LIST_ID_PARAMETER,
   SUCCESS_RESULT_SCHEMA,
 } from './list-tool-support.mts'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 
 type DeleteListArgs = { list_id: string }
 

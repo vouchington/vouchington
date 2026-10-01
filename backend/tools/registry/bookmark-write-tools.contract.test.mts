@@ -9,7 +9,7 @@ import {
   unsuspendTestUser,
 } from '@voucha/test-helpers'
 import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
-import setBookmarkTool from './set-bookmark.mts'
+import setBookmarkTool from '../set-bookmark.mts'
 
 const SCOPES = ['bookmarks:read', 'bookmarks:write'] as const
 const PRIVATE_SCOPES = [...SCOPES, 'post-relations.owned-private:write'] as const
