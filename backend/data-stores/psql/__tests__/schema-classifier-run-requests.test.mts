@@ -1,5 +1,7 @@
 import { afterAll, afterEach, describe, expect, it } from 'vitest'
 import { createClassifierFixture } from '../../../test-helpers/data-stores/psql/classifiers.mts'
+import { createTestTopic } from '../../../test-helpers/entities/create-test-entities.mts'
+import { hardDeleteTestTopic } from '../../../test-helpers/entities/topics/deletion.mts'
 import { createClassifierRunSchemaFixture } from '../../../test-helpers/data-stores/psql/classifier-runs/schema-fixture.mts'
 import {
   deleteClassifierRunForSchemaTest,
@@ -115,5 +117,17 @@ describe('classifier run request and local outcome schema', () => {
 
     await deleteClassifierRunForSchemaTest(fixture.id)
     expect(await getPostClassifierLocalOutcomeFacts(fixture.id)).toBeNull()
+  })
+
+  it('removes a local outcome with its topic and keeps the run receipt', async () => {
+    const classifier = await createClassifierFixture()
+    const fixture = await createFixture({ classifierId: classifier.classifierId })
+    const topic = await createTestTopic()
+
+    await insertPostClassifierLocalOutcomeForSchemaTest(fixture.id, topic.id)
+    await hardDeleteTestTopic(topic.id)
+
+    expect(await getPostClassifierLocalOutcomeFacts(fixture.id)).toBeNull()
+    expect(await fixture.read()).toBeDefined()
   })
 })

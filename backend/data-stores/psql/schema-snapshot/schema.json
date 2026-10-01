@@ -67658,7 +67658,7 @@
         },
         "local_topic_id": {
           "collation": null,
-          "comment": "Concrete local detector topic relationship the outcome applies to.",
+          "comment": "Concrete local detector topic relationship the outcome applies to; the outcome is removed with the topic.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -67694,8 +67694,8 @@
       "foreignKeys": {
         "post_classifier_local_outcomes_local_topic_id_fkey": {
           "columns": ["local_topic_id"],
-          "definition": "FOREIGN KEY (local_topic_id) REFERENCES topics(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
+          "definition": "FOREIGN KEY (local_topic_id) REFERENCES topics(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "topics",

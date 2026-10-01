@@ -15,7 +15,9 @@ specific to a classifier; a classifier supplies only `ClassifierRunInputs`:
 ## What the executor guarantees
 
 - **Replay before input.** A run that already has persisted outcomes returns `replay` before any
-  input is built, so a retry, lease reclaim or replay cannot bill twice.
+  input is built, so a replay or lease reclaim cannot spend again. A crash or lease loss between
+  the provider returning and the outcomes being persisted can still spend another attempt, within
+  the attempt cap. A signal that aborts after the provider returned never discards that response.
 - **One reserved attempt per model call.** The client's `beforeAttempt` hook runs the shared spend
   admission, then `startClassifierProviderAttempt` reserves the counted attempt in Postgres before
   the request leaves. At the attempt cap the run ends terminal `attempts-exhausted`. The billing

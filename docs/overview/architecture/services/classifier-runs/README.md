@@ -29,12 +29,14 @@ A run is identified by `(classifier, subject, input SHA-256, configuration SHA-2
 one partial unique index per subject kind. The input hash is the subject's content digest and the
 configuration hash is over PostgreSQL's canonical `jsonb::text`, so JavaScript key ordering is not
 an identity boundary. A run's candidate set is deliberately not part of its identity: a candidate
-set that changes after first claim cannot cause a second model call for the same content.
+set that changes after first claim cannot create a second receipt for the same content.
 
-At most one model call is made per classifier scope per content version because the identity
-admits one receipt, the receipt owns one pre-reserved C3 decision batch, and the attempt counter
-is capped and monotone. Retries, lease expiry and replays reuse the receipt and either return
-persisted outcomes or reserve the next counted attempt; they never create a second receipt.
+The identity admits one receipt per classifier scope and content version, the receipt owns one
+pre-reserved C3 decision batch, and the attempt counter is capped and monotone. Provider spend per
+run is bounded by that cap, not by one call: a crash or lease loss between the provider returning
+and the outcomes being persisted can reserve and spend another attempt. Once the outcomes are
+durable, retries, lease expiry and replays return them without a model call, and none of them
+creates a second receipt.
 
 ## Tables
 

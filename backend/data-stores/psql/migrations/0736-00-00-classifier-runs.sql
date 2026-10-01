@@ -160,7 +160,7 @@ CREATE INDEX IF NOT EXISTS idx_classifier_run_requests__pending
 -- C5's local detector outcome, retained once per run so every terminal kind can keep it.
 CREATE TABLE IF NOT EXISTS post_classifier_local_outcomes (
   run_id UUID NOT NULL REFERENCES classifier_runs (id) ON DELETE CASCADE,
-  local_topic_id UUID NOT NULL REFERENCES topics (id) ON DELETE RESTRICT,
+  local_topic_id UUID NOT NULL REFERENCES topics (id) ON DELETE CASCADE,
   flagged BOOLEAN NOT NULL,
   reason TEXT NOT NULL CHECK (btrim(reason) <> ''),
   confidence_score DOUBLE PRECISION NOT NULL CHECK (confidence_score BETWEEN 0 AND 1),
@@ -237,7 +237,7 @@ COMMENT ON TABLE post_classifier_local_outcomes IS
 COMMENT ON COLUMN post_classifier_local_outcomes.run_id IS
   'Run that produced this local detector outcome; the outcome is removed with the run.';
 COMMENT ON COLUMN post_classifier_local_outcomes.local_topic_id IS
-  'Concrete local detector topic relationship the outcome applies to.';
+  'Concrete local detector topic relationship the outcome applies to; the outcome is removed with the topic.';
 COMMENT ON COLUMN post_classifier_local_outcomes.flagged IS
   'Local detector decision retained unchanged for retry-safe topic application.';
 COMMENT ON COLUMN post_classifier_local_outcomes.reason IS

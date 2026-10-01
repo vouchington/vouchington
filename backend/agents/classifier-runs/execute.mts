@@ -53,19 +53,23 @@ function classifyFailure(
   if (!phase.reserved) return null
   if (error instanceof StructuredDecisionError && error.code === 'invalid-response')
     return 'invalid-result'
+  // Once the provider has returned, an abort is not a provider failure: the response is already
+  // billed, so only a defect in what came back may fail the attempt.
   if (
     (error instanceof StructuredDecisionError && error.code === 'provider-error') ||
-    signal.aborted
+    (signal.aborted && !phase.returned)
   )
     return 'provider-error'
   return phase.returned ? 'invalid-result' : null
 }
 
 /**
- * Runs one leased run's remote half: at most one reserved, billed provider attempt, and durable
- * outcomes, never their effects. A replay that already has outcomes returns before any input is
- * built, so a retry, lease reclaim or replay cannot spend twice. Effects are applied by
- * `completeClassifierRun` afterwards.
+ * Runs one leased run's remote half: reserved provider attempts, each capped by `maxAttempts`, and
+ * durable outcomes, never their effects. A run whose outcomes are already durable returns before
+ * any input is built, so a replay or lease reclaim cannot spend again. A crash or lease loss
+ * between the provider returning and the outcomes being persisted can still spend again, within
+ * the attempt cap. A signal that aborts after the provider returned never discards that response.
+ * Effects are applied by `completeClassifierRun` afterwards.
  */
 export async function executeClassifierRun<C, L, E>(
   adapter: ClassifierRunAdapter<C, L, E>,
@@ -126,7 +130,6 @@ export async function executeClassifierRun<C, L, E>(
         },
         signal,
       })
-      signal.throwIfAborted()
     } catch (error) {
       if (error instanceof AttemptStopped) return error.outcome
       if (!phase.reserved && error instanceof OpenAiSpendCapBreachError)
