@@ -1,7 +1,7 @@
-import { getRouteConfig } from './config.mts'
-import { buildRateLimitKeys } from './identity.mts'
-import { routeRateLimiters } from './check.mts'
-import type { RateLimitIdentities } from './types.mts'
+import { getRouteConfig } from '../../../services/route-rate-limits/config.mts'
+import { buildRateLimitKeys } from '../../../services/route-rate-limits/identity.mts'
+import { routeRateLimiters } from '../../../services/route-rate-limits/check.mts'
+import type { RateLimitIdentities } from '../../../services/route-rate-limits/types.mts'
 
 export function createRouteRateLimitKeyCleanup(
   deleteKeys: typeof deleteRouteRateLimitKeys = deleteRouteRateLimitKeys,
@@ -46,7 +46,7 @@ export function createRouteRateLimitKeyCleanup(
  * Kept service-local rather than in @voucha/test-helpers: @services/route-rate-limits
  * already depends on @voucha/test-helpers as a devDependency (for createTestUser() etc
  * in check.test.mts), so a reverse dependency from test-helpers back to this service would
- * close a workspace cycle. See backend/services/entity-relations/test-support.mts for the
+ * close a workspace cycle. See backend/test-helpers/services/entity-relations/test-support.mts for the
  * same pattern applied to a different service.
  *
  * Use for fixed-identity unit tests that construct RateLimitIdentities directly (e.g.

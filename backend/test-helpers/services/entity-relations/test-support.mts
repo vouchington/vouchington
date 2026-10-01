@@ -4,18 +4,18 @@ import {
   getRegisteredBlockedHostnameGuard,
   registerBlockedHostnameGuard,
   unregisterBlockedHostnameGuardForTest,
-} from './blocked-hostname-guard-registry.mts'
+} from '../../../services/entity-relations/blocked-hostname-guard-registry.mts'
 import {
   getRegisteredReferralLinkGuard,
   registerReferralLinkGuard,
   unregisterReferralLinkGuardForTest,
-} from './referral-link-guard-registry.mts'
+} from '../../../services/entity-relations/referral-link-guard-registry.mts'
 import {
   getRegisteredPostRelatedUrlsGuard,
   registerPostRelatedUrlsGuard,
   unregisterPostRelatedUrlsGuardForTest,
-} from './post-related-urls-guard-registry.mts'
-import { recordPostTopicRelationPublicationChanges } from './post-topic-publication.mts'
+} from '../../../services/entity-relations/post-related-urls-guard-registry.mts'
+import { recordPostTopicRelationPublicationChanges } from '../../../services/entity-relations/post-topic-publication.mts'
 
 export async function recordTestPostTopicRelationPublicationChanges(
   relationTable: string,

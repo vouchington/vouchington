@@ -32,7 +32,7 @@ _none_
 
 **Foreign keys:**
 
-- `user_sessions_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES web_user_agents(id) ON DELETE RESTRICT`
+- `user_sessions_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE RESTRICT`
 - `user_sessions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**

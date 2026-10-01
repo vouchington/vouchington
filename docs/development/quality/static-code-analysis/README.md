@@ -336,6 +336,14 @@ manifests also declares `"./*.test.mts": null` and `"./*/__tests__/*": null`. No
 honor the single-star key and ignore the multi-star one, and nothing imports a test file by package
 specifier. Add both keys to any new backend package that declares `"./*"`.
 
+The error-level JSON AST-grep rule `backend-knip-test-export-exclusions` requires both literal
+`null` keys as direct siblings of the wildcard in the top-level `exports` object. Nested lookalikes
+do not satisfy it. `pnpm run ast-grep` disables this rule only for the broad worktree scan, then
+scans tracked, existing backend manifests explicitly (including `backend/package.json`); an empty
+discovery skips the command rather than falling back to `.`. Ignored and untracked manifests
+neither fail nor satisfy this guard. Run its real-Git/aggregate regression with
+`pnpm exec vitest run --project static-analysis-ast-grep static-code-analysis/__tests__/ast-grep-backend-manifests.test.mts`.
+
 - **Baseline.** [`baseline.txt`](../../../../static-code-analysis/knip-production-exports/baseline.txt)
   lists one `<issue type> <repo-relative path> <symbol>` line per known finding, sorted, without line
   numbers. The [preprocessor](../../../../static-code-analysis/knip-production-exports/baseline.mts)
@@ -352,7 +360,7 @@ specifier. Add both keys to any new backend package that declares `"./*"`.
 - **Test helpers.** `knip.jsonc` lists `backend/test-helpers!` in `ignoreWorkspaces`. The `!`
   applies it only under `--production`, so the shared helper package can't keep production exports
   alive there, and default Knip still checks it. Helper files inside production packages, such as
-  `test-helpers.mts` or `*test-support.mts`, remain production entries: their own unused exports are
+  `fixtures.mts` or `*test-support.mts`, remain production entries: their own unused exports are
   reported, but exports they import are not. Move them into `backend/test-helpers`.
 - **Config hints.** Knip disables configuration hints under `--production`, so
   `pnpm exec knip --treat-config-hints-as-errors` remains the check for stale `knip.jsonc` entries.
@@ -602,7 +610,7 @@ Useful targeted preflights:
 - `pnpm exec ast-grep scan --no-ignore hidden --off=unused-suppression --rule ast-grep-rules/<rule-id>.yml` for one AST-grep rule.
 - `node static-code-analysis/run-node-checks.mts --checks repo-file-policy,scc-complexity,targeted-guardrails` for file-policy, code complexity, and targeted regression guards.
 - `pnpm exec vitest run --project static-analysis-tools <changed static-analysis tests>` for repo-owned static-analysis tests.
-- `pnpm run ast-grep` for AST-grep rule examples; `pnpm exec vitest run --project static-analysis-ast-grep` for Tsx `languageGlobs` and rule-language contract.
+- `pnpm run ast-grep` for AST-grep rule examples; `pnpm exec vitest run --project static-analysis-ast-grep` for language and tracked-manifest scope contracts.
 - `pnpm run jscpd` for duplicated blocks at or above the `minLines` threshold.
 
 ## Rolling Out A Repo-Wide Guard

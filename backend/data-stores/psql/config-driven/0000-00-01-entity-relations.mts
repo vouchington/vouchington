@@ -124,7 +124,7 @@ function createEntityRelationVoteParentTable(): string {
   ip_address INET,
   device_id UUID,
   session_id UUID,
-  user_agent_id UUID REFERENCES vote_user_agents ON DELETE SET NULL,
+  user_agent_id UUID REFERENCES user_agent_strings ON DELETE SET NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   PRIMARY KEY (relation_table, entity_relation_id, id)
 ) PARTITION BY LIST (relation_table);

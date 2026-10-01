@@ -38,9 +38,18 @@ intake queue shows each message's wait age.
 3. Confirm the target is an exact Voucha-hosted placement and preserve its captured revision.
 4. Record missing elements as an assessment and request information. Do not silently reject a
    substantially compliant notice for failing to match Voucha's form wording.
-5. While automatic provisional withholding is off, a clear-screened signed-in form waits here like
+5. To reject an email or ask the sender for more information, check who will receive the reply. An
+   email with a parsed sender replies to that sender. An email with no parsed sender (a `failed`
+   or `unparsed` parse) has nobody to reply to, so the reply field appears and a rejection queues no
+   reply unless you type an address there. Type one only when the original MIME shows a sender
+   worth answering; the server refuses an address for an email that has a parsed sender. The
+   staff page then reports "A reply was queued." or "No reply sent."; the API returns
+   `reply_queued`. Asking for more information (`response_kind: needs_information`) is API-only
+   today and takes the same optional `reply_email`. A parse that lands after the decision sends nothing, and a repeated decision
+   reports the original outcome.
+6. While automatic provisional withholding is off, a clear-screened signed-in form waits here like
    a guest form. Accept it to withhold its targets, or reject it. The screen is advisory only.
-6. If a signed-in case was provisionally restricted automatically, record a human `confirm`,
+7. If a signed-in case was provisionally restricted automatically, record a human `confirm`,
    `modify`, or `reverse` decision even when nobody appeals.
 
 ## Intake activation
@@ -90,7 +99,8 @@ configured wherever mail is received, because ingest fails without them. A stack
 `scheduled_job_config_missing` warning in Sentry, so in a deployed environment that warning means the
 bucket is misconfigured. Only the AI recommendation job is paused, so no email contents reach a model. Ingest sends the sender nothing: there is no acknowledgement or automatic
 reply. During a pause a sender receives mail only when staff act: the response staff choose when
-they reject an email or ask for more information, and the deterministic notices a case's normal
+they reject an email or ask for more information (sent to the parsed sender, or to an address staff
+type when no sender was parsed), and the deterministic notices a case's normal
 review queues after staff record an in-case filing, such as the counter-notice status update. No
 approval receipt goes out, because approving an emailed notice is closed.
 
@@ -142,7 +152,8 @@ is matched to its case automatically. Record it from the queue instead of waitin
    counter-notice review, queues the deterministic notices as usual.
 
 An email that did not match a case is a new notice. Staff can read it and reject it, which sends
-the response they choose, but `POST .../approvals` returns 503 until the switch is on. If it also
+the response they choose to the parsed sender (see [Queue triage](#queue-triage) for an email with
+no parsed sender), but `POST .../approvals` returns 503 until the switch is on. If it also
 carries a statutory filing for an existing case, handle it from the designated-agent inbox, which
 remains the source of truth for §512(g) clocks until the switch is on.
 
@@ -307,7 +318,8 @@ has no claimant, poster, work, correspondence, sender, subject, or body fields. 
 the staff queue by notice ID and triage it as described in [Queue triage](#queue-triage). Open each
 email from the email-review queue by intake ID. A `failed` or `unparsed` email has no parsed fields
 or agent recommendation, so review the original MIME object and record a manual-fallback reason
-with the decision. An email is `unparsed` for a moment while the SES worker runs. One that stays
+with the decision. It also has no parsed sender, so rejecting it queues no reply unless you type
+one (see [Queue triage](#queue-triage)). An email is `unparsed` for a moment while the SES worker runs. One that stays
 `unparsed` for more than a few minutes means the worker keeps failing before it records a parse,
 or copyright intake was switched off mid-flight: check the worker's errors. Treat a missed
 restoration deadline under [Incident response](#incident-response).
@@ -364,7 +376,8 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
    send it to counsel the same day. A subpoena emailed to the designated inbox becomes an email
    intake in the email review queue. Do not approve it, because approval admits it as a copyright
    notice. Do not reject it either, because rejection queues the standard notice-rejection reply
-   to the sender. Record a disposition only after counsel says whether that reply may go out.
+   to the parsed sender (or to an address staff type when none was parsed). Record a disposition
+   only after counsel says whether that reply may go out.
 2. **Validity checks.** Before anything is disclosed, record for counsel whether:
    - a clerk of a US district court issued and signed it;
    - it attaches or follows a notification that meets §512(c)(3)(A);

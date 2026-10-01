@@ -41,6 +41,7 @@ import {
   parseCopyrightCorrespondenceSubmission,
   parseCopyrightManualFallbackReason,
   parseCopyrightRecommendationId,
+  parseCopyrightReplyEmail,
   parseCopyrightSimilarityCandidateLimit,
   parseNullableCopyrightDate,
   parseNullableCopyrightEnum,
@@ -269,11 +270,12 @@ app.route('/api/v1/copyright-email-intakes/:id/rejections').post(async (ctx: Con
     recommendationId: parseCopyrightRecommendationId(ctx, body),
     manualFallbackReason: parseCopyrightManualFallbackReason(ctx, body),
     rationale: body.rationale as string,
+    replyEmail: parseCopyrightReplyEmail(ctx, body),
     responseKind: body.response_kind as 'rejected' | 'needs_information' | undefined,
     responseMessage: typeof body.response_message === 'string' ? body.response_message : null,
   })
   if (rejected.responseId) void enqueueSendCopyrightEmailIntakeResponse(rejected.responseId)
-  ctx.setStatus(204)
+  ctx.json({ reply_queued: rejected.replyQueued })
 })
 
 app.route('/api/v1/copyright-submissions/:id/appeal-reviews').post(async (ctx: Context) => {

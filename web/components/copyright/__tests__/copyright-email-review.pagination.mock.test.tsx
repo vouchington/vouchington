@@ -59,7 +59,7 @@ describe('CopyrightEmailReview pagination', () => {
       .mockResolvedValueOnce(makeQueuePage([makeQueueItem(secondId)]))
       .mockResolvedValueOnce(makeQueuePage([makeQueueItem(refreshedId)]))
     mockGet.mockResolvedValue({ copyright_email_intake: makeIntake(firstId) })
-    mockReject.mockResolvedValue(undefined)
+    mockReject.mockResolvedValue({ reply_queued: true })
     render(<CopyrightEmailReview data={firstPage()} />)
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
     await waitFor(() => expect(queueIntakeIds()).toEqual([firstId, secondId]))
@@ -72,7 +72,9 @@ describe('CopyrightEmailReview pagination', () => {
 
     await waitFor(() => expect(queueIntakeIds()).toEqual([refreshedId]))
     expect(mockList).toHaveBeenLastCalledWith()
-    expect(screen.getByText('The email intake was rejected.')).toBeInTheDocument()
+    expect(
+      screen.getByText('The email intake was rejected. A reply was queued.'),
+    ).toBeInTheDocument()
   })
 })
 

@@ -6,7 +6,7 @@ import type {
   ElectionVoteScore,
   VoteEventContext,
 } from '../shared/index.mts'
-import { upsertVoteUserAgent } from '../shared/upsert-vote-user-agent.mts'
+import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
 
 const NULL_VOTE_CONTEXT: VoteEventContext = {
   ipAddress: null,
@@ -58,7 +58,7 @@ export async function upsertAgentModerationElectionVotes(
   values.sort((a, b) => a.agentModerationId.localeCompare(b.agentModerationId))
 
   // Upsert user agent into lookup table if provided (counts as the 1st of 2 allowed DB calls)
-  const userAgentId = await upsertVoteUserAgent(context.userAgent)
+  const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null)
 
   await using query = await beginTransaction()
   await lockAgentModerationVoteMutation(

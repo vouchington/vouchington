@@ -8,7 +8,7 @@ import {
   insertTestCommunityMember,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
-import { createCommunityPostFixture } from '@services/posts/test-support'
+import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 import { createPostModerationContent } from '@services/posts/content'
 import { insertAgentModerationResult } from '@services/moderation'
 import { ai_agents } from '@queues/ai-agents/queues'

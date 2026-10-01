@@ -17,7 +17,7 @@ import {
 // asserts on `post_data_point_topics`, which only the real createPost write path populates (the
 // raw @voucha/test-helpers substitute does not). @services/topics must not depend on
 // @services/posts (posts already prod-deps topics, the kept direction), so this test lives here.
-import { createTestPost } from '../test-support.mts'
+import { createTestPost } from '@voucha/test-helpers/services/posts/test-support'
 import { updateTopicRatingStats } from '@services/topics/ratings'
 
 import type { PrivateUser } from '@services/users/types'

@@ -73,8 +73,7 @@ export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
   'user_totp_authenticators',
   'user_warnings',
   'verified_identities',
-  'vote_user_agents',
+  'user_agent_strings',
   'vote_weight_penalties',
-  'web_user_agents',
   'x_accounts',
 ] as const

@@ -155,7 +155,7 @@ utils:
           - pattern: import * as $HELPERS from '$SOURCE'
   supported-creator-source:
     regex: >-
-      \bfrom\s*['"](?:@voucha/test-helpers(?:/entities/users(?:-direct)?)?|@services/users/test-support|\.\./test-support\.mts|(?:\.\.?/)+(?:backend/)?test-helpers(?:/index|/entities/users(?:-direct)?)?\.mts|(?:\.\.?/)+backend/services/users/test-support\.mts)['"]
+      \bfrom\s*['"](?:@voucha/test-helpers(?:/entities/users(?:-direct)?|/services/users/test-support)?|\.\./test-support\.mts|(?:\.\.?/)+(?:backend/)?test-helpers(?:/index|/entities/users(?:-direct)?)?\.mts|(?:\.\.?/)+backend/test-helpers/services/users/test-support\.mts)['"]
 examples:
   - code: |
       import { createTestUser } from '@voucha/test-helpers'
@@ -178,7 +178,7 @@ examples:
     isValid: false
     file: 'integration-tests/web-api/users.test.mts'
   - code: |
-      import { createTestUser } from '@services/users/test-support'
+      import { createTestUser } from '@voucha/test-helpers/services/users/test-support'
       const user = (await createTestUser())!
     isValid: false
     file: 'backend/services/users/create.test.mts'

@@ -26,6 +26,7 @@ export function useCopyrightEmailReviewActions({
   draft,
   manualFallbackReason,
   rationale,
+  replyEmail,
   setCorrespondenceDraft,
   setDetail,
   setDraft,
@@ -34,6 +35,7 @@ export function useCopyrightEmailReviewActions({
   setLoading,
   setManualFallbackReason,
   setRationale,
+  setReplyEmail,
   setSuccess,
 }: {
   correspondenceDraft: CopyrightEmailCorrespondenceDraft
@@ -41,6 +43,7 @@ export function useCopyrightEmailReviewActions({
   draft: CopyrightEmailApprovalDraft | null
   manualFallbackReason: string
   rationale: string
+  replyEmail: string
   setCorrespondenceDraft: (draft: CopyrightEmailCorrespondenceDraft) => void
   setDetail: (detail: CopyrightEmailIntake | null) => void
   setDraft: (draft: CopyrightEmailApprovalDraft | null) => void
@@ -49,6 +52,7 @@ export function useCopyrightEmailReviewActions({
   setLoading: (value: boolean) => void
   setManualFallbackReason: (value: string) => void
   setRationale: (value: string) => void
+  setReplyEmail: (value: string) => void
   setSuccess: (value: string | null) => void
 }) {
   const selectedIntakeRequest = useRef(0)
@@ -103,8 +107,12 @@ export function useCopyrightEmailReviewActions({
           rationale.trim(),
           detail.recommendation?.id ?? null,
           detail.recommendation ? null : manualFallbackReason.trim(),
+          // The field only exists for an intake with no parsed sender, and the server refuses an
+          // address beside one.
+          detail.parsed_email ? null : replyEmail.trim() || null,
         ),
-      'The email intake was rejected.',
+      response =>
+        `The email intake was rejected. ${response.reply_queued ? 'A reply was queued.' : 'No reply sent.'}`,
       'We could not reject that copyright email intake.',
     )
   }
@@ -148,14 +156,19 @@ export function useCopyrightEmailReviewActions({
       setLoading(false)
     }
   }
-  async function complete(action: () => Promise<unknown>, success: string, fallback: string) {
+  async function complete<Result>(
+    action: () => Promise<Result>,
+    success: string | ((result: Result) => string),
+    fallback: string,
+  ) {
     await run(async () => {
-      await action()
+      const result = await action()
       setDetail(null)
       setRationale('')
       setManualFallbackReason('')
+      setReplyEmail('')
       await loadQueue()
-      setSuccess(success)
+      setSuccess(typeof success === 'string' ? success : success(result))
     }, fallback)
   }
   function clearIntakeReviewState() {
@@ -164,6 +177,7 @@ export function useCopyrightEmailReviewActions({
     setCorrespondenceDraft(createCopyrightEmailCorrespondenceDraft())
     setManualFallbackReason('')
     setRationale('')
+    setReplyEmail('')
   }
   return { admitCorrespondence, approve, reject, rejectCorrespondence, selectIntake }
 }

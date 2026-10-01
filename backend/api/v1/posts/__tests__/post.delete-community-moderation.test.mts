@@ -9,7 +9,7 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers/entities/communities'
-import { createCommunityPostFixture } from '@services/posts/test-support'
+import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 
 describe('DELETE /api/v1/posts/:idOrSlug community moderation', () => {
   it('allows a community moderator to delete another author pending comment', async () => {

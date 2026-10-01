@@ -1,3 +1,5 @@
+import webCopyrightEmailIntakeRejectionNoReply from '../../../../api-fixtures/v1/responses/web.copyright.email-intake-rejection.no-reply.json'
+import webCopyrightEmailIntakeRejectionReplyQueued from '../../../../api-fixtures/v1/responses/web.copyright.email-intake-rejection.reply-queued.json'
 import webCopyrightEmailIntakeQueueDefault from '../../../../api-fixtures/v1/responses/web.copyright.email-intake-queue.default.json'
 import webCopyrightNoticesDefault from '../../../../api-fixtures/v1/responses/web.copyright.notices.default.json'
 import webCopyrightNoticesNullClaimant from '../../../../api-fixtures/v1/responses/web.copyright.notices.null-claimant.json'
@@ -101,6 +103,30 @@ export const COPYRIGHT_DECLARATIONS = [
     webCopyrightEmailIntakeQueueDefault,
     context => context.server.copyrightNotices.getCopyrightEmailIntakeReviewQueue(),
     [context => context.client.copyrightEmailIntakes.listCopyrightEmailIntakes()],
+  ),
+  defineWebApiFixture<{ reply_queued: boolean }>()(
+    'web.copyright.email-intake-rejection.reply-queued',
+    webCopyrightEmailIntakeRejectionReplyQueued,
+    context =>
+      context.client.copyrightEmailIntakes.rejectCopyrightEmailIntake(
+        '00000000-0000-7000-8000-000000000840',
+        'The message is not a copyright notice.',
+        null,
+        'No agent output.',
+        'reporter@example.test',
+      ),
+  ),
+  defineWebApiFixture<{ reply_queued: boolean }>()(
+    'web.copyright.email-intake-rejection.no-reply',
+    webCopyrightEmailIntakeRejectionNoReply,
+    context =>
+      context.client.copyrightEmailIntakes.rejectCopyrightEmailIntake(
+        '00000000-0000-7000-8000-000000000840',
+        'The message is not a copyright notice.',
+        null,
+        'No agent output.',
+        null,
+      ),
   ),
   defineWebApiFixture<{
     copyright_guest_capability: { id: string; expires_at: string; token: string }

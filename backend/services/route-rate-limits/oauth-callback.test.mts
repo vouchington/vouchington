@@ -6,7 +6,7 @@ import {
 } from '@voucha/test-helpers/dynamic-config'
 import { checkRouteRateLimit } from './check.mts'
 import { getRouteConfig, routeRateLimitConfig } from './config.mts'
-import { createRouteRateLimitKeyCleanup } from './test-support.mts'
+import { createRouteRateLimitKeyCleanup } from '@voucha/test-helpers/services/route-rate-limits/test-support'
 
 describe('OAuth provider callback rate limit', () => {
   const routeKey = 'GET:/api/v1/auth/oauth/:provider/broker-callback'

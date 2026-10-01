@@ -16,3 +16,21 @@ export async function readCopyrightEmailIntakeReview(intakeId: string): Promise<
     WHERE copyright_notice_email_intake_id = ${intakeId}`)
   return rows
 }
+
+export async function readCopyrightEmailIntakeResponses(intakeId: string): Promise<
+  {
+    id: string
+    response_kind: 'rejected' | 'needs_information'
+    state: string
+  }[]
+> {
+  const { rows } = await read<{
+    id: string
+    response_kind: 'rejected' | 'needs_information'
+    state: string
+  }>(sql`/* readCopyrightEmailIntakeResponses */
+    SELECT id, response_kind, state
+    FROM copyright_notice_email_intake_responses
+    WHERE copyright_notice_email_intake_id = ${intakeId}`)
+  return rows
+}

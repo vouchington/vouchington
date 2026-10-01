@@ -6,7 +6,7 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
-import { createCommunityPostFixture } from '@services/posts/test-support'
+import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 
 describe('community post moderation routes', () => {
   it('routes every community-moderator action and rejects platform-only status values', async () => {

@@ -29,7 +29,7 @@ _none_
 
 **Foreign keys:**
 
-- `entity_relation_votes_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES vote_user_agents(id) ON DELETE SET NULL`
+- `entity_relation_votes_user_agent_id_fkey`: `FOREIGN KEY (user_agent_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL`
 - `entity_relation_votes_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**

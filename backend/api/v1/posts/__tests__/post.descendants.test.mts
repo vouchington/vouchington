@@ -14,7 +14,7 @@ import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 import type { PrivateUser } from '@services/users/types'
 
-import { createCommunityPostFixture } from '@services/posts/test-support'
+import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 
 describe('post.descendants', () => {
   let creator: PrivateUser

@@ -8,7 +8,10 @@ import {
   getUserDataRequestStatusAndS3KeyForTest,
 } from '@voucha/test-helpers'
 import { deleteUser } from '../delete.mts'
-import { deleteUserAndDrainForTest, drainUserDeletionForTest } from '../delete-test-support.mts'
+import {
+  deleteUserAndDrainForTest,
+  drainUserDeletionForTest,
+} from '@voucha/test-helpers/services/users/delete-test-support'
 import { getPrivateUserByAny } from '../get.mts'
 import * as accountDataRequests from '@services/account-data-requests'
 

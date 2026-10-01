@@ -26,6 +26,7 @@ Use these owner indexes for the detailed subdomains.
 - [Auto Harness automation accepted boundary](workflows/reference-harness-automation-accepted-risk.md)
 - [Auto Harness automation](workflows/reference-harness-automation.md)
 - [Maintenance, Security, And Utilities](workflows/reference-maintenance-security-and-utilities.md)
+- [Merge Queue Run Cancellation](workflows/reference-merge-queue-run-cancellation.md)
 - [Non-Critical Steps](workflows/reference-non-critical-steps.md)
 - [Workspace Installs](workflows/reference-parallel-workspace-installs.md)
 - [Playwright And Storybook](workflows/reference-playwright-and-storybook.md)

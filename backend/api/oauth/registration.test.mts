@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
-import { deleteRouteRateLimitKeys } from '@services/route-rate-limits/test-support'
+import { deleteRouteRateLimitKeys } from '@voucha/test-helpers/services/route-rate-limits/test-support'
 
 const SCOPE = 'mcp.user:read mcp.user:write'
 let originalRouteRateLimitConfig: ReturnType<typeof routeRateLimitConfig.getFields>

@@ -10,7 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import { isUUIDv7 } from '@ts-shared/session-jwt'
 import { bookmarkEntity } from '@services/bookmarks/upsert'
-import { createCommunityPostFixture } from '@services/posts/test-support'
+import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 
 describe('Community Posts Routes', () => {
   describe('POST /api/v1/communities/:slug/posts', () => {

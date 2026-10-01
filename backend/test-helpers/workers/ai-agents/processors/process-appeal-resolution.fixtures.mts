@@ -1,9 +1,9 @@
 import type { Job } from 'glide-mq'
 import { expect, vi } from 'vitest'
-import { ai_agents } from '@queues/ai-agents/queues'
-import type { AppealResolutionJobData } from '@queues/ai-agents/types'
-import { rerunModerationAppealResolutionDraft } from '@services/moderation-appeals/rerun-resolution-draft'
-import { processAppealResolution } from './process-appeal-resolution.mts'
+import { ai_agents } from '../../../../queues/ai-agents/queues.mts'
+import type { AppealResolutionJobData } from '../../../../queues/ai-agents/types.mts'
+import { rerunModerationAppealResolutionDraft } from '../../../../services/moderation-appeals/rerun-resolution-draft.mts'
+import { processAppealResolution } from '../../../../workers/ai-agents/processors/process-appeal-resolution.mts'
 
 export async function rerunAppealResolutionThroughQueueForTest(
   staffUserId: string,

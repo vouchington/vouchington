@@ -70,6 +70,10 @@ export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
 ])
 
 export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
+  [
+    'user_agent_strings',
+    'Insert-only normalized string lookup shared by sessions and votes; existing rows never update.',
+  ],
   ...RETAINED_MISSING_UPDATED_AT,
   ...ALLOWED_MISSING_CREATED_AT,
   ...postPublication.POST_PUBLICATION_TABLES_WITHOUT_UPDATED_AT,

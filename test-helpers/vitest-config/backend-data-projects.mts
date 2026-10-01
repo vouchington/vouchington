@@ -36,6 +36,9 @@ export const backendDataProjects: TestProjectConfiguration[] = [
       include: [
         'backend/{agents,api,data-stores,entrypoints,flows,md,queues,rss,scripts,service-registrations,services,sitemaps,tools,worker-runtime,workers}/**/*.test.mts',
         'backend/test-helpers/election-vote-stats.test.mts',
+        'backend/test-helpers/services/posts/test-support.test.mts',
+        'backend/test-helpers/services/users/test-support.test.mts',
+        'backend/test-helpers/workers/entity-listeners/test-support.test.mts',
         'backend/test-helpers/entities/bluesky-link-authorizations.test.mts',
       ],
       exclude: [

@@ -3,7 +3,7 @@ import {
   validateSqsConsumerQueues,
 } from './worker-queue-policy-queue-validation.mts'
 
-export type WorkerQueuePolicy = {
+type WorkerQueuePolicy = {
   cpuOnlyQueues: string[]
   ioCapableQueues: string[]
   sqsConsumerQueues: string[]

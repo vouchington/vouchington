@@ -8,7 +8,7 @@ import {
   insertTestCommunityMember,
   insertTestPost,
 } from '@voucha/test-helpers'
-import { createCommunityPostFixture } from '@services/posts/test-support'
+import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 import type { PrivateUser } from '@services/users/types'
 
 describe('post.ancestors', () => {

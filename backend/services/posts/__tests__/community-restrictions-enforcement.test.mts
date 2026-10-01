@@ -8,7 +8,7 @@ import {
   insertTestCommunityMember,
   insertTestCommunityRestriction,
 } from '@voucha/test-helpers'
-import { createCommunityPostFixture } from '../test-support.mts'
+import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 import { createPost } from '../create.mts'
 import { updatePost } from '../update.mts'
 import { setPostImages } from '../images.mts'

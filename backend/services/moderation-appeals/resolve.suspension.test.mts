@@ -15,7 +15,7 @@ import { parseCreateModerationAppealInput } from './parse.mts'
 import { resolveModerationAppealAccept } from './resolve.mts'
 import { liftUserSuspensionById } from './lift-sanctions.mts'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
-import { deliverModerationAppealForTest } from './resolution.fixtures.mts'
+import { deliverModerationAppealForTest } from '@voucha/test-helpers/services/moderation-appeals/resolution.fixtures'
 import * as psqlEnqueues from '@queues/psql/enqueues'
 
 describe('resolveModerationAppealAccept — suspension', () => {

@@ -117,6 +117,12 @@ topics:
 - `post_type`: Must be `article` for articles or `blog_post` for blog posts.
 - `topics`: List of topic slugs to tag the article with on upsert.
 
+## Linking Between Articles
+
+Link to another article with a relative file link, `[text](./other-slug.md)` (a `#fragment` is fine). The path is the target's file name, which is its slug. The link works when the files are browsed on GitHub.
+
+Sync rewrites each such link to `/article/other-slug` before it stores the Markdown, so rendered HTML, the API, MCP, RSS, and the `/md/posts/...` Markdown alias all link to the article page. Without the rewrite, `./other-slug.md` resolves on `/article/<slug>` to `/article/other-slug.md`, which the Cloudflare Worker serves as the raw-Markdown alias instead of the page. Links inside code spans and code blocks are left as written. Native clients render the API's HTML, so they receive the same root-relative `/article/...` href as the web.
+
 ## Seeding
 
 This directory is the committed source of truth for article Markdown. On trusted `main`, `.github/workflows/sync-articles.yml` packages the regular article Markdown files, excluding this source-only `README.md`, into one attempt-qualified Actions artifact. The private infrastructure receiver selects and validates that exact artifact, and owns destination mapping and publication.

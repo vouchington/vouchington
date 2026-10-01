@@ -51,6 +51,7 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
     createCopyrightEmailCorrespondenceDraft,
   )
   const [manualFallbackReason, setManualFallbackReason] = useState('')
+  const [replyEmail, setReplyEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -61,6 +62,7 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
       draft,
       manualFallbackReason,
       rationale,
+      replyEmail,
       setCorrespondenceDraft,
       setDetail,
       setDraft,
@@ -69,6 +71,7 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
       setLoading,
       setManualFallbackReason,
       setRationale,
+      setReplyEmail,
       setSuccess,
     })
   return (
@@ -134,10 +137,12 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
             loading={loading}
             rationale={rationale}
             manualFallbackReason={manualFallbackReason}
+            replyEmail={replyEmail}
             correspondenceDraft={correspondenceDraft}
             onChangeDraft={setDraft}
             onChangeRationale={setRationale}
             onChangeManualFallbackReason={setManualFallbackReason}
+            onChangeReplyEmail={setReplyEmail}
             onChangeCorrespondenceDraft={setCorrespondenceDraft}
             onApproveInitial={() => approve()}
             onRejectInitial={() => reject()}

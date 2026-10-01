@@ -1,7 +1,10 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { mapUserDeletionRequest, type UserDeletionRequestRow } from './row.mts'
-import type { UserDeletionRequest } from './types.mts'
+import {
+  mapUserDeletionRequest,
+  type UserDeletionRequestRow,
+} from '../../../services/user-deletions/row.mts'
+import type { UserDeletionRequest } from '../../../services/user-deletions/types.mts'
 
 export async function makeUserDeletionRecoverableForTest(
   requestId: string,

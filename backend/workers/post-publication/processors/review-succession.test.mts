@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { processReconcilePostPublication } from '../processors.mts'
 import { reconcileReviewSuccessionBeforePostPublication } from './review-succession.mts'
-import { makeDependencies, post } from './fixtures.mts'
+import {
+  makeDependencies,
+  post,
+} from '@voucha/test-helpers/workers/post-publication/processors/fixtures'
 
 describe('post publication review succession phase', () => {
   it('defers projections and the old generation when review succession writes new work', async () => {

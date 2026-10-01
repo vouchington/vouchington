@@ -11,6 +11,7 @@ import { updatePost } from '@services/posts/update'
 import type { PrivateUser } from '@services/users/types'
 
 import { parseFrontmatter, extractTitleFromMarkdown } from './parse.mts'
+import { rewriteRelativeArticleLinks } from './relative-links.mts'
 import { getArticleMarkdown, listArticleMarkdownFiles } from './storage.mts'
 
 const ALLOWED_POST_TYPES: ReadonlySet<PostType> = new Set(['article', 'blog_post'])
@@ -86,7 +87,8 @@ async function syncArticleFiles<T extends ArticleSyncFile>(
     try {
       // oxlint-disable-next-line no-await-in-loop -- preserve input order and isolate each file's load failure in its result
       const content = await loadMarkdown(articleFile)
-      const { frontmatter, body } = parseFrontmatter(content)
+      const { frontmatter, body: authoredBody } = parseFrontmatter(content)
+      const body = rewriteRelativeArticleLinks(authoredBody)
       const topics = frontmatter.topics
 
       const slug = frontmatter.slug || basename(articleFile.file, '.md')

@@ -21,7 +21,7 @@ import {
   getVerifiedIdentityByFingerprint,
 } from '@voucha/test-helpers'
 import { deleteUser } from '../delete.mts'
-import { deleteUserAndDrainForTest } from '../delete-test-support.mts'
+import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { DELETED_USER_ID } from '../constants.mts'
 import { getPrivateUserByAny, getPublicUserByAny } from '../get.mts'
 import { caches } from '@services/entity-cache/caches'

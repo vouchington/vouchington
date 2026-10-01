@@ -24,7 +24,7 @@ import { updateCommunity } from '@services/communities'
 import { createPost, deletePost, updatePost } from '@services/posts'
 import { hardDeleteRssFeedById, setRssFeedEnablementAsCurrentUser } from '@services/rss-feeds'
 import { suspendUser } from '@services/users'
-import { deleteUserAndDrainForTest } from '@services/users/delete-test-support'
+import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import { describe, expect, it, vi } from 'vitest'
 import {

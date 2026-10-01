@@ -1,0 +1,84 @@
+id: backend-knip-test-export-exclusions
+language: Json
+severity: error
+message: Backend wildcard exports require both own null test exclusions.
+files:
+  - '**/backend/**/package.json'
+rule:
+  all:
+    - kind: object
+    - inside:
+        all:
+          - kind: pair
+          - has:
+              field: key
+              regex: '^"exports"$'
+          - inside:
+              all:
+                - kind: object
+                - inside:
+                    kind: document
+    - has:
+        all:
+          - kind: pair
+          - has:
+              field: key
+              regex: '^"\./\*"$'
+    - any:
+        - not:
+            has:
+              all:
+                - kind: pair
+                - has:
+                    field: key
+                    regex: '^"\./\*\.test\.mts"$'
+                - has:
+                    field: value
+                    kind: 'null'
+        - not:
+            has:
+              all:
+                - kind: pair
+                - has:
+                    field: key
+                    regex: '^"\./\*/__tests__/\*"$'
+                - has:
+                    field: value
+                    kind: 'null'
+examples:
+  - code: '{"exports":{"./*":"./*.mts","./*.test.mts":null,"./*/__tests__/*":null}}'
+    isValid: true
+    file: 'backend/example/package.json'
+  - code: '{"exports":{"./*/__tests__/*":null,"./*.test.mts":null,"./*":{"types":"./*.mts"}}}'
+    isValid: true
+    file: 'backend/package.json'
+  - code: '{"exports":{".":"./index.mts"},"nested":{"exports":{"./*":"./*.mts"}}}'
+    isValid: true
+    file: 'backend/example/package.json'
+  - code: '{"exports":{".":{"./*":"./*.mts"}}}'
+    isValid: true
+    file: 'backend/example/package.json'
+  - code: '{"name":"unrelated"}'
+    isValid: true
+    file: 'backend/example/package.json'
+  - code: '{"exports":{"./*":"./*.mts"}}'
+    isValid: false
+    file: 'backend/example/package.json'
+  - code: '{"exports":{"./*":"./*.mts","./*.test.mts":null}}'
+    isValid: false
+    file: 'backend/example/package.json'
+  - code: '{"exports":{"./*":"./*.mts","./*/__tests__/*":null}}'
+    isValid: false
+    file: 'backend/example/package.json'
+  - code: '{"exports":{"./*":"./*.mts","./*.test.mts":"./tests.mts","./*/__tests__/*":null}}'
+    isValid: false
+    file: 'backend/example/package.json'
+  - code: '{"exports":{"./*":"./*.mts","./*.test.mts":null,"./*/__tests__/*":false}}'
+    isValid: false
+    file: 'backend/example/package.json'
+  - code: '{"exports":{"./*":{"./*.test.mts":null,"./*/__tests__/*":null}}}'
+    isValid: false
+    file: 'backend/example/package.json'
+  - code: '{"exports":{"./*":"./*.mts","nested":{"./*.test.mts":null,"./*/__tests__/*":null}},"./*.test.mts":null,"./*/__tests__/*":null}'
+    isValid: false
+    file: 'backend/example/package.json'

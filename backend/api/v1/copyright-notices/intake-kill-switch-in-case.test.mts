@@ -167,10 +167,11 @@ describe('copyright in-case responses with intake switched off', () => {
     expect(refused.body.message).toBe('Copyright intake is not available')
     await expect(readCopyrightEmailIntakeReview(approved.id)).resolves.toEqual([])
 
-    await staff
+    const rejection = await staff
       .post(`/api/v1/copyright-email-intakes/${rejected.id}/rejections`)
       .send(decision)
-      .expect(204)
+      .expect(200)
+    expect(rejection.body).toEqual({ reply_queued: true })
     await expect(readCopyrightEmailIntakeReview(rejected.id)).resolves.toEqual([
       { accepted: false, promoted_copyright_notice_id: null },
     ])

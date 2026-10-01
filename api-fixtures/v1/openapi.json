@@ -6191,35 +6191,6 @@
         "required": ["message"],
         "type": "object"
       },
-      "EuCopyrightRedressDecision": {
-        "additionalProperties": false,
-        "properties": {
-          "decided_at": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "staff_disposition": {
-            "$ref": "#/components/schemas/CopyrightStaffDisposition"
-          }
-        },
-        "required": ["decided_at", "id", "staff_disposition"],
-        "type": "object"
-      },
-      "EuCopyrightRedressRequest": {
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "is_duplicate": {
-            "type": "boolean"
-          }
-        },
-        "required": ["id", "is_duplicate"],
-        "type": "object"
-      },
       "EuCopyrightStatementOfReasons": {
         "additionalProperties": false,
         "properties": {
@@ -18475,6 +18446,35 @@
         ],
         "type": "object"
       },
+      "TerritorialCopyrightRedressDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "decided_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "staff_disposition": {
+            "$ref": "#/components/schemas/CopyrightStaffDisposition"
+          }
+        },
+        "required": ["decided_at", "id", "staff_disposition"],
+        "type": "object"
+      },
+      "TerritorialCopyrightRedressRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "is_duplicate": {
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "is_duplicate"],
+        "type": "object"
+      },
       "TopHashtag": {
         "additionalProperties": false,
         "properties": {
@@ -19139,35 +19139,6 @@
           }
         },
         "required": ["page_info", "referral_programs"],
-        "type": "object"
-      },
-      "UkCopyrightRedressDecision": {
-        "additionalProperties": false,
-        "properties": {
-          "decided_at": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "staff_disposition": {
-            "$ref": "#/components/schemas/CopyrightStaffDisposition"
-          }
-        },
-        "required": ["decided_at", "id", "staff_disposition"],
-        "type": "object"
-      },
-      "UkCopyrightRedressRequest": {
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "is_duplicate": {
-            "type": "boolean"
-          }
-        },
-        "required": ["id", "is_duplicate"],
         "type": "object"
       },
       "UkCopyrightReview": {
@@ -37750,8 +37721,22 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "No Content"
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "reply_queued": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["reply_queued"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
           },
           "default": {
             "$ref": "#/components/responses/Error"
@@ -37885,7 +37870,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "copyright_eu_redress_request": {
-                      "$ref": "#/components/schemas/EuCopyrightRedressRequest"
+                      "$ref": "#/components/schemas/TerritorialCopyrightRedressRequest"
                     }
                   },
                   "required": ["copyright_eu_redress_request"],
@@ -37902,7 +37887,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "copyright_eu_redress_request": {
-                      "$ref": "#/components/schemas/EuCopyrightRedressRequest"
+                      "$ref": "#/components/schemas/TerritorialCopyrightRedressRequest"
                     }
                   },
                   "required": ["copyright_eu_redress_request"],
@@ -37956,7 +37941,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "copyright_eu_redress_decision": {
-                      "$ref": "#/components/schemas/EuCopyrightRedressDecision"
+                      "$ref": "#/components/schemas/TerritorialCopyrightRedressDecision"
                     }
                   },
                   "required": ["copyright_eu_redress_decision"],
@@ -40124,7 +40109,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "copyright_uk_redress_request": {
-                      "$ref": "#/components/schemas/UkCopyrightRedressRequest"
+                      "$ref": "#/components/schemas/TerritorialCopyrightRedressRequest"
                     }
                   },
                   "required": ["copyright_uk_redress_request"],
@@ -40141,7 +40126,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "copyright_uk_redress_request": {
-                      "$ref": "#/components/schemas/UkCopyrightRedressRequest"
+                      "$ref": "#/components/schemas/TerritorialCopyrightRedressRequest"
                     }
                   },
                   "required": ["copyright_uk_redress_request"],
@@ -40195,7 +40180,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "copyright_uk_redress_decision": {
-                      "$ref": "#/components/schemas/UkCopyrightRedressDecision"
+                      "$ref": "#/components/schemas/TerritorialCopyrightRedressDecision"
                     }
                   },
                   "required": ["copyright_uk_redress_decision"],

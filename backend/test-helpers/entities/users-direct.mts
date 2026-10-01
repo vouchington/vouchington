@@ -89,7 +89,7 @@ export async function createUnonboardedTestUserDirect(
   return privateUser
 }
 
-// Exported (not just used locally) so @services/users/test-support's real, upsertUser-based
+// Exported (not just used locally) so @voucha/test-helpers/services/users/test-support's real, upsertUser-based
 // createTestUser can reuse this instead of duplicating the same raw-primitive logic.
 export function getTestPhoneNumber(phoneNumberOption?: string | boolean): string | null {
   if (typeof phoneNumberOption === 'string') return phoneNumberOption

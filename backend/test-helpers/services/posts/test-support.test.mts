@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createTestPost } from '../test-support.mts'
+import { createTestPost } from '@voucha/test-helpers/services/posts/test-support'
 
 describe('createTestPost fixture', () => {
   it('creates a discussion post with a default user', async () => {

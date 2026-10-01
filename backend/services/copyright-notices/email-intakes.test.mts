@@ -146,7 +146,7 @@ describe('copyright email intake persistence', () => {
       { accepted: false, promoted_copyright_notice_id: null },
     ])
     expect(rejected.responseId).toEqual(expect.any(String))
-    expect(duplicate).toEqual({ responseId: null })
+    expect(duplicate).toEqual({ responseId: null, replyQueued: true })
     const { responseId } = rejected
     if (!responseId) throw new Error('Email intake response was not created')
     await expect(readRecoverableResponseIds(responseId)).resolves.toEqual([responseId])

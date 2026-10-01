@@ -18,7 +18,7 @@ import {
   getBackendLifecycleClaims,
 } from '../../../test-helpers/lifecycle-scenarios.mts'
 import { observeServerBoundary } from '../../../test-helpers/lifecycle-scenario-observation.mts'
-import { rerunAppealResolutionThroughQueueForTest } from '../../../workers/ai-agents/processors/process-appeal-resolution.fixtures.mts'
+import { rerunAppealResolutionThroughQueueForTest } from '@voucha/test-helpers/workers/ai-agents/processors/process-appeal-resolution.fixtures'
 import { getUserPostsCollection as getCollection } from '../../../services/entity-fetch/profile-collections.mts'
 import { approveModerationAppeal } from '../../../services/moderation-appeals/approve-appeal.mts'
 import { createModerationAppeal } from '../../../services/moderation-appeals/create.mts'

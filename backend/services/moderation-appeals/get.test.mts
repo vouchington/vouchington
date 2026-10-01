@@ -12,7 +12,7 @@ import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
 import { getModerationAppealById, listModerationAppeals, getAppealCaseTrace } from './get.mts'
 import { dismissModerationAppeal } from './dismiss-appeal.mts'
-import { deliverModerationAppealForTest } from './resolution.fixtures.mts'
+import { deliverModerationAppealForTest } from '@voucha/test-helpers/services/moderation-appeals/resolution.fixtures'
 
 describe('getModerationAppealById', () => {
   let staff: PrivateUser

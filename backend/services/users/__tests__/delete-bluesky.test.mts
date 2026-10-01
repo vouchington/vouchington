@@ -23,7 +23,10 @@ import {
 } from '@services/bluesky-accounts'
 import { v7 } from 'uuid'
 import { deleteUser } from '../delete.mts'
-import { deleteUserAndDrainForTest, drainUserDeletionForTest } from '../delete-test-support.mts'
+import {
+  deleteUserAndDrainForTest,
+  drainUserDeletionForTest,
+} from '@voucha/test-helpers/services/users/delete-test-support'
 import { getPrivateUserByAny } from '../get.mts'
 import { cleanupExpiredBlueskyLinkCompletions } from '../../data-retention/cleanup.mts'
 
