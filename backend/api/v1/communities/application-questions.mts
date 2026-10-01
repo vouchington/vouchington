@@ -7,6 +7,7 @@ import {
 } from '../../response-helpers.mts'
 import {
   getCommunityOrThrow,
+  loadCommunityForApplicationQuestions,
   getCommunityMember,
   getApplicationQuestions,
   setApplicationQuestions,
@@ -27,11 +28,11 @@ app
     })
     const { idOrSlug } = ctx.params as { idOrSlug: string }
 
-    const community = await getCommunityOrThrow(idOrSlug)
+    const community = await loadCommunityForApplicationQuestions(currentUser, idOrSlug)
 
     const questions = await getApplicationQuestions(community.id)
 
-    if (!currentUser) {
+    if (!currentUser && community.visibility === 'public') {
       ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
     }
 

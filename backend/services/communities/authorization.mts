@@ -2,6 +2,8 @@ import type { PrivateUser } from '@services/users/types'
 import { isModerationStaff } from '@services/users'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { IDENTITY_REQUIRED } from '@modules/on-error/error-codes'
+import { getActiveCommunityBan } from './bans/get.mts'
+import { getPendingApplicationForUser } from './applications/pending.mts'
 import type { Community, CommunityMember } from './types.mts'
 
 export function currentUserCanUpdateCommunity(
@@ -97,4 +99,21 @@ export function currentUserCanViewCommunity(
   if (!currentUser) return false
   if (currentUser.roles.includes('administrator')) return true
   return !!membership && !membership.removed_at
+}
+
+/** Questions also serve prospective applicants accepted by createApplication. */
+export async function currentUserCanViewCommunityApplicationQuestions(
+  currentUser: PrivateUser | null,
+  community: Community,
+  membership?: CommunityMember | null,
+): Promise<boolean> {
+  if (currentUserCanViewCommunity(currentUser, community, membership)) return true
+  if (!currentUser || community.visibility !== 'private') return false
+  const [ban, pending] = await Promise.all([
+    getActiveCommunityBan(community.id, currentUser.id),
+    getPendingApplicationForUser(community.id, currentUser.id),
+  ])
+  // Pending applicants can already view the detail page, including after eligibility changes.
+  if (pending) return true
+  return !community.archived_at && !membership && !ban
 }
