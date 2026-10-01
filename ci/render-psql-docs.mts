@@ -2,11 +2,10 @@
 
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { runRenderDocsCli } from './render-docs-cli.mts'
 import { htmlPage, renderMarkdownToHtml } from './render-docs-page.mts'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
+const __dirname = import.meta.dirname
 const DEFAULT_SCHEMA_DIR = resolve(__dirname, '..', 'docs/development/postgresql/schema-snapshot')
 const DEFAULT_SCHEMA_JSON = resolve(
   __dirname,

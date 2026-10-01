@@ -1,8 +1,7 @@
 import { cpSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { workerQueuePolicyCommandOutput } from './worker-queue-policy-cli.mts'
 import { formatQueueIncludeList, workerQueuePolicy } from './worker-queue-policy.mts'
@@ -30,7 +29,7 @@ describe('worker queue inventory policy CLI', () => {
     const isolatedRoot = mkdtempSync(join(tmpdir(), 'worker-queue-inventory-'))
     try {
       const isolatedPackage = join(isolatedRoot, 'worker-queue-inventory')
-      cpSync(dirname(fileURLToPath(import.meta.url)), isolatedPackage, { recursive: true })
+      cpSync(import.meta.dirname, isolatedPackage, { recursive: true })
 
       const result = spawnSync(
         process.execPath,

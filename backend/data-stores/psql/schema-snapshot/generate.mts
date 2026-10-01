@@ -1,5 +1,4 @@
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 import { format } from 'oxfmt'
 import { stableStringify } from '@modules/utils/stable-stringify'
 import {
@@ -11,8 +10,7 @@ import { buildSchemaSnapshot } from './build-snapshot.mts'
 import { catalogQuery } from './catalog-query.mts'
 import { renderSchemaMarkdown } from './render-markdown.mts'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+const __dirname = import.meta.dirname
 
 async function formatWithOxfmt(path: string, raw: string): Promise<string> {
   const result = await format(path, raw)
