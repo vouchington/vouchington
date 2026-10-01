@@ -15,7 +15,12 @@ import { coverageConfigForScope } from '../test-helpers/vitest-config/coverage-c
 const RULES_PATH = '.coverage-rules.yml'
 
 function repoFiles(): string[] {
-  return execFileSync('git', ['ls-files'], { encoding: 'utf8' }).split('\n').filter(Boolean)
+  return execFileSync('git', ['ls-files'], {
+    encoding: 'utf8',
+    maxBuffer: 4 * 1024 * 1024,
+  })
+    .split('\n')
+    .filter(Boolean)
 }
 
 function reachableFiles(): string[] {
