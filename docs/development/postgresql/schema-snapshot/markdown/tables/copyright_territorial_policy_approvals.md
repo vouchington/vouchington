@@ -20,6 +20,7 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
+- `uq_copyright_territorial_policy_approvals__id_jurisdiction`: `UNIQUE (id, jurisdiction)`
 - `uq_copyright_territorial_policy_approvals__version`: `UNIQUE (jurisdiction, policy_version)`
 
 **Check constraints:**
@@ -35,6 +36,7 @@ Not partitioned — growth: unbounded.
 
 - `copyright_territorial_policy_approvals_pkey`: `CREATE UNIQUE INDEX copyright_territorial_policy_approvals_pkey ON public.copyright_territorial_policy_approvals USING btree (id)`
 - `idx_copyright_territorial_policy_approvals__approved_by`: `CREATE INDEX idx_copyright_territorial_policy_approvals__approved_by ON public.copyright_territorial_policy_approvals USING btree (approved_by_id) WHERE (approved_by_id IS NOT NULL)`
+- `uq_copyright_territorial_policy_approvals__id_jurisdiction`: `CREATE UNIQUE INDEX uq_copyright_territorial_policy_approvals__id_jurisdiction ON public.copyright_territorial_policy_approvals USING btree (id, jurisdiction)`
 - `uq_copyright_territorial_policy_approvals__version`: `CREATE UNIQUE INDEX uq_copyright_territorial_policy_approvals__version ON public.copyright_territorial_policy_approvals USING btree (jurisdiction, policy_version)`
 
 **Triggers:**
