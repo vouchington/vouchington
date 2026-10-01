@@ -1,6 +1,7 @@
 import type pg from 'pg'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { readPool, writePool } from '@data-stores/psql'
+import { getOptionalRequestClientInfo } from '../modules/request-client-info/index.mts'
 import { runPoolObservationExclusively } from './postgres-pool-observation-queue.mts'
 
 const queryFailureContext = new AsyncLocalStorage<{ active: boolean }>()
@@ -9,13 +10,23 @@ const queryFailureContext = new AsyncLocalStorage<{ active: boolean }>()
 export async function withPostgresQueryFailureForTest<Result>(
   queryMarker: string,
   operation: () => Promise<Result>,
-  options: { command?: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' } = {},
+  options: { command?: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE'; requestId?: string } = {},
 ): Promise<{ result: Result; error: Error }> {
   if (!/^\/\* [^*]+ \*\/$/.test(queryMarker))
     throw new Error('PostgreSQL fault injection requires an exact leading query annotation')
+  if (
+    options.requestId !== undefined &&
+    !/^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(options.requestId)
+  )
+    throw new Error('Request-scoped PostgreSQL faults require an owned UUID request id')
 
   return runPoolObservationExclusively(async () => {
     const context = { active: true }
+    const ownsContext = () =>
+      context.active &&
+      (queryFailureContext.getStore() === context ||
+        (options.requestId !== undefined &&
+          getOptionalRequestClientInfo()?.requestId === options.requestId))
     let fired = false
     let targetError: Error | undefined
     const restorations = new Set<() => void>()
@@ -45,14 +56,14 @@ export async function withPostgresQueryFailureForTest<Result>(
       const query = ((...args: unknown[]) => {
         const text = queryText(args[0])
         const command = text.trimStart().replace(/^\/\*[\s\S]*?\*\/\s*/, '')
-        const ownsContext = queryFailureContext.getStore() === context && context.active
-        if (ownsContext && /^BEGIN\b/.test(command)) began = true
-        if (ownsContext && /^(?:COMMIT|ROLLBACK)\b/.test(command)) began = false
+        const ownsRequest = ownsContext()
+        if (ownsRequest && /^BEGIN\b/.test(command)) began = true
+        if (ownsRequest && /^(?:COMMIT|ROLLBACK)\b/.test(command)) began = false
         const target = text.trimStart()
         const matchesCommand =
           !options.command ||
           target.slice(queryMarker.length).trimStart().startsWith(options.command)
-        if (!ownsContext || fired || !target.startsWith(queryMarker) || !matchesCommand)
+        if (!ownsRequest || fired || !target.startsWith(queryMarker) || !matchesCommand)
           return Reflect.apply(originalQuery, client, args)
         const input = args[0]
         if (
@@ -106,8 +117,7 @@ export async function withPostgresQueryFailureForTest<Result>(
       for (const { pool, connect } of poolDescriptors) {
         const wrappedConnect = ((...args: unknown[]) => {
           // Pool.query uses a callback; preserve that overload and every other context exactly.
-          if (args.length || queryFailureContext.getStore() !== context || !context.active)
-            return Reflect.apply(connect, pool, args)
+          if (args.length || !ownsContext()) return Reflect.apply(connect, pool, args)
           return (Reflect.apply(connect, pool, args) as Promise<pg.PoolClient>).then(client =>
             context.active ? observeClient(client) : client,
           )
