@@ -34,10 +34,13 @@ per-classifier input building and outcome application that lifecycle asks for:
   current content. `hasCurrentAutotaggerEmbedding` gates reservation (an unready request stays
   unsettled); `autotaggerRequestEligibility` puts the same predicate in the sweep query, so the wait
   for the embedding never burns the sweep's enqueue bound.
-- **Effects** (`effects.mts`) — `applyAutotaggerEffects` applies the durable decision as topic votes
-  by the shared classifier actor inside the completion transaction
-  (`applyTopicClassifierDecisionVotes`), so a retry only ever sees the run incomplete or fully
-  applied.
+- **Effects** (`effects.mts`) — `applyAutotaggerEffects` applies the durable decision to the exact
+  post or feed item the run classified, inside the completion transaction
+  (`applyTopicClassifierDecisionRelations`): each positive topic result creates or updates that
+  subject's topic category relation and the shared classifier actor's relation vote, never a global
+  topic vote and never a soft-deleted relation. The same topic on an unrelated subject is applied
+  independently. A retry only ever sees the run incomplete or fully applied, and the returned
+  `addedTopicIds` lists only the topics whose subject relation is live and net positive.
 - **Paid-tier limits** (`limits-config.mts`) — `getAutotaggerPaidLimitsFields` resolves the
   dynamic-config-backed `AutotaggerPaidLimitsFields`: a global `enabled` kill-switch, the post
   author's tiered `max_topics` cap (free/plus/pro), and the two independent RSS enrichment tiers

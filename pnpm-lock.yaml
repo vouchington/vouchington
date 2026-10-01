@@ -4487,6 +4487,9 @@ importers:
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
+      '@services/entity-relations':
+        specifier: workspace:^
+        version: link:../entity-relations
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
