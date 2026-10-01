@@ -46,6 +46,39 @@ describe('reconcile-post batches', () => {
     return subscribers
   }
 
+  it('keeps persisted notifications idempotent after the delivery callback fails', async () => {
+    const author = await createTestUser()
+    const postCreatedAt = new Date(Date.now() + 2_000)
+    const [subscriber] = await createUserSubscribers(
+      author.id,
+      1,
+      new Date(postCreatedAt.getTime() - 1_000),
+    )
+    const postId = await insertNotificationTestPost(author.id, 'Delivery failure', postCreatedAt)
+    const failure = new Error('notification delivery unavailable')
+    const err = await reconcileNotificationsForPost(postId, {
+      onCreatedNotifications: async () => {
+        throw failure
+      },
+    }).catch((err: unknown) => err)
+
+    expect(err).toBe(failure)
+    expect(err).toMatchObject({
+      tags: { service: 'notifications', operation: 'reconcileNotificationsForPost' },
+      extra: { postId },
+    })
+    const notifications = await listNotifications(subscriber!.id)
+    expect(notifications.results).toHaveLength(1)
+
+    await expect(reconcileNotificationsForPost(postId)).resolves.toMatchObject({
+      created: 0,
+      pruned: 0,
+    })
+    expect((await listNotifications(subscriber!.id)).results.map(row => row.id)).toEqual(
+      notifications.results.map(row => row.id),
+    )
+  })
+
   it('creates post notifications in bounded recipient batches', async () => {
     const author = await createTestUser()
     if (!author) throw new Error('Failed to create user')

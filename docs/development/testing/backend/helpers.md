@@ -10,6 +10,11 @@ Language detection separates fixture creation from state assertions, and `sql-qu
 owns SQL fragments used to exercise query builders. The main helper barrel exports each helper
 directly from its owner. Membership schema tests import purchase-intent fixtures and verification
 assertions from their separate owners under `data-stores/psql/`.
+
+[`withAbortedPostgresTransactionForTest`](../../../../backend/test-helpers/postgres-aborted-transaction.mts)
+executes division by zero inside its own real transaction, checks PostgreSQL's `22012`, and lends
+the aborted query to a service callback. Use it to verify borrowed-transaction failures propagate
+`25P02` without partial writes; resource disposal rolls the transaction back afterward.
 The [PostgreSQL row-contract probe](../../../../backend/test-helpers/data-stores/psql/query-row-contract.mts) keeps its read-only SQL
 and explicit projection type inside a focused helper. Its owning PSQL test imports that helper by
 relative path, following other PSQL tests without adding a `@data-stores/psql` →
