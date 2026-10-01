@@ -75,10 +75,13 @@ look at.
   `parseTerritorialRedressDecision` with `422` and `rationale is required`, the message the service
   already gave a missing or blank one. The staff role `403` is on the route and runs first, so no
   status or message changes.
-- String lengths are not in the generated schema. The 64-character `policy_version`, the 200
-  character `authority_reference`, and the 50,000 character text limits stay in the existing
-  parsers and services.
-- No status code changes for a valid request, and none for an invalid request that already failed.
+- String lengths are not in the generated schema. Every length bound stays in the existing parsers
+  and services (for example `policy_version` at 64, `authority_reference` at 200, `contact` at
+  4096, `hosted_use_url` at 2048, and the free-text fields at 50,000).
+- No status code changes for a valid request, and none for a request that already failed on a
+  field the parsers check. A request that also carries an unknown key (or a non-string
+  `cf_turnstile_response`) and that the service would have rejected with `404`, `409`, or an
+  ownership `403` now answers `422` first; see "Rejections the service still decides".
 
 ### One acceptance change
 
@@ -101,8 +104,10 @@ before them, as a missing field already did:
   turn a stored receipt's replay after a withdrawal into `403` and an over-length `422` on an
   unapproved territory into `403`, so it stays a documented exception. The kill switch,
   authentication, and role checks still run first.
-- `404` for a missing notice or redress request and `409` for a reused key, an existing decision, or
-  a repeated complaint.
+- `404` for a missing notice and `409` for a reused key, an existing decision, or a repeated
+  complaint. A request with an unknown key used to reach these and now answers `422` first. The
+  route tests pin the missing-notice `404` on the redress, supervised complaint, and statement or
+  review routes, and the recorded-decision and recorded-policy `409`, each beside the `422`.
 
 ## Carriers the generated schema does not check
 

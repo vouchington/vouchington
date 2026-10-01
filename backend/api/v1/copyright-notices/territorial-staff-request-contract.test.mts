@@ -72,6 +72,19 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
       ).toBe(1)
     })
 
+    // The service decides existence, so a missing notice is a 404 for a valid body only.
+    it('leaves the missing-notice 404 to the service behind a malformed body', async () => {
+      const { staffRequest } = await createTerritorialActors()
+      const url = `${surface.base}/${crypto.randomUUID()}/${surface.determinationPath}`
+      const body = { [surface.determinationField]: 'Staff reasons' }
+
+      await staffRequest.post(url).send(body).expect(404)
+      await staffRequest
+        .post(url)
+        .send({ ...body, injected: true })
+        .expect(422)
+    })
+
     it('keeps the field message and the path id check', async () => {
       const { staffRequest } = await createTerritorialActors()
       const field = surface.determinationField
@@ -112,6 +125,12 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
         .expect(422)
       // A recorded decision would make this retry a 409.
       await actors.staffRequest.post(url).send(decisionBody).expect(201)
+      // Once recorded, the service's 409 sits behind a malformed body's 422.
+      await actors.staffRequest
+        .post(url)
+        .send({ ...decisionBody, injected: true })
+        .expect(422)
+      await actors.staffRequest.post(url).send(decisionBody).expect(409)
     })
 
     it.each([
@@ -237,6 +256,11 @@ describe('territorial policy request contracts', () => {
       .expect(422)
     // A recorded version would make this retry a 409.
     await administratorRequest.post(policies).send(body).expect(201)
+    // Once recorded, the service's 409 sits behind a malformed body's 422.
+    await administratorRequest
+      .post(policies)
+      .send({ ...body, injected: true })
+      .expect(422)
     await administratorRequest.post(policies).send(body).expect(409)
   })
 

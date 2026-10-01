@@ -140,6 +140,25 @@ describe.each(TERRITORIAL_SURFACES)('$label claimant request contracts', surface
       .expect(422)
   })
 
+  // The service decides existence, so a missing notice is a 404 for a valid body only.
+  it('leaves the missing-notice 404 to the service behind a malformed body', async () => {
+    const actors = await createTerritorialActors()
+    await approveTerritorialPolicy(actors.administrator, surface.jurisdiction)
+    const url = `${surface.base}/${crypto.randomUUID()}/redress-requests`
+    const body = { explanation: 'Please review this restriction' }
+
+    await actors.claimantRequest
+      .post(url)
+      .set('Idempotency-Key', crypto.randomUUID())
+      .send(body)
+      .expect(404)
+    await actors.claimantRequest
+      .post(url)
+      .set('Idempotency-Key', crypto.randomUUID())
+      .send({ ...body, injected: true })
+      .expect(422)
+  })
+
   // The service decides ownership, so a stranger's valid redress is a 403 while a malformed body
   // is still a 422: a documented consequence of validating before the service runs.
   it('leaves the ownership 403 to the service behind a malformed body', async () => {
@@ -209,6 +228,18 @@ describe('EU supervised complaint request contract', () => {
       .send({ ...body, [field]: 7 })
       .expect(422)
     expect(rejected.body.message).toBe(message)
+  })
+
+  it('leaves the missing-notice 404 to the service behind a malformed body', async () => {
+    const { claimantRequest } = await complaintFixture()
+    const url = `${eu!.base}/${crypto.randomUUID()}/supervised-complaints`
+    const body = { authority_reference: `dsc-${crypto.randomUUID()}`, explanation: 'Complaint' }
+
+    await claimantRequest.post(url).send(body).expect(404)
+    await claimantRequest
+      .post(url)
+      .send({ ...body, injected: true })
+      .expect(422)
   })
 
   it('checks the path id and leaves the ownership 403 to the service', async () => {
