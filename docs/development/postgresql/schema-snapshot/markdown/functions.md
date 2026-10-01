@@ -275,14 +275,6 @@ CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_correspondence_recomm
  LANGUAGE plpgsql
 ```
 
-## `fn_guard_copyright_email_intake_response_transition`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_intake_response_transition()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_guard_copyright_email_review_recommendation_scope`
 
 ```sql

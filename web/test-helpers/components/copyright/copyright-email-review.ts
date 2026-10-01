@@ -16,6 +16,8 @@ export function makeCopyrightEmailQueueItem(
     recommendation_id: '019f0000-0000-7000-8000-000000000002',
     review_path: 'initial',
     linked_notice_id: null,
+    waiting_reason: 'awaiting_review',
+    waiting_since: '2026-09-19T00:00:00.000Z',
   }
 }
 

@@ -7,10 +7,10 @@ import {
 } from '@voucha/test-helpers'
 import { readCopyrightEmailIntakeReview } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import {
-  markCopyrightEmailIntakeResponseBouncedBySesMessageId,
-  markCopyrightEmailIntakeResponseFailed,
-  markCopyrightEmailIntakeResponseSent,
-  prepareCopyrightEmailIntakeResponseDelivery,
+  markCopyrightDeliveryIntentBouncedBySesMessageId,
+  markCopyrightDeliveryIntentFailed,
+  markCopyrightDeliveryIntentSent,
+  prepareCopyrightEmailDelivery,
   promoteCopyrightEmailIntake,
   rejectCopyrightEmailIntake,
 } from './index.mts'
@@ -97,20 +97,29 @@ describe('copyright email promotion', () => {
       responseKind: 'needs_information',
       responseMessage: 'Please identify the work and the hosted material.',
     })
-    const first = await prepareCopyrightEmailIntakeResponseDelivery(responseId)
+    const first = await prepareCopyrightEmailDelivery(responseId)
     expect(first.subject).toContain('More information')
     expect(first.text).toContain('Please identify the work')
-    const outboundMessageId = `ses-outbound-${crypto.randomUUID()}`
+    const sesMessageId = `ses-outbound-${crypto.randomUUID()}`
     expect(
-      await markCopyrightEmailIntakeResponseSent({
-        responseId,
+      await markCopyrightDeliveryIntentSent({
+        intentId: responseId,
         leaseToken: first.leaseToken,
-        sesMessageId: outboundMessageId,
+        sesMessageId,
       }),
     ).toBe(true)
-    expect(await markCopyrightEmailIntakeResponseBouncedBySesMessageId(outboundMessageId)).toBe(
-      true,
-    )
+    await expect(
+      markCopyrightDeliveryIntentBouncedBySesMessageId({
+        sesMessageId,
+        recipientEmails: ['someone-else@example.test'],
+      }),
+    ).resolves.toBe(0)
+    await expect(
+      markCopyrightDeliveryIntentBouncedBySesMessageId({
+        sesMessageId,
+        recipientEmails: [first.recipientEmail.toUpperCase()],
+      }),
+    ).resolves.toBe(1)
   })
 
   it('records a retryable failure only after claiming an email response', async () => {
@@ -118,17 +127,17 @@ describe('copyright email promotion', () => {
       responseKind: 'rejected',
       responseMessage: null,
     })
-    const prepared = await prepareCopyrightEmailIntakeResponseDelivery(responseId)
+    const prepared = await prepareCopyrightEmailDelivery(responseId)
     await expect(
-      markCopyrightEmailIntakeResponseFailed({
-        responseId,
+      markCopyrightDeliveryIntentFailed({
+        intentId: responseId,
         leaseToken: prepared.leaseToken,
         error: 'The email provider timed out.',
       }),
     ).resolves.toBe(true)
     await expect(
-      markCopyrightEmailIntakeResponseSent({
-        responseId,
+      markCopyrightDeliveryIntentSent({
+        intentId: responseId,
         leaseToken: prepared.leaseToken,
         sesMessageId: `ses-should-not-send-${crypto.randomUUID()}`,
       }),

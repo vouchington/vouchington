@@ -159,7 +159,6 @@ exports backend/services/copyright-notices/index.mts claimCopyrightDeliveryInten
 exports backend/services/copyright-notices/index.mts copyrightAppealRecommendations
 exports backend/services/copyright-notices/index.mts copyrightGuestCapabilityMaxLifetimeMs
 exports backend/services/copyright-notices/index.mts getCopyrightRepeatInfringerAccount
-exports backend/services/copyright-notices/index.mts markCopyrightDeliveryIntentSent
 exports backend/services/copyright-notices/index.mts recordCopyrightRepeatInfringerDisposition
 exports backend/services/copyright-notices/repeat-infringer-incidents.mts getCopyrightRepeatInfringerAccount
 exports backend/services/copyright-notices/restoration-hold-scene.mts recordOrdinaryCopyrightHold

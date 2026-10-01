@@ -74,6 +74,12 @@ reachable after the first page. That includes an email whose parse was never rec
 `parse_status` is `unparsed`, beside `succeeded` and `failed`, and staff review it from the original
 MIME object. A reviewer's decision refreshes the queue from its first page.
 
+Each queue item carries `waiting_reason` and `waiting_since`. An unreviewed intake is
+`awaiting_review` and waits since `received_at`. A declined intake whose reply failed or bounced
+stays on the queue as `reply_failed` or `reply_bounced`, waiting since that failure, so a sender
+who never received the reply is not lost. The queue never lists a declined intake whose reply is
+pending or sent.
+
 The staff intake response, `GET /api/v1/copyright-email-intakes/:id`, carries
 `copyright_email_intake.ses_verdicts`: `{ spf, dkim, dmarc, spam, virus }`, each `pass`, `fail`,
 `gray`, `processing_failed`, or `unknown`. SES reported them in headers it prepended to the message

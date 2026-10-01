@@ -41,8 +41,8 @@ a counter-notice is compliant or that a hold is qualifying.
 
 ## Work claim ownership
 
-Action intents, delivery intents, email intake responses, enforcement requests, and form screening
-executions rotate a UUID `lease_token` on each claim or reclaim. Workers carry that token through
+Action intents, delivery intents (case deliveries and replies to declined email intakes alike),
+enforcement requests, and form screening executions rotate a UUID `lease_token` on each claim or reclaim. Workers carry that token through
 completion and failure; a worker whose claim was reclaimed cannot change the newer owner's state.
 Action delivery also checks ownership under its row lock before placement mutations and again after
 external projection. A per-intent advisory lock prevents reclaim during compensation; action
@@ -103,6 +103,15 @@ can correlate it. Copyright emails opt out of the generic operational BCC becaus
 statutory personal information. The email transport worker is activation-blocking infrastructure: it must claim these
 rows, resolve private recipient evidence case-scoped, and report SES bounces before
 `COPYRIGHT_INTAKE_ENABLED` is enabled.
+
+The reply to a declined email intake is the same kind of row, with no case: it carries the intake's
+id instead of a notice id, a `delivery_kind` of `email_intake_rejected` or
+`email_intake_needs_information`, and the `correspondent` role. A check keeps exactly one of the
+two ids set, and a unique constraint keeps one reply per intake. The rendered body is stored
+encrypted on the row and cannot change, so every retry sends the same text and never the staff
+rationale. The sender's address goes in the row's recipient record, so SES bounces correlate to it
+like any other delivery. These rows never appear as a case in the staff queue or the case
+aggregate, and never match an inbound reply to a case.
 
 ## Placement enforcement boundary
 
@@ -212,8 +221,10 @@ a succeeded parse the reply goes to the parsed sender. With no parse row or a fa
 moderator may type a reply address, validated like the claimant email on approval; without one no
 reply is queued, and the decision response reports `reply_queued: false` so staff see that nothing
 was sent. An address typed beside a parsed sender is refused. A parse that lands after the decision
-sends nothing, because the response is created only at decision time. See the
-[API](../api/v1/copyright-notices/README.md) for the contract.
+sends nothing, because the response is created only at decision time. When that reply fails or
+bounces, the intake returns to the email review page with the reason (`reply_failed` or
+`reply_bounced`) and how long it has waited since the failure, so a declined sender who was never
+answered is visible to staff. See the [API](../api/v1/copyright-notices/README.md) for the contract.
 
 Email extraction includes the claimant, contact, work, hosted URLs, signature, and both statutory
 declarations, with short source excerpts for moderator verification. Missing declarations remain
@@ -520,7 +531,8 @@ A five-minute sweep sends one Sentry warning when copyright work is late. It cou
 The email set uses the email-review queue's own rule: no intake review, and either no notice link
 or a matched reply whose correspondence is neither admitted nor rejected. An intake counts whether
 or not its parse was recorded, and the queue lists an unparsed intake too, so a stuck email is
-never invisible to staff.
+never invisible to staff. An intake listed only because its decline reply failed or bounced is not
+counted: that set measures unreviewed work, and the reply failure has its own reason on the queue.
 
 `reviewTargetMinutes` lives in the audited `copyright` dynamic-config namespace. Its default is `0`,
 which means unset: both waiting counts stay off until an operator records an approved target. Missed

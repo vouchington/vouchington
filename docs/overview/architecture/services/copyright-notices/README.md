@@ -25,7 +25,7 @@ the affected member's current verified address only at send time. Every legal em
 immutable deterministic correspondence body; SES acceptance records its MessageId and sets the
 correspondence `sent_at` in the same database transaction as the intent receipt. The five-minute
 notification-queue reconciliation re-enqueues pending, failed, and expired claims. Bounce and
-complaint feedback transitions only the correlated SES intent to `bounced`.
+complaint feedback transitions only the correlated SES intent to `bounced`. Intake replies share it.
 
 A statutory counter-notice forwarding intent is created only inside the qualifying deadline
 transaction, after an identified reviewer has found the immutable counter-notice compliant. The

@@ -37,10 +37,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Opaque worker fencing token, not a durable relation.',
   ],
   [
-    'copyright_notice_email_intake_responses.lease_token',
-    'Opaque worker fencing token, not a durable relation.',
-  ],
-  [
     'copyright_notice_enforcement_requests.lease_token',
     'Opaque worker fencing token, not a durable relation.',
   ],

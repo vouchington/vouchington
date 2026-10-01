@@ -44,7 +44,9 @@ intake queue shows each message's wait age.
    reply unless you type an address there. Type one only when the original MIME shows a sender
    worth answering; the server refuses an address for an email that has a parsed sender. The
    staff page then reports "A reply was queued." or "No reply sent."; the API returns
-   `reply_queued`.
+   `reply_queued`. If the queued reply later fails or bounces, the intake returns to the email-review
+   queue with a `reply_failed` or `reply_bounced` reason and the time since the failure. The reply
+   has no replay control yet (tracked in #1657), so contact the sender by another channel.
    - **Reject email intake** closes the intake without opening a case. It needs the review
      rationale, plus the manual-fallback reason when there is no recommendation.
    - **Request information** closes the intake the same way and sends your message to the sender.
