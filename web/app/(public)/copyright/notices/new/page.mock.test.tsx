@@ -52,7 +52,7 @@ async function fillAndSubmit() {
   fireEvent.change(screen.getByLabelText('Full legal name'), { target: { value: 'Claimant' } })
   fireEvent.change(screen.getByLabelText('Mailing address'), { target: { value: '1 Main St' } })
   fireEvent.change(screen.getByLabelText('Email address'), {
-    target: { value: 'claimant@example.com' },
+    target: { value: 'tests+claimant@voucha.ai' },
   })
   fireEvent.change(screen.getByLabelText('Copyrighted work'), {
     target: { value: 'Claimed photograph' },
@@ -111,13 +111,13 @@ describe('NewCopyrightNoticePage for a signed-out visitor', () => {
     expect(await screen.findByRole('heading', { name: 'Notice received' })).toBeInTheDocument()
     expect(createCopyrightNotice).toHaveBeenCalledWith(
       expect.objectContaining({
-        claimant_email: 'claimant@example.com',
+        claimant_email: 'tests+claimant@voucha.ai',
         cf_turnstile_response: 'turnstile-token',
       }),
     )
     const receipt = screen.getByTestId('copyright-guest-receipt')
     expect(receipt).toHaveTextContent(noticeId)
-    expect(receipt).toHaveTextContent('claimant@example.com')
+    expect(receipt).toHaveTextContent('tests+claimant@voucha.ai')
     expect(receipt).toHaveTextContent(/cannot follow this case online/i)
     expect(receipt).toHaveTextContent(`/copyright/notices/${noticeId}/guest`)
     expect(screen.queryByTestId('copyright-notice-form')).not.toBeInTheDocument()
