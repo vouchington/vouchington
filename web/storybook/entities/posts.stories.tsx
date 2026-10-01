@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { PostAuthorAside } from '@/components/posts/post-author-aside'
-import { PostDetailView as PostDetail } from '@/components/posts/post-detail-view'
+import { PostDetail } from '@/components/posts/post-detail'
+import { PostDetailView } from '@/components/posts/post-detail-view'
 import { PostDetailTabs } from '@/components/posts/post-detail-tabs'
 import { PostFilters } from '@/components/posts/post-filters'
 import { PostList } from '@/components/posts/post-list'
@@ -84,7 +85,7 @@ export const PostTypeVariations: Story = {
             key={post.id}
             title={post.post_type}
           >
-            <PostDetail
+            <PostDetailView
               post={post}
               html={`<p>${post.markdown}</p>`}
               election={postsResponse.post_elections?.[post.id]}
