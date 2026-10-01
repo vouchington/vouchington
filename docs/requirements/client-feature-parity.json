@@ -2876,7 +2876,7 @@
             "web/components/copyright/__tests__/copyright-email-review.parse-state.mock.test.tsx",
             "web/components/copyright/__tests__/copyright-email-review.reply-address.mock.test.tsx",
             "web/components/copyright/__tests__/copyright-email-review.needs-information.mock.test.tsx",
-            "web/components/copyright/copyright-email-review-reply-failure.mock.test.tsx",
+            "web/components/copyright/copyright-email-review.test.tsx",
             "web/components/copyright/copyright-email-approval-fields.test.tsx",
             "web/components/copyright/copyright-email-correspondence-fields.test.tsx"
           ]

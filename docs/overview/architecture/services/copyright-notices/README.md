@@ -25,15 +25,7 @@ the affected member's current verified address only at send time. Every legal em
 immutable deterministic correspondence body; SES acceptance records its MessageId and sets the
 correspondence `sent_at` in the same database transaction as the intent receipt. The five-minute
 notification-queue reconciliation re-enqueues pending, failed, and expired claims. Bounce and
-complaint feedback transitions only the correlated SES intent to `bounced`.
-
-The one reply to a declined email intake uses the same table and the same worker, claim, sweep and
-bounce path. Its row has a nullable `copyright_notice_id` and a `copyright_notice_email_intake_id`
-foreign key, exactly one of which is set, and the rendered body is stored encrypted and immutable in
-`body_ciphertext` (purpose `copyright-delivery-body:<intentId>`). The send path has an explicit
-intake branch and no correspondence row. Every reader that joins intents to notices filters
-`copyright_notice_id IS NOT NULL`, so a failed reply never becomes a case; the email review queue
-lists the intake instead.
+complaint feedback transitions only the correlated SES intent to `bounced`. Intake replies share it.
 
 A statutory counter-notice forwarding intent is created only inside the qualifying deadline
 transaction, after an identified reviewer has found the immutable counter-notice compliant. The

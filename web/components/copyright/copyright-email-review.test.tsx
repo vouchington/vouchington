@@ -1,6 +1,5 @@
 import { configure, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
-import { copyrightEmailIntakesClientMock as intakesClient } from '@/test-helpers/components/copyright/copyright-email-client-mocks'
+import { describe, expect, it } from 'vitest'
 import {
   makeCopyrightEmailQueueItem as makeQueueItem,
   makeCopyrightEmailQueuePage as makeQueuePage,
@@ -8,8 +7,6 @@ import {
 import { CopyrightEmailReview } from './copyright-email-review'
 
 configure({ testIdAttribute: 'data-pw' })
-
-vi.mock(import('@/lib/api/client/copyright-email-intakes'), () => intakesClient)
 
 const failedId = '019f0000-0000-7000-8000-000000000011'
 const bouncedId = '019f0000-0000-7000-8000-000000000012'
