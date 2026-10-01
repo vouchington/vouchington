@@ -6,19 +6,22 @@ User-issued API keys for programmatic access (format: voucha_<type>_<32 hex rand
 
 Not partitioned — growth: unbounded.
 
-| Column         | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                     |
-| -------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------- |
-| `id`           | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                             |
-| `user_id`      | `uuid`                     | no       |                              |          |           |           | The user who owns this API key.                                                             |
-| `prefix`       | `text`                     | no       |                              |          |           |           | Visible prefix of the API key for identification (e.g. voucha_rss_XXXX, 8-16 chars).        |
-| `key_hash`     | `bytea`                    | no       |                              |          |           |           | SHA-256 hash of the full API key (32 bytes).                                                |
-| `type`         | `api_key_types`            | no       | `'rss'::api_key_types`       |          |           |           | Key type scope (rss or mcp). Determines which API features the key can access.              |
-| `label`        | `text`                     | no       | `''::text`                   |          |           |           | User-provided label to identify the key's purpose.                                          |
-| `permissions`  | `text[]`                   | no       | `'{}'::text[]`               |          |           |           | Canonical scope set granted to this key; validated against the application scope catalogue. |
-| `created_at`   | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                             |
-| `last_used_at` | `timestamp with time zone` | yes      |                              |          |           |           | When this API key was last used for authentication.                                         |
-| `revoked_at`   | `timestamp with time zone` | yes      |                              |          |           |           | When this API key was revoked; revoked keys cannot authenticate.                            |
-| `updated_at`   | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                             |
+| Column                    | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                     |
+| ------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------- |
+| `id`                      | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                             |
+| `user_id`                 | `uuid`                     | no       |                              |          |           |           | The user who owns this API key.                                                             |
+| `prefix`                  | `text`                     | no       |                              |          |           |           | Visible prefix of the API key for identification (e.g. voucha_rss_XXXX, 8-16 chars).        |
+| `key_hash`                | `bytea`                    | no       |                              |          |           |           | SHA-256 hash of the full API key (32 bytes).                                                |
+| `type`                    | `api_key_types`            | no       | `'rss'::api_key_types`       |          |           |           | Key type scope (rss or mcp). Determines which API features the key can access.              |
+| `label`                   | `text`                     | no       | `''::text`                   |          |           |           | User-provided label to identify the key's purpose.                                          |
+| `permissions`             | `text[]`                   | no       | `'{}'::text[]`               |          |           |           | Canonical scope set granted to this key; validated against the application scope catalogue. |
+| `created_at`              | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                             |
+| `last_used_at`            | `timestamp with time zone` | yes      |                              |          |           |           | When this API key was last used for authentication.                                         |
+| `revoked_at`              | `timestamp with time zone` | yes      |                              |          |           |           | When this API key was revoked; revoked keys cannot authenticate.                            |
+| `expires_at`              | `timestamp with time zone` | yes      |                              |          |           |           | Authentication deadline; NULL means no expiry for non-administrator owners.                 |
+| `replaced_by_api_key_id`  | `uuid`                     | yes      |                              |          |           |           | Replacement key created by owner rotation; the old key has at most 24 hours of overlap.     |
+| `expiry_reminder_sent_at` | `timestamp with time zone` | yes      |                              |          |           |           | Durable claim before expiry reminder delivery; retries never send twice.                    |
+| `updated_at`              | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -36,12 +39,15 @@ _none_
 **Foreign keys:**
 
 - `api_keys_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_api_key_identities(id) ON DELETE RESTRICT`
+- `api_keys_replaced_by_api_key_id_fkey`: `FOREIGN KEY (replaced_by_api_key_id) REFERENCES api_keys(id) ON DELETE SET NULL`
 - `api_keys_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `api_keys_pkey`: `CREATE UNIQUE INDEX api_keys_pkey ON public.api_keys USING btree (id)`
+- `idx_api_keys__expiry_reminder`: `CREATE INDEX idx_api_keys__expiry_reminder ON public.api_keys USING btree (expires_at, id) WHERE ((revoked_at IS NULL) AND (replaced_by_api_key_id IS NULL) AND (expiry_reminder_sent_at IS NULL))`
 - `idx_api_keys__key_hash`: `CREATE UNIQUE INDEX idx_api_keys__key_hash ON public.api_keys USING btree (key_hash) WHERE (revoked_at IS NULL)`
+- `idx_api_keys__replaced_by_api_key_id__fk`: `CREATE INDEX idx_api_keys__replaced_by_api_key_id__fk ON public.api_keys USING btree (replaced_by_api_key_id) WHERE (replaced_by_api_key_id IS NOT NULL)`
 - `idx_api_keys__user_id`: `CREATE INDEX idx_api_keys__user_id ON public.api_keys USING btree (user_id, id DESC) WHERE (revoked_at IS NULL)`
 - `idx_api_keys__user_id__fk`: `CREATE INDEX idx_api_keys__user_id__fk ON public.api_keys USING btree (user_id) WHERE (user_id IS NOT NULL)`
 

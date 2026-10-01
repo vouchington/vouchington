@@ -5009,6 +5009,28 @@
           "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
+        "expires_at": {
+          "collation": null,
+          "comment": "Authentication deadline; NULL means no expiry for non-administrator owners.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "expiry_reminder_sent_at": {
+          "collation": null,
+          "comment": "Durable claim before expiry reminder delivery; retries never send twice.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
+        },
         "id": {
           "collation": null,
           "comment": null,
@@ -5075,6 +5097,17 @@
           "ordinalPosition": 3,
           "type": "text"
         },
+        "replaced_by_api_key_id": {
+          "collation": null,
+          "comment": "Replacement key created by owner rotation; the old key has at most 24 hours of overlap.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "uuid"
+        },
         "revoked_at": {
           "collation": null,
           "comment": "When this API key was revoked; revoked keys cannot authenticate.",
@@ -5105,7 +5138,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -5129,6 +5162,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "retained_api_key_identities",
+          "validated": true
+        },
+        "api_keys_replaced_by_api_key_id_fkey": {
+          "columns": ["replaced_by_api_key_id"],
+          "definition": "FOREIGN KEY (replaced_by_api_key_id) REFERENCES api_keys(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "api_keys",
           "validated": true
         },
         "api_keys_user_id_fkey": {
@@ -5163,6 +5205,33 @@
           "unique": true,
           "valid": true
         },
+        "idx_api_keys__expiry_reminder": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_api_keys__expiry_reminder ON public.api_keys USING btree (expires_at, id) WHERE ((revoked_at IS NULL) AND (replaced_by_api_key_id IS NULL) AND (expiry_reminder_sent_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "expires_at",
+              "descending": false,
+              "expression": "expires_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((revoked_at IS NULL) AND (replaced_by_api_key_id IS NULL) AND (expiry_reminder_sent_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_api_keys__key_hash": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -5181,6 +5250,26 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_api_keys__replaced_by_api_key_id__fk": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_api_keys__replaced_by_api_key_id__fk ON public.api_keys USING btree (replaced_by_api_key_id) WHERE (replaced_by_api_key_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "replaced_by_api_key_id",
+              "descending": false,
+              "expression": "replaced_by_api_key_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(replaced_by_api_key_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_api_keys__user_id": {
