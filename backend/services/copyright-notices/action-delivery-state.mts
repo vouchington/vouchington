@@ -6,6 +6,7 @@ import {
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
 import type { CopyrightActionIntentRecord } from './types.mts'
+import { tryLockCopyrightActionClaim } from './action-delivery-locking.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 export {
   completeCopyrightActionIntentInTransaction,
@@ -15,6 +16,7 @@ export {
   insertCopyrightActionLifecycleEvent,
   liftCopyrightRestrictionInTransaction,
   lockCopyrightActionDelivery,
+  lockCopyrightActionClaim,
 } from './action-delivery-locking.mts'
 export type { LockedCopyrightActionDelivery } from './action-delivery-locking.mts'
 export { failCopyrightActionIntent } from './action-delivery-completion.mts'
@@ -33,6 +35,7 @@ export async function claimCopyrightActionIntent(
   now: Date,
 ): Promise<CopyrightClaimedActionIntent | null> {
   await using transaction = await beginTransaction()
+  if (!(await tryLockCopyrightActionClaim(intentId, transaction))) return null
   const { rows } = await transaction<CopyrightClaimedActionIntent>(sql`
     /* claimCopyrightActionIntent */
     WITH exhausted AS (

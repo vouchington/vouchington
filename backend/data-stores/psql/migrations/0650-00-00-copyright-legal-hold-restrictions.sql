@@ -52,3 +52,5 @@ COMMENT ON COLUMN copyright_legal_hold_restrictions.copyright_notice_legal_hold_
 CREATE INDEX IF NOT EXISTS idx_copyright_notice_enforcement_requests__reconcilable
   ON copyright_notice_enforcement_requests (copyright_notice_submission_assessment_id)
   WHERE state IN ('pending', 'claimed');
+
+COMMENT ON COLUMN copyright_notice_enforcement_requests.lease_token IS 'Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.';

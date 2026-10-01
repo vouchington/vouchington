@@ -11,6 +11,7 @@ import {
   getCopyrightActionPlacementKey,
   hasCopyrightActionBlocker,
   lockCopyrightActionDelivery,
+  lockCopyrightActionClaim,
   type CopyrightClaimedActionIntent,
 } from './action-delivery-state.mts'
 import {
@@ -81,6 +82,7 @@ async function prepareCopyrightAction(
     }
 > {
   await using transaction = await beginTransaction()
+  await lockCopyrightActionClaim(intent.id, transaction)
   const placementId = await getCopyrightActionPlacementKey(
     intent.id,
     intent.lease_token,

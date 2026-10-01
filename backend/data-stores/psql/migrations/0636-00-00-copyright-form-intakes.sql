@@ -106,3 +106,5 @@ COMMENT ON COLUMN copyright_notice_form_screenings.model IS 'Model identifier re
 COMMENT ON COLUMN copyright_notice_form_screenings.recommendation IS 'Bounded advisory anti-spam classification.';
 COMMENT ON COLUMN copyright_notice_form_screenings.rationale_ciphertext IS 'Encrypted bounded agent rationale.';
 COMMENT ON COLUMN copyright_notice_form_screenings.guidance_ciphertext IS 'Encrypted strictly validated moderator guidance: summary, section 512(c)(3) element checklist, risk notes, and advisory suggested action. Staff-visible only; no workflow predicate reads it.';
+
+COMMENT ON COLUMN copyright_notice_form_screening_executions.lease_token IS 'Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.';

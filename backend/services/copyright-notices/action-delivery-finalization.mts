@@ -11,6 +11,7 @@ import {
   hasOtherActiveCopyrightRestrictions,
   insertCopyrightActionLifecycleEvent,
   lockCopyrightActionDelivery,
+  lockCopyrightActionClaim,
 } from './action-delivery-state.mts'
 
 export async function finalizeCopyrightActionAfterDelivery(
@@ -21,6 +22,7 @@ export async function finalizeCopyrightActionAfterDelivery(
   dependencies: CopyrightActionDeliveryDependencies,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
+  await lockCopyrightActionClaim(intentId, transaction)
   const placementId = await getCopyrightActionPlacementKey(intentId, leaseToken, transaction)
   if (placementId) await lockCopyrightActionPlacement(placementId, transaction)
   const legal = await lockCopyrightActionDelivery(intentId, leaseToken, transaction)

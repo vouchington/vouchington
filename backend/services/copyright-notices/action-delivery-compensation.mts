@@ -18,15 +18,17 @@ export async function compensateCopyrightActionFailure(
     leaseToken: intent.lease_token,
     failedAt: now,
     failureMessage,
+    beforeRelease: async () => {
+      if (intent.action === 'withhold')
+        await repairFailedImageDeliveryMutation({ imageIds: [intent.image_id] })
+      if (restorePublishedTuple) {
+        await dependencies.prepublishImagePlacementDenial({
+          ...restorePublishedTuple,
+        })
+      }
+    },
   })
   if (result === 'not_claimed') throw error
-  if (intent.action === 'withhold')
-    await repairFailedImageDeliveryMutation({ imageIds: [intent.image_id] })
-  if (restorePublishedTuple) {
-    await dependencies.prepublishImagePlacementDenial({
-      ...restorePublishedTuple,
-    })
-  }
   if (result === 'retrying') throw error
   if (result === 'failed') return 'blocked'
   throw error

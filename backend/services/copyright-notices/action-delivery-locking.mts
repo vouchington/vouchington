@@ -10,6 +10,27 @@ import {
 } from './action-delivery-facts.mts'
 
 export type { LockedCopyrightActionDelivery }
+/** Action work takes this domain before placement and row locks, including compensation. */
+export async function lockCopyrightActionClaim(
+  intentId: string,
+  query: TransactionQuery,
+): Promise<void> {
+  await query(sql`/* lockCopyrightActionClaim */
+    SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-action-claim:${intentId}`}, 0))
+  `)
+}
+
+/** Claimers skip a worker that is still compensating rather than making its row reclaimable. */
+export async function tryLockCopyrightActionClaim(
+  intentId: string,
+  query: TransactionQuery,
+): Promise<boolean> {
+  const { rows } = await query<{ locked: boolean }>(sql`/* tryLockCopyrightActionClaim */
+    SELECT pg_try_advisory_xact_lock(hashtextextended(${`copyright-action-claim:${intentId}`}, 0)) AS locked
+  `)
+  return rows[0]?.locked ?? false
+}
+
 export async function getCopyrightActionPlacementKey(
   intentId: string,
   leaseToken: string,

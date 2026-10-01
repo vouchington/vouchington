@@ -11,7 +11,10 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/copyright-delivery-claims'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import {
+  createCounterNoticeRestoreIntent,
+  createCopyrightRestorationHoldFixture,
+} from './evidence-and-holds-restoration-hold-fixtures.mts'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   claimCopyrightDeliveryIntent,
@@ -112,16 +115,7 @@ describe('copyright queue lease fencing', () => {
   })
 
   it('rejects reclaimed action completion, failure, and execution before side effects', async () => {
-    const { notice, aggregate, assessment, moderator } =
-      await createCopyrightRestorationHoldFixture()
-    await acceptCopyrightNoticeAndImposeRestriction({
-      noticeId: notice.id,
-      targetId: aggregate.targets[0]!.id,
-      assessmentId: assessment.id,
-      imposedAt: new Date(),
-      imposedById: moderator.id,
-    })
-    const intent = (await getCopyrightNoticePrivateAggregate(notice.id))!.actionIntents[0]!
+    const { notice, intent } = await createActionClaimFixture()
     const now = new Date()
     const old = (await claimCopyrightActionIntent(intent.id, now))!
     const later = new Date(now.getTime() + 16 * 60 * 1000)
@@ -176,6 +170,45 @@ describe('copyright queue lease fencing', () => {
     )
   })
 
+  it('keeps an expired competing claim out while compensation is running', async () => {
+    const { intent, now } = await createActionClaimFixture('restore')
+    const old = (await claimCopyrightActionIntent(intent.id, now))!
+    const later = new Date(now.getTime() + 16 * 60 * 1000)
+    const entered = Promise.withResolvers<void>()
+    const resume = Promise.withResolvers<void>()
+    const error = new Error('provider failure')
+    const compensation = compensateCopyrightActionFailure(
+      old,
+      now,
+      {
+        placementId: old.placement_id,
+        revision: old.expected_placement_revision,
+        imageId: old.image_id,
+      },
+      getCopyrightActionDeliveryDependencies({
+        prepublishImagePlacementDenial: async () => {
+          entered.resolve()
+          await resume.promise
+        },
+      }),
+      error,
+    ).catch(caught => caught)
+    try {
+      await Promise.race([
+        entered.promise,
+        compensation.then(() => {
+          throw new Error('Compensation ended before denial')
+        }),
+      ])
+      expect(await claimCopyrightActionIntent(intent.id, later)).toBeNull()
+    } finally {
+      resume.resolve()
+      expect(await compensation).toBe(error)
+    }
+    const current = (await claimCopyrightActionIntent(intent.id, later))!
+    expect(current.lease_token).not.toBe(old.lease_token)
+  })
+
   it.each(['complete', 'fail'])(
     'preserves the new enforcement result after stale %s',
     async outcome => {
@@ -212,3 +245,31 @@ describe('copyright queue lease fencing', () => {
     },
   )
 })
+
+async function createActionClaimFixture(action: 'withhold' | 'restore' = 'withhold') {
+  const { notice, aggregate, assessment, claimant, moderator } =
+    await createCopyrightRestorationHoldFixture()
+  const restriction = await acceptCopyrightNoticeAndImposeRestriction({
+    noticeId: notice.id,
+    targetId: aggregate.targets[0]!.id,
+    assessmentId: assessment.id,
+    imposedAt: new Date('2026-07-01T12:00:00.000Z'),
+    imposedById: moderator.id,
+  })
+  let now = new Date()
+  if (action === 'restore') {
+    const opened = await createCounterNoticeRestoreIntent({
+      claimant,
+      noticeId: notice.id,
+      moderator,
+      targetId: aggregate.targets[0]!.id,
+      restrictionId: restriction.id,
+      placementRevision: aggregate.targets[0]!.placement_revision,
+    })
+    now = opened.now
+  }
+  const intent = (await getCopyrightNoticePrivateAggregate(notice.id))!.actionIntents.find(
+    record => record.action === action,
+  )!
+  return { notice, intent, now }
+}

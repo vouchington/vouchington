@@ -966,3 +966,5 @@ COMMENT ON COLUMN copyright_notice_action_intents.completed_at IS 'One-way times
 -- Current indexes for fresh schema bootstrap.
 CREATE INDEX IF NOT EXISTS idx_copyright_notices__received_id
   ON copyright_notices (received_at, id);
+
+COMMENT ON COLUMN copyright_notice_action_intents.lease_token IS 'Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.';

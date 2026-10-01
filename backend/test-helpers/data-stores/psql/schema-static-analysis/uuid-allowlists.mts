@@ -24,6 +24,26 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS,
   ...STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS,
+  [
+    'copyright_notice_action_intents.lease_token',
+    'Opaque worker fencing token, not a durable relation.',
+  ],
+  [
+    'copyright_notice_form_screening_executions.lease_token',
+    'Opaque worker fencing token, not a durable relation.',
+  ],
+  [
+    'copyright_notice_delivery_intents.lease_token',
+    'Opaque worker fencing token, not a durable relation.',
+  ],
+  [
+    'copyright_notice_email_intake_responses.lease_token',
+    'Opaque worker fencing token, not a durable relation.',
+  ],
+  [
+    'copyright_notice_enforcement_requests.lease_token',
+    'Opaque worker fencing token, not a durable relation.',
+  ],
   ['post_admission_claims.lease_id', 'Fencing token, not a durable relation.'],
   ['agent_moderations.moderation_transparency_community_id', 'Trigger-maintained scope snapshot.'],
   ['moderation_appeals.moderation_transparency_community_id', 'Immutable scope snapshot.'],

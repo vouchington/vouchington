@@ -88,3 +88,5 @@ COMMENT ON COLUMN copyright_notice_email_intake_responses.failure_ciphertext IS 
 CREATE INDEX IF NOT EXISTS idx_copyright_email_intake_responses__recoverable
   ON copyright_notice_email_intake_responses (id)
   WHERE state IN ('pending', 'claimed');
+
+COMMENT ON COLUMN copyright_notice_email_intake_responses.lease_token IS 'Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.';

@@ -137,3 +137,5 @@ COMMENT ON COLUMN copyright_notice_delivery_intents.failure_ciphertext IS 'Encry
 CREATE INDEX IF NOT EXISTS idx_copyright_delivery_intents__recoverable
   ON copyright_notice_delivery_intents (channel, id)
   WHERE state IN ('pending', 'claimed');
+
+COMMENT ON COLUMN copyright_notice_delivery_intents.lease_token IS 'Opaque worker ownership token rotated on each claim or reclaim; completion and failure compare it for equality. It identifies no durable row.';
