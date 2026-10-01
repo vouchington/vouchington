@@ -34,11 +34,7 @@ describe('worker queue inventory policy CLI', () => {
 
       const result = spawnSync(
         process.execPath,
-        [
-          '--experimental-strip-types',
-          join(isolatedPackage, 'worker-queue-policy-cli.mts'),
-          'dev-all-queues',
-        ],
+        [join(isolatedPackage, 'worker-queue-policy-cli.mts'), 'dev-all-queues'],
         { encoding: 'utf8' },
       )
 
