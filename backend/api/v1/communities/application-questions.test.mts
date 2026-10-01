@@ -29,7 +29,7 @@ describe('Community Application Questions Routes', () => {
           const caller =
             role === 'anonymous'
               ? null
-              : await createTestUser(role === 'administrator' ? { roles: ['administrator'] } : {})
+              : await createTestUser(role === 'administrator' ? { administrator: true } : {})
           const community = await insertTestCommunity({
             createdById: owner.id,
             visibility,
