@@ -399,7 +399,6 @@ types backend/data-stores/valkey-rate-limiter/index.mts RetryRateLimiterSaturati
 types backend/data-stores/valkey/types.mts DynamicConfigField
 types backend/entrypoints/api/valkey-admin-command.mts ParsedValkeyAdminCommand
 types backend/entrypoints/api/verify-ipv6-egress-checks.mts HostResult
-types backend/modules/bluesky-oauth/index.mts Keyset
 types backend/modules/scheduled-job-manifest/index.mts ScheduledJobQueue
 types backend/modules/utils/http.mts httpUtils.ReadResponseBodyOptions
 types backend/services/ap-inbox-activities/durable-delivery-transition-contract.mts ActivityPubInboxDeliveryTransitionDimensions

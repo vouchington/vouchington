@@ -294,25 +294,25 @@ UNION ALL
     username,
     use_display_name_from,
         CASE
-            WHEN (use_display_name_from = 'facebook'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (fa.facebook_user_data ->> 'name'::text)) AS jsonb_build_object
+            WHEN (use_display_name_from = 'facebook'::user_display_name_source) THEN ( SELECT jsonb_build_object('name', (fa.facebook_user_data ->> 'name'::text)) AS jsonb_build_object
                FROM facebook_accounts fa
               WHERE (fa.user_id = users.id))
-            WHEN (use_display_name_from = 'apple'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (aa.apple_user_data ->> 'name'::text)) AS jsonb_build_object
+            WHEN (use_display_name_from = 'apple'::user_display_name_source) THEN ( SELECT jsonb_build_object('name', (aa.apple_user_data ->> 'name'::text)) AS jsonb_build_object
                FROM apple_accounts aa
               WHERE (aa.user_id = users.id))
-            WHEN (use_display_name_from = 'google'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (ga.google_user_data ->> 'name'::text)) AS jsonb_build_object
+            WHEN (use_display_name_from = 'google'::user_display_name_source) THEN ( SELECT jsonb_build_object('name', (ga.google_user_data ->> 'name'::text)) AS jsonb_build_object
                FROM google_accounts ga
               WHERE (ga.user_id = users.id))
-            WHEN (use_display_name_from = 'x'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (xa.x_user_data ->> 'name'::text)) AS jsonb_build_object
+            WHEN (use_display_name_from = 'x'::user_display_name_source) THEN ( SELECT jsonb_build_object('name', (xa.x_user_data ->> 'name'::text)) AS jsonb_build_object
                FROM x_accounts xa
               WHERE (xa.user_id = users.id))
-            WHEN (use_display_name_from = 'linkedin'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (la.linkedin_user_data ->> 'name'::text)) AS jsonb_build_object
+            WHEN (use_display_name_from = 'linkedin'::user_display_name_source) THEN ( SELECT jsonb_build_object('name', (la.linkedin_user_data ->> 'name'::text)) AS jsonb_build_object
                FROM linkedin_accounts la
               WHERE (la.user_id = users.id))
-            WHEN (use_display_name_from = 'microsoft'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (ma.microsoft_user_data ->> 'name'::text)) AS jsonb_build_object
+            WHEN (use_display_name_from = 'microsoft'::user_display_name_source) THEN ( SELECT jsonb_build_object('name', (ma.microsoft_user_data ->> 'name'::text)) AS jsonb_build_object
                FROM microsoft_accounts ma
               WHERE (ma.user_id = users.id))
-            WHEN (use_display_name_from = 'github'::user_display_name_source) THEN ( SELECT jsonb_build_object('id', '', 'name', (gha.github_user_data ->> 'name'::text)) AS jsonb_build_object
+            WHEN (use_display_name_from = 'github'::user_display_name_source) THEN ( SELECT jsonb_build_object('name', (gha.github_user_data ->> 'name'::text)) AS jsonb_build_object
                FROM github_accounts gha
               WHERE (gha.user_id = users.id))
             ELSE NULL::jsonb

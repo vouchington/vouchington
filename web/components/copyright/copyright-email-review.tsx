@@ -93,42 +93,46 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
       )}
       <div className='grid gap-4 md:grid-cols-2'>
         <div>
-          <InfiniteScroll
-            hasNextPage={hasNextPage}
-            endCursor={endCursor}
-            onLoadMore={loadMore}
-            loadingMore={loadingMore}
-            fetchError={fetchError}
-            clearError={clearError}
-            resetKey={resetKey}
-          >
-            <ul className='space-y-1'>
-              {items.map(item => (
-                <li key={item.id}>
-                  <Button
-                    disabled={loading}
-                    onClick={() => selectIntake(item.id)}
-                    variant='link'
-                  >
-                    {item.review_path === 'matched_thread'
-                      ? 'Matched correspondence'
-                      : item.review_path === 'unresolved_thread'
-                        ? 'Unresolved reply'
-                        : 'Initial intake'}{' '}
-                    {item.id}
-                  </Button>
-                  <p className='text-xs text-muted-foreground'>
-                    Received <TimeAgo date={item.received_at} />
-                  </p>
-                  {item.parse_status !== 'succeeded' && (
-                    <p className='text-xs text-destructive'>
-                      {item.parse_status === 'failed' ? 'Parse failed' : 'No parse recorded'}
+          {items.length === 0 && !hasNextPage ? (
+            <p className='text-muted-foreground'>No copyright emails need review.</p>
+          ) : (
+            <InfiniteScroll
+              hasNextPage={hasNextPage}
+              endCursor={endCursor}
+              onLoadMore={loadMore}
+              loadingMore={loadingMore}
+              fetchError={fetchError}
+              clearError={clearError}
+              resetKey={resetKey}
+            >
+              <ul className='space-y-1'>
+                {items.map(item => (
+                  <li key={item.id}>
+                    <Button
+                      disabled={loading}
+                      onClick={() => selectIntake(item.id)}
+                      variant='link'
+                    >
+                      {item.review_path === 'matched_thread'
+                        ? 'Matched correspondence'
+                        : item.review_path === 'unresolved_thread'
+                          ? 'Unresolved reply'
+                          : 'Initial intake'}{' '}
+                      {item.id}
+                    </Button>
+                    <p className='text-xs text-muted-foreground'>
+                      Received <TimeAgo date={item.received_at} />
                     </p>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </InfiniteScroll>
+                    {item.parse_status !== 'succeeded' && (
+                      <p className='text-xs text-destructive'>
+                        {item.parse_status === 'failed' ? 'Parse failed' : 'No parse recorded'}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </InfiniteScroll>
+          )}
         </div>
         {detail && (
           <CopyrightEmailReviewDetail

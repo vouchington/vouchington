@@ -74,7 +74,7 @@ vi.mock(import('@/components/shared/user-official-badge'), () => ({
 const user = {
   id: 'user-abc',
   username: 'alice',
-  display_account: { id: 'display-1', name: 'Alice Example' },
+  display_account: { name: 'Alice Example' },
   profile_image_id: null,
   roles: [],
 } as User

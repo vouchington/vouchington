@@ -74,7 +74,7 @@
     },
     "GET:/api/v1/admin/moderation-analytics": {
       "fixtureIds": ["native.moderation.analytics.default"],
-      "hash": "07a1bf8c35bd38366023e37a632b331bc455b236083243d4c5a525768a3dea21"
+      "hash": "c35b3912a3ec4171c8c3f65f973e15a706c467ac2fe72138de15fe115f66a930"
     },
     "GET:/api/v1/admin/modlog": {
       "fixtureIds": ["native.moderation.modlog.default"],
@@ -82,7 +82,7 @@
     },
     "GET:/api/v1/admin/oauth-clients": {
       "fixtureIds": ["web.admin.oauth-clients.list"],
-      "hash": "499ae10a8af606fde3311137eb10810e98d9dc4adc704c5b35fe6deeda9c3e83"
+      "hash": "f41297619b2a9f0937d11347f95df3ef8307740bc4c8c4d65e313e62a5cdb06b"
     },
     "GET:/api/v1/admin/users/:userId/landing-pages": {
       "fixtureIds": ["native.admin-user-landing-pages.default"],
@@ -158,7 +158,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/moderation-analytics": {
       "fixtureIds": ["web.communities.moderation-analytics.default"],
-      "hash": "07a1bf8c35bd38366023e37a632b331bc455b236083243d4c5a525768a3dea21"
+      "hash": "c35b3912a3ec4171c8c3f65f973e15a706c467ac2fe72138de15fe115f66a930"
     },
     "GET:/api/v1/communities/:communitySlug/moderation-queue": {
       "fixtureIds": ["web.communities.moderation-queue.default"],
@@ -476,7 +476,7 @@
         "native.friend-recommendations.empty",
         "native.friend-recommendations.second-page"
       ],
-      "hash": "90639413054cd6e18d16a2eba14d831fce830ddb80e3a48d87cbb9e3d11bde06"
+      "hash": "800615deb50963d28c4f13549a53eb54ef8e25ac7e0d499b34d82a181286c531"
     },
     "GET:/api/v1/my/identity": {
       "fixtureIds": ["swift.my.identity.default"],
@@ -550,7 +550,7 @@
     },
     "GET:/api/v1/my/referral-clicks": {
       "fixtureIds": ["native.referral-clicks.mine.default", "web.referral-clicks.mine.default"],
-      "hash": "1a5026008f93e6faf657340117aabac656b0e07b636c6fa256defd3c54f3024a"
+      "hash": "690cefbe92e0c1d15d505162909b084e524bc2216b4fd45b58a3d25becc29190"
     },
     "GET:/api/v1/my/removed-posts#include-platform": {
       "fixtureIds": [
@@ -767,15 +767,15 @@
     },
     "GET:/api/v1/users#search": {
       "fixtureIds": ["native.messages.user-search.default"],
-      "hash": "e48e41549062c1b875af0fbdb7fd8745c7a4c853d7fefcfc3333a2cbcfe63597"
+      "hash": "6a777c62173f9896e5c7dbb87cdcabb55b212f2f88bb44fb5fdfbc43f8dd195a"
     },
     "GET:/api/v1/users/:id/vouch-context": {
       "fixtureIds": ["native.users.vouch-context.default"],
-      "hash": "e47b21bab887a0514ceebfaf1433e4f47fb8c70c1ce02c072ac2b48d821baa2e"
+      "hash": "94babc8b93d1041fcde6c5e3c0857959a64c18f61888237deedd042e4a078695"
     },
     "GET:/api/v1/users/:idOrSlug": {
       "fixtureIds": ["native.users.profile.restricted"],
-      "hash": "a4aaf67cefbaadda5bd6cff66056bc60a9ee9143ae619de6016628b58e768217"
+      "hash": "d116a1dc7065b0a9912957b160709f7217766df6c1b1ca110b4dea26c0cfe6eb"
     },
     "GET:/api/v1/users/:idOrSlug#self": {
       "fixtureIds": ["native.users.profile.default"],
@@ -840,7 +840,7 @@
         "swift.users.followers.default",
         "swift.users.following.default"
       ],
-      "hash": "2a88c53590387938e8e685ac409dce26e29507915016dfd0666c3ecd234297db"
+      "hash": "4adcd52aec6234a5e49236a3907aef07cfe47ddef3c76b5b3642e16682df8e99"
     },
     "GET:/api/v1/valkey/cache-groups": {
       "fixtureIds": ["web.admin.valkey.cache-groups.default"],
@@ -1825,7 +1825,7 @@
     },
     "native.messages.user-search.default": {
       "fixtureIds": ["native.messages.user-search.default"],
-      "hash": "392df99fc9adf53c2b74e9525acce60473b1a63d3deb31568aa7f6aada6432df"
+      "hash": "8f75590a56b8e7150b45305358673da6634260e5fec3f2d3a71780165fcb1412"
     },
     "native.moderation.admin-warning.report": {
       "fixtureIds": ["native.moderation.admin-warning.report"],
@@ -1833,7 +1833,7 @@
     },
     "native.moderation.analytics.default": {
       "fixtureIds": ["native.moderation.analytics.default"],
-      "hash": "b4daf9fff1ee37a976367af64a8e683b67ac24d5c7ee0caf01cf7884ffc6b867"
+      "hash": "9d97af4f7716fcbb9c2a5aae062edebb5f3c4fc04861ead74a0e77a6f0961f79"
     },
     "native.moderation.appeals.approval.default": {
       "fixtureIds": ["native.moderation.appeals.approval.default"],
@@ -2337,7 +2337,7 @@
     },
     "native.users.followers.search": {
       "fixtureIds": ["native.users.followers.search"],
-      "hash": "b55263c46f3266cef5a85ccfe52813acf5c318802ebfdc8dbc5ab032cb68df6e"
+      "hash": "2cf299b5d6a34249578ae9bea8328dd81768c207ad0ce0b198c38f60c6be65db"
     },
     "native.users.profile.communities-member.first-page": {
       "fixtureIds": ["native.users.profile.communities-member.first-page"],
@@ -2445,11 +2445,11 @@
     },
     "swift.users.followers.default": {
       "fixtureIds": ["swift.users.followers.default"],
-      "hash": "b55263c46f3266cef5a85ccfe52813acf5c318802ebfdc8dbc5ab032cb68df6e"
+      "hash": "2cf299b5d6a34249578ae9bea8328dd81768c207ad0ce0b198c38f60c6be65db"
     },
     "swift.users.following.default": {
       "fixtureIds": ["swift.users.following.default"],
-      "hash": "b55263c46f3266cef5a85ccfe52813acf5c318802ebfdc8dbc5ab032cb68df6e"
+      "hash": "2cf299b5d6a34249578ae9bea8328dd81768c207ad0ce0b198c38f60c6be65db"
     },
     "web.admin.article-syncs.status.active": {
       "fixtureIds": ["web.admin.article-syncs.status.active"],
@@ -2613,7 +2613,7 @@
     },
     "web.communities.moderation-analytics.default": {
       "fixtureIds": ["web.communities.moderation-analytics.default"],
-      "hash": "15d33eb1e95aa11fe09ab2a4288a0746760e107504ade59d8106cbc2d1ed7afe"
+      "hash": "78ab38f3b722e6c986f481e43ceb434fa99ee1a8bc99d86325b93856bba35039"
     },
     "web.communities.moderation-queue.default": {
       "fixtureIds": ["web.communities.moderation-queue.default"],

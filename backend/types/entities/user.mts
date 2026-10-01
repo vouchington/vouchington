@@ -86,7 +86,6 @@ export type BasicUser = {
 }
 
 export type PublicDisplayAccount = {
-  id: string
   name: string | null
 }
 

@@ -2,7 +2,6 @@
   "appeals": {
     "accepted": 0,
     "denied": 0,
-    "dismissed": 0,
     "reduced": 0,
     "success_rate": null,
     "total_closed": 0
