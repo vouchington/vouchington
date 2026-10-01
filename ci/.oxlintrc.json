@@ -12,7 +12,8 @@
     "jest",
     "promise",
     "oxc",
-    "typescript"
+    "typescript",
+    "unicorn"
   ],
   "rules": {
     "no-console": "off",

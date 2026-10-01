@@ -12,6 +12,7 @@
     "jest",
     "promise",
     "oxc",
-    "typescript"
+    "typescript",
+    "unicorn"
   ]
 }

@@ -12,7 +12,8 @@
     "jest",
     "promise",
     "oxc",
-    "typescript"
+    "typescript",
+    "unicorn"
   ],
   "rules": {
     "playwright/consistent-spacing-between-blocks": "error",

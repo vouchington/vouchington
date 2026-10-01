@@ -426,9 +426,16 @@ for a worked example. Both restatements are enforced by `structured-config-polic
 enabled from [`.oxlintrc.react.json`](../../../../.oxlintrc.react.json); React/Next/JSX doctor _enables_
 live there too. Generic `js-*` and security doctor rules stay at root.
 
-The root and nested plugin lists also enable Oxlint's configured TypeScript rules. Keep
-`typescript` present in every inherited-config copy; `structured-config-policy` enforces parity,
-while [`typescript-plugin-oxlint.test.mts`](../../../../static-code-analysis/oxlint-plugin/typescript-plugin-oxlint.test.mts) runs
+The root and nested plugin lists enable the configured TypeScript and Unicorn rules. Keep
+`typescript` and `unicorn` present in every inherited-config copy; `structured-config-policy` enforces parity.
+[`configured-plugins-oxlint.test.mts`](../../../../static-code-analysis/oxlint-plugin/configured-plugins-oxlint.test.mts)
+checks every concrete tracked config against the installed analyzer, including inherited rules and
+overrides, so another missing builtin plugin fails CI. The existing import-plugin gap is temporarily
+tracked in [#1697](https://github.com/vouchington/vouchington/issues/1697); its exception must be removed
+when that plugin is enabled.
+Staged Unicorn entries record rule-specific scan counts and link their remediation issues; permanent
+opt-outs state their repository policy beside the rule. Catch bindings prefer `err`; string literals
+use the simplest readable form rather than requiring `String.raw`. Meanwhile, [`typescript-plugin-oxlint.test.mts`](../../../../static-code-analysis/oxlint-plugin/typescript-plugin-oxlint.test.mts) runs
 the installed analyzer with the real root and backend-agent configurations to prove syntax and
 type-aware TypeScript rules are active. The full lint command is `pnpm run oxlint`.
 
