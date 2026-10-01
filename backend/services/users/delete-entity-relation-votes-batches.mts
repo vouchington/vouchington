@@ -75,7 +75,9 @@ async function deleteEntityRelationVoteBatch(
   batch: EntityRelationVoteBatch,
 ) {
   await lockEntityRelationVoteScopes(query, batch.scopes)
-  const families = [...new Set(batch.candidates.map(candidate => candidate.entity_relation))].toSorted()
+  const families = [
+    ...new Set(batch.candidates.map(candidate => candidate.entity_relation)),
+  ].toSorted()
   const statement = sql`/* deleteUserEntityRelationVotesBatch:delete */ WITH `
   families.forEach((family, index) => {
     if (index > 0) statement.append(', ')
