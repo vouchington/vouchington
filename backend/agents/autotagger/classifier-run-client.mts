@@ -31,7 +31,9 @@ function resolveApiKey(provider: ClassifierModelProvider, options: AutotaggerCli
 /**
  * Builds the C6 provider client only for a run that actually has remote work. Shared billing first
  * admits the spend, then the lifecycle's durable attempt reservation runs immediately before the
- * single physical request, so a retry, reclaim or replay can never bill twice.
+ * single physical request. Provider spend per run is capped at `maxAttempts` reserved attempts, and
+ * persisted outcomes short-circuit any replay. A crash or lease loss between the provider returning
+ * and the outcomes being persisted can still spend again, within that cap.
  */
 export function createAutotaggerClient(
   input: {

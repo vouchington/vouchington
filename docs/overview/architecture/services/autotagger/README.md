@@ -21,14 +21,13 @@ per-classifier input building and outcome application that lifecycle asks for:
   `tagging` classifier and the shared classifier actor into the run's configuration (the prompt,
   model and actor that answer it). Its hash is the configuration half of the receipt identity. Tier
   caps and the candidate set are deliberately not part of it, so a plan change or a different
-  embedding search result can never mint a second receipt and a second provider call for the same
-  content. The operator kill switch (`enabled: false`) returns `null`, which settles the request as
+  embedding search result can never mint a second receipt for the same content. The operator kill switch (`enabled: false`) returns `null`, which settles the request as
   no work; a missing seeded classifier or system actor throws instead, so the subject stays
   eligible for the sweep and classifier configuration never blocks or delays approval.
 - **Candidate capture** (`candidates.mts`) — `captureAutotaggerCandidateTopicIds` chooses the topics
   one run asks about, exactly once, when the receipt is first reserved. The ids are stored in
   `classifier_run_candidates` next to the receipt, so a later search result, embedding refresh or
-  plan change cannot alter what an existing receipt asks, and cannot cost a second model call.
+  plan change cannot alter what an existing receipt asks or mint a second receipt.
   Posts use the author's tiered cap and the post embedding; feed items use the
   discoverable-source budget with feed-declared categories first. `null` means nothing to classify.
 - **Readiness** (`readiness.mts`) — a subject is ready only once its embedding was built from its
@@ -62,8 +61,13 @@ per-classifier input building and outcome application that lifecycle asks for:
 - Model calls happen in `backend/agents/autotagger/` (the executor plus question-set building),
   never here.
 - The receipt identity is `(classifier, subject, input hash, configuration hash)`. A retry, a lease
-  expiry, a replay or a changed candidate set reuses the receipt, and the provider attempt is
-  reserved before the call and capped per receipt, so no path bills twice.
+  expiry, a replay or a changed candidate set reuses the receipt. Persisted outcomes short-circuit
+  any replay, and provider spend per run is capped at `maxAttempts` reserved attempts. A crash or
+  lease loss between the provider returning and the outcomes being persisted can still spend again,
+  within that cap.
+- Every captured topic can be hard-deleted after reservation (the captured rows cascade with their
+  topic). Such a run asks nothing: it persists no decision, applies no votes and completes without
+  a provider call.
 - Any failure other than a classified provider or invalid-result failure is left to propagate to the
   queue worker; an expired lease is cheap and safe to retry from scratch. The sweep recovers a
   subject that never got a receipt, because approval (or the RSS upsert) writes a durable

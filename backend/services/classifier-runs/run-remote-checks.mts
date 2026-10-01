@@ -14,6 +14,15 @@ function remotePlan<C>(lease: ClassifierRunLease<C>): RemotePlan {
   return remote
 }
 
+/**
+ * A run that captures its own candidates and has none left asks no question. The captured rows
+ * cascade with their topic, so this means every topic the receipt captured has since been deleted:
+ * there is nothing to ask and nothing to apply, so no provider call and no decision are needed.
+ */
+export function hasNoCapturedCandidates<C>(lease: ClassifierRunLease<C>): boolean {
+  return lease.resolved.remote?.capturedCandidates === true && lease.capturedTopicIds.length === 0
+}
+
 type ExpectedCandidate = { thresholdId: string | null; lower: number; upper: number } | null
 
 /**

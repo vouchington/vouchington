@@ -1,14 +1,30 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { ClassifierRunProviderHooks } from '@agents/classifier-runs'
-import type { StructuredDecisionClient } from '@modules/structured-decisions'
+import { beginTransaction } from '@data-stores/psql'
+import type {
+  StructuredDecisionClient,
+  StructuredDecisionFetch,
+} from '@modules/structured-decisions'
 import { createAutotaggerRunAdapter } from '@services/autotagger'
+import {
+  claimClassifierRun,
+  completeClassifierRun,
+  listIncompleteClassifierRuns,
+  persistClassifierRunOutcomes,
+} from '@services/classifier-runs'
 import { createFakeStructuredDecisionClient } from '@voucha/test-helpers/agents/autotagger/fake-structured-decision-client'
 import {
   claimAutotaggerLease,
   createAutotaggerFeedItemFixture,
   createAutotaggerPostFixture,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-fixture'
-import { getSubjectClassifierRunFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
+import {
+  expireClassifierRunLeaseForTest,
+  getSubjectClassifierRunFacts,
+  getSubjectClassifierRunRequestFacts,
+} from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
+import { hardDeleteTestTopic } from '@voucha/test-helpers/entities/topics/deletion'
+import { createAutotaggerClient } from './classifier-run-client.mts'
 import { executeAutotaggerRun } from './classifier-run.mts'
 
 const adapter = createAutotaggerRunAdapter()
@@ -94,5 +110,101 @@ describe('executeAutotaggerRun (real PG)', () => {
     await expect(
       executeAutotaggerRun({ adapter, lease: gone, maxAttempts: 3, signal }, { createClient }),
     ).resolves.toBe('stale')
+  })
+
+  describe('once every captured topic was hard-deleted', () => {
+    /** Reserves and leases a run, deletes the topics it captured, and reclaims it as the sweep would. */
+    async function reclaimAfterDeletingEveryTopic() {
+      const fixture = await createAutotaggerPostFixture({ topicCount: 2 })
+      const first = await claimAutotaggerLease(fixture)
+      await Promise.all(first.capturedTopicIds.map(topicId => hardDeleteTestTopic(topicId)))
+      await expireClassifierRunLeaseForTest(first.runId)
+      const claim = await claimClassifierRun(adapter, {
+        runId: first.runId,
+        subject: first.subject,
+        inputSha256: first.inputSha256,
+        configurationSha256: first.resolved.configurationSha256,
+        leaseSeconds: 60,
+      })
+      if (claim.kind !== 'claimed') throw new Error(`Expected a claim, got ${claim.kind}`)
+      return { fixture, first, lease: claim.lease }
+    }
+
+    it('completes with no provider call, no attempt and no votes, and leaves the sweep nothing to rescan', async () => {
+      const { fixture, first, lease } = await reclaimAfterDeletingEveryTopic()
+      const fetch = vi.fn<StructuredDecisionFetch>()
+      const createClient = vi.fn<(hooks: ClassifierRunProviderHooks) => StructuredDecisionClient>(
+        hooks =>
+          createAutotaggerClient(
+            {
+              postId: fixture.post.id,
+              modelProvider: 'openrouter',
+              beforeAttempt: hooks.beforeAttempt,
+            },
+            { fetch, apiKey: 'test-key' },
+          ),
+      )
+      const input = { adapter, lease, maxAttempts: 3, signal }
+
+      expect(lease.capturedTopicIds).toEqual([])
+      await expect(executeAutotaggerRun(input, { createClient })).resolves.toBe('persisted')
+      await expect(completeClassifierRun(adapter, lease)).resolves.toEqual({
+        kind: 'completed',
+        effects: { appliedTopicIds: [] },
+      })
+
+      expect(createClient).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
+      expect(await getSubjectClassifierRunFacts(fixture.subject)).toMatchObject([
+        {
+          provider_attempts_started: 0,
+          outcomes_persisted_at: expect.any(Date),
+          completed_at: expect.any(Date),
+          terminal_failed_at: null,
+          lease_token: null,
+        },
+      ])
+      expect(await getSubjectClassifierRunRequestFacts(fixture.subject)).toMatchObject([
+        { run_id: first.runId, no_work_at: null, stale_at: null },
+      ])
+      const incomplete: string[] = []
+      let after: string | null = null
+      do {
+        const page = await listIncompleteClassifierRuns(after)
+        incomplete.push(...page.items.map(run => run.runId))
+        after = page.next
+      } while (after)
+      expect(incomplete).not.toContain(first.runId)
+    })
+
+    it('replays as persisted without building a client', async () => {
+      const { lease } = await reclaimAfterDeletingEveryTopic()
+      const { createClient } = reservingClient()
+      const input = { adapter, lease, maxAttempts: 3, signal }
+
+      await expect(executeAutotaggerRun(input, { createClient })).resolves.toBe('persisted')
+      await expect(executeAutotaggerRun(input, { createClient })).resolves.toBe('replay')
+      expect(createClient).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('a run that still has captured topics', () => {
+    it('refuses to persist without a remote decision', async () => {
+      const lease = await claimAutotaggerLease(await createAutotaggerPostFixture())
+
+      expect(lease.capturedTopicIds.length).toBeGreaterThan(0)
+      await expect(persistClassifierRunOutcomes(adapter, { lease })).rejects.toThrow(
+        'requires a complete remote output',
+      )
+    })
+
+    it('refuses to apply effects without a remote decision', async () => {
+      const lease = await claimAutotaggerLease(await createAutotaggerPostFixture())
+      await using query = await beginTransaction()
+
+      await expect(
+        adapter.applyEffects(query, lease, { local: null, remoteDecision: null }),
+      ).rejects.toThrow('no remote decision to apply')
+    })
   })
 })

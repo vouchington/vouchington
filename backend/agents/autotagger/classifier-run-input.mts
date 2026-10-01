@@ -14,14 +14,16 @@ import type { ClassifierRunLease } from '@services/classifier-runs'
  * C6's remote input: one yes/no question per topic the run captured when its receipt was reserved,
  * asked over the subject's classifier state. Reading the captured topics (not a fresh search) is
  * what keeps a retry, lease reclaim or replay asking the same question set it first reserved.
+ * Null when every captured topic has since been hard-deleted: with no question to ask, the run
+ * has no remote work and completes without a provider call.
  */
 export async function buildAutotaggerRunInput(
   lease: ClassifierRunLease<AutotaggerRunConfiguration>,
   state: ClassifierSafeText,
-): Promise<ClassifierRunRemoteInput> {
+): Promise<ClassifierRunRemoteInput | null> {
   const { remote, configuration } = lease.resolved
   if (!remote?.capturedCandidates) throw new Error('tagging run must capture its own candidates')
-  if (lease.capturedTopicIds.length === 0) throw new Error('tagging run has no captured topics')
+  if (lease.capturedTopicIds.length === 0) return null
   const topics = await readAutotaggerCandidateTopics(lease.capturedTopicIds)
   const bindings: NoulClassifierBinding[] = await Promise.all(
     topics.map(async topic => ({

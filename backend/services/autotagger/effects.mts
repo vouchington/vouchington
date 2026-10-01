@@ -15,7 +15,11 @@ export async function applyAutotaggerEffects(
   outcomes: ClassifierRunOutcomes<never>,
 ): Promise<AutotaggerEffects> {
   const decision = outcomes.remoteDecision
-  if (!decision) throw new Error('tagging run has no remote decision to apply')
+  if (!decision) {
+    // Every captured topic was deleted after reservation, so the run asked nothing and has no votes.
+    if (lease.capturedTopicIds.length === 0) return { appliedTopicIds: [] }
+    throw new Error('tagging run has no remote decision to apply')
+  }
   const { appliedTopicIds } = await applyTopicClassifierDecisionVotes(
     {
       batchId: decision.batchId,

@@ -61,12 +61,12 @@ describe('buildAutotaggerRunInput (real PG)', () => {
     expect(after.bindings.map(binding => binding.questionId)).not.toContain(closer.id)
   })
 
-  it('refuses a lease that captured no topics rather than asking nothing', async () => {
+  it('has no remote work, instead of throwing, once every captured topic was deleted', async () => {
     const lease = await claimAutotaggerLease(await createAutotaggerPostFixture())
 
     await expect(
       buildAutotaggerRunInput({ ...lease, capturedTopicIds: [] }, STATE),
-    ).rejects.toThrow('tagging run has no captured topics')
+    ).resolves.toBeNull()
   })
 
   it('refuses a lease whose configuration does not capture its own candidates', async () => {

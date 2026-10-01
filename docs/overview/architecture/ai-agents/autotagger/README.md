@@ -15,7 +15,9 @@ supplies only input building:
 - `classifier-run-input.mts` (`buildAutotaggerRunInput`) renders one yes/no question per topic the
   run captured when its receipt was reserved, over the sanitized `ClassifierSafeText` state
   (`content.mts`'s `buildPostClassifierState` / `buildRssFeedItemClassifierState`). It never
-  searches for candidates, so a retry, lease reclaim or replay asks the same question set.
+  searches for candidates, so a retry, lease reclaim or replay asks the same question set. When
+  every captured topic has since been hard-deleted it returns no input: the run has no remote work
+  and completes without a provider call or votes.
 - `classifier-run-client.mts` (`createAutotaggerClient`) builds the structured-decision client with
   the shared billing hooks; the lifecycle's durable attempt reservation runs in its `beforeAttempt`
   hook. A client that cannot be built ends as the shared `client-unavailable` terminal path.
@@ -68,8 +70,10 @@ safe to retry from scratch.
 - All caps above are runtime-configurable through DynamicConfig namespace `autotagger-paid-limits`
   (`getAutotaggerPaidLimitsFields`). The private collaborative caps must remain monotonic: Plus ≤
   Pro.
-- At most one model call is made per (subject, content version): the receipt identity is
+- One receipt per (subject, content version): the receipt identity is
   `(classifier, subject, input hash, configuration hash)`. The candidate topic set is captured with
-  the receipt and is not part of that identity, so re-dispatching, a lease expiry or a changed
-  candidate set idempotently replays the prior decision's votes instead of re-calling the
-  classifier.
+  the receipt and is not part of that identity, so a changed candidate set cannot mint a second
+  receipt. Persisted outcomes short-circuit any replay, so re-dispatching or a lease expiry
+  idempotently replays the prior decision's votes instead of re-calling the classifier. Provider
+  spend per run is capped at `maxAttempts` reserved attempts; a crash or lease loss between the
+  provider returning and the outcomes being persisted can still spend again, within that cap.

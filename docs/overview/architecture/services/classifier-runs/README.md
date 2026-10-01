@@ -81,7 +81,10 @@ the resolved current state means the run is obsolete and is superseded, never re
    call, at most `maxAttempts` per receipt. At the cap it persists the local outcome and marks the
    receipt terminal `attempts-exhausted`.
 5. **Outcomes.** `persistClassifierRunOutcomes` writes the local outcome and the C3 decision
-   batch atomically. A run with persisted outcomes never calls the provider again.
+   batch atomically. A run with persisted outcomes never calls the provider again. A run that
+   captures its own candidates and has none left (every captured topic was hard-deleted, and the
+   captured rows cascade with it) has no remote work: it persists without a decision and completes
+   with no effects, instead of waiting for a question set that can no longer exist.
 6. **Complete.** `completeClassifierRun` applies the adapter's effects and stamps completion in one
    transaction; a replay returns `replay`.
 7. **Supersede.** `supersedeStaleClassifierRun` retires an obsolete run and reserves the current
