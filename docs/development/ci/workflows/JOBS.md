@@ -35,6 +35,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `backend.yml`                          | `test-explain-analyze`          | job    | → `explain-analyze.yml`               | 360           |
 | `backend.yml`                          | `test-postgres-schema`          | job    | → `tests-postgres-schema.yml`         | 360           |
 | `backend.yml`                          | `validate-backend-images`       | job    | → `publish-backend-images.yml`        | 360           |
+| `cancel-dequeued-merge-group-runs.yml` | `cancel`                        | job    | `ubuntu-slim`                         | 5             |
 | `cancel-replaced-merge-group-runs.yml` | `cancel`                        | job    | `ubuntu-slim`                         | 5             |
 | `checks-backend-smoke.yml`             | `smoke`                         | job    | `ubuntu-latest`                       | 10            |
 | `checks-static.yml`                    | `static-backend`                | job    | `ubuntu-latest`                       | 15            |
