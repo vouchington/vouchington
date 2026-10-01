@@ -18,7 +18,7 @@ export function CopyrightEmailOriginalDownload({
   if (state === 'quarantined' || downloadUrl === null) {
     return (
       <Alert
-        data-pw='copyright-email-quarantined'
+        aria-label='Original email withheld'
         variant='destructive'
       >
         <AlertTitle>Original email withheld</AlertTitle>
@@ -33,7 +33,7 @@ export function CopyrightEmailOriginalDownload({
     <div className='space-y-2'>
       {state === 'unconfirmed' && (
         <Alert
-          data-pw='copyright-email-malware-unconfirmed'
+          aria-label='Malware scan not confirmed'
           role='note'
         >
           <AlertTitle>Malware scan not confirmed</AlertTitle>

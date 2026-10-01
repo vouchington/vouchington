@@ -10,9 +10,9 @@ import { sesFailureNotes, sesVerdictRows } from './copyright-email-ses-verdicts-
 export function CopyrightEmailSesVerdicts({ verdicts }: { verdicts: SesVerdicts }) {
   const notes = sesFailureNotes(verdicts)
   return (
-    <div
+    <section
+      aria-label='Email authentication and scan results'
       className='space-y-2'
-      data-pw='copyright-email-ses-verdicts'
     >
       <h3 className='font-medium'>Email authentication and scan results</h3>
       <dl className='flex flex-wrap gap-x-4 gap-y-1 text-sm'>
@@ -23,10 +23,7 @@ export function CopyrightEmailSesVerdicts({ verdicts }: { verdicts: SesVerdicts 
           >
             <dt className='text-muted-foreground'>{row.label}</dt>
             <dd>
-              <Badge
-                data-pw='copyright-email-ses-verdict'
-                variant={row.verdict === 'fail' ? 'destructive' : 'secondary'}
-              >
+              <Badge variant={row.verdict === 'fail' ? 'destructive' : 'secondary'}>
                 {row.verdictLabel}
               </Badge>
             </dd>
@@ -35,7 +32,7 @@ export function CopyrightEmailSesVerdicts({ verdicts }: { verdicts: SesVerdicts 
       </dl>
       {notes.length > 0 && (
         <Alert
-          data-pw='copyright-email-ses-risk-notes'
+          aria-label='Authentication risk'
           role='note'
         >
           <AlertTitle>Authentication risk</AlertTitle>
@@ -56,6 +53,6 @@ export function CopyrightEmailSesVerdicts({ verdicts }: { verdicts: SesVerdicts 
         DKIM Pass means a signature validated. It does not show the signing domain matches the From
         address.
       </p>
-    </div>
+    </section>
   )
 }
