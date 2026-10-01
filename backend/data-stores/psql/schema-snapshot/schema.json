@@ -12413,7 +12413,7 @@
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
@@ -14048,7 +14048,7 @@
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
@@ -42287,7 +42287,7 @@
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
@@ -54261,7 +54261,7 @@
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
@@ -56335,7 +56335,7 @@
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
@@ -73365,7 +73365,7 @@
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
@@ -104391,7 +104391,7 @@
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
@@ -110001,7 +110001,7 @@
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
@@ -119622,7 +119622,7 @@
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
