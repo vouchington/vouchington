@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
+import { assertIsolatedDatabaseCaseRan } from './vitest-isolated-database-case-result.mts'
 import {
   getIsolatedDatabaseCase,
   getIsolatedDatabaseCaseMode,
@@ -96,21 +97,25 @@ export async function runIsolatedDatabaseCase(caseId: IsolatedDatabaseCaseId): P
     )
     created = true
     await command('pnpm', ['--dir', 'backend', 'db:migrate'], childEnv, 60_000)
-    await command(
+    const childOutput = await command(
       process.execPath,
       [vitestCli, 'run', '--config', isolatedConfig],
       childEnv,
       120_000,
     )
+    assertIsolatedDatabaseCaseRan(caseId, childOutput)
   } catch (error) {
     primaryFailure = error
   }
   if (created) {
     try {
+      // DROP DATABASE waits on an immediate checkpoint; one outlasted the default 10s while
+      // other suites wrote to the same server.
       await command(
         'psql',
         ['-v', 'ON_ERROR_STOP=1', '-qc', `DROP DATABASE IF EXISTS ${databaseName} WITH (FORCE)`],
         adminEnv,
+        60_000,
       )
     } catch (cleanupFailure) {
       if (primaryFailure) {

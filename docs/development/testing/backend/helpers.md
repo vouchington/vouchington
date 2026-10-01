@@ -312,9 +312,13 @@ leaked GlideMQ workers. The catalog is intentionally finite, not a SQL-wide inte
 new global-head or sweep services require an explicit catalog and bound-scope review. See the
 [parallel-safety reference](../../reference-tests-parallel-safety-and-test-root-hygiene.md#catalogued-shared-db-scan-guard).
 Intentionally global cases run through `test-helpers/vitest-isolated-database-case.mts` against a
-fresh, disposable local database. The registered cases are the copyright media-replay HTTP route
-and the ActivityPub inbox expiry batch. Their real route/audit and lease-aware deletion assertions
-run without scanning or mutating another test's shared fixtures.
+fresh, disposable local database. The registry in `test-helpers/vitest-isolated-database-cases.mts`
+names each case's file and test. Their real assertions run without scanning or mutating another
+test's shared fixtures. Register a test's `fullName` in the form `suite > test`, the form Vitest
+matches `testNamePattern` against and reports; the registry type rejects any other separator. A
+child that exits 0 after skipping the test or running no test would otherwise pass silently, so the
+child config's reporter lists every collected test and the parent fails unless exactly one test
+with the registered name passed and none failed.
 `VITEST_ISOLATED_DATABASE_CASE` and `VITEST_ISOLATED_DATABASE_CHILD` are harness-owned, validated
 child markers, not settings for test authors to supply.
 
