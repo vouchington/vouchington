@@ -197,6 +197,26 @@
 - `url`
 - `email`
 
+## `elected_entity_relations`
+
+- `relation__user__category__topic`
+- `relation__post__category__topic`
+- `relation__post__category__topic_alias`
+- `relation__post__related__post`
+- `relation__post__related__url`
+- `relation__topic__related__topic`
+- `relation__topic__category__topic`
+- `relation__topic__publisher_type__topic`
+- `relation__topic__faq__post`
+- `relation__topic__related__post`
+- `relation__topic__related__url`
+- `relation__topic__faq__url`
+- `relation__topic__guide__url`
+- `relation__topic__landing_page__url`
+- `relation__topic__terms_of_service__url`
+- `relation__rss_feed_item__category__topic`
+- `relation__rss_feed_item__category__topic_alias`
+
 ## `engagement_email_types`
 
 - `follow_topics`
