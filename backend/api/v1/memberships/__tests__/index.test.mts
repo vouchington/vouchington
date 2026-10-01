@@ -8,7 +8,7 @@ import {
   MEMBERSHIP_BENEFIT_CATALOG_VERSION,
   membershipBenefitCatalog,
   type MembershipBenefitCatalog,
-} from '@services/memberships/benefit-catalog'
+} from '@ts-shared/utils/membership-benefit-catalog'
 import { responseBody } from '@voucha/test-helpers/api-fixtures/static-response-bodies'
 import * as providerCatalog from '@services/memberships/provider-catalog'
 

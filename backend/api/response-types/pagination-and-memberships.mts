@@ -22,7 +22,7 @@ export type PaginatedResponse<TResult extends PaginatedResult> = {
  */
 export type MembershipPlansResponseBody = {
   products: import('@services/memberships').MembershipCatalogProduct[]
-  benefit_catalog: import('@services/memberships/benefit-catalog').MembershipBenefitCatalog
+  benefit_catalog: import('@ts-shared/utils/membership-benefit-catalog').MembershipBenefitCatalog
 }
 
 /**

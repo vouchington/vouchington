@@ -77,9 +77,8 @@ To add an exception when dedupe is out of scope:
    issue), and the owner accountable for removing it.
 3. Delete the row and the glob in the change that removes the duplication.
 
-| Glob                             | Reason                                                                                                                                                                                              | Owner                                                         |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `**/fallback-benefit-catalog.ts` | Intentional web copy of `backend/services/memberships/benefit-catalog.mts` for the web-first rollout window. The files stay separate. [#563](https://github.com/vouchington/vouchington/issues/563) | [#563](https://github.com/vouchington/vouchington/issues/563) |
+| Glob | Reason | Owner |
+| ---- | ------ | ----- |
 
 ## Files
 

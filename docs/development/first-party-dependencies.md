@@ -92,7 +92,7 @@ states, buckets and signing policy, queue/retry behavior, cache keys and headers
 metadata shape, and moderation policy.
 
 Vouchington pins `@vouchington/memberships` exactly at `0.2.0` in its direct consumers:
-`@services/memberships` and `@services/stripe`. The package owns benefit-catalog validation,
+`@services/memberships`, `@services/stripe`, and `@ts-shared/utils`. The package owns benefit-catalog validation,
 SKU grouping, terminal-status detection, and membership-change classification utilities; Vouchington retains
 its product catalog data, SQL lifecycle projection, Stripe calls, refunds, portal, authorization, and
 side effects.

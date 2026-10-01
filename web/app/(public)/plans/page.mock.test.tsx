@@ -112,8 +112,8 @@ describe('PlansPage', () => {
     )
   })
 
-  it('keeps plan benefits visible when an older API response omits the catalog', async () => {
-    mockGetPlans.mockResolvedValue({ plans: {} })
+  it('keeps plan benefits visible when the plans API fails', async () => {
+    mockGetPlans.mockRejectedValue(new Error('plans unavailable'))
 
     const ui = await PlansPage()
     render(ui)
