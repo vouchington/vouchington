@@ -165,7 +165,6 @@ exports backend/services/crawl-chunks/cleanup.mts finalizeChunksIfComplete
 exports backend/services/crawler-rss/clean.mts parseRssFeedItemsFromXml
 exports backend/services/crawlers/delete.mts deleteCrawler
 exports backend/services/crawlers/get.mts getCrawlerForUrl
-exports backend/services/crawls/domain-rate-limit.mts setDomainRateLimitedBackground
 exports backend/services/crawls/public-url-response.mts toPaidSafeUrlCrawlHistory
 exports backend/services/crawls/s3.mts uploadCrawlHtmlToS3
 exports backend/services/dynamic-config-admin/index.mts dynamicConfigRegistry
@@ -387,7 +386,6 @@ types backend/agents/chat/stream.mts ChatStreamEvent
 types backend/services/ap-inbox-activities/durable-delivery-transition-contract.mts ActivityPubInboxDeliveryTransitionDimensions
 types backend/services/copyright-notices/index.mts CopyrightAgentDispatchPage
 types backend/services/copyright-notices/index.mts CopyrightReviewTargetBreaches
-types backend/services/dynamic-config-admin/index.mts DynamicConfigRegistryEntry
 types backend/services/memberships/reverse-ineligible-stripe-purchase.mts IneligibleStripePurchaseOperations
 types backend/services/moderation-appeals/get.mts ModerationCaseTrace
 types backend/services/moderation-exposure/index.mts ExposureState
