@@ -5,7 +5,6 @@ import {
   readCopyrightEmailIntakeReview,
 } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import {
-  createFailedParseCopyrightEmailIntake,
   createParsedCopyrightEmailIntake,
   createUnparsedCopyrightEmailIntake,
 } from './email-intake-test-fixtures.mts'
@@ -39,6 +38,13 @@ function getModerator(): Promise<Moderator> {
     record => ({ ...record, roles: ['moderator'] }) as typeof record,
   )
   return moderator
+}
+
+// A received email whose parse failed, so it has no parsed sender to reply to.
+async function createFailedParseCopyrightEmailIntake() {
+  const intake = await createUnparsedCopyrightEmailIntake()
+  await recordCopyrightEmailParse(intake, { status: 'failed', error: 'The MIME body is corrupt.' })
+  return intake
 }
 
 async function decide(intakeId: string, decision: Decision) {

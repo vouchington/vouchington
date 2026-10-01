@@ -29,10 +29,3 @@ export async function createParsedCopyrightEmailIntake(receivedAt = new Date()) 
   })
   return intake
 }
-
-// A received copyright email whose parse failed, so it has no parsed sender to reply to.
-export async function createFailedParseCopyrightEmailIntake(receivedAt = new Date()) {
-  const intake = await createUnparsedCopyrightEmailIntake(receivedAt)
-  await recordCopyrightEmailParse(intake, { status: 'failed', error: 'The MIME body is corrupt.' })
-  return intake
-}

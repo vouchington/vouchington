@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { recordCopyrightEmailParse } from '@services/copyright-notices'
 import {
-  createFailedParseCopyrightEmailIntake,
   createParsedCopyrightEmailIntake,
   createUnparsedCopyrightEmailIntake,
 } from '@services/copyright-notices/email-intake-test-fixtures'
@@ -19,6 +19,13 @@ const needsInformation = {
   ...decision,
   response_kind: 'needs_information',
   response_message: 'Please identify the copyrighted work and each allegedly infringing URL.',
+}
+
+// A received email whose parse failed, so it has no parsed sender to reply to.
+async function createFailedParseCopyrightEmailIntake() {
+  const intake = await createUnparsedCopyrightEmailIntake()
+  await recordCopyrightEmailParse(intake, { status: 'failed', error: 'The MIME body is corrupt.' })
+  return intake
 }
 
 async function createStaffRequest() {
