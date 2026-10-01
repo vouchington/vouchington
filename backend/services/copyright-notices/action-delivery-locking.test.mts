@@ -2,6 +2,8 @@ import { readCopyrightEnforcementRequest } from '@voucha/test-helpers/data-store
 import { describe, expect, it } from 'vitest'
 import {
   completeTestCopyrightActionClaim,
+  corruptTestCopyrightResponseSubject,
+  readTestCopyrightResponseFailure,
   createTestRejectedCopyrightResponse,
   expireTestCopyrightEnforcementClaim,
 } from '@voucha/test-helpers/copyright-lease-fencing'
@@ -112,6 +114,25 @@ describe('copyright queue lease fencing', () => {
         error: 'late',
       }),
     ).toBe(false)
+  })
+
+  it('records an owned retry failure when intake response preparation cannot decrypt', async () => {
+    const responseId = await createTestRejectedCopyrightResponse()
+    await corruptTestCopyrightResponseSubject(responseId)
+    await expect(prepareCopyrightEmailIntakeResponseDelivery(responseId)).rejects.toThrow(
+      'Invalid encrypted secret format',
+    )
+    expect(await readTestCopyrightResponseFailure(responseId)).toEqual({
+      state: 'pending',
+      leaseToken: expect.any(String),
+      claimedAt: null,
+      attempts: 1,
+      nextAttemptAt: expect.any(Date),
+      failure: 'Invalid encrypted secret format',
+    })
+    await expect(prepareCopyrightEmailIntakeResponseDelivery(responseId)).rejects.toThrow(
+      'Copyright email intake response is not available to send',
+    )
   })
 
   it('rejects reclaimed action completion, failure, and execution before side effects', async () => {

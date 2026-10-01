@@ -1,7 +1,8 @@
 import { createTestUser } from './index.mts'
 import { createParsedCopyrightEmailIntake } from '../services/copyright-notices/email-intake-test-fixtures.mts'
 import { rejectCopyrightEmailIntake } from '../services/copyright-notices/email-rejection.mts'
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
+import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { completeCopyrightActionIntentInTransaction } from '../services/copyright-notices/action-delivery-locking.mts'
 
@@ -43,4 +44,35 @@ export async function createTestRejectedCopyrightResponse(): Promise<string> {
   })
   if (!responseId) throw new Error('Response was not created')
   return responseId
+}
+
+export async function corruptTestCopyrightResponseSubject(responseId: string): Promise<void> {
+  await write(sql`/* corruptTestCopyrightResponseSubject */
+    UPDATE copyright_notice_email_intake_responses
+    SET subject_ciphertext = ${'invalid-encrypted-response'}
+    WHERE id = ${responseId}
+  `)
+}
+
+export async function readTestCopyrightResponseFailure(responseId: string) {
+  const { rows } = await read<{
+    state: string
+    lease_token: string | null
+    claimed_at: Date | null
+    delivery_attempt_count: number
+    next_attempt_at: Date | null
+    failure_ciphertext: string
+  }>(sql`/* readTestCopyrightResponseFailure */
+    SELECT state, lease_token, claimed_at, delivery_attempt_count, next_attempt_at, failure_ciphertext
+    FROM copyright_notice_email_intake_responses WHERE id = ${responseId}
+  `)
+  const row = rows[0]!
+  return {
+    state: row.state,
+    leaseToken: row.lease_token,
+    claimedAt: row.claimed_at,
+    attempts: row.delivery_attempt_count,
+    nextAttemptAt: row.next_attempt_at,
+    failure: decryptSecret(row.failure_ciphertext, `copyright-email-intake-response:${responseId}`),
+  }
 }
