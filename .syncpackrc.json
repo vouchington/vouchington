@@ -131,7 +131,7 @@
   ],
   "semverGroups": [
     {
-      "label": "All deps must use caret (^) range — bans * and other non-conforming specifiers",
+      "label": "Caret (^) range, in effect only for the glide-mq snapTo group because the last versionGroup ignores all other external deps",
       "dependencies": ["**"],
       "packages": ["**"],
       "range": "^"

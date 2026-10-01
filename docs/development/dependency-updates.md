@@ -63,7 +63,9 @@ Native dependency policy and automation are owned by the
 Exact pins belong in package-manager, lock, or toolchain files that Dependabot, Renovate, or a
 frozen install can update:
 
-- npm/pnpm caret ranges in `package.json` plus `pnpm-lock.yaml` (syncpack requires `^`)
+- npm/pnpm specifiers in `package.json`, exact or caret as each workspace chooses (Syncpack enforces a
+  range style only where [`.syncpackrc.json`](../../.syncpackrc.json) configures one), plus
+  `pnpm-lock.yaml`, which records what actually installs
 - `.mise.toml` (Renovate)
 - GitHub Actions 40-hex SHAs with a version comment
 
