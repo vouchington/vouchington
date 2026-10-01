@@ -144,7 +144,7 @@ jobs:
     needs: [static-backend, test-backend-modules, test-backend-unit, test-backend-credentialed]
     if: >-
       !cancelled() &&
-      (github.event_name == 'pull_request' || github.event_name == 'merge_group') &&
+      github.event_name == 'pull_request' &&
       needs.static-backend.result == 'success' &&
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled')

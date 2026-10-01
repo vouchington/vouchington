@@ -5,6 +5,7 @@ export const jobInventory = {
   '.github/workflows/backend.yml': jobs(
     'backend backend-smoke changes codecov coverage publish-backend-images static-backend test-backend-credentialed test-backend-modules test-backend-unit test-explain-analyze test-postgres-schema validate-backend-images',
   ),
+  '.github/workflows/cancel-replaced-merge-group-runs.yml': jobs('cancel'),
   '.github/workflows/ci-area-coverage.yml': jobs('coverage'),
   '.github/workflows/cloudflare-worker.yml': jobs(
     'changes cloudflare-worker codecov coverage static-cloudflare-worker test-cloudflare-worker',

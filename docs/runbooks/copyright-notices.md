@@ -93,8 +93,10 @@ unseen in `copyright-incoming/`. The SES worker and its reconcile sweep copy eac
 evidence bucket, parse it, link a reply to its
 existing case, and list it in the staff email intake queue and the
 [review-target page](#review-target-page). Both `S3_BUCKET_SES_INBOUND` and `S3_BUCKET_COPYRIGHT_EVIDENCE` must be
-configured wherever the worker runs, because the scan and the evidence copy fail without them.
-Only the AI recommendation job is paused, so no email contents reach a model. Ingest sends the sender nothing: there is no acknowledgement or automatic
+configured wherever mail is received, because ingest fails without them. A stack with no
+`S3_BUCKET_SES_INBOUND` (local development) skips the five-minute reconcile instead, with a
+`scheduled_job_config_missing` warning in Sentry, so in a deployed environment that warning means the
+bucket is misconfigured. Only the AI recommendation job is paused, so no email contents reach a model. Ingest sends the sender nothing: there is no acknowledgement or automatic
 reply. During a pause a sender receives mail only when staff act: the response staff choose when
 they reject an email or ask for more information (sent to the parsed sender, or to an address staff
 type when no sender was parsed), and the deterministic notices a case's normal

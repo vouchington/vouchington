@@ -14,9 +14,10 @@ unselected area ends in a passing required gate, making the skipped state explic
 protection.
 
 Area static checks are the only prerequisite for their own suites. They do not serialize unrelated
-areas. After selected suites pass, the area coverage job checks the full LCOV evidence against rules
-owned by that area, then its required gate reports the result. Codecov is informational and does
-not gate a pull request or merge group.
+areas. After selected suites pass, a pull request's area coverage job checks the full LCOV evidence
+against rules owned by that area, then its required gate reports the result. A merge group skips the
+coverage job because its diff is the pull request's diff, and the gate passes the skipped job. Codecov
+is informational and does not gate a pull request or merge group.
 
 Trusted Docker validation builds in
 [`publish-backend-images.yml`](../../.github/workflows/publish-backend-images.yml) and

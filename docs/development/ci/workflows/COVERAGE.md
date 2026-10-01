@@ -1,7 +1,8 @@
 # Coverage
 
 Each selected area workflow produces full LCOV for every suite it runs. Its `coverage` job merges
-that LCOV and enforces the patch-coverage rules owned by that area; skipped areas pass their gate.
+that LCOV and, on pull requests only, enforces the patch-coverage rules owned by that area; skipped
+areas pass their gate.
 The independent `codecov` job uploads the same full LCOV under the suite's carryforward flag and
 remains informational.
 
