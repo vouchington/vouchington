@@ -1,6 +1,5 @@
 import { rateLimiterValkeyClient } from '@data-stores/valkey/clients'
 import { loadScript, registerScript } from '@data-stores/valkey/scripts'
-import onError from '@modules/on-error'
 
 const KEY_PREFIX = 'crawler:domain-rate-limit'
 const setDomainRateLimitScript = registerScript(
@@ -40,13 +39,6 @@ export async function setDomainRateLimited(
     args: [String(lockMs)],
   })
   return normalizeDomainRateLimitScriptResult(effectiveLockMs)
-}
-
-/**
- * Fire-and-forget wrapper — safe to call from catch blocks that cannot await.
- */
-export function setDomainRateLimitedBackground(hostnameId: string, retryAfterMs?: number): void {
-  setDomainRateLimited(hostnameId, retryAfterMs).catch(onError)
 }
 
 export function normalizeDomainRateLimitMs(retryAfterMs?: number): number {

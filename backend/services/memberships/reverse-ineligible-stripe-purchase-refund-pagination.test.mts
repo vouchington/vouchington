@@ -4,10 +4,11 @@ import { createTestFamilyMembership, createTestSku, createTestUser } from '@vouc
 import { getIneligiblePurchaseReversalCase } from './ineligible-stripe-purchase-reversal/case-read.mts'
 import { StripeRefundScanContinuationError } from './ineligible-stripe-purchase-reversal/refund-scan.mts'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from './reconcile-recorded-ineligible-stripe-purchase-reversal.mts'
-import {
-  reverseIneligibleStripePurchase,
-  type IneligibleStripePurchaseOperations,
-} from './reverse-ineligible-stripe-purchase.mts'
+import { reverseIneligibleStripePurchase } from './reverse-ineligible-stripe-purchase.mts'
+
+type IneligibleStripePurchaseOperations = NonNullable<
+  Parameters<typeof reverseIneligibleStripePurchase>[0]['operations']
+>
 
 describe('ineligible Stripe purchase refund pagination', () => {
   it('commits the reversal case and resumes more than 1,000 refunds after the call budget', async () => {

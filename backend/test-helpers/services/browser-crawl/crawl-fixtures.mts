@@ -76,9 +76,8 @@ export function makeMockBrowser(page: ReturnType<typeof makeMockPage>) {
   }
 }
 
-export function resetCrawlMocks(resetForTesting: () => void) {
+export function resetCrawlMocks() {
   vi.clearAllMocks()
-  resetForTesting()
   mockReadFile.mockRejectedValue(new Error('ENOENT'))
   const blockerInstance = {
     serialize: mockBlockerSerialize.mockReturnValue(Buffer.from('data')),
