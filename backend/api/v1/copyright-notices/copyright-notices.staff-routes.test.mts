@@ -19,25 +19,18 @@ import {
 import { failTestCopyrightDeliveryIntent } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 
 describe('copyright staff and participant routes', () => {
+  useCopyrightIntakeEnvironment()
+
   beforeEach(() => {
     vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
     vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
-    vi.stubEnv('MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID', 'test-distribution')
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED', 'true')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-east-1')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', 'test-media-delivery-registry')
-    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
-    vi.stubEnv('SES_COPYRIGHT_SOURCE_EMAIL', 'copyright@voucha.ai')
-    vi.stubEnv('SES_COPYRIGHT_REPLY_TO', 'copyright@voucha.ai')
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
-    vi.unstubAllEnvs()
   })
 
   it('returns the accepted case to the claimant and forbids unrelated viewers', async () => {

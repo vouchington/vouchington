@@ -7,6 +7,7 @@ import { readCopyrightStaffQueueCursorBefore } from '@voucha/test-helpers/data-s
 import { createTestCopyrightFormRejectionByErasedModerator } from '@voucha/test-helpers/data-stores/psql/copyright-form-reviews'
 import { insertOpenCopyrightCounterNoticeDeadline } from '@voucha/test-helpers/data-stores/psql/copyright-staff-queue'
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 
 type StaffRequest = ReturnType<typeof createRequest>
 
@@ -42,23 +43,15 @@ async function findQueuedCase(request: StaffRequest, noticeId: string): Promise<
 }
 
 describe('copyright staff case form review after the decision', () => {
+  useCopyrightIntakeEnvironment()
+
   beforeEach(() => {
     vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
     vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
-    vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
-    vi.stubEnv('MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID', 'test-distribution')
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED', 'true')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-east-1')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', 'test-media-delivery-registry')
-    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
-    vi.stubEnv('SES_COPYRIGHT_SOURCE_EMAIL', 'copyright@voucha.ai')
-    vi.stubEnv('SES_COPYRIGHT_REPLY_TO', 'copyright@voucha.ai')
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
-    vi.unstubAllEnvs()
   })
 
   it('keeps the guidance, screening and the recorded review on a case that stays queued', async () => {

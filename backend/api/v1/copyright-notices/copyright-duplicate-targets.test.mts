@@ -1,20 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createCopyrightFormFixture } from '@services/copyright-notices/route-test-fixtures'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 
 describe('copyright duplicate targets', () => {
-  beforeEach(() => {
-    vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
-    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
-    vi.stubEnv('SES_COPYRIGHT_SOURCE_EMAIL', 'copyright@voucha.ai')
-    vi.stubEnv('SES_COPYRIGHT_REPLY_TO', 'copyright@voucha.ai')
-    vi.stubEnv('MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID', 'test-distribution')
-    vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED', 'true')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_REGION', 'us-east-1')
-    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_TABLE', 'test-media-delivery-registry')
-  })
-  afterEach(() => vi.unstubAllEnvs())
+  useCopyrightIntakeEnvironment()
 
   it('rejects duplicate hosted placements before persisting a notice', async () => {
     const fixture = await createCopyrightFormFixture()
