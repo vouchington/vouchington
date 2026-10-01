@@ -6,11 +6,15 @@ const MAX_MESSAGE_CHARS = 200
 const MAX_FIELD_CHARS = 64
 const MAX_REASONS = 8
 const REDACTED = '[redacted]'
+// Provider codes and types are short machine identifiers. Anything with whitespace or punctuation
+// beyond these is free text, which may carry user content, so it is dropped rather than kept.
+const IDENTIFIER = /^[\w.:-]{1,64}$/
 
 /**
  * Reads the provider's error body, bounded, and keeps only the documented safe fields:
  * `error.code`, a truncated `error.message`, and the metadata keys `error_type`, `provider_code`,
- * `reasons`, `provider_name`, `model_slug` and `limit_source`. A moderation block's
+ * `reasons`, `provider_name`, `model_slug` and `limit_source`. The code, type and limit source are
+ * kept only when they are short machine identifiers. A moderation block's
  * `flagged_input` is user content: it is never kept, and any echo of it is cut from the message.
  * A body that is missing, unreadable, too long to parse or not the documented JSON shape yields
  * `undefined`, never an exception, so the caller classifies from the status alone.
@@ -31,19 +35,19 @@ function parseProviderErrorDetail(body: unknown): ProviderErrorDetail | undefine
   if (!isRecord(body) || !isRecord(body.error)) return undefined
   const { code, message, metadata } = body.error
   const meta = isRecord(metadata) ? metadata : {}
-  const errorType = shortText(meta.error_type)
-  const providerCode = shortText(meta.provider_code)
+  const errorType = identifier(meta.error_type)
+  const providerCode = identifier(meta.provider_code)
   const providerName = shortText(meta.provider_name)
   const modelSlug = shortText(meta.model_slug)
-  const limitSource = shortText(meta.limit_source)
+  const limitSource = identifier(meta.limit_source)
   const reasons = Array.isArray(meta.reasons)
     ? meta.reasons.flatMap(reason => shortText(reason) ?? []).slice(0, MAX_REASONS)
     : undefined
   const safeMessage = typeof message === 'string' ? boundMessage(message, meta.flagged_input) : null
   return {
     ...(typeof code === 'number' && Number.isFinite(code) ? { code } : {}),
-    ...(typeof code === 'string' ? { code: code.slice(0, MAX_FIELD_CHARS) } : {}),
-    ...(safeMessage ? { message: safeMessage } : {}),
+    ...(typeof code === 'string' && IDENTIFIER.test(code) ? { code } : {}),
+    ...(safeMessage ? { providerMessage: safeMessage } : {}),
     ...(errorType ? { errorType } : {}),
     ...(providerCode ? { providerCode } : {}),
     ...(reasons ? { reasons } : {}),
@@ -64,7 +68,7 @@ export function describeProviderErrorDetail(detail: ProviderErrorDetail): string
   ]
     .filter(Boolean)
     .join(', ')
-  return [head, detail.message ?? ''].filter(Boolean).join(': ')
+  return [head, detail.providerMessage ?? ''].filter(Boolean).join(': ')
 }
 
 function boundMessage(message: string, flaggedInput: unknown): string {
@@ -81,31 +85,35 @@ function boundMessage(message: string, flaggedInput: unknown): string {
   return redacted.replace(/\s+/g, ' ').trim().slice(0, MAX_MESSAGE_CHARS)
 }
 
+function identifier(value: unknown): string | undefined {
+  const text = typeof value === 'number' ? String(value) : value
+  return typeof text === 'string' && IDENTIFIER.test(text) ? text : undefined
+}
+
 function shortText(value: unknown): string | undefined {
   const text = typeof value === 'number' ? String(value) : value
   if (typeof text !== 'string' || text.length === 0) return undefined
   return text.slice(0, MAX_FIELD_CHARS)
 }
 
-/** Reads at most `MAX_BODY_BYTES`, then cancels the rest of the stream. Never throws. */
+/**
+ * Reads at most `MAX_BODY_BYTES`. Leaving the loop early cancels the rest of the stream. Never
+ * throws: an unreadable body is `null`.
+ */
 async function readBoundedText(response: Response): Promise<string | null> {
-  const reader = response.body?.getReader()
-  if (!reader) return null
+  if (!response.body) return null
   const chunks: Buffer[] = []
   let size = 0
   try {
-    while (size < MAX_BODY_BYTES) {
-      const { done, value } = await reader.read()
-      if (done) break
-      chunks.push(Buffer.from(value))
-      size += value.byteLength
+    for await (const chunk of response.body) {
+      chunks.push(Buffer.from(chunk))
+      size += chunk.byteLength
+      if (size >= MAX_BODY_BYTES) break
     }
-    return Buffer.concat(chunks).subarray(0, MAX_BODY_BYTES).toString('utf8')
   } catch {
     return null
-  } finally {
-    await reader.cancel().catch(() => undefined)
   }
+  return Buffer.concat(chunks).subarray(0, MAX_BODY_BYTES).toString('utf8')
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

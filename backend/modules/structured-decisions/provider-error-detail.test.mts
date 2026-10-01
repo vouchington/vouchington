@@ -29,7 +29,7 @@ describe('readProviderErrorDetail', () => {
     )
     expect(detail).toEqual({
       code: 403,
-      message: 'Provider returned error',
+      providerMessage: 'Provider returned error',
       errorType: 'provider_unavailable',
       providerCode: 'upstream_503',
       reasons: ['capacity'],
@@ -61,7 +61,7 @@ describe('readProviderErrorDetail', () => {
     const kept = JSON.stringify(detail)
     expect(kept).not.toContain('flagged_input')
     expect(kept).not.toContain('terrible person')
-    expect(detail?.message).toBe('Input flagged: "[redacted]" violates the policy')
+    expect(detail?.providerMessage).toBe('Input flagged: "[redacted]" violates the policy')
   })
 
   it('cuts the middle-truncated fragments of a long flagged_input from the message', async () => {
@@ -74,7 +74,7 @@ describe('readProviderErrorDetail', () => {
         },
       }),
     )
-    expect(detail?.message).toBe('Flagged: [redacted]')
+    expect(detail?.providerMessage).toBe('Flagged: [redacted]')
   })
 
   it('marks a guardrail block by the presence of its patterns and never keeps them', async () => {
@@ -95,21 +95,44 @@ describe('readProviderErrorDetail', () => {
     const detail = await readProviderErrorDetail(
       jsonResponse({
         error: {
-          code: 'x'.repeat(500),
           message: 'word '.repeat(500),
           metadata: {
-            error_type: 'e'.repeat(500),
             provider_name: 'p'.repeat(500),
             reasons: Array.from({ length: 50 }, (_, index) => `reason-${index}`),
           },
         },
       }),
     )
-    expect(String(detail?.code)).toHaveLength(64)
-    expect(detail?.message).toHaveLength(200)
-    expect(detail?.errorType).toHaveLength(64)
+    expect(detail?.providerMessage).toHaveLength(200)
     expect(detail?.providerName).toHaveLength(64)
     expect(detail?.reasons).toHaveLength(8)
+  })
+
+  it('keeps a code, type and limit source only when they are short machine identifiers', async () => {
+    const free = 'the user wrote this sentence'
+    const dropped = await readProviderErrorDetail(
+      jsonResponse({
+        error: {
+          code: free,
+          metadata: { error_type: free, provider_code: 'e'.repeat(65), limit_source: free },
+        },
+      }),
+    )
+    expect(dropped).toEqual({ moderation: false, guardrail: false })
+
+    const kept = await readProviderErrorDetail(
+      jsonResponse({
+        error: {
+          code: 'rate_limit_exceeded',
+          metadata: { error_type: 'provider.unavailable', provider_code: 42 },
+        },
+      }),
+    )
+    expect(kept).toMatchObject({
+      code: 'rate_limit_exceeded',
+      errorType: 'provider.unavailable',
+      providerCode: '42',
+    })
   })
 
   it.each([
@@ -149,7 +172,7 @@ describe('describeProviderErrorDetail', () => {
         code: 403,
         errorType: 'provider_unavailable',
         providerCode: 'upstream_503',
-        message: 'Provider returned error',
+        providerMessage: 'Provider returned error',
         moderation: false,
         guardrail: false,
       }),

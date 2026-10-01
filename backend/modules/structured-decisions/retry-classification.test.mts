@@ -6,7 +6,7 @@ import type { ProviderErrorDetail, StructuredDecisionRetryClass } from './types.
 const none = { moderation: false, guardrail: false } satisfies ProviderErrorDetail
 const moderation = { ...none, moderation: true, reasons: ['harassment'] }
 const guardrail = { ...none, guardrail: true }
-const outage: ProviderErrorDetail = { ...none, message: 'Provider returned error' }
+const outage: ProviderErrorDetail = { ...none, providerMessage: 'Provider returned error' }
 const inFlightBudget: ProviderErrorDetail = { ...none, limitSource: 'openrouter_in_flight_budget' }
 const otherLimit: ProviderErrorDetail = { ...none, limitSource: 'key_limit' }
 

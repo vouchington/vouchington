@@ -21,7 +21,7 @@ import {
   OpenAiSpendCapBreachError,
 } from '@services/ai-usage'
 import { processAIAgent } from '../processors.mts'
-import { classifierRunBackoffMs } from './classifier-run-backoff.mts'
+import { classifierRunBackoffMs } from '../processors/classifier-run-backoff.mts'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { registerOpenAiSpendCapRecheck } from '../processors/spend-cap-recheck.mts'
 

@@ -36,7 +36,6 @@
     "@voucha/types": "workspace:^"
   },
   "devDependencies": {
-    "@data-stores/valkey": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "undici": "^8.11.2"
   }

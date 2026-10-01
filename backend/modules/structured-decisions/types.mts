@@ -60,7 +60,7 @@ export type StructuredDecisionRetryClass = 'transient' | 'permanent'
  */
 export type ProviderErrorDetail = {
   code?: number | string
-  message?: string
+  providerMessage?: string
   errorType?: string
   providerCode?: string
   reasons?: readonly string[]

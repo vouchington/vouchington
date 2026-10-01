@@ -27,11 +27,30 @@ specific to a classifier; a classifier supplies only `ClassifierRunInputs`:
   outcome and raises one `classifier_run_alarm` Sentry message. `provider-error` and
   `invalid-result` failures after a reserved attempt are recorded and retried while attempts remain.
   A spend-cap rejection before the reservation releases the lease without consuming an attempt.
+- **A provider failure is classified once, here.** `classifyFailure`
+  (`failure-classification.mts`) reads the structured-decision client's `retryClass` (see
+  [provider failures](../../backend/modules/structured-decisions/README.md#provider-failures)), so C5
+  and C6 and every later classifier share one outcome. A transient failure releases the lease and
+  rethrows for a queue retry. A permanent one ends the run at once, as terminal `context-rejected`
+  for a moderation block (quiet: it is about the content, not the deployment) and as terminal
+  `provider-error` for any other rejection (a rejected key, exhausted credits, a malformed request,
+  a guardrail block), which also raises one `classifier_run_alarm` of kind `provider-rejected` with
+  the status, code and error type only. Neither the provider's message nor any content reaches the
+  alarm.
 - **Durable outcomes, never effects.** Outcomes are persisted atomically; the adapter's effects
   (votes, tags) are applied afterwards by `completeClassifierRun`.
 
-The executor returns `persisted`, `replay`, `stale` or `terminal`. `context-rejected` failures are
-accepted by the lifecycle but not produced here until provider error classification (#689) lands.
+The executor returns `persisted`, `replay`, `stale` or `terminal`.
+
+### Retry budget
+
+One number caps both the queue and the receipt: `CLASSIFIER_RUN_ATTEMPTS` (8) is the `classifier-run`
+job's `attempts` and the `maxAttempts` the handler gives the executor. A queue retry therefore never
+reserves a provider attempt the receipt would refuse, and the recovery sweep can never buy an
+attempt beyond the cap. The worker's `classifier-run-outage` backoff waits about 30 seconds, then
+doubles, so a transient outage is ridden out for about 63.5 minutes (up to about 79 with jitter)
+before the run ends terminal `provider-error`; see the
+[queue backoff](../../queues/workers/ai-agents/README.md#classifier-run-backoff).
 
 The dispatcher, run and sweep jobs that call the executor live on the `ai_agents` queue; see the
 [queue package](../../../../../backend/queues/ai-agents/README.md) for their enqueue surface.

@@ -3,7 +3,7 @@ import { RateLimitError } from 'openai'
 import type { Job, Worker } from 'glide-mq'
 import { AI_AGENTS_QUEUE_NAME, CLASSIFIER_RUN_BACKOFF } from '@queues/ai-agents/config'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
-import { classifierRunBackoffMs } from './workers/classifier-run-backoff.mts'
+import { classifierRunBackoffMs } from './processors/classifier-run-backoff.mts'
 import { createAIAgentsWorker, processAIAgentWorkerJob } from './workers/core.mts'
 import { processAIAgent } from './processors.mts'
 

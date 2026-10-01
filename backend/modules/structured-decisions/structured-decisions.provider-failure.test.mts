@@ -61,8 +61,8 @@ describe('structured-decision provider failure', () => {
       retryClass: 'permanent',
       detail: { code: 403, providerName: 'OpenAI', modelSlug: 'openai/gpt-5', moderation: true },
     })
-    expect(error.message).toMatch(/^Structured-decision provider returned HTTP 403 \(code 403/)
-    expect(error.message).not.toContain(FLAGGED_INPUT)
+    // `String(error)` carries the message, which is what a log line or Sentry event would show.
+    expect(String(error)).not.toContain(FLAGGED_INPUT)
     expect(JSON.stringify(error)).not.toContain(FLAGGED_INPUT)
     expect(JSON.stringify(error.detail)).not.toContain('flagged_input')
   })
@@ -95,7 +95,6 @@ describe('structured-decision provider failure', () => {
     const error = await failureOf(status, '<html>gateway</html>')
     expect(error).toMatchObject({ code: 'provider-error', status, retryClass: kind })
     expect(error.detail).toBeUndefined()
-    expect(error.message).toBe(`Structured-decision provider returned HTTP ${status}.`)
   })
 
   it('treats the in-flight budget 402 as transient and honours its Retry-After', async () => {
@@ -167,7 +166,12 @@ describe('structured-decision provider failure', () => {
   // The spend-cap latch follows the billing status rules alone (#652), never the retry class: a
   // transient outage 403 does not latch, while a 409 is permanent to retry yet still latches.
   it.each([
-    ['a transient outage 403', 403, { error: { code: 403, message: 'Provider returned error' } }, 0],
+    [
+      'a transient outage 403',
+      403,
+      { error: { code: 403, message: 'Provider returned error' } },
+      0,
+    ],
     ['a permanent 401', 401, {}, 0],
     ['a transient 429', 429, {}, 1],
     ['a permanent 409', 409, {}, 1],

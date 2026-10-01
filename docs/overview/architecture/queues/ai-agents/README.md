@@ -58,7 +58,7 @@ agentic-run storage is removed, so no run state remains that could block native 
 - [`enqueues/copyright-form-screening.mts`](../../../../../backend/queues/ai-agents/enqueues/copyright-form-screening.mts) — stable-ID structured form anti-spam jobs
 - [`enqueues/copyright-appeal-recommendation.mts`](../../../../../backend/queues/ai-agents/enqueues/copyright-appeal-recommendation.mts) — stable-ID advisory appeal recommendation jobs
 - [`enqueues/reconcile-copyright-agent-dispatches.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-copyright-agent-dispatches.mts) - copyright agent delivery recovery job
-- [`enqueues/classifier-run.mts`](../../../../../backend/queues/ai-agents/enqueues/classifier-run.mts) — durable classifier-run dispatch and stable-id run jobs
+- [`enqueues/classifier-run.mts`](../../../../../backend/queues/ai-agents/enqueues/classifier-run.mts) — durable classifier-run dispatch and stable-id run jobs; run jobs use the outage-sized `CLASSIFIER_RUN_ATTEMPTS` and `CLASSIFIER_RUN_BACKOFF` from `config.mts` (see [classifier-run backoff](../workers/ai-agents/README.md#classifier-run-backoff)) instead of `AI_AGENTS_DEFAULTS`
 - [`enqueues/reconcile-classifier-runs.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-classifier-runs.mts) — five-minute cursor-paginated run and request recovery
 - [`enqueues/story-clustering.mts`](../../../../../backend/queues/ai-agents/enqueues/story-clustering.mts) — story clustering jobs
 - [`enqueues/story-post.mts`](../../../../../backend/queues/ai-agents/enqueues/story-post.mts) — fire-and-forget creation enqueue plus an awaited recovery variant that propagates delivery failure
