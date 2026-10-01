@@ -6,22 +6,23 @@ Tracks user data export requests with lifecycle from queued through download or 
 
 Not partitioned — growth: unbounded.
 
-| Column                  | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                     |
-| ----------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------- |
-| `id`                    | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                             |
-| `user_id`               | `uuid`                     | yes      |                              |          |           |           | The user who requested the data export.                                                     |
-| `queued_at`             | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the request was queued; always set on insert.                                          |
-| `processing_attempt_id` | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Durable token fencing one export generation attempt from stale workers.                     |
-| `dispatched_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the current processing attempt was most recently enqueued.                             |
-| `processing_attempts`   | `integer`                  | no       | `0`                          |          |           |           | Number of worker attempts that acquired the current or prior processing token.              |
-| `processing_started_at` | `timestamp with time zone` | yes      |                              |          |           |           | When the worker began generating the export.                                                |
-| `completed_at`          | `timestamp with time zone` | yes      |                              |          |           |           | When the worker uploaded the export to S3.                                                  |
-| `failed_at`             | `timestamp with time zone` | yes      |                              |          |           |           | When the worker terminated unsuccessfully.                                                  |
-| `last_error_message`    | `text`                     | yes      |                              |          |           |           | Most recent bounded processing error retained for audit and recovery.                       |
-| `s3_key`                | `text`                     | yes      |                              |          |           |           | S3 path to the generated ZIP file while the export is downloadable; cleared when reclaimed. |
-| `expires_at`            | `timestamp with time zone` | yes      |                              |          |           |           | When the download link expires; the cleanup sweep reclaims the ZIP from S3 after this time. |
-| `created_at`            | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                             |
-| `updated_at`            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                             |
+| Column                  | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                                                             |
+| ----------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                    | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                                                     |
+| `user_id`               | `uuid`                     | yes      |                              |          |           |           | The subject: the user whose data is exported.                                                                                                                                       |
+| `requested_by_id`       | `uuid`                     | yes      |                              |          |           |           | The user who requested the export: the subject, or an administrator acting on their behalf. Only the requester may read the request; NULL (requester deleted) is visible to no one. |
+| `queued_at`             | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the request was queued; always set on insert.                                                                                                                                  |
+| `processing_attempt_id` | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Durable token fencing one export generation attempt from stale workers.                                                                                                             |
+| `dispatched_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the current processing attempt was most recently enqueued.                                                                                                                     |
+| `processing_attempts`   | `integer`                  | no       | `0`                          |          |           |           | Number of worker attempts that acquired the current or prior processing token.                                                                                                      |
+| `processing_started_at` | `timestamp with time zone` | yes      |                              |          |           |           | When the worker began generating the export.                                                                                                                                        |
+| `completed_at`          | `timestamp with time zone` | yes      |                              |          |           |           | When the worker uploaded the export to S3.                                                                                                                                          |
+| `failed_at`             | `timestamp with time zone` | yes      |                              |          |           |           | When the worker terminated unsuccessfully.                                                                                                                                          |
+| `last_error_message`    | `text`                     | yes      |                              |          |           |           | Most recent bounded processing error retained for audit and recovery.                                                                                                               |
+| `s3_key`                | `text`                     | yes      |                              |          |           |           | S3 path to the generated ZIP file while the export is downloadable; cleared when reclaimed.                                                                                         |
+| `expires_at`            | `timestamp with time zone` | yes      |                              |          |           |           | When the download link expires; the cleanup sweep reclaims the ZIP from S3 after this time.                                                                                         |
+| `created_at`            | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                                     |
+| `updated_at`            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -37,13 +38,15 @@ _none_
 
 **Foreign keys:**
 
+- `user_data_requests_requested_by_id_fkey`: `FOREIGN KEY (requested_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `user_data_requests_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
 
-- `idx_user_data_requests__active_per_user`: `CREATE UNIQUE INDEX idx_user_data_requests__active_per_user ON public.user_data_requests USING btree (user_id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL))`
+- `idx_user_data_requests__active_per_requester`: `CREATE UNIQUE INDEX idx_user_data_requests__active_per_requester ON public.user_data_requests USING btree (user_id, requested_by_id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL))`
 - `idx_user_data_requests__processing_attempt_id`: `CREATE UNIQUE INDEX idx_user_data_requests__processing_attempt_id ON public.user_data_requests USING btree (processing_attempt_id)`
-- `idx_user_data_requests__user_id`: `CREATE INDEX idx_user_data_requests__user_id ON public.user_data_requests USING btree (user_id, id DESC)`
+- `idx_user_data_requests__requested_by_id`: `CREATE INDEX idx_user_data_requests__requested_by_id ON public.user_data_requests USING btree (requested_by_id)`
+- `idx_user_data_requests__user_id_requested_by_id`: `CREATE INDEX idx_user_data_requests__user_id_requested_by_id ON public.user_data_requests USING btree (user_id, requested_by_id, id DESC)`
 - `user_data_requests_pkey`: `CREATE UNIQUE INDEX user_data_requests_pkey ON public.user_data_requests USING btree (id)`
 
 **Triggers:**

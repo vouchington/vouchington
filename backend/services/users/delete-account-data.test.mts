@@ -18,7 +18,7 @@ import { processUserDeletionPhaseBatch } from './delete-phases.mts'
 describe('user deletion account-data phase', () => {
   it('leaves a leased upload key pending until the provider effect settles', async () => {
     const user = await createTestUser()
-    const exportRequest = await createDataRequest(user.id)
+    const exportRequest = await createDataRequest(user.id, user.id)
     expect(
       await markDataRequestProcessing(exportRequest.id, exportRequest.processing_attempt_id),
     ).toBe(true)
@@ -41,7 +41,7 @@ describe('user deletion account-data phase', () => {
 
   it('records cleanup for a claimed export before expiring its request', async () => {
     const user = await createTestUser()
-    const exportRequest = await createDataRequest(user.id)
+    const exportRequest = await createDataRequest(user.id, user.id)
     expect(
       await markDataRequestProcessing(exportRequest.id, exportRequest.processing_attempt_id),
     ).toBe(true)
@@ -61,7 +61,7 @@ describe('user deletion account-data phase', () => {
 
   it('records every claimed export key retained across stale recovery', async () => {
     const user = await createTestUser()
-    const exportRequest = await createDataRequest(user.id)
+    const exportRequest = await createDataRequest(user.id, user.id)
     const staleAttemptId = exportRequest.processing_attempt_id
     expect(await markDataRequestProcessing(exportRequest.id, staleAttemptId)).toBe(true)
     await makeUserDataRequestRecoverableForTest(exportRequest.id, 'stale')

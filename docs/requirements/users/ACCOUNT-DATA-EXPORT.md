@@ -9,7 +9,7 @@ satisfies GDPR "Right to Data Portability" and CCPA "Right to Know" requirements
 - Users can request a download of all their personal data from account settings.
 - Native clients expose the in-app request, status refresh, and ready export download link from the
   settings account-data section.
-- Only one active export request is allowed at a time.
+- Only one active export request is allowed at a time for each requester.
 - Export is prepared as a background job and may take a few minutes.
 - User is notified in the UI when the export is ready (polls for status every 5 seconds).
 - The download is a ZIP file containing CSV files for each data category:
@@ -31,7 +31,30 @@ satisfies GDPR "Right to Data Portability" and CCPA "Right to Know" requirements
 - Boolean fields in export CSVs use `true`/`false`; unset values remain empty.
 - Download link expires after 7 days.
 - Users can request a new export at any time after the previous one has expired, failed, or is ready.
-- Admins can request exports on behalf of any user.
+- Admins can request exports on behalf of any user. The account holder never sees those exports (see
+  [Administrator-requested exports](#administrator-requested-exports)).
+
+## Administrator-requested exports
+
+An administrator can run an export for any account through the account's own data-request route, for
+example to preserve records for legal process. That export is for the administrator, not the
+account holder, so it stays invisible to them.
+
+- The request records who asked in `user_data_requests.requested_by_id`; `user_id` stays the subject.
+  A request the account holder made has both columns equal.
+- Every read is scoped to the caller: `GET .../data-request`, the status stream (by `request_id` or
+  latest), and the `download_url` it carries return only requests the caller made. The account
+  holder gets `404` for an administrator's request, and the administrator keeps the requests they
+  made.
+- No notification is sent. The ready email, which carries a seven-day download link, goes only to the
+  subject for an export they requested themselves.
+- An administrator's active export never blocks, or is revealed by a conflict on, the account
+  holder's own request; the single-active-request limit applies per subject and requester.
+- If the requester's account is later deleted, `requested_by_id` becomes `NULL` and no one can read
+  the request through the API; the export still expires and is reclaimed like any other.
+- There is no per-case policy switch. Hiding an administrator's export from its subject is the safe
+  default for a legal-process hold; disclosing it to the user is a separate notice decision (see the
+  [subpoena runbook](../../runbooks/copyright-notices.md)).
 
 ## Copyright records
 
@@ -94,7 +117,7 @@ columns on read: `failed_at` set means `failed`; `completed_at` set with no `s3_
 | Method | Route                                         | Description                                                                              |
 | ------ | --------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `POST` | `/api/v1/users/:idOrSlug/data-request`        | Create a new export request                                                              |
-| `GET`  | `/api/v1/users/:idOrSlug/data-request`        | Get latest export status and `download_url`                                              |
+| `GET`  | `/api/v1/users/:idOrSlug/data-request`        | Get the caller's latest export status and `download_url`                                 |
 | `GET`  | `/api/v1/users/:idOrSlug/data-request/stream` | Server-Sent Events stream of status until a terminal status (`ready`/`failed`/`expired`) |
 
-Authorization: Users can only access their own requests; admins can access any user's requests.
+Authorization: Users can start an export for themselves, and admins can start one for any user. Reads return only the requests the caller made, so a user never sees an export an admin ran for their account.

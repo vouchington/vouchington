@@ -41,7 +41,7 @@ describe('Users API Routes', () => {
       const user = await createTestUser({
         username: safeUsername('users-data-request-pending'),
       })
-      const pending = await createDataRequest(user!.id)
+      const pending = await createDataRequest(user!.id, user!.id)
 
       const request = createRequest()
       await request.authenticateAs(user!)
@@ -92,7 +92,7 @@ describe('Users API Routes', () => {
       const otherUser = await createTestUser({
         username: safeUsername('users-data-request-other-get'),
       })
-      await createDataRequest(owner!.id)
+      await createDataRequest(owner!.id, owner!.id)
 
       const request = createRequest()
       await request.authenticateAs(otherUser!)
@@ -103,7 +103,7 @@ describe('Users API Routes', () => {
       const user = await createTestUser({
         username: safeUsername('users-data-request-get'),
       })
-      const dataRequest = await createDataRequest(user!.id)
+      const dataRequest = await createDataRequest(user!.id, user!.id)
 
       const request = createRequest()
       await request.authenticateAs(user!)
@@ -120,7 +120,7 @@ describe('Users API Routes', () => {
       const user = await createTestUser({
         username: safeUsername('users-data-request-ready-url'),
       })
-      const dataRequest = await createDataRequest(user!.id)
+      const dataRequest = await createDataRequest(user!.id, user!.id)
       const started = await markDataRequestProcessing(dataRequest.id)
       expect(started).toBe(true)
 

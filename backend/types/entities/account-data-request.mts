@@ -3,6 +3,7 @@ export type DataRequestStatus = 'pending' | 'processing' | 'ready' | 'failed' | 
 export type UserDataRequestRow = {
   id: string
   user_id: string
+  requested_by_id: string | null
   queued_at: Date
   processing_attempt_id: string
   dispatched_at: Date

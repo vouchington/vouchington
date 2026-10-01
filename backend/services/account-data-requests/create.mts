@@ -3,15 +3,20 @@ import sql from 'sql-template-strings'
 import { attachDerivedStatus } from './derive-status.mts'
 import type { UserDataRequest, UserDataRequestRow } from './types.mts'
 
-export async function createDataRequest(userId: string): Promise<UserDataRequest> {
+/** `requestedById` is the caller: the subject, or an administrator exporting on their behalf. */
+export async function createDataRequest(
+  userId: string,
+  requestedById: string,
+): Promise<UserDataRequest> {
   await using query = await beginTransaction()
   await query(sql`/* createDataRequest */ SELECT fn_lock_active_user_for_mutation(${userId})`)
   const { rows } = await query(sql`/* createDataRequest */
-      INSERT INTO user_data_requests (user_id)
-      VALUES (${userId})
+      INSERT INTO user_data_requests (user_id, requested_by_id)
+      VALUES (${userId}, ${requestedById})
       RETURNING
         id,
         user_id,
+        requested_by_id,
         queued_at,
         processing_attempt_id,
         dispatched_at,

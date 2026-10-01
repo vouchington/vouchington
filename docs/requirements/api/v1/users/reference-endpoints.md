@@ -16,7 +16,7 @@
 | PATCH        | `/api/v1/users/:idOrSlug`                          | Required (self or admin) | Update user                                                  |
 | DELETE       | `/api/v1/users/:idOrSlug`                          | Required (self or admin) | Soft delete user account                                     |
 | POST         | `/api/v1/users/:idOrSlug/data-request`             | Required (self or admin) | Request a data export                                        |
-| GET          | `/api/v1/users/:idOrSlug/data-request`             | Required (self or admin) | Get latest data export status                                |
+| GET          | `/api/v1/users/:idOrSlug/data-request`             | Required (self or admin) | Get the caller's latest data export status                   |
 | PUT          | `/api/v1/users/:userId/vote-weight`                | Required (admin only)    | Set user vote weight                                         |
 | DELETE       | `/api/v1/users/:userId/vote-weight`                | Required (admin only)    | Clear user vote weight                                       |
 | PUT          | `/api/v1/users/:userId/suspension`                 | Admin only               | Suspend a user                                               |
