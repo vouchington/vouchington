@@ -30,7 +30,6 @@
     "@modules/pagination": "workspace:^",
     "@modules/search-utils": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@queues/ai-agents": "workspace:^",
     "@queues/bedrock-embeddings": "workspace:^",
     "@queues/crawler": "workspace:^",
     "@queues/entity-listeners": "workspace:^",

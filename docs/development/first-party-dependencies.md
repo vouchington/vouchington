@@ -49,7 +49,11 @@ workaround or copied package feature per run once the upstream fix or capability
 | `@vouchington/uuid-v7`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | [vouchington/vouchington-platform](https://github.com/vouchington/vouchington-platform)         |
 | `@vouchington/worker-runtime`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | [vouchington/vouchington-platform](https://github.com/vouchington/vouchington-platform)         |
 
-Vouchington pins `@vouchington/utils` exactly at `0.5.3` in its direct consumers:
+First-party packages follow the same version rule as every other external dependency: a caret range
+and one version across all workspaces, enforced by Syncpack (see the
+[docs pinning policy](dependency-updates.md#docs-pinning-policy)).
+
+Vouchington declares `@vouchington/utils` in its direct consumers:
 `@modules/http-signatures`, `@modules/scopes`, `@modules/stripe`, `@modules/token-secrets`, `@modules/utils`,
 `@services/memberships`, `@services/moderation-reports`, `@services/oauth-github`,
 `@ts-shared/cache`, `@ts-shared/deploy-environment`, `@ts-shared/env-contract`, `@ts-shared/feature-flags`,
@@ -60,7 +64,7 @@ Vouchington pins `@vouchington/utils` exactly at `0.5.3` in its direct consumers
 through `cache-tags`. The Cloudflare Worker reads tunnel envelopes through `sentry-envelope`.
 `@services/moderation-reports` uses the `moderation` subpath, and `@services/memberships` uses the
 package for bounded provider-operation concurrency.
-Vouchington pins `@vouchington/request-contract-validation` exactly at `0.0.1` in
+Vouchington declares `@vouchington/request-contract-validation` in
 `@services/runtime-request-validation`. That package compiles request carriers; this service injects
 the generated v1 bundle and keeps the fail-closed missing-operation error.
 Generic algorithms live in the platform package; these local packages retain Voucha import paths,
@@ -74,27 +78,27 @@ helpers (`node:zlib`, `node:net`, `validator` plus `ssrf-guard`) do not. `@modul
 delegates key parsing and AES-GCM to `@vouchington/utils/token-secrets` and must not remap kids or
 accept noncanonical ciphertext.
 
-Vouchington pins `@vouchington/localization` and `@vouchington/localization-compiler` exactly in their
+Vouchington declares `@vouchington/localization` and `@vouchington/localization-compiler` in their
 direct consumer manifests. The runtime owns locale aliases, selector validation, and wire
 serialization; the compiler owns SQLite emission and the shared resolver. Vouchington retains catalog
 source, consumer membership, API bounds, Docker
 artifact coupling, and native/email product usage.
 
-Vouchington pins `@vouchington/uuid-v7` exactly at `0.0.0` in `@modules/utils`. The platform package
+Vouchington declares `@vouchington/uuid-v7` in `@modules/utils`. The platform package
 owns UUIDv7 minting, timestamp, bounds, and fixed random-suffix conversion; the local facade retains
 Voucha's UUID syntax and HTTP 422 validation boundary.
 
-Vouchington pins `@vouchington/html-utils` exactly at `0.1.1` in `@ts-shared/utils`. The package owns
+Vouchington declares `@vouchington/html-utils` in `@ts-shared/utils`. The package owns
 HTML entity decode/escape, lexical tag checks, and inline-script JSON escaping.
 
-Vouchington pins `@vouchington/media` and `@vouchington/image-resize` exactly at `0.2.0`. The public
+Vouchington declares `@vouchington/media` and `@vouchington/image-resize`. The public
 packages own media validation, streamed hashing and spooling, S3 primitives, format negotiation,
 and Sharp transformation. Vouchington retains upload orchestration, PostgreSQL transactions and
 states, buckets and signing policy, queue/retry behavior, cache keys and headers, HTTP errors, full
 metadata shape, and moderation policy.
 
-Vouchington pins `@vouchington/memberships` exactly at `0.2.0` in its direct consumers:
-`@services/memberships`, `@services/stripe`, and `@ts-shared/utils`. The package owns benefit-catalog validation,
+Vouchington declares `@vouchington/memberships` in its direct consumers: `@services/memberships`,
+`@services/stripe`, and `@ts-shared/utils`. The package owns benefit-catalog validation,
 SKU grouping, terminal-status detection, and membership-change classification utilities; Vouchington retains
 its product catalog data, SQL lifecycle projection, Stripe calls, refunds, portal, authorization, and
 side effects.

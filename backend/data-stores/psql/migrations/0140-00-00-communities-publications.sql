@@ -36,6 +36,13 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- What a community does when its moderation classifier flags a post. The community setting
+-- uses all three values; a post's recorded automod flag uses review_queue or unpublish.
+DO $$ BEGIN
+  CREATE TYPE community_automod_action AS ENUM ('record_only', 'review_queue', 'unpublish');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
 DO $$ BEGIN
   CREATE TYPE community_application_question_field_types AS ENUM (
     'short_text',
@@ -62,6 +69,7 @@ CREATE TABLE IF NOT EXISTS communities (
   post_approval_required_at TIMESTAMPTZ,
   allow_review_posts BOOLEAN NOT NULL DEFAULT false,
   allow_data_point_posts BOOLEAN NOT NULL DEFAULT false,
+  automod_action community_automod_action NOT NULL DEFAULT 'record_only',
   trusted_at TIMESTAMPTZ,
   profile_image_id UUID REFERENCES images ON DELETE SET NULL,
   banner_image_id UUID REFERENCES images ON DELETE SET NULL,
@@ -126,6 +134,7 @@ COMMENT ON COLUMN communities.member_roster_visibility IS 'Who can see regular m
 COMMENT ON COLUMN communities.member_invites_allowed_at IS 'When set, existing members can invite new members (not just owners/moderators). NULL means only owners/moderators can invite.';
 COMMENT ON COLUMN communities.post_approval_required_at IS 'When set, posts must be approved by a moderator before becoming visible. NULL means no approval required.';
 COMMENT ON COLUMN communities.allow_review_posts IS 'When true, active community members can create review posts in this community.';
+COMMENT ON COLUMN communities.automod_action IS 'What the community moderation classifier does when a post trips one of the community''s active prompts: record_only (the default, only the per-prompt agent_moderations projection), review_queue (the post stays published and enters the moderator review queue) or unpublish. Read when the classifier run completes, so changing it never re-runs a classification.';
 COMMENT ON COLUMN communities.allow_data_point_posts IS 'When true, active community members can create data point posts in this community.';
 COMMENT ON COLUMN communities.trusted_at IS 'When set, posts in this community bypass the clearance pending gate and are immediately visible. NULL means standard clearance flow.';
 COMMENT ON COLUMN communities.profile_image_id IS 'Optional avatar/logo image for the community.';
@@ -384,12 +393,32 @@ CREATE TABLE IF NOT EXISTS community_post_reviews (
   -- Escalation: a moderator can escalate a pending post review for senior-mod review.
   escalated_at TIMESTAMPTZ,
   escalated_by_id UUID REFERENCES users ON DELETE SET NULL,
+  -- Automod flag: the community moderation classifier's latest flag on this post, written with
+  -- the same row-level shape as escalated_* (the flag is superseded by content, not lifted).
+  automod_action community_automod_action,
+  automod_flagged_at TIMESTAMPTZ,
+  automod_flagged_content_sha256 BYTEA,
+  automod_dismissed_at TIMESTAMPTZ,
+  automod_dismissed_by_id UUID REFERENCES users ON DELETE SET NULL,
   PRIMARY KEY (post_id),
   CHECK (NOT (approved_at IS NOT NULL AND rejected_at IS NOT NULL)),
   CHECK ((approved_at IS NULL AND rejected_at IS NULL) OR reviewed_at IS NOT NULL),
   CHECK (rejection_reason IS NULL OR char_length(rejection_reason) <= 1000),
   CHECK (rejection_reason IS NULL OR rejection_reason = TRIM(rejection_reason)),
   CHECK (escalated_at IS NOT NULL OR escalated_by_id IS NULL),
+  CONSTRAINT chk_community_post_reviews__automod_flag CHECK (
+    (automod_action IS NULL AND automod_flagged_at IS NULL AND automod_flagged_content_sha256 IS NULL)
+    OR
+    (
+      automod_action IN ('review_queue', 'unpublish')
+      AND automod_flagged_at IS NOT NULL
+      AND octet_length(automod_flagged_content_sha256) = 32
+    )
+  ),
+  CONSTRAINT chk_community_post_reviews__automod_dismissal CHECK (
+    (automod_dismissed_at IS NULL AND automod_dismissed_by_id IS NULL)
+    OR (automod_dismissed_at IS NOT NULL AND automod_action = 'review_queue')
+  ),
   CHECK (
     (platform_override_at IS NULL AND platform_override_by_id IS NULL AND platform_override_action IS NULL)
     OR
@@ -415,6 +444,11 @@ CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__user_removed
   ON community_post_reviews (submitted_by_id, unpublished_at DESC, post_id DESC)
   WHERE unpublished_at IS NOT NULL;
 
+-- Keyset order of a community's open automod review queue (flagged, not dismissed).
+CREATE INDEX IF NOT EXISTS idx_comm_post_reviews__automod_open
+  ON community_post_reviews (community_id, automod_flagged_at DESC, post_id DESC)
+  WHERE automod_action = 'review_queue' AND automod_dismissed_at IS NULL;
+
 COMMENT ON TABLE community_post_reviews IS 'Tracks the single community review state for community-scoped posts.';
 COMMENT ON COLUMN community_post_reviews.community_id IS 'The community the post belongs to.';
 COMMENT ON COLUMN community_post_reviews.post_id IS 'The community-scoped post under review.';
@@ -428,6 +462,11 @@ COMMENT ON COLUMN community_post_reviews.unpublished_at IS 'When the post was re
 COMMENT ON COLUMN community_post_reviews.unpublished_by_id IS 'User who removed the post from the community.';
 COMMENT ON COLUMN community_post_reviews.escalated_at IS 'When a moderator escalated this pending post review for senior-mod attention. NULL means not escalated.';
 COMMENT ON COLUMN community_post_reviews.escalated_by_id IS 'The moderator who escalated this pending post review.';
+COMMENT ON COLUMN community_post_reviews.automod_action IS 'What the community moderation classifier did when it last flagged this post: review_queue (queued for a moderator) or unpublish. NULL means never flagged. record_only flags are projected to agent_moderations only and never stored here. Flags written for new content must clear the dismissal columns in the same update.';
+COMMENT ON COLUMN community_post_reviews.automod_flagged_at IS 'When the classifier flag in automod_action was written.';
+COMMENT ON COLUMN community_post_reviews.automod_flagged_content_sha256 IS 'The post llm_moderation_content_sha256 the flag was computed for. The flag is current only while it equals the post''s digest, so an edit supersedes it without a write.';
+COMMENT ON COLUMN community_post_reviews.automod_dismissed_at IS 'When a moderator dismissed the review_queue flag as not needing action. NULL means not dismissed.';
+COMMENT ON COLUMN community_post_reviews.automod_dismissed_by_id IS 'The moderator who dismissed the review_queue flag; NULL after that user is deleted.';
 COMMENT ON COLUMN community_post_reviews.platform_override_at IS 'When platform moderation staff last overrode the community publication projection; while present community moderators cannot replace it.';
 COMMENT ON COLUMN community_post_reviews.platform_override_by_id IS 'Platform administrator or site moderator who applied the currently controlling override.';
 COMMENT ON COLUMN community_post_reviews.platform_override_action IS 'The currently controlling platform publication action.';
@@ -480,11 +519,6 @@ COMMENT ON COLUMN community_pinned_posts.pinned_by_id IS 'Moderator who pinned t
 -- 0210-00-00-community-agent-prompts.sql
 -- ============================================================================
 
-DO $$ BEGIN
-  CREATE TYPE community_prompt_on_flag_action AS ENUM ('none', 'unpublish');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
-
 CREATE TABLE IF NOT EXISTS community_agent_prompts (
   -- extension table: id IS an agent_prompts.id; timestamps come from agent_prompts
   id UUID NOT NULL PRIMARY KEY REFERENCES agent_prompts(id) ON DELETE CASCADE,
@@ -495,8 +529,6 @@ CREATE TABLE IF NOT EXISTS community_agent_prompts (
   slot_allocated BOOLEAN NOT NULL DEFAULT false,
   activated_at   TIMESTAMPTZ,
   deactivated_at TIMESTAMPTZ,
-
-  on_flag_action community_prompt_on_flag_action NOT NULL DEFAULT 'none',
 
   deleted_at    TIMESTAMPTZ,
   deleted_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -535,7 +567,6 @@ COMMENT ON COLUMN community_agent_prompts.community_id IS 'The community this ag
 COMMENT ON COLUMN community_agent_prompts.slot_allocated IS 'Whether this prompt has been allocated a slot for active use.';
 COMMENT ON COLUMN community_agent_prompts.activated_at IS 'When the prompt was activated for community use. Mutually exclusive with deactivated_at.';
 COMMENT ON COLUMN community_agent_prompts.deactivated_at IS 'When the prompt was deactivated. Mutually exclusive with activated_at.';
-COMMENT ON COLUMN community_agent_prompts.on_flag_action IS 'Action taken when this community prompt flags content: none or unpublish.';
 
 -- community_auto_tagger_agents
 CREATE TABLE IF NOT EXISTS community_auto_tagger_agents (

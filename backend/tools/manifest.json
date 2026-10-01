@@ -86,7 +86,7 @@
     },
     {
       "name": "get_my_profile",
-      "description": "Get the current user's wallet profile including their cards, point valuations, rewards program statuses, and financial profile (credit score range, income range).",
+      "description": "Get the current user's wallet profile including their cards, point valuations, rewards program statuses.",
       "parameters": null,
       "api": [
         {
@@ -100,13 +100,21 @@
         {
           "method": "GET",
           "path": "/api/v1/my/rewards-program-statuses"
-        },
+        }
+      ],
+      "requiredScopes": ["profile:read"]
+    },
+    {
+      "name": "get_my_financial_profile",
+      "description": "Read the current user's credit score range, stated income range, total credit limit and years of credit history.",
+      "parameters": null,
+      "api": [
         {
           "method": "GET",
           "path": "/api/v1/my/financial-profile"
         }
       ],
-      "requiredScopes": ["profile:read"]
+      "requiredScopes": ["financial-profile:read"]
     },
     {
       "name": "get_my_rewards_statuses",

@@ -426,25 +426,20 @@ for a worked example. Both restatements are enforced by `structured-config-polic
 enabled from [`.oxlintrc.react.json`](../../../../.oxlintrc.react.json); React/Next/JSX doctor _enables_
 live there too. Generic `js-*` and security doctor rules stay at root.
 
-The root and nested plugin lists also enable Oxlint's configured TypeScript rules. Keep
-`typescript` present in every inherited-config copy; `structured-config-policy` enforces parity,
-while [`typescript-plugin-oxlint.test.mts`](../../../../static-code-analysis/oxlint-plugin/typescript-plugin-oxlint.test.mts) runs
+The root and nested plugin lists enable the configured TypeScript, Unicorn, and Import rules. Keep
+`typescript`, `unicorn`, and `import` present in every inherited-config copy; `structured-config-policy` enforces parity.
+[`configured-plugins-oxlint.test.mts`](../../../../static-code-analysis/oxlint-plugin/configured-plugins-oxlint.test.mts)
+checks every concrete tracked config against the installed analyzer, including inherited rules and
+overrides and disabled rule declarations, so another missing builtin plugin fails CI.
+Staged Unicorn entries record rule-specific scan counts and link their remediation issues; permanent
+opt-outs state their repository policy beside the rule. Catch bindings prefer `err`; string literals
+use the simplest readable form rather than requiring `String.raw`. Meanwhile, [`typescript-plugin-oxlint.test.mts`](../../../../static-code-analysis/oxlint-plugin/typescript-plugin-oxlint.test.mts) runs
 the installed analyzer with the real root and backend-agent configurations to prove syntax and
 type-aware TypeScript rules are active. The full lint command is `pnpm run oxlint`.
 
-The `unicorn` plugin is absent from those plugin lists, so the `unicorn/*` entries in
-the root [`.oxlintrc.json`](../../../../.oxlintrc.json) run only where another extended config
-re-enables it. Today that is `web/` and `email-templates/`: they extend
-[`.oxlintrc.react.json`](../../../../.oxlintrc.react.json), which sets no `"plugins"` key and so
-contributes Oxlint's default plugin set (including `unicorn`). Backend, `ci/`, `dev/`, `lambdas/`,
-`cloudflare-worker/`, `playwright/`, and `ts-shared/` do not run them. Enabling the plugin repo-wide
-surfaces roughly 2,100 findings across about 40 already-configured rules (measured 2026-10-01), and
-a per-file `overrides` entry cannot isolate one rule: overrides accept `"plugins"` but not
-`"categories"`, so the plugin's default categories come with it. Treat that as a separate
-remediation, not as a side effect of enabling one more rule. `unicorn/prefer-import-meta-properties`
-follows the same pattern: it keeps `web/` and `email-templates/` from regressing to
-`dirname(fileURLToPath(import.meta.url))`. The other workspaces were converted with a one-rule
-autofix pass and have no lint guard until the plugin is enabled there.
+`unicorn/prefer-import-meta-properties` is enforced wherever the root configuration is inherited, including backend and tooling workspaces. Use native `import.meta.dirname` and `import.meta.filename` rather than reconstructing them from `import.meta.url`.
+
+Clean import safety rules remain errors; module-style rules deliberately allow named exports, namespace and parent imports, Node builtins, framework default exports, and side-effect imports. The small import correctness backlog is staged in [#1696](https://github.com/vouchington/vouchington/issues/1696). Resolving imports also exposes canonical package and service entrypoint barrels to `oxc/no-barrel-file`; that rule stays off because `index.mts` barrels are the backend module contract.
 
 Each selected area coverage job consumes only its own full-LCOV artifacts and runs
 `ci/coverage-artifacts.sh area-check`; a missing full LCOV is a producer failure, not an optional

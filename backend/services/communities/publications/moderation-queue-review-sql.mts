@@ -1,12 +1,64 @@
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 
+type CommunityPostQueueSource = 'community_review' | 'automod_flag'
+
+/** Closed set, so these fragments are never user input. */
+const POST_QUEUE_SOURCES: Record<CommunityPostQueueSource, { comment: string; createdAt: string }> =
+  {
+    community_review: { comment: 'reviews', createdAt: 'cpr.created_at' },
+    automod_flag: { comment: 'automod_flags', createdAt: 'cpr.automod_flagged_at' },
+  }
+
+/** Pre-publication reviews: posts still waiting for a first moderator decision. */
 export function buildCommunityReviewQueueQuery(communityId: string) {
-  return sql`/* searchCommunityModerationQueue:reviews */
+  return buildCommunityPostQueueQuery(
+    'community_review',
+    sql`
+    WHERE cpr.community_id = ${communityId}
+      AND cpr.approved_at IS NULL
+      AND cpr.rejected_at IS NULL
+      AND rp.deleted_at IS NULL
+  `,
+  )
+}
+
+/**
+ * Open automod flags. A flag is current only while the post is still published and the digest it
+ * was computed for is the post's current one, so an edit retires it without any write.
+ */
+export function buildCommunityAutomodFlagQueueQuery(communityId: string) {
+  return buildCommunityPostQueueQuery(
+    'automod_flag',
+    sql`
+    WHERE cpr.community_id = ${communityId}
+      AND cpr.automod_action = 'review_queue'
+      AND cpr.automod_dismissed_at IS NULL
+      AND cpr.automod_flagged_content_sha256 = rp.llm_moderation_content_sha256
+      AND cpr.approved_at IS NOT NULL
+      AND cpr.rejected_at IS NULL
+      AND cpr.unpublished_at IS NULL
+      AND rp.deleted_at IS NULL
+  `,
+  )
+}
+
+function buildCommunityPostQueueQuery(source: CommunityPostQueueSource, where: SQLStatement) {
+  const { comment, createdAt } = POST_QUEUE_SOURCES[source]
+  const postPath = `'/' || CASE rp.post_type
+        WHEN 'story' THEN 'story'
+        WHEN 'review' THEN 'review'
+        WHEN 'article' THEN 'article'
+        WHEN 'blog_post' THEN 'blog-post'
+        WHEN 'data_point' THEN 'data-point'
+        ELSE 'discussion'
+      END || '/' || COALESCE(ps.slug, rp.id::text)`
+  const query = sql``
+  query.append(`/* searchCommunityModerationQueue:${comment} */
     SELECT
       cpr.post_id AS id,
-      cpr.created_at,
+      ${createdAt} AS created_at,
       to_char(
-        cpr.created_at AT TIME ZONE 'UTC',
+        ${createdAt} AT TIME ZONE 'UTC',
         'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
       ) AS cursor_created_at,
       NULL::timestamptz AS reviewed_at,
@@ -21,22 +73,8 @@ export function buildCommunityReviewQueueQuery(communityId: string) {
         'declared_language', rp.declared_language,
         'lingua_rs_detected_language', rp.lingua_rs_detected_language
       ) ELSE NULL END AS target_content,
-      '/' || CASE rp.post_type
-        WHEN 'story' THEN 'story'
-        WHEN 'review' THEN 'review'
-        WHEN 'article' THEN 'article'
-        WHEN 'blog_post' THEN 'blog-post'
-        WHEN 'data_point' THEN 'data-point'
-        ELSE 'discussion'
-      END || '/' || COALESCE(ps.slug, rp.id::text) AS target_path,
-      '/' || CASE rp.post_type
-        WHEN 'story' THEN 'story'
-        WHEN 'review' THEN 'review'
-        WHEN 'article' THEN 'article'
-        WHEN 'blog_post' THEN 'blog-post'
-        WHEN 'data_point' THEN 'data-point'
-        ELSE 'discussion'
-      END || '/' || COALESCE(ps.slug, rp.id::text) AS admin_action_path,
+      ${postPath} AS target_path,
+      ${postPath} AS admin_action_path,
       rp.created_by_id AS target_user_id,
       (rp.id IS NOT NULL AND rp.deleted_at IS NULL) AS target_available,
       NULL::moderation_report_reason AS reason,
@@ -48,7 +86,7 @@ export function buildCommunityReviewQueueQuery(communityId: string) {
       0::integer AS cursor_severity_rank,
       (rp.broadcast <> 'everyone' OR rp.privacy <> 'public') AS target_is_restricted,
       rp.is_anonymous AS target_is_anonymous,
-      'community_review'::text AS queue_source
+      '${source}'::text AS queue_source
     FROM community_post_reviews cpr
     JOIN posts rp ON rp.id = cpr.post_id
     LEFT JOIN LATERAL (
@@ -57,9 +95,6 @@ export function buildCommunityReviewQueueQuery(communityId: string) {
       ORDER BY created_at DESC
       LIMIT 1
     ) ps ON true
-    WHERE cpr.community_id = ${communityId}
-      AND cpr.approved_at IS NULL
-      AND cpr.rejected_at IS NULL
-      AND rp.deleted_at IS NULL
-  `
+  `)
+  return query.append(where)
 }

@@ -4,7 +4,8 @@
 
 `get_post`, `get_post_ancestors`, `get_post_descendants` and `get_story` read a post, its thread and
 a news story. Each requires the `posts:read` scope, is read-only, names its REST twin in `meta.api`,
-and sits on the `internal`, `mcp` and `client` surfaces like the other post tools. The
+and sits on the `internal`, `mcp` and `client` surfaces like the other post tools. `search_posts`
+is not one of them but follows their [privacy rule](#privacy). The
 [community read tools](#community-read-tools) follow the same shape with the `communities:read`
 scope.
 
@@ -36,6 +37,21 @@ sees only through private visibility (a private audience, a private community, o
 unapproved post) is therefore never returned, even to its author, and a topic recommendation is
 never returned. One hidden ancestor hides the whole thread, so a `parent_id`, title or count never
 reveals it.
+
+`search_posts` applies the same rule to what it returns, so a search never lists a post these tools
+would refuse. Its query judges every candidate as a signed-out reader (`public_eligibility_only` in
+`backend/services/posts/search/query-builder/base-filters.mts`), even for the author or an
+administrator, so private, audience-limited and not-yet-cleared posts are not listed. When
+`post_type` includes `comment`, `thread-readability.mts` also drops a comment unless every live
+ancestor is approved and not a topic recommendation, the chain rule above. A `similar_post_id` seed
+that `get_post` would refuse is answered like an id that matches nothing, an empty page, so its
+embedding cannot be probed. The owner's mutes and blocks still remove results.
+
+The inclusion is one-way: a search result is always readable through `get_post`, but a readable
+post may not be found by search, which also needs `broadcast = everyone`, an unarchived post, an
+unsuspended author and no community. The chain check (JavaScript) and the search filter (SQL) must
+stay aligned; `output-schema-contract-search-posts.agreement.test.mts` compares them on shared
+fixtures.
 
 `get_post_descendants` pages with the REST descendants page (`getCommentDescendantsPage`), whose
 cursors are scoped to the thread and never to a viewer; a hidden reply prunes its subtree. A deleted

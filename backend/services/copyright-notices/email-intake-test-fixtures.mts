@@ -1,4 +1,5 @@
 // Email intake fixtures belong in the copyright service test support, beside the route fixtures.
+import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { createCopyrightEmailIntake, recordCopyrightEmailParse } from './index.mts'
 
 // A received copyright email whose parse was never recorded, as when the SES worker keeps failing.
@@ -11,6 +12,7 @@ export async function createUnparsedCopyrightEmailIntake(receivedAt = new Date()
     rawSha256: Buffer.alloc(32, 8),
     rawMimeType: 'message/rfc822',
     rawByteSize: 12,
+    sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
   })
   return intake
 }

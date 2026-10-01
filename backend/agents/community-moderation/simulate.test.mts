@@ -182,7 +182,6 @@ function makePrompt(): CommunityAgentPrompt {
     model_name: 'gpt-5.4-nano',
     model_provider: 'openai',
     slot_allocated: false,
-    on_flag_action: 'unpublish',
     activated_at: null,
     deactivated_at: null,
     created_at: new Date('2026-01-01T00:00:00Z'),

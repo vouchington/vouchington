@@ -1,3 +1,4 @@
+import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { describe, expect, it, vi } from 'vitest'
 import { createCopyrightEmailIntake, recordCopyrightEmailParse } from '@services/copyright-notices'
 import { parseCopyrightEmailIntakeOutput, runCopyrightEmailIntakeAgent } from './run.mts'
@@ -75,6 +76,7 @@ describe('copyright email intake output', () => {
       rawSha256: Buffer.alloc(32, 4),
       rawMimeType: 'message/rfc822',
       rawByteSize: 12,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
     })
     await recordCopyrightEmailParse(intake, {
       status: 'succeeded',

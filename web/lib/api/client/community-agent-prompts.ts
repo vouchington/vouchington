@@ -1,7 +1,11 @@
 'use client'
 
 import { clientApi } from './instance'
-import type { CommunityAgentPrompt, CommunityAgentPromptsResponseBody } from '@/types/api-responses'
+import type {
+  CommunityAgentPrompt,
+  CommunityAgentPromptsResponseBody,
+  CommunityAutomodActionSetting,
+} from '@/types/api-responses'
 
 export type { CommunityAgentPrompt, CommunityAgentPromptsResponseBody } from '@/types/api-responses'
 
@@ -27,7 +31,6 @@ export interface CommunityAutomodSimulationResult {
   content_excerpt: string
   flagged: boolean
   reason: string
-  would_unpublish: boolean
 }
 
 export interface CommunityAutomodSimulation {
@@ -36,7 +39,7 @@ export interface CommunityAutomodSimulation {
     time_window_hours: number
     sample_count: number
     would_flag_count: number
-    would_unpublish_count: number
+    community_automod_action: CommunityAutomodActionSetting
     false_positive_estimate: {
       historical_flagged_count: number
       historical_approved_count: number

@@ -19,6 +19,7 @@ describe('community API response factories', () => {
       created_at: '2026-01-01T00:00:00Z',
       allow_review_posts: false,
       allow_data_point_posts: false,
+      automod_action: 'record_only',
       default_language: null,
       lingua_rs_detected_language: null,
     })

@@ -5,10 +5,8 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createConversation,
   createConversationMessage,
-  claimChatConversationMessageAgenticRun,
 } from '@services/conversations-messages/create'
 import { createClientGeneratedChatTurn } from '@services/conversations-messages/client-generated-chat'
-import { hasActiveChatTurnByConversationId } from '@services/conversations-messages/agentic-runs'
 import { getConversationMessagesByConversationId } from '@services/conversations-messages/messages'
 import { requestOpenAIModeration } from '@modules/openai-utils/moderate'
 
@@ -48,7 +46,7 @@ describe('member transcript contract', () => {
       user_message_id: body.user_message_id,
       assistant_message_id: body.assistant_message_id,
     })
-    expect(first.body).not.toHaveProperty('agentic_run')
+    expect(first.body.assistant_message.content).toEqual({ role: 'assistant', content: 'Hi' })
     await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(2)
     await createConversationMessage(conversation.id, user.id, { role: 'assistant', content: null })
     const retry = await request.post(path).send(body).expect(200)
@@ -70,7 +68,7 @@ describe('member transcript contract', () => {
     await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(3)
   })
 
-  it('rejects changed text and partial identity reuse atomically', async () => {
+  it('rejects changed text, model and partial identity reuse atomically', async () => {
     const user = await createTestUser()
     const conversation = await createConversation(user.id, 'Transcript')
     const request = createRequest()
@@ -85,6 +83,10 @@ describe('member transcript contract', () => {
     await request
       .post(path)
       .send({ ...body, assistant_message_id: uuidv7() })
+      .expect(409)
+    await request
+      .post(path)
+      .send({ ...body, model_provider: 'openai_compatible', model_name: 'local-model' })
       .expect(409)
     await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(2)
   })
@@ -124,10 +126,10 @@ describe('member transcript contract', () => {
     await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(0)
   })
 
-  it('keeps active placeholders and claims scoped when another conversation reuses a message ID', async () => {
+  it('scopes message identity to its conversation and never blocks on an incomplete placeholder', async () => {
     const user = await createTestUser()
-    const hosted = await createConversation(user.id, 'Incomplete transcript')
-    const placeholder = await createConversationMessage(hosted.id, user.id, {
+    const other = await createConversation(user.id, 'Incomplete transcript')
+    const placeholder = await createConversationMessage(other.id, user.id, {
       role: 'assistant',
       content: null,
     })
@@ -142,20 +144,15 @@ describe('member transcript contract', () => {
         assistant_message_id: placeholder.id,
       })
       .expect(200)
-    await expect(hasActiveChatTurnByConversationId(hosted.id)).resolves.toBe(true)
+    await expect(getConversationMessagesByConversationId(other.id)).resolves.toMatchObject([
+      { id: placeholder.id, content: { role: 'assistant', content: null } },
+    ])
     await request
-      .post(`/api/v1/conversations/${hosted.id}/client-generated-chat`)
+      .post(`/api/v1/conversations/${other.id}/client-generated-chat`)
       .send(turn())
-      .expect(409)
-    expect(moderation).toHaveBeenCalledTimes(2)
-    const run = await claimChatConversationMessageAgenticRun({
-      conversationId: hosted.id,
-      conversationMessageId: placeholder.id,
-      modelName: 'gpt-5.4-nano',
-      modelProvider: 'openai',
-      input: { message: 'Hello' },
-    })
-    expect(run).toBeDefined()
+      .expect(200)
+    await expect(getConversationMessagesByConversationId(other.id)).resolves.toHaveLength(3)
+    expect(moderation).toHaveBeenCalledTimes(4)
   })
 
   it('paginates history with completion metadata and omits generation internals from conversations', async () => {

@@ -6,7 +6,6 @@ import sql from 'sql-template-strings'
 import { buildCommunityIdCursorPage, resolveCommunityIdCursorPage } from '../id-cursor-page.mts'
 
 export { searchCommunityPosts } from './approved-posts.mts'
-export { getApprovedReviewsForPost } from './approved-reviews.mts'
 type CommunityFeedPost = {
   id: string
   [key: string]: unknown

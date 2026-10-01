@@ -10,11 +10,7 @@ import {
 import onError from '@modules/on-error'
 import type { RunToolLoopConfig, RunToolLoopResult } from './run-tool-loop/types.mts'
 import { assertSpendCapNotBreachedForIteration } from './run-tool-loop/spend-cap-check.mts'
-import {
-  extractResponseUsage,
-  getResponseFinishReason,
-  tryExtractText,
-} from './run-tool-loop/response-summary.mts'
+import { tryExtractText } from './run-tool-loop/response-summary.mts'
 import { callRecordingToolLoopUsage } from './run-tool-loop/record-usage.mts'
 
 export type { RunToolLoopConfig, RunToolLoopResult } from './run-tool-loop/types.mts'
@@ -47,7 +43,6 @@ export async function runToolLoop(config: RunToolLoopConfig): Promise<RunToolLoo
     onCallError = (_toolCall: OpenAIFunctionCall, error: Error) => onError(error),
     onBeforeCall,
     onAfterCall,
-    writeRunEvent,
     onIteration,
     onAfterIteration,
     deps = {},
@@ -109,18 +104,6 @@ export async function runToolLoop(config: RunToolLoopConfig): Promise<RunToolLoo
 
     const toolCalls = getCalls(response.output)
 
-    await writeRunEvent?.(
-      'model_response',
-      {
-        response_id: response.id,
-        iteration: iterations,
-        finish_reason: getResponseFinishReason(response),
-        usage: extractResponseUsage(response),
-        tool_calls_count: toolCalls.length,
-      },
-      response.output,
-    )
-
     // onIteration fires before the toolCalls.length === 0 check. If it returns
     // { stop: true }, that reason takes precedence over 'no_tool_calls' even
     // when there are no tool calls in this iteration.
@@ -140,7 +123,6 @@ export async function runToolLoop(config: RunToolLoopConfig): Promise<RunToolLoo
     const toolCallResults = await executeCalls({
       toolCalls,
       tools,
-      writeRunEvent,
       onBeforeCall,
       onAfterCall,
       onCallError,
@@ -179,17 +161,6 @@ export async function runToolLoop(config: RunToolLoopConfig): Promise<RunToolLoo
 
   lastResponseId = finalResponse.id
   iterations++
-  await writeRunEvent?.(
-    'model_response',
-    {
-      response_id: finalResponse.id,
-      iteration: iterations,
-      finish_reason: getResponseFinishReason(finalResponse),
-      usage: extractResponseUsage(finalResponse),
-      tool_calls_count: 0,
-    },
-    finalResponse.output,
-  )
   const text = tryExtractText(finalResponse)
   return { text, iterations, terminationReason: 'max_iterations', lastResponseId }
 }

@@ -1117,6 +1117,9 @@
             }
           ]
         },
+        "automod_action": {
+          "$ref": "#/components/schemas/CommunityAutomodAction"
+        },
         "banner_image_id": {
           "anyOf": [
             {
@@ -1291,6 +1294,7 @@
         "allow_review_posts",
         "archived_at",
         "archived_by_id",
+        "automod_action",
         "banner_image_id",
         "created_at",
         "created_by_id",
@@ -1401,9 +1405,6 @@
         "model_provider": {
           "type": "string"
         },
-        "on_flag_action": {
-          "$ref": "#/components/schemas/CommunityPromptOnFlagAction"
-        },
         "prompt": {
           "type": "string"
         },
@@ -1426,7 +1427,6 @@
         "id",
         "model_name",
         "model_provider",
-        "on_flag_action",
         "prompt",
         "slot_allocated",
         "updated_at"
@@ -1842,6 +1842,10 @@
       ],
       "type": "object"
     },
+    "CommunityAutomodAction": {
+      "enum": ["record_only", "review_queue", "unpublish"],
+      "type": "string"
+    },
     "CommunityBanEvasionContext": {
       "additionalProperties": false,
       "properties": {
@@ -2237,6 +2241,10 @@
       ],
       "type": "object"
     },
+    "CommunityModerationQueueSource": {
+      "enum": ["automod_flag", "community_review", "report"],
+      "type": "string"
+    },
     "CommunityOwner": {
       "additionalProperties": false,
       "properties": {
@@ -2288,10 +2296,6 @@
         "post_id"
       ],
       "type": "object"
-    },
-    "CommunityPromptOnFlagAction": {
-      "enum": ["none", "unpublish"],
-      "type": "string"
     },
     "CommunitySavedReply": {
       "additionalProperties": false,
@@ -2710,6 +2714,32 @@
         }
       },
       "required": ["copyright_email_intakes", "page_info"],
+      "type": "object"
+    },
+    "CopyrightEmailSesVerdict": {
+      "enum": ["fail", "gray", "pass", "processing_failed", "unknown"],
+      "type": "string"
+    },
+    "CopyrightEmailSesVerdicts": {
+      "additionalProperties": false,
+      "properties": {
+        "dkim": {
+          "$ref": "#/components/schemas/CopyrightEmailSesVerdict"
+        },
+        "dmarc": {
+          "$ref": "#/components/schemas/CopyrightEmailSesVerdict"
+        },
+        "spam": {
+          "$ref": "#/components/schemas/CopyrightEmailSesVerdict"
+        },
+        "spf": {
+          "$ref": "#/components/schemas/CopyrightEmailSesVerdict"
+        },
+        "virus": {
+          "$ref": "#/components/schemas/CopyrightEmailSesVerdict"
+        }
+      },
+      "required": ["dkim", "dmarc", "spam", "spf", "virus"],
       "type": "object"
     },
     "CopyrightFormGuidance": {
@@ -3311,7 +3341,14 @@
               "type": "number"
             },
             "download_url": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
             },
             "mime_type": {
               "type": "string"
@@ -3349,6 +3386,9 @@
         "review_path": {
           "enum": ["initial", "matched_thread", "unresolved_thread"],
           "type": "string"
+        },
+        "ses_verdicts": {
+          "$ref": "#/components/schemas/CopyrightEmailSesVerdicts"
         }
       },
       "required": [
@@ -3359,7 +3399,8 @@
         "raw_email",
         "received_at",
         "recommendation",
-        "review_path"
+        "review_path",
+        "ses_verdicts"
       ],
       "type": "object"
     },
@@ -18332,10 +18373,22 @@
         "description_key": {
           "anyOf": [
             {
+              "const": "financial_profile_read"
+            },
+            {
+              "const": "financial_profile_write"
+            },
+            {
               "const": "mcp_admin_full_access"
             },
             {
               "const": "mcp_user_full_access"
+            },
+            {
+              "const": "spending_read"
+            },
+            {
+              "const": "spending_write"
             },
             {
               "type": "null"
@@ -20028,6 +20081,16 @@
           ]
         }
       },
+      "type": "object"
+    },
+    "UpdateCommunityAutomodSettingsInput": {
+      "additionalProperties": false,
+      "properties": {
+        "automod_action": {
+          "$ref": "#/components/schemas/CommunityAutomodAction"
+        }
+      },
+      "required": ["automod_action"],
       "type": "object"
     },
     "UpdateCommunityPostTypeSettingsInput": {
@@ -28572,6 +28635,20 @@
         "type": "object"
       }
     },
+    "PATCH:/api/v1/communities/:idOrSlug/automod-settings": {
+      "body": {
+        "$ref": "#/components/schemas/UpdateCommunityAutomodSettingsInput"
+      },
+      "path": {
+        "properties": {
+          "idOrSlug": {
+            "type": "string"
+          }
+        },
+        "required": ["idOrSlug"],
+        "type": "object"
+      }
+    },
     "PATCH:/api/v1/communities/:idOrSlug/members/:userId": {
       "body": {
         "additionalProperties": false,
@@ -30196,6 +30273,20 @@
           }
         },
         "required": ["idOrSlug"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/communities/:idOrSlug/posts/:postId/automod-flag/dismissal": {
+      "path": {
+        "properties": {
+          "idOrSlug": {
+            "type": "string"
+          },
+          "postId": {
+            "type": "string"
+          }
+        },
+        "required": ["idOrSlug", "postId"],
         "type": "object"
       }
     },

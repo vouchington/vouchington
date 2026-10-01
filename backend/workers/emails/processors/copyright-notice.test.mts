@@ -1,3 +1,4 @@
+import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
 import {
@@ -60,6 +61,7 @@ async function createEmailIntakeResponse(): Promise<{ intentId: string; intakeId
     rawSha256: Buffer.alloc(32, 9),
     rawMimeType: 'message/rfc822',
     rawByteSize: 12,
+    sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
   })
   await recordCopyrightEmailParse(intake, {
     status: 'succeeded',

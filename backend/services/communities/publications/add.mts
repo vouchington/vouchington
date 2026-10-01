@@ -4,9 +4,9 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { CommunityPostReview } from '../types.mts'
-import { enqueueBulkCommunityModerationDispatchers } from '@queues/ai-agents/enqueues/community-moderation'
 import { assertCommunityPostTopicsNotMuted, type CategoryVoteState } from './muted-topics.mts'
 import { recordPostPublicationChange } from '@services/post-publication'
+import { requestCommunityModerationRun } from './moderation-run.mts'
 
 async function createCommunityPostReviewWithOptions(
   currentUserId: string,
@@ -121,6 +121,10 @@ async function createCommunityPostReviewWithOptions(
     impactedCommunityIds: [communityId],
     footprint: { priorCommunityId: communityId },
   })
+  // An administrator's post skips community moderation, as it skips the other creation checks.
+  if (approvedAt && !communityRows[0]!.current_user_is_admin) {
+    await requestCommunityModerationRun(options.query as TransactionQuery, postId)
+  }
   return rows[0] as CommunityPostReview
 }
 
@@ -134,8 +138,8 @@ export async function createCommunityPostReview(
   assert(isUUID(communityId), 422, `Invalid community id: ${communityId}`)
 
   if (options?.query) {
-    // Called within an external transaction — return results only; the caller
-    // must enqueue community moderation after the transaction commits.
+    // Called within an external transaction: the community moderation request is written in it
+    // and its dispatcher is enqueued once the owning transaction commits.
     return createCommunityPostReviewWithOptions(
       currentUserId,
       postId,
@@ -154,12 +158,5 @@ export async function createCommunityPostReview(
     categoryVoteState,
   )
   await query.commit()
-
-  // Fire-and-forget: enqueue community moderation for auto-approved reviews
-  if (review.approved_at) {
-    /* c8 ignore next -- lint-only fire-and-forget enqueue disposition. */
-    void enqueueBulkCommunityModerationDispatchers([{ postId, communityId: review.community_id }])
-  }
-
   return review
 }

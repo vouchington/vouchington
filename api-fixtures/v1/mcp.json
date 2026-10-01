@@ -1653,7 +1653,7 @@
           "tool": {
             "name": "get_my_profile",
             "title": "Get My Profile",
-            "description": "Get the current user's wallet profile including their cards, point valuations, rewards program statuses, and financial profile (credit score range, income range).",
+            "description": "Get the current user's wallet profile including their cards, point valuations, rewards program statuses.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -2077,168 +2077,6 @@
                   },
                   "required": ["end_cursor", "has_next_page", "start_cursor"],
                   "type": "object"
-                },
-                "financial_profile": {
-                  "anyOf": [
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "cards_opened_24m": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "number"
-                            }
-                          ]
-                        },
-                        "credit_score_range": {
-                          "anyOf": [
-                            {
-                              "const": "300-579"
-                            },
-                            {
-                              "const": "580-669"
-                            },
-                            {
-                              "const": "670-739"
-                            },
-                            {
-                              "const": "740-799"
-                            },
-                            {
-                              "const": "800-850"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "currency": {
-                          "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
-                          "type": "string"
-                        },
-                        "hard_inquiries_12m": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "number"
-                            }
-                          ]
-                        },
-                        "individual_id": {
-                          "type": "string"
-                        },
-                        "stated_income_range": {
-                          "anyOf": [
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "maximum": {
-                                  "anyOf": [
-                                    {
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "amount": {
-                                          "maximum": 9007199254740991,
-                                          "minimum": 0,
-                                          "type": "integer"
-                                        },
-                                        "currency": {
-                                          "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
-                                          "type": "string"
-                                        }
-                                      },
-                                      "required": ["amount", "currency"],
-                                      "type": "object"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                },
-                                "minimum": {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "amount": {
-                                      "maximum": 9007199254740991,
-                                      "minimum": 0,
-                                      "type": "integer"
-                                    },
-                                    "currency": {
-                                      "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
-                                      "type": "string"
-                                    }
-                                  },
-                                  "required": ["amount", "currency"],
-                                  "type": "object"
-                                }
-                              },
-                              "required": ["maximum", "minimum"],
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "total_credit_limit": {
-                          "anyOf": [
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "amount": {
-                                  "maximum": 9007199254740991,
-                                  "minimum": 0,
-                                  "type": "integer"
-                                },
-                                "currency": {
-                                  "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
-                                  "type": "string"
-                                }
-                              },
-                              "required": ["amount", "currency"],
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "updated_at": {
-                          "type": "string"
-                        },
-                        "years_of_credit_history": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "number"
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "cards_opened_24m",
-                        "credit_score_range",
-                        "currency",
-                        "hard_inquiries_12m",
-                        "individual_id",
-                        "stated_income_range",
-                        "total_credit_limit",
-                        "updated_at",
-                        "years_of_credit_history"
-                      ],
-                      "type": "object"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
                 }
               },
               "required": [
@@ -2248,8 +2086,7 @@
                 "point_valuations",
                 "point_valuations_page_info",
                 "rewards_program_statuses",
-                "rewards_program_statuses_page_info",
-                "financial_profile"
+                "rewards_program_statuses_page_info"
               ],
               "additionalProperties": false
             },
@@ -2275,7 +2112,210 @@
             {
               "method": "GET",
               "path": "/api/v1/my/rewards-program-statuses"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_my_financial_profile",
+            "title": "Get My Financial Profile",
+            "description": "Read the current user's credit score range, stated income range, total credit limit and years of credit history.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
             },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "result": {
+                  "type": "object",
+                  "properties": {
+                    "financial_profile": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "cards_opened_24m": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ]
+                            },
+                            "credit_score_range": {
+                              "anyOf": [
+                                {
+                                  "const": "300-579"
+                                },
+                                {
+                                  "const": "580-669"
+                                },
+                                {
+                                  "const": "670-739"
+                                },
+                                {
+                                  "const": "740-799"
+                                },
+                                {
+                                  "const": "800-850"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "currency": {
+                              "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                              "type": "string"
+                            },
+                            "hard_inquiries_12m": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ]
+                            },
+                            "individual_id": {
+                              "type": "string"
+                            },
+                            "stated_income_range": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "maximum": {
+                                      "anyOf": [
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "amount": {
+                                              "maximum": 9007199254740991,
+                                              "minimum": 0,
+                                              "type": "integer"
+                                            },
+                                            "currency": {
+                                              "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": ["amount", "currency"],
+                                          "type": "object"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "minimum": {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "amount": {
+                                          "maximum": 9007199254740991,
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        },
+                                        "currency": {
+                                          "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["amount", "currency"],
+                                      "type": "object"
+                                    }
+                                  },
+                                  "required": ["maximum", "minimum"],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "total_credit_limit": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "amount": {
+                                      "maximum": 9007199254740991,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    "currency": {
+                                      "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["amount", "currency"],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "updated_at": {
+                              "type": "string"
+                            },
+                            "years_of_credit_history": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "cards_opened_24m",
+                            "credit_score_range",
+                            "currency",
+                            "hard_inquiries_12m",
+                            "individual_id",
+                            "stated_income_range",
+                            "total_credit_limit",
+                            "updated_at",
+                            "years_of_credit_history"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["financial_profile"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["success", "result"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["financial-profile:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
             {
               "method": "GET",
               "path": "/api/v1/my/financial-profile"

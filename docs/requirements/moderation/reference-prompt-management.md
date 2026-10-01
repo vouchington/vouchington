@@ -13,3 +13,4 @@
 | `POST`   | `/api/v1/communities/:slug/agent-prompts/:promptId/deallocate` | Deactivate (free the slot)            |
 | `POST`   | `/api/v1/communities/:slug/agent-prompts/:promptId/test`       | Dry-run against sample text           |
 | `POST`   | `/api/v1/communities/:slug/automod/simulate`                   | Dry-run against recent approved posts |
+| `PATCH`  | `/api/v1/communities/:slug/automod-settings`                   | Set the community automod action      |

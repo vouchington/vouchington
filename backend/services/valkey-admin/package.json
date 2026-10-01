@@ -30,7 +30,7 @@
     "@services/users": "workspace:^",
     "@valkey/valkey-glide": "^2.5.3",
     "http-errors": "^2.0.1",
-    "valkyries": "^0.8.0"
+    "valkyries": "^0.8.1"
   },
   "devDependencies": {
     "@services/entity-cache": "workspace:^",

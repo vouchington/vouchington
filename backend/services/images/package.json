@@ -40,7 +40,7 @@
     "@services/topics": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/media": "0.2.0",
+    "@vouchington/media": "^0.2.0",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2"

@@ -1,7 +1,13 @@
 export type ScopeAudience = 'admin' | 'api' | 'user'
 export type ScopeCredentialSurface = 'api-key' | 'oauth'
 export type ScopeAction = 'read' | 'write'
-export type ScopeDescriptionKey = 'mcp_admin_full_access' | 'mcp_user_full_access'
+export type ScopeDescriptionKey =
+  | 'mcp_admin_full_access'
+  | 'mcp_user_full_access'
+  | 'financial_profile_read'
+  | 'financial_profile_write'
+  | 'spending_read'
+  | 'spending_write'
 
 export type ApiScope =
   | 'cards:read'

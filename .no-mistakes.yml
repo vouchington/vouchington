@@ -1394,6 +1394,7 @@ rules:
         - .stripe
         - .no-data.mock
         - .real-glide.mock
+        - .actions.mock
         - .mock
         - .generated
         - .routes
@@ -1714,6 +1715,7 @@ rules:
         - community_members.approved_by_id
         - community_members.removed_by_id
         - community_members.suspected_ban_evader_dismissed_by_id
+        - community_post_reviews.automod_dismissed_by_id
         - community_post_reviews.escalated_by_id
         - community_post_reviews.reviewed_by_id
         - community_post_reviews.submitted_by_id

@@ -14,8 +14,6 @@ single coordinator that releases jobs when an operator relaxes the daily cap.
 | `processClassifierRunDispatcher`           | `classifier-run-dispatcher`            | Reserves one run for an approved subject/content/configuration and awaits its `classifier-run` enqueue; a subject that is not ready leaves its request pending |
 | `processClassifierRun`                     | `classifier-run`                       | Runs one reserved classifier run through the shared lifecycle after primary revalidation of the content and configuration fingerprints                         |
 | `processReconcileClassifierRuns`           | `reconcile-classifier-runs`            | Two-phase sweep: re-enqueues incomplete runs up to ten counted times each, then dispatches pending requests that never got a run; stops on a spend-cap breach  |
-| `processCommunityModerationDispatcher`     | `community-moderation-dispatcher`      | Dispatches community moderation prompt jobs; post-created recovery awaits queue delivery so failures retain the reconciliation checkpoint                      |
-| `processCommunityModerationPrompt`         | `community-moderation-prompt`          | Runs a community moderation prompt on a post                                                                                                                   |
 | `processCopyrightEmailIntake`              | `copyright-email-intake`               | Parses a preserved copyright-inbox email into an advisory structured recommendation; moderator approval remains mandatory                                      |
 | `processCopyrightFormScreening`            | `copyright-form-screening`             | Screens a structured form only for obvious spam or invalidity; a clear signed-in result may provisionally restrict pending mandatory human review              |
 | `processCopyrightAppealRecommendation`     | `copyright-appeal-recommendation`      | Persists advisory appeal analysis for a moderator; it never changes a restriction or restores material                                                         |
@@ -43,19 +41,22 @@ new coordinator instead of deduplicating against the old active job. Coordinator
 explicitly reported best-effort optimization: if the dedicated queue is unavailable after
 registration, the source job still reaches its midnight delay fallback.
 
+Community moderation prompts (`community-moderation`) are a classifier on the same shared
+lifecycle, not a job family of their own: a publication change writes a `classifier_run_requests`
+row in its own transaction and enqueues `classifier-run-dispatcher` after commit, and one run asks
+every active community prompt in a single provider call. The community's
+`communities.automod_action` setting decides what a flag does when the run completes.
+
 There is no hosted chat job: `chat` and `reconcile-chat-runtime-generations` were removed with the
 hosted chat transport, and native chat persists through `client-generated-chat`. A `chat` or
 `reconcile-chat-runtime-generations` job still queued at deploy follows the worker's unknown-job
 path (`Unknown AI agent job: <name>`) and fails as an ordinary job failure without crashing the
-worker; the scheduled reconciler's scheduler is pruned when the manifest is upserted. A hosted run
-that was in flight at deploy stays active because no reconciler remains, so native chat for that
-conversation returns 409; prelaunch accepts that loss, and the agentic-run storage is left for the
-agentic-run removal work.
+worker; the scheduled reconciler's scheduler is pruned when the manifest is upserted. The
+agentic-run storage is removed, so no run state remains that could block native chat.
 
 ## Enqueue Files
 
 - [`enqueues/autotagger.mts`](../../../../../backend/queues/ai-agents/enqueues/autotagger.mts) — autotagger jobs
-- [`enqueues/community-moderation.mts`](../../../../../backend/queues/ai-agents/enqueues/community-moderation.mts) — fire-and-forget community moderation jobs plus an awaited recovery variant
 - [`enqueues/copyright-email-intake.mts`](../../../../../backend/queues/ai-agents/enqueues/copyright-email-intake.mts) — replay-safe copyright email extraction jobs
 - [`enqueues/copyright-form-screening.mts`](../../../../../backend/queues/ai-agents/enqueues/copyright-form-screening.mts) — stable-ID structured form anti-spam jobs
 - [`enqueues/copyright-appeal-recommendation.mts`](../../../../../backend/queues/ai-agents/enqueues/copyright-appeal-recommendation.mts) — stable-ID advisory appeal recommendation jobs

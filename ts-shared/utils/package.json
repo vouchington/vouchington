@@ -21,9 +21,9 @@
   },
   "scripts": {},
   "dependencies": {
-    "@vouchington/html-utils": "0.1.1",
-    "@vouchington/memberships": "0.2.0",
-    "@vouchington/phone-validation": "0.0.0",
-    "@vouchington/utils": "0.5.3"
+    "@vouchington/html-utils": "^0.1.1",
+    "@vouchington/memberships": "^0.2.0",
+    "@vouchington/phone-validation": "^0.0.0",
+    "@vouchington/utils": "^0.5.3"
   }
 }

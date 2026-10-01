@@ -1,6 +1,15 @@
 'use client'
 import { clientApi } from './instance'
 import type { CopyrightEmailIntakeQueuePage } from '@/types/copyright-notices'
+// What Amazon SES recorded for the message. `unknown` means SES never reported the check.
+export type CopyrightEmailSesVerdict = 'pass' | 'fail' | 'gray' | 'processing_failed' | 'unknown'
+export type CopyrightEmailSesVerdicts = {
+  spf: CopyrightEmailSesVerdict
+  dkim: CopyrightEmailSesVerdict
+  dmarc: CopyrightEmailSesVerdict
+  spam: CopyrightEmailSesVerdict
+  virus: CopyrightEmailSesVerdict
+}
 export type CopyrightEmailIntake = {
   id: string
   received_at: string
@@ -9,7 +18,9 @@ export type CopyrightEmailIntake = {
     id: string
     targets: Array<{ id: string; placement_key: string }>
   } | null
-  raw_email: { mime_type: string; byte_size: number; sha256: string; download_url: string }
+  // `download_url` is null when SES reported malware: the original is quarantined.
+  raw_email: { mime_type: string; byte_size: number; sha256: string; download_url: string | null }
+  ses_verdicts: CopyrightEmailSesVerdicts
   parsed_email: { sender_email: string; subject: string; body_text: string } | null
   parser_error: string | null
   recommendation: { id: string; structured_output: Record<string, unknown> } | null

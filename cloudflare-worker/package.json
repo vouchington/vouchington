@@ -36,7 +36,7 @@
     "test:smoke": "./scripts/tests/smoke-test-cloudflare-worker.sh"
   },
   "dependencies": {
-    "@sentry/cloudflare": "11.0.0",
+    "@sentry/cloudflare": "^11.0.0",
     "@ts-shared/cache": "workspace:^",
     "@ts-shared/feed-capabilities": "workspace:^",
     "@ts-shared/languages": "workspace:^",
@@ -46,7 +46,7 @@
     "@ts-shared/url-signing": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
-    "@vouchington/utils": "0.5.3",
+    "@vouchington/utils": "^0.5.3",
     "isbot": "^5.2.2"
   },
   "devDependencies": {

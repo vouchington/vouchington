@@ -30,17 +30,6 @@ export type ReconcileClassifierRunsJobData = {
   after?: string | null
 }
 
-export type CommunityModerationDispatcherJobData = {
-  postId: string
-  communityId: string
-}
-
-export type CommunityModerationPromptJobData = {
-  postId: string
-  communityId: string
-  promptId: string
-}
-
 export type StoryClusteringJobData = {
   rss_feed_item_id: string
   embedding_retries?: number
@@ -99,8 +88,6 @@ export type AIAgentJobData = (
   | AutotaggerRssFeedItemJobData
   | ClassifierRunDispatcherJobData
   | ClassifierRunJobData
-  | CommunityModerationDispatcherJobData
-  | CommunityModerationPromptJobData
   | ReportJudgementJobData
   | DisputeResolutionJobData
   | AppealResolutionJobData

@@ -119,7 +119,6 @@ describe('agent-moderation.vote', () => {
         communityId: community.id,
         createdById: user.id,
         slotAllocated: true,
-        onFlagAction: 'unpublish',
       })
       const postId = await insertTestPost({
         title: `Prompt moderation vote ${random}`,

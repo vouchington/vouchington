@@ -6,6 +6,8 @@ export type CommunityListItemType = keyof typeof communityListItemTypeCatalog
 export type CommunityVisibility = 'public' | 'private'
 export type CommunityMemberRosterVisibility = 'public' | 'users' | 'members' | 'moderators'
 export type CommunityMemberRole = 'owner' | 'moderator' | 'member'
+/** What a community's AI moderation prompts do to a published post that one of them flags. */
+export type CommunityAutomodAction = 'record_only' | 'review_queue' | 'unpublish'
 export type CommunityListType = 'follow' | 'mute'
 export type CommunityRestrictionType =
   | 'require_post_approval'
@@ -26,6 +28,7 @@ export type Community = {
   post_approval_required_at: Date | null
   allow_review_posts: boolean
   allow_data_point_posts: boolean
+  automod_action: CommunityAutomodAction
   trusted_at: Date | null
   profile_image_id: string | null
   banner_image_id: string | null
@@ -117,6 +120,11 @@ export type CommunityPostReview = {
   platform_override_action: 'approve' | 'reject' | 'unpublish' | 'restore' | null
   platform_override_reason_code: string | null
   platform_override_private_note: string | null
+  automod_action: 'review_queue' | 'unpublish' | null
+  automod_flagged_at: Date | null
+  automod_flagged_content_sha256: Buffer | null
+  automod_dismissed_at: Date | null
+  automod_dismissed_by_id: string | null
 }
 
 export type CommunityPinnedPost = {

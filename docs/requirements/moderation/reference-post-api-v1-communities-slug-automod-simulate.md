@@ -22,7 +22,7 @@ Response:
     "time_window_hours": 168,
     "sample_count": 25,
     "would_flag_count": 2,
-    "would_unpublish_count": 0,
+    "community_automod_action": "record_only",
     "false_positive_estimate": {
       "historical_flagged_count": 10,
       "historical_approved_count": 1,
@@ -37,11 +37,10 @@ Response:
       "approved_at": "2026-06-01T00:00:00.000Z",
       "content_excerpt": "Example post content...",
       "flagged": true,
-      "reason": "Matches the prompt.",
-      "would_unpublish": false
+      "reason": "Matches the prompt."
     }
   ]
 }
 ```
 
-Simulation samples approved, non-unpublished community posts from the selected window. It does not save `agent_moderations`, enqueue jobs, consume prompt slots, or apply `on_flag_action`.
+Simulation samples approved, non-unpublished community posts from the selected window. It does not save `agent_moderations`, enqueue jobs, consume prompt slots, or apply the automod action. `simulation.community_automod_action` states which action (`record_only`, `review_queue` or `unpublish`) the community currently applies to a real flag, so a moderator can read the results against it.

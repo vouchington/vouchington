@@ -57,6 +57,7 @@ export const community = {
   post_approval_required_at: null,
   allow_review_posts: false,
   allow_data_point_posts: false,
+  automod_action: 'record_only',
   trusted_at: null,
   profile_image_id: null,
   banner_image_id: null,

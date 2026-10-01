@@ -224,13 +224,14 @@ Running `pnpm run db:seed` adds sample data on top of the migrated schema:
   software engineering, travel)
 - Curated articles
 - Copyright review data (the [`copyright*.mts`](../../../backend/scripts/seed/copyright.mts)
-  modules) so `/copyright/email-review` and `/copyright/review-queue` are not empty: four email
-  intakes (a new notice, a thread reply, a failed parse, and one with no parse row) and two guest
-  form cases, one waiting on intake review with AI guidance and one past its deadline escalation.
-  Rows come from the service insert paths where those allow it, keyed on fixed ids so a rerun
-  adds nothing. No moderator is seeded; sign in with `pnpm run login-as`. When the workers
-  start, they finish accepting the past-deadline case; its withhold action then fails locally
-  because media delivery enforcement is not configured.
+  modules) so `/copyright/email-review` and `/copyright/review-queue` are not empty: five email
+  intakes (a new notice, a thread reply, a failed parse, one with no parse row, and one SES flagged
+  for malware whose original is withheld) and two guest form cases, one waiting on intake review
+  with AI guidance and one past its deadline escalation. Rows come from the service insert paths
+  where those allow it, keyed on fixed ids so a rerun adds nothing. No moderator is seeded; sign
+  in with `pnpm run login-as`. When the workers start, they finish accepting the past-deadline
+  case; its withhold action then fails locally because media delivery enforcement is not
+  configured.
 
 `db:seed` is idempotent and can be run multiple times safely.
 

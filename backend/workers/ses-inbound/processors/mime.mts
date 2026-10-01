@@ -2,7 +2,7 @@ import { MailParser, type AddressObject, type HeaderValue } from 'mailparser'
 import { Readable, Transform } from 'node:stream'
 import { streamMailParts, type ParsedMimeAttachment } from './streamed-mail-parts.mts'
 
-const MAX_MIME_HEADER_BYTES = 1024 * 1024
+export const MAX_MIME_HEADER_BYTES = 1024 * 1024
 
 export type ParsedSesInboundEmail = {
   fromEmail: string

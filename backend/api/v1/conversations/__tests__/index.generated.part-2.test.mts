@@ -4,8 +4,23 @@ import createHttpError from 'http-errors'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import { createConversation } from '@services/conversations-messages/create'
+import { getConversationMessagesByConversationId } from '@services/conversations-messages/messages'
 import * as safetyModule from '../../check-api-message-safety.mts'
 import type { PrivateUser } from '@services/users/types'
+
+async function expectStoredModel(
+  conversationId: string,
+  assistantMessageId: string,
+  modelProvider: string,
+  modelName: string,
+) {
+  const messages = await getConversationMessagesByConversationId(conversationId)
+  expect(messages.find(message => message.id === assistantMessageId)?.content).toMatchObject({
+    role: 'assistant',
+    model_provider: modelProvider,
+    model_name: modelName,
+  })
+}
 
 describe('index.generated', () => {
   let user: PrivateUser
@@ -36,8 +51,12 @@ describe('index.generated', () => {
         })
         .expect(200)
 
-      expect(response.body).not.toHaveProperty('agentic_run')
-      expect(response.body).not.toHaveProperty('agentic_run')
+      await expectStoredModel(
+        conversation.id,
+        response.body.turn.assistant_message_id,
+        'windows_foundry',
+        'windows-system-language-model',
+      )
       expect(safetyCheck).toHaveBeenCalledTimes(2)
     })
 
@@ -59,8 +78,12 @@ describe('index.generated', () => {
         })
         .expect(200)
 
-      expect(response.body).not.toHaveProperty('agentic_run')
-      expect(response.body).not.toHaveProperty('agentic_run')
+      await expectStoredModel(
+        conversation.id,
+        response.body.turn.assistant_message_id,
+        'windows_foundry',
+        'windows-system-language-model',
+      )
     })
 
     it('should persist Android AICore with its fixed system model identity', async () => {
@@ -81,8 +104,12 @@ describe('index.generated', () => {
         })
         .expect(200)
 
-      expect(response.body).not.toHaveProperty('agentic_run')
-      expect(response.body).not.toHaveProperty('agentic_run')
+      await expectStoredModel(
+        conversation.id,
+        response.body.turn.assistant_message_id,
+        'android_aicore',
+        'android-aicore-system',
+      )
     })
 
     it('should accept exact model names for OpenAI-compatible local providers', async () => {
@@ -103,8 +130,12 @@ describe('index.generated', () => {
         })
         .expect(200)
 
-      expect(response.body).not.toHaveProperty('agentic_run')
-      expect(response.body).not.toHaveProperty('agentic_run')
+      await expectStoredModel(
+        conversation.id,
+        response.body.turn.assistant_message_id,
+        'openai_compatible',
+        'gpt-oss-20b-local',
+      )
       expect(safetyCheck).toHaveBeenCalledTimes(2)
     })
 

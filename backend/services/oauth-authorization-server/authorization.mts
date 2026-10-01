@@ -1,3 +1,4 @@
+import { SCOPE_DEFINITIONS } from '@modules/scopes'
 import { beginTransaction, write } from '@data-stores/psql'
 import { createOAuthBrowserBindingHash } from './browser-binding.mts'
 import { AUTHORIZATION_REQUEST_TTL_MS } from './constants.mts'
@@ -191,6 +192,7 @@ export async function getOAuthAuthorizationRequestForUser(
     client_hostname: row.metadata_url ? new URL(row.metadata_url).hostname : null,
     resource: row.resource,
     scopes: row.scopes,
+    sensitive_scopes: row.scopes.filter(scope => SCOPE_DEFINITIONS[scope].requiresExactGrant),
     expires_at: row.expires_at,
   }
 }

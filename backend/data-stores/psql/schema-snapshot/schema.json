@@ -55,6 +55,9 @@
     "community_application_question_field_types": {
       "values": ["short_text", "long_text", "single_select", "multi_select", "checkbox"]
     },
+    "community_automod_action": {
+      "values": ["record_only", "review_queue", "unpublish"]
+    },
     "community_list_item_types": {
       "values": ["topic", "rss_feed", "post", "url_hostname", "url"]
     },
@@ -66,9 +69,6 @@
     },
     "community_member_roster_visibility_types": {
       "values": ["public", "users", "members", "moderators"]
-    },
-    "community_prompt_on_flag_action": {
-      "values": ["none", "unpublish"]
     },
     "community_restriction_types": {
       "values": [
@@ -89,12 +89,6 @@
     },
     "conversation_channel_types": {
       "values": ["chat", "direct_message", "modmail", "mod_internal"]
-    },
-    "conversation_message_agentic_runs_events_types": {
-      "values": ["function_call", "model_response"]
-    },
-    "conversation_message_agentic_runs_termination_reasons": {
-      "values": ["no_tool_calls", "max_topics", "max_iterations", "stalled", "error", "superseded"]
     },
     "conversation_message_directions": {
       "values": ["inbound", "outbound"]
@@ -12096,7 +12090,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "archived_by_id": {
@@ -12107,8 +12101,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "uuid"
+        },
+        "automod_action": {
+          "collation": null,
+          "comment": "What the community moderation classifier does when a post trips one of the community's active prompts: record_only (the default, only the per-prompt agent_moderations projection), review_queue (the post stays published and enters the moderator review queue) or unpublish. Read when the classifier run completes, so changing it never re-runs a classification.",
+          "defaultExpression": "'record_only'::community_automod_action",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 13,
+          "type": "community_automod_action"
         },
         "banner_image_id": {
           "collation": null,
@@ -12118,7 +12123,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "uuid"
         },
         "created_at": {
@@ -12129,7 +12134,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -12140,7 +12145,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "uuid"
         },
         "created_via": {
@@ -12173,7 +12178,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 26,
           "type": "text"
         },
         "deleted_at": {
@@ -12184,7 +12189,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -12195,7 +12200,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "uuid"
         },
         "id": {
@@ -12217,7 +12222,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 28,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -12228,7 +12233,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -12239,7 +12244,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 27,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -12250,7 +12255,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 29,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -12261,7 +12266,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 30,
           "type": "jsonb"
         },
         "list_type": {
@@ -12272,7 +12277,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "community_list_types"
         },
         "markdown": {
@@ -12338,7 +12343,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "uuid"
         },
         "rules_markdown": {
@@ -12349,7 +12354,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 32,
           "type": "text"
         },
         "search_vector": {
@@ -12360,7 +12365,7 @@
           "generatedExpression": "((setweight(to_tsvector('voucha_english'::regconfig, COALESCE(name, ''::text)), 'A'::\"char\") || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(slug, ''::text)), 'A'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(markdown, ''::text)), 'B'::\"char\"))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "tsvector"
         },
         "slug": {
@@ -12382,7 +12387,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -12393,7 +12398,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "visibility": {
@@ -13137,7 +13142,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -13148,7 +13153,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "uuid"
         },
         "id": {
@@ -13161,17 +13166,6 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
-        },
-        "on_flag_action": {
-          "collation": null,
-          "comment": "Action taken when this community prompt flags content: none or unpublish.",
-          "defaultExpression": "'none'::community_prompt_on_flag_action",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "community_prompt_on_flag_action"
         },
         "slot_allocated": {
           "collation": null,
@@ -17144,6 +17138,8 @@
     },
     "community_post_reviews": {
       "checkConstraints": {
+        "chk_community_post_reviews__automod_dismissal": "CHECK ((((automod_dismissed_at IS NULL) AND (automod_dismissed_by_id IS NULL)) OR ((automod_dismissed_at IS NOT NULL) AND (automod_action = 'review_queue'::community_automod_action))))",
+        "chk_community_post_reviews__automod_flag": "CHECK ((((automod_action IS NULL) AND (automod_flagged_at IS NULL) AND (automod_flagged_content_sha256 IS NULL)) OR ((automod_action = ANY (ARRAY['review_queue'::community_automod_action, 'unpublish'::community_automod_action])) AND (automod_flagged_at IS NOT NULL) AND (octet_length(automod_flagged_content_sha256) = 32))))",
         "community_post_reviews_check": "CHECK ((NOT ((approved_at IS NOT NULL) AND (rejected_at IS NOT NULL))))",
         "community_post_reviews_check1": "CHECK ((((approved_at IS NULL) AND (rejected_at IS NULL)) OR (reviewed_at IS NOT NULL)))",
         "community_post_reviews_check2": "CHECK (((escalated_at IS NOT NULL) OR (escalated_by_id IS NULL)))",
@@ -17167,6 +17163,61 @@
           "nullable": true,
           "ordinalPosition": 7,
           "type": "timestamp with time zone"
+        },
+        "automod_action": {
+          "collation": null,
+          "comment": "What the community moderation classifier did when it last flagged this post: review_queue (queued for a moderator) or unpublish. NULL means never flagged. record_only flags are projected to agent_moderations only and never stored here. Flags written for new content must clear the dismissal columns in the same update.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 19,
+          "type": "community_automod_action"
+        },
+        "automod_dismissed_at": {
+          "collation": null,
+          "comment": "When a moderator dismissed the review_queue flag as not needing action. NULL means not dismissed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 22,
+          "type": "timestamp with time zone"
+        },
+        "automod_dismissed_by_id": {
+          "collation": null,
+          "comment": "The moderator who dismissed the review_queue flag; NULL after that user is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 23,
+          "type": "uuid"
+        },
+        "automod_flagged_at": {
+          "collation": null,
+          "comment": "When the classifier flag in automod_action was written.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 20,
+          "type": "timestamp with time zone"
+        },
+        "automod_flagged_content_sha256": {
+          "collation": null,
+          "comment": "The post llm_moderation_content_sha256 the flag was computed for. The flag is current only while it equals the post's digest, so an edit supersedes it without a write.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 21,
+          "type": "bytea"
         },
         "community_id": {
           "collation": null,
@@ -17358,6 +17409,15 @@
       },
       "comment": "Tracks the single community review state for community-scoped posts.",
       "foreignKeys": {
+        "community_post_reviews_automod_dismissed_by_id_fkey": {
+          "columns": ["automod_dismissed_by_id"],
+          "definition": "FOREIGN KEY (automod_dismissed_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
         "community_post_reviews_community_id_fkey": {
           "columns": ["community_id"],
           "definition": "FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE",
@@ -17473,6 +17533,40 @@
             }
           ],
           "predicate": "((approved_at IS NOT NULL) AND (unpublished_at IS NULL) AND (rejected_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_comm_post_reviews__automod_open": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_comm_post_reviews__automod_open ON public.community_post_reviews USING btree (community_id, automod_flagged_at DESC, post_id DESC) WHERE ((automod_action = 'review_queue'::community_automod_action) AND (automod_dismissed_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "automod_flagged_at",
+              "descending": true,
+              "expression": "automod_flagged_at",
+              "nullsFirst": true,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": true,
+              "expression": "post_id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((automod_action = 'review_queue'::community_automod_action) AND (automod_dismissed_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -18480,522 +18574,6 @@
       "relationKind": "table",
       "triggers": {
         "trigger_community_saved_replies_updated_at": "CREATE TRIGGER trigger_community_saved_replies_updated_at BEFORE UPDATE ON public.community_saved_replies FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
-    "conversation_message_agentic_runs": {
-      "checkConstraints": {
-        "conversation_message_agentic_runs_check": "CHECK (((completed_at IS NULL) OR (failed_at IS NULL)))"
-      },
-      "columns": {
-        "completed_at": {
-          "collation": null,
-          "comment": "When the agentic run completed successfully. Derived status is completed when set.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 12,
-          "type": "timestamp with time zone"
-        },
-        "conversation_id": {
-          "collation": null,
-          "comment": "The conversation containing the triggering message.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "conversation_message_id": {
-          "collation": null,
-          "comment": "The message that triggered this agentic run.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 14,
-          "type": "timestamp with time zone"
-        },
-        "deleted_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 16,
-          "type": "timestamp with time zone"
-        },
-        "error": {
-          "collation": null,
-          "comment": "Error details if the run failed.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "jsonb"
-        },
-        "failed_at": {
-          "collation": null,
-          "comment": "When the agentic run failed. Derived status is failed when set.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "input": {
-          "collation": null,
-          "comment": "New input for this run, excluding prior context.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "jsonb"
-        },
-        "model_name": {
-          "collation": null,
-          "comment": "The LLM model used for this run.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "text"
-        },
-        "model_provider": {
-          "collation": null,
-          "comment": "The provider of the LLM model (e.g. openai).",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "agent_model_providers"
-        },
-        "output": {
-          "collation": null,
-          "comment": "Output of the run, passed as context to subsequent messages.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "jsonb"
-        },
-        "parent_agentic_run_id": {
-          "collation": null,
-          "comment": "The orchestrator agentic run that spawned this subagent run. NULL for top-level runs.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 13,
-          "type": "uuid"
-        },
-        "started_at": {
-          "collation": null,
-          "comment": "When the agentic run began executing.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 11,
-          "type": "timestamp with time zone"
-        },
-        "termination_reason": {
-          "collation": null,
-          "comment": "Why the run ended (e.g. no_tool_calls, max_iterations, error).",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10,
-          "type": "conversation_message_agentic_runs_termination_reasons"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 15,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Tracks individual agentic LLM runs triggered by a conversation message, range-partitioned by id for retention.",
-      "foreignKeys": {
-        "conversation_message_agentic__conversation_id_conversation_fkey": {
-          "columns": ["conversation_id", "conversation_message_id"],
-          "definition": "FOREIGN KEY (conversation_id, conversation_message_id) REFERENCES conversation_messages(conversation_id, id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["conversation_id", "id"],
-          "referencedTable": "conversation_messages",
-          "validated": true
-        },
-        "conversation_message_agentic_runs_parent_agentic_run_id_fkey": {
-          "columns": ["parent_agentic_run_id"],
-          "definition": "FOREIGN KEY (parent_agentic_run_id) REFERENCES conversation_message_agentic_runs(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "conversation_message_agentic_runs",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "conversation_message_agentic_runs_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX conversation_message_agentic_runs_pkey ON ONLY public.conversation_message_agentic_runs USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_conv_msg_agentic_runs__parent": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_conv_msg_agentic_runs__parent ON ONLY public.conversation_message_agentic_runs USING btree (parent_agentic_run_id) WHERE (parent_agentic_run_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "parent_agentic_run_id",
-              "descending": false,
-              "expression": "parent_agentic_run_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(parent_agentic_run_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_conversation_message_agentic_runs__active_conversation": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_conversation_message_agentic_runs__active_conversation ON ONLY public.conversation_message_agentic_runs USING btree (conversation_id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL) AND (deleted_at IS NULL))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "conversation_id",
-              "descending": false,
-              "expression": "conversation_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "((completed_at IS NULL) AND (failed_at IS NULL) AND (deleted_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_conversation_message_agentic_runs__conv_msg": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_conversation_message_agentic_runs__conv_msg ON ONLY public.conversation_message_agentic_runs USING btree (conversation_id, conversation_message_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "conversation_id",
-              "descending": false,
-              "expression": "conversation_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "conversation_message_id",
-              "descending": false,
-              "expression": "conversation_message_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_conversation_message_agentic_runs__conversation_message_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_conversation_message_agentic_runs__conversation_message_id ON ONLY public.conversation_message_agentic_runs USING btree (conversation_message_id, id DESC)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "conversation_message_id",
-              "descending": false,
-              "expression": "conversation_message_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "partition": {
-        "accessClass": "retention-window",
-        "children": "monthly",
-        "key": "id",
-        "retentionOwner": "cleanupPartitions",
-        "strategy": "RANGE"
-      },
-      "physicalPartition": {
-        "key": "RANGE (id)",
-        "strategy": "range"
-      },
-      "primaryKey": {
-        "columns": ["id"],
-        "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "partitioned table",
-      "triggers": {
-        "trigger_conversation_message_agentic_runs_updated_at": "CREATE TRIGGER trigger_conversation_message_agentic_runs_updated_at BEFORE UPDATE ON public.conversation_message_agentic_runs FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
-    "conversation_message_agentic_runs_events": {
-      "checkConstraints": {},
-      "columns": {
-        "conversation_message_agentic_run_id": {
-          "collation": null,
-          "comment": "The agentic run this event belongs to; also the partition key.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6,
-          "type": "timestamp with time zone"
-        },
-        "deleted_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "timestamp with time zone"
-        },
-        "id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "input": {
-          "collation": null,
-          "comment": "Input data for this event (e.g. function arguments or prompt).",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "jsonb"
-        },
-        "output": {
-          "collation": null,
-          "comment": "Output data from this event (e.g. function result or model response).",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "jsonb"
-        },
-        "type": {
-          "collation": null,
-          "comment": "Event type: function_call or model_response.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "conversation_message_agentic_runs_events_types"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Individual events (function calls, model responses) within an agentic run, partitioned by parent run ID.",
-      "foreignKeys": {
-        "conversation_message_agentic__conversation_message_agentic_fkey": {
-          "columns": ["conversation_message_agentic_run_id"],
-          "definition": "FOREIGN KEY (conversation_message_agentic_run_id) REFERENCES conversation_message_agentic_runs(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "conversation_message_agentic_runs",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "conversation_message_agentic_runs_events_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX conversation_message_agentic_runs_events_pkey ON ONLY public.conversation_message_agentic_runs_events USING btree (conversation_message_agentic_run_id, id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "conversation_message_agentic_run_id",
-              "descending": false,
-              "expression": "conversation_message_agentic_run_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_conv_msg_agentic_run_events__id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_conv_msg_agentic_run_events__id ON ONLY public.conversation_message_agentic_runs_events USING btree (id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "partition": {
-        "accessClass": "retention-window",
-        "children": "monthly",
-        "key": "conversation_message_agentic_run_id",
-        "retentionOwner": "cleanupPartitions",
-        "strategy": "RANGE"
-      },
-      "physicalPartition": {
-        "key": "RANGE (conversation_message_agentic_run_id)",
-        "strategy": "range"
-      },
-      "primaryKey": {
-        "columns": ["conversation_message_agentic_run_id", "id"],
-        "definition": "PRIMARY KEY (conversation_message_agentic_run_id, id)"
-      },
-      "relationKind": "partitioned table",
-      "triggers": {
-        "trigger_conversation_message_agentic_runs_events_updated_at": "CREATE TRIGGER trigger_conversation_message_agentic_runs_events_updated_at BEFORE UPDATE ON public.conversation_message_agentic_runs_events FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },
@@ -26776,11 +26354,16 @@
     },
     "copyright_notice_email_intakes": {
       "checkConstraints": {
+        "copyright_notice_email_intakes_dkim_verdict_check": "CHECK ((dkim_verdict = ANY (ARRAY['pass'::text, 'fail'::text, 'gray'::text, 'processing_failed'::text, 'unknown'::text])))",
+        "copyright_notice_email_intakes_dmarc_verdict_check": "CHECK ((dmarc_verdict = ANY (ARRAY['pass'::text, 'fail'::text, 'gray'::text, 'processing_failed'::text, 'unknown'::text])))",
         "copyright_notice_email_intakes_raw_byte_size_check": "CHECK ((raw_byte_size >= 0))",
         "copyright_notice_email_intakes_raw_mime_type_check": "CHECK (((char_length(raw_mime_type) >= 1) AND (char_length(raw_mime_type) <= 255)))",
         "copyright_notice_email_intakes_raw_sha256_check": "CHECK ((octet_length(raw_sha256) = 32))",
         "copyright_notice_email_intakes_raw_storage_key_check": "CHECK (((char_length(raw_storage_key) >= 1) AND (char_length(raw_storage_key) <= 1024)))",
-        "copyright_notice_email_intakes_ses_message_id_check": "CHECK (((char_length(ses_message_id) >= 1) AND (char_length(ses_message_id) <= 512)))"
+        "copyright_notice_email_intakes_ses_message_id_check": "CHECK (((char_length(ses_message_id) >= 1) AND (char_length(ses_message_id) <= 512)))",
+        "copyright_notice_email_intakes_spam_verdict_check": "CHECK ((spam_verdict = ANY (ARRAY['pass'::text, 'fail'::text, 'gray'::text, 'processing_failed'::text, 'unknown'::text])))",
+        "copyright_notice_email_intakes_spf_verdict_check": "CHECK ((spf_verdict = ANY (ARRAY['pass'::text, 'fail'::text, 'gray'::text, 'processing_failed'::text, 'unknown'::text])))",
+        "copyright_notice_email_intakes_virus_verdict_check": "CHECK ((virus_verdict = ANY (ARRAY['pass'::text, 'fail'::text, 'gray'::text, 'processing_failed'::text, 'unknown'::text])))"
       },
       "columns": {
         "created_at": {
@@ -26791,8 +26374,30 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
+        },
+        "dkim_verdict": {
+          "collation": null,
+          "comment": "SES DKIM verdict from the amazonses.com Authentication-Results header; pass means a DKIM signature validated, not that the signing domain aligns with the From domain. unknown when SES reported none. Advisory risk signal only.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "text"
+        },
+        "dmarc_verdict": {
+          "collation": null,
+          "comment": "SES DMARC verdict from the amazonses.com Authentication-Results header; unknown when SES reported none. Advisory risk signal only.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "text"
         },
         "id": {
           "collation": null,
@@ -26871,6 +26476,28 @@
           "ordinalPosition": 2,
           "type": "text"
         },
+        "spam_verdict": {
+          "collation": null,
+          "comment": "SES spam verdict from the X-SES-Spam-Verdict header SES added at receipt; unknown when SES reported none. Advisory risk signal only.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "text"
+        },
+        "spf_verdict": {
+          "collation": null,
+          "comment": "SES SPF verdict from the amazonses.com Authentication-Results header SES added at receipt; unknown when SES reported none. Advisory risk signal only.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text"
+        },
         "updated_at": {
           "collation": null,
           "comment": null,
@@ -26879,8 +26506,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
+        },
+        "virus_verdict": {
+          "collation": null,
+          "comment": "SES malware verdict from the X-SES-Virus-Verdict header SES added at receipt; unknown when SES reported none. A fail quarantines the original message so staff cannot download it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12,
+          "type": "text"
         }
       },
       "comment": "Immutable, private records for email sent to the designated copyright inbox before a moderator validates it into a legal case.",

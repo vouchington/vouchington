@@ -22,8 +22,6 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | admin-imports                                | processImportRow                               | —                                        | 10               |
 | user-rss-feed-imports                        | processImportRow                               | —                                        | 10               |
 | ai_agents                                    | chat                                           | —                                        | 1                |
-| ai_agents                                    | community-moderation-prompt                    | —                                        | 3                |
-| ai_agents                                    | community-moderation-dispatcher                | —                                        | 8                |
 | ai_agents                                    | story-clustering                               | —                                        | 15               |
 | ai_agents                                    | autotagger-post                                | —                                        | 20               |
 | ai_agents                                    | classifier-run-dispatcher                      | `classifier_run_dispatcher_<class>_<id>` | 8                |

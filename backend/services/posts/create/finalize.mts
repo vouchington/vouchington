@@ -10,7 +10,6 @@ import onError from '@modules/on-error'
 type FinalizePreparedPostInput = {
   communityReviews: CommunityPostReview[]
   creator: PrivateUser
-  isAdminCreator: boolean
   post: Post
   postType: NonNullable<CreatePostInput['post_type']>
   resolvedUrlHostnameId: string | undefined
@@ -24,7 +23,6 @@ export async function finalizePreparedPost(
   const {
     communityReviews,
     creator,
-    isAdminCreator,
     post,
     postType,
     resolvedUrlHostnameId,
@@ -43,9 +41,7 @@ export async function finalizePreparedPost(
     }
   }
   await applyPostCommitSideEffects({
-    communityReviews,
     creator,
-    isAdminCreator,
     post,
     postType,
     updates,

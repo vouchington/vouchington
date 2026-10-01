@@ -56,6 +56,7 @@ describe('get', () => {
         'allow_review_posts',
         'archived_at',
         'archived_by_id',
+        'automod_action',
         'banner_image_id',
         'banner_image_placement',
         'created_at',

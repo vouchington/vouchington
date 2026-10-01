@@ -6,17 +6,16 @@ Extension table linking agent prompts to communities, with slot allocation and a
 
 Not partitioned — growth: unbounded.
 
-| Column           | Type                              | Nullable | Default                                   | Identity | Generated | Collation | Comment                                                                                  |
-| ---------------- | --------------------------------- | -------- | ----------------------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------- |
-| `id`             | `uuid`                            | no       |                                           |          |           |           |                                                                                          |
-| `community_id`   | `uuid`                            | no       |                                           |          |           |           | The community this agent prompt belongs to.                                              |
-| `created_by_id`  | `uuid`                            | no       |                                           |          |           |           |                                                                                          |
-| `slot_allocated` | `boolean`                         | no       | `false`                                   |          |           |           | Whether this prompt has been allocated a slot for active use.                            |
-| `activated_at`   | `timestamp with time zone`        | yes      |                                           |          |           |           | When the prompt was activated for community use. Mutually exclusive with deactivated_at. |
-| `deactivated_at` | `timestamp with time zone`        | yes      |                                           |          |           |           | When the prompt was deactivated. Mutually exclusive with activated_at.                   |
-| `on_flag_action` | `community_prompt_on_flag_action` | no       | `'none'::community_prompt_on_flag_action` |          |           |           | Action taken when this community prompt flags content: none or unpublish.                |
-| `deleted_at`     | `timestamp with time zone`        | yes      |                                           |          |           |           |                                                                                          |
-| `deleted_by_id`  | `uuid`                            | yes      |                                           |          |           |           |                                                                                          |
+| Column           | Type                       | Nullable | Default | Identity | Generated | Collation | Comment                                                                                  |
+| ---------------- | -------------------------- | -------- | ------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------- |
+| `id`             | `uuid`                     | no       |         |          |           |           |                                                                                          |
+| `community_id`   | `uuid`                     | no       |         |          |           |           | The community this agent prompt belongs to.                                              |
+| `created_by_id`  | `uuid`                     | no       |         |          |           |           |                                                                                          |
+| `slot_allocated` | `boolean`                  | no       | `false` |          |           |           | Whether this prompt has been allocated a slot for active use.                            |
+| `activated_at`   | `timestamp with time zone` | yes      |         |          |           |           | When the prompt was activated for community use. Mutually exclusive with deactivated_at. |
+| `deactivated_at` | `timestamp with time zone` | yes      |         |          |           |           | When the prompt was deactivated. Mutually exclusive with activated_at.                   |
+| `deleted_at`     | `timestamp with time zone` | yes      |         |          |           |           |                                                                                          |
+| `deleted_by_id`  | `uuid`                     | yes      |         |          |           |           |                                                                                          |
 
 **Primary key:** `PRIMARY KEY (id)`
 

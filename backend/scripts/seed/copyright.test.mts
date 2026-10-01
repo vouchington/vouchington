@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
+  getCopyrightStaffEmailIntake,
   listCopyrightStaffQueue,
   searchCopyrightStaffEmailIntakes,
 } from '@services/copyright-notices'
@@ -19,7 +20,8 @@ describe('seedCopyright', () => {
     const second = await seedCopyright()
     expect(second).toEqual(first)
 
-    // The email queue is oldest first: new notice, its reply, a failed parse, then no parse row.
+    // The email queue is oldest first: new notice, its reply, a failed parse, no parse row, then
+    // the message SES flagged for malware.
     const { intakes } = await searchCopyrightStaffEmailIntakes(moderator, { limit: 10 })
     expect(intakes.map(intake => intake.id)).toEqual(first.emailIntakeIds)
     expect(
@@ -54,6 +56,31 @@ describe('seedCopyright', () => {
         recommendation_id: null,
         linked_notice_id: null,
       },
+      {
+        parse_status: 'succeeded',
+        review_path: 'initial',
+        recommendation_id: null,
+        linked_notice_id: null,
+      },
+    ])
+
+    // Only the malware-flagged message has its original withheld; the others offer the download.
+    const details = await Promise.all(
+      first.emailIntakeIds.map(id => getCopyrightStaffEmailIntake(id, moderator)),
+    )
+    expect(details.map(detail => detail?.ses_verdicts.virus)).toEqual([
+      'pass',
+      'pass',
+      'pass',
+      'pass',
+      'fail',
+    ])
+    expect(details.map(detail => detail?.raw_email.download_url === null)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      true,
     ])
 
     // The overdue-deadline case outranks the case that has only waited on intake review.

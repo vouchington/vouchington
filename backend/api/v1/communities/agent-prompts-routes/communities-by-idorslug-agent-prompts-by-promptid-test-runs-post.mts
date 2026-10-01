@@ -59,7 +59,7 @@ app
     const config: ActiveModeratorConfig = {
       moderator_id: prompt.agent_id,
       moderator_slug: `community-prompt-${promptId}`,
-      on_flag_action: 'review_queue',
+      on_flag_action: 'none',
       is_baseline: false,
       system_user_id: '',
       prompt: {

@@ -60,6 +60,6 @@
     "@services/users": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
-    "@vouchington/embeds": "0.0.2"
+    "@vouchington/embeds": "^0.0.2"
   }
 }

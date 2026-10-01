@@ -1,4 +1,3 @@
-export type { TopicClaim, TopicClaimVerificationMethod, TopicClaimState } from './config.mts'
 export { TOPIC_CLAIM_VERIFICATION_METHODS, getTopicClaimState } from './config.mts'
 export { createTopicClaim } from './create.mts'
 export {

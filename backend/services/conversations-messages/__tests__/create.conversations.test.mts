@@ -1,11 +1,10 @@
-import { getLatestConversationMessageAgenticRunByConversationMessageId } from '../agentic-runs.mts'
 import { describe, expect, it } from 'vitest'
 import { createSystemUser } from '@voucha/test-helpers'
 import {
+  ClientGeneratedTurnIdentityConflictError,
   createClientGeneratedChatTurn,
   createConversation,
   createConversationMessage,
-  createConversationMessageAgenticRun,
   getConversationByCreatedByAndTitle,
   getConversationById,
   getConversationsByCreatedById,
@@ -130,27 +129,9 @@ describe('conversations-messages service (conversations)', () => {
       role: 'assistant',
       content: 'Use transferable points first.',
       turn_key: result.userMessage.content?.turn_key,
-    })
-    expect(
-      await getLatestConversationMessageAgenticRunByConversationMessageId(
-        result.assistantMessage.id,
-      ),
-    ).toMatchObject({
-      conversation_id: conversation.id,
-      conversation_message_id: result.assistantMessage.id,
-      model_name: 'apple-foundation-system',
       model_provider: 'apple_foundation',
-      status: 'completed',
-      input: { message: 'Summarize my rewards profile' },
-      output: { response: 'Use transferable points first.' },
+      model_name: 'apple-foundation-system',
     })
-    expect(
-      (
-        await getLatestConversationMessageAgenticRunByConversationMessageId(
-          result.assistantMessage.id,
-        )
-      )?.termination_reason,
-    ).toBe('no_tool_calls')
   })
 
   it('createClientGeneratedChatTurn stores phi-silica for windows_foundry', async () => {
@@ -159,23 +140,14 @@ describe('conversations-messages service (conversations)', () => {
     const conversation = await createConversation(user.id, 'Windows local model')
 
     const result = await createClientGeneratedChatTurn({
-      userMessageId: user.id,
-      assistantMessageId: conversation.id,
-      conversationId: conversation.id,
-      createdById: user.id,
-      message: 'Summarize my rewards profile',
-      assistantContent: 'Use transferable points first.',
+      ...turnParams(user.id, conversation.id),
       modelProvider: 'windows_foundry',
       modelName: 'phi-silica',
     })
 
-    expect(
-      await getLatestConversationMessageAgenticRunByConversationMessageId(
-        result.assistantMessage.id,
-      ),
-    ).toMatchObject({
-      model_name: 'phi-silica',
+    expect(result.assistantMessage.content).toMatchObject({
       model_provider: 'windows_foundry',
+      model_name: 'phi-silica',
     })
   })
 
@@ -185,76 +157,61 @@ describe('conversations-messages service (conversations)', () => {
     const conversation = await createConversation(user.id, 'OpenAI-compatible local model')
 
     const result = await createClientGeneratedChatTurn({
-      userMessageId: user.id,
-      assistantMessageId: conversation.id,
-      conversationId: conversation.id,
-      createdById: user.id,
-      message: 'Summarize my rewards profile',
-      assistantContent: 'Use transferable points first.',
+      ...turnParams(user.id, conversation.id),
       modelProvider: 'openai_compatible',
       modelName: 'gpt-oss-20b-local',
     })
 
-    expect(
-      await getLatestConversationMessageAgenticRunByConversationMessageId(
-        result.assistantMessage.id,
-      ),
-    ).toMatchObject({
-      model_name: 'gpt-oss-20b-local',
+    expect(result.assistantMessage.content).toMatchObject({
       model_provider: 'openai_compatible',
+      model_name: 'gpt-oss-20b-local',
     })
   })
 
-  it('createClientGeneratedChatTurn rejects a pending assistant placeholder that has no run yet', async () => {
+  it('createClientGeneratedChatTurn does not wait on an incomplete assistant placeholder', async () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Pending placeholder')
     await createConversationMessage(conversation.id, user.id, { role: 'assistant', content: null })
 
-    await expect(
-      createClientGeneratedChatTurn({
-        userMessageId: user.id,
-        assistantMessageId: conversation.id,
-        conversationId: conversation.id,
-        createdById: user.id,
-        message: 'Second',
-        assistantContent: 'Blocked.',
-        modelProvider: 'apple_foundation',
-        modelName: 'apple-foundation-system',
-      }),
-    ).rejects.toThrow('A message is already being processed')
-    await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(1)
+    await createClientGeneratedChatTurn(turnParams(user.id, conversation.id))
+
+    await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(3)
   })
 
-  it('createClientGeneratedChatTurn rejects active turns inside the insert transaction', async () => {
+  it('createClientGeneratedChatTurn replays an identical retry and rejects a changed model', async () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
-    const conversation = await createConversation(user.id, 'Local model')
-    const assistantMessage = await createConversationMessage(conversation.id, user.id, {
-      role: 'assistant',
-      content: null,
-    })
-    await createConversationMessageAgenticRun({
-      conversationId: conversation.id,
-      conversationMessageId: assistantMessage.id,
-      modelName: 'gpt-5.4-nano',
-      modelProvider: 'openai',
-      input: { message: 'Hello' },
-    })
+    const conversation = await createConversation(user.id, 'Retry model')
+    const params = {
+      ...turnParams(user.id, conversation.id),
+      modelProvider: 'openai_compatible' as const,
+      modelName: 'gpt-oss-20b-local',
+    }
+    const first = await createClientGeneratedChatTurn(params)
 
+    const replay = await createClientGeneratedChatTurn(params)
+    expect(replay.assistantMessage.id).toBe(first.assistantMessage.id)
     await expect(
-      createClientGeneratedChatTurn({
-        userMessageId: user.id,
-        assistantMessageId: conversation.id,
-        conversationId: conversation.id,
-        createdById: user.id,
-        message: 'Summarize my rewards profile',
-        assistantContent: 'Use transferable points first.',
-        modelProvider: 'apple_foundation',
-        modelName: 'apple-foundation-system',
-      }),
-    ).rejects.toThrow('A message is already being processed')
+      createClientGeneratedChatTurn({ ...params, modelName: 'another-local-model' }),
+    ).rejects.toBeInstanceOf(ClientGeneratedTurnIdentityConflictError)
+    await expect(
+      createClientGeneratedChatTurn({ ...params, modelProvider: 'apple_foundation' }),
+    ).rejects.toBeInstanceOf(ClientGeneratedTurnIdentityConflictError)
 
-    await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(1)
+    await expect(getConversationMessagesByConversationId(conversation.id)).resolves.toHaveLength(2)
   })
 })
+
+function turnParams(userId: string, conversationId: string) {
+  return {
+    userMessageId: userId,
+    assistantMessageId: conversationId,
+    conversationId,
+    createdById: userId,
+    message: 'Summarize my rewards profile',
+    assistantContent: 'Use transferable points first.',
+    modelProvider: 'apple_foundation' as const,
+    modelName: 'apple-foundation-system',
+  }
+}

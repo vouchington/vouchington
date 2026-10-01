@@ -70,6 +70,7 @@ await setCommunityArchiveState(currentUser, communityId, true, membership)
 | [`create.mts`](../../../../../backend/services/communities/create.mts)                         | Community creation (free, no membership gate)             |
 | [`update.mts`](../../../../../backend/services/communities/update.mts)                         | Settings and metadata updates                             |
 | [`post-type-settings.mts`](../../../../../backend/services/communities/post-type-settings.mts) | Review/data-point post-type flags and eligibility helpers |
+| [`automod-settings.mts`](../../../../../backend/services/communities/automod-settings.mts)     | Moderator-set `automod_action` (`record_only` default)    |
 | [`delete.mts`](../../../../../backend/services/communities/delete.mts)                         | Soft-delete (sets deleted_at)                             |
 | [`get.mts`](../../../../../backend/services/communities/get.mts)                               | Fetch community by slug or ID                             |
 | [`columns.mts`](../../../../../backend/services/communities/columns.mts)                       | Response column list for detail, batch and search reads   |

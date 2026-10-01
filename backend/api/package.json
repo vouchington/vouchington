@@ -266,9 +266,10 @@
     "http-errors": "^2.0.1",
     "jose": "^6.2.12",
     "otpauth": "^9.5.2",
-    "p-map": "7.0.8",
+    "p-map": "^7.0.8",
     "undici": "^8.11.2",
-    "uuid": "^14.0.2"
+    "uuid": "^14.0.2",
+    "valkyries": "^0.8.1"
   },
   "devDependencies": {
     "@aws-sdk/client-cloudfront": "^3.1142.0",

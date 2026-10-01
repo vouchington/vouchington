@@ -6,20 +6,30 @@ import {
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
 import type { PostSearchOptions } from '../types.mts'
+import { buildThreadReadabilityFilter } from './thread-readability.mts'
 import { POST_TOPIC_CATEGORY_RELATION_TABLE } from '@services/entity-relations/metadata'
 
 export function appendBaseFilters(
   filters: SQLStatement[],
   currentUser: BasicUser | undefined,
-  { exclude_for_user_id, include_topic_recommendations, post_types, user_id }: PostSearchOptions,
+  {
+    exclude_for_user_id,
+    include_topic_recommendations,
+    post_types,
+    public_eligibility_only,
+    user_id,
+  }: PostSearchOptions,
 ): boolean {
   filters.push(sql`posts.deleted_at IS NULL`)
   filters.push(sql`posts.community_id IS NULL`)
   if (!include_topic_recommendations) filters.push(sql`posts.post_type != 'topic_recommendation'`)
   if (!post_types?.length) filters.push(sql`posts.post_type != 'comment'`)
 
-  const isAdmin = isAdminUser(currentUser ?? null)
-  if (currentUser) {
+  // Public-only callers (MCP search_posts) are judged as signed out, so neither an author nor an
+  // administrator widens what they see. The exclusions below still follow `currentUser`.
+  const viewer = public_eligibility_only ? undefined : currentUser
+  const isAdmin = isAdminUser(viewer ?? null)
+  if (viewer) {
     const viewerEligibility = sql`EXISTS (
       SELECT 1
       FROM posts root_post
@@ -27,7 +37,7 @@ export function appendBaseFilters(
         AND `
     viewerEligibility.append(
       buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', {
-        currentUserId: currentUser.id,
+        currentUserId: viewer.id,
         isAdministrator: isAdmin,
       }),
     ).append(sql`
@@ -42,9 +52,13 @@ export function appendBaseFilters(
     publicEligibility.append(buildPublicPostEligibilityFilter('posts', 'root_post')).append(sql`
     )`)
     filters.push(publicEligibility)
+    // Comments are searched only when asked for, so only then does the thread need judging.
+    if (public_eligibility_only && post_types?.includes('comment')) {
+      filters.push(buildThreadReadabilityFilter())
+    }
   }
   if (exclude_for_user_id) appendUserExclusionFilters(filters)
-  if (user_id) appendUserFilter(filters, { currentUser, isAdmin, user_id })
+  if (user_id) appendUserFilter(filters, { currentUser: viewer, isAdmin, user_id })
   return isAdmin
 }
 

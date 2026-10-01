@@ -16,7 +16,7 @@ const openApi = JSON.parse(
   readFileSync(new URL('../../api-fixtures/v1/openapi.json', import.meta.url), 'utf8'),
 ) as OpenApi
 
-// get_my_profile flattens four REST bodies into one result, so it owns its result schema. Each
+// get_my_profile flattens three REST bodies into one result, so it owns its result schema. Each
 // section must stay the schema its REST twin documents in the generated OpenAPI document.
 function documentedBody(path: string): JsonSchema {
   const schema = openApi.paths[path]?.get.responses[200].content['application/json']?.schema
@@ -44,7 +44,6 @@ describe('get_my_profile output schema', () => {
       'point_valuations_page_info',
       'rewards_program_statuses',
       'rewards_program_statuses_page_info',
-      'financial_profile',
     ])
   })
 
@@ -63,12 +62,6 @@ describe('get_my_profile output schema', () => {
   ])('takes %s and its page info from the %s REST twin', (list, pageInfo, path) => {
     expect(properties[list]).toEqual(documentedProperty(path, 'results'))
     expect(properties[pageInfo]).toEqual(documentedProperty(path, 'page_info'))
-  })
-
-  it('takes the financial profile from the REST twin', () => {
-    expect(properties['financial_profile']).toEqual(
-      documentedProperty('/api/v1/my/financial-profile', 'financial_profile'),
-    )
   })
 
   it('publishes a schema that needs no document around it', () => {

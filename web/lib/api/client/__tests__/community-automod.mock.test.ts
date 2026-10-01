@@ -5,14 +5,22 @@ vi.mock(
   () =>
     ({
       clientApi: {
+        patch: vi.fn<VitestLooseMock>(),
         post: vi.fn<VitestLooseMock>(),
       },
     }) as unknown as typeof import('../instance'),
 )
 
-import { recordCommunityAutomodFeedback } from '../community-automod'
+import {
+  dismissCommunityAutomodFlag,
+  recordCommunityAutomodFeedback,
+  updateCommunityAutomodSettings,
+} from '../community-automod'
 import { clientApi } from '../instance'
+import { makeCommunity } from '@/test-helpers/api-responses/communities'
+import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
 
+const mockPatch = vi.mocked(clientApi.patch)
 const mockPost = vi.mocked(clientApi.post)
 
 describe('community automod client', () => {
@@ -41,5 +49,28 @@ describe('community automod client', () => {
         note: 'Looks fine after review.',
       },
     )
+  })
+
+  it('dismisses an automod flag with encoded community and post ids', async () => {
+    mockPost.mockResolvedValueOnce(undefined)
+
+    await expect(dismissCommunityAutomodFlag('my/community', 'post/1')).resolves.toBeUndefined()
+
+    expect(mockPost).toHaveBeenCalledWith(
+      '/api/v1/communities/my%2Fcommunity/posts/post%2F1/automod-flag/dismissal',
+    )
+  })
+
+  it('updates the community automod action with an encoded community id', async () => {
+    await expectApiWrapperCall({
+      mock: mockPatch,
+      response: { community: makeCommunity({ id: 'community-1', automod_action: 'review_queue' }) },
+      call: () =>
+        updateCommunityAutomodSettings('my/community', { automod_action: 'review_queue' }),
+      expectedArgs: [
+        '/api/v1/communities/my%2Fcommunity/automod-settings',
+        { automod_action: 'review_queue' },
+      ],
+    })
   })
 })

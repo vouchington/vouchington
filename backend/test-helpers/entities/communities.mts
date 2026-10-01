@@ -64,7 +64,6 @@ type InsertTestCommunityAgentPromptOptions = {
   createdById: string
   prompt?: string
   slotAllocated?: boolean
-  onFlagAction?: 'none' | 'unpublish'
   deletedAt?: Date | null
   deletedPromptAt?: Date | null
   deletedAgentAt?: Date | null
@@ -108,10 +107,9 @@ export async function insertTestCommunityAgentPrompt(
       FROM prompt_id p, new_agent a
       RETURNING *
     ), new_community_prompt AS (
-      INSERT INTO community_agent_prompts (id, community_id, created_by_id, slot_allocated, on_flag_action, activated_at, deleted_at)
+      INSERT INTO community_agent_prompts (id, community_id, created_by_id, slot_allocated, activated_at, deleted_at)
       SELECT id, ${options.communityId}, ${options.createdById},
         ${options.slotAllocated ?? false},
-        ${options.onFlagAction ?? 'none'},
         ${options.slotAllocated ? new Date() : null},
         ${options.deletedAt ?? null}
       FROM new_prompt
