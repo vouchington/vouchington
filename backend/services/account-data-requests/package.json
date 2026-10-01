@@ -24,6 +24,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1141.0",
     "@data-stores/psql": "workspace:^",
     "@modules/aws": "workspace:^",
+    "@modules/token-secrets": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@voucha/types": "workspace:^",
     "csv-stringify": "^6.9.0",
