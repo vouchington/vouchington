@@ -162,7 +162,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/moderation-queue": {
       "fixtureIds": ["web.communities.moderation-queue.default"],
-      "hash": "8df3012f005bc9639e0cf1d57170f44ef5b198d196305652be1284679880de00"
+      "hash": "1b00f759d10c5c74e763b74b578c6ef17521a76835a0f5c86d674ce90778f466"
     },
     "GET:/api/v1/communities/:communitySlug/moderator-stats": {
       "fixtureIds": ["web.communities.moderator-stats.default"],

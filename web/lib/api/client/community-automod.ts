@@ -16,3 +16,10 @@ export function recordCommunityAutomodFeedback(
     input,
   )
 }
+
+/** Dismisses the open automod review-queue flag on a post (moderators and site staff). */
+export function dismissCommunityAutomodFlag(idOrSlug: string, postId: string): Promise<void> {
+  return clientApi.post<void>(
+    `/api/v1/communities/${encodeURIComponent(idOrSlug)}/posts/${encodeURIComponent(postId)}/automod-flag/dismissal`,
+  )
+}

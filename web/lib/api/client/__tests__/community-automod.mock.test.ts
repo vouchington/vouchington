@@ -10,7 +10,7 @@ vi.mock(
     }) as unknown as typeof import('../instance'),
 )
 
-import { recordCommunityAutomodFeedback } from '../community-automod'
+import { dismissCommunityAutomodFlag, recordCommunityAutomodFeedback } from '../community-automod'
 import { clientApi } from '../instance'
 
 const mockPost = vi.mocked(clientApi.post)
@@ -40,6 +40,16 @@ describe('community automod client', () => {
         reason_code: 'allowed_content',
         note: 'Looks fine after review.',
       },
+    )
+  })
+
+  it('dismisses an automod flag with encoded community and post ids', async () => {
+    mockPost.mockResolvedValueOnce(undefined)
+
+    await expect(dismissCommunityAutomodFlag('my/community', 'post/1')).resolves.toBeUndefined()
+
+    expect(mockPost).toHaveBeenCalledWith(
+      '/api/v1/communities/my%2Fcommunity/posts/post%2F1/automod-flag/dismissal',
     )
   })
 })

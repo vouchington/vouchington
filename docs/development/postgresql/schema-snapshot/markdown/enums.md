@@ -92,6 +92,12 @@
 - `multi_select`
 - `checkbox`
 
+## `community_automod_action`
+
+- `record_only`
+- `review_queue`
+- `unpublish`
+
 ## `community_list_item_types`
 
 - `topic`

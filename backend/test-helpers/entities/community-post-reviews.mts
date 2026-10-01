@@ -68,6 +68,59 @@ export async function insertTestPendingCommunityPostReview(options: {
   )
 }
 
+/**
+ * Records an automod flag on the post's review row for the post's current content digest, the
+ * way the community classifier's review-queue and unpublish effects will. Change the digest
+ * afterwards with `setPostLLMModerationContentSha256` to simulate an edit.
+ */
+export async function setTestCommunityPostReviewAutomodFlag(options: {
+  postId: string
+  action: 'review_queue' | 'unpublish'
+  flaggedAt?: Date
+}): Promise<void> {
+  await write(
+    sql`/* setTestCommunityPostReviewAutomodFlag */
+    UPDATE community_post_reviews cpr
+    SET automod_action = ${options.action}::community_automod_action,
+        automod_flagged_at = ${(options.flaggedAt ?? new Date()).toISOString()}::timestamptz,
+        automod_flagged_content_sha256 = p.llm_moderation_content_sha256,
+        automod_dismissed_at = NULL,
+        automod_dismissed_by_id = NULL
+    FROM posts p
+    WHERE p.id = cpr.post_id
+      AND cpr.post_id = ${options.postId}
+    `,
+  )
+}
+
+export async function getCommunityPostReviewAutomodState(postId: string): Promise<
+  | {
+      automod_action: 'review_queue' | 'unpublish' | null
+      automod_flagged_content_sha256: Buffer | null
+      automod_dismissed_at: Date | null
+      automod_dismissed_by_id: string | null
+    }
+  | undefined
+> {
+  const { rows } = await read(
+    sql`/* getCommunityPostReviewAutomodState */
+    SELECT automod_action, automod_flagged_content_sha256, automod_dismissed_at,
+      automod_dismissed_by_id
+    FROM community_post_reviews
+    WHERE post_id = ${postId}
+    LIMIT 1
+    `,
+  )
+  return rows[0] as
+    | {
+        automod_action: 'review_queue' | 'unpublish' | null
+        automod_flagged_content_sha256: Buffer | null
+        automod_dismissed_at: Date | null
+        automod_dismissed_by_id: string | null
+      }
+    | undefined
+}
+
 export async function getCommunityPostReviewStatus(
   communityId: string,
   postId: string,

@@ -2983,6 +2983,48 @@
         "summary": "Swift and .NET render no copyright form-screening guidance panel. The panel is advisory staff tooling on the web staff case.",
         "trackingIssue": "https://github.com/vouchington/vouchington/issues/1229"
       }
+    },
+    {
+      "id": "community-automod-flags",
+      "title": "Community automod flag review",
+      "domain": "Community",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/moderation/community-moderation.md",
+        "docs/requirements/moderation/reference-community-moderation-moderation-queue.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "community automod flags (moderator)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/communities/community-automod-flags-panel.tsx",
+            "web/app/(communities)/communities/[slug]/settings/moderation/page.tsx"
+          ],
+          "behaviorTests": [
+            "web/components/communities/__tests__/community-automod-flags-panel.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET render no community automod flag list or Dismiss action. The queue source and dismissal endpoint are staged in the API fixtures; the per-community automod action setting follows in the next Vouchington #221 change.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/199"
+      }
     }
   ]
 }

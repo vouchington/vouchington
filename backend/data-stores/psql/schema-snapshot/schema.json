@@ -55,6 +55,9 @@
     "community_application_question_field_types": {
       "values": ["short_text", "long_text", "single_select", "multi_select", "checkbox"]
     },
+    "community_automod_action": {
+      "values": ["record_only", "review_queue", "unpublish"]
+    },
     "community_list_item_types": {
       "values": ["topic", "rss_feed", "post", "url_hostname", "url"]
     },
@@ -17133,6 +17136,8 @@
     },
     "community_post_reviews": {
       "checkConstraints": {
+        "chk_community_post_reviews__automod_dismissal": "CHECK ((((automod_dismissed_at IS NULL) AND (automod_dismissed_by_id IS NULL)) OR ((automod_dismissed_at IS NOT NULL) AND (automod_action = 'review_queue'::community_automod_action))))",
+        "chk_community_post_reviews__automod_flag": "CHECK ((((automod_action IS NULL) AND (automod_flagged_at IS NULL) AND (automod_flagged_content_sha256 IS NULL)) OR ((automod_action = ANY (ARRAY['review_queue'::community_automod_action, 'unpublish'::community_automod_action])) AND (automod_flagged_at IS NOT NULL) AND (octet_length(automod_flagged_content_sha256) = 32))))",
         "community_post_reviews_check": "CHECK ((NOT ((approved_at IS NOT NULL) AND (rejected_at IS NOT NULL))))",
         "community_post_reviews_check1": "CHECK ((((approved_at IS NULL) AND (rejected_at IS NULL)) OR (reviewed_at IS NOT NULL)))",
         "community_post_reviews_check2": "CHECK (((escalated_at IS NOT NULL) OR (escalated_by_id IS NULL)))",
@@ -17156,6 +17161,61 @@
           "nullable": true,
           "ordinalPosition": 7,
           "type": "timestamp with time zone"
+        },
+        "automod_action": {
+          "collation": null,
+          "comment": "What the community moderation classifier did when it last flagged this post: review_queue (queued for a moderator) or unpublish. NULL means never flagged. record_only flags are projected to agent_moderations only and never stored here. Flags written for new content must clear the dismissal columns in the same update.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 19,
+          "type": "community_automod_action"
+        },
+        "automod_dismissed_at": {
+          "collation": null,
+          "comment": "When a moderator dismissed the review_queue flag as not needing action. NULL means not dismissed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 22,
+          "type": "timestamp with time zone"
+        },
+        "automod_dismissed_by_id": {
+          "collation": null,
+          "comment": "The moderator who dismissed the review_queue flag; NULL after that user is deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 23,
+          "type": "uuid"
+        },
+        "automod_flagged_at": {
+          "collation": null,
+          "comment": "When the classifier flag in automod_action was written.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 20,
+          "type": "timestamp with time zone"
+        },
+        "automod_flagged_content_sha256": {
+          "collation": null,
+          "comment": "The post llm_moderation_content_sha256 the flag was computed for. The flag is current only while it equals the post's digest, so an edit supersedes it without a write.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 21,
+          "type": "bytea"
         },
         "community_id": {
           "collation": null,
@@ -17347,6 +17407,15 @@
       },
       "comment": "Tracks the single community review state for community-scoped posts.",
       "foreignKeys": {
+        "community_post_reviews_automod_dismissed_by_id_fkey": {
+          "columns": ["automod_dismissed_by_id"],
+          "definition": "FOREIGN KEY (automod_dismissed_by_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
         "community_post_reviews_community_id_fkey": {
           "columns": ["community_id"],
           "definition": "FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE",
@@ -17462,6 +17531,40 @@
             }
           ],
           "predicate": "((approved_at IS NOT NULL) AND (unpublished_at IS NULL) AND (rejected_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_comm_post_reviews__automod_open": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_comm_post_reviews__automod_open ON public.community_post_reviews USING btree (community_id, automod_flagged_at DESC, post_id DESC) WHERE ((automod_action = 'review_queue'::community_automod_action) AND (automod_dismissed_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "automod_flagged_at",
+              "descending": true,
+              "expression": "automod_flagged_at",
+              "nullsFirst": true,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": true,
+              "expression": "post_id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((automod_action = 'review_queue'::community_automod_action) AND (automod_dismissed_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,

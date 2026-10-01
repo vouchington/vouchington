@@ -241,6 +241,13 @@
       "owner_classification": "mixed-discovery-sql"
     },
     {
+      "path": "backend/services/communities/publications/automod-flag.mts",
+      "classification": "mutation",
+      "reason": "Automod flag dismissal mutation; returns only a flag count and never serializes post rows.",
+      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
       "path": "backend/services/rss-feed-items/story-publication-change.mts",
       "classification": "mutation",
       "reason": "Mutation-boundary scope resolver that records durable story publication work and never serializes post rows.",
