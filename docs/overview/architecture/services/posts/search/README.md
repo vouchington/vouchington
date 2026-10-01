@@ -63,8 +63,15 @@ cost but does not make recall exact. The EXPLAIN gate verifies index use on the 
 The parameter-only embedding CTE is not materialized, so the custom planner sees the same
 constant embedding in eligibility filters and distance ordering even with repeated references.
 The parameter-only text query is also inlined so hybrid planning sees its real selectivity.
+Candidate selection drives raw distance ordering from the vector relation and checks all
+eligibility in a correlated, one-row lateral lookup before counting toward the cap.
 After candidate selection, ranking and cursor filters read posts by candidate ID through bounded
 lateral lookups; the outer query cannot rescan the corpus to recompute embedding distances.
+
+The seeded CI measurement motivating this setting observed candidate startup costs of
+5,633.14 for an index plan and 13,418.39 for a sequential scan, with total query times
+of 168.942 ms and 169.499 ms respectively. These were different seeded runs and do
+not establish a latency improvement; the index plan remains an EXPLAIN gate.
 
 Approximate recall and a capped result window are intentional ([#1549](https://github.com/vouchington/vouchington/issues/1549)).
 The candidate cap is defined by `SEMANTIC_POST_CANDIDATE_LIMIT` in the query builder. Ranking
@@ -159,8 +166,3 @@ Response:
   "total_count": <Number>
 }
 ```
-
-The seeded CI measurement motivating this setting observed candidate startup costs of
-5,633.14 for an index plan and 13,418.39 for a sequential scan, with total query times
-of 168.942 ms and 169.499 ms respectively. These were different seeded runs and do
-not establish a latency improvement; the index plan remains an EXPLAIN gate.
