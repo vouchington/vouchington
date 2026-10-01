@@ -1,12 +1,18 @@
 import app from '../../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { isAdminUser } from '@services/users'
-import { requireAuthAndRateLimit, parseJsonBody } from '../../../response-helpers.mts'
+import {
+  requireAuthAndRateLimit,
+  parseJsonBody,
+  validateRequestContract,
+} from '../../../response-helpers.mts'
 import { parseCsvRows } from '@modules/csv'
 import { validateTopicRows, validateTopicHeaders, createImportBatch } from '@services/admin-imports'
 import { enqueueBulkImportRows } from '@queues/admin-imports/enqueues'
 
 const MAX_ROWS = 1000
+
+type AdminImportTopicsRequest = { csv: string }
 
 /**
  * POST /api/v1/imports/topics — Batch create/update topics via import queue.
@@ -20,14 +26,9 @@ app.route('/api/v1/imports/topics').post(async (ctx: Context) => {
   // 4mb comfortably fits 1000 rows of realistic topic data (markdown descriptions) without
   // rejecting valid admin batches, while staying well under the former 10mb cap. The endpoint
   // is admin-only and rate-limited, so the event-loop cost of parsing is bounded.
-  const body = await parseJsonBody<{ csv?: unknown }>(ctx, '4mb')
-  ctx.assert(
-    body !== null && typeof body === 'object' && !Array.isArray(body),
-    400,
-    'Invalid JSON body',
-  )
+  const body = await parseJsonBody<AdminImportTopicsRequest>(ctx, '4mb')
+  validateRequestContract(ctx, 'POST:/api/v1/imports/topics', { body })
   const { csv } = body
-  ctx.assert(typeof csv === 'string', 400, 'csv must be a string')
   ctx.assert(csv.trim().length > 0, 400, 'CSV body must not be empty')
 
   let rows: Record<string, string>[]

@@ -8,13 +8,18 @@ import { getConversationMessageAgenticRunsByConversationMessageId } from '@servi
 import type { PrivateUser } from '@services/users/types'
 import { streamOpenAIResponse, type OpenAIResponse } from '@modules/openai-utils/create-response'
 import { CHAT_SUBAGENT_RETRY_POLICY, type SubagentToolCurryArgs } from '@agents/_shared'
-import type { SubagentStepEvent, SubagentResult } from '../_shared/subagent-tool.mts'
 import { setupSubagentFixtures } from '../../test-helpers/agents/_shared/subagent-fixtures.mts'
 import {
   createMockTextResponse,
   createMockFunctionCallResponse,
   drainSubagentExecutor,
 } from '@voucha/test-helpers/subagent-test-utils'
+
+type SubagentExecution = ReturnType<ReturnType<typeof researchAgentTool.function>>
+type SubagentStepEvent =
+  SubagentExecution extends AsyncGenerator<infer Event, unknown> ? Event : never
+type SubagentResult =
+  SubagentExecution extends AsyncGenerator<unknown, infer Result> ? Result : never
 
 vi.mock<typeof import('@jongleberry/vurst-prompt')>(import('@jongleberry/vurst-prompt'), () => ({
   sanitizePromptInjection: vi.fn<VitestLooseMock>((text: string) =>

@@ -60156,7 +60156,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/appeals/appeals.mts",
+      "source": "backend/api/v1/appeals/appeals-staff.mts",
       "statusKnowledge": "default"
     },
     "PATCH:/api/v1/communities/:communitySlug": {
@@ -61604,7 +61604,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/disputes/disputes.mts",
+      "source": "backend/api/v1/disputes/disputes-staff.mts",
       "statusKnowledge": "default"
     },
     "PATCH:/api/v1/dynamic-config/namespaces/:namespace": {
@@ -64016,7 +64016,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/appeals/appeals.mts",
+      "source": "backend/api/v1/appeals/appeals-staff.mts",
       "statusCodes": [200],
       "statusKnowledge": "explicit"
     },
@@ -64457,7 +64457,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/appeals/appeals.mts",
+      "source": "backend/api/v1/appeals/appeals-staff.mts",
       "statusCodes": [200],
       "statusKnowledge": "explicit"
     },
@@ -64898,7 +64898,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/appeals/appeals.mts",
+      "source": "backend/api/v1/appeals/appeals-staff.mts",
       "statusCodes": [200],
       "statusKnowledge": "explicit"
     },
@@ -64931,7 +64931,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/appeals/appeals.mts",
+      "source": "backend/api/v1/appeals/appeals-staff.mts",
       "statusCodes": [202],
       "statusKnowledge": "explicit"
     },
@@ -67351,7 +67351,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/disputes/disputes.mts",
+      "source": "backend/api/v1/disputes/disputes-staff.mts",
       "statusCodes": [200],
       "statusKnowledge": "explicit"
     },
@@ -68026,7 +68026,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/disputes/disputes.mts",
+      "source": "backend/api/v1/disputes/disputes-staff.mts",
       "statusCodes": [200],
       "statusKnowledge": "explicit"
     },
@@ -68701,7 +68701,7 @@
           "type": "object"
         }
       },
-      "source": "backend/api/v1/disputes/disputes.mts",
+      "source": "backend/api/v1/disputes/disputes-staff.mts",
       "statusCodes": [200],
       "statusKnowledge": "explicit"
     },
@@ -72886,7 +72886,7 @@
     },
     "POST:/api/v1/valkey/bloom-filters/rebuild": {
       "bodyKind": "content",
-      "hash": "a1d0377e1e3d7bc16a196eda470d7517ee7e4fd9984efcfe796a942d0f205f50",
+      "hash": "c42b3c17ae1a041da05b764e23e5cc50b13f4da86bae75288759ac08824787ec",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -72899,7 +72899,29 @@
             "filter": {
               "required": true,
               "schema": {
-                "type": "string"
+                "type": "union",
+                "variants": [
+                  {
+                    "type": "literal",
+                    "value": "api-keys"
+                  },
+                  {
+                    "type": "literal",
+                    "value": "email-blocklist"
+                  },
+                  {
+                    "type": "literal",
+                    "value": "embedding"
+                  },
+                  {
+                    "type": "literal",
+                    "value": "entity-cache"
+                  },
+                  {
+                    "type": "literal",
+                    "value": "url-blocklist"
+                  }
+                ]
               }
             },
             "success": {
@@ -83943,6 +83965,76 @@
       "responseSchema": {
         "hash": "b1d883f88b6afb685bde0e61dde5a6d4f86437e8d587d34d77f59216e18d1386",
         "key": "web.copyright.email-intake-rejection.no-reply"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000840"
+        },
+        "routeTemplate": "/api/v1/copyright-email-intakes/:id/rejections"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-email-intake-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/copyright-email-intakes/:id/rejections",
+      "bodyFile": "responses/web.copyright.email-intake-information-request.reply-queued.json",
+      "consumers": ["web"],
+      "id": "web.copyright.email-intake-information-request.reply-queued",
+      "method": "POST",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/moderator-routes.mts",
+        "web/lib/api/client/copyright-email-intakes.ts"
+      ],
+      "path": "/api/v1/copyright-email-intakes/00000000-0000-7000-8000-000000000840/rejections",
+      "requestBody": {
+        "manual_fallback_reason": "No agent output.",
+        "rationale": "The notice does not identify the allegedly infringing URLs.",
+        "recommendation_id": null,
+        "reply_email": "reporter@example.test",
+        "response_kind": "needs_information",
+        "response_message": "Please identify the copyrighted work and each allegedly infringing URL."
+      },
+      "responseSchema": {
+        "hash": "b1d883f88b6afb685bde0e61dde5a6d4f86437e8d587d34d77f59216e18d1386",
+        "key": "web.copyright.email-intake-information-request.reply-queued"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000840"
+        },
+        "routeTemplate": "/api/v1/copyright-email-intakes/:id/rejections"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-copyright-email-intake-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/copyright-email-intakes/:id/rejections",
+      "bodyFile": "responses/web.copyright.email-intake-information-request.no-reply.json",
+      "consumers": ["web"],
+      "id": "web.copyright.email-intake-information-request.no-reply",
+      "method": "POST",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/moderator-routes.mts",
+        "web/lib/api/client/copyright-email-intakes.ts"
+      ],
+      "path": "/api/v1/copyright-email-intakes/00000000-0000-7000-8000-000000000840/rejections",
+      "requestBody": {
+        "manual_fallback_reason": "No agent output.",
+        "rationale": "The notice does not identify the allegedly infringing URLs.",
+        "recommendation_id": null,
+        "reply_email": null,
+        "response_kind": "needs_information",
+        "response_message": "Please identify the copyrighted work and each allegedly infringing URL."
+      },
+      "responseSchema": {
+        "hash": "b1d883f88b6afb685bde0e61dde5a6d4f86437e8d587d34d77f59216e18d1386",
+        "key": "web.copyright.email-intake-information-request.no-reply"
       },
       "route": {
         "pathParams": {

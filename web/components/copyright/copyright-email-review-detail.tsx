@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { CopyrightEmailApprovalFields } from './copyright-email-approval-fields'
@@ -6,6 +7,8 @@ import {
   type CopyrightEmailApprovalDraft,
 } from './copyright-email-approval-model'
 import type { CopyrightEmailIntake } from '@/lib/api/client/copyright-email-intakes'
+import { CopyrightEmailInformationRequestField } from './copyright-email-information-request-field'
+import { isValidCopyrightEmailInformationMessage } from './copyright-email-information-request-model'
 import { CopyrightEmailReplyAddressField } from './copyright-email-reply-address-field'
 import { CopyrightEmailCorrespondenceFields } from './copyright-email-correspondence-fields'
 import {
@@ -28,6 +31,7 @@ export function CopyrightEmailReviewDetail({
   onChangeCorrespondenceDraft,
   onApproveInitial,
   onRejectInitial,
+  onRequestInformation,
   onAdmitCorrespondence,
   onRejectCorrespondence,
 }: {
@@ -45,9 +49,13 @@ export function CopyrightEmailReviewDetail({
   onChangeCorrespondenceDraft: (draft: CopyrightEmailCorrespondenceDraft) => void
   onApproveInitial: () => void
   onRejectInitial: () => void
+  onRequestInformation: (message: string) => void
   onAdmitCorrespondence: () => void
   onRejectCorrespondence: () => void
 }) {
+  // Only an information request uses this message, so it lives here: the parent remounts this
+  // component for each intake, which clears it, and a failed request keeps what staff typed.
+  const [informationMessage, setInformationMessage] = useState('')
   const requiresFallback = !detail.recommendation && !manualFallbackReason.trim()
   return (
     <section className='space-y-3'>
@@ -90,6 +98,12 @@ export function CopyrightEmailReviewDetail({
           value={manualFallbackReason}
         />
       )}
+      {detail.review_path === 'initial' && (
+        <CopyrightEmailInformationRequestField
+          onChange={setInformationMessage}
+          value={informationMessage}
+        />
+      )}
       {detail.review_path === 'initial' && !detail.parsed_email && (
         <CopyrightEmailReplyAddressField
           onChange={onChangeReplyEmail}
@@ -110,6 +124,18 @@ export function CopyrightEmailReviewDetail({
               onClick={onApproveInitial}
             >
               Approve structured intake
+            </Button>
+            <Button
+              disabled={
+                loading ||
+                !rationale.trim() ||
+                !isValidCopyrightEmailInformationMessage(informationMessage) ||
+                requiresFallback
+              }
+              onClick={() => onRequestInformation(informationMessage)}
+              variant='outline'
+            >
+              Request information
             </Button>
             <Button
               disabled={loading || !rationale.trim() || requiresFallback}

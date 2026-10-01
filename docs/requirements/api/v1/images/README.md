@@ -51,9 +51,10 @@ private final-images bucket before workers consume them. This provides:
 
 **Error Responses:**
 
-- `400 Bad Request` - Invalid content type or file too large
+- `400 Bad Request` - Disallowed content type or file too large
 - `401 Unauthorized` - Authentication required
 - `415 Unsupported Media Type` - Request is not JSON
+- `422 Unprocessable Entity` - `content_type` or `content_length` is missing or has the wrong type
 
 **What Happens:**
 

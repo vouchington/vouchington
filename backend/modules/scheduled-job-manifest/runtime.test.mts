@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { ScheduledJobDefinition, ScheduledJobQueue } from './types.mts'
+import type { ScheduledJobDefinition } from './types.mts'
 import { defineScheduledJobManifest, upsertScheduledJobManifest } from './index.mts'
+
+type ScheduledJobQueue = Parameters<typeof upsertScheduledJobManifest>[0]
 
 describe('upsertScheduledJobManifest', () => {
   it('upserts all-environment jobs and filters production-only jobs', async () => {

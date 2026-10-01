@@ -1,6 +1,11 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { parseJsonBody, requireAuthAndRateLimit } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuthAndRateLimit,
+  validateRequestContract,
+} from '../../response-helpers.mts'
+import type { ApiUuidContract } from '../../request-contract-types.mts'
 import {
   parseCreateUserWarningInput,
   createUserWarning,
@@ -15,6 +20,15 @@ import {
 } from '@services/moderation-reports'
 import { isUUID } from '@modules/utils'
 
+type IssueUserWarningRequest = {
+  userId: ApiUuidContract
+  reason: string
+  publicMessage?: string | null
+  communityId?: ApiUuidContract | null
+  reportId?: ApiUuidContract | null
+  resolveReport?: boolean
+}
+
 // POST /api/v1/admin/warnings — issue a warning (mod staff only)
 app.route('/api/v1/admin/warnings').post(async (ctx: Context) => {
   const currentUser = await requireAuthAndRateLimit(
@@ -22,7 +36,8 @@ app.route('/api/v1/admin/warnings').post(async (ctx: Context) => {
     currentUserCanIssueUserWarning,
     'POST:/api/v1/admin/warnings',
   )
-  const body = await parseJsonBody<Record<string, unknown>>(ctx)
+  const body = await parseJsonBody<IssueUserWarningRequest>(ctx)
+  validateRequestContract(ctx, 'POST:/api/v1/admin/warnings', { body })
   const input = parseCreateUserWarningInput({
     userId: body.userId,
     reason: body.reason,

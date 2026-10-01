@@ -1,17 +1,14 @@
-import { describe, expect, it, vi } from 'vitest'
-import {
-  GRAFANA_HEARTBEAT_INTERVAL_MS,
-  GRAFANA_HEARTBEAT_TIMEOUT_MS,
-  sendGrafanaHeartbeat,
-  startGrafanaHeartbeat,
-} from './grafana-heartbeat.mts'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { sendGrafanaHeartbeat, startGrafanaHeartbeat } from './grafana-heartbeat.mts'
 
 const HEARTBEAT_URL =
   'https://oncall-prod-us-central-0.grafana.net/oncall/integrations/v1/formatted_webhook/token/heartbeat/'
 type ExternalFetch = NonNullable<Parameters<typeof sendGrafanaHeartbeat>[1]>
 
 describe('worker-cpu Grafana heartbeat', () => {
+  afterEach(() => vi.restoreAllMocks())
   it('posts to the configured Grafana heartbeat endpoint with a bounded timeout', async () => {
+    const timeout = vi.spyOn(AbortSignal, 'timeout')
     const fetch = vi.fn<ExternalFetch>(async () => new Response(null, { status: 200 }))
 
     await sendGrafanaHeartbeat(HEARTBEAT_URL, fetch)
@@ -25,7 +22,7 @@ describe('worker-cpu Grafana heartbeat', () => {
         signal: expect.any(AbortSignal),
       }),
     )
-    expect(GRAFANA_HEARTBEAT_TIMEOUT_MS).toBe(5_000)
+    expect(timeout).toHaveBeenCalledExactlyOnceWith(5_000)
   })
 
   it('rejects non-Grafana and non-HTTPS endpoints without disclosing the URL', async () => {
@@ -61,7 +58,7 @@ describe('worker-cpu Grafana heartbeat', () => {
     const setTimeout = vi.fn<
       (callback: () => void, delay: number) => ReturnType<typeof globalThis.setTimeout>
     >((callback, delay) => {
-      expect(delay).toBe(GRAFANA_HEARTBEAT_INTERVAL_MS)
+      expect(delay).toBe(60 * 60 * 1000)
       scheduled = callback
       return timer
     })
@@ -78,7 +75,6 @@ describe('worker-cpu Grafana heartbeat', () => {
       expect(setTimeout).toHaveBeenCalledTimes(1)
     })
     expect(timer.unref).toHaveBeenCalled()
-    expect(GRAFANA_HEARTBEAT_INTERVAL_MS).toBe(60 * 60 * 1000)
     expect(addGracefulShutdownCallback).toHaveBeenCalledTimes(1)
 
     scheduled?.()

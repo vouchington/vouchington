@@ -4,8 +4,8 @@ import { getExternalFetch } from '@modules/utils'
 import { context } from '@opentelemetry/api'
 import { suppressTracing } from '@opentelemetry/core'
 
-export const GRAFANA_HEARTBEAT_INTERVAL_MS = 60 * 60 * 1000
-export const GRAFANA_HEARTBEAT_TIMEOUT_MS = 5_000
+const GRAFANA_HEARTBEAT_INTERVAL_MS = 60 * 60 * 1000
+const GRAFANA_HEARTBEAT_TIMEOUT_MS = 5_000
 
 type Timer = ReturnType<typeof setTimeout>
 type ExternalFetch = ReturnType<typeof getExternalFetch>

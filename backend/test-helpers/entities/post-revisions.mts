@@ -1,5 +1,6 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import type { PostRevision } from '../../services/post-revisions/index.mts'
 
 export async function countPostImageRevisions(postId: string): Promise<number> {
   const { rows } = await read<{ count: number }>(sql`/* countPostImageRevisions */
@@ -25,4 +26,14 @@ export async function getLatestPostCategoryRevisionForTest(
     LIMIT 1
   `)
   return rows[0]?.category_change
+}
+
+export async function getPostArchiveRevisionsForTest(postId: string): Promise<PostRevision[]> {
+  const { rows } = await write<PostRevision>(sql`/* getPostArchiveRevisionsForTest */
+    SELECT id, post_id, revision_type, revised_by_id, changes, created_at
+    FROM post_revisions
+    WHERE post_id = ${postId} AND changes ? 'archived_at'
+    ORDER BY id
+  `)
+  return rows
 }

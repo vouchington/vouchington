@@ -46,8 +46,8 @@ export async function validateOAuthAccessToken(
            AND suspension.lifted_at IS NULL
        )
        AND access.resource = $2
-     RETURNING client.client_id, client.owner_user_id, oauth_grant.user_id, access.resource,
-       access.scopes, access.expires_at`,
+     RETURNING client.client_id, client.owner_user_id, oauth_grant.id AS grant_id,
+       oauth_grant.user_id, access.resource, access.scopes, access.expires_at`,
     [tokenHash, getOAuthResourceUrl(audience)],
   )
   const principal = result.rows[0]
@@ -62,6 +62,7 @@ export async function validateOAuthAccessToken(
   await query.commit()
   return {
     client_id: principal.client_id,
+    grant_id: principal.grant_id,
     user_id: principal.user_id,
     resource: principal.resource,
     scopes: principal.scopes,

@@ -1,1 +1,1 @@
-export type { DynamicConfigField, DynamicConfigFieldType, ValkeyCacheOptions } from 'valkyries'
+export type { DynamicConfigFieldType, ValkeyCacheOptions } from 'valkyries'

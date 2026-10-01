@@ -7,7 +7,8 @@ import {
   rateLimiterValkeyClient,
 } from '@data-stores/valkey/clients'
 import * as clearCacheModule from './clear-cache.mts'
-import { FLUSH_CONCERNS, flushConcern, type FlushConcern } from './flush.mts'
+import { FLUSH_CONCERNS } from './concerns.mts'
+import { flushConcern, type FlushConcern } from './flush.mts'
 
 const { scanAndUnlinkKeysMock } = vi.hoisted(() => ({
   scanAndUnlinkKeysMock: vi.fn<typeof import('valkyries').scanAndUnlinkKeys>(),

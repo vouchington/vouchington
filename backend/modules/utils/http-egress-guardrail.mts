@@ -54,11 +54,6 @@ export function createEgressGuardrailInterceptor(): Dispatcher.DispatcherCompose
   }
 }
 
-/** Test-only: clears the per-process dedupe cache between test cases. */
-export function resetEgressGuardrailDedupeForTest(): void {
-  reportedHosts.clear()
-}
-
 function getHostname(origin: string | URL): string | undefined {
   try {
     return (typeof origin === 'string' ? new URL(origin) : origin).hostname

@@ -33,8 +33,7 @@ import type {
   SubagentTool,
 } from './subagent-tool-types.mts'
 
-export type { SubagentStepEvent }
-export type { SubagentResult, SubagentToolConfig, SubagentToolCurryArgs, SubagentTool }
+export type { SubagentToolConfig, SubagentToolCurryArgs, SubagentTool }
 
 /** Creates a subagent tool that delegates to a full runToolLoop internally. */
 export function createSubagentTool<TArgs>(config: SubagentToolConfig<TArgs>): SubagentTool<TArgs> {

@@ -57,6 +57,16 @@
       "required": ["user_id"],
       "type": "object"
     },
+    "AdminImportTopicsRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "csv": {
+          "type": "string"
+        }
+      },
+      "required": ["csv"],
+      "type": "object"
+    },
     "AdminOAuthClientView": {
       "additionalProperties": false,
       "properties": {
@@ -480,9 +490,15 @@
     "AssignmentBody": {
       "additionalProperties": false,
       "properties": {
-        "category_text": {},
-        "topic_id": {}
+        "category_text": {
+          "type": "string"
+        },
+        "topic_id": {
+          "format": "uuid",
+          "type": "string"
+        }
       },
+      "required": ["category_text", "topic_id"],
       "type": "object"
     },
     "AttributionReferrerBody": {
@@ -833,6 +849,23 @@
       "required": ["__entity_type", "id", "roles"],
       "type": "object"
     },
+    "BatchDisputeAnnotationsRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "post_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 50,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": false
+        }
+      },
+      "required": ["post_ids"],
+      "type": "object"
+    },
     "BatchProgress": {
       "additionalProperties": false,
       "properties": {
@@ -903,6 +936,16 @@
       "required": ["expires_at", "flow_id", "redirect_url"],
       "type": "object"
     },
+    "BillingPortalSessionRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "return_url": {
+          "type": "string"
+        }
+      },
+      "required": ["return_url"],
+      "type": "object"
+    },
     "BlockHostnameResult": {
       "additionalProperties": false,
       "properties": {
@@ -917,6 +960,17 @@
         }
       },
       "required": ["blocked_hostname_count", "penalized_user_count", "soft_deleted_relation_count"],
+      "type": "object"
+    },
+    "BloomFilterRebuildRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "filter": {
+          "enum": ["api-keys", "email-blocklist", "embedding", "entity-cache", "url-blocklist"],
+          "type": "string"
+        }
+      },
+      "required": ["filter"],
       "type": "object"
     },
     "BlueskyAccountInfo": {
@@ -999,6 +1053,16 @@
           ]
         }
       },
+      "type": "object"
+    },
+    "ClearCacheRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "group": {
+          "type": "string"
+        }
+      },
+      "required": ["group"],
       "type": "object"
     },
     "ClearanceMutationBody": {
@@ -4224,6 +4288,19 @@
       "properties": {},
       "type": "object"
     },
+    "CreateImageUploadUrlRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "content_length": {
+          "type": "number"
+        },
+        "content_type": {
+          "type": "string"
+        }
+      },
+      "required": ["content_length", "content_type"],
+      "type": "object"
+    },
     "CreateInstanceResult": {
       "additionalProperties": false,
       "properties": {
@@ -4298,6 +4375,70 @@
         }
       },
       "required": ["name"],
+      "type": "object"
+    },
+    "CreateModerationAppealRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "appeal_reason": {
+          "type": "string"
+        },
+        "cf_turnstile_response": {
+          "type": "string"
+        },
+        "post_removal_kind": {
+          "enum": ["community", "platform"],
+          "type": "string"
+        },
+        "target_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "target_type": {
+          "enum": ["ban", "removal", "suspension", "warning"],
+          "type": "string"
+        }
+      },
+      "required": ["appeal_reason", "target_type"],
+      "type": "object"
+    },
+    "CreateModerationReportRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "cf_turnstile_response": {
+          "type": "string"
+        },
+        "entityId": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "entityType": {
+          "enum": ["comment", "post", "rss_feed_item", "url_hostname", "user"],
+          "type": "string"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "reason": {
+          "enum": [
+            "harassment",
+            "illegal_content",
+            "misinformation",
+            "other",
+            "spam",
+            "vote_manipulation"
+          ],
+          "type": "string"
+        }
+      },
+      "required": ["entityId", "entityType", "reason"],
       "type": "object"
     },
     "CreateOAuthAppRequest": {
@@ -4695,6 +4836,37 @@
         }
       },
       "required": ["slug"],
+      "type": "object"
+    },
+    "CreateReviewDisputeRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "cf_turnstile_response": {
+          "type": "string"
+        },
+        "claim_text": {
+          "type": "string"
+        },
+        "post_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "defamatory",
+            "factually_inaccurate",
+            "impersonation",
+            "other",
+            "privacy_violation"
+          ],
+          "type": "string"
+        },
+        "topic_id": {
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "required": ["claim_text", "post_id", "reason"],
       "type": "object"
     },
     "CreateRewardsProgramStatusRequest": {
@@ -6566,6 +6738,28 @@
       "required": ["exact_topic", "pending_recommendations", "similar_topics"],
       "type": "object"
     },
+    "FlushRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "concern": {
+          "enum": [
+            "blooms",
+            "caches",
+            "dynamic-config",
+            "queues",
+            "rate-limiter",
+            "recently-viewed",
+            "sessions"
+          ],
+          "type": "string"
+        },
+        "force": {
+          "type": "boolean"
+        }
+      },
+      "required": ["concern"],
+      "type": "object"
+    },
     "FlushResult": {
       "additionalProperties": false,
       "properties": {
@@ -6942,6 +7136,28 @@
         }
       },
       "required": ["consent_type", "version"],
+      "type": "object"
+    },
+    "GrantMembershipRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "duration_days": {
+          "type": "number"
+        },
+        "plan": {
+          "enum": ["plus", "pro"],
+          "type": "string"
+        },
+        "sku_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "user_id": {
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "required": ["duration_days", "plan", "sku_id", "user_id"],
       "type": "object"
     },
     "GrowthMetrics": {
@@ -7674,6 +7890,55 @@
         }
       },
       "required": ["ai_token_usage", "cache_hit_rate", "crawler_success_rate", "queue_throughput"],
+      "type": "object"
+    },
+    "IssueUserWarningRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "communityId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "publicMessage": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "reportId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolveReport": {
+          "type": "boolean"
+        },
+        "userId": {
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "required": ["reason", "userId"],
       "type": "object"
     },
     "IssuedOAuthApp": {
@@ -8932,9 +9197,11 @@
       "additionalProperties": false,
       "properties": {
         "idempotency_key": {
+          "format": "uuid",
           "type": "string"
         },
         "product_id": {
+          "format": "uuid",
           "type": "string"
         },
         "provider": {
@@ -9064,6 +9331,7 @@
           ]
         },
         "idempotency_key": {
+          "format": "uuid",
           "type": "string"
         },
         "invoice_id": {
@@ -9093,6 +9361,7 @@
           "$ref": "#/components/schemas/MembershipRefundReason"
         },
         "user_id": {
+          "format": "uuid",
           "type": "string"
         }
       },
@@ -9174,12 +9443,14 @@
       "properties": {
         "evidence": {},
         "idempotency_key": {
+          "format": "uuid",
           "type": "string"
         },
         "provider": {
           "$ref": "#/components/schemas/MembershipVerificationProvider"
         },
         "purchase_intent_id": {
+          "format": "uuid",
           "type": "string"
         }
       },
@@ -14601,6 +14872,23 @@
       ],
       "type": "string"
     },
+    "PsqlJobRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "cleanupPartitions",
+            "createPartitions",
+            "runConfigDriven",
+            "runMigrations",
+            "runViews"
+          ],
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
     "PublicDisplayAccount": {
       "additionalProperties": false,
       "properties": {
@@ -16446,11 +16734,35 @@
       ],
       "type": "object"
     },
+    "RejectTopicClaimRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "rejection_reason": {
+          "type": "string"
+        }
+      },
+      "required": ["rejection_reason"],
+      "type": "object"
+    },
     "RejectionBody": {
       "additionalProperties": false,
       "properties": {
-        "category_text": {}
+        "category_text": {
+          "type": "string"
+        }
       },
+      "required": ["category_text"],
+      "type": "object"
+    },
+    "RemoveDisputeAnnotationRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "annotation_id": {
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "required": ["annotation_id"],
       "type": "object"
     },
     "ReorderProfileLinksRequest": {
@@ -16665,6 +16977,42 @@
         "resolved_by_id",
         "rss_feed_item_id"
       ],
+      "type": "object"
+    },
+    "ResolveAppealRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "enum": ["accept", "deny", "reduce"],
+          "type": "string"
+        }
+      },
+      "required": ["action"],
+      "type": "object"
+    },
+    "ResolveDisputeRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "enum": ["annotate", "dismiss", "remove"],
+          "type": "string"
+        },
+        "body_text": {
+          "type": "string"
+        }
+      },
+      "required": ["action"],
+      "type": "object"
+    },
+    "ResolveModerationReportRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": ["dismissed", "reviewed"],
+          "type": "string"
+        }
+      },
+      "required": ["status"],
       "type": "object"
     },
     "ResolvedEmbed": {
@@ -17331,6 +17679,16 @@
       ],
       "type": "object"
     },
+    "RevokeMembershipGrantRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": ["reason"],
+      "type": "object"
+    },
     "RevokeReportAbusePenaltyResult": {
       "additionalProperties": false,
       "properties": {
@@ -17345,6 +17703,16 @@
         }
       },
       "required": ["penalty", "penaltyId", "userId"],
+      "type": "object"
+    },
+    "RevokeTopicClaimRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "revocation_reason": {
+          "type": "string"
+        }
+      },
+      "required": ["revocation_reason"],
       "type": "object"
     },
     "RewardsProgramAttributes": {
@@ -18024,6 +18392,17 @@
     "SetIntegrationStatusResult": {
       "enum": ["noop", "updated"],
       "type": "string"
+    },
+    "SetOfficialStoryItemRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "rss_feed_item_id": {
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "required": ["rss_feed_item_id"],
+      "type": "object"
     },
     "SetPrimaryEmailAddressRequest": {
       "additionalProperties": false,
@@ -19273,6 +19652,18 @@
       "required": ["category_text", "item_count", "rejected"],
       "type": "object"
     },
+    "UpdateAppealDraftRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "internal_notes": {
+          "type": "string"
+        },
+        "public_response": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "UpdateCardRequest": {
       "additionalProperties": false,
       "properties": {
@@ -19426,6 +19817,18 @@
         },
         "verified_badge_visible": {
           "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "UpdateDisputeDraftRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "internal_notes": {
+          "type": "string"
+        },
+        "public_response": {
+          "type": "string"
         }
       },
       "type": "object"
@@ -19886,6 +20289,16 @@
       },
       "type": "object"
     },
+    "UpdateStoryTitleRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": ["title"],
+      "type": "object"
+    },
     "UpdateUserOptions": {
       "additionalProperties": false,
       "properties": {
@@ -20043,6 +20456,37 @@
         }
       },
       "required": ["position_seconds"],
+      "type": "object"
+    },
+    "UpsertReferralProgramCrawlerRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "content_selectors": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "crawler_type": {
+          "enum": ["automation", "fetch"],
+          "type": "string"
+        },
+        "css_selectors_to_remove": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "hostname_id": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "referral_program_id": {
+          "format": "uuid",
+          "type": "string"
+        }
+      },
+      "required": ["hostname_id", "referral_program_id"],
       "type": "object"
     },
     "UrlCrawlHistory": {
@@ -23417,11 +23861,7 @@
     },
     "DELETE:/api/v1/disputes/:id/annotation": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "annotation_id": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/RemoveDisputeAnnotationRequest"
       },
       "path": {
         "properties": {
@@ -23521,14 +23961,7 @@
     },
     "DELETE:/api/v1/membership-grants/:grantId": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "reason": {
-            "type": "string"
-          }
-        },
-        "required": ["reason"],
-        "type": "object"
+        "$ref": "#/components/schemas/RevokeMembershipGrantRequest"
       },
       "path": {
         "properties": {
@@ -27403,12 +27836,7 @@
     },
     "PATCH:/api/v1/appeals/:id": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "internal_notes": {},
-          "public_response": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/UpdateAppealDraftRequest"
       },
       "path": {
         "properties": {
@@ -27659,12 +28087,7 @@
     },
     "PATCH:/api/v1/disputes/:id": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "internal_notes": {},
-          "public_response": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/UpdateDisputeDraftRequest"
       },
       "path": {
         "properties": {
@@ -28123,11 +28546,7 @@
     },
     "PATCH:/api/v1/reports/:id": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "status": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/ResolveModerationReportRequest"
       },
       "path": {
         "properties": {
@@ -28160,13 +28579,7 @@
     },
     "PATCH:/api/v1/stories/:id": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "title": {
-            "type": "string"
-          }
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/UpdateStoryTitleRequest"
       },
       "path": {
         "properties": {
@@ -28318,11 +28731,7 @@
     },
     "POST:/api/v1/admin/topic-claims/:id/rejection": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "rejection_reason": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/RejectTopicClaimRequest"
       },
       "path": {
         "properties": {
@@ -28336,11 +28745,7 @@
     },
     "POST:/api/v1/admin/topic-claims/:id/revocation": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "revocation_reason": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/RevokeTopicClaimRequest"
       },
       "path": {
         "properties": {
@@ -28386,7 +28791,7 @@
     },
     "POST:/api/v1/admin/warnings": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/IssueUserWarningRequest"
       }
     },
     "POST:/api/v1/app-attestation/attest": {
@@ -28401,7 +28806,7 @@
     },
     "POST:/api/v1/appeals": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateModerationAppealRequest"
       }
     },
     "POST:/api/v1/appeals/:id/approval": {
@@ -28428,11 +28833,7 @@
     },
     "POST:/api/v1/appeals/:id/resolution": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "action": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/ResolveAppealRequest"
       },
       "path": {
         "properties": {
@@ -29814,7 +30215,7 @@
     },
     "POST:/api/v1/disputes": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateReviewDisputeRequest"
       }
     },
     "POST:/api/v1/disputes/:id/approval": {
@@ -29841,12 +30242,7 @@
     },
     "POST:/api/v1/disputes/:id/resolution": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "action": {},
-          "body_text": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/ResolveDisputeRequest"
       },
       "path": {
         "properties": {
@@ -29970,16 +30366,12 @@
     },
     "POST:/api/v1/images/upload-url": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateImageUploadUrlRequest"
       }
     },
     "POST:/api/v1/imports/topics": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "csv": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/AdminImportTopicsRequest"
       }
     },
     "POST:/api/v1/landing-pages/:landingPageId/clicks": {
@@ -30067,23 +30459,7 @@
     },
     "POST:/api/v1/membership-grants": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "duration_days": {
-            "type": "number"
-          },
-          "plan": {
-            "type": "string"
-          },
-          "sku_id": {
-            "type": "string"
-          },
-          "user_id": {
-            "type": "string"
-          }
-        },
-        "required": ["duration_days", "plan", "sku_id", "user_id"],
-        "type": "object"
+        "$ref": "#/components/schemas/GrantMembershipRequest"
       }
     },
     "POST:/api/v1/membership-purchase-intents": {
@@ -30101,13 +30477,7 @@
     },
     "POST:/api/v1/memberships/billing-portal-sessions": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "return_url": {
-            "type": "string"
-          }
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/BillingPortalSessionRequest"
       }
     },
     "POST:/api/v1/memberships/google-play/notifications": {
@@ -30554,16 +30924,12 @@
     },
     "POST:/api/v1/posts/batch-dispute-annotations": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "post_ids": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/BatchDisputeAnnotationsRequest"
       }
     },
     "POST:/api/v1/psql/jobs": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/PsqlJobRequest"
       }
     },
     "POST:/api/v1/referral-link-validations": {
@@ -30656,7 +31022,7 @@
     },
     "POST:/api/v1/reports": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateModerationReportRequest"
       }
     },
     "POST:/api/v1/reports/:id/judgements": {
@@ -31031,17 +31397,17 @@
     },
     "POST:/api/v1/valkey/bloom-filters/rebuild": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/BloomFilterRebuildRequest"
       }
     },
     "POST:/api/v1/valkey/caches/clear": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/ClearCacheRequest"
       }
     },
     "POST:/api/v1/valkey/flush": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/FlushRequest"
       }
     },
     "POST:/api/v1/vote-integrity/flags/:id/penalties": {
@@ -31233,21 +31599,7 @@
     },
     "PUT:/api/v1/crawlers/referral-program": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "content_selectors": {},
-          "crawler_type": {
-            "type": "string"
-          },
-          "css_selectors_to_remove": {},
-          "hostname_id": {
-            "type": "string"
-          },
-          "referral_program_id": {
-            "type": "string"
-          }
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/UpsertReferralProgramCrawlerRequest"
       }
     },
     "PUT:/api/v1/curated-aside-items/order": {
@@ -31411,13 +31763,7 @@
     },
     "PUT:/api/v1/stories/:storyId/official": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "rss_feed_item_id": {
-            "type": "string"
-          }
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/SetOfficialStoryItemRequest"
       },
       "path": {
         "properties": {

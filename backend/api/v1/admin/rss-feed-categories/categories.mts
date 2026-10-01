@@ -27,6 +27,8 @@ app.route('/api/v1/rss-feed-categories').get(async (ctx: Context) => {
     'GET:/api/v1/rss-feed-categories',
   )
 
+  // Intentional carrier skip: no registered response contract and an integer `limit`; the shared
+  // pagination parser owns the range and cursor checks, and unknown `status` values fall back.
   const { limit, after } = parser.parse(ctx.query)
 
   const statusRaw = typeof ctx.query.status === 'string' ? ctx.query.status : 'pending'

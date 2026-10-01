@@ -513,6 +513,13 @@ resolution rules are copied into `forbidden`: dependency-cruiser merges `extends
 `not-to-unresolvable`, and `no-non-package-json`. Web inlines `no-circular` and
 `not-to-unresolvable`.
 
+`no-mistakes` enforces `postgres-no-offset` and `postgres-require-query-annotation`
+for backend TypeScript runtime code, excluding tests, test helpers, and scripts.
+The repository annotation guard remains because parity in #1586 found that the released
+analyzer misses SQL assigned to a function-scoped `var` inside a conditional block and
+executed afterward. The existing runtime-guard fixture protects this case; remove the
+duplicate annotation check after the package-owned rule covers it.
+
 PostgreSQL final-state inventories in `repo-file-policy` load the tracked, versioned
 [`schema.json`](../../../../backend/data-stores/psql/schema-snapshot/schema.json) once and fail closed when it
 is missing, malformed, or stale-format. Migration authoring, deploy sequencing, inline directives,

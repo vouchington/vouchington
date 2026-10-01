@@ -47,42 +47,43 @@ describe('index', () => {
       await request.post('/api/v1/membership-grants').send({}).expect(403)
     })
 
-    it('returns 400 for missing fields', async () => {
+    it('returns 422 for missing fields', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)
-      await request.post('/api/v1/membership-grants').send({}).expect(400)
+      await request.post('/api/v1/membership-grants').send({}).expect(422)
     })
 
-    it('returns 400 for a JSON null body', async () => {
+    it('returns 422 for a JSON null body', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)
       await request
         .post('/api/v1/membership-grants')
         .set('Content-Type', 'application/json')
         .send('null')
-        .expect(400)
+        .expect(422)
     })
 
-    it('returns 400 for missing user_id', async () => {
+    it('returns 422 for missing user_id', async () => {
       const sku = await createTestSku({ plan: 'plus' })
       const request = createRequest()
       await request.authenticateAs(admin)
       await request
         .post('/api/v1/membership-grants')
         .send({ plan: 'plus', sku_id: sku.id, duration_days: 30 })
-        .expect(400)
+        .expect(422)
     })
 
-    it('returns 400 for missing sku_id', async () => {
+    it('returns 422 for missing sku_id', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)
       await request
         .post('/api/v1/membership-grants')
         .send({ user_id: regularUser.id, plan: 'plus', duration_days: 30 })
-        .expect(400)
+        .expect(422)
     })
 
-    it('returns 400 for invalid plan', async () => {
+    it('returns 422 for invalid plan', async () => {
+      const sku = await createTestSku({ plan: 'plus' })
       const request = createRequest()
       await request.authenticateAs(admin)
       await request
@@ -90,20 +91,20 @@ describe('index', () => {
         .send({
           user_id: regularUser.id,
           plan: 'invalid',
-          sku_id: 'some-id',
+          sku_id: sku.id,
           duration_days: 30,
         })
-        .expect(400)
+        .expect(422)
     })
 
-    it('returns 400 for missing duration_days', async () => {
+    it('returns 422 for missing duration_days', async () => {
       const sku = await createTestSku({ plan: 'plus' })
       const request = createRequest()
       await request.authenticateAs(admin)
       await request
         .post('/api/v1/membership-grants')
         .send({ user_id: regularUser.id, plan: 'plus', sku_id: sku.id })
-        .expect(400)
+        .expect(422)
     })
 
     it.each([0, 1.5, 3661])('returns 400 for invalid duration_days %s', async durationDays => {

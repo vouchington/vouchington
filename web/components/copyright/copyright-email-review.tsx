@@ -55,30 +55,37 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const { admitCorrespondence, approve, reject, rejectCorrespondence, selectIntake } =
-    useCopyrightEmailReviewActions({
-      correspondenceDraft,
-      detail,
-      draft,
-      manualFallbackReason,
-      rationale,
-      replyEmail,
-      setCorrespondenceDraft,
-      setDetail,
-      setDraft,
-      setError,
-      resetQueue: page => resetToFirstPage?.(page),
-      setLoading,
-      setManualFallbackReason,
-      setRationale,
-      setReplyEmail,
-      setSuccess,
-    })
+  const {
+    admitCorrespondence,
+    approve,
+    reject,
+    rejectCorrespondence,
+    requestInformation,
+    selectIntake,
+  } = useCopyrightEmailReviewActions({
+    correspondenceDraft,
+    detail,
+    draft,
+    manualFallbackReason,
+    rationale,
+    replyEmail,
+    setCorrespondenceDraft,
+    setDetail,
+    setDraft,
+    setError,
+    resetQueue: page => resetToFirstPage?.(page),
+    setLoading,
+    setManualFallbackReason,
+    setRationale,
+    setReplyEmail,
+    setSuccess,
+  })
   return (
     <main className='mx-auto max-w-4xl space-y-4 py-8'>
       <h1 className='text-3xl font-bold'>Copyright email review</h1>
       <p className='text-muted-foreground'>
-        Staff must verify each parsed email and approve or reject it before any case action.
+        Staff must verify each parsed email and approve, reject, or ask the sender for more
+        information before any case action.
       </p>
       {error && (
         <Alert variant='destructive'>
@@ -136,6 +143,7 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
         </div>
         {detail && (
           <CopyrightEmailReviewDetail
+            key={detail.id}
             detail={detail}
             draft={draft}
             loading={loading}
@@ -150,6 +158,7 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
             onChangeCorrespondenceDraft={setCorrespondenceDraft}
             onApproveInitial={() => approve()}
             onRejectInitial={() => reject()}
+            onRequestInformation={message => requestInformation(message)}
             onAdmitCorrespondence={() => admitCorrespondence()}
             onRejectCorrespondence={() => rejectCorrespondence()}
           />

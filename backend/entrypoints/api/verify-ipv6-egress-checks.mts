@@ -27,7 +27,7 @@ export function getIpv6VerificationHosts(env: NodeJS.ProcessEnv = process.env): 
   ]
 }
 
-export type HostResult = {
+type HostResult = {
   host: string
   a: string[]
   aaaa: string[]
