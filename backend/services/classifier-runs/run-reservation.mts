@@ -61,10 +61,19 @@ async function reserveOnce<C, L, E>(
   prepared: PreparedClassifierCandidates | null,
 ): Promise<ReserveClassifierRunResult | typeof PREPARE_AGAIN> {
   await using query = await beginTransaction()
-  const current = await adapter.lockCurrent(query, subject)
-  const result = await reserveLockedClassifierRun(adapter, query, subject, current, prepared)
+  const result = await lockAndReserve(adapter, query, subject, prepared)
   if (result !== PREPARE_AGAIN) await query.commit()
   return result
+}
+
+async function lockAndReserve<C, L, E>(
+  adapter: ClassifierRunAdapter<C, L, E>,
+  query: OwnedTransaction,
+  subject: ClassifierRunSubject,
+  prepared: PreparedClassifierCandidates | null,
+): Promise<ReserveClassifierRunResult | typeof PREPARE_AGAIN> {
+  const current = await adapter.lockCurrent(query, subject)
+  return reserveLockedClassifierRun(adapter, query, subject, current, prepared)
 }
 
 /** The locked reservation, or a request to prepare again because the subject changed under it. */
