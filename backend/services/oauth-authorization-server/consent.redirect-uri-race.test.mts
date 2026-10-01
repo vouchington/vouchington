@@ -5,7 +5,7 @@ import {
   createTestApprovedOAuthAuthorization,
   createTestPendingOAuthAuthorization,
   randomTestOAuthRedirectUri,
-} from './test-support.mts'
+} from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import { decideOAuthAuthorizationRequest, exchangeOAuthAuthorizationCode } from './index.mts'
 
 type TestUser = Awaited<ReturnType<typeof createTestUserDirect>>

@@ -17,7 +17,7 @@ import { getOAuthResourceMetadataUrl, revokeOAuthToken } from '@services/oauth-a
 import {
   issueTestOAuthTokens,
   issueTestOAuthTokensForClient,
-} from '@services/oauth-authorization-server/test-support'
+} from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import type { PrivateUser } from '@services/users/types'
 
 const MCP_LIST_BODY = { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }

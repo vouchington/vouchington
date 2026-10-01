@@ -21,7 +21,7 @@ import {
 import {
   createTestApprovedOAuthAuthorization,
   TEST_OAUTH_RESOURCE,
-} from '@services/oauth-authorization-server/test-support'
+} from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import { createUserDeletionRequest, processUserDeletionBatch } from '@services/user-deletions'
 import { getUserDeletionRequestForTest } from '@services/user-deletions/lifecycle.test-support'
 import {

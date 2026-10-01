@@ -7,7 +7,7 @@ import {
   createOwnedOAuthApp,
   updateOwnedOAuthApp,
 } from '../../../backend/services/oauth-authorization-server/app-management.mts'
-import { randomTestOAuthRedirectUri } from '../../../backend/services/oauth-authorization-server/test-support.mts'
+import { randomTestOAuthRedirectUri } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 
 async function registerOwnedApp() {
   const owner = await createTestUser()

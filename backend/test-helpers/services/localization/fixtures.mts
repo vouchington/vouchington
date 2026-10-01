@@ -6,7 +6,7 @@ import {
   compileLocalizationSqlite,
   openLocalizationDatabase,
 } from '@vouchington/localization-compiler'
-import { setLocalizationDatabaseForTests } from './database.mts'
+import { setLocalizationDatabaseForTests } from '../../../services/localization/database.mts'
 
 export function sampleCatalogMessages(): CatalogMessage[] {
   return [

@@ -7,7 +7,7 @@ import {
   updateTestMcpCallAuditOutcomes,
 } from '@voucha/test-helpers/entities/mcp-call-audit'
 import { getOAuthResourceUrl } from '@services/oauth-authorization-server'
-import { issueTestOAuthTokensForClient } from '@services/oauth-authorization-server/test-support'
+import { issueTestOAuthTokensForClient } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import { createMcpCallAuditContext, recordMcpCallAudit } from './audit.mts'
 import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
 

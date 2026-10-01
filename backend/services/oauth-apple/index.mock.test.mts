@@ -1,7 +1,11 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createHash } from 'node:crypto'
 import { createRandomString } from '@voucha/test-helpers'
-import { createSignedJwt, makeAppleJwk, makeFetchResponse } from './fixtures.mts'
+import {
+  createSignedJwt,
+  makeAppleJwk,
+  makeFetchResponse,
+} from '@voucha/test-helpers/services/oauth-apple/fixtures'
 import type { fetch as undiciFetch } from 'undici'
 
 const fetchSpy = vi.fn<typeof undiciFetch>()
@@ -65,7 +69,6 @@ describe('apple oauth', () => {
       )
 
       const account = await upsertAppleAccount(credential, { name: 'Apple Test User' }, nonce)
-
       expect(account.provider_user_id).toBe(appleUserId)
       expect(account.provider_user_email_address).toBe(email)
       expect(fetchSpy).toHaveBeenCalledWith(
@@ -119,7 +122,6 @@ describe('apple oauth', () => {
         firstNonce,
       )
       const secondAccount = await upsertAppleAccount(secondCredential, undefined, secondNonce)
-
       expect(secondCredential).not.toBe(firstCredential)
       expect(secondAccount).toEqual(firstAccount)
       expect(secondAccount.provider_user_data.name).toBe('Apple Recovery User')
@@ -169,7 +171,6 @@ describe('apple oauth', () => {
       )
 
       const account = await upsertAppleAccount(credential)
-
       expect(account.provider_user_id).toBe('apple-native-audience')
     })
 
@@ -210,7 +211,6 @@ describe('apple oauth', () => {
       const account = await upsertAppleAccount(credential, undefined, undefined, {
         requireVerifiedEmail: false,
       })
-
       expect(account.provider_user_id).toBe(appleUserId)
       expect(account.provider_user_email_address).toBeNull()
     })

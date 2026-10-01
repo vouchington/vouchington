@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTestUserDirect, softDeleteUser } from '@voucha/test-helpers/entities/users'
-import { randomTestOAuthRedirectUri } from './test-support.mts'
+import { randomTestOAuthRedirectUri } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
   authenticateOAuthClient,
   createOwnedOAuthApp,

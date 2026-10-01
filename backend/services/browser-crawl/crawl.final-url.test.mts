@@ -5,7 +5,7 @@ import {
   makeMockPage,
   mockConnectOverCDP,
   resetCrawlMocks,
-} from './crawl-fixtures.mts'
+} from '@voucha/test-helpers/services/browser-crawl/crawl-fixtures'
 import { resetBlockerForTesting } from './adblocker-cache.mts'
 import { crawlWithBrowser } from './crawl.mts'
 

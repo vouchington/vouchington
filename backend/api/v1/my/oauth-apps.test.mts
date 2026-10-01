@@ -5,7 +5,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import { clientSecretMatchesStoredHash } from '@voucha/test-helpers/entities/oauth-authorization-server'
 import { setTestOAuthClientVerified } from '@voucha/test-helpers/entities/oauth-client-management'
 import { createOwnedOAuthApp } from '@services/oauth-authorization-server'
-import { randomTestOAuthRedirectUri } from '@services/oauth-authorization-server/test-support'
+import { randomTestOAuthRedirectUri } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import type { PrivateUser } from '@services/users/types'
 
 const MISSING_ID = '00000000-0000-7000-8000-000000000000'

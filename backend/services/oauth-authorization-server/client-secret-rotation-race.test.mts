@@ -4,7 +4,7 @@ import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { rotateTestOAuthClientSecretWhileWaiting } from '@voucha/test-helpers/entities/oauth-client-management'
 import { generateOAuthClientSecret } from './clients.mts'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
-import { createTestApprovedOAuthAuthorization } from './test-support.mts'
+import { createTestApprovedOAuthAuthorization } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
   exchangeOAuthAuthorizationCode,
   exchangeOAuthRefreshToken,

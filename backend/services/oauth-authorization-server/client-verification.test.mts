@@ -6,7 +6,10 @@ import {
   revokeTestOAuthClient,
   setTestOAuthClientMetadataUrl,
 } from '@voucha/test-helpers/entities/oauth-client-management'
-import { randomTestOAuthRedirectUri, TEST_OAUTH_SCOPE } from './test-support.mts'
+import {
+  randomTestOAuthRedirectUri,
+  TEST_OAUTH_SCOPE,
+} from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
   currentUserCanVerifyOAuthClients,
   listOAuthClientsForVerification,

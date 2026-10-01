@@ -4,7 +4,7 @@ import {
   recordMcpCallAudit,
   USER_MCP_SERVER_CONFIG,
 } from '../services/mcp-tools/index.mts'
-import { issueTestOAuthTokensForClient } from '../services/oauth-authorization-server/test-support.mts'
+import { issueTestOAuthTokensForClient } from './services/oauth-authorization-server/test-support.mts'
 import { createTestUser } from './entities/users.mts'
 
 export type UserMcpCredentialKind = 'oauth' | 'api_key'

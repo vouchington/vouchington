@@ -8,7 +8,7 @@ import { getOAuthIssuer, getOAuthResourceUrl } from '@services/oauth-authorizati
 import {
   createTestApprovedOAuthAuthorization,
   randomTestOAuthRedirectUri,
-} from '@services/oauth-authorization-server/test-support'
+} from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 
 type AuthorizeOptions = { resource: string; scope: string }
 type TestRequest = ReturnType<typeof createRequest>

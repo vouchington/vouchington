@@ -50,6 +50,8 @@
     "@valkey/valkey-glide": "^2.5.3",
     "@voucha/api-fixtures": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/localization": "0.2.0",
+    "@vouchington/localization-compiler": "0.2.2",
     "jose": "^6.2.12",
     "openai": "^7.23.0",
     "otpauth": "^9.5.2",

@@ -6,7 +6,7 @@ import { exchangeOAuthAuthorizationCode } from '@services/oauth-authorization-se
 import {
   createTestApprovedOAuthAuthorization,
   TEST_OAUTH_RESOURCE,
-} from '@services/oauth-authorization-server/test-support'
+} from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import type { PrivateUser } from '@services/users/types'
 
 const MISSING_ID = '00000000-0000-7000-8000-000000000000'

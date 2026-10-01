@@ -10558,6 +10558,12 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../types
+      '@vouchington/localization':
+        specifier: 0.2.0
+        version: 0.2.0
+      '@vouchington/localization-compiler':
+        specifier: 0.2.2
+        version: 0.2.2
       jose:
         specifier: ^6.2.12
         version: 6.2.12
@@ -12888,6 +12894,9 @@ importers:
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../backend/test-helpers
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))

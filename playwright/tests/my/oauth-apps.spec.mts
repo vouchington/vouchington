@@ -6,7 +6,7 @@ import { randomSuffix } from '../../helpers/random-id.mts'
 import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
 import { revokeTestOAuthClient } from '../../../backend/test-helpers/entities/oauth-client-management.mts'
 import { createOwnedOAuthApp } from '../../../backend/services/oauth-authorization-server/app-management.mts'
-import { randomTestOAuthRedirectUri } from '../../../backend/services/oauth-authorization-server/test-support.mts'
+import { randomTestOAuthRedirectUri } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 
 function oauthAppRows(page: Page, clientName: string) {
   return page

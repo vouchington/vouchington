@@ -9,7 +9,7 @@ import {
   getTestPostgresAdvisoryLockHolderProcessId,
   waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers/postgres-lock-wait'
-import { createTestApprovedOAuthAuthorization } from './test-support.mts'
+import { createTestApprovedOAuthAuthorization } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import { exchangeOAuthAuthorizationCode, validateOAuthAccessToken } from './index.mts'
 
 describe('OAuth authority and account-deletion lock races', () => {

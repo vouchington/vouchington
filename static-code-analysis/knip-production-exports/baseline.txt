@@ -130,11 +130,6 @@ exports backend/services/bookmarks/counts.mts getPostBookmarkCounts
 exports backend/services/bookmarks/counts.mts getRssFeedBookmarkCounts
 exports backend/services/bookmarks/counts.mts getTopicBookmarkCounts
 exports backend/services/browser-crawl/adblocker-cache.mts resetBlockerForTesting
-exports backend/services/browser-crawl/crawl-fixtures.mts getCrawlTestDependencies
-exports backend/services/browser-crawl/crawl-fixtures.mts makeMockBrowser
-exports backend/services/browser-crawl/crawl-fixtures.mts makeMockRoute
-exports backend/services/browser-crawl/crawl-fixtures.mts makeMockWebSocketRoute
-exports backend/services/browser-crawl/crawl-fixtures.mts resetCrawlMocks
 exports backend/services/captcha/config.mts resetTurnstileAlwaysApproveSkipLogForTests
 exports backend/services/communities/authorization.mts currentUserCanCreateCommunity
 exports backend/services/communities/invites/get.mts getMyInvites
@@ -217,7 +212,7 @@ exports backend/services/jwt-session/revocation.mts revokeSessions
 exports backend/services/jwt-session/user-sessions.mts touchAuthenticatedSession
 exports backend/services/landing-page-analytics/get-analytics.mts getLandingPageAnalytics
 exports backend/services/lists/lists.mts getList
-exports backend/services/localization/fixtures.mts installSampleLocalizationDatabase
+exports backend/services/localization/database.mts setLocalizationDatabaseForTests
 exports backend/services/localization/index.mts getLocalizationDatabase
 exports backend/services/localization/index.mts localizationBatchPayload
 exports backend/services/localization/index.mts localizationSqlitePath
@@ -269,14 +264,11 @@ exports backend/services/notifications-push/test-fixtures.mts getLeaseExpiry
 exports backend/services/notifications-push/test-fixtures.mts successfulSendResult
 exports backend/services/notifications-push/test-fixtures.mts waitForDeliveredEndpoint
 exports backend/services/notifications/community-activity-digest.mts getPreviousClosedMondayWindow
-exports backend/services/oauth-apple/fixtures.mts createSignedJwt
-exports backend/services/oauth-apple/fixtures.mts makeFetchResponse
 exports backend/services/oauth-apple/index.mts getAppleAccountByAppleUserId
 exports backend/services/oauth-authorization-server/access-tokens.mts isOAuthAccessToken
 exports backend/services/oauth-authorization-server/access-tokens.mts validateOAuthAccessToken
+exports backend/services/oauth-authorization-server/authorization.mts beginOAuthAuthorizationRequest
 exports backend/services/oauth-authorization-server/resources.mts getOAuthResourceMetadataUrl
-exports backend/services/oauth-authorization-server/test-support.mts TEST_OAUTH_RESOURCE
-exports backend/services/oauth-authorization-server/test-support.mts issueTestOAuthTokens
 exports backend/services/oauth-authorization-server/tokens.mts validateOAuthAccessToken
 exports backend/services/oauth-google/index.mts getGoogleAccountByGoogleUserId
 exports backend/services/oauth/authorization-broker.mts buildProviderAuthorizationUrl

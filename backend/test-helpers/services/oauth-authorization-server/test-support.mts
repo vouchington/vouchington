@@ -9,7 +9,7 @@ import {
   getOAuthResourceUrl,
   registerOAuthClient,
   type OAuthResourceAudience,
-} from './index.mts'
+} from '../../../services/oauth-authorization-server/index.mts'
 
 type TestUser = Pick<Awaited<ReturnType<typeof createTestUserDirect>>, 'id'>
 
