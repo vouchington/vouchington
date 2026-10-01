@@ -21,7 +21,8 @@ unbounded-growth entry in the schema-growth registry.
 A run's attempt reservation and cap stay a monotone `provider_attempts_started` counter on the
 receipt, reserved inside the client's `beforeAttempt` hook after the shared spend-cap check. There
 is no child attempts table: the counter, the C3 decision batch and the billing hooks already
-give the one-model-call-per-scope guarantee, and a ledger would only re-derive them.
+bound provider spend per run at `maxAttempts` and short-circuit a replay of persisted outcomes, and
+a ledger would only re-derive them.
 
 ## Identity
 
