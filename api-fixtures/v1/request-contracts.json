@@ -3507,49 +3507,6 @@
       ],
       "type": "string"
     },
-    "CopyrightStaffQueueResponse": {
-      "additionalProperties": false,
-      "properties": {
-        "copyright_notices": {
-          "items": {
-            "$ref": "#/components/schemas/CopyrightStaffQueueCase"
-          },
-          "type": "array"
-        },
-        "page_info": {
-          "additionalProperties": false,
-          "properties": {
-            "end_cursor": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "string"
-                }
-              ]
-            },
-            "has_next_page": {
-              "type": "boolean"
-            },
-            "start_cursor": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "required": ["end_cursor", "has_next_page", "start_cursor"],
-          "type": "object"
-        }
-      },
-      "required": ["copyright_notices", "page_info"],
-      "type": "object"
-    },
     "CopyrightTerritorialNoticeRequest": {
       "additionalProperties": false,
       "properties": {
