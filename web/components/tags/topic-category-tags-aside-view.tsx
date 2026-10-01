@@ -21,7 +21,6 @@ export function TopicCategoryTagsAsideView({
 
   return (
     <TopicPredicateTagsAsideView
-      dataPw='category-tags-aside'
       electionVotes={electionVotes}
       emptyLabel={t('extracted.tags.topicCategoryTagsAside.noCategoriesYet_7465b456')}
       isAuthenticated={isAuthenticated}
