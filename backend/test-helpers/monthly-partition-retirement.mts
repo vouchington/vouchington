@@ -44,8 +44,9 @@ export async function createMonthlyPartitionRetirementFixture() {
     },
     async addUnexpectedCrawlReference() {
       await using query = await startTransaction()
-      await query(`/* addUnexpectedCrawlReference */
-        CREATE TABLE unexpected_reference (crawl_id uuid REFERENCES crawls ON DELETE RESTRICT);
+      await query(`/* addUnexpectedCrawlReference:create */
+        CREATE TABLE unexpected_reference (crawl_id uuid REFERENCES crawls ON DELETE RESTRICT)`)
+      await query(`/* addUnexpectedCrawlReference:insert */
         INSERT INTO unexpected_reference VALUES ('00000000-0000-7000-8000-000000000001')`)
       await query.commit()
     },
