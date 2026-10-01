@@ -122,7 +122,6 @@ exports backend/services/bookmarks/bloom-filter.mts checkBookmarkBloomCandidates
 exports backend/services/bookmarks/counts.mts getPostBookmarkCounts
 exports backend/services/bookmarks/counts.mts getRssFeedBookmarkCounts
 exports backend/services/bookmarks/counts.mts getTopicBookmarkCounts
-exports backend/services/browser-crawl/adblocker-cache.mts resetBlockerForTesting
 exports backend/services/captcha/config.mts resetTurnstileAlwaysApproveSkipLogForTests
 exports backend/services/communities/authorization.mts currentUserCanCreateCommunity
 exports backend/services/communities/invites/get.mts getMyInvites
@@ -386,7 +385,6 @@ exports backend/workers/sitemaps/processors.mts updateSitemapIndexDependencies
 exports backend/workers/story-post-related-url-projections/processors.mts processReconcileStoryPostRelatedUrlProjections
 types backend/agents/chat/stream.mts ChatStreamEvent
 types backend/services/ap-inbox-activities/durable-delivery-transition-contract.mts ActivityPubInboxDeliveryTransitionDimensions
-types backend/services/contribution-gating/admission.mts ContributionAdmissionAudit
 types backend/services/copyright-notices/index.mts CopyrightAgentDispatchPage
 types backend/services/copyright-notices/index.mts CopyrightReviewTargetBreaches
 types backend/services/dynamic-config-admin/index.mts DynamicConfigRegistryEntry

@@ -32,7 +32,6 @@ import { CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES } from './admission-rep
 export { canonicalizeAdmissionIntent, hashAdmissionIntent } from './admission-intent.mts'
 export { resolveAdmissionIdentity } from './admission-intent.mts'
 export { pruneExpiredContributionAdmissions } from './admission-reservations.mts'
-export type { ContributionAdmissionAudit } from './admission-reservations.mts'
 export type { ContributionAdmissionInput, ContributionAdmissionResult } from './admission-types.mts'
 
 /** Claims before mutation; the mutation, quota, and replay response commit atomically. */
