@@ -2,8 +2,7 @@ import { getGrowthMetrics } from '@services/growth-metrics'
 import { parseGrowthMetricsRange } from '@services/growth-metrics/parse-range'
 import { getCommunityAiCostTotals } from '@services/ai-usage'
 import { aiCostTotalsParser } from '@services/ai-usage/query-parser'
-import { getAggregatedQueueStats } from '@data-stores/valkey-glide-mq/get-queue-stats'
-import { QUEUE_NAMES } from '@services/queue-monitoring/queue-inventory'
+import { getManagedQueueStats } from '@services/queue-monitoring'
 import { adminInput, createAdminTool, PAGE_INPUT } from './create-admin-tool.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 
@@ -38,6 +37,6 @@ const stats = createAdminTool<Record<string, never>>({
   parameters: adminInput({}),
   outputSchema: adminRouteOutputSchema(statsApi),
   annotations: { readOnlyHint: true, openWorldHint: false },
-  run: async () => ({ stats: await getAggregatedQueueStats(QUEUE_NAMES) }),
+  run: user => getManagedQueueStats(user),
 })
 export const adminBusinessAnalyticsTools = [growth, costs, stats]

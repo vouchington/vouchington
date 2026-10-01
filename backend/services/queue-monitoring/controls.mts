@@ -4,13 +4,21 @@ import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { currentUserCanAccessQueueStats } from './authorization.mts'
 import { QUEUE_NAMES, findQueueByName } from './queue-inventory.mts'
-import { getAllQueueStats } from '@data-stores/valkey-glide-mq/get-queue-stats'
+import {
+  getAllQueueStats,
+  getAggregatedQueueStats,
+} from '@data-stores/valkey-glide-mq/get-queue-stats'
 import { SCHEDULED_JOBS_REGISTRY } from './scheduled-jobs-registry.mts'
 import { BACKFILL_REGISTRY } from './backfills-registry.mts'
 
 export async function listManagedQueues() {
   const queues = await getAllQueueStats(QUEUE_NAMES)
   return { queues, total: queues.length }
+}
+
+export async function getManagedQueueStats(currentUser: PrivateUser) {
+  assert(currentUserCanAccessQueueStats(currentUser), 403, 'Forbidden')
+  return { stats: await getAggregatedQueueStats(QUEUE_NAMES) }
 }
 
 export async function setManagedQueuePaused(
