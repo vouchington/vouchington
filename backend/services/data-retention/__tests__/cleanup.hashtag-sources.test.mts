@@ -15,7 +15,7 @@ import {
   softDeleteUserAt,
 } from '@voucha/test-helpers'
 import { DELETED_USER_ID } from '@services/users/constants'
-import { deleteUserAndDrainForTest } from '@services/users/delete-test-support'
+import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { cleanupSoftDeletedUsers } from '../cleanup.mts'
 
 describe('cleanupSoftDeletedUsers hashtag source retention', () => {

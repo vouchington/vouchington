@@ -7,7 +7,7 @@ import {
   waitForTestUserDeletionBackendsBlockedBehind,
 } from '@voucha/test-helpers/entities/user-deletion-actor-locks'
 import { deleteUser } from '../delete.mts'
-import { drainUserDeletionForTest } from '../delete-test-support.mts'
+import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 
 describe('deleteUser reciprocal administrator deletions', () => {
   it('completes both deletions when two administrators delete each other concurrently', async () => {

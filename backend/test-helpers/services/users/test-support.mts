@@ -1,6 +1,6 @@
 import assert from 'node:assert'
-import { upsertUser } from './create.mts'
-import type { PrivateUser } from './types.mts'
+import { upsertUser } from '../../../services/users/create.mts'
+import type { PrivateUser } from '../../../services/users/types.mts'
 import {
   addTestUserRole,
   attachTestPhoneNumber,

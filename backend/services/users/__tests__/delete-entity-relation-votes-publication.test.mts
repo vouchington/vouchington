@@ -16,7 +16,7 @@ import {
   setTestEntityRelationIdAndScore,
 } from '@voucha/test-helpers'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import { deleteUserAndDrainForTest } from '../delete-test-support.mts'
+import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 
 const cleanupDeps = {
   deleteExportsFromS3: async () => undefined,

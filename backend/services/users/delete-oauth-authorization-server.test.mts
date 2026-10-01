@@ -23,7 +23,7 @@ import {
   TEST_OAUTH_RESOURCE,
 } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import { createUserDeletionRequest, processUserDeletionBatch } from '@services/user-deletions'
-import { getUserDeletionRequestForTest } from '@services/user-deletions/lifecycle.test-support'
+import { getUserDeletionRequestForTest } from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
 import {
   beginOAuthAuthorizationRequest,
   createOAuthBrowserBindingHash,
@@ -34,7 +34,7 @@ import {
 } from '@services/oauth-authorization-server'
 import { processUserDeletionCredentialsBatch } from './delete-phase-credentials.mts'
 import { deleteUser } from './delete.mts'
-import { drainUserDeletionForTest } from './delete-test-support.mts'
+import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 
 async function createCredentialChain(userId: string, rotations: number) {
   const flow = await createTestApprovedOAuthAuthorization({ id: userId })

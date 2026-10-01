@@ -16,7 +16,7 @@ import {
   getUserDeletionRelationImpactIdsForTest,
   getUserDeletionRequestForTest,
   makeUserDeletionRecoverableForTest,
-} from './lifecycle.test-support.mts'
+} from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
 
 describe('user deletion lifecycle', () => {
   it('creates a durable fenced request', async () => {
