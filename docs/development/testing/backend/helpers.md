@@ -469,6 +469,12 @@ in a second statement, once let a parallel sweep lock the review and wait on the
 erasure held, which deadlocked (#518). `createTestCopyrightFormRejectionByErasedModerator()` commits
 both together.
 
+Hard-deleting a post cascades into its relation rows, while a live vote-stats or publication worker
+locks the post's publication scope, then the relation row, then FK-checks the post row.
+`hardDeleteTestPost()` and `hardDeleteTestPosts()` therefore take the same `post:<id>` scope lock
+first, in their own transaction, so the delete queues behind that worker instead of cycling with it.
+Do not replace them with a raw `DELETE FROM posts`.
+
 ### Shared membership catalog rows
 
 Only four `membership_products` rows are ever active — `plan ∈ {plus, pro} × interval ∈ {monthly, yearly}`, enforced by a partial unique index and pre-seeded by migration. `createTestSku()` upserts on `(plan, billing_interval) WHERE retired_at IS NULL`, so every caller with the same plan+interval gets the identical row. That row is shared, not owned — do not isolate by `(plan, interval)`; the interval pool is small and easily exhausted.
