@@ -6266,8 +6266,12 @@
 {"descriptor":null,"id":"copy.oauth.consent.permissionsHeading"},
 {"descriptor":null,"id":"copy.oauth.consent.resourceHeading"},
 {"descriptor":null,"id":"copy.oauth.consent.title"},
+{"descriptor":null,"id":"copy.scopeDescription.financialProfileRead"},
+{"descriptor":null,"id":"copy.scopeDescription.financialProfileWrite"},
 {"descriptor":null,"id":"copy.scopeDescription.mcpAdminFullAccess"},
 {"descriptor":null,"id":"copy.scopeDescription.mcpUserFullAccess"},
+{"descriptor":null,"id":"copy.scopeDescription.spendingRead"},
+{"descriptor":null,"id":"copy.scopeDescription.spendingWrite"},
 {"descriptor":null,"id":"copy.settings.activeSessions.confirmCurrentDescription"},
 {"descriptor":null,"id":"copy.settings.activeSessions.confirmCurrentTitle"},
 {"descriptor":null,"id":"copy.settings.activeSessions.confirmSessionDescription"},
@@ -6301,5 +6305,6 @@
 {"descriptor":null,"id":"copy.settings.notificationSettings.loadError"},
 {"descriptor":null,"id":"copy.settings.notificationSettings.loadErrorFallback"},
 {"descriptor":{"cases":["action","alias","appeal","candidate","click","conversation","domain","email","field","hostname","image","item","key","link","member","message","moderator","note","participant","page","post","positiveVote","negativeVote","prefix","loadedReport","queueItem","listItem","report","reporter","comment","view","rating","review","discussion","result","signup","source","topic","url","user","visit","visitor"],"kind":"select-plural","numberParameters":["count"],"selectParameter":"unit","valueParameter":"count"},"id":"copy.shared.countLabel.format"},
+{"descriptor":null,"id":"copy.shared.oauth.consent.sensitivePermissionsHeading"},
 {"descriptor":{"cases":["minute","hour","day","week","month","year"],"kind":"select-plural","numberParameters":[],"selectParameter":"unit","valueParameter":"value"},"id":"copy.shared.timeAgo.relativeDuration"}
 ]

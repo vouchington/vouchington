@@ -189,3 +189,5 @@ the private account objects and are not copied into `display_account`. Web alrea
 success from `success_rate` and `total_closed`, and display names from `display_account.name`, so
 the staff moderation ops row stays full. Swift and .NET drop both decoder fields in
 [vouchington-clients#194](https://github.com/vouchington/vouchington-clients/pull/194).
+
+Financial scope consent (#1271): hosted OAuth consent and the web API-key picker describe financial profile and spending exact grants. Native clients have no consent screen; their shared `native.credentials.mcpUserFullAccess` copy now states that financial profile and spending require separate grants. Native presets must explicitly list financial scopes when they intend to access those resources.

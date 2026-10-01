@@ -43,7 +43,15 @@ const scopeCatalog: ScopeCatalogEntry[] = (scopeCatalogFixture as ScopeCatalogRe
         ? 'mcp_admin_full_access'
         : entry.resource === 'mcp.user'
           ? 'mcp_user_full_access'
-          : null,
+          : entry.resource === 'financial-profile'
+            ? entry.action === 'read'
+              ? 'financial_profile_read'
+              : 'financial_profile_write'
+            : entry.resource === 'spending'
+              ? entry.action === 'read'
+                ? 'spending_read'
+                : 'spending_write'
+              : null,
   }),
 )
 
@@ -100,6 +108,14 @@ describe('ApiKeysManager scope selection', () => {
         revoked_at: null,
       },
     })
+  })
+
+  it('describes each financial read and write permission', async () => {
+    await openMcpForm()
+    expect(screen.getByText(/Read your credit score range/)).toBeInTheDocument()
+    expect(screen.getByText(/Update your credit score range/)).toBeInTheDocument()
+    expect(screen.getByText(/Read your spending categories/)).toBeInTheDocument()
+    expect(screen.getByText(/Add, update or remove your spending categories/)).toBeInTheDocument()
   })
 
   it('creates a user MCP key with a write scope and its required read scope', async () => {
@@ -173,7 +189,7 @@ describe('ApiKeysManager scope selection', () => {
   it('renders the user catalogue description through localized copy', async () => {
     await openMcpForm()
 
-    expect(screen.getByText('Full user MCP access')).toBeInTheDocument()
+    expect(screen.getByText(/excluding financial profile and spending/)).toBeInTheDocument()
     expect(screen.queryByText('Full administrator MCP access')).not.toBeInTheDocument()
   })
 

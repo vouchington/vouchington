@@ -11,25 +11,17 @@ import {
   type IndividualRewardsProgramStatus,
   type IndividualRewardsProgramStatusPage,
 } from '@services/individuals-households'
-import { getUserFinancialProfile } from '@services/user-financial-profiles'
 import { requirePrivateToolUser } from './private-user.mts'
-import {
-  componentSchema,
-  routePropertySchema,
-  routeResponseSchema,
-} from './route-response-schema.mts'
+import { routePropertySchema, routeResponseSchema } from './route-response-schema.mts'
 
 const API = {
   cards: { method: 'GET', path: '/api/v1/my/cards' },
   pointValuations: { method: 'GET', path: '/api/v1/my/rewards-program-point-valuations' },
   statuses: { method: 'GET', path: '/api/v1/my/rewards-program-statuses' },
-  financialProfile: { method: 'GET', path: '/api/v1/my/financial-profile' },
 } as const satisfies Record<string, ToolApiEndpoint>
 
-// This tool reshapes four REST bodies into one flat result, so it owns the result schema. Each
-// section still comes from its REST twin's generated contract, never a hand-written copy. The
-// financial profile route documents its body inline, so that section names the component the
-// route wraps in `anyOf`, which `getUserFinancialProfile` returns or null.
+// This tool reshapes three REST bodies into one flat result, so it owns the result schema. Each
+// section still comes from its REST twin’s generated contract.
 function buildOutputSchema(): ToolOutputSchema {
   const cards = routeResponseSchema(API.cards)
   const pointValuations = routeResponseSchema(API.pointValuations)
@@ -42,7 +34,6 @@ function buildOutputSchema(): ToolOutputSchema {
     point_valuations_page_info: routePropertySchema(pointValuations, 'page_info'),
     rewards_program_statuses: routePropertySchema(statuses, 'results'),
     rewards_program_statuses_page_info: routePropertySchema(statuses, 'page_info'),
-    financial_profile: { anyOf: [componentSchema('UserFinancialProfile'), { type: 'null' }] },
   }
   return {
     type: 'object',
@@ -69,7 +60,6 @@ type ToolResult = {
   point_valuations_page_info: IndividualRewardsProgramPointValuationPage['page_info']
   rewards_program_statuses: IndividualRewardsProgramStatus[]
   rewards_program_statuses_page_info: IndividualRewardsProgramStatusPage['page_info']
-  financial_profile: unknown | null
 }
 
 const tool: Tool<ToolArgs, ToolResult> = {
@@ -77,7 +67,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'get_my_profile',
     type: 'function',
     description:
-      "Get the current user's wallet profile including their cards, point valuations, rewards program statuses, and financial profile (credit score range, income range).",
+      "Get the current user's wallet profile including their cards, point valuations, rewards program statuses.",
     parameters: {
       type: 'object',
       properties: {
@@ -115,29 +105,27 @@ const tool: Tool<ToolArgs, ToolResult> = {
     title: 'Get My Profile',
     requiredScopes: { mcp: ['profile:read'] },
     annotations: { readOnlyHint: true },
-    api: [API.cards, API.pointValuations, API.statuses, API.financialProfile],
+    api: [API.cards, API.pointValuations, API.statuses],
     outputSchema: buildOutputSchema(),
   },
   function:
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
       const privateUser = await requirePrivateToolUser(currentUser)
-      const [cardPage, pointValuationPage, rewardsProgramStatuses, financialProfile] =
-        await Promise.all([
-          getIndividualCards(privateUser, privateUser, {
-            after: args.cards_after,
-            limit: args.cards_limit,
-          }),
-          getIndividualRewardsProgramPointValuations(privateUser, privateUser, {
-            after: args.point_valuations_after,
-            limit: args.point_valuations_limit,
-          }),
-          getIndividualRewardsProgramStatuses(privateUser, privateUser, {
-            after: args.rewards_program_statuses_after,
-            limit: args.rewards_program_statuses_limit,
-          }),
-          getUserFinancialProfile(privateUser.id),
-        ])
+      const [cardPage, pointValuationPage, rewardsProgramStatuses] = await Promise.all([
+        getIndividualCards(privateUser, privateUser, {
+          after: args.cards_after,
+          limit: args.cards_limit,
+        }),
+        getIndividualRewardsProgramPointValuations(privateUser, privateUser, {
+          after: args.point_valuations_after,
+          limit: args.point_valuations_limit,
+        }),
+        getIndividualRewardsProgramStatuses(privateUser, privateUser, {
+          after: args.rewards_program_statuses_after,
+          limit: args.rewards_program_statuses_limit,
+        }),
+      ])
 
       return {
         success: true,
@@ -147,7 +135,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
         point_valuations_page_info: pointValuationPage.page_info,
         rewards_program_statuses: rewardsProgramStatuses.results,
         rewards_program_statuses_page_info: rewardsProgramStatuses.page_info,
-        financial_profile: financialProfile,
       }
     },
 }

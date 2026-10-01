@@ -9428,8 +9428,12 @@
 {"alias":"settings.activeSessions.toastSessionSignedOut","consumer":"web","copyId":"copy.settings.activeSessions.toastSessionSignedOut"},
 {"alias":"settings.activeSessions.unknownDevice","consumer":"web","copyId":"copy.settings.activeSessions.unknownDevice"},
 {"alias":"settings.apiKeys.labelExample.mcp","consumer":"web","copyId":"copy.apiKeyLabelExample.mcp"},
+{"alias":"settings.apiKeys.scopeDescription.financialProfileRead","consumer":"web","copyId":"copy.scopeDescription.financialProfileRead"},
+{"alias":"settings.apiKeys.scopeDescription.financialProfileWrite","consumer":"web","copyId":"copy.scopeDescription.financialProfileWrite"},
 {"alias":"settings.apiKeys.scopeDescription.mcpAdminFullAccess","consumer":"web","copyId":"copy.scopeDescription.mcpAdminFullAccess"},
 {"alias":"settings.apiKeys.scopeDescription.mcpUserFullAccess","consumer":"web","copyId":"copy.scopeDescription.mcpUserFullAccess"},
+{"alias":"settings.apiKeys.scopeDescription.spendingRead","consumer":"web","copyId":"copy.scopeDescription.spendingRead"},
+{"alias":"settings.apiKeys.scopeDescription.spendingWrite","consumer":"web","copyId":"copy.scopeDescription.spendingWrite"},
 {"alias":"settings.connectedApps.authorizedConsentedatNotUsedYet","consumer":"web","copyId":"copy.my.connectedAppsManager.connectedAppRow.authorizedConsentedatNotUsedYet"},
 {"alias":"settings.language.countryLabel","consumer":"web","copyId":"copy.settings.language.countryLabel"},
 {"alias":"settings.language.countrySaveError","consumer":"web","copyId":"copy.settings.language.countrySaveError"},
@@ -9462,6 +9466,7 @@
 {"alias":"shared.oauth.consent.passwordNotice","consumer":"web","copyId":"copy.oauth.consent.passwordNotice"},
 {"alias":"shared.oauth.consent.permissionsHeading","consumer":"web","copyId":"copy.oauth.consent.permissionsHeading"},
 {"alias":"shared.oauth.consent.resourceHeading","consumer":"web","copyId":"copy.oauth.consent.resourceHeading"},
+{"alias":"shared.oauth.consent.sensitivePermissionsHeading","consumer":"web","copyId":"copy.shared.oauth.consent.sensitivePermissionsHeading"},
 {"alias":"shared.oauth.consent.title","consumer":"web","copyId":"copy.oauth.consent.title"},
 {"alias":"shared.timeAgo.relativeDuration","consumer":"web","copyId":"copy.shared.timeAgo.relativeDuration"}
 ]

@@ -2,6 +2,10 @@ import type { MessageKey } from '@ts-shared/ui-messages'
 import type { ScopeDescriptionKey } from '@/types/scopes'
 
 const MESSAGE_KEYS = {
+  financial_profile_read: 'settings.apiKeys.scopeDescription.financialProfileRead',
+  financial_profile_write: 'settings.apiKeys.scopeDescription.financialProfileWrite',
+  spending_read: 'settings.apiKeys.scopeDescription.spendingRead',
+  spending_write: 'settings.apiKeys.scopeDescription.spendingWrite',
   mcp_admin_full_access: 'settings.apiKeys.scopeDescription.mcpAdminFullAccess',
   mcp_user_full_access: 'settings.apiKeys.scopeDescription.mcpUserFullAccess',
 } satisfies Record<ScopeDescriptionKey, MessageKey>

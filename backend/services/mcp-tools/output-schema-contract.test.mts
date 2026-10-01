@@ -95,7 +95,11 @@ describe('MCP output schema contract — real DB', () => {
     expect(structured['cards']).toHaveLength(1)
     expect(structured['point_valuations']).toHaveLength(1)
     expect(structured['rewards_program_statuses']).toHaveLength(1)
-    expect(structured['financial_profile']).toMatchObject({ credit_score_range: '740-799' })
+    expect(structured).not.toHaveProperty('financial_profile')
+    const financial = await call(user, 'get_my_financial_profile', 'financial-profile:read')
+    expect(financial['result']).toMatchObject({
+      financial_profile: { credit_score_range: '740-799' },
+    })
   })
 
   it('returns get_my_profile for a user with no financial profile', async () => {
@@ -103,7 +107,9 @@ describe('MCP output schema contract — real DB', () => {
 
     const structured = await call(freshUser, 'get_my_profile', 'profile:read')
 
-    expect(structured['financial_profile']).toBeNull()
+    expect(structured).not.toHaveProperty('financial_profile')
+    const financial = await call(freshUser, 'get_my_financial_profile', 'financial-profile:read')
+    expect(financial['result']).toMatchObject({ financial_profile: null })
     expect(structured['cards']).toEqual([])
   })
 })

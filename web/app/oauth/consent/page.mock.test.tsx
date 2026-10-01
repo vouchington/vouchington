@@ -47,6 +47,16 @@ vi.mock(import('./consent-actions'), () => ({
   ),
 }))
 
+vi.mock(import('@/lib/api/server/scopes'), () => ({
+  getScopeCatalog: async () => ({
+    scopes: [
+      { scope: 'financial-profile:read', description_key: 'financial_profile_read' },
+      { scope: 'spending:read', description_key: 'spending_read' },
+      { scope: 'mcp.user:read', description_key: 'mcp_user_full_access' },
+    ],
+  }),
+}))
+
 import OAuthConsentPage from './page'
 
 const authorizationRequest: OAuthAuthorizationRequestResponse = {
@@ -55,7 +65,8 @@ const authorizationRequest: OAuthAuthorizationRequestResponse = {
     client_name: 'Example app',
     client_hostname: null,
     resource: 'https://api.voucha.ai/api/v1/mcp',
-    scopes: ['news:read', 'topics:read'],
+    scopes: ['topics:read'],
+    sensitive_scopes: [],
     expires_at: '2026-09-20T21:00:00.000Z',
   },
 }
@@ -97,6 +108,7 @@ describe('OAuthConsentPage', () => {
       authorization_request: {
         ...authorizationRequest.authorization_request,
         scopes: ['post-relations.owned-private:write'],
+        sensitive_scopes: ['post-relations.owned-private:write'],
       },
     })
     const ui = await OAuthConsentPage({
@@ -113,6 +125,27 @@ describe('OAuthConsentPage', () => {
       ),
     ).toBeInTheDocument()
     expect(screen.getByTestId('consent-actions')).toHaveTextContent('request-1')
+  })
+
+  it('separates financial permissions and explains excluded umbrella access', async () => {
+    mockGetAuthorizationRequest.mockResolvedValue({
+      authorization_request: {
+        ...authorizationRequest.authorization_request,
+        scopes: ['mcp.user:read', 'financial-profile:read', 'spending:read'],
+        sensitive_scopes: ['financial-profile:read', 'spending:read'],
+      },
+    })
+    render(await OAuthConsentPage({ searchParams: Promise.resolve({ request_id: 'request-1' }) }))
+    expect(screen.getByText('Sensitive permissions — explicit access')).toBeInTheDocument()
+    expect(screen.getByText(/Read your credit score range/)).toBeInTheDocument()
+    expect(screen.getByText(/Read your spending categories/)).toBeInTheDocument()
+    expect(screen.getByText(/excluding financial profile and spending/)).toBeInTheDocument()
+    const financial = screen.getByText('financial-profile:read')
+    expect(financial.closest('ul')).toHaveAttribute('data-pw', 'oauth-consent-sensitive-scopes')
+    expect(screen.getByText('mcp.user:read').closest('ul')).toHaveAttribute(
+      'data-pw',
+      'oauth-consent-scopes',
+    )
   })
 
   it('shows the Client ID Metadata Document hostname with the reviewed client name', async () => {
