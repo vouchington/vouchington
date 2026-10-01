@@ -157,13 +157,13 @@ describe('POST /api/v1/communities/:idOrSlug/posts/:postId/automod-flag/dismissa
       .expect(404)
   })
 
-  it('returns 400 for a malformed post id', async () => {
+  it('returns 422 for a malformed post id', async () => {
     const { community } = await createFlaggedPost()
     const request = createRequest()
     await request.authenticateAs(siteAdmin)
 
     await request
       .post(`/api/v1/communities/${community.slug}/posts/not-a-uuid/automod-flag/dismissal`)
-      .expect(400)
+      .expect(422)
   })
 })
