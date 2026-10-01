@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
+import { ALLOWED_LABELS } from './runner-policy-classify.mts'
 
+// The runner allowlist owns the versioned ARM label; read it instead of pinning a second literal.
+const armLabel = ALLOWED_LABELS.find(label => label.endsWith('-arm'))
 const workflow = readFileSync('.github/workflows/tests-web.yml', 'utf8')
 const parsedWorkflow = load(workflow) as {
   permissions?: Record<string, string>
@@ -42,7 +45,8 @@ describe('Web Tests workflow', () => {
     const tests = jobSection('web-tests')
 
     expect(tests).toContain('needs: [prep]')
-    expect(tests).toContain('runs-on: ubuntu-24.04-arm')
+    expect(armLabel).toBeDefined()
+    expect(tests).toContain(`runs-on: ${armLabel}\n`)
     expect(tests).toContain('fail-fast: false')
     expect(tests).toContain('shard: ${{ fromJSON(needs.prep.outputs.shard-matrix) }}')
     expect(tests).toContain("VITEST_MAX_WORKERS: '4'")
