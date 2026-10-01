@@ -25,8 +25,10 @@ into every partition prompt so inspectors never read their own clock.
 
 Use the `vouchington-tooling` MCP server. First drain every worktree's outbox: for each path that
 `git worktree list` prints, call `outbox_flush` and then `outbox_status` with that path as
-`worktree`, and stop if any of them still reports pending records. An archived session refuses later
-delivery, so a retained record would never be distilled. Then call `snapshot_export` with the root's
+`worktree`, and stop if any of them reports a `worktreePendingCount` above 0. Use the worktree count,
+never `pendingCount` or `status`, which cover only the root's own session: the sessions to distill
+belong to other agents. An archived session refuses later delivery, so a retained record would never
+be distilled. Then call `snapshot_export` with the root's
 own `sessionId`; it always exports only non-archived sessions and returns a private local snapshot
 path, counts, checksum, and terminal manifest, never the records. If the server is not connected,
 stop and report it rather than falling back to a CLI command or paginated session reads.
@@ -81,8 +83,9 @@ versioned feedback envelope fails the shared validator — even if it
 also has a retrospective entry — report it separately and give it no issue-filing pass or archival
 this run, regardless of its age, rather than treating an untyped entry as journal evidence; a
 **retrospective** session when it has a retrospective entry and no unresolved entry; report quarantine counts/reasons and continue clean unrelated sessions.
-Deduplicate versioned source events by session and `sourceEventId` before theme counting; conflicting
-payloads stay quarantined. A
+Deduplicate versioned source events by session and `sourceEventId` before theme counting; copies that
+differ only in the server-assigned `timestamp` are one event, and any other difference is a
+conflicting payload that stays quarantined. A
 **checkpoint-only** session when it has at least one entry, no retrospective entry, and
 every entry satisfies `isCheckpointEntry` (journal auto-append noise, #9337); a **journal-only**
 session when it has at least one entry, no retrospective entry, and at least one entry is not a
@@ -123,9 +126,9 @@ was saved after the export), so leave it unarchived for the next pass; so is a r
 the session's metadata, so its entries stay appendable. Invoking this skill is the local archival
 authorization for eligible sessions: archive each one with a separate `session_archive` call whose
 `sessionId` is the archived session, not the root's. Before any `session_archive`, repeat the
-drain across every worktree, and never call `session_archive` while `outbox_status` reports pending
-records in any of them: an archived session refuses later delivery and would strand the retained
-record. Archive every eligible session after all
+drain across every worktree, and never call `session_archive` while any worktree's `outbox_status`
+reports a `worktreePendingCount` above 0: an archived session refuses later delivery and would
+strand the retained record. Archive every eligible session after all
 issue work completes, whether or not it produced a theme: no actionable content is a disposition, not
 a deferral. Two exceptions, both keyed by the theme→session-ID mapping above: skip archival for
 exactly the sessions that contributed to a theme whose issue mutation failed this run (they remain

@@ -110,15 +110,18 @@ The [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) records feedb
 `vouchington-tooling` MCP server, which exposes seven tools: `journal_append`, `journal_entries`,
 `outbox_status`, `outbox_flush`, `session_ensure`, `snapshot_export`, and `session_archive`. One
 `journal_append` call carries the note as `markdown` plus mode, source-event id, work outcome,
-feedback coverage, repositories, and a caller-fixed `timestamp`; the server builds the validated
-feedback envelope, so a retry is the same call with the same source-event id, content, and
-timestamp. The provider plugin's raw `entry_append` never satisfies that delivery contract, and
+feedback coverage, and repositories; the server builds the validated feedback envelope and owns its
+`timestamp`, which the tool rejects as an argument and returns on the receipt. An event is its
+session, source-event id, and content, never its timestamp, so a retry is the identical call and
+reports the stored timestamp, while different content under the same source-event id is an
+`event-conflict`. The provider plugin's raw `entry_append` never satisfies that delivery contract, and
 the skill forbids calling it. Each entry's `data.repositories` lists the repositories it concerns
 (`vouchington/vouchington` unless the caller lists others), and the session's `data.repositories`
 keeps their cumulative union. Interactive mode retains a failed delivery in the worktree's
 `.local/blackboard-outbox`, the same directory `dev/retrospective-save.mts` uses by default;
-`outbox_status` and `outbox_flush` inspect and deliver it for the whole worktree. Autonomous mode
-has no outbox. There is no CLI fallback: when the server is not connected, the agent stops and
+`outbox_flush` delivers every retained record in the worktree, and `journal_append`, `outbox_status`,
+and `outbox_flush` report two counts: `pendingCount` is the calling session's unsent records and
+`worktreePendingCount` is every session's. Autonomous mode has no outbox (both counts are 0). There is no CLI fallback: when the server is not connected, the agent stops and
 reports it. Manual CLI use remains available through `pnpm exec agent-blackboard`; the retrospective
 and probe scripts import the JS client directly, which keeps the dependency visible to Knip.
 
@@ -144,8 +147,10 @@ archival — for the run. See
 [distilling.md](../../.agents/skills/retrospective-distill/distilling.md) for the full eligibility,
 redaction, and archival-carve-out rules. Before the export, and again before any `session_archive`,
 the root calls `outbox_flush` then `outbox_status` for every worktree that `git worktree list`
-prints (each path as `worktree`) and stops if any reports pending records: an archived session
-refuses later delivery, which would strand the retained record. A removed worktree or another
+prints (each path as `worktree`) and stops if any reports a `worktreePendingCount` above 0 (not
+`pendingCount`, which covers only the root's own session, while the sessions being distilled belong
+to other agents): an archived session refuses later delivery, which would strand the retained
+record. A removed worktree or another
 machine cannot be drained. The canonical skill covers that with `inactiveForHours` selection, but
 the export never passes it here: the filter never matches a zero-entry session, so passing it would
 hide exactly the aborted sessions this age rule exists to sweep up. The `--retro-days` and
@@ -377,11 +382,13 @@ path; discovery is bound to the composition session ID.
 in a bounded, private worktree-local outbox and return visible `pending` state so work can
 continue. Unsent records are never silently evicted. Saturation, persistence failure, malformed
 input, and identity mismatch remain explicit failures. Use the `outbox_status` and `outbox_flush`
-tools to inspect and retry pending delivery for the whole worktree; retries preserve source IDs and
+tools to inspect pending delivery (the calling session's `pendingCount` and the worktree's
+`worktreePendingCount`) and to retry it for the whole worktree; retries preserve source IDs and
 verify read-back.
 
-The versioned envelope records `schemaVersion`, `type`, `sourceEventId`, `timestamp`,
-`repositories`, `markdown`, `workOutcome`, and `feedbackCoverage`. Retrospectives retain typed
+The versioned envelope records `schemaVersion`, `type`, `sourceEventId`, `timestamp` (assigned by the
+server for `journal_append`), `repositories`, `markdown`, `workOutcome`, and `feedbackCoverage`.
+Retrospectives retain typed
 `date`, `issues`, and `prs` provenance. The writer owns validation, sanitization, deduplication,
 attribution, transport, and acknowledgment; repository adapters do not duplicate those mechanisms.
 

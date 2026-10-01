@@ -101,11 +101,13 @@ session.
 ## Recording an entry
 
 Make one `journal_append` call and pass the note as `markdown`; no temporary file or replay command
-is involved. Fix the ISO 8601 `timestamp` before the first attempt, because a failed or timed-out
-call returns no result to learn a server-generated one from. To retry, repeat the same call with the
-same `sourceEventId`, content, and `timestamp`. The tool rejects a changed envelope under an
-existing `sourceEventId`. Interactive `pending` means the outbox retained the entry: check the count
-with `outbox_status` and deliver with `outbox_flush` once the deployment is reachable.
+is involved. Never pass a `timestamp`: the server owns it, rejects the argument, and returns the one
+it used. To retry a failed or timed-out call, repeat the identical call with the same
+`sourceEventId` and content; the tool returns the stored timestamp. The tool rejects different
+content under an existing `sourceEventId`. Interactive `pending` means the outbox retained the
+entry: check the counts with `outbox_status` (`pendingCount` is this session's unsent records,
+`worktreePendingCount` every session's in the worktree) and deliver with `outbox_flush` once the
+deployment is reachable.
 
 An autonomous runner's admission `journal_append` (after `session_ensure`, before it launches an
 attempt) is the exception to reuse: give every attempt its own `sourceEventId`, for example one that

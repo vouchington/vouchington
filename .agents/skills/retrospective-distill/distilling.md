@@ -10,9 +10,10 @@ The `snapshot_export` tool of the `vouchington-tooling` MCP server is the sole b
 file it writes is the only source of full records: `journal_entries` reads one session at a time
 with no checksum or manifest, so it cannot prove a bulk read complete. Before the export, the root
 calls `outbox_flush` then `outbox_status` for every worktree that `git worktree list` prints (each
-path as `worktree`) and stops if any still reports pending records; it repeats that drain before any
-`session_archive` and never archives while any are pending, because an archived session refuses
-later delivery. A removed worktree or another machine cannot be drained, which is why the age
+path as `worktree`) and stops if any reports a `worktreePendingCount` above 0 (never `pendingCount`
+or `status`, which cover only the root's own session); it repeats that drain before any
+`session_archive` and never archives while any worktree still has pending records, because an
+archived session refuses later delivery. A removed worktree or another machine cannot be drained, which is why the age
 cutoffs below delay distillation. Its terminal manifest and client-side checksum establish that
 the root received a complete best-effort export before any partition is delegated, and the root
 stops on any mismatch rather than treating missing records as absent. The root must first

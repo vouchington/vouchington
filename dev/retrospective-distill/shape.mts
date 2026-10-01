@@ -99,6 +99,12 @@ function isEligible(
   return staleRetro || staleSession
 }
 
+// An event is its session, `sourceEventId`, and content; the server assigns `timestamp` per attempt
+// (a retry or a late write beside it can store the same event twice), so it is not identity.
+function withoutTimestamp(data: SessionEntry['data']) {
+  return Object.fromEntries(Object.entries(data).filter(([key]) => key !== 'timestamp'))
+}
+
 function normalizeSourceEvents(entries: SessionEntry[]) {
   const events = new Map<string, SessionEntry>()
   const unique: SessionEntry[] = []
@@ -116,7 +122,7 @@ function normalizeSourceEvents(entries: SessionEntry[]) {
       unique.push(entry)
       continue
     }
-    if (!isDeepStrictEqual(existing.data, entry.data)) {
+    if (!isDeepStrictEqual(withoutTimestamp(existing.data), withoutTimestamp(entry.data))) {
       conflictCount++
       continue
     }

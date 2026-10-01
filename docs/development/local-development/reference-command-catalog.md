@@ -106,8 +106,9 @@ Agents journal through the `vouchington-tooling` MCP server, not a command. One 
 call writes one entry (its `markdown` argument carries the note), `journal_entries` reads a
 session's entries back (every type, oldest first, full envelope), and `outbox_status` and `outbox_flush` manage interactive
 pending delivery. Every call passes the `sessionId` the SessionStart hook printed as
-`Blackboard sessionId: <id>`. A retry repeats the same call with the same `sourceEventId`, content,
-and `timestamp`. When the server is not connected, stop and report; there is no CLI fallback. See
+`Blackboard sessionId: <id>`. The server owns the entry `timestamp` (the call takes none) and a retry
+repeats the identical call, with the same `sourceEventId` and content. When the server is not
+connected, stop and report; there is no CLI fallback. See
 [the `blackboard` skill](../../../.agents/skills/blackboard/SKILL.md) and
 [agent-blackboard](../agent-blackboard.md#mcp-server-js-client-and-cli-integration) for the
 argument contract and the `pending` result.
