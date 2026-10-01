@@ -6,7 +6,7 @@ PR and merge-group application tests run behind their matching backend, web, Lam
 Cloudflare Worker static gate; both Playwright suites wait on the static gates they need. No test
 waits on another, so a test failure never suppresses a different suite, and an intentionally
 skipped static gate does not block selected work. Each selected area reports its own required gate
-after its suites and area patch-coverage check complete. Main publication workflows do not
+after its suites and, on pull requests, area patch-coverage check complete. Main publication workflows do not
 run these test suites; nightly and manual validation retain full-suite coverage.
 
 | Workflow                                                                                       | What                                                                                                                                                                                                                                                                                                                                                                          | Vitest projects                                                                                                                                                            |

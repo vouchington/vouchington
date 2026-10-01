@@ -49,7 +49,7 @@ jobs:
     needs: [static-lambdas, test-lambdas]
     if: >-
       !cancelled() &&
-      (github.event_name == 'pull_request' || github.event_name == 'merge_group') &&
+      github.event_name == 'pull_request' &&
       needs.static-lambdas.result == 'success' &&
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled')
