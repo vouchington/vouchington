@@ -69,8 +69,8 @@ import NewCopyrightNoticePage from './notices/new/page'
 import CopyrightNoticePage from './notices/[id]/page'
 import CopyrightAppealPage from './notices/[id]/appeal/page'
 import CopyrightCounterNoticePage from './notices/[id]/counter-notice/page'
-import CopyrightReviewQueuePage from './review-queue/page'
-import CopyrightEmailReviewPage from './email-review/page'
+import CopyrightReviewQueuePage, { metadata as reviewQueueMetadata } from './review-queue/page'
+import CopyrightEmailReviewPage, { metadata as emailReviewMetadata } from './email-review/page'
 
 const mockUser = vi.mocked(requireCurrentUser)
 const mockList = vi.mocked(getCopyrightNotices)
@@ -148,6 +148,17 @@ describe('copyright pages', () => {
     expect(screen.getByText('staff queue')).toBeInTheDocument()
     render(await CopyrightEmailReviewPage())
     expect(screen.getByText(`email review ${copyrightEmailIntakeId}`)).toBeInTheDocument()
+  })
+
+  it('titles the staff pages and keeps them out of search indexes', () => {
+    expect(reviewQueueMetadata).toMatchObject({
+      title: 'Copyright Review Queue | Staff',
+      robots: { index: false, follow: false },
+    })
+    expect(emailReviewMetadata).toMatchObject({
+      title: 'Copyright Email Review | Staff',
+      robots: { index: false, follow: false },
+    })
   })
 
   it('loads a public notice and poster response routes', async () => {
