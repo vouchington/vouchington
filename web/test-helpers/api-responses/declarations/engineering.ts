@@ -16,6 +16,7 @@ import adminValkeyCacheGroupsDefault from '../../../../api-fixtures/v1/responses
 import adminValkeyCachesClearDefault from '../../../../api-fixtures/v1/responses/web.admin.valkey.caches.clear.default.json'
 import adminValkeyFlushDefault from '../../../../api-fixtures/v1/responses/web.admin.valkey.flush.default.json'
 import growthMetricsDefault from '../../../../api-fixtures/v1/responses/web.growth-metrics.default.json'
+import rssFeedCategoriesDefault from '../../../../api-fixtures/v1/responses/web.rss-feed-categories.default.json'
 import type { Backfill, QueueStats, QueueStatsSummary, ScheduledJob } from '@/lib/api/client/mq'
 import type { ArticleSyncJobStatus } from '@/lib/api/client/admin'
 import type { FlushValkeyResponseBody } from '@/types/api-responses'
@@ -28,6 +29,7 @@ import type {
   RebuildBloomFilterResponse,
 } from '@/types/api-responses/memberships-referrals-and-admin'
 import type { GrowthMetrics } from '@/types/growth-metrics'
+import type { UnmappedCategoryListResponse } from '@/types/rss-feed-categories'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
 export const ENGINEERING_DECLARATIONS = [
@@ -122,5 +124,13 @@ export const ENGINEERING_DECLARATIONS = [
     'web.growth-metrics.default',
     growthMetricsDefault,
     context => context.server.growthMetrics.getGrowthMetrics({ range: '30d' }),
+  ),
+  defineWebApiFixture<UnmappedCategoryListResponse>()(
+    'web.rss-feed-categories.default',
+    rssFeedCategoriesDefault,
+    context =>
+      context.server.rssFeedCategories.getAdminRssFeedCategories({
+        searchParams: { limit: 2, status: 'pending' },
+      }),
   ),
 ] as const satisfies readonly WebApiFixtureDeclaration<string, unknown>[]
