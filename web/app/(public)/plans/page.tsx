@@ -9,7 +9,7 @@ import { PageWithAside } from '@/components/page-with-aside'
 import { PlanCards } from '@/components/memberships/plan-cards'
 import { PlanComparisonTable } from '@/components/memberships/plan-comparison-table'
 import { PlanFAQ } from '@/components/memberships/plan-faq'
-import { fallbackMembershipBenefitCatalog } from '@/components/memberships/fallback-benefit-catalog'
+import { builtMembershipBenefitCatalog } from '@/components/memberships/membership-benefit-catalog'
 import type { SubscriptionMembership } from '@/types/api-responses'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { getResolvedUiLocale } from '@/lib/i18n/get-resolved-ui-locale'
@@ -31,7 +31,7 @@ export default async function PlansPage() {
     getResolvedUiLocale(),
   ])
   const plans = groupStripeMembershipProducts(plansResult?.products ?? [])
-  const benefitCatalog = plansResult?.benefit_catalog ?? fallbackMembershipBenefitCatalog
+  const benefitCatalog = plansResult ? plansResult.benefit_catalog : builtMembershipBenefitCatalog
   const membership: SubscriptionMembership | null | undefined = currentUser
     ? membershipResult?.membership
       ? toUiMembership(

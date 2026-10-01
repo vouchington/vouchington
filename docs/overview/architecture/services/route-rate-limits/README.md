@@ -134,9 +134,31 @@ concurrent jobs and crash retries neither inflate the hostname count nor change 
 Inline inbox handling keeps the ordinary per-request counter because it has no durable delivery
 UUID.
 
+## MCP usage quota
+
+The MCP routes also draw on an outcome-based usage quota that counts only requests the API served
+(2xx and 4xx; a 429 and an actual 5xx are not charged) and emits one `api_usage` analytics event
+per settled request with the validated identity ids. It is separate from the attempt-based limiter
+above, which still counts every attempt. `checkUsageQuota()` is a read-only pre-check and
+`settleUsage()` charges the quota and emits the event once the response status is known. The quota
+bucket is per owner and surface, Valkey is the only store, and no credential ever enters a key or an
+event. Quota limits, units, settlement, and deferred items are documented in the
+[Layer 4 reference](../../reference-rate-limiting-layer-4-per-route-rate-limiting-backend.md#mcp-usage-quota).
+
+## REST usage quota
+
+`ctx.applyRouteRateLimit` meters every REST request with the same quota after the attempt-based
+check passes. A signed-in user draws on their own `rest_user` allowance, keyed by user id alone, and
+is refused with the MCP `429 Usage quota exceeded` once it is spent (session and sign-in routes are
+never refused). Anonymous requests are charged to one `rest_anonymous` aggregate that is reported and
+never enforced, with no IP, device, session, or user identifier in the key or the event. The meter
+is `backend/api/rest-usage-meter.mts`, and it shares the settle-on-response-close hook in
+`backend/api/usage-meter-helpers.mts` with MCP. See the
+[REST usage quota reference](../../reference-rate-limiting-rest-usage-quota.md).
+
 ## Error Handling
 
-Fails open on Valkey errors: if `addAndCheck` throws, returns `{ limited: false }` so the request proceeds. Error is reported via `onError`.
+Fails open on Valkey errors: if `addAndCheck` throws, returns `{ limited: false }` so the request proceeds. Error is reported via `onError`. The usage quota check and charge fail open the same way.
 
 ## Files
 
@@ -144,6 +166,9 @@ Fails open on Valkey errors: if `addAndCheck` throws, returns `{ limited: false 
 - `config.mts` — `ROUTE_REGISTRY`, `routeRateLimitConfig` DynamicConfig, threshold helpers
 - `identity.mts` — `resolveRateLimitIdentities()`, `buildRateLimitKeys()`
 - `check.mts` — `checkRouteRateLimit()`
+- `usage-types.mts`, `usage-policy.mts`, `usage-quota.mts` — usage identity and settlement types,
+  surface/plan/scope-class quota selection (including the REST route-category scope class and the
+  session-route exemption), and `checkUsageQuota()` / `settleUsage()`
 - `activitypub-inbox.mts` — source-IP attempt and authenticated sender-hostname limiters
 - `index.mts` — barrel exports
 

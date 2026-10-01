@@ -145,9 +145,6 @@
     "backend/workers/*": {
       "entry": ["**/*.mts"],
     },
-    "backend/flows/*": {
-      "entry": ["**/*.mts"],
-    },
     "backend/agents/*": {
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,

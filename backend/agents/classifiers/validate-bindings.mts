@@ -1,5 +1,9 @@
 import type { ActiveClassifierConfiguration } from '@services/classifiers'
-import { candidatesForBinding, classifierCandidateKey } from './bindings.mts'
+import {
+  candidatesForBinding,
+  classifierCandidateEntityId,
+  classifierCandidateKey,
+} from './bindings.mts'
 import { assertChoiceBinding } from './validate-choice-binding.mts'
 import {
   assertClassifierDecisionIds,
@@ -53,7 +57,7 @@ function assertBindingSet(
 }
 
 function assertCandidateIdentity(candidate: ClassifierDecisionCandidate): void {
-  const entityId = candidate.candidateKind === 'topic' ? candidate.topicId : candidate.storyId
+  const entityId = classifierCandidateEntityId(candidate)
   if (entityId.trim().length === 0)
     throw new Error('Classifier candidates require a concrete entity ID')
   if (candidate.storedCandidateId !== null && candidate.storedCandidateId.trim().length === 0)

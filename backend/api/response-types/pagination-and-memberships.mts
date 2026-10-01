@@ -4,9 +4,6 @@ type ElectionVote = Deps.ElectionVote
 type PageInfo = Deps.PageInfo
 type PaginatedResult = Deps.PaginatedResult
 
-// TypeScript 7 workaround for PageInfo resolution
-export type { PageInfo }
-
 /**
  * Base paginated response structure shared by all API endpoints
  */
@@ -22,7 +19,7 @@ export type PaginatedResponse<TResult extends PaginatedResult> = {
  */
 export type MembershipPlansResponseBody = {
   products: import('@services/memberships').MembershipCatalogProduct[]
-  benefit_catalog: import('@services/memberships/benefit-catalog').MembershipBenefitCatalog
+  benefit_catalog: import('@ts-shared/utils/membership-benefit-catalog').MembershipBenefitCatalog
 }
 
 /**

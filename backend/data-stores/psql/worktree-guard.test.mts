@@ -147,6 +147,14 @@ describe('worktree-guard', () => {
       ).not.toThrow()
     })
 
+    it('resolves the repository from its own module directory when none is injected', () => {
+      expect(() =>
+        assertNotCrossWorktreeConnection('postgres://localhost/voucha-default-module-dir', {
+          env: {},
+        }),
+      ).not.toThrow()
+    })
+
     it('also blocks when nested in subdirectory of non-main worktree', () => {
       const dir = makeNonMainWorktreeDir()
       const nested = join(dir, 'data-stores', 'psql')

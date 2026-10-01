@@ -7,6 +7,7 @@ import sql from 'sql-template-strings'
 import type {
   CopyrightDeliveryIntentRecord,
   CopyrightDeliveryRecipientRecord,
+  CopyrightNoticeDeliveryKind,
 } from './delivery-types.mts'
 import {
   queryCopyrightSweepIdPage,
@@ -18,6 +19,12 @@ export type {
   CopyrightDeliveryRecipientRecord,
 } from './delivery-types.mts'
 
+export type ClaimedCopyrightDeliveryIntent = CopyrightDeliveryIntentRecord & {
+  lease_token: string
+  copyright_notice_email_intake_id: string | null
+  body_ciphertext: string | null
+}
+
 export async function createCopyrightDeliveryIntent(
   input: {
     noticeId: string
@@ -25,7 +32,7 @@ export async function createCopyrightDeliveryIntent(
     correspondenceId: string | null
     recipientUserId: string | null
     recipientRole: 'claimant' | 'poster' | 'correspondent'
-    deliveryKind: CopyrightDeliveryIntentRecord['delivery_kind']
+    deliveryKind: CopyrightNoticeDeliveryKind
     channel: CopyrightDeliveryIntentRecord['channel']
     idempotencyKey: string
     recipientEmail?: string
@@ -41,10 +48,9 @@ export async function createCopyrightDeliveryIntent(
 
 export async function claimCopyrightDeliveryIntent(
   intentId: string,
-): Promise<(CopyrightDeliveryIntentRecord & { lease_token: string }) | null> {
-  const { rows } = await write<
-    CopyrightDeliveryIntentRecord & { lease_token: string }
-  >(sql`/* claimCopyrightDeliveryIntent */
+): Promise<ClaimedCopyrightDeliveryIntent | null> {
+  const { rows } =
+    await write<ClaimedCopyrightDeliveryIntent>(sql`/* claimCopyrightDeliveryIntent */
     WITH exhausted AS (
       UPDATE copyright_notice_delivery_intents
       SET state = 'failed', claimed_at = NULL, failed_at = CURRENT_TIMESTAMP, next_attempt_at = NULL
@@ -61,9 +67,10 @@ export async function claimCopyrightDeliveryIntent(
       AND delivery_attempt_count < 5
       AND ((state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP))
         OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'))
-    RETURNING id, lease_token, copyright_notice_id, copyright_notice_submission_id,
-      copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind,
-      channel, state, ses_message_id, delivery_attempt_count
+    RETURNING id, lease_token, copyright_notice_id, copyright_notice_email_intake_id,
+      copyright_notice_submission_id, copyright_notice_correspondence_message_id, recipient_user_id,
+      recipient_role, delivery_kind, channel, state, ses_message_id, delivery_attempt_count,
+      body_ciphertext
   `)
   return rows[0] ?? null
 }
@@ -223,7 +230,7 @@ async function insertCopyrightDeliveryIntent(
   return existing
 }
 
-async function insertCopyrightDeliveryRecipient(
+export async function insertCopyrightDeliveryRecipient(
   recipientEmail: string | undefined,
   intentId: string,
   transaction: TransactionQuery,

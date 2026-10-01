@@ -54,7 +54,7 @@ describe('backend Dockerfile runtime CMDs', () => {
 FROM base-node AS deploy-api
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store,sharing=shared \\
     pnpm deploy --filter @entrypoints/api --prod /prod/api && \\
-    node --experimental-strip-types foo
+    node foo
 
 FROM runtime-base AS api
 COPY --from=deploy-api --chown=65532:65532 /prod/api ./

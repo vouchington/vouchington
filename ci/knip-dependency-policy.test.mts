@@ -1,7 +1,6 @@
 import { execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { basename, join, relative } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { parse as parseJsonc } from 'jsonc-parser'
 import { describe, expect, it } from 'vitest'
 
@@ -27,7 +26,7 @@ interface FilesMatchingOptions {
 
 const PHANTOM_REFERENCE_FILE_NAME = 'knip-dependency-references.d.ts'
 const gitRoot = execSync('git rev-parse --show-toplevel', { encoding: 'utf8' }).trim()
-const POLICY_TEST_FILE = relative(gitRoot, fileURLToPath(import.meta.url))
+const POLICY_TEST_FILE = relative(gitRoot, import.meta.filename)
 const ALLOWED_WORKSPACE_IGNORE_DEPENDENCIES = new Map<string, readonly IgnoredDependencyEvidence[]>(
   [
     [

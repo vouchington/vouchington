@@ -6,9 +6,11 @@ import { webCommunityApiFixtureCases } from './web-community-cases.mts'
 import { webCommunityModerationApiFixtureCases } from './web-community-moderation-cases.mts'
 import { growthMetricsBody } from './web-growth-metrics-data.mts'
 import { webMembershipRefundApiFixtureCases } from './web-membership-refund-cases.mts'
+import { webRssFeedCategoryApiFixtureCases } from './web-rss-feed-category-cases.mts'
 
 export const webApiFixtureCases: ApiFixtureCase[] = [
   ...webMembershipRefundApiFixtureCases,
+  ...webRssFeedCategoryApiFixtureCases,
   {
     id: 'web.oauth.authorization.complete.acknowledged',
     method: 'POST',

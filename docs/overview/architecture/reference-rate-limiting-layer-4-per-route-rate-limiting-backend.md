@@ -84,12 +84,74 @@ after signature verification succeeds.
 - `X-RateLimit-Remaining` — requests remaining
 - `Retry-After` — window size in seconds (429 only)
 
+The MCP routes (`POST /api/v1/mcp` and `POST /api/v1/admin/mcp`) do not emit `X-RateLimit-*`
+headers; their 429 responses carry an authoritative `Retry-After`.
+
+### MCP usage quota
+
+The two MCP routes add an outcome-based quota on top of the attempt-based limit above. The
+attempt-based limit is unchanged and still counts every request, including rejected ones, so abuse
+protection covers all traffic. The usage quota counts only requests the API served, so a client is
+never charged for a failure that was ours. Valkey is the only store: there is no usage table and no
+durable ledger.
+
+| Response status    | Units charged | Why                                 |
+| ------------------ | ------------- | ----------------------------------- |
+| 2xx                | 1             | Served                              |
+| 4xx other than 429 | 1             | Served; the caller caused the error |
+| 429                | 0             | Refused before it ran               |
+| 5xx                | 0             | The API's failure                   |
+
+- **Unit**: one HTTP request. A JSON-RPC batch is one unit.
+- **Settlement**: the quota is charged, and the usage event emitted, when the response closes,
+  because only then is the real status known. A client that disconnects before any response header
+  was sent has no status and is skipped.
+- **Bucket**: `rate-limiter:usage-quota:{<surface>:user:<userId>}`, a 15-minute sliding window per
+  owner and surface. Every API key and OAuth grant of one user draws on one allowance, so minting
+  more credentials does not widen it. No key, token, or credential hash appears in the bucket id.
+- **Quota selection**: surface, plan, and scope class choose the limit from code constants in
+  `usage-policy.mts`. A credential is write-class when any scope it holds has a `write` action,
+  whatever resource it names. The plan is the owner's membership plan (`free` when none).
+
+  | Surface            | Read scopes | Write-capable scopes |
+  | ------------------ | ----------- | -------------------- |
+  | `mcp_user` (free)  | 900         | 450                  |
+  | `mcp_admin` (free) | 1800        | 900                  |
+
+  `plus` multiplies the limit by 2 and `pro` by 4. The values are provisional constants, not
+  DynamicConfig fields.
+
+- **Enforcement**: a read-only check runs before the call. An exhausted quota returns `429 Usage
+quota exceeded` with `Retry-After` set to the full window (900 seconds), records an MCP audit
+  entry with outcome `rate_limited`, and is not charged. Because the charge happens after the
+  response, concurrent in-flight requests can overshoot the limit by at most their own number. The
+  check fails open on a Valkey error and reports it through `onError`. The `enabled` kill switch
+  turns off enforcement and charging; the usage event is still emitted.
+- **Metrics**: each settled request emits one typed `api_usage` analytics event (see the
+  [table registry](reference-analytics-pipeline-table-registry.md)) carrying the validated user id,
+  API key id or OAuth client id and grant id, plan, scope class, units, status, quota, and
+  duration. The raw bearer token is never read by the metering code.
+- **Model requests**: no model call is made through MCP or the API today, so there are no token
+  counts and none are invented. Model request recording would reuse the existing redacted,
+  access-controlled object-recording path when such a call exists.
+- **Deferred**: per-OAuth-client buckets and the structured `RateLimit-Policy` / `RateLimit`
+  headers belong to the Public REST API milestone. REST requests are metered by the
+  [REST usage quota](reference-rate-limiting-rest-usage-quota.md).
+
+The Firehose stream and S3 Tables table for `api_usage` are provisioned in the infra repository
+([#1556](https://github.com/vouchington/vouchington/issues/1556)). Until they exist, the
+`firehose` backend reports a delivery error for each batch of `api_usage` rows; the `local`
+backend is unaffected.
+
 ### Exemptions
 
 `POST /api/v1/auth/logout` is exempt from backend per-route rate limiting. Logout must clear or
 revoke the current session even if the browser or IP has already exhausted mutating-route buckets.
+It never reaches the REST usage meter either.
 
-**Files:** `backend/services/route-rate-limits/`, `backend/api/context/rate-limit.mts`
+**Files:** `backend/services/route-rate-limits/`, `backend/api/context/rate-limit.mts`,
+`backend/api/mcp-usage-helpers.mts`, `backend/api/rest-usage-meter.mts`,
+`backend/api/usage-meter-helpers.mts`
 
 **CF Worker bindings**: staging declares the shared GET/HEAD, mutating, and nested Server Action
 bindings in the private Worker deployment manifest; Vouchington is not their source of

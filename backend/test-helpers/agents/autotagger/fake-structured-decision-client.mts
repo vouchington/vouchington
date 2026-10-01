@@ -16,17 +16,15 @@ export type FakeStructuredDecisionClient = {
 }
 
 /**
- * Builds a fake `StructuredDecisionClient` (plus the `createClient` factory
- * `dispatch-classifier.mts`'s `AutotaggerClassifierDispatchDeps` expects) for the three C6
- * autotagger dispatch test files. Answers every requested Noul question with the probability from
+ * Builds a fake `StructuredDecisionClient` (plus a `createClient` factory returning it) for the C6
+ * classifier-run tests. Answers every requested Noul question with the probability from
  * `probabilities`, keyed by question id, defaulting to a mid-range neutral 0.4 for any id the
- * caller didn't anticipate -- this dispatch path only ever sends Noul questions.
+ * caller didn't anticipate -- this classifier only ever sends Noul questions.
  *
  * Answering by id rather than a fixed-position list matters on the shared, parallel-running test
- * database: embedding-similarity candidate search (`run.test.mts` / `run-rss-feed-item.test.mts`)
- * can surface topics from other concurrently running tests, and this still produces a complete,
- * valid answer set for whatever candidate set actually got dispatched instead of failing
- * `resultsForShard`'s exact-coverage check.
+ * database: embedding-similarity candidate search can surface topics from other concurrently
+ * running tests, and this still produces a complete, valid answer set for whatever candidate set
+ * the run actually captured instead of failing the exact-coverage check.
  *
  * `decide` is a `vi.fn` so tests can assert call counts (idempotent replay, retry-after-failure)
  * and inspect each call's exact request (candidate coverage, feed-mapped-topic ordering, dedup).

@@ -7,8 +7,8 @@ import type { OpenAiSpendCapBreachContext } from '@modules/on-error/openai-spend
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { processAIAgentWorkerJob } from './core.mts'
 
-// Round-16 regression (#9348): a tool loop's per-iteration recheck (run-tool-loop.mts /
-// run-tool-loop-streaming.mts) can find a breach mid-job, after this job's own pre-dispatch check
+// Round-16 regression (#9348): a tool loop's per-iteration recheck (run-tool-loop.mts)
+// can find a breach mid-job, after this job's own pre-dispatch check
 // already passed -- see core.spend-cap.test.mts for that pre-dispatch path. This exercises the
 // catch block that converts the resulting OpenAiSpendCapBreachError into the same
 // job.moveToDelayed() defer, without double-recording the breach telemetry.

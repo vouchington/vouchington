@@ -6,11 +6,18 @@ import {
   mockConnectOverCDP,
   resetCrawlMocks,
 } from '@voucha/test-helpers/services/browser-crawl/crawl-fixtures'
-import { resetBlockerForTesting } from './adblocker-cache.mts'
-import { crawlWithBrowser } from './crawl.mts'
+let crawl: typeof import('./crawl.mts')
+
+async function loadFreshCrawl() {
+  vi.resetModules()
+  crawl = await import('./crawl.mts')
+}
 
 describe('crawlWithBrowser finalUrl capture', () => {
-  beforeEach(() => resetCrawlMocks(resetBlockerForTesting))
+  beforeEach(async () => {
+    await loadFreshCrawl()
+    resetCrawlMocks()
+  })
 
   afterEach(() => {
     delete process.env.LIGHTPANDA_CDP_URL
@@ -18,7 +25,7 @@ describe('crawlWithBrowser finalUrl capture', () => {
   })
 
   function crawlWithBrowserForTest(url: string) {
-    return crawlWithBrowser(url, getCrawlTestDependencies())
+    return crawl.crawlWithBrowser(url, getCrawlTestDependencies())
   }
 
   it('captures the post-redirect landed URL as finalUrl', async () => {

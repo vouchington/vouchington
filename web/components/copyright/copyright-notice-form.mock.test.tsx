@@ -1,9 +1,11 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
 import { createCopyrightNotice } from '@/lib/api/client/copyright-notices'
 import { resolveCopyrightNoticeTargets } from '@/lib/api/client/copyright-notice-targets'
 import { CopyrightNoticeForm } from './copyright-notice-form'
+
+configure({ testIdAttribute: 'data-pw' })
 
 vi.mock(import('@/lib/auth/context'), () => ({
   useAuth: () => ({
@@ -146,6 +148,8 @@ describe('CopyrightNoticeForm', () => {
         cf_turnstile_response: 'turnstile-token',
       })
     })
+    await waitFor(() => expect(mockNav.push).toHaveBeenCalledWith('/copyright/notices'))
+    expect(screen.queryByTestId('copyright-guest-receipt')).not.toBeInTheDocument()
   })
 
   it('resets captcha after a failed notice submission', async () => {

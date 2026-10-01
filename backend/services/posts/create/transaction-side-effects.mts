@@ -14,12 +14,9 @@ import { createCommunityPostReview } from '@services/communities/publications/ad
 import { createPostRevision, computePostChanges } from '@services/post-revisions'
 import { syncPostHashtagCategoriesInTransaction } from '../hashtags.mts'
 import { syncPostExplicitTopicCategoriesInTransaction } from '../explicit-topic-categories.mts'
-import { writeEntityRelations } from '@services/entity-relations/write-relations'
+import { upsertEntityRelation } from '@services/entity-relations'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import {
-  persistPostCategoryFinalization,
-  type PostCategoryFinalization,
-} from '../post-category-finalizations.mts'
+import { castPostCategoryVotesInTransaction } from '../hashtag-votes.mts'
 import { syncPostImagePlacements } from '../image-placements.mts'
 
 export async function applyPostTransactionSideEffects({
@@ -36,7 +33,6 @@ export async function applyPostTransactionSideEffects({
   updates: CreatePostInput
 }): Promise<{
   communityReviews: CommunityPostReview[]
-  postCategoryFinalization: PostCategoryFinalization
 }> {
   await Promise.all([
     syncPostHashtagCategoriesInTransaction(creator, post.id, updates, options),
@@ -58,14 +54,8 @@ export async function applyPostTransactionSideEffects({
     communityReview,
     createPostRevision(post.id, 'create', changes, creator.id, options),
   ])
-  const postCategoryFinalization = await persistPostCategoryFinalization(
-    post.id,
-    creator.id,
-    creator.id,
-    'create',
-    options,
-  )
-  return { communityReviews: review ? [review] : [], postCategoryFinalization }
+  await castPostCategoryVotesInTransaction(options.query, creator, post.id, creator.id)
+  return { communityReviews: review ? [review] : [] }
 }
 
 async function insertReviewRatings({
@@ -115,10 +105,8 @@ async function insertDataPointTopics({
 }
 
 /**
- * Data-point topic relations are part of the submitted post, so persist the relation rows in the
- * admission transaction rather than relying on a post-commit callback that can be lost on crash.
- * The category-finalization record remains the durable worker-owned source for user-generated
- * category votes; structural data-point relation votes are refreshed in this transaction.
+ * Data-point topic relations are part of the submitted post, so persist relation rows in the
+ * admission transaction. The category-vote helper applies their owner's vote in the same tx.
  */
 async function insertDataPointTopicRelations({
   creator,
@@ -141,11 +129,12 @@ async function insertDataPointTopicRelations({
     objectType: 'topic',
     predicate: 'category',
   })
-  await writeEntityRelations(
-    relation,
+  await upsertEntityRelation(
     creator,
-    topicIds.map(id => ({ subject: { id: post.id }, object: { id } })),
-    options,
+    relation,
+    { id: post.id },
+    topicIds.map(id => ({ id })),
+    { ...options, vote: false, enqueueVoteStats: false, suppressNotificationReconcile: true },
   )
 }
 

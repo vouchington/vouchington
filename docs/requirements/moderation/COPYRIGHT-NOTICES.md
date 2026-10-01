@@ -41,8 +41,8 @@ a counter-notice is compliant or that a hold is qualifying.
 
 ## Work claim ownership
 
-Action intents, delivery intents, email intake responses, and form screening
-executions rotate a UUID `lease_token` on each claim or reclaim. Workers carry that token through
+Action intents, delivery intents (case deliveries and replies to declined email intakes alike), and
+form screening executions rotate a UUID `lease_token` on each claim or reclaim. Workers carry that token through
 completion and failure; a worker whose claim was reclaimed cannot change the newer owner's state.
 Action delivery also checks ownership under its row lock before placement mutations and again after
 external projection. A per-intent advisory lock prevents reclaim during compensation; action
@@ -103,6 +103,15 @@ can correlate it. Copyright emails opt out of the generic operational BCC becaus
 statutory personal information. The email transport worker is activation-blocking infrastructure: it must claim these
 rows, resolve private recipient evidence case-scoped, and report SES bounces before
 `COPYRIGHT_INTAKE_ENABLED` is enabled.
+
+The reply to a declined email intake is the same kind of row, with no case: it carries the intake's
+id instead of a notice id, a `delivery_kind` of `email_intake_rejected` or
+`email_intake_needs_information`, and the `correspondent` role. A check keeps exactly one of the
+two ids set, and a unique constraint keeps one reply per intake. The rendered body is stored
+encrypted on the row and cannot change, so every retry sends the same text and never the staff
+rationale. The sender's address goes in the row's recipient record, so SES bounces correlate to it
+like any other delivery. These rows never appear as a case in the staff queue or the case
+aggregate, and never match an inbound reply to a case.
 
 ## Placement enforcement boundary
 
@@ -203,13 +212,20 @@ but cannot create a restriction, correspondence, or legal case. A moderator must
 and agent output, then explicitly accept or reject it before a valid email submission can enter the
 case lifecycle, even when the recommendation is `potentially_valid`.
 
+On the staff email review page a moderator decides an initial intake with **Approve structured
+intake**, **Request information**, or **Reject email intake**. A request for information carries a
+required message (not blank, at most 10,000 characters) that follows the fixed reply text, and like
+a rejection it closes the intake without opening a case. Reply wording is owned by counsel.
+
 A rejection, or a request for more information, replies to the sender only when there is one. With
 a succeeded parse the reply goes to the parsed sender. With no parse row or a failed parse the
 moderator may type a reply address, validated like the claimant email on approval; without one no
 reply is queued, and the decision response reports `reply_queued: false` so staff see that nothing
 was sent. An address typed beside a parsed sender is refused. A parse that lands after the decision
-sends nothing, because the response is created only at decision time. See the
-[API](../api/v1/copyright-notices/README.md) for the contract.
+sends nothing, because the response is created only at decision time. When that reply fails or
+bounces, the intake returns to the email review page with the reason (`reply_failed` or
+`reply_bounced`) and how long it has waited since the failure, so a declined sender who was never
+answered is visible to staff. See the [API](../api/v1/copyright-notices/README.md) for the contract.
 
 Email extraction includes the claimant, contact, work, hosted URLs, signature, and both statutory
 declarations, with short source excerpts for moderator verification. Missing declarations remain
@@ -258,6 +274,18 @@ allowlisted lifecycle timeline, and the claimant's current public profile when o
 never expose legal claimant or poster identity, email, mailing address, signature, raw email,
 evidence artifacts, encrypted fields, moderator rationale, or agent recommendation. A guest or
 erased claimant has no member-visible profile link.
+
+`/copyright/notices/new` is public. A signed-out visitor files with the same Turnstile check,
+statutory fields, and § 512(f) warning as a signed-in member, and the notice is a guest filing as
+described below. The API returns only the case identifier, and a guest has no case read, so after
+filing the form shows an in-page receipt with that identifier in place of the sign-in-only case
+list. The receipt states what a guest can rely on: the receipt email to the address on the notice
+and, only if staff issue one, a capability token for `/copyright/notices/:id/guest`. There is no
+online status view for a guest, and nothing emails a form claimant a review outcome or a request
+for more information, so the receipt promises neither. The hosted
+material field and its lookup error both point to the designated-agent page for a claimant who
+cannot open the image. That copy is the same for every lookup failure, so it never says whether a
+hidden image exists.
 
 The timeline is an audience allowlist decided per event type in
 `backend/services/copyright-notices/timeline-visibility.mts`, and a database-backed test fails when
@@ -478,6 +506,31 @@ legal hold on a placement whose post author is that account. A qualifying hold i
 with an original claimant, the same material, a proceeding kind, a commencement time, and a
 designated-agent receipt, and with no resolution row. An open review alone does not block deletion.
 
+## Data export
+
+The account data export (GDPR Art. 15, CCPA right to know) includes the account's copyright records
+under a deliberately conservative redaction rule, so the export reveals nothing new. Counsel
+confirms the rule under [#1230](https://github.com/vouchington/vouchington/issues/1230).
+
+- The account's own signed-in submissions are exported decrypted in full: filed notices (claimant
+  name, contact, work description, statements, signature, target references), counter-notices (name,
+  address, telephone, consents, statements, signature), and appeals (reason).
+- A case the account is party to from the other side uses only the participant projection a
+  non-staff member already sees: accepted cases, dates, target visibility and restriction state, the
+  claimant's public profile, and the member timeline. The export never decrypts or includes the
+  other party's legal name, address, email, phone, or signature, and never includes moderator
+  rationale, internal notes, agent recommendations, reviewer identities, staff-only timeline events,
+  or raw email.
+- Repeat-infringer incidents about the account list their dates, operative state, linked notice id,
+  and any staff disposition, with no claimant identity. Decided reviews list outcome and dates; rationales
+  and open reviews are withheld.
+- Delivery intents, email intake responses, and other outbox rows are transport, not user records,
+  and are not exported. EU and UK redress records and court or CCB filings are not exported, and
+  claimants who only used email have no account, so they use a manual request.
+- An erased account's export has no copyright records.
+
+See [account data export](../users/ACCOUNT-DATA-EXPORT.md#copyright-records) for the files.
+
 ## Evidence retention
 
 Retention deletion is not built yet, so nothing is deleted today. Case records, evidence objects,
@@ -499,7 +552,8 @@ A five-minute sweep sends one Sentry warning when copyright work is late. It cou
 The email set uses the email-review queue's own rule: no intake review, and either no notice link
 or a matched reply whose correspondence is neither admitted nor rejected. An intake counts whether
 or not its parse was recorded, and the queue lists an unparsed intake too, so a stuck email is
-never invisible to staff.
+never invisible to staff. An intake listed only because its decline reply failed or bounced is not
+counted: that set measures unreviewed work, and the reply failure has its own reason on the queue.
 
 `reviewTargetMinutes` lives in the audited `copyright` dynamic-config namespace. Its default is `0`,
 which means unset: both waiting counts stay off until an operator records an approved target. Missed

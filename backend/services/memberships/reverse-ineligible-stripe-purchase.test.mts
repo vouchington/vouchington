@@ -2,10 +2,11 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { createTestSku, createTestUser } from '@voucha/test-helpers'
 import { createMembership } from './create.mts'
-import {
-  reverseIneligibleStripePurchase,
-  type IneligibleStripePurchaseOperations,
-} from './reverse-ineligible-stripe-purchase.mts'
+import { reverseIneligibleStripePurchase } from './reverse-ineligible-stripe-purchase.mts'
+
+type IneligibleStripePurchaseOperations = NonNullable<
+  Parameters<typeof reverseIneligibleStripePurchase>[0]['operations']
+>
 import { reconcileRecordedIneligibleStripePurchaseReversal } from './reconcile-recorded-ineligible-stripe-purchase-reversal.mts'
 
 describe('reverseIneligibleStripePurchase', () => {

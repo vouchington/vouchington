@@ -39,7 +39,7 @@ export async function createSyntheticClassifier() {
       const post = rows[0]
       return post ? { inputSha256: post.input_sha256, communityId: post.community_id } : null
     },
-    async resolve(_current, query = write) {
+    async resolve(_subject, _current, query = write) {
       if (state.unresolvable) throw new Error('synthetic classifier configuration is unavailable')
       if (!state.configured) return null
       const configuration = { version: state.version }

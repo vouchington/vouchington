@@ -20,8 +20,7 @@ describe('config', () => {
     }
   })
 
-  it('the worker gate treats both autotagger jobs as spend-producing again (#616)', () => {
-    expect(AI_AGENT_JOB_PRODUCES_SPEND['autotagger-post']).toBe(true)
-    expect(AI_AGENT_JOB_PRODUCES_SPEND['autotagger-rss-feed-item']).toBe(true)
+  it('the collaborative-only RSS autotagger job never calls a model, so it is spend-free', () => {
+    expect(AI_AGENT_JOB_PRODUCES_SPEND['autotagger-rss-feed-item']).toBe(false)
   })
 })

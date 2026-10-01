@@ -5,7 +5,7 @@ import {
   rejectTopicRecommendation,
 } from '@services/topic-recommendations'
 import app from '../../../app.mts'
-import { requireAuth } from '../../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
 import { assertTopicRecommendationPost } from './shared.mts'
 
@@ -17,6 +17,10 @@ app.route('/api/v1/topic-recommendations/:id/rejections').post(async (ctx: Conte
   ctx.assert(post, 404, 'Recommendation not found')
 
   const body = (await ctx.request.json('1mb')) as { reason?: string }
+  validateRequestContract(ctx, 'POST:/api/v1/topic-recommendations/:id/rejections', {
+    body,
+    path: ctx.params,
+  })
   const recommendation = await rejectTopicRecommendation(currentUser, post, body.reason)
   ctx.json({ post: recommendation })
 })

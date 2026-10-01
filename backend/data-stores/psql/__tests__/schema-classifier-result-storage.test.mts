@@ -132,7 +132,7 @@ describe('classifier result storage', () => {
     ).resolves.toEqual({ batches: 0, calls: 0, candidates: 0, results: 0 })
   })
 
-  it('creates concrete default RANGE partitions for both result families', async () => {
+  it('creates concrete default RANGE partitions for every result family', async () => {
     const fixture = await createClassifierFixture()
     const facts = await fixture.getPartitionFacts()
 
@@ -140,6 +140,12 @@ describe('classifier result storage', () => {
       {
         parent: 'classifier_decision_batch_candidates',
         child: 'classifier_decision_batch_candidates__default',
+        strategy: 'RANGE (batch_id)',
+        bound: 'DEFAULT',
+      },
+      {
+        parent: 'community_prompt_classifier_results',
+        child: 'community_prompt_classifier_results__default',
         strategy: 'RANGE (batch_id)',
         bound: 'DEFAULT',
       },

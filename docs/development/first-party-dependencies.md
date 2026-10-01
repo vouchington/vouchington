@@ -6,7 +6,9 @@ The authoritative registry is `pnpm-release-age-policy.permanentPackages` in [`.
 
 The [scheduled first-party dependency audit](../prompts/scheduled/first-party-dependencies.md)
 rechecks this registry and local workarounds against current upstream releases, then tracks one
-confirmed root cause per run without changing dependencies or code.
+confirmed root cause per run without changing dependencies or code. The
+[scheduled upstream adoption prompt](../prompts/scheduled/upstream-adoption.md) removes one local
+workaround or copied package feature per run once the upstream fix or capability is released.
 
 | Package(s)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Repository                                                                                      |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
@@ -66,8 +68,8 @@ product policy, runtime configuration, and HTTP error contracts.
 
 Remaining `@modules/*` and `@ts-shared/*` wrappers are not unextracted engines. Keep orchestration
 local: AWS clients, API egress-proxy routing, GlideMQ scheduled-job manifests, worker-queue
-inventory, session mint/cookies/env, request-client listeners, Wikipedia fetch wiring, and
-ActivityPub HTTP signature policy. Isomorphic primitives belong in `@vouchington/utils`; Node-only
+inventory, session mint/cookies/env, request-client listeners, and ActivityPub HTTP signature
+policy. Isomorphic primitives belong in `@vouchington/utils`; Node-only
 helpers (`node:zlib`, `node:net`, `validator` plus `ssrf-guard`) do not. `@modules/token-secrets`
 delegates key parsing and AES-GCM to `@vouchington/utils/token-secrets` and must not remap kids or
 accept noncanonical ciphertext.
@@ -92,7 +94,7 @@ states, buckets and signing policy, queue/retry behavior, cache keys and headers
 metadata shape, and moderation policy.
 
 Vouchington pins `@vouchington/memberships` exactly at `0.2.0` in its direct consumers:
-`@services/memberships` and `@services/stripe`. The package owns benefit-catalog validation,
+`@services/memberships`, `@services/stripe`, and `@ts-shared/utils`. The package owns benefit-catalog validation,
 SKU grouping, terminal-status detection, and membership-change classification utilities; Vouchington retains
 its product catalog data, SQL lifecycle projection, Stripe calls, refunds, portal, authorization, and
 side effects.

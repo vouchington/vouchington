@@ -68,7 +68,7 @@ describe('backend/.dependency-cruiser.cjs doNotFollow.path api-fixtures/ anchori
     'backend/modules/feed-query-builders/time-range.mts',
     'backend/services/posts/search/query-builder.mts',
     'backend/test-helpers/entities/user-profile-fixtures.mts',
-    'backend/agents/chat/build-system-prompt.mts',
+    'backend/agents/story-post/agent.mts',
     'backend/test-helpers/api-fixtures/build/generated.mts',
     'backend/test-helpers/api-fixtures/fixtures/case.mts',
   ])('keeps %s in scope', path => {

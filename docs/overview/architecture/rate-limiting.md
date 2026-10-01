@@ -37,6 +37,7 @@ flowchart TD
 - <a id="layer-2-per-endpoint-backend"></a>[Layer 2: Per-Endpoint (Backend)](reference-rate-limiting-layer-1-cloudflare-worker-edge.md#layer-2-per-endpoint-backend)
 - <a id="layer-3-user-aware-trust-tier-backend"></a>[Layer 3: User-Aware Trust Tier (Backend)](reference-rate-limiting-layer-3-user-aware-trust-tier-backend.md)
 - <a id="layer-4-per-route-rate-limiting-backend"></a>[Layer 4: Per-Route Rate Limiting (Backend)](reference-rate-limiting-layer-4-per-route-rate-limiting-backend.md)
+- <a id="rest-usage-quota"></a>[REST Usage Quota](reference-rate-limiting-rest-usage-quota.md)
 - <a id="creation-gates"></a>[Creation Gates](reference-rate-limiting-creation-gates.md)
 - <a id="pagination-limits-anti-scraping"></a>[Pagination Limits (Anti-Scraping)](reference-rate-limiting-creation-gates.md#pagination-limits-anti-scraping)
 - <a id="related"></a>[Related](reference-rate-limiting-creation-gates.md#related)

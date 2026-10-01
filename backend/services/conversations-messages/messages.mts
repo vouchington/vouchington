@@ -1,25 +1,10 @@
-import { read, write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { ConversationMessage } from './types.mts'
 
 type SimpleCursor = { id: string }
 
 export async function getConversationMessagesByConversationId(
-  conversationId: string,
-  options?: { after?: SimpleCursor; limit?: number; probeForNextPage?: boolean },
-): Promise<ConversationMessage[]> {
-  return fetchConversationMessagesByConversationId(read, conversationId, options)
-}
-
-export async function getConversationMessagesByConversationIdForMutation(
-  conversationId: string,
-  options?: { after?: SimpleCursor; limit?: number; probeForNextPage?: boolean },
-): Promise<ConversationMessage[]> {
-  return fetchConversationMessagesByConversationId(write, conversationId, options)
-}
-
-async function fetchConversationMessagesByConversationId(
-  executeQuery: typeof read,
   conversationId: string,
   options?: { after?: SimpleCursor; limit?: number; probeForNextPage?: boolean },
 ): Promise<ConversationMessage[]> {
@@ -45,6 +30,6 @@ async function fetchConversationMessagesByConversationId(
     query.append(sql` LIMIT ${limit + (options.probeForNextPage ? 1 : 0)}`)
   }
 
-  const { rows } = await executeQuery<ConversationMessage>(query)
+  const { rows } = await read<ConversationMessage>(query)
   return rows.toReversed()
 }

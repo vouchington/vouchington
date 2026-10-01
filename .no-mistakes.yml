@@ -918,6 +918,7 @@ rules:
     rule: package-json-workspace-coverage
     scope: repository
     options:
+      requireNamedPackage: true
       packageRoots:
         - .agents
         - .claude
@@ -1163,7 +1164,6 @@ rules:
         - backend/api/v1
         - backend/data-stores
         - backend/entrypoints
-        - backend/flows
         - backend/modules
         - backend/queues
         - backend/services
@@ -1251,14 +1251,6 @@ rules:
           allowedSubdirs:
             - workers
             - processors
-        - root: backend/flows
-          sourceExtension: .mts
-          allowedRootFiles:
-            - package.json
-            - types.mts
-            - queues.mts
-            - enqueues.mts
-          allowedSubdirs: []
 
   - name: backend agent test coverage
     rule: require-test-per-subdir
@@ -1281,8 +1273,6 @@ rules:
           requiredFiles: [package.json]
           requireAnyOf:
             - [workers.mts, 'workers/*.mts']
-        - root: backend/flows
-          requiredFiles: [package.json, queues.mts, enqueues.mts]
         - root: backend/services
           requiredFiles: [package.json, index.mts]
         - root: backend/agents
@@ -1417,7 +1407,7 @@ rules:
         - .spend-cap-rollover.real-glide.mock
         - .spend-cap
         - .spend-cap-moderation
-        - .spend-cap-autotagger
+        - .autotagger
         - .spend-cap-story-post
         - .spend-cap-mid-loop
         - .mid-loop-breach.mock
@@ -1834,6 +1824,30 @@ rules:
         - fn_lock_agent_moderation_transparency_agent
       triggerWrittenColumns:
         fn_update_updated_at: [updated_at]
+
+  - name: runtime queries use cursor pagination
+    rule: postgres-no-offset
+    scope: repository
+    options:
+      include:
+        - backend/**/*.{ts,mts}
+      exclude:
+        - '**/*.test.*'
+        - '**/__tests__/**'
+        - '**/test-helpers/**'
+        - backend/scripts/**
+
+  - name: runtime queries identify executed statements
+    rule: postgres-require-query-annotation
+    scope: repository
+    options:
+      include:
+        - backend/**/*.{ts,mts}
+      exclude:
+        - '**/*.test.*'
+        - '**/__tests__/**'
+        - '**/test-helpers/**'
+        - backend/scripts/**
 
   - name: do not wrap set operations in correlated EXISTS
     rule: postgres-sql-shape-policy

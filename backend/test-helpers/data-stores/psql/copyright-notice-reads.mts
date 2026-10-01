@@ -79,6 +79,16 @@ export async function readCopyrightStaffQueueCursorRows(
   return rows
 }
 
+/** Queue keys that name no case; a reply to a declined email intake must never become one. */
+export async function countCopyrightStaffQueueKeysWithoutNotice(): Promise<number> {
+  const { rows } = await read<{ count: number }>(
+    sql`/* countCopyrightStaffQueueKeysWithoutNotice */`
+      .append(copyrightStaffQueueKeysSql())
+      .append(sql`SELECT count(*)::int AS count FROM queue_key WHERE id IS NULL`),
+  )
+  return rows[0]!.count
+}
+
 export async function readCopyrightNoticeTargetIds(noticeId: string): Promise<string[]> {
   const { rows } = await read<{ id: string }>(sql`/* readCopyrightNoticeTargetIds */
     SELECT id FROM copyright_notice_targets WHERE copyright_notice_id = ${noticeId} ORDER BY id`)

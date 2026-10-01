@@ -26,7 +26,17 @@ export type StoryClassifierCandidate = {
   storedCandidateId: string | null
 }
 
-export type ClassifierDecisionCandidate = TopicClassifierCandidate | StoryClassifierCandidate
+/** One community moderation prompt; it has no stored candidate or threshold revision. */
+export type CommunityPromptClassifierCandidate = {
+  candidateKind: 'community_prompt'
+  communityPromptId: string
+  storedCandidateId: null
+}
+
+export type ClassifierDecisionCandidate =
+  | TopicClassifierCandidate
+  | StoryClassifierCandidate
+  | CommunityPromptClassifierCandidate
 
 export type NoulClassifierBinding = {
   type: 'noul'

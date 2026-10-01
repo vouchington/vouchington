@@ -20,6 +20,9 @@ export function toResolvedClassifierRun(
     remote: configuration.remote && {
       classifierId: configuration.remote.classifierId,
       promptVersionId: configuration.remote.promptVersionId,
+      scope: { scopeCategory: 'global', scopeCommunityId: null },
+      candidateKind: 'topic',
+      capturedCandidates: false,
       candidates: configuration.remote.questions.map(question => ({
         topicId: question.topicId,
         candidateId: question.candidateId,

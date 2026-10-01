@@ -1,0 +1,19 @@
+{
+  "page_info": {
+    "end_cursor": "rss-feed-categories-next",
+    "has_next_page": true,
+    "start_cursor": "rss-feed-categories-first"
+  },
+  "results": [
+    {
+      "category_text": "Deals",
+      "item_count": 12,
+      "rejected": false
+    },
+    {
+      "category_text": "Reviews",
+      "item_count": 7,
+      "rejected": false
+    }
+  ]
+}

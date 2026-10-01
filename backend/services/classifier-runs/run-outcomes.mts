@@ -8,6 +8,7 @@ import {
   assertPersistedDecisionMatchesRun,
   assertRemoteInputCandidates,
   assertRemoteInputIdentity,
+  hasNoCapturedCandidates,
 } from './run-remote-checks.mts'
 import type { ClassifierRunAdapter, ClassifierRunLease } from './types.mts'
 
@@ -35,10 +36,12 @@ export async function persistClassifierRunOutcomes<C, L, E>(
     if (input.remoteDecision) {
       throw new Error('Local-only classifier run cannot persist remote output')
     }
-  } else {
-    if (!input.remoteDecision) {
+  } else if (!input.remoteDecision) {
+    // Only a run with no captured candidates left may persist without a decision: it asked nothing.
+    if (!hasNoCapturedCandidates(lease)) {
       throw new Error('Remote classifier run requires a complete remote output')
     }
+  } else {
     assertRemoteInputIdentity(lease, input.remoteDecision)
     assertRemoteInputCandidates(lease, input.remoteDecision)
     const persisted = await persistClassifierDecision(input.remoteDecision, { query })

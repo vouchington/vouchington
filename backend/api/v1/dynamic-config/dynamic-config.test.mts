@@ -8,9 +8,11 @@ import {
 import { DynamicConfig } from '@data-stores/valkey'
 import {
   dynamicConfigRegistry,
-  type DynamicConfigRegistryEntry,
+  type getDynamicConfigRegistryEntry,
 } from '@services/dynamic-config-admin'
 import type { PrivateUser } from '@services/users/types'
+
+type DynamicConfigRegistryEntry = NonNullable<ReturnType<typeof getDynamicConfigRegistryEntry>>
 
 describe('dynamic-config', () => {
   let admin: PrivateUser
@@ -151,7 +153,7 @@ describe('dynamic-config', () => {
         .send({ config: { memberships: 'yes' } })
         .expect(400)
 
-      await request.patch('/api/v1/dynamic-config/namespaces/feature-flags').send({}).expect(400)
+      await request.patch('/api/v1/dynamic-config/namespaces/feature-flags').send({}).expect(422)
 
       await request
         .patch('/api/v1/dynamic-config/namespaces/recaptcha-config')

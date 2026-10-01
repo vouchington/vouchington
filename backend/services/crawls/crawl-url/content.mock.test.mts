@@ -1,5 +1,4 @@
 import { describe, expect, it, vi, beforeAll } from 'vitest'
-import { fileURLToPath } from 'node:url'
 import { addUrl } from '@services/urls/upsert'
 import { getUrlById } from '@services/urls/get'
 import { createCrawler } from '@services/crawlers'
@@ -43,7 +42,7 @@ function makeHtmlResult(
     htmlFile: {
       byteLength: 0,
       cleanup: async () => {},
-      filePath: fileURLToPath(import.meta.url),
+      filePath: import.meta.filename,
     },
   }
 }

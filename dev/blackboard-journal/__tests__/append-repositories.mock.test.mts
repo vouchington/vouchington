@@ -26,6 +26,7 @@ function deliveredJournal(): FeedbackDeliveryResult {
       sessionId: 'sess-1',
       sourceEventId: 'event-1',
       createdAt: '2026-01-01T00:00:00.000Z',
+      timestamp: '2026-01-01T00:00:00.000Z',
       verified: true,
     },
   }

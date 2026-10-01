@@ -502,7 +502,8 @@ CREATE TABLE IF NOT EXISTS community_agent_prompts (
   deleted_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
 
   CONSTRAINT chk_community_agent_prompts__lifecycle
-    CHECK (NOT (activated_at IS NOT NULL AND deactivated_at IS NOT NULL))
+    CHECK (NOT (activated_at IS NOT NULL AND deactivated_at IS NOT NULL)),
+  CONSTRAINT uq_community_agent_prompts__id__community UNIQUE (id, community_id)
 );
 
 -- Lookup by community for listing

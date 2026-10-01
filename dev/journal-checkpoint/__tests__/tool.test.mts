@@ -1,6 +1,5 @@
 import { unlink } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
@@ -16,7 +15,7 @@ import { runToolCheckpoint } from '../tool.mts'
 // -> repo root); this test file lives one directory deeper, hence the extra `..`. The failure path
 // isn't baseDir-injectable through runToolCheckpoint, so each test's counter file lands in the
 // real OS tmpdir() — clean those up explicitly rather than leaving droppings behind.
-const worktreeRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
+const worktreeRoot = resolve(import.meta.dirname, '..', '..', '..')
 const usedSessionIds: string[] = []
 
 type AppendCall = { sessionId: string; data: Record<string, unknown> }

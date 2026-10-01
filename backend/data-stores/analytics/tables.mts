@@ -12,6 +12,7 @@ import type {
   WebClickRecord,
   AuthSessionRecord,
   ContributionAdmissionRecord,
+  ApiUsageRecord,
 } from './table-records.mts'
 import type {
   PgQueryTimingRecord,
@@ -34,6 +35,7 @@ export interface AnalyticsTableRegistry {
   web_click: WebClickRecord
   auth_sessions: AuthSessionRecord
   contribution_admission: ContributionAdmissionRecord
+  api_usage: ApiUsageRecord
   pg_query_timing: PgQueryTimingRecord
   pg_pool_stats: PgPoolStatsRecord
   pg_vote_drift: PgVoteDriftRecord
@@ -52,6 +54,7 @@ export const ANALYTICS_TABLES: AnalyticsTableName[] = [
   'web_click',
   'auth_sessions',
   'contribution_admission',
+  'api_usage',
   'pg_query_timing',
   'pg_pool_stats',
   'pg_vote_drift',

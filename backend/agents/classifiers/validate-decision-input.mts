@@ -1,6 +1,6 @@
 import type { ActiveClassifierConfiguration } from '@services/classifiers'
 import { isUUID } from '@modules/utils/ids'
-import { candidatesForBinding } from './bindings.mts'
+import { candidatesForBinding, classifierCandidateEntityId } from './bindings.mts'
 import type { ClassifierDecisionRequestInput } from './types.mts'
 
 const UUID_V7_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -14,7 +14,7 @@ export function assertClassifierDecisionIds(input: ClassifierDecisionRequestInpu
   if (input.scope.scopeCommunityId) ids.push(input.scope.scopeCommunityId)
   for (const binding of input.bindings) {
     for (const candidate of candidatesForBinding(binding)) {
-      ids.push(candidate.candidateKind === 'topic' ? candidate.topicId : candidate.storyId)
+      ids.push(classifierCandidateEntityId(candidate))
       if (candidate.storedCandidateId) ids.push(candidate.storedCandidateId)
     }
   }
@@ -56,6 +56,11 @@ export function assertSubjectAndScope(
     throw new Error('Classifier decision requires exactly one subject')
   if (configuration.candidateKind === 'story' && input.subject.rssFeedItemId === null)
     throw new Error('Story classifiers require an RSS feed item subject')
+  if (
+    configuration.candidateKind === 'community_prompt' &&
+    (input.subject.postId === null || input.scope.scopeCategory !== 'community_ai')
+  )
+    throw new Error('Community prompt classifiers require a post subject and a community scope')
   if (input.scope.scopeCategory === 'global' && input.scope.scopeCommunityId !== null)
     throw new Error('Global classifier decisions cannot name a community')
   if (input.scope.scopeCategory === 'community_ai' && !input.scope.scopeCommunityId)

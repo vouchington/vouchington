@@ -29,6 +29,11 @@ Revisions are written **synchronously** inside the same transaction as the post 
 
 - **Create**: `createPost()`, `insertStoryPostRecord()` insert a `create` revision
 - **Update**: `updatePost()` inserts an `update` revision with only the changed fields
+- **Automatic review succession**: reconciliation inserts one `update` revision per actual archive
+  or restore in the same batched SQL statement. `revised_by_id` is NULL for the automatic actor,
+  and `changes.archived_at` records the archive epoch timestamp before/after. Replays write no
+  duplicate revisions. Entity-listener reconciliation emits `post_updated` with
+  `contentChanged: false` for these lifecycle changes.
 - **Delete**: `deletePost()` inserts a `delete` revision recording `deleted_at`
 
 ## API

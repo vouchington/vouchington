@@ -39,19 +39,24 @@ export async function createTestRejectedCopyrightResponse(): Promise<string> {
   return responseId
 }
 
-/** Seeds unreadable persisted content without updating immutable response facts. */
+/** Seeds an unreadable stored reply body without updating immutable intent facts. */
 export async function createTestUnreadableCopyrightResponse(): Promise<string> {
   const intake = await createParsedCopyrightEmailIntake()
   const id = uuidv7()
-  const purpose = `copyright-email-intake-response:${id}`
   await write(sql`/* createTestUnreadableCopyrightResponse */
-    INSERT INTO copyright_notice_email_intake_responses (
-      id, copyright_notice_email_intake_id, response_kind, recipient_email_ciphertext,
-      subject_ciphertext, body_ciphertext, idempotency_key
+    INSERT INTO copyright_notice_delivery_intents (
+      id, copyright_notice_email_intake_id, recipient_role, delivery_kind, channel,
+      idempotency_key, body_ciphertext
     ) VALUES (
-      ${id}, ${intake.id}, 'rejected', ${encryptSecret('claimant@example.test', purpose)},
-      ${'invalid-encrypted-response'}, ${encryptSecret('Response body', purpose)},
-      ${`copyright-email-intake-response:${intake.id}`}
+      ${id}, ${intake.id}, 'correspondent', 'email_intake_rejected', 'email',
+      ${`copyright-email-intake-response:${intake.id}`}, ${'invalid-encrypted-response'}
+    )
+  `)
+  await write(sql`/* createTestUnreadableCopyrightResponse:recipient */
+    INSERT INTO copyright_notice_delivery_recipients (
+      copyright_notice_delivery_intent_id, email_ciphertext
+    ) VALUES (
+      ${id}, ${encryptSecret('claimant@example.test', `copyright-delivery-recipient:${id}`)}
     )
   `)
   return id
@@ -67,7 +72,7 @@ export async function readTestCopyrightResponseFailure(responseId: string) {
     failure_ciphertext: string
   }>(sql`/* readTestCopyrightResponseFailure */
     SELECT state, lease_token, claimed_at, delivery_attempt_count, next_attempt_at, failure_ciphertext
-    FROM copyright_notice_email_intake_responses WHERE id = ${responseId}
+    FROM copyright_notice_delivery_intents WHERE id = ${responseId}
   `)
   const row = rows[0]!
   return {
@@ -76,6 +81,13 @@ export async function readTestCopyrightResponseFailure(responseId: string) {
     claimedAt: row.claimed_at,
     attempts: row.delivery_attempt_count,
     nextAttemptAt: row.next_attempt_at,
-    failure: decryptSecret(row.failure_ciphertext, `copyright-email-intake-response:${responseId}`),
+    failure: decryptSecret(row.failure_ciphertext, `copyright-delivery:${responseId}`),
   }
+}
+
+export async function readTestCopyrightDeliveryIntentState(intentId: string): Promise<string> {
+  const { rows } = await read<{ state: string }>(sql`/* readTestCopyrightDeliveryIntentState */
+    SELECT state FROM copyright_notice_delivery_intents WHERE id = ${intentId}
+  `)
+  return rows[0]!.state
 }

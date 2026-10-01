@@ -12,15 +12,15 @@ const apiKey = process.env.OPENROUTER_API_KEY ?? ''
 describe('autotagger golden regression set', () => {
   it.skipIf(!apiKey)('keeps synthetic tagging decisions in their configured bands', async () => {
     const [
-      { buildAutotaggerClassifierBindingsAndDigest },
       { buildPostClassifierState, buildRssFeedItemClassifierState },
       { getActiveClassifierConfigurationBySlugFromPrimary },
       { prepareSingleCallClassifierDecision },
+      { buildAutotaggerBindings },
     ] = await Promise.all([
-      import('./dispatch-classifier-bindings.mts'),
       import('./content.mts'),
       import('@services/classifiers'),
       import('@agents/classifiers/prepare-single-call'),
+      import('./classifier-run-bindings.mts'),
     ])
     const configuration = await getActiveClassifierConfigurationBySlugFromPrimary('tagging')
     expect(configuration?.modelProvider).toBe('openrouter')
@@ -52,12 +52,7 @@ describe('autotagger golden regression set', () => {
           topicId: randomUUID(),
           name,
         }))
-        const { bindings } = await buildAutotaggerClassifierBindingsAndDigest(configuration, {
-          subject,
-          state,
-          candidates,
-          maxCandidates: candidates.length,
-        })
+        const bindings = await buildAutotaggerBindings(configuration.prompt, candidates)
         return {
           fixture,
           decide: async client => {

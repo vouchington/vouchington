@@ -164,9 +164,9 @@ program is active. See [Copyright and the DMCA on Voucha](./copyright-and-dmca.m
 
 ### Submitting a Notice
 
-A signed-in member can submit a US copyright notice through the published form. Anyone can send a
-notice by email to the designated agent. The form uses CAPTCHA to prevent abuse. CAPTCHA does not
-decide whether a claim is valid.
+Anyone can submit a US copyright notice through the published form, with or without signing in.
+Anyone can also send a notice by email to the designated agent. The form uses CAPTCHA to prevent
+abuse. CAPTCHA does not decide whether a claim is valid.
 
 ### How Copyright Moderators Review Notices
 

@@ -23,6 +23,7 @@ import {
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 
 type VerifyOAuthClientRequest = { client_name: string; redirect_uris: string[] }
 
@@ -35,9 +36,6 @@ const oauthClientsFilterQuery = defineQueryContract({
 })
 
 // GET /api/v1/admin/oauth-clients — dynamically registered clients awaiting or holding verification
-//
-// Query-carrier validation is skipped for the same reason as GET /api/v1/my/api-keys: the shared
-// registry does not coerce raw query strings, so it would reject a valid `?limit=10`.
 app.route('/api/v1/admin/oauth-clients').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/admin/oauth-clients', oauthClientsParser, oauthClientsFilterQuery)
   await requireAuthAndRateLimit(
@@ -46,7 +44,12 @@ app.route('/api/v1/admin/oauth-clients').get(async (ctx: Context) => {
     'GET:/api/v1/admin/oauth-clients',
   )
 
-  const options = oauthClientsParser.parse(ctx.query)
+  const options = parseAndValidatePaginatedRequest(
+    ctx,
+    'GET:/api/v1/admin/oauth-clients',
+    oauthClientsParser,
+    { extraQueryContracts: [oauthClientsFilterQuery.queryContract] },
+  )
   const verification = parseVerificationFilter(ctx, ctx.query.verification)
   const scope = `admin-oauth-clients:${verification}`
   const afterId = options.after

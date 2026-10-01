@@ -24,23 +24,15 @@ describe('parseEmailJob', () => {
     expect(() => parseEmailJob('missingJob', {})).toThrow(/unknown job missingJob/)
   })
 
-  it('accepts exactly one copyright identifier', () => {
+  it('accepts exactly one copyright delivery intent identifier', () => {
     expect(parseEmailJob('processSendCopyrightNoticeEmail', { intentId: 'intent' })).toEqual({
       kind: 'copyright',
       data: { intentId: 'intent' },
     })
-    expect(
-      parseEmailJob('processSendCopyrightNoticeEmail', { intakeResponseId: 'intake' }),
-    ).toEqual({ kind: 'copyright', data: { intakeResponseId: 'intake' } })
     expect(() =>
-      parseEmailJob('processSendCopyrightNoticeEmail', {
-        intentId: 'intent',
-        intakeResponseId: 'intake',
-      }),
-    ).toThrow(/intentId or intakeResponseId/)
-    expect(() => parseEmailJob('processSendCopyrightNoticeEmail', {})).toThrow(
-      /intentId or intakeResponseId/,
-    )
+      parseEmailJob('processSendCopyrightNoticeEmail', { intentId: 'intent', extra: 'x' }),
+    ).toThrow(/unexpected property extra/)
+    expect(() => parseEmailJob('processSendCopyrightNoticeEmail', {})).toThrow(/must set intentId/)
   })
 
   it('parses template variables and input metadata', () => {

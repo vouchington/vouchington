@@ -24,8 +24,8 @@ describe('ownsReportResolutionTransaction', () => {
 
     expect(await ownsReportResolutionTransaction({ client: client as never })).toBe(false)
     expect(queries).toEqual([
-      'SAVEPOINT voucha_report_resolution_probe',
-      'RELEASE SAVEPOINT voucha_report_resolution_probe',
+      '/* probeReportResolutionTransaction */ SAVEPOINT voucha_report_resolution_probe',
+      '/* releaseReportResolutionTransactionProbe */ RELEASE SAVEPOINT voucha_report_resolution_probe',
     ])
   })
 
@@ -42,8 +42,8 @@ describe('ownsReportResolutionTransaction', () => {
 
     expect(await ownsReportResolutionTransaction({ client: client as never })).toBe(false)
     expect(queries).toEqual([
-      'SAVEPOINT voucha_report_resolution_probe',
-      'RELEASE SAVEPOINT voucha_report_resolution_probe',
+      '/* probeReportResolutionTransaction */ SAVEPOINT voucha_report_resolution_probe',
+      '/* releaseReportResolutionTransactionProbe */ RELEASE SAVEPOINT voucha_report_resolution_probe',
     ])
   })
 

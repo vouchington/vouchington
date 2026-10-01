@@ -29,6 +29,11 @@ equivalent verified App Attest assertion path with the endpoint's action tag; br
 not have that attestation path. The server rejects an incomplete or invalid App Attest attempt
 rather than falling back to CAPTCHA.
 
+The notice, appeal, and counter-notice bodies are closed: an unknown key, or a `cf_turnstile_response`
+that is not a string, is a `422` before any service call, and each statutory declaration must be the
+literal `true`. Existing field-named `422` messages and the `Idempotency-Key` `400` are unchanged;
+see [request validation](../../reference-copyright-submission-request-validation.md).
+
 Signed-in affected posters may submit an informal appeal or a separate statutory counter-notice.
 Both flows require CAPTCHA, exact case targets, and server-verified ownership. Email intake approval
 is staff-only and cannot create a case until a moderator supplies and approves the structured fields. Matched
@@ -69,9 +74,16 @@ reachable after the first page. That includes an email whose parse was never rec
 `parse_status` is `unparsed`, beside `succeeded` and `failed`, and staff review it from the original
 MIME object. A reviewer's decision refreshes the queue from its first page.
 
+Each queue item carries `waiting_reason` and `waiting_since`. An unreviewed intake is
+`awaiting_review` and waits since `received_at`. A declined intake whose reply failed or bounced
+stays on the queue as `reply_failed` or `reply_bounced`, waiting since that failure, so a sender
+who never received the reply is not lost. The queue never lists a declined intake whose reply is
+pending or sent.
+
 `POST /api/v1/copyright-email-intakes/:id/rejections` rejects an email or, with
-`response_kind: needs_information`, asks the sender for more information. It returns `200` with
-`{ reply_queued: boolean }`, so staff learn whether a reply was queued. With a
+`response_kind: needs_information`, asks the sender for more information. That kind requires a
+`response_message` that is not blank and at most 10,000 characters, which follows the fixed reply
+text. It returns `200` with `{ reply_queued: boolean }`, so staff learn whether a reply was queued. With a
 succeeded parse the reply goes to the parsed sender. With no parse row or a failed parse there is
 no sender, so the optional `reply_email` (a valid address of at most 254 characters, or null)
 names the recipient. Without it no reply is queued and `reply_queued` is `false`. On a new
@@ -96,6 +108,12 @@ information with `POST .../guest-capabilities/:capabilityId/information-requests
 with `POST /api/v1/copyright-notices/:id/guest-filings` and the `Copyright-Guest-Capability`
 header. A capability files at most one court or CCB hold (409 on a repeat), and a received
 withdrawal revokes every live capability on the case.
+
+The guest capability and guest filing bodies are closed: an unknown key, or a `cf_turnstile_response`
+that is not a string, is a `422` before any service call. The `Copyright-Guest-Capability` header is
+checked by the route and never passed to the schema validator, so it cannot appear in a diagnostic.
+Existing field-named `422` and the capability `403` are unchanged; see
+[request validation](../../reference-copyright-guest-request-validation.md).
 
 ## Performance
 

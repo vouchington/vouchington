@@ -3,6 +3,11 @@ import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
+import { ALLOWED_LABELS } from './runner-policy-classify.mts'
+
+// The runner allowlist owns the versioned ARM label; read it instead of pinning a second literal.
+const armLabel = ALLOWED_LABELS.find(label => label.endsWith('-arm'))
+
 type Job = {
   if?: string
   'runs-on'?: string | string[]
@@ -74,8 +79,10 @@ describe('checks-static workflow', () => {
     expect(parsed.jobs?.['static-cloudflare']?.if).toBe('inputs.cloudflare-worker')
   })
 
-  it('runs every static-* job on ubuntu-latest', () => {
-    for (const job of ['static-backend', 'static-web', 'static-lambdas', 'static-cloudflare']) {
+  it('runs the shared-build producer on native ARM64 and the other static-* jobs on ubuntu-latest', () => {
+    expect(armLabel).toBeDefined()
+    expect(parsed.jobs?.['static-web']?.['runs-on']).toEqual(armLabel)
+    for (const job of ['static-backend', 'static-lambdas', 'static-cloudflare']) {
       expect(parsed.jobs?.[job]?.['runs-on']).toEqual('ubuntu-latest')
     }
   })

@@ -18,23 +18,33 @@ import {
 } from '@services/topics'
 import app from '../../../app.mts'
 import { apiQuery } from '../../../response-contract.mts'
+import { parseAndValidatePaginatedRequest } from '../../../validate-paginated-query.mts'
 import { requireAuth } from '../../../response-helpers.mts'
 
 const parser = createPaginationParser({
   cursor: { type: 'score' },
   limit: { min: 1, max: 100, default: 25 },
 })
-const queryContract = defineQueryContract({
+const filterQuery = defineQueryContract({
   q: queryString(),
   mapping: queryEnum(['all', 'linked', 'unlinked'] as const),
 })
 
 app.route('/api/v1/topic-recommendations/top-hashtags').get(async (ctx: Context) => {
-  apiQuery('GET:/api/v1/topic-recommendations/top-hashtags', parser, queryContract)
+  apiQuery('GET:/api/v1/topic-recommendations/top-hashtags', parser, filterQuery)
   await requireAuth(ctx, 'GET:/api/v1/topic-recommendations/top-hashtags')
+  const pagination = parseAndValidatePaginatedRequest(
+    ctx,
+    'GET:/api/v1/topic-recommendations/top-hashtags',
+    parser,
+    // A repeated `q` has always been ignored rather than rejected.
+    {
+      extraQueryContracts: [filterQuery.queryContract],
+      ignoredKeys: typeof ctx.query.q === 'string' ? [] : ['q'],
+    },
+  )
   const q = typeof ctx.query.q === 'string' ? ctx.query.q : undefined
-  const mapping = parseMapping(ctx, ctx.query.mapping)
-  const pagination = parser.parse(ctx.query)
+  const mapping = (ctx.query.mapping as TopHashtagMapping | undefined) ?? 'all'
   const scope = topHashtagsCursorScope({ q, mapping })
   const after = pagination.after ? decodeTopHashtagsCursor(ctx, pagination.after, scope) : undefined
   const { results, hasNextPage } = await searchTopHashtags({
@@ -59,12 +69,6 @@ app.route('/api/v1/topic-recommendations/top-hashtags').get(async (ctx: Context)
     topics: indexById(topics.filter(Boolean)),
   })
 })
-
-function parseMapping(ctx: Context, value: unknown): TopHashtagMapping {
-  if (value === undefined) return 'all'
-  if (value === 'all' || value === 'linked' || value === 'unlinked') return value
-  return ctx.throw(422, 'mapping must be all, linked, or unlinked')
-}
 
 function encodeTopHashtagsCursor(cursor: TopHashtagCursor, scope: string): string {
   return encodeCursor({

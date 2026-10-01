@@ -158,6 +158,8 @@ Body: `{ user_id, charge_id?, payment_intent_id?, invoice_id, reason, idempotenc
 - `amount`: positive partial refund money in the same currency as the charge; omit for the full
   remaining refundable amount
 - `idempotency_key`: caller-generated UUID reused for an unchanged request until a response succeeds
+- `invoice_id`: a blank or whitespace-only value returns `400` (`invoice_id must not be blank`)
+  before any Stripe call
 
 Every caller must send `idempotency_key`; missing, null, non-string, and malformed values are
 invalid. The OpenAPI request schema marks the field required.

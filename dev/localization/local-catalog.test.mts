@@ -24,7 +24,7 @@ function artifactSnapshot(path: string) {
 }
 
 function runLocalCatalogCli(cwd: string, script = LOCAL_CATALOG_CLI) {
-  return execFileSync(process.execPath, ['--experimental-strip-types', script], {
+  return execFileSync(process.execPath, [script], {
     cwd,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],

@@ -39,6 +39,7 @@
     "@queues/rss-feed-item-categories": "workspace:^",
     "@queues/story-post-related-url-projections": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
+    "@services/classifier-runs": "workspace:^",
     "@services/crawls": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-cache": "workspace:^",

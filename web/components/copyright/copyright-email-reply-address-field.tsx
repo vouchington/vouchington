@@ -1,7 +1,8 @@
 import { Input } from '@/components/ui/input'
 
-// Shown only for an initial intake with no parsed sender. Rejecting such an intake sends no reply
-// unless staff type an address here, so the field says so beside the input.
+// Shown only for an initial intake with no parsed sender. Rejecting such an intake, or asking for
+// more information, sends no reply unless staff type an address here, so the field says so beside
+// the input.
 export function CopyrightEmailReplyAddressField({
   value,
   onChange,
@@ -19,8 +20,8 @@ export function CopyrightEmailReplyAddressField({
         value={value}
       />
       <p className='text-xs text-muted-foreground'>
-        No sender was parsed from this email. Rejecting it sends no reply unless you enter an
-        address here.
+        No sender was parsed from this email. Rejecting it or requesting information sends no reply
+        unless you enter an address here.
       </p>
     </div>
   )

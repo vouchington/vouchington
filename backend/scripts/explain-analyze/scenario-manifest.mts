@@ -28,7 +28,6 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'notifications-unread-summary',
   'oauth-client-verification-verified-page',
   'platform-stats',
-  'post-admission-response-refresh',
   'post-by-slug',
   'post-communities-batch',
   'post-elections-batch',

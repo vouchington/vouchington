@@ -33,10 +33,14 @@ specific to a classifier; a classifier supplies only `ClassifierRunInputs`:
 The executor returns `persisted`, `replay`, `stale` or `terminal`. `context-rejected` failures are
 accepted by the lifecycle but not produced here until provider error classification (#689) lands.
 
+The dispatcher, run and sweep jobs that call the executor live on the `ai_agents` queue; see the
+[queue package](../../../../../backend/queues/ai-agents/README.md) for their enqueue surface.
+
 ## Classifiers
 
 | Classifier | Input builder                                             |
 | ---------- | --------------------------------------------------------- |
 | C5         | [`@agents/post-classifier`](../post-classifier/README.md) |
+| C6         | [`@agents/autotagger`](../autotagger/README.md)           |
 
 C8 and C9 add an input builder of this shape and register with the worker; nothing here changes.

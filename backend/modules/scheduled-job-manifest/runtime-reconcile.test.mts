@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { Queue } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import type { ScheduledJobDefinition, ScheduledJobQueue } from './types.mts'
+import type { ScheduledJobDefinition } from './types.mts'
 import {
   defineScheduledJobManifest,
   removeScheduledJobScheduler,
   upsertScheduledJobManifest,
 } from './index.mts'
+
+type ScheduledJobQueue = Parameters<typeof upsertScheduledJobManifest>[0]
 
 describe('upsertScheduledJobManifest leftover scheduler reconcile', () => {
   it('removes leftover schedulers after a successful upsert', async () => {

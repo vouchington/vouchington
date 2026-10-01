@@ -117,7 +117,7 @@ describe('restoreDeployedWorkspacePackages', () => {
     )
 
     // The top-level entry chains through the virtual-store symlink to a real
-    // path with no node_modules segment, so --experimental-strip-types works.
+    // path with no node_modules segment, so Node's type stripping works.
     const topLevel = path.join(prodDir, 'node_modules', '@services', 'alpha')
     expect(readFileSync(path.join(topLevel, 'index.mts'), 'utf8')).toBe(
       'export const alpha = true\n',

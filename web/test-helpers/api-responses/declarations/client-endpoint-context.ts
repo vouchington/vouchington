@@ -60,7 +60,9 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly copyrightEmailIntakes: Pick<
     typeof import('@/lib/api/client/copyright-email-intakes'),
-    'listCopyrightEmailIntakes' | 'rejectCopyrightEmailIntake'
+    | 'listCopyrightEmailIntakes'
+    | 'rejectCopyrightEmailIntake'
+    | 'requestCopyrightEmailIntakeInformation'
   >
   readonly copyrightNotices: Pick<
     typeof import('@/lib/api/client/copyright-notices'),
@@ -97,7 +99,7 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly memberships: Pick<
     typeof import('@/lib/api/client/memberships'),
-    'createMembershipRefund'
+    'createMembershipRefund' | 'fetchRefundableCharges'
   >
   readonly importExport: Pick<
     typeof import('@/lib/api/client/import-export'),

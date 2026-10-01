@@ -77,6 +77,14 @@ describe('story member EXPLAIN gates', () => {
     }
   })
 
+  it('accepts the unsuffixed auto plan-cache-mode selector name', () => {
+    const input = result('story-members-preview-1-first', selectorPlan(1, 'first', 1))
+    input.name = 'getStoryMemberPagesBatch'
+    expect(() => assertStoryMemberPagePlan(input)).not.toThrow()
+    input.name = 'getStoryMemberPagesBatchOther'
+    expect(() => assertStoryMemberPagePlan(input)).toThrow('production story member selector')
+  })
+
   it('rejects work above selected page plus lookahead and primary exclusion', () => {
     const input = result('story-members-preview-3-first', selectorPlan(3, 'first', 2))
     expect(() => assertStoryMemberPagePlan(input)).toThrow('scanned 6 story members')

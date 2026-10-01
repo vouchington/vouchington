@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, resolve } from 'node:path'
 import { runRenderDocsCli } from './render-docs-cli.mts'
 import { htmlPage, renderMarkdownToHtml } from './render-docs-page.mts'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
+const __dirname = import.meta.dirname
 const DEFAULT_CATALOG_PATH = resolve(__dirname, '..', 'api-fixtures/v1/mcp.json')
 const PAGE_TITLE = 'Voucha MCP Servers'
 

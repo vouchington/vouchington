@@ -41,11 +41,11 @@ export async function executeToolCalls(
  *
  * Processes tool calls sequentially (not in parallel). When an executor returns an
  * AsyncGenerator, its yielded values are re-yielded to the caller before the final
- * result is collected. This enables real-time delivery of subagent progress events
- * to the outer stream.
+ * result is collected. This enables real-time delivery of executor progress events
+ * to an outer stream.
  *
- * Use this in the chat orchestrator's generator. Use executeToolCalls in runToolLoop
- * and other non-streaming callers — they benefit from parallel execution.
+ * Use executeToolCalls in runToolLoop and other non-streaming callers — they benefit
+ * from parallel execution.
  */
 export async function* streamingExecuteToolCalls(
   params: ExecuteToolCallsParams,

@@ -47,6 +47,12 @@ Psql jobs are always enqueued, including in tests. Tests must use the queue fixt
 - Cleanup is idempotent and uses bounded batches with short transactions/statements; repeated runs continue deleting remaining eligible rows.
 - Soft-deleted user cleanup first reassigns or nulls dependent references for the selected user batch, then hard-deletes only that batch.
 
+Monthly partition cleanup performs FK referential actions before detaching and dropping each
+partition. Agentic run retirement clears child-run parent pointers and deletes referencing events,
+including rows in newer months. Each partition commits independently; failures are reported and
+rolled back without stopping other retirements. Crawl dependency handling is documented in the
+[crawls service](../../services/crawls/README.md).
+
 ## Related
 
 - Database: [../../data-stores/psql/AGENTS.md](../../../../../backend/data-stores/psql/AGENTS.md)

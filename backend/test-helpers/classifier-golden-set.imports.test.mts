@@ -1,9 +1,8 @@
 import { dirname, resolve, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 
-const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
+const repositoryRoot = resolve(import.meta.dirname, '../..')
 const classifierGoldenEntrypoints = [
   'backend/agents/post-classifier/post-classifier.golden.openrouter.test.mts',
   'backend/agents/autotagger/autotagger.golden.openrouter.test.mts',
@@ -24,7 +23,7 @@ describe('classifier golden regression set import graph', () => {
       expect.arrayContaining([
         'backend/agents/classifiers/prepare-single-call.mts',
         'backend/agents/post-classifier/classifier-input.mts',
-        'backend/agents/autotagger/dispatch-classifier-bindings.mts',
+        'backend/agents/autotagger/classifier-run-bindings.mts',
         'backend/agents/autotagger/content.mts',
       ]),
     )

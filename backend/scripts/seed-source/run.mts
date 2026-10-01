@@ -19,8 +19,7 @@
  */
 
 import { existsSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 import { gracefulShutdown } from '@data-stores/graceful-shutdown'
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
 import { getTopicBySlug } from '@services/topics/get'
@@ -32,7 +31,7 @@ import {
 } from '@voucha/test-helpers/entities/rss-feeds'
 import { normalizeKey } from '@ts-shared/utils/strings'
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
+const REPO_ROOT = resolve(import.meta.dirname, '..', '..', '..')
 const WEB_PROTOCOL =
   existsSync(resolve(REPO_ROOT, 'dev/certs/localhost.pem')) &&
   existsSync(resolve(REPO_ROOT, 'dev/certs/localhost-key.pem'))

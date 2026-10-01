@@ -7,7 +7,6 @@ import { assertTopicMetricsBatchIsCandidateBounded } from './plan-topic-metrics-
 import { assertTopicViewerCountsDiscussionsUsesCandidateBind } from './plan-topic-viewer-counts-gate.mts'
 import { assertTrendingCommunitiesIsCandidateBounded } from './plan-trending-communities-gate.mts'
 import { assertUserRemovedPostsUsesIndex } from './plan-user-removed-posts-gate.mts'
-import { assertCommittedAdmissionResponsePlanShapeIfApplicable } from './plan-admission-response-gate.mts'
 import { assertTopicImportAttemptPlanShapeIfApplicable } from './plan-topic-import-attempts-gate.mts'
 import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-remote-followers-gate.mts'
 import { assertReviewSuccessionCandidatePlanIfApplicable } from './plan-review-succession-gate.mts'
@@ -58,7 +57,6 @@ export function assertRequiredPlanShape(result: ExplainResult): void {
     : undefined
   if (membershipRefundIndexes) assertMembershipRefundUsesIndexes(result, membershipRefundIndexes)
   if (scenarioId === 'user-removed-posts-page') assertUserRemovedPostsUsesIndex(result)
-  assertCommittedAdmissionResponsePlanShapeIfApplicable(result)
   assertRemoteFollowerPagePlanShapeIfApplicable(result)
   assertReviewSuccessionCandidatePlanIfApplicable(result)
   assertTopicImportAttemptPlanShapeIfApplicable(result)

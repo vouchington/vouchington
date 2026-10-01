@@ -8,11 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import { archivePost } from '../archive.mts'
-import {
-  REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE,
-  auditReviewSuccessionHistory,
-  pageReviewSuccessionHistoryAuditRows,
-} from './audit.mts'
+import { auditReviewSuccessionHistory, pageReviewSuccessionHistoryAuditRows } from './audit.mts'
 import type { ReviewSuccessionHistoryAuditRow } from './audit-query.mts'
 import { reconcileReviewSuccessionsForPostIds } from './reconcile.mts'
 import { normalizeReviewSuccessionPostIds } from './list.mts'
@@ -32,7 +28,6 @@ describe('review succession history audit', () => {
 
     expect(first.cutoffArchivedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/)
     expect(second.cutoffArchivedAt).toBe(first.cutoffArchivedAt)
-    expect(REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE).toBe(100)
   })
 
   it('classifies a matching automatic archive epoch by timestamp value without writes', async () => {
@@ -94,10 +89,9 @@ describe('review succession history audit', () => {
   })
 
   it('only continues when a lookahead row proves another page exists', () => {
-    const rows = Array.from({ length: REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE }, (_, index) =>
-      auditRow(index),
-    )
+    const rows = Array.from({ length: 100 }, (_, index) => auditRow(index))
 
+    expect(pageReviewSuccessionHistoryAuditRows([...rows, auditRow(100)]).rows).toHaveLength(100)
     expect(pageReviewSuccessionHistoryAuditRows(rows)).toMatchObject({
       cursor: rows.at(-1)?.id,
       hasMore: false,

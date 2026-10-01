@@ -1,9 +1,10 @@
-import { read } from '@data-stores/psql'
+import { read, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function searchTopicsByRssFeedItemEmbedding(
   rssFeedItemId: string,
   limit: number,
+  query: QueryExecutor = read,
 ): Promise<{ id: string; name: string }[]> {
   const safeLimit = Math.min(Math.max(1, limit), 25)
 
@@ -25,7 +26,7 @@ export async function searchTopicsByRssFeedItemEmbedding(
     LIMIT ${safeLimit}
   `
 
-  const { rows } = await read(queryStatement)
+  const { rows } = await query(queryStatement)
 
   return rows.map(row => ({
     id: row.id,

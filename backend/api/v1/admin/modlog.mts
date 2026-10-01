@@ -1,19 +1,31 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuthAndRateLimit } from '../../response-helpers.mts'
+import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import { apiQuery, apiResponse } from '../../response-contract.mts'
 import { isAdminUser } from '@services/users'
 import { searchModeratorActions, MODERATOR_ACTION_TYPES } from '@services/moderator-actions'
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
-import { createPaginationParser } from '@modules/pagination'
-import { isUUID } from '@modules/utils'
+import {
+  createPaginationParser,
+  defineQueryContract,
+  queryEnum,
+  queryUuid,
+} from '@modules/pagination'
 
 const parser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { default: 25, max: 100 },
 })
 
+const modlogFilterQuery = defineQueryContract({
+  community_id: queryUuid(),
+  actor_id: queryUuid(),
+  action_type: queryEnum(MODERATOR_ACTION_TYPES, { description: 'Unknown values are ignored.' }),
+})
+
 // GET /api/v1/admin/modlog
 app.route('/api/v1/admin/modlog').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/admin/modlog', parser, modlogFilterQuery)
   await requireAuthAndRateLimit(ctx, isAdminUser, 'GET:/api/v1/admin/modlog')
 
   const { limit, after } = parser.parse(ctx.query)
@@ -25,8 +37,17 @@ app.route('/api/v1/admin/modlog').get(async (ctx: Context) => {
     ? (rawActionType as (typeof MODERATOR_ACTION_TYPES)[number])
     : undefined
 
-  ctx.assert(!communityId || isUUID(communityId), 422, 'Invalid community_id')
-  ctx.assert(!actorId || isUUID(actorId), 422, 'Invalid actor_id')
+  // An unknown action_type is ignored and an empty id is dropped, so the contract checks the
+  // settled values: it rejects a malformed or repeated id, as the inline UUID checks did.
+  validateRequestContract(ctx, 'GET:/api/v1/admin/modlog', {
+    query: {
+      limit,
+      ...(after !== undefined && { after }),
+      ...(communityId && { community_id: communityId }),
+      ...(actorId && { actor_id: actorId }),
+      ...(actionType && { action_type: actionType }),
+    },
+  })
 
   const result = await searchModeratorActions({
     communityId,
@@ -47,16 +68,18 @@ app.route('/api/v1/admin/modlog').get(async (ctx: Context) => {
     }, {}),
   )
 
-  ctx.json({
-    results: result.results.map(r => ({
-      __entity_type: 'moderator_action' as const,
-      id: r.id,
-    })),
-    page_info: result.page_info,
-    moderator_actions: result.results.reduce<Record<string, unknown>>((acc, r) => {
-      acc[r.id] = r
-      return acc
-    }, {}),
-    users: actors,
-  })
+  ctx.json(
+    apiResponse('GET:/api/v1/admin/modlog', {
+      results: result.results.map(r => ({
+        __entity_type: 'moderator_action' as const,
+        id: r.id,
+      })),
+      page_info: result.page_info,
+      moderator_actions: result.results.reduce<Record<string, unknown>>((acc, r) => {
+        acc[r.id] = r
+        return acc
+      }, {}),
+      users: actors,
+    }),
+  )
 })

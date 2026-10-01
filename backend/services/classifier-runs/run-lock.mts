@@ -70,7 +70,7 @@ export async function lockClassifierRun<C, L, E>(
   await query(sql`/* lockClassifierRunActor */
     SELECT fn_lock_active_user_for_mutation(${row.shared_actor_id}::uuid)
   `)
-  const resolved = await adapter.resolve(current, query)
+  const resolved = await adapter.resolve(target.subject, current, query)
   if (
     !resolved ||
     !resolved.configurationSha256.equals(row.configuration_sha256) ||

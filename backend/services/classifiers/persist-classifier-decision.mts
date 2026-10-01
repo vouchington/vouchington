@@ -81,6 +81,7 @@ async function persistNewClassifierDecision(
     configuration.candidateKind,
     candidateKind,
     normalizedInput.subject,
+    normalizedInput.scope,
   )
   const [snapshots, calls] = await Promise.all([
     captureClassifierDecisionStoredCandidateSnapshots(query, {
@@ -112,6 +113,7 @@ async function completeReservedClassifierDecision(
     configuration.candidateKind,
     candidateKind,
     normalizedInput.subject,
+    normalizedInput.scope,
   )
   const snapshots = await readClassifierDecisionStoredCandidateSnapshots(
     query,

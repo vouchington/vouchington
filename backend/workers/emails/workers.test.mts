@@ -67,11 +67,11 @@ describe('emails worker router', () => {
     ).rejects.toBeInstanceOf(JobPayloadError)
   })
 
-  it('rejects a copyright payload that sets both identifiers', async () => {
+  it('rejects a copyright payload without a delivery intent identifier', async () => {
     await expect(
       processEmailJob({
         name: 'processSendCopyrightNoticeEmail',
-        data: { intentId: 'intent', intakeResponseId: 'response' },
+        data: {},
       } as Job),
     ).rejects.toBeInstanceOf(JobPayloadError)
   })

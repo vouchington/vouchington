@@ -26,10 +26,41 @@ satisfies GDPR "Right to Data Portability" and CCPA "Right to Know" requirements
   - `bookmarks.csv` – saved/bookmarked data
   - `consents.csv` – legal and cookie consent ledger records
   - `referral-attributions.csv` – referral click attributions
+  - `copyright-*.csv` – the account's copyright records, with a conservative redaction rule (see
+    [Copyright records](#copyright-records))
 - Boolean fields in export CSVs use `true`/`false`; unset values remain empty.
 - Download link expires after 7 days.
 - Users can request a new export at any time after the previous one has expired, failed, or is ready.
 - Admins can request exports on behalf of any user.
+
+## Copyright records
+
+The export carries the user's own copyright records, because the right to know covers them. The rule
+is deliberately conservative: the export reveals nothing the user cannot already see in the app,
+except the user's own submissions. Counsel confirms it as part of the copyright launch readiness
+work in [#1230](https://github.com/vouchington/vouchington/issues/1230).
+
+- **Own filings, decrypted in full.** `copyright-notices-filed.csv` holds each notice the user filed
+  while signed in: claimant name, contact, work description, statements, signature, and target
+  references. `copyright-counter-notices.csv` holds the user's counter-notices with their name,
+  address, telephone, consents, statements, and signature. `copyright-appeals.csv` holds their
+  appeals with the stated reason. Only signed-in submissions made by the account are included; a
+  record a moderator recorded on someone's behalf stays out of the moderator's own export.
+- **The other side, as the participant sees it.** `copyright-cases.csv` lists each accepted case the
+  user is a party to, as claimant or as poster of a targeted image, using the same projection the
+  in-app participant view uses for a member: dates, target visibility and restriction state, the
+  claimant's public profile, and the member timeline. It never contains the other party's legal
+  name, address, email, phone, or signature, staff rationale, notes, AI guidance, raw email, or
+  staff-only timeline events.
+- **Repeat-infringer records about the user.** `copyright-repeat-infringer-incidents.csv` lists
+  incident dates, whether each is operative, the linked notice id, and any staff disposition, with no
+  claimant identity. `copyright-repeat-infringer-reviews.csv` lists decided account reviews with
+  their outcome and dates. Rationales and open reviews are withheld.
+- **Out of scope.** Claimants who only ever used email have no account, so those requests are
+  handled manually. EU and UK redress records, delivery and outbox rows (transport, not user records),
+  and court or CCB filings are not exported; no signed-in court or CCB filing exists yet.
+- **Erased accounts** have no copyright records: their claimant and submitter links are cleared, and
+  the other party's case view loses the attribution.
 
 ## Data Request Lifecycle
 

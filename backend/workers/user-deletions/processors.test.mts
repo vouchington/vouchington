@@ -5,7 +5,7 @@ import type {
   processUserDeletionBatch,
 } from '@services/user-deletions'
 import type { enqueueBulkUserDeletions, enqueueUserDeletion } from '@queues/user-deletions/enqueues'
-import { isFinalUserDeletionAttempt, processUserDeletionJob } from './processors/process-job.mts'
+import { processUserDeletionJob } from './processors/process-job.mts'
 import { processUserDeletion, recoverUserDeletions } from './processors.mts'
 
 describe('user-deletions processor', () => {
@@ -53,13 +53,22 @@ describe('user-deletions processor', () => {
     })
   })
 
-  it('treats a missing attempt limit as a final attempt', () => {
-    const jobWithoutAttemptLimit = { attemptsMade: 0, opts: {} } as Pick<
-      Job,
-      'attemptsMade' | 'opts'
-    >
+  it('treats a missing attempt limit as a final attempt', async () => {
+    const processDeletion = vi.fn<typeof processUserDeletion>()
+    const jobWithoutAttemptLimit = job('processUserDeletion', {
+      requestId: 'request-1',
+      processingAttemptId: 'attempt-1',
+    })
+    delete jobWithoutAttemptLimit.opts.attempts
 
-    expect(isFinalUserDeletionAttempt(jobWithoutAttemptLimit)).toBe(true)
+    await processUserDeletionJob(jobWithoutAttemptLimit, {
+      processUserDeletion: processDeletion,
+      recoverUserDeletions: vi.fn<typeof recoverUserDeletions>(),
+    })
+
+    expect(processDeletion).toHaveBeenCalledWith('request-1', 'attempt-1', {
+      isFinalAttempt: true,
+    })
   })
 
   it.each([

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Readable } from 'node:stream'
 import { parseSesInboundMime, SesInboundTerminalError } from './mime.mts'
-import { MAX_MIME_TEXT_BYTES } from './streamed-mail-parts.mts'
 
 describe('SES inbound MIME parsing', () => {
   it('extracts sender, subject, body, and reply references', async () => {
@@ -88,12 +87,12 @@ describe('SES inbound MIME parsing', () => {
     async function* mime(): AsyncGenerator<Buffer | string> {
       yield 'From: tests+text@voucha.ai\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n'
       const chunk = Buffer.alloc(64 * 1024, 0x61)
-      for (let bytes = 0; bytes <= MAX_MIME_TEXT_BYTES; bytes += chunk.byteLength) yield chunk
+      for (let bytes = 0; bytes <= 2 * 1024 * 1024; bytes += chunk.byteLength) yield chunk
     }
 
     await expect(parseSesInboundMime(Readable.from(mime()))).rejects.toMatchObject({
       message: 'Raw SES object is not valid MIME',
-      cause: expect.objectContaining({ message: expect.stringContaining('MIME text exceeds') }),
+      cause: expect.objectContaining({ message: 'MIME text exceeds 2097152 bytes' }),
     })
   })
 })

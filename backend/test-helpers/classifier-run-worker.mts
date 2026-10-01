@@ -30,6 +30,14 @@ export function classifierRunDispatcherJobFor(postId: string, classifier = POST_
   } as DispatcherJob
 }
 
+export function classifierRunDispatcherJobForFeedItem(rssFeedItemId: string, classifier: string) {
+  return {
+    id: randomUUID(),
+    name: 'classifier-run-dispatcher',
+    data: { classifier, postId: null, rssFeedItemId },
+  } as DispatcherJob
+}
+
 export function classifierRunJobFor(data: ClassifierRunJobData) {
   return { id: randomUUID(), name: 'classifier-run', data } as RunJob
 }
@@ -59,6 +67,7 @@ export async function dispatchApprovedClassifierPost(remote: boolean) {
  */
 export function createClassifierRunSweepScope(realHandler: ClassifierRunHandler) {
   const postIds = new Set<string>()
+  const rssFeedItemIds = new Set<string>()
   const runIds = new Set<string>()
   const handler: ClassifierRunHandler = {
     ...realHandler,
@@ -66,7 +75,11 @@ export function createClassifierRunSweepScope(realHandler: ClassifierRunHandler)
       const page = await realHandler.pendingRequests(after)
       return {
         ...page,
-        items: page.items.filter(item => item.postId !== null && postIds.has(item.postId)),
+        items: page.items.filter(item =>
+          item.postId !== null
+            ? postIds.has(item.postId)
+            : item.rssFeedItemId !== null && rssFeedItemIds.has(item.rssFeedItemId),
+        ),
       }
     },
   }
@@ -89,13 +102,20 @@ export function createClassifierRunSweepScope(realHandler: ClassifierRunHandler)
   return {
     handler,
     postIds,
+    rssFeedItemIds,
     runIds,
     track(post: { id: string }, runId: string) {
       postIds.add(post.id)
       runIds.add(runId)
     },
+    /** Scopes the sweep to a run of an RSS feed item, whose subject has no post. */
+    trackFeedItem(rssFeedItemId: string, runId: string) {
+      rssFeedItemIds.add(rssFeedItemId)
+      runIds.add(runId)
+    },
     reset() {
       postIds.clear()
+      rssFeedItemIds.clear()
       runIds.clear()
     },
     dependencies(

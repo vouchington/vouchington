@@ -56,7 +56,7 @@ async function restoreAutomaticPredecessors(
         AND succession.predecessor_post_id = requested.post_id
         AND succession.automatically_restored_at IS NULL
         AND succession.manual_override_at IS NULL
-      RETURNING succession.predecessor_post_id
+      RETURNING succession.predecessor_post_id, succession.predecessor_archived_at
     ), restored AS (
       UPDATE posts
       SET archived_at = NULL, archived_by_id = NULL
@@ -64,6 +64,14 @@ async function restoreAutomaticPredecessors(
       WHERE posts.id = terminalized.predecessor_post_id
         AND posts.archived_at IS NOT NULL
       RETURNING posts.id
+    ), revised AS (
+      INSERT INTO post_revisions (post_id, revision_type, revised_by_id, changes)
+      SELECT restored.id, 'update', NULL,
+        jsonb_build_object('archived_at', jsonb_build_object(
+          'before', to_jsonb(terminalized.predecessor_archived_at), 'after', NULL
+        ))
+      FROM restored
+      JOIN terminalized ON terminalized.predecessor_post_id = restored.id
     )
     SELECT id FROM restored ORDER BY id`,
     [
@@ -119,6 +127,14 @@ async function archiveAutomaticPredecessors(
       WHERE posts.id = inserted.predecessor_post_id
         AND posts.archived_at IS NULL
       RETURNING posts.id
+    ), revised AS (
+      INSERT INTO post_revisions (post_id, revision_type, revised_by_id, changes)
+      SELECT archived.id, 'update', NULL,
+        jsonb_build_object('archived_at', jsonb_build_object(
+          'before', NULL, 'after', to_jsonb(inserted.predecessor_archived_at)
+        ))
+      FROM archived
+      JOIN inserted ON inserted.predecessor_post_id = archived.id
     )
     SELECT archived.id AS predecessor_post_id
     FROM archived

@@ -2,7 +2,7 @@ import { recordStaffOperation } from '@services/moderator-actions'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { currentUserCanAccessQueueStats } from '@services/queue-monitoring'
-import { requireAuthAndRateLimit } from '../../response-helpers.mts'
+import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { BACKFILL_REGISTRY } from './backfills-registry.mts'
 
 // GET /api/v1/mq/backfills - List all triggerable backfills
@@ -20,6 +20,7 @@ app.route('/api/v1/mq/backfills/:id/runs').post(async (ctx: Context) => {
     currentUserCanAccessQueueStats,
     'POST:/api/v1/mq/backfills/:id/runs',
   )
+  validateRequestContract(ctx, 'POST:/api/v1/mq/backfills/:id/runs', { path: ctx.params })
 
   const backfill = BACKFILL_REGISTRY.find(b => b.id === ctx.params.id)
   ctx.assert(backfill, 404, 'Backfill not found')

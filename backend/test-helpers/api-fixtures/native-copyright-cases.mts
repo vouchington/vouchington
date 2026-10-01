@@ -93,6 +93,8 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
           recommendation_id: null,
           review_path: 'initial',
           linked_notice_id: null,
+          waiting_reason: 'awaiting_review',
+          waiting_since: '2026-07-01T12:00:00.000Z',
         },
       ],
       page_info: {

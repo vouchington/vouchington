@@ -43,7 +43,6 @@
     "@services/community-agent-prompts": "workspace:^",
     "@services/copyright-notices": "workspace:^",
     "@services/feeds": "workspace:^",
-    "@services/memberships": "workspace:^",
     "@services/moderation": "workspace:^",
     "@services/moderation-reports": "workspace:^",
     "@services/moderation-threads": "workspace:^",
@@ -64,7 +63,6 @@
   "devDependencies": {
     "@modules/structured-decisions": "workspace:^",
     "@services/rss-feeds": "workspace:^",
-    "@services/urls": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "undici": "^8.11.2",
     "vitest": "^5.0.2"

@@ -1,11 +1,11 @@
 import { build } from 'esbuild'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 
-const srcDir = fileURLToPath(new URL('.', import.meta.url))
+const srcDir = import.meta.dirname
 
 await build({
-  entryPoints: [`${srcDir}index.mts`],
-  outfile: `${srcDir}dist/index.mjs`,
+  entryPoints: [join(srcDir, 'index.mts')],
+  outfile: join(srcDir, 'dist/index.mjs'),
   format: 'esm',
   platform: 'node',
   target: 'esnext',

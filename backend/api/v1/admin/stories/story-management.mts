@@ -10,7 +10,11 @@ import {
   updateStoryTitle,
 } from '@services/stories'
 import { isUUID } from '@modules/utils'
-import { requireAuthAndRateLimit } from '../../../response-helpers.mts'
+import { requireAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
+import type { ApiUuidContract } from '../../../request-contract-types.mts'
+
+type SetOfficialStoryItemRequest = { rss_feed_item_id: ApiUuidContract }
+type UpdateStoryTitleRequest = { title: string }
 
 /**
  * PUT /api/v1/stories/:storyId/items/:itemId — Admin: add item to story (locks assignment).
@@ -21,6 +25,7 @@ app.route('/api/v1/stories/:storyId/items/:itemId').put(async (ctx: Context) => 
   const { storyId, itemId } = ctx.params
   ctx.assert(isUUID(storyId!), 400, 'Invalid story ID')
   ctx.assert(isUUID(itemId!), 400, 'Invalid item ID')
+  validateRequestContract(ctx, 'PUT:/api/v1/stories/:storyId/items/:itemId', { path: ctx.params })
 
   const story = await getStoryById(storyId!)
   ctx.assert(story, 404, 'Story not found')
@@ -40,6 +45,9 @@ app.route('/api/v1/stories/:storyId/items/:itemId').delete(async (ctx: Context) 
   const { storyId, itemId } = ctx.params
   ctx.assert(isUUID(storyId!), 400, 'Invalid story ID')
   ctx.assert(isUUID(itemId!), 400, 'Invalid item ID')
+  validateRequestContract(ctx, 'DELETE:/api/v1/stories/:storyId/items/:itemId', {
+    path: ctx.params,
+  })
 
   const story = await getStoryById(storyId!)
   ctx.assert(story, 404, 'Story not found')
@@ -63,37 +71,37 @@ app.route('/api/v1/stories/:storyId/official').put(async (ctx: Context) => {
   const storyId = ctx.params.storyId!
   ctx.assert(isUUID(storyId), 400, 'Invalid story ID')
 
-  const body = (await ctx.request.json('1mb')) as { rss_feed_item_id?: string }
-  ctx.assert(
-    body.rss_feed_item_id && isUUID(body.rss_feed_item_id),
-    400,
-    'Invalid rss_feed_item_id',
-  )
+  const body = (await ctx.request.json('1mb')) as SetOfficialStoryItemRequest
+  validateRequestContract(ctx, 'PUT:/api/v1/stories/:storyId/official', {
+    body,
+    path: ctx.params,
+  })
 
   const story = await getStoryById(storyId)
   ctx.assert(story, 404, 'Story not found')
 
   const itemIds = await getStoryItemIds(storyId)
-  ctx.assert(itemIds.includes(body.rss_feed_item_id!), 400, 'Item is not in this story')
+  ctx.assert(itemIds.includes(body.rss_feed_item_id), 400, 'Item is not in this story')
 
-  const updated = await adminSetStoryOfficialItem(storyId, body.rss_feed_item_id!)
+  const updated = await adminSetStoryOfficialItem(storyId, body.rss_feed_item_id)
   ctx.assert(updated, 404, 'Story not found')
 
   ctx.json({ story: updated })
 })
 
 /**
- * PATCH /api/v1/stories/:storyId — Admin: update story title.
+ * PATCH /api/v1/stories/:id — Admin: update story title.
  * Body: { title: string }
  */
-app.route('/api/v1/stories/:storyId').patch(async (ctx: Context) => {
-  await requireAuthAndRateLimit(ctx, isAdminUser, 'PATCH:/api/v1/stories/:storyId')
+app.route('/api/v1/stories/:id').patch(async (ctx: Context) => {
+  await requireAuthAndRateLimit(ctx, isAdminUser, 'PATCH:/api/v1/stories/:id')
 
-  const storyId = ctx.params.storyId!
+  const storyId = ctx.params.id!
   ctx.assert(isUUID(storyId), 400, 'Invalid story ID')
 
-  const body = (await ctx.request.json('1mb')) as { title?: string }
-  const title = typeof body.title === 'string' ? body.title.trim() : ''
+  const body = (await ctx.request.json('1mb')) as UpdateStoryTitleRequest
+  validateRequestContract(ctx, 'PATCH:/api/v1/stories/:id', { body, path: ctx.params })
+  const title = body.title.trim()
   ctx.assert(title.length > 0, 400, 'title is required')
   ctx.assert(title.length <= 500, 400, 'title must be at most 500 characters')
 

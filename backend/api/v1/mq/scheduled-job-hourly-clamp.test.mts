@@ -1,11 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  projectScheduledJobs,
-  upsertScheduledJobManifest,
-  type ScheduledJobQueue,
-} from '@modules/scheduled-job-manifest'
+import { projectScheduledJobs, upsertScheduledJobManifest } from '@modules/scheduled-job-manifest'
 import type { DeployEnvironmentSource } from '@ts-shared/deploy-environment'
 import { SCHEDULED_JOB_MANIFESTS } from './scheduled-job-manifests.mts'
+
+type ScheduledJobQueue = Parameters<typeof upsertScheduledJobManifest>[0]
 
 const NON_PRODUCTION_CLAMP_JOBS = [
   'account-data-requests/accountDataRequestRecovery',
@@ -53,8 +51,8 @@ describe('staging hourly-floor clamp', () => {
   it('clamps exactly the non-production high-frequency jobs and leaves every other repeat unchanged', async () => {
     const baseline = await captureRegisteredRepeats({ ENVIRONMENT: 'production' })
     const staging = await captureRegisteredRepeats({ ENVIRONMENT: 'staging' })
-    expect(baseline.size).toBe(82)
-    expect(staging.size).toBe(82)
+    expect(baseline.size).toBe(81)
+    expect(staging.size).toBe(81)
     const clamped = [...baseline.keys()].filter(
       key => JSON.stringify(staging.get(key)) !== JSON.stringify(baseline.get(key)),
     )

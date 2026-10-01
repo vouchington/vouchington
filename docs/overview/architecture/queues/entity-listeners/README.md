@@ -17,15 +17,13 @@ downstream chain.
 ## Queue
 
 Every processor uses the `entity-listeners` queue. The worker rejects a payload that does not match the named job before the processor runs. The normal entity processors and
-`reconcileEntity` use priority 10 without group keys. The two batch reconcilers use priority 100:
+`reconcileEntity` use priority 10 without group keys. The reconciliation dispatcher uses priority 100:
 
 - User events use `processUserCreated`, `processUserLoggedIn`, and `processUserUpdated`.
 - Topic events use `processTopicCreated`, `processTopicUpdated`, and `processTopicDeleted`.
 - Post events use `processPostCreated`, `processPostUpdated`, and `processPostDeleted`.
 - Image and URL creation use `processImageCreated` and `processUrlCreated`.
 - `reconcileEntities` has no group key.
-- `processReconcilePostCategoryFinalizations` uses the
-  `post-category-finalization-reconciliation` group key.
 
 ## Durable recovery
 
@@ -41,17 +39,9 @@ strand already-checkpointed child work. The scheduled dispatcher uses a time-buc
 the separately exposed per-entity enqueue uses
 `entity-reconcile__<type>__<id>__<changed-at-us>` as both `jobId` and simple deduplication ID.
 
-`processReconcilePostCategoryFinalizations` runs every five minutes and can be triggered from the
-scheduled-jobs API. It drains the durable `post_category_finalizations` outbox, and each full
-25-row success immediately queues a same-key, unthrottled continuation; a partial or failed page
-stops and leaves remaining recovery to the next schedule. The post transaction writes with the
-editing actor, post owner, and a per-post generation before post-commit category-vote replay. A
-generation increments only while its row remains retained; a recreated row starts at generation 1.
-The worker serializes replay, reloads the retained row after acquiring the post lock, and deletes
-only the matching current generation, so scheduled work safely processes a recreated row. Create
-transactions also retain an exact-generation admission-response marker; any category update removes
-it atomically, so recovery can repair a stale create response without rewriting that response with
-later category edits.
+Post category relations, votes, and primary vote stats are written in the post transaction. They
+need no category recovery job; the post service publishes cache invalidation and notification
+reconciliation after commit. See the [post service](../../services/posts/README.md).
 
 ## processPostCreated
 
@@ -71,11 +61,13 @@ Downstream systems triggered (all fire-and-forget):
 - If `created_by_id` exists, create the author's +1 vote through
   `@services/elections-votes/post` and bookmark through `@services/bookmarks/upsert`.
 - Always process @mentions through the `post-mentions` queue.
-- For `pending` posts, enqueue `bedrock_embeddings_nova_multimodal_v1_single`,
-  `openai_moderation_omni_single`, and `autotagger` through the `workflows` FlowProducer, and run
-  `spam_detection` before clearance.
-- For `approved` posts, enqueue `bedrock_embeddings_nova_multimodal_v1_single` and `autotagger`
-  through the `workflows` FlowProducer.
+- For `pending` posts, enqueue `bedrock_embeddings_nova_multimodal_v1_single` and
+  `openai_moderation_omni_single` (one attempt, like every other creation-moderation enqueue), and
+  run `spam_detection` before clearance. Approval writes the durable `classifier_run_requests` for
+  the post classifier and the tagging classifier in the approval transaction.
+- For `approved` posts, enqueue `bedrock_embeddings_nova_multimodal_v1_single` and record the
+  tagging request (`requestApprovedPostClassifierRuns`) followed by a stable-id classifier-run
+  dispatcher. The dispatcher waits for the post embedding; the sweep covers the wait.
 - For comments, refresh ancestor metrics through the `entity-metrics-cache-refresh` queue.
 
 > **Note:** Post revisions are tracked synchronously in the `createPost()` / `updatePost()` / `deletePost()` transactions, not via the entity-listeners queue.

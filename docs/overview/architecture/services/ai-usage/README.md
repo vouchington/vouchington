@@ -6,7 +6,7 @@ Records and aggregates token usage and cost across **every** agent call site, no
 per-community moderation. Despite the OpenAI-branded names throughout this service
 (`OpenAiSpendCapBreachError`, `getOpenAiSpendCapFields`, ...), the same ledger and daily cap also
 cover the C6 tagging autotagger's OpenRouter/Jev spend: `@modules/structured-decisions` never
-imports this service, so `@agents/autotagger/structured-decision-attempt-hooks.mts` wires the
+imports this service, so `@agents/_shared/structured-decision-billing-hooks.mts` wires the
 client's `beforeAttempt`/`onBilledResponse`/`onUnknownBilledAttempt` hooks to
 `assertOpenAiSpendCapNotBreached`/`recordAgentResponseUsage`/`latchAccountingUncertainty` from the
 agent layer instead (issue #616). The full pricing matrix, the production forecast, and the

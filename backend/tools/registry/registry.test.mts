@@ -15,6 +15,7 @@ const NON_TOOL_FILES = new Set([
   'get-domain-ratings-helpers.mts',
   'get-domain-ratings-output-schema.mts',
   'index.mts',
+  'mcp-community-output.mts',
   'mcp-post-access.mts',
   'mcp-post-output.mts',
   'mcp-story-output.mts',

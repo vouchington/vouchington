@@ -1,14 +1,22 @@
 import { readFileSync } from 'node:fs'
 
+import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
+import { ALLOWED_LABELS } from './runner-policy-classify.mts'
+
+// The runner allowlist owns the versioned ARM label; read it instead of pinning a second literal.
+const armLabel = ALLOWED_LABELS.find(label => label.endsWith('-arm'))
 const workflow = readFileSync('.github/workflows/tests-web-api.yml', 'utf8')
+const parsedWorkflow = load(workflow) as { jobs?: Record<string, { 'runs-on'?: string }> }
 
 describe('web API workflow', () => {
   it('runs API-only shards with database services and no web build', () => {
     expect(workflow).toContain('node ci/vitest/shard-total.mts test-web-api')
     expect(workflow).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
-    expect(workflow).toContain('runs-on: ubuntu-latest')
+    expect(armLabel).toBeDefined()
+    expect(parsedWorkflow.jobs?.prep?.['runs-on']).toBe(armLabel)
+    expect(parsedWorkflow.jobs?.['web-api-tests']?.['runs-on']).toBe(armLabel)
     expect(workflow).toContain('postgres:')
     expect(workflow).toContain('valkey:')
     expect(workflow).toContain('uses: ./.github/actions/setup-backend')

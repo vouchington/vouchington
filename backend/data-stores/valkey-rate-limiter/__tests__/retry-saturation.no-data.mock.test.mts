@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { config } from '@data-stores/valkey-core/config'
-import {
-  retryRateLimiterSaturation,
-  type RetryRateLimiterSaturationDependencies,
-} from '../retry-saturation.mts'
+import { retryRateLimiterSaturation } from '../retry-saturation.mts'
+
+type RetryRateLimiterSaturationDependencies = NonNullable<
+  Parameters<typeof retryRateLimiterSaturation>[1]
+>
 
 const retryOptions = vi.hoisted(() => [] as Array<{ attempts?: number; delayMs?: number }>)
 

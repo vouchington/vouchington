@@ -42,4 +42,34 @@ describe('run-bounded', () => {
       rmSync(dir, { recursive: true, force: true })
     }
   })
+
+  it('kills a TERM-resistant child even when its parent exits on TERM', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'run-bounded-'))
+    const pidFile = join(dir, 'child-pid')
+    const child = [
+      'import os, signal, time',
+      'signal.signal(signal.SIGTERM, signal.SIG_IGN)',
+      'open(os.environ["PID_FILE"], "w").write(str(os.getpid()))',
+      'time.sleep(30)',
+    ].join('; ')
+    const parent = [
+      'import os, subprocess, sys, time',
+      `subprocess.Popen([sys.executable, "-c", ${JSON.stringify(child)}], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)`,
+      'time.sleep(30)',
+    ].join('; ')
+    let pid: number | undefined
+    try {
+      const { result, elapsedMs } = runBounded('1', ['python3', '-c', parent], {
+        PID_FILE: pidFile,
+      })
+      pid = Number(readFileSync(pidFile, 'utf8').trim())
+      expect(result.status).toBe(124)
+      expect(elapsedMs).toBeLessThan(8000)
+      const state = spawnSync('ps', ['-p', String(pid), '-o', 'stat='], { encoding: 'utf8' })
+      expect(state.stdout.trim() === '' || state.stdout.trim().startsWith('Z')).toBe(true)
+    } finally {
+      if (pid !== undefined) spawnSync('kill', ['-KILL', String(pid)])
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
 })

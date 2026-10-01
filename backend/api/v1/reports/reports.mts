@@ -4,6 +4,7 @@ import type { Context } from '@jongleberry/api-server'
 import {
   parseJsonBody,
   requireAuthAndRateLimit,
+  validateRequestContract,
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import {
@@ -13,9 +14,6 @@ import {
   listRedactedModerationReports,
   currentUserCanResolveModerationReport,
   type ModerationReportSort,
-  type ModerationReportStatus,
-  MODERATION_REPORT_STATUSES,
-  MODERATION_REPORT_RESOLUTION_STATUSES,
   type ModerationReportResolutionStatus,
   buildReportPageInfo,
   withoutClusterCursorMetadata,
@@ -23,49 +21,48 @@ import {
 } from '@services/moderation-reports'
 import { isModerationStaff } from '@services/users'
 import { parseReportCursor, reportCursorScope } from './reports-cursor.mts'
-import { apiResponse } from '../../response-contract.mts'
+import { apiQuery, apiResponse } from '../../response-contract.mts'
 import {
   parseReportCursorQueryParams,
+  parseReportListFilters,
+  reportsFilterQuery,
   reportsPaginationParser,
 } from '../../report-pagination-helpers.mts'
 import './reports-create.mts'
 
+type ResolveModerationReportRequest = { status: ModerationReportResolutionStatus }
+
 app.route('/api/v1/reports').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/reports', reportsPaginationParser, reportsFilterQuery)
   const currentUser = await requireAuthAndRateLimit(
     ctx,
     user => user !== null,
     'GET:/api/v1/reports',
   )
 
+  // `status` and `sort` fall back to their defaults instead of failing, and the parsers keep their
+  // own 400/422 answers, so the contract below checks the settled values.
   const cursorQuery = parseReportCursorQueryParams(ctx, ctx.query)
   const { limit } = reportsPaginationParser.parse(ctx.query)
   const { after, before } = cursorQuery
 
-  const statusParam = ctx.query.status
-  const status: ModerationReportStatus =
-    typeof statusParam === 'string' &&
-    MODERATION_REPORT_STATUSES.includes(statusParam as ModerationReportStatus)
-      ? (statusParam as ModerationReportStatus)
-      : 'pending'
-
   const isStaff = isModerationStaff(currentUser)
+  const { status, sort } = parseReportListFilters(ctx.query, isStaff)
   const sortParam = ctx.query.sort
-  const sort: ModerationReportSort = isStaff
-    ? sortParam === 'created_at_asc' ||
-      sortParam === 'created_at_desc' ||
-      sortParam === 'most_reported' ||
-      sortParam === 'severity'
-      ? sortParam
-      : 'severity'
-    : sortParam === 'created_at_asc'
-      ? 'created_at_asc'
-      : 'created_at_desc'
+  const clusterParam = ctx.query.cluster
+  validateRequestContract(ctx, 'GET:/api/v1/reports', {
+    query: {
+      limit,
+      status,
+      sort,
+      ...(clusterParam !== undefined && { cluster: clusterParam }),
+      ...(after !== undefined && { after }),
+      ...(before !== undefined && { before }),
+    },
+  })
 
   const beforeCursor = after || before ? parseReportCursor(ctx, after ?? before!) : undefined
   const cursorDirection: 'after' | 'before' = before ? 'before' : 'after'
-
-  const clusterParam = ctx.query.cluster
-  ctx.assert(clusterParam === undefined || clusterParam === 'entity', 422, 'Invalid cluster mode')
 
   const cursorScope = reportCursorScope(
     isStaff ? 'staff' : 'member',
@@ -149,17 +146,12 @@ app.route('/api/v1/reports/:id').patch(async (ctx: Context) => {
     'PATCH:/api/v1/reports/:id',
   )
   const id = validateUUIDParam(ctx, 'id')
-  const body = await parseJsonBody<{ status?: unknown }>(ctx)
-  const status =
-    typeof body.status === 'string' &&
-    MODERATION_REPORT_RESOLUTION_STATUSES.includes(body.status as ModerationReportResolutionStatus)
-      ? (body.status as ModerationReportResolutionStatus)
-      : null
-  ctx.assert(status, 422, 'Invalid status')
+  const body = await parseJsonBody<ResolveModerationReportRequest>(ctx)
+  validateRequestContract(ctx, 'PATCH:/api/v1/reports/:id', { body, path: ctx.params })
 
   const { resolveModerationReport } = await import('@services/moderation-reports/resolve')
   const report = await resolveModerationReport(id, {
-    status,
+    status: body.status,
     resolvedById: currentUser.id,
   })
 
@@ -173,6 +165,7 @@ app.route('/api/v1/reports/:id/judgements').post(async (ctx: Context) => {
     'POST:/api/v1/reports/:id/judgements',
   )
   const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'POST:/api/v1/reports/:id/judgements', { path: ctx.params })
 
   const report = await getModerationReportById(id)
   ctx.assert(report, 404, 'Report not found')

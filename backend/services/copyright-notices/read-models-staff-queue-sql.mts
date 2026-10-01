@@ -80,7 +80,7 @@ export function copyrightStaffQueueKeysSql(): SQLStatement {
       SELECT intent.copyright_notice_id, 'delivery_failed',
         COALESCE(intent.bounced_at, intent.failed_at, intent.updated_at)
       FROM copyright_notice_delivery_intents intent
-      WHERE intent.state IN ('failed', 'bounced')
+      WHERE intent.state IN ('failed', 'bounced') AND intent.copyright_notice_id IS NOT NULL
       UNION ALL
       SELECT deadline.copyright_notice_id,
         CASE WHEN deadline.restoration_deadline_at <= CURRENT_TIMESTAMP

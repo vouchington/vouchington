@@ -189,6 +189,11 @@ config-driven operations, and views. After migration the database contains:
   The seed writes no `agent_prompts` rows: only community prompts create them, and the built-in
   classifier's prompt, model, and provider are seeded by
   [`config-driven/0635-00-03-seed-post-classifier.mts`](../../../backend/data-stores/psql/config-driven/0635-00-03-seed-post-classifier.mts).
+  The global `community-moderation` classifier (C8, candidate kind `community_prompt`) and its one
+  prompt version are seeded against the existing `automod` system user by
+  [`config-driven/0635-00-04-seed-community-moderation-classifier.mts`](../../../backend/data-stores/psql/config-driven/0635-00-04-seed-community-moderation-classifier.mts);
+  it has no stored candidates or threshold revisions because each community prompt is its own
+  candidate.
   Agent users have **no** `administrator` role.
 - **Admin user** — `jong` user with primary email `jong@voucha.ai` and the `administrator`
   role, seeded by
@@ -218,6 +223,14 @@ Running `pnpm run db:seed` adds sample data on top of the migrated schema:
 - Topics from CSV files (AI tools, cars, credit cards, hardware, media, referral programs,
   software engineering, travel)
 - Curated articles
+- Copyright review data (the [`copyright*.mts`](../../../backend/scripts/seed/copyright.mts)
+  modules) so `/copyright/email-review` and `/copyright/review-queue` are not empty: four email
+  intakes (a new notice, a thread reply, a failed parse, and one with no parse row) and two guest
+  form cases, one waiting on intake review with AI guidance and one past its deadline escalation.
+  Rows come from the service insert paths where those allow it, keyed on fixed ids so a rerun
+  adds nothing. No moderator is seeded; sign in with `pnpm run login-as`. When the workers
+  start, they finish accepting the past-deadline case; its withhold action then fails locally
+  because media delivery enforcement is not configured.
 
 `db:seed` is idempotent and can be run multiple times safely.
 

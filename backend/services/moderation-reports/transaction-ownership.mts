@@ -14,8 +14,12 @@ export async function ownsReportResolutionTransaction(
 async function isPoolClientInTransaction(client: { query: (sql: string) => Promise<unknown> }) {
   try {
     // Do not replace with getTransactionStatus(); see reference-transactions.md and #9805.
-    await client.query('SAVEPOINT voucha_report_resolution_probe')
-    await client.query('RELEASE SAVEPOINT voucha_report_resolution_probe')
+    await client.query(
+      '/* probeReportResolutionTransaction */ SAVEPOINT voucha_report_resolution_probe',
+    )
+    await client.query(
+      '/* releaseReportResolutionTransactionProbe */ RELEASE SAVEPOINT voucha_report_resolution_probe',
+    )
     return true
   } catch (error) {
     if ((error as { code?: string }).code === '25P01') return false

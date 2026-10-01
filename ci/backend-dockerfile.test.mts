@@ -139,7 +139,7 @@ describe('backend Dockerfile dependency install', () => {
     )
     expect(dockerfile).toContain('COPY localization/ ./localization/')
     expect(dockerfile).toContain(
-      'node --experimental-strip-types backend/services/localization/compile-cli.mts --source localization/catalog --output /app/localization/catalog.sqlite',
+      'node backend/services/localization/compile-cli.mts --source localization/catalog --output /app/localization/catalog.sqlite',
     )
   })
 
@@ -161,7 +161,7 @@ describe('backend Dockerfile dependency install', () => {
     ['@entrypoints/worker-io', '/prod/worker-io'],
   ])('prunes TypeScript declaration artifacts in the %s deploy layer', (filter, prodDir) => {
     expect(dockerfile).toContain(
-      `pnpm deploy --filter ${filter} --prod ${prodDir} --legacy && \\\n    node --experimental-strip-types static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts ${prodDir}`,
+      `pnpm deploy --filter ${filter} --prod ${prodDir} --legacy && \\\n    node static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts ${prodDir}`,
     )
   })
 
@@ -220,7 +220,7 @@ describe('backend Dockerfile dependency install', () => {
     'normalizes the %s deploy tree in the same RUN as workspace restore',
     prodDir => {
       expect(dockerfile).toContain(
-        `node --experimental-strip-types static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts ${prodDir} && \\\n    node --experimental-strip-types static-code-analysis/docker-deploy/normalize-deployed-layer.mts ${prodDir}`,
+        `node static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts ${prodDir} && \\\n    node static-code-analysis/docker-deploy/normalize-deployed-layer.mts ${prodDir}`,
       )
     },
   )

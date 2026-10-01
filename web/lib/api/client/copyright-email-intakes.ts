@@ -33,6 +33,13 @@ export type CopyrightEmailCorrespondenceInput = Record<string, unknown> & {
   recommendation_id: string | null
   manual_fallback_reason: string | null
 }
+export type CopyrightEmailIntakeInformationRequestInput = {
+  rationale: string
+  recommendation_id: string | null
+  manual_fallback_reason: string | null
+  reply_email: string | null
+  response_message: string
+}
 export function listCopyrightEmailIntakes(options?: {
   after?: string
   limit?: number
@@ -64,6 +71,18 @@ export function rejectCopyrightEmailIntake(
       manual_fallback_reason: manualFallbackReason,
       reply_email: replyEmail,
     },
+  )
+}
+// Asks the sender of an initial email intake for missing elements. The route is the rejection's:
+// the intake is decided without opening a case, and `response_message` is queued as the reply.
+// `reply_email` follows the rejection's rule: only for an intake with no parsed sender.
+export function requestCopyrightEmailIntakeInformation(
+  id: string,
+  input: CopyrightEmailIntakeInformationRequestInput,
+) {
+  return clientApi.post<{ reply_queued: boolean }>(
+    `/api/v1/copyright-email-intakes/${id}/rejections`,
+    { ...input, response_kind: 'needs_information' },
   )
 }
 export function approveCopyrightEmailIntake(id: string, input: CopyrightEmailIntakeApprovalInput) {

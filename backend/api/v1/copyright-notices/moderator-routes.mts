@@ -3,7 +3,7 @@ import app from '../../app.mts'
 import { Readable } from 'node:stream'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
-import { enqueueSendCopyrightEmailIntakeResponse } from '@queues/emails/enqueues'
+import { enqueueSendCopyrightNoticeEmail } from '@queues/emails/enqueues'
 import { enqueueDeliverCopyrightNotice } from '@queues/notifications/enqueues'
 import { enqueueCreateImageEmbeddingsBatch } from '@queues/bedrock-embeddings-batch/enqueues'
 import onError from '@modules/on-error'
@@ -274,7 +274,7 @@ app.route('/api/v1/copyright-email-intakes/:id/rejections').post(async (ctx: Con
     responseKind: body.response_kind as 'rejected' | 'needs_information' | undefined,
     responseMessage: typeof body.response_message === 'string' ? body.response_message : null,
   })
-  if (rejected.responseId) void enqueueSendCopyrightEmailIntakeResponse(rejected.responseId)
+  if (rejected.responseId) void enqueueSendCopyrightNoticeEmail(rejected.responseId)
   ctx.json({ reply_queued: rejected.replyQueued })
 })
 

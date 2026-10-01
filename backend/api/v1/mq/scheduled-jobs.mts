@@ -2,7 +2,7 @@ import { recordStaffOperation } from '@services/moderator-actions'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { currentUserCanAccessQueueStats } from '@services/queue-monitoring'
-import { requireAuthAndRateLimit } from '../../response-helpers.mts'
+import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { SCHEDULED_JOBS_REGISTRY } from './scheduled-jobs-registry.mts'
 
 // GET /api/v1/mq/scheduled-jobs - List all triggerable scheduled jobs
@@ -24,6 +24,7 @@ app.route('/api/v1/mq/scheduled-jobs/:id/runs').post(async (ctx: Context) => {
     currentUserCanAccessQueueStats,
     'POST:/api/v1/mq/scheduled-jobs/:id/runs',
   )
+  validateRequestContract(ctx, 'POST:/api/v1/mq/scheduled-jobs/:id/runs', { path: ctx.params })
 
   const job = SCHEDULED_JOBS_REGISTRY.find(j => j.id === ctx.params.id)
   ctx.assert(job, 404, 'Scheduled job not found')

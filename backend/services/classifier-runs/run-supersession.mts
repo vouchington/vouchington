@@ -37,7 +37,7 @@ export async function supersedeStaleClassifierRun<C, L, E>(
   `)
   const run = rows[0]
   if (!run || run.superseded_at !== null) return null
-  const resolved = current ? await adapter.resolve(current, query) : null
+  const resolved = current ? await adapter.resolve(stale.subject, current, query) : null
   if (
     current?.inputSha256.equals(stale.inputSha256) &&
     resolved?.configurationSha256.equals(stale.configurationSha256)

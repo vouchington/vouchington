@@ -35,6 +35,10 @@ flowchart LR
 
 All endpoints require admin access (`currentUserCanAccessQueueStats`). Returns 401 if unauthenticated, 403 if not an admin.
 
+The five `POST` actions read only path parameters. The generated path contract cannot reject a plain
+string, so an unknown queue, backfill, or scheduled job keeps its existing not-found or validation
+answer from the action itself. See [Staff and operations validation](../../reference-staff-operations-request-validation.md).
+
 ## GET /api/v1/mq/stats
 
 Returns aggregated statistics across all queues (waiting, active, completed, failed counts, queue count).

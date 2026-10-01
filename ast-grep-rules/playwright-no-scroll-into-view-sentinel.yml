@@ -16,9 +16,9 @@ examples:
   - code: "await page.getByTestId('infinite-scroll-sentinel').scrollIntoViewIfNeeded()"
     isValid: false
     file: 'playwright/tests/posts/search-pagination.spec.mts'
-  - code: "await page.getByTestId('chat-input-textarea').scrollIntoViewIfNeeded()"
+  - code: "await page.getByTestId('search-input').scrollIntoViewIfNeeded()"
     isValid: true
-    file: 'playwright/tests/chat/chat.spec.mts'
+    file: 'playwright/tests/posts/search-pagination.spec.mts'
   - code: 'await scrollToLoadMore(page)'
     isValid: true
     file: 'playwright/tests/posts/search-pagination.spec.mts'

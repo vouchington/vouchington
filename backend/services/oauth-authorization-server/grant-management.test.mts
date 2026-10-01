@@ -78,7 +78,10 @@ describe('user OAuth grant management', () => {
       scopes: ['mcp.user:read', 'mcp.user:write'],
     })
 
-    await validateOAuthAccessToken(tokens.access_token, 'user')
+    // The bearer principal names the grant row, so usage attributes to the grant, not the token.
+    await expect(validateOAuthAccessToken(tokens.access_token, 'user')).resolves.toMatchObject({
+      grant_id: listed.id,
+    })
     const after = await listUserOAuthGrants(user.id, { limit: 100 })
     const used = after.results.find(grant => grant.id === listed.id)!
     if (!listed.last_used_at || !used.last_used_at) {

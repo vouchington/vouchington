@@ -13,6 +13,8 @@ import {
   rejectCopyrightEmailIntake,
 } from '@services/copyright-notices'
 import { processSendCopyrightNoticeEmail } from './copyright-notice.mts'
+import { readTestCopyrightResponseFailure } from '@voucha/test-helpers/copyright-lease-fencing'
+import { readCopyrightEmailIntakeResponses } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 async function createEmailDeliveryIntent(): Promise<{ intentId: string; noticeId: string }> {
@@ -47,7 +49,7 @@ async function createEmailDeliveryIntent(): Promise<{ intentId: string; noticeId
   return { intentId: intent.id, noticeId: intake.intake.copyright_notice_id }
 }
 
-async function createEmailIntakeResponse(): Promise<string> {
+async function createEmailIntakeResponse(): Promise<{ intentId: string; intakeId: string }> {
   const moderatorRecord = await createTestUser()
   const moderator = { ...moderatorRecord, roles: ['moderator'] } as typeof moderatorRecord
   const sesMessageId = `ses-intake-response-${crypto.randomUUID()}`
@@ -78,7 +80,7 @@ async function createEmailIntakeResponse(): Promise<string> {
     responseMessage: 'Please identify the work and material.',
   })
   if (!rejected.responseId) throw new Error('email response fixture missing')
-  return rejected.responseId
+  return { intentId: rejected.responseId, intakeId: intake.id }
 }
 
 describe('processSendCopyrightNoticeEmail', () => {
@@ -142,32 +144,33 @@ describe('processSendCopyrightNoticeEmail', () => {
     vi.spyOn(ses, 'sendEmail').mockResolvedValue({
       MessageId: `ses-${crypto.randomUUID()}`,
     } as never)
-    const intakeResponseId = await createEmailIntakeResponse()
+    const { intentId, intakeId } = await createEmailIntakeResponse()
 
-    await expect(processSendCopyrightNoticeEmail({ intakeResponseId })).resolves.toBe(true)
+    await expect(processSendCopyrightNoticeEmail({ intentId })).resolves.toBe(true)
     expect(ses.sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         subject: 'More information is needed for your copyright notice',
+        text: expect.stringContaining('Please identify the work and material.'),
         allowGlobalBcc: false,
       }),
     )
+    await expect(readCopyrightEmailIntakeResponses(intakeId)).resolves.toEqual([
+      { id: intentId, delivery_kind: 'email_intake_needs_information', state: 'sent' },
+    ])
   })
 
-  it('rejects a job that names both a legal intent and an intake response', async () => {
-    await expect(
-      processSendCopyrightNoticeEmail({
-        intentId: '00000000-0000-7000-8000-000000000043',
-        intakeResponseId: '00000000-0000-7000-8000-000000000044',
-      }),
-    ).rejects.toThrow('exactly one delivery')
-  })
-
-  it('fails a claimed intake response when SES omits its MessageId', async () => {
+  it('retries a claimed intake response when SES omits its MessageId', async () => {
     vi.spyOn(ses, 'sendEmail').mockResolvedValue({} as never)
-    const intakeResponseId = await createEmailIntakeResponse()
+    const { intentId } = await createEmailIntakeResponse()
 
-    await expect(processSendCopyrightNoticeEmail({ intakeResponseId })).rejects.toThrow(
+    await expect(processSendCopyrightNoticeEmail({ intentId })).rejects.toThrow(
       'SES accepted copyright email without a MessageId',
     )
+
+    await expect(readTestCopyrightResponseFailure(intentId)).resolves.toMatchObject({
+      state: 'pending',
+      attempts: 1,
+      failure: 'SES accepted copyright email without a MessageId',
+    })
   })
 })

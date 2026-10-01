@@ -4,8 +4,9 @@ description: >
   with no persisted local state, so ~/.cache/ms-playwright is restored from
   actions/cache (keyed on the pnpm lockfile hash, with no restore-keys
   fallback so a stale or mismatched browser cache never silently restores —
-  a miss just re-installs). Dependency installation is scoped to the current
-  ephemeral runner.
+  a miss just re-installs). Host packages are installed only when the
+  installed Chromium cannot launch. Dependency installation is scoped to the
+  current ephemeral runner.
 
 runs:
   using: composite
@@ -27,8 +28,9 @@ runs:
 
     - name: Install Playwright browsers
       shell: bash
-      # A stalled apt or browser download must die inside this attempt. Healthy installs
-      # finish well under two minutes; one retry covers a transient mirror stall.
+      # A stalled browser download must die inside this attempt. Healthy installs finish well under
+      # two minutes; one retry covers a transient mirror stall. Only this user-space download runs
+      # under run-bounded.py, so its process-group kill reaches everything the attempt started.
       run: |
         set -euo pipefail
         attempt=1
@@ -36,16 +38,7 @@ runs:
         install_status=0
         while [ "$attempt" -le "$max_attempts" ]; do
           set +e
-          python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 120 bash -c '
-            set -euo pipefail
-            if pnpm exec playwright install-deps --dry-run chromium > /dev/null 2>&1; then
-              :
-            else
-              bash "$GITHUB_WORKSPACE/ci/wait-for-apt-locks.sh"
-              pnpm exec playwright install-deps --dry-run chromium || pnpm exec playwright install-deps chromium
-            fi
-            pnpm exec playwright install chromium
-          '
+          python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 120 pnpm exec playwright install chromium
           install_status=$?
           set -e
           if [ "$install_status" -eq 0 ]; then
@@ -58,3 +51,26 @@ runs:
           echo "::warning::Playwright browser install attempt ${attempt} failed with status ${install_status}; retrying"
           attempt=$((attempt + 1))
         done
+
+    - name: Verify Chromium launches
+      shell: bash
+      # Host packages are installed only when Chromium cannot start. A healthy runner already has
+      # every shared library, and `install-deps` would still download fonts and a Mesa upgrade from
+      # the apt mirror on every job. This fallback deliberately stays outside run-bounded.py:
+      # Playwright runs apt through sudo, so a process-group kill as the runner user cannot stop the
+      # root-owned apt. That apt keeps downloading and holds the dpkg locks, which would starve a
+      # second attempt. The caller's step timeout-minutes bounds the fallback and ends the job
+      # instead; a retry would only race the surviving apt.
+      run: |
+        set -euo pipefail
+        probe="$GITHUB_WORKSPACE/ci/playwright/chromium-launch-probe.mts"
+        if node "$probe"; then
+          exit 0
+        fi
+        echo "::warning::Chromium did not launch; installing its host packages"
+        bash "$GITHUB_WORKSPACE/ci/wait-for-apt-locks.sh"
+        pnpm exec playwright install-deps chromium
+        if ! node "$probe"; then
+          echo "::error::Chromium still cannot launch after installing its host packages"
+          exit 1
+        fi

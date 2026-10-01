@@ -17,7 +17,6 @@ export const SCHEDULED_JOB_API_ORDER = [
   'refreshTopHashtags',
   'dispatchEngagementEmails',
   'dispatchCommunityModerationSummaryEmails',
-  'reconcilePostCategoryFinalizations',
   'account-data-requests-cleanup',
   'cleanup-abandoned-uploads-schedule',
   'reconcile-image-quarantines',

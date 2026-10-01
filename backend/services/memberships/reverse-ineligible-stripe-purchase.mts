@@ -20,7 +20,6 @@ import {
 } from './ineligible-stripe-purchase-reversal-targets.mts'
 import type { IneligibleStripePurchase } from './ineligible-stripe-purchase-reversal-types.mts'
 import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
-export type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
 
 /**
  * Reverses a paid Stripe subscription that lost the entitlement race. The operation row is

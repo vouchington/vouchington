@@ -11,6 +11,7 @@ import {
   validateCreateCommunityInput,
   getPendingApplicationCommunityIds,
   getCommunityMemberBatch,
+  resolveCommunityHashtagQuery,
   type CreateCommunityInput,
 } from '@services/communities'
 import { assertCanCreateCommunity } from '@services/communities/authorization'
@@ -23,7 +24,6 @@ import { searchCommunitiesCached } from '@services/entity-fetch/search-caches'
 import { indexById } from '@modules/utils'
 import { clampAnonLimit } from '@modules/search-utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { resolveHashtagTopicSearch } from '@services/search-params'
 import { parseCommunitiesListQuery, parseEligiblePostType } from './list-query.mts'
 
 const VALID_MEMBER_ROSTER_VISIBILITIES = ['public', 'users', 'members', 'moderators']
@@ -53,12 +53,7 @@ app
       limit = clampAnonLimit(limit)
     }
 
-    const hashtagResult = await resolveHashtagTopicSearch(rawQ)
-    const hashtagTopicIds = hashtagResult.topicIds
-    const textSearchQuery = hashtagResult.textSearchQuery
-    const hashtagHasNoMatches =
-      hashtagResult.hasUnknown ||
-      hashtagResult.filters.some(filter => filter.kind === 'exact_alias')
+    const hashtagQuery = await resolveCommunityHashtagQuery(rawQ)
 
     const topicParam = ctx.query.topic
     const topicParams = Array.isArray(topicParam)
@@ -72,10 +67,10 @@ app
         ctx.throw(400, 'Invalid topic UUID format')
       }
     }
-    const topicIds = [...new Set([...hashtagTopicIds, ...topicParams])]
+    const topicIds = [...new Set([...hashtagQuery.topicIds, ...topicParams])]
 
     const communitySearch = {
-      search: textSearchQuery,
+      search: hashtagQuery.search,
       limit,
       after,
       memberUserId,
@@ -86,7 +81,7 @@ app
       hasListType: hasListType || undefined,
       hasListItems: hasListItems || undefined,
       topicIds: topicIds.length > 0 ? topicIds : undefined,
-      hashtagHasNoMatches,
+      hashtagHasNoMatches: hashtagQuery.hashtagHasNoMatches,
       eligiblePostType,
     }
     const result = currentUser

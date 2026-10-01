@@ -32,12 +32,7 @@
       {
         "targets": [
           {
-            "sourceSpecifierPatterns": [
-              "@queues/**/enqueues",
-              "@queues/**/enqueues/**",
-              "@flows/**/enqueues",
-              "@flows/**/enqueues/**"
-            ],
+            "sourceSpecifierPatterns": ["@queues/**/enqueues", "@queues/**/enqueues/**"],
             "calleeNamePatterns": ["/^enqueue[A-Z].*/"]
           }
         ]

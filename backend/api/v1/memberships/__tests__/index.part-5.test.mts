@@ -34,10 +34,10 @@ describe('membership management routes', () => {
         .expect(401)
     })
 
-    it('returns 400 for missing return_url', async () => {
+    it('returns 422 for missing return_url', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
-      await request.post('/api/v1/memberships/billing-portal-sessions').send({}).expect(400)
+      await request.post('/api/v1/memberships/billing-portal-sessions').send({}).expect(422)
     })
 
     it('returns 400 when user has no Stripe subscription', async () => {

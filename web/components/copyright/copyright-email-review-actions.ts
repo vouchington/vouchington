@@ -6,6 +6,7 @@ import {
   listCopyrightEmailIntakes,
   rejectCopyrightEmailIntake,
   rejectCopyrightEmailCorrespondence,
+  requestCopyrightEmailIntakeInformation,
   type CopyrightEmailIntake,
 } from '@/lib/api/client/copyright-email-intakes'
 import {
@@ -18,6 +19,12 @@ import {
   toCopyrightEmailCorrespondenceInput,
   type CopyrightEmailCorrespondenceDraft,
 } from './copyright-email-correspondence-model'
+import {
+  copyrightEmailActionError,
+  copyrightEmailDecisionBasis,
+  copyrightEmailReplyAddress,
+  copyrightEmailReplyOutcome,
+} from './copyright-email-review-decision'
 import type { CopyrightEmailIntakeQueuePage } from '@/types/copyright-notices'
 
 export function useCopyrightEmailReviewActions({
@@ -77,7 +84,7 @@ export function useCopyrightEmailReviewActions({
       )
     } catch (error) {
       if (request === selectedIntakeRequest.current) {
-        setError(displayError(error, 'We could not load that copyright email intake.'))
+        setError(copyrightEmailActionError(error, 'We could not load that copyright email intake.'))
       }
     } finally {
       if (request === selectedIntakeRequest.current) setLoading(false)
@@ -86,14 +93,11 @@ export function useCopyrightEmailReviewActions({
   async function approve() {
     if (!detail || !draft) return
     await complete(
-      async () => {
-        await approveCopyrightEmailIntake(detail.id, {
+      () =>
+        approveCopyrightEmailIntake(detail.id, {
           ...toCopyrightEmailApprovalInput(draft),
-          rationale: rationale.trim(),
-          recommendation_id: detail.recommendation?.id ?? null,
-          manual_fallback_reason: detail.recommendation ? null : manualFallbackReason.trim(),
-        })
-      },
+          ...copyrightEmailDecisionBasis(detail, rationale, manualFallbackReason),
+        }),
       'The structured intake was approved.',
       'We could not approve that copyright email intake.',
     )
@@ -107,13 +111,23 @@ export function useCopyrightEmailReviewActions({
           rationale.trim(),
           detail.recommendation?.id ?? null,
           detail.recommendation ? null : manualFallbackReason.trim(),
-          // The field only exists for an intake with no parsed sender, and the server refuses an
-          // address beside one.
-          detail.parsed_email ? null : replyEmail.trim() || null,
+          copyrightEmailReplyAddress(detail, replyEmail),
         ),
-      response =>
-        `The email intake was rejected. ${response.reply_queued ? 'A reply was queued.' : 'No reply sent.'}`,
+      response => `The email intake was rejected. ${copyrightEmailReplyOutcome(response)}`,
       'We could not reject that copyright email intake.',
+    )
+  }
+  async function requestInformation(responseMessage: string) {
+    if (!detail) return
+    await complete(
+      () =>
+        requestCopyrightEmailIntakeInformation(detail.id, {
+          ...copyrightEmailDecisionBasis(detail, rationale, manualFallbackReason),
+          reply_email: copyrightEmailReplyAddress(detail, replyEmail),
+          response_message: responseMessage.trim(),
+        }),
+      response => `The information request was recorded. ${copyrightEmailReplyOutcome(response)}`,
+      'We could not request information for that copyright email intake.',
     )
   }
   async function admitCorrespondence() {
@@ -122,9 +136,7 @@ export function useCopyrightEmailReviewActions({
       () =>
         admitCopyrightEmailCorrespondence(detail.id, {
           ...toCopyrightEmailCorrespondenceInput(correspondenceDraft),
-          rationale: rationale.trim(),
-          recommendation_id: detail.recommendation?.id ?? null,
-          manual_fallback_reason: detail.recommendation ? null : manualFallbackReason.trim(),
+          ...copyrightEmailDecisionBasis(detail, rationale, manualFallbackReason),
         }),
       'The matched email correspondence was admitted.',
       'We could not admit that copyright email correspondence.',
@@ -136,9 +148,7 @@ export function useCopyrightEmailReviewActions({
       () =>
         rejectCopyrightEmailCorrespondence(detail.id, {
           kind: correspondenceDraft.kind,
-          rationale: rationale.trim(),
-          recommendation_id: detail.recommendation?.id ?? null,
-          manual_fallback_reason: detail.recommendation ? null : manualFallbackReason.trim(),
+          ...copyrightEmailDecisionBasis(detail, rationale, manualFallbackReason),
         }),
       'The matched email correspondence was rejected.',
       'We could not reject that copyright email correspondence.',
@@ -151,7 +161,7 @@ export function useCopyrightEmailReviewActions({
     try {
       await action()
     } catch (error) {
-      setError(displayError(error, fallback))
+      setError(copyrightEmailActionError(error, fallback))
     } finally {
       setLoading(false)
     }
@@ -179,9 +189,12 @@ export function useCopyrightEmailReviewActions({
     setRationale('')
     setReplyEmail('')
   }
-  return { admitCorrespondence, approve, reject, rejectCorrespondence, selectIntake }
-}
-
-function displayError(error: unknown, fallback: string) {
-  return error instanceof Error && error.message ? error.message : fallback
+  return {
+    admitCorrespondence,
+    approve,
+    reject,
+    rejectCorrespondence,
+    requestInformation,
+    selectIntake,
+  }
 }

@@ -3,7 +3,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isHttpError } from 'http-errors'
 import { isAdminUser } from '@services/users'
-import { requireAuthAndRateLimit } from '../../response-helpers.mts'
+import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { enqueueArticleSync } from '@queues/article-sync/enqueues'
 import { articleSync } from '@queues/article-sync/queues'
 import { articleSyncPubSub, type ArticleSyncStatus } from '@data-stores/valkey-pubsub'
@@ -36,6 +36,7 @@ app.route('/api/v1/article-syncs').post(async (ctx: Context) => {
  */
 app.route('/api/v1/article-syncs/:jobId').get(async (ctx: Context) => {
   await requireAuthAndRateLimit(ctx, isAdminUser, 'GET:/api/v1/article-syncs/:jobId')
+  validateRequestContract(ctx, 'GET:/api/v1/article-syncs/:jobId', { path: ctx.params })
 
   const job = await articleSync.getJob(ctx.params.jobId!)
   if (!job) {
@@ -60,6 +61,9 @@ app.route('/api/v1/article-syncs/:jobId').get(async (ctx: Context) => {
  */
 app.route('/api/v1/admin/article-syncs/:jobId/stream').get(async (ctx: Context) => {
   await requireAuthAndRateLimit(ctx, isAdminUser, 'GET:/api/v1/admin/article-syncs/:jobId/stream')
+  validateRequestContract(ctx, 'GET:/api/v1/admin/article-syncs/:jobId/stream', {
+    path: ctx.params,
+  })
 
   const jobId = ctx.params.jobId!
 

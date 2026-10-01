@@ -4,7 +4,11 @@ import {
   readCompleteClassifierDecisionIfExistsFromPrimary,
 } from '@services/classifiers/read-complete-decision'
 import sql from 'sql-template-strings'
-import { assertPersistedDecisionMatchesRun } from './run-remote-checks.mts'
+import {
+  assertPersistedDecisionMatchesRun,
+  hasNoCapturedCandidates,
+  remoteCandidateKind,
+} from './run-remote-checks.mts'
 import type { ClassifierRunAdapter, ClassifierRunLease, ClassifierRunOutcomes } from './types.mts'
 
 type OutcomeRow = {
@@ -48,10 +52,13 @@ export async function readClassifierRunOutcomes<C, L, E>(
   if (adapter.validateLocal) {
     adapter.validateLocal(lease.resolved.configuration, local ?? undefined)
   }
-  if (row.decision_batch_id === null) return { local, remoteDecision: null }
+  if (row.decision_batch_id === null || hasNoCapturedCandidates(lease)) {
+    return { local, remoteDecision: null }
+  }
+  const candidateKind = remoteCandidateKind(lease)
   const remoteDecision = options.query
-    ? await readCompleteClassifierDecision(options.query, row.decision_batch_id, 'topic')
-    : await readCompleteClassifierDecisionIfExistsFromPrimary(row.decision_batch_id, 'topic')
+    ? await readCompleteClassifierDecision(options.query, row.decision_batch_id, candidateKind)
+    : await readCompleteClassifierDecisionIfExistsFromPrimary(row.decision_batch_id, candidateKind)
   if (!remoteDecision) throw new Error('classifier run lost its committed remote decision')
   assertPersistedDecisionMatchesRun(lease, remoteDecision)
   return { local, remoteDecision }

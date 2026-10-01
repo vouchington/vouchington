@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import {
   entityRelationMetadatum,
   getEntityRelationVoteTableName,
@@ -23,4 +23,22 @@ export async function insertTestEntityRelationVote(options: {
         VALUES (${options.relationTable}, ${options.userId}, ${options.subjectId},
           ${options.relationId}, ${options.score}, COALESCE(${options.id ?? null}::uuid, uuidv7()))`),
   )
+}
+
+export async function getLatestTestEntityRelationVoteScore(options: {
+  relationTable: string
+  relationId: string
+  userId: string
+}): Promise<number | undefined> {
+  const metadata = entityRelationMetadatum.find(
+    relation => relation.table_name === options.relationTable,
+  )
+  if (!metadata?.election) throw new Error(`Invalid election relation: ${options.relationTable}`)
+  const { rows } = await read<{ score: number }>(
+    sql`/* getLatestTestEntityRelationVoteScore */ SELECT score FROM `.append(
+      getEntityRelationVoteTableName(metadata),
+    ).append(sql` WHERE entity_relation_id = ${options.relationId}
+        AND user_id = ${options.userId} ORDER BY id DESC LIMIT 1`),
+  )
+  return rows[0]?.score
 }

@@ -49,10 +49,11 @@ The hosted streaming route, its `chat` and `reconcile-chat-runtime-generations` 
 Valkey token channel, and the stale-run reconciler are removed
 ([A6a, #1542](https://github.com/vouchington/vouchington/issues/1542)), so
 `POST /api/v1/conversations/:conversationId/chat` returns 404. The agentic-run records and their
-services remain until [A6 (#185)](https://github.com/vouchington/vouchington/issues/185) removes them,
-and the unused `@agents/chat` package and subagents remain until #183 removes them. Under decision D1, server removal proceeds without
-waiting on native client migrations; clients adopt independently. These retained paths are not a web
-product surface and must not gain new web consumers.
+services remain until [A6 (#185)](https://github.com/vouchington/vouchington/issues/185) removes them.
+The chat orchestrator, its research, discovery and profile subagents, and the streaming tool loop are
+removed ([A4b, #183](https://github.com/vouchington/vouchington/issues/183)). Under decision D1,
+server removal proceeds without waiting on native client migrations; clients adopt independently.
+These retained paths are not a web product surface and must not gain new web consumers.
 
 Native clients use REST/API calls derived from `backend/tools/manifest.json` for client-surface
 tools rather than runtime MCP. See [Agent Tools](agent-tools/README.md).
@@ -69,7 +70,6 @@ Conversations can be linked to entities for contextual lookup:
 - [Backend rules](../../../backend/AGENTS.md) — service and data conventions
 - [Web rules](../../../web/AGENTS.md) — UI and routing conventions
 
-- [docs/overview/architecture/services/conversations-messages/README.md](services/conversations-messages/README.md) -- CRUD, streaming, agentic run queries
-- [docs/overview/architecture/ai-agents/chat/README.md](ai-agents/chat/README.md) -- chat agent that processes messages and executes tool calls
+- [docs/overview/architecture/services/conversations-messages/README.md](services/conversations-messages/README.md) -- CRUD, agentic run queries
 - [docs/requirements/api/v1/conversations/README.md](../../requirements/api/v1/conversations/README.md) -- API endpoints
 - [docs/overview/architecture/queues/psql/README.md](queues/psql/README.md) -- partition cleanup jobs

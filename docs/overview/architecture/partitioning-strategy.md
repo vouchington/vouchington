@@ -39,6 +39,7 @@ This block is rendered from the typed registry, and its normalized rows are chec
 | `ai_usage_records`                                      | RANGE         | `id`                                   | default            | none              | target-scoped      |
 | `classifier_decision_batch_candidates`                  | RANGE         | `batch_id`                             | default            | none              | target-scoped      |
 | `community_post_review_changes`                         | RANGE         | `id`                                   | default            | none              | target-scoped      |
+| `community_prompt_classifier_results`                   | RANGE         | `batch_id`                             | default            | none              | target-scoped      |
 | `conversation_message_agentic_runs`                     | RANGE         | `id`                                   | monthly            | cleanupPartitions | retention-window   |
 | `conversation_message_agentic_runs_events`              | RANGE         | `conversation_message_agentic_run_id`  | monthly            | cleanupPartitions | retention-window   |
 | `conversation_messages`                                 | RANGE         | `conversation_id`                      | default            | none              | target-scoped      |
@@ -155,7 +156,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `copyright_notice_email_correspondence_reviews`, `copyright_notice_email_intake_attachments`,
   `copyright_notice_email_intake_notice_links`,
   `copyright_notice_email_intake_parses`,
-  `copyright_notice_email_intake_recommendations`, `copyright_notice_email_intake_responses`,
+  `copyright_notice_email_intake_recommendations`,
   `copyright_notice_email_intake_reviews`,
   `copyright_notice_email_intakes`, `copyright_notice_email_thread_references`,
   `copyright_notice_evidence_artifacts`,
@@ -254,13 +255,12 @@ a stronger invariant. The typed registry owns the rationale and trigger.
 - Lower-amplification entities and workflow rows: `agent_prompts`, `agents`,
   `agents__moderators`, `ap_actor_keys`, `ap_posts`, `api_keys`, `app_attestation_keys`,
   `apple_accounts`,
-  `autotagger_receipt_attempts`, `autotagger_receipts`,
   `bedrock_embeddings_batch_entities`, `bedrock_embeddings_batches`,
   `bedrock_nova_multimodal_v1_embeddings`, `bedrock_nova_multimodal_v1_image_embeddings`,
   `bluesky_link_authorizations`, `bluesky_link_completions`, `bluesky_linked_accounts`,
   `boilerplate_removal_urls`, `boilerplate_removals`, `classifier_candidate_community_overrides`,
   `classifier_candidate_thresholds`, `classifier_candidates`, `classifier_decision_batches`, `classifier_decision_calls`,
-  `classifier_prompt_versions`, `classifier_run_requests`, `classifier_runs`, `classifier_topic_vote_applications`, `classifiers`, `community_agent_prompts`,
+  `classifier_prompt_versions`, `classifier_run_candidates`, `classifier_run_requests`, `classifier_runs`, `classifier_topic_vote_applications`, `classifiers`, `community_agent_prompts`,
   `community_application_answers`, `community_application_questions`, `community_applications`,
   `community_auto_tagger_agents`,
   `community_bans`, `community_invites`, `community_member_vacations`,

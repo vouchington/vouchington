@@ -2,26 +2,25 @@ import './index-routes/images-by-imageid-state-stream-get.mts'
 
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { validateUUIDParam, requireAuth } from '../../response-helpers.mts'
+import { validateUUIDParam, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { createImageUploadUrl } from '@services/images/create-upload-url'
 import { completeImageUpload } from '@services/images/complete-upload'
 import { getImageUploadState, deriveUploadStatus } from '@services/images/get-upload-state'
 import { assertNotSuspended } from '@services/users'
+
+type CreateImageUploadUrlRequest = { content_type: string; content_length: number }
 
 // POST /api/v1/images/upload-url
 app.route('/api/v1/images/upload-url').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/images/upload-url')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('1kb')) as Record<string, unknown>
-
-  ctx.assert(body.content_type, 400, 'content_type is required')
-  ctx.assert(body.content_length, 400, 'content_length is required')
-  ctx.assert(typeof body.content_length === 'number', 400, 'content_length must be a number')
+  const body = (await ctx.request.json('1kb')) as CreateImageUploadUrlRequest
+  validateRequestContract(ctx, 'POST:/api/v1/images/upload-url', { body })
 
   const result = await createImageUploadUrl(currentUser, {
-    contentType: body.content_type as string,
-    contentLength: body.content_length as number,
+    contentType: body.content_type,
+    contentLength: body.content_length,
   })
 
   ctx.setStatus(201)
@@ -32,8 +31,8 @@ app.route('/api/v1/images/upload-url').post(async (ctx: Context) => {
 app.route('/api/v1/images/:id/completions').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/images/:id/completions')
 
-  const id = ctx.params.id!
-  ctx.assert(id, 400, 'Image ID is required')
+  const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'POST:/api/v1/images/:id/completions', { path: ctx.params })
 
   const image = await completeImageUpload(currentUser, id)
 
@@ -48,6 +47,7 @@ app.route('/api/v1/images/:id/upload-state').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/images/:id/upload-state')
 
   const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'GET:/api/v1/images/:id/upload-state', { path: ctx.params })
   const upload_state = await getImageUploadState(currentUser.id, id)
 
   ctx.json({ upload_state })

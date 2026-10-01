@@ -31,9 +31,9 @@ provider addresses. X is excluded. Missing verified email returns the dedicated
 - A **claim** is the short-lived fenced execution lease on one reservation. It prevents concurrent
   attempts from running the protected mutation, can be taken over after expiry, and carries neither
   a durable response nor quota consumption.
-- A **finalization** is post-commit recovery work for transaction-captured category state and the
-  retained response. It is not a post publication state: Voucha publishes every persisted post
-  immediately and does not store draft posts.
+- The post response and its category projection are captured in the same transaction as the
+  mutation. They are not a publication state: Voucha publishes every persisted post immediately
+  and does not store draft posts.
 
 ## Related
 
@@ -64,10 +64,9 @@ CAPTCHA-protected create routes must run gates in this order:
    and its replay response. The post-mutation actor lock uses `FOR NO KEY UPDATE`, which serializes
    quota commits without conflicting with the foreign-key `KEY SHARE` locks acquired by authored
    rows.
-8. Register prepared finalizers on the owning transaction so they run only after commit and are
-   discarded on rollback. Durable reconciliation recovers a lost post-commit dispatch. A retry
-   with an expired pre-finalization claim remains in progress while category finalization is
-   pending, then completes the exact-generation retained response without copying later post state.
+8. Register post-commit effects on the owning transaction so they run only after commit and are
+   discarded on rollback. The committed replay response already contains the transaction-captured
+   post and category projection; a retry returns it without reading later post state.
 
 Bulk import flows that intentionally consume only daily capacity must use the typed
 `resolveContributionDailyOnlyPolicy` admission policy after parsing and validation for each
@@ -111,14 +110,9 @@ and exists only during the expand phase; `Idempotency-Key` becomes required afte
 (#10619). A committed fallback request returns its durable response instead of a retryable
 in-progress result, because a retry would mint a new identity and could otherwise duplicate the
 mutation.
-Durable category recovery may refresh the retained response only for the exact pending create
-generation. Replay remains in progress until recovery patches only the create-time topic projection
-and marks the retained response complete. Any later category update atomically removes that
-permission and completes the original response without rewriting it, so an edit cannot change the
-original idempotency result. The initial request also returns in progress while durable category
-finalization remains pending. After a claim lease expires, a committed response with no category
-finalization marker is completed and replayed directly from its transaction-captured response
-without rerunning the challenge or mutation.
+The initial request stores its exact response in the mutation transaction. A committed replay returns
+that response after a claim lease expires without rerunning the challenge or mutation, and later edits
+cannot rewrite the original idempotency result.
 
 A reclaimed noncommitted admission records the retry's current route, scope, source, post type,
 and policy revision. An exact committed replay retains its original audit and response data while

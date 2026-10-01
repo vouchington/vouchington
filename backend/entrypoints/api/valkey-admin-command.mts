@@ -18,7 +18,7 @@ const VALKEY_ADMIN_USAGE = `Usage:
 
 Concerns: ${FLUSH_CONCERNS.join(', ')}`
 
-export type ParsedValkeyAdminCommand =
+type ParsedValkeyAdminCommand =
   | { operation: 'help' }
   | { operation: 'diagnose'; environment: ValkeyAdminEnvironment }
   | {

@@ -28,13 +28,17 @@ export type ClassifierRunRequestFacts = {
   stale_at: Date | null
 }
 
-/** Every run receipt of one post, optionally scoped to one classifier, oldest first. */
-export async function getClassifierRunFacts(
-  postId: string,
+export type ClassifierRunFactsSubject =
+  | { postId: string; rssFeedItemId: null }
+  | { postId: null; rssFeedItemId: string }
+
+/** Every run receipt of one subject (a post or a feed item), optionally scoped to one classifier. */
+export async function getSubjectClassifierRunFacts(
+  subject: ClassifierRunFactsSubject,
   slug: string | null = null,
   query: QueryExecutor = read,
 ): Promise<ClassifierRunFacts[]> {
-  const { rows } = await query<ClassifierRunFacts>(sql`/* getClassifierRunFacts */
+  const { rows } = await query<ClassifierRunFacts>(sql`/* getSubjectClassifierRunFacts */
     SELECT run.id, classifier.slug AS classifier_slug, run.post_id, run.rss_feed_item_id,
       run.input_sha256, run.configuration_sha256, run.decision_batch_id,
       run.provider_attempts_started, run.sweep_enqueue_count, run.terminal_failure_kind,
@@ -42,25 +46,57 @@ export async function getClassifierRunFacts(
       run.completed_at
     FROM classifier_runs run
     JOIN classifiers classifier ON classifier.id = run.classifier_id
-    WHERE run.post_id = ${postId} AND (${slug}::text IS NULL OR classifier.slug = ${slug})
+    WHERE run.post_id IS NOT DISTINCT FROM ${subject.postId}::uuid
+      AND run.rss_feed_item_id IS NOT DISTINCT FROM ${subject.rssFeedItemId}::uuid
+      AND (${slug}::text IS NULL OR classifier.slug = ${slug})
     ORDER BY run.id
   `)
   return rows
 }
 
-export async function getClassifierRunRequestFacts(
+/** Every run receipt of one post, optionally scoped to one classifier, oldest first. */
+export function getClassifierRunFacts(
   postId: string,
   slug: string | null = null,
+  query: QueryExecutor = read,
+): Promise<ClassifierRunFacts[]> {
+  return getSubjectClassifierRunFacts({ postId, rssFeedItemId: null }, slug, query)
+}
+
+/** Every request row of one subject (a post or a feed item), optionally scoped to one classifier. */
+export async function getSubjectClassifierRunRequestFacts(
+  subject: ClassifierRunFactsSubject,
+  slug: string | null = null,
 ): Promise<ClassifierRunRequestFacts[]> {
-  const { rows } = await write<ClassifierRunRequestFacts>(sql`/* getClassifierRunRequestFacts */
+  const { rows } =
+    await write<ClassifierRunRequestFacts>(sql`/* getSubjectClassifierRunRequestFacts */
     SELECT request.id, classifier.slug AS classifier_slug, request.input_sha256, request.run_id,
       request.no_work_at, request.stale_at
     FROM classifier_run_requests request
     JOIN classifiers classifier ON classifier.id = request.classifier_id
-    WHERE request.post_id = ${postId} AND (${slug}::text IS NULL OR classifier.slug = ${slug})
+    WHERE request.post_id IS NOT DISTINCT FROM ${subject.postId}::uuid
+      AND request.rss_feed_item_id IS NOT DISTINCT FROM ${subject.rssFeedItemId}::uuid
+      AND (${slug}::text IS NULL OR classifier.slug = ${slug})
     ORDER BY request.id
   `)
   return rows
+}
+
+export function getClassifierRunRequestFacts(
+  postId: string,
+  slug: string | null = null,
+): Promise<ClassifierRunRequestFacts[]> {
+  return getSubjectClassifierRunRequestFacts({ postId, rssFeedItemId: null }, slug)
+}
+
+/** The candidate topics a run captured at reservation, in captured order. */
+export async function getClassifierRunCandidateTopicIdsForTest(runId: string): Promise<string[]> {
+  const { rows } = await write<{
+    topic_id: string
+  }>(sql`/* getClassifierRunCandidateTopicIdsForTest */
+    SELECT topic_id FROM classifier_run_candidates WHERE run_id = ${runId} ORDER BY ordinal
+  `)
+  return rows.map(row => row.topic_id)
 }
 
 export async function expireClassifierRunLeaseForTest(runId: string): Promise<void> {
