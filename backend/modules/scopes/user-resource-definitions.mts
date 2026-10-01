@@ -2,6 +2,7 @@ import type { ScopeAction, ScopeDefinition } from './scope-types.mts'
 
 const USER_RESOURCE_SCOPES = {
   cards: ['read', 'write'],
+  communities: ['read'],
   'data-points': ['read'],
   'domain-ratings': ['read'],
   'entity-relations': ['read', 'write'],

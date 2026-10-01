@@ -25,6 +25,7 @@
     "ajv-formats": "^3.0.1"
   },
   "devDependencies": {
+    "@services/communities": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

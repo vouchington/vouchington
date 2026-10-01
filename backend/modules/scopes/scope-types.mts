@@ -6,6 +6,7 @@ export type ScopeDescriptionKey = 'mcp_admin_full_access' | 'mcp_user_full_acces
 export type ApiScope =
   | 'cards:read'
   | 'cards:write'
+  | 'communities:read'
   | 'data-points:read'
   | 'domain-ratings:read'
   | 'entity-relations:read'
