@@ -20,7 +20,8 @@ export type AutotaggerRunAdapter = ClassifierRunAdapter<
 
 /**
  * The C6 adapter: how a post's or feed item's current input is read, which topics a new receipt
- * captures, and how the durable decision becomes topic votes. The shared classifier-run lifecycle
+ * captures, and how the durable decision becomes topic relations on that subject. The shared
+ * classifier-run lifecycle
  * owns receipt, lease, attempts, terminal failure, completion, supersession and sweep.
  */
 export function createAutotaggerRunAdapter(): AutotaggerRunAdapter {

@@ -17,12 +17,15 @@ import {
   claimAutotaggerLease,
   createAutotaggerFeedItemFixture,
   createAutotaggerPostFixture,
+  embedAutotaggerFeedItem,
+  reviseAutotaggerFeedItem,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-fixture'
 import {
   expireClassifierRunLeaseForTest,
   getSubjectClassifierRunFacts,
   getSubjectClassifierRunRequestFacts,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
+import { readSubjectTopicRelationFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/subject-topic-relations'
 import { hardDeleteTestTopic } from '@voucha/test-helpers/entities/topics/deletion'
 import { createAutotaggerClient } from './classifier-run-client.mts'
 import { executeAutotaggerRun } from './classifier-run.mts'
@@ -31,8 +34,8 @@ const adapter = createAutotaggerRunAdapter()
 const signal = new AbortController().signal
 
 /** A client that reserves its provider attempt through the hook first, as a real one does. */
-function reservingClient() {
-  const fake = createFakeStructuredDecisionClient()
+function reservingClient(probabilities: Record<string, number> = {}) {
+  const fake = createFakeStructuredDecisionClient(probabilities)
   const createClient = vi.fn<(hooks: ClassifierRunProviderHooks) => StructuredDecisionClient>(
     hooks => ({
       decide: async (request, decideSignal) => {
@@ -150,7 +153,7 @@ describe('executeAutotaggerRun (real PG)', () => {
       await expect(executeAutotaggerRun(input, { createClient })).resolves.toBe('persisted')
       await expect(completeClassifierRun(adapter, lease)).resolves.toEqual({
         kind: 'completed',
-        effects: { appliedTopicIds: [] },
+        effects: { addedTopicIds: [] },
       })
 
       expect(createClient).not.toHaveBeenCalled()
@@ -204,6 +207,89 @@ describe('executeAutotaggerRun (real PG)', () => {
       await expect(applyAutotaggerEffectsWithoutDecisionForTest(lease)).rejects.toThrow(
         'no remote decision to apply',
       )
+    })
+  })
+  describe('applying the decision to the subject revision it classified', () => {
+    const answerAll = (topicIds: readonly string[], probability: number) =>
+      Object.fromEntries(topicIds.map(topicId => [topicId, probability]))
+
+    it('tags the subject and replays a completed run without a provider call or a second write', async () => {
+      const fixture = await createAutotaggerPostFixture({ topicCount: 2 })
+      const lease = await claimAutotaggerLease(fixture)
+      const { createClient, decide } = reservingClient(answerAll(lease.capturedTopicIds, 0.9))
+      await executeAutotaggerRun({ adapter, lease, maxAttempts: 3, signal }, { createClient })
+
+      const completed = await completeClassifierRun(adapter, lease)
+      const tagged = await readSubjectTopicRelationFacts(fixture.subject)
+      const replay = await completeClassifierRun(adapter, lease)
+
+      expect(completed).toEqual({
+        kind: 'completed',
+        effects: { addedTopicIds: lease.capturedTopicIds.toSorted() },
+      })
+      expect(replay).toEqual({ kind: 'replay' })
+      expect(tagged.map(fact => fact.topicId)).toEqual(lease.capturedTopicIds.toSorted())
+      expect(tagged.every(fact => fact.votes.length === 1)).toBe(true)
+      expect(decide).toHaveBeenCalledTimes(1)
+      expect(await readSubjectTopicRelationFacts(fixture.subject)).toEqual(tagged)
+    })
+
+    it('rolls every relation, vote and the receipt back when a later effect fails, then applies each once', async () => {
+      const fixture = await createAutotaggerPostFixture({ topicCount: 2 })
+      const lease = await claimAutotaggerLease(fixture)
+      const { createClient, decide } = reservingClient(answerAll(lease.capturedTopicIds, 0.9))
+      await executeAutotaggerRun({ adapter, lease, maxAttempts: 3, signal }, { createClient })
+      const failing: typeof adapter = {
+        ...adapter,
+        applyEffects: async (query, current, outcomes) => {
+          await adapter.applyEffects(query, current, outcomes)
+          throw new Error('a later effect failed')
+        },
+      }
+
+      await expect(completeClassifierRun(failing, lease)).rejects.toThrow('a later effect failed')
+      expect(await readSubjectTopicRelationFacts(fixture.subject)).toEqual([])
+      expect(await getSubjectClassifierRunFacts(fixture.subject)).toMatchObject([
+        { completed_at: null },
+      ])
+
+      await expect(completeClassifierRun(adapter, lease)).resolves.toMatchObject({
+        kind: 'completed',
+      })
+      const tagged = await readSubjectTopicRelationFacts(fixture.subject)
+      expect(tagged.map(fact => fact.topicId)).toEqual(lease.capturedTopicIds.toSorted())
+      expect(tagged.every(fact => fact.votes.length === 1)).toBe(true)
+      expect(decide).toHaveBeenCalledTimes(1)
+    })
+
+    it('lets an older revision result neither tag nor change what the newer revision settled', async () => {
+      const fixture = await createAutotaggerFeedItemFixture({ topicCount: 2 })
+      const older = await claimAutotaggerLease(fixture)
+      const reject = reservingClient(answerAll(older.capturedTopicIds, 0.1))
+      await expect(
+        executeAutotaggerRun(
+          { adapter, lease: older, maxAttempts: 3, signal },
+          { createClient: reject.createClient },
+        ),
+      ).resolves.toBe('persisted')
+      const inputSha256 = await reviseAutotaggerFeedItem(fixture.itemId)
+      await embedAutotaggerFeedItem(fixture.itemId, fixture.embedding)
+      const newer = await claimAutotaggerLease({ ...fixture, inputSha256 })
+      const accept = reservingClient(answerAll(newer.capturedTopicIds, 0.9))
+      await expect(
+        executeAutotaggerRun(
+          { adapter, lease: newer, maxAttempts: 3, signal },
+          { createClient: accept.createClient },
+        ),
+      ).resolves.toBe('persisted')
+      await completeClassifierRun(adapter, newer)
+      const settled = await readSubjectTopicRelationFacts(fixture.subject)
+
+      await expect(completeClassifierRun(adapter, older)).resolves.toEqual({ kind: 'stale' })
+
+      expect(settled.map(fact => fact.topicId)).toEqual(newer.capturedTopicIds.toSorted())
+      expect(settled.flatMap(fact => fact.votes.map(vote => vote.score))).toEqual([1, 1])
+      expect(await readSubjectTopicRelationFacts(fixture.subject)).toEqual(settled)
     })
   })
 })
