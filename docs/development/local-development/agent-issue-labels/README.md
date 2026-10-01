@@ -79,7 +79,7 @@ escaping or ambiguous keys.
 ## Subcommands
 
 ```bash
-node --experimental-strip-types dev/agent-issue-labels/batch-issues.mts \
+node dev/agent-issue-labels/batch-issues.mts \
   preflight --session-dir <dir> --repo <owner/repo>
 ```
 
