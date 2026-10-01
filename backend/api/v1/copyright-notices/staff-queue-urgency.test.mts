@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import {
@@ -7,6 +7,7 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/copyright-staff-queue'
 import { createCopyrightFormFixture } from '@services/copyright-notices/route-test-fixtures'
 import { createCopyrightFormIntake } from '@services/copyright-notices'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
 import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
 
@@ -24,13 +25,10 @@ type QueuePage = {
 }
 
 describe('copyright staff queue urgency', () => {
-  beforeEach(() => {
-    vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
-  })
+  useCopyrightIntakeEnvironment()
 
   afterEach(() => {
     vi.useRealTimers()
-    vi.unstubAllEnvs()
   })
 
   it('lists missed then due restoration deadlines ahead of older intake work across pages', async () => {

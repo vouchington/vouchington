@@ -1,22 +1,19 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { S3Client } from '@aws-sdk/client-s3'
 import { createHash } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { createCopyrightEmailIntake } from '@services/copyright-notices'
 import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
 import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
 
 describe('copyright API cache policy', () => {
-  beforeEach(() => {
-    vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
-    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
-  })
+  useCopyrightIntakeEnvironment()
 
   afterEach(() => {
     vi.restoreAllMocks()
-    vi.unstubAllEnvs()
   })
 
   it('marks member, staff, and raw-email responses private and no-store', async () => {
