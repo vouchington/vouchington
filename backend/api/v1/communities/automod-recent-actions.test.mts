@@ -54,7 +54,7 @@ describe('Community automod recent action routes', () => {
       post_type: 'discussion',
       community_id: community.id,
     })
-    await updateClearanceStatus(post.id, 'rejected')
+    await updateClearanceStatus(post.id, 'rejected', undefined, 'staff_or_user')
     await insertTestAgentModeration({
       postId: post.id,
       agentId: moderator.id,

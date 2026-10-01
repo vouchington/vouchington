@@ -53,7 +53,10 @@ export type ModerationTrainingFeedback = {
   updated_at: Date
 }
 
+export type ModerationTrainingEvidence = 'staff_or_user' | 'agent'
+
 export type RecordModerationTrainingFeedbackInput = {
+  trainingEvidence: ModerationTrainingEvidence
   sourceType: ModerationTrainingSourceType
   eventType: ModerationTrainingEventType
   label: ModerationTrainingLabel

@@ -2,7 +2,7 @@ import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'
 import { searchCommunityMembers, type CommunityMemberRole } from '@services/communities'
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 import {
   COMMUNITY_NOT_FOUND,
   COMMUNITY_PAGE_LIMIT,

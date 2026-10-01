@@ -71,7 +71,7 @@ const { results, page_info } = await searchModeratorActions({
 Database-backed staff mutations write their history through the same transaction as the change.
 This includes appeal/dispute resolution, topic claims, report ownership/escalation, integrity reviews
 and penalties, vote weights, moderation votes, note deletion, OAuth verification, crawler CRUD,
-RSS-category management and staff import-batch creation. Draft edits retain before/after text in
+RSS-category management, story membership/official-item/title edits and staff import-batch creation. Draft edits retain before/after text in
 their existing lifecycle history. OAuth verification retains the vouched-for name and redirect URIs.
 Targets are typed columns, not metadata IDs. Metadata holds before/after values and operation outcomes.
 

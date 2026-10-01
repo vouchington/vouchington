@@ -4,7 +4,7 @@ import { createEntityRelationAction } from '@services/entity-relation-actions'
 import { addPostHashtag } from '@services/posts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { requirePrivateToolUser } from './private-user.mts'
-import type { Tool, ToolInvocationContext } from './types.mts'
+import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
 import { objectSchema, oneOfSchema } from './output-schema-shapes.mts'
 
 const text = { type: 'string' }

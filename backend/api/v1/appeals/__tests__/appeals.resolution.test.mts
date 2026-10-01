@@ -224,7 +224,7 @@ describe('POST /api/v1/appeals/:id/resolution-drafts — rerun AI', () => {
       `Rerun resolved rejection ${crypto.randomUUID()}`,
     )
     await deliverModerationAppealForTest(staff.id, appeal.id)
-    await resolveModerationAppealReduce(staff.id, appeal.id)
+    await resolveModerationAppealReduce(staff.id, appeal.id, 'staff_or_user')
 
     const request = createRequest()
     await request.authenticateAs(staff)

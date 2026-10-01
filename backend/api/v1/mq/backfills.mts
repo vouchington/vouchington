@@ -1,19 +1,17 @@
-import { recordStaffOperation } from '@services/moderator-actions'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { currentUserCanAccessQueueStats } from '@services/queue-monitoring'
+import {
+  currentUserCanAccessQueueStats,
+  listManagedBackfills,
+  runManagedBackfill,
+} from '@services/queue-monitoring'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
-import { BACKFILL_REGISTRY } from './backfills-registry.mts'
 
-// GET /api/v1/mq/backfills - List all triggerable backfills
 app.route('/api/v1/mq/backfills').get(async (ctx: Context) => {
   await requireAuthAndRateLimit(ctx, currentUserCanAccessQueueStats, 'GET:/api/v1/mq/backfills')
-
-  const backfills = BACKFILL_REGISTRY.map(({ trigger: _, ...backfill }) => backfill)
-  ctx.json({ backfills })
+  ctx.json(listManagedBackfills())
 })
 
-// POST /api/v1/mq/backfills/:id/runs - Manually trigger a backfill
 app.route('/api/v1/mq/backfills/:id/runs').post(async (ctx: Context) => {
   const currentUser = await requireAuthAndRateLimit(
     ctx,
@@ -21,14 +19,5 @@ app.route('/api/v1/mq/backfills/:id/runs').post(async (ctx: Context) => {
     'POST:/api/v1/mq/backfills/:id/runs',
   )
   validateRequestContract(ctx, 'POST:/api/v1/mq/backfills/:id/runs', { path: ctx.params })
-
-  const backfill = BACKFILL_REGISTRY.find(b => b.id === ctx.params.id)
-  ctx.assert(backfill, 404, 'Backfill not found')
-
-  await recordStaffOperation(
-    currentUser.id,
-    { actionType: 'backfill_run', backfillKey: backfill!.id },
-    () => backfill!.trigger(),
-  )
-  ctx.json({ success: true })
+  ctx.json(await runManagedBackfill(currentUser, ctx.params.id!))
 })

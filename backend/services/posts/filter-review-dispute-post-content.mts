@@ -1,4 +1,4 @@
-import { canViewPostsBatch } from '@services/posts'
+import { canViewPostsBatch } from './check-privacy-access-batch.mts'
 import type { ReviewDisputeResponse } from '@services/review-disputes'
 import type { PrivateUser } from '@services/users/types'
 

@@ -25,6 +25,8 @@
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/moderation-cases": "workspace:^",
+    "@services/moderation-reports": "workspace:^",
+    "@services/moderation-training": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/notifications": "workspace:^",
     "@services/users": "workspace:^",

@@ -17,6 +17,10 @@ export async function listCopyrightRepeatInfringerAccountsForNotice(
   noticeId: string,
 ): Promise<CopyrightRepeatInfringerNoticeAccount[]> {
   assert(currentUserCanReviewCopyrightNotices(currentUser), 403, 'Forbidden')
+  const notice = await read<{ id: string }>(sql`/* requireCopyrightRepeatInfringerNotice */
+    SELECT id FROM copyright_notices WHERE id = ${noticeId}::uuid
+  `)
+  assert(notice.rows[0], 404, 'Copyright notice not found')
   const { rows } = await read<CopyrightRepeatInfringerNoticeAccount>(sql`
     /* listCopyrightRepeatInfringerAccountsForNotice */
     SELECT incident.account_user_id,

@@ -1,3 +1,4 @@
+import { listReviewDisputePage } from '@services/review-disputes/list-page'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
@@ -7,7 +8,6 @@ import {
   parseCreateReviewDisputeInput,
   createReviewDispute,
   getReviewDisputeById,
-  listReviewDisputes,
   redactReviewDispute,
   listRedactedReviewDisputes,
   REVIEW_DISPUTE_STATUSES,
@@ -22,12 +22,8 @@ import {
   queryInteger,
   queryString,
 } from '@modules/pagination'
-import {
-  beforeIdFromCursor,
-  parseAndValidateCaseListQuery,
-  scopedPageInfo,
-} from '../../case-list-query-helpers.mts'
-import { filterReviewDisputePostContentForViewer } from './dispute-post-content-visibility.mts'
+import { parseAndValidateCaseListQuery } from '../../case-list-query-helpers.mts'
+import { filterReviewDisputePostContentForViewer } from '@services/posts/filter-review-dispute-post-content'
 import './disputes-staff.mts'
 
 type CreateReviewDisputeRequest = {
@@ -77,18 +73,14 @@ app.route('/api/v1/disputes').get(async (ctx: Context) => {
 
   const disputantUserId = mine ? currentUser.id : undefined
   const isStaff = isModerationStaff(currentUser)
-  const audience = isStaff ? 'staff' : 'member'
-  const cursorScope = `disputes:${status}:${audience}:${disputantUserId ?? 'all'}:id-desc`
-
-  const { disputes, hasNextPage } = await listReviewDisputes({
+  const { disputes, page_info } = await listReviewDisputePage({
     status,
     limit,
-    beforeId: beforeIdFromCursor(after, cursorScope),
     disputantUserId,
+    audience: isStaff ? 'staff' : 'member',
+    after,
   })
   const viewerDisputes = await filterReviewDisputePostContentForViewer(currentUser, disputes)
-
-  const page_info = scopedPageInfo(viewerDisputes, hasNextPage, cursorScope)
   if (isStaff) {
     ctx.json(apiResponse('GET:/api/v1/disputes#staff', { disputes: viewerDisputes, page_info }))
     return

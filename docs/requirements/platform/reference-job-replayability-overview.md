@@ -15,6 +15,6 @@ Two requirements enforce this:
    write to Postgres must use upsert, content-sha guards, or uniqueness constraints.
 
 2. **Backfill** — every replayable queue must register a **backfill entry** in
-   `BACKFILL_REGISTRY` (`backend/api/v1/mq/backfills-registry.mts`). The backfill
+   `BACKFILL_REGISTRY` (`backend/services/queue-monitoring/backfills-registry.mts`). The backfill
    scans the Postgres source-of-truth and enqueues individual jobs for every entity
    missing a derived result. Backfills are triggerable from `/admin/queues`.

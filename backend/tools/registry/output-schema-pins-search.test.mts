@@ -1,7 +1,7 @@
 import { documentedResponseProperty } from '@voucha/test-helpers/openapi-documented-response'
 import { describe, expect, it } from 'vitest'
-import searchPostsTool from './search-posts.mts'
-import searchTopicsTool from './search-topics.mts'
+import searchPostsTool from '../search-posts.mts'
+import searchTopicsTool from '../search-topics.mts'
 
 type JsonSchema = Record<string, unknown>
 

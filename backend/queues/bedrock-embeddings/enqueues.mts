@@ -7,7 +7,7 @@ import {
 } from './config.mts'
 import { bedrock_embeddings_nova_multimodal_v1_single } from './queues.mts'
 import type { DefaultBedrockEmbeddingsJobData } from './types.mts'
-import { getQueueStatsCached } from '@services/queue-monitoring/get-queue-stats-cached'
+import { getQueueStatsCached } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
 import { trackAIEmbeddingShortCircuit } from '@services/analytics'
 import { getBacklogThreshold } from '@services/bedrock-embeddings/batch/config'
 import onError from '@modules/on-error'

@@ -6,13 +6,7 @@ import {
   parseJsonBody,
   validateRequestContract,
 } from '../../../response-helpers.mts'
-import { parseCsvRows } from '@modules/csv'
-import { validateTopicRows, validateTopicHeaders, createImportBatch } from '@services/admin-imports'
-import { enqueueBulkImportRows } from '@queues/admin-imports/enqueues'
-
-const MAX_ROWS = 1000
-
-type AdminImportTopicsRequest = { csv: string }
+import { importAdminTopics } from '@services/admin-imports/topic-import'
 
 /**
  * POST /api/v1/imports/topics — Batch create/update topics via import queue.
@@ -26,68 +20,23 @@ app.route('/api/v1/imports/topics').post(async (ctx: Context) => {
   // 4mb comfortably fits 1000 rows of realistic topic data (markdown descriptions) without
   // rejecting valid admin batches, while staying well under the former 10mb cap. The endpoint
   // is admin-only and rate-limited, so the event-loop cost of parsing is bounded.
-  const body = await parseJsonBody<AdminImportTopicsRequest>(ctx, '4mb')
+  const body = await parseJsonBody<{ csv?: unknown }>(ctx, '4mb')
+  ctx.assert(
+    body !== null && typeof body === 'object' && !Array.isArray(body),
+    400,
+    'Invalid JSON body',
+  )
   validateRequestContract(ctx, 'POST:/api/v1/imports/topics', { body })
   const { csv } = body
-  ctx.assert(csv.trim().length > 0, 400, 'CSV body must not be empty')
-
-  let rows: Record<string, string>[]
-  try {
-    rows = parseCsvRows(csv)
-  } catch {
-    ctx.throw(400, 'Invalid CSV format')
-  }
-
-  ctx.assert(rows.length > 0, 400, 'CSV must contain at least one data row')
-  ctx.assert(rows.length <= MAX_ROWS, 400, `CSV must not exceed ${MAX_ROWS} rows`)
-
-  // Validate headers (column allowlist)
-  const headers = rows.length > 0 ? Object.keys(rows[0]) : []
-  const unknownColumns = validateTopicHeaders(headers)
-  if (unknownColumns.length > 0) {
-    ctx.setStatus(422)
-    ctx.setType('json')
-    await ctx.pipeline(
-      streamJsonObject({
-        valid: false,
-        error: `Unknown CSV columns: ${unknownColumns.join(', ')}`,
-      }),
-    )
-    return
-  }
-
-  const validation = validateTopicRows(rows)
-
-  if (!validation.valid) {
-    ctx.setStatus(422)
-    ctx.setType('json')
-    await ctx.pipeline(
-      streamJsonObject({
-        valid: false,
-        validation,
-      }),
-    )
-    return
-  }
-
-  const { batch, rowIds } = await createImportBatch(
-    currentUser,
-    'topic',
-    rows as Record<string, unknown>[],
-  )
-  await enqueueBulkImportRows(rowIds.map(rowId => ({ batchId: batch.id, rowId })))
-
-  ctx.setStatus(201)
+  ctx.assert(typeof csv === 'string', 400, 'csv must be a string')
+  const result = await importAdminTopics(currentUser, csv)
   ctx.setType('json')
-  await ctx.pipeline(
-    streamJsonObject({
-      valid: true,
-      batch: {
-        id: batch.id,
-        import_type: batch.import_type,
-        total_rows: batch.total_rows,
-        created_at: batch.created_at,
-      },
-    }),
-  )
+  if (result.valid) {
+    ctx.setStatus(201)
+    await ctx.pipeline(streamJsonObject({ valid: true, batch: result.batch }))
+    return
+  }
+  ctx.setStatus(422)
+  if ('error' in result) await ctx.pipeline(streamJsonObject({ valid: false, error: result.error }))
+  else await ctx.pipeline(streamJsonObject({ valid: false, validation: result.validation }))
 })

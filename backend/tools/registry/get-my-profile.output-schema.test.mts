@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import getMyProfileTool from './get-my-profile.mts'
-import { inlineSchemaReferences } from './route-response-schema.mts'
+import getMyProfileTool from '../get-my-profile.mts'
+import { inlineSchemaReferences } from '../route-response-schema.mts'
 
 type JsonSchema = Record<string, unknown>
 type OpenApi = {

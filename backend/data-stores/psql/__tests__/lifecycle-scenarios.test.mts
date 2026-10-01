@@ -112,7 +112,7 @@ async function runModerationAppealScenario(
   }
   await sendApprovedModerationAppealResolution(administrator.id, appeal.id)
   if (input.action.type === 'deny') {
-    const updated = await dismissModerationAppeal(administrator.id, appeal.id)
+    const updated = await dismissModerationAppeal(administrator.id, appeal.id, 'staff_or_user')
     return observeServerBoundary(
       {
         status: updated.status,
@@ -126,7 +126,7 @@ async function runModerationAppealScenario(
     throw new Error(`Unknown backend moderation lifecycle action: ${input.action.type}`)
   }
   if (input.preconditions.viewerRole === 'moderator') {
-    const status = await resolveModerationAppealAccept(moderator.id, appeal.id)
+    const status = await resolveModerationAppealAccept(moderator.id, appeal.id, 'staff_or_user')
       .then(() => null)
       .catch((error: { status?: number }) => error.status)
     if (status !== 403)
@@ -145,7 +145,7 @@ async function runModerationAppealScenario(
   })
   await approveModerationAppeal(administrator.id, probe.id)
   await sendApprovedModerationAppealResolution(administrator.id, probe.id)
-  await resolveModerationAppealAccept(administrator.id, probe.id)
+  await resolveModerationAppealAccept(administrator.id, probe.id, 'staff_or_user')
   const resolvedProbe = await getModerationAppealByIdFromPrimary(probe.id)
   if (resolvedProbe?.status !== 'resolved' || resolvedProbe.resolution_action !== 'accept') {
     throw new Error('Administrator acceptance probe did not persist its authoritative final state')

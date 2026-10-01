@@ -20,7 +20,7 @@ import { getPrivateUserByAny } from '@services/users/get'
 import { findOrCreateDirectConversation } from '@services/messaging'
 import { isUserBlockedOrMuted } from '@services/entity-relations/check-block-mute'
 import { createPaginationParser, defineQueryContract, queryEnum } from '@modules/pagination'
-import { parseReportCursor } from '../reports/reports-cursor.mts'
+import { parseReportCursor } from '@services/moderation-reports/cursor'
 import { apiQuery } from '../../response-contract.mts'
 import {
   communityModeratorVisibleReportSort,
@@ -65,7 +65,7 @@ app.route('/api/v1/communities/:idOrSlug/reports/pending').get(async (ctx: Conte
   const requestedSort = parseCommunityReportSort(ctx.query.sort)
   const sort = isStaff ? requestedSort : communityModeratorVisibleReportSort(requestedSort)
   const cursorScope = `community-pending-reports:${community.id}:${isStaff ? 'staff' : 'member'}`
-  const cursor = after ? parseReportCursor(ctx, after) : null
+  const cursor = after ? parseReportCursor(after) : null
   ctx.assert(
     !cursor ||
       (!cursor.cluster &&
@@ -182,6 +182,7 @@ app.route('/api/v1/communities/:idOrSlug/reports/:reportId').patch(async (ctx: C
   ctx.assert(status, 422, 'Invalid status')
 
   const report = await resolveModerationReport(reportId, {
+    trainingEvidence: 'staff_or_user',
     communityId: community.id,
     resolvedById: currentUser.id,
     status,

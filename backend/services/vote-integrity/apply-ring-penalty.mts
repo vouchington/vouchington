@@ -1,5 +1,5 @@
 import { recordModeratorAction } from '@services/moderator-actions'
-import { assertWhitelistedSqlIdentifier, read, beginTransaction } from '@data-stores/psql'
+import { assertWhitelistedSqlIdentifier, beginTransaction } from '@data-stores/psql'
 import {
   VOTE_ENTITY_ID_COLUMN_IDENTIFIERS,
   VOTE_TABLE_IDENTIFIERS,
@@ -10,9 +10,10 @@ import sql from 'sql-template-strings'
 import { ENTITY_VOTE_TABLES, FLAG_ENTITY_FK_COLUMNS } from './config.mts'
 import type { VoteIntegrityFlag } from './create-flag.mts'
 import { insertVoteWeightPenalty } from './insert-vote-weight-penalty.mts'
-import { VOTE_INTEGRITY_FLAG_TARGET_PROJECTION } from './flag-projection.mts'
+import { VOTE_INTEGRITY_FLAG_PROJECTION } from './flag-projection.mts'
 
 type ApplyRingPenaltyResult = {
+  flag: VoteIntegrityFlag
   penalized_user_count: number
 }
 
@@ -20,29 +21,21 @@ export async function applyVoteRingPenalty(
   flagId: string,
   adminUserId: string,
 ): Promise<ApplyRingPenaltyResult> {
-  // Load the flag to determine the entity
+  await using query = await beginTransaction()
+  // Load and lock the flag to determine the entity
   const flagQuery = sql`/* applyVoteRingPenalty_getFlag */
     SELECT `
-  flagQuery.append(VOTE_INTEGRITY_FLAG_TARGET_PROJECTION)
+  flagQuery.append(VOTE_INTEGRITY_FLAG_PROJECTION)
   flagQuery.append(sql`
     FROM vote_integrity_flags
     WHERE id = ${flagId}
+    FOR UPDATE
   `)
-  const { rows: flagRows } = await read(flagQuery)
+  const { rows: flagRows } = await query<VoteIntegrityFlag>(flagQuery)
 
-  const flag = flagRows[0] as
-    | Omit<
-        VoteIntegrityFlag,
-        | 'id'
-        | 'flag_type'
-        | 'details'
-        | 'resolved_at'
-        | 'resolved_by_id'
-        | 'resolution'
-        | 'created_at'
-      >
-    | undefined
+  const flag = flagRows[0]
   if (!flag) throw createHttpError(404, 'Vote integrity flag not found')
+  if (flag.resolved_at) throw createHttpError(409, 'Vote integrity flag is already resolved')
 
   // Find which FK column is set and look up the vote table
   let entityId: string | null = null
@@ -62,7 +55,6 @@ export async function applyVoteRingPenalty(
   if (!tableConfig)
     throw createHttpError(500, `No vote table configured for entity type: ${entityType}`)
 
-  await using query = await beginTransaction()
   // Get current upvoters: DISTINCT ON to get latest vote per user, filter score > 0
   const usersQuery = sql`/* applyVoteRingPenalty_getUsers */
       SELECT DISTINCT ON (user_id) user_id, score
@@ -101,6 +93,15 @@ export async function applyVoteRingPenalty(
           query,
           enqueueRecalculation: false,
         })
+  const resolutionQuery = sql`/* applyVoteRingPenalty_resolveFlag */
+    UPDATE vote_integrity_flags
+    SET resolved_at = CURRENT_TIMESTAMP, resolved_by_id = ${adminUserId}, resolution = 'penalized'
+    WHERE id = ${flagId} AND resolved_at IS NULL
+    RETURNING `
+  resolutionQuery.append(VOTE_INTEGRITY_FLAG_PROJECTION)
+  const { rows: resolvedRows } = await query<VoteIntegrityFlag>(resolutionQuery)
+  const resolvedFlag = resolvedRows[0]
+  if (!resolvedFlag) throw createHttpError(409, 'Vote integrity flag is already resolved')
   await recordModeratorAction(
     adminUserId,
     {
@@ -116,5 +117,5 @@ export async function applyVoteRingPenalty(
     void enqueueBulkRecalculateUserVoteWeight(userIds, true)
   }
 
-  return { penalized_user_count: userIds.length }
+  return { flag: resolvedFlag, penalized_user_count: userIds.length }
 }

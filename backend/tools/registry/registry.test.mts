@@ -3,7 +3,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS, getRegisteredToolByName } from './index.mts'
 import { getToolRequiredScopes, isToolMcpEligible, listToolsForSurface } from './select.mts'
-import type { Tool } from '../types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { SCOPE_DEFINITIONS } from '@modules/scopes'
 
 const TOOLS_DIR = path.join(import.meta.dirname, '..')

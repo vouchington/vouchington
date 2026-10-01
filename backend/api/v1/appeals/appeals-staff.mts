@@ -85,11 +85,11 @@ app.route('/api/v1/appeals/:id/resolution').post(async (ctx: Context) => {
   const { action } = body
   let appeal
   if (action === 'accept') {
-    appeal = await resolveModerationAppealAccept(currentUser.id, id)
+    appeal = await resolveModerationAppealAccept(currentUser.id, id, 'staff_or_user')
   } else if (action === 'reduce') {
-    appeal = await resolveModerationAppealReduce(currentUser.id, id)
+    appeal = await resolveModerationAppealReduce(currentUser.id, id, 'staff_or_user')
   } else {
-    appeal = await dismissModerationAppeal(currentUser.id, id)
+    appeal = await dismissModerationAppeal(currentUser.id, id, 'staff_or_user')
   }
   ctx.setStatus(200)
   ctx.json(apiResponse('POST:/api/v1/appeals/:id/resolution#staff', { appeal }))

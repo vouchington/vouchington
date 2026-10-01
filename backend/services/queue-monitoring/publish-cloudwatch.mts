@@ -1,7 +1,7 @@
 import { getDeployEnvironment, type DeployEnvironment } from '@ts-shared/deploy-environment'
 import { putCloudWatchMetricData } from '@modules/aws/cloudwatch'
 import { workerQueuePolicySource } from '@modules/worker-queue-inventory'
-import { getAggregatedQueueMetricStats } from './get-queue-stats.mts'
+import { getAggregatedQueueMetricStats } from '@data-stores/valkey-glide-mq/get-queue-stats'
 
 export const GLIDE_MQ_METRIC_NAMESPACE = 'Voucha'
 export const GLIDE_MQ_WAITING_METRIC = 'GlideMQWaiting'

@@ -12,7 +12,7 @@ import {
   encodeReportCursor,
   type ModerationReportSort,
 } from '@services/moderation-reports'
-import { reportCursorScope } from '../reports-cursor.mts'
+import { reportCursorScope } from '@services/moderation-reports/cursor'
 
 const FLAT_SORTS: ModerationReportSort[] = [
   'created_at_asc',

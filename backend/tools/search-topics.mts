@@ -1,5 +1,5 @@
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { getTopicIds } from '@services/topics/search/get-ids'
 import { prepareTopicsSearchParams, resolveTopicsSearchParams } from '@services/search-params'
 import {

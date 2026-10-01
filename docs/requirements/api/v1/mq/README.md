@@ -73,7 +73,7 @@ Response: `{ success: boolean, retried: number }`
 
 ## GET /api/v1/mq/scheduled-jobs
 
-Returns all scheduled jobs registered in the scheduled jobs registry (`scheduled-jobs-registry.mts`). Does not include jobs that already have trigger buttons on domain-specific admin pages (`/admin/postgresql`, `/admin/valkey`).
+Returns all scheduled jobs registered in the shared service registry (`backend/services/queue-monitoring/scheduled-jobs-registry.mts`). Does not include jobs that already have trigger buttons on domain-specific admin pages (`/admin/postgresql`, `/admin/valkey`).
 
 Response: `{ jobs: Array<{ id, queue_name, job_name, schedule, description }> }`
 
@@ -137,3 +137,13 @@ A full-featured queue management UI is available at `/admin/mq-dashboard` (requi
 - Service: [../../../services/queue-monitoring/](../../../../overview/architecture/services/queue-monitoring/README.md)
 - GlideMQ Dashboard: [../../../entrypoints/api/glidemq-dashboard.mts](../../../../../backend/entrypoints/api/glidemq-dashboard.mts)
 - Parent: [../../AGENTS.md](../../../../../backend/api/AGENTS.md)
+
+## Shared controls and history
+
+REST queue controls and admin MCP site-operations tools call the same
+`@services/queue-monitoring/controls` services. Queue names must belong to the managed inventory.
+Pause and resume leave an already matching state unchanged and create no additional history.
+A state change retains the durable requested/finished operation history. Retry-failed handles at
+most the first 100 failed jobs; scheduled-job and backfill triggers require a registered ID and
+retain the same operation history. Registries and the queue inventory live in queue-monitoring,
+so tools do not import API route registration modules.

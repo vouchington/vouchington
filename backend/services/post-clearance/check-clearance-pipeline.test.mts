@@ -82,7 +82,7 @@ describe('post clearance pipeline', () => {
     })
 
     // Admin overrides the rejected status to approved
-    await updateClearanceStatus(postId, 'approved', adminUser!.id)
+    await updateClearanceStatus(postId, 'approved', adminUser!.id, 'staff_or_user')
 
     expect(await getPostClearanceStatus(postId)).toBe('approved')
   })

@@ -51,6 +51,7 @@ app.route('/api/v1/communities/:idOrSlug/warnings').post(async (ctx: Context) =>
   if (input.reportId && input.resolveReport) {
     const { resolveModerationReport } = await import('@services/moderation-reports/resolve')
     await resolveModerationReport(input.reportId, {
+      trainingEvidence: 'staff_or_user',
       communityId: community.id,
       status: 'actioned',
       resolvedById: currentUser.id,

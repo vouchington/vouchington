@@ -2,7 +2,10 @@ import { beginTransaction, read } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { recordModerationTrainingFeedback } from '@services/moderation-training'
+import {
+  recordModerationTrainingFeedback,
+  type ModerationTrainingEvidence,
+} from '@services/moderation-training'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { setPostClearanceStatus, type ClearanceDecisionContext } from './set-status.mts'
 import { CLEARANCE_MODLOG_ACTIONS } from './status-constants.mts'
@@ -19,7 +22,8 @@ export {
 export async function updateClearanceStatus(
   postId: string,
   status: ClearanceStatus,
-  updatedById?: string,
+  updatedById: string | undefined,
+  trainingEvidence: ModerationTrainingEvidence,
   decision: ClearanceDecisionContext = {},
 ): Promise<void> {
   let change: Awaited<ReturnType<typeof setPostClearanceStatus>> | null = null
@@ -62,6 +66,7 @@ export async function updateClearanceStatus(
   if (updatedById && change) {
     await recordModerationTrainingFeedback(
       {
+        trainingEvidence,
         sourceType: 'community_review',
         eventType: 'manual_action_inferred',
         label: getClearanceTrainingLabel(status, previousState),

@@ -6,7 +6,7 @@ import { bedrock_embeddings_nova_multimodal_v1_single } from '@queues/bedrock-em
 import { enqueueBulkCreateRssFeedItemEmbeddings } from '@queues/bedrock-embeddings/enqueues'
 import { QUEUE_NAME } from '@queues/bedrock-embeddings-batch/config'
 import { EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME } from '@queues/bedrock-embeddings/config'
-import { clearQueueStatsCacheForTesting } from '@services/queue-monitoring'
+import { clearQueueStatsCacheForTesting } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
 import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
 import {
   overrideDynamicConfigFieldsForTest,

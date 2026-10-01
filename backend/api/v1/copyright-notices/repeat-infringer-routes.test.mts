@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
   getCopyrightRepeatInfringerAccount,
@@ -8,6 +9,15 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 
 describe('copyright repeat-infringer routes', () => {
+  it('rejects a missing notice before listing its accounts', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const request = createRequest()
+    await request.authenticateAs(admin)
+    await request
+      .get(`/api/v1/copyright-notices/${randomUUID()}/repeat-infringer-accounts`)
+      .expect(404)
+  })
+
   it('records staff dispositions and review outcomes over HTTP', async () => {
     const [poster, moderator, admin] = await Promise.all([
       createTestUser(),

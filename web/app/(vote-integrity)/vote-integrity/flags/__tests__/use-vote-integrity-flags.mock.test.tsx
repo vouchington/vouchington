@@ -73,7 +73,14 @@ function makeInitialData(flags = [makeFlag()]) {
 describe('useVoteIntegrityFlags', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockApplyPenalty.mockResolvedValue({ penalized_user_count: 1 })
+    mockApplyPenalty.mockResolvedValue({
+      flag: makeFlag({
+        resolution: 'penalized',
+        resolved_at: '2026-07-16T01:00:00.000Z',
+        resolved_by_id: 'admin-1',
+      }),
+      penalized_user_count: 1,
+    })
     mockGetFlag.mockResolvedValue({ flag: makeFlag() })
     mockGetPenalties.mockResolvedValue({
       results: [],
@@ -127,8 +134,15 @@ describe('useVoteIntegrityFlags', () => {
     },
   )
 
-  it('keeps resolution state unchanged after a successful ring penalty', async () => {
-    mockApplyPenalty.mockResolvedValueOnce({ penalized_user_count: 4 })
+  it('uses the returned resolved flag without a confirmation read', async () => {
+    mockApplyPenalty.mockResolvedValueOnce({
+      flag: makeFlag({
+        resolution: 'penalized',
+        resolved_at: '2026-07-16T01:00:00.000Z',
+        resolved_by_id: 'admin-1',
+      }),
+      penalized_user_count: 4,
+    })
     const { result } = renderHook(() => useVoteIntegrityFlags(makeInitialData(), 'pending'))
 
     act(() => {
@@ -141,11 +155,8 @@ describe('useVoteIntegrityFlags', () => {
     await waitFor(() => {
       expect(result.current.penaltyResults['flag-1']).toBe(4)
     })
-    expect(result.current.flags[0]).toMatchObject({
-      resolution: null,
-      resolved_at: null,
-      resolved_by_id: null,
-    })
+    expect(result.current.flags).toEqual([])
+    expect(mockGetFlag).not.toHaveBeenCalled()
   })
 
   it('serializes resolution and penalty mutations for the same flag', async () => {
@@ -198,14 +209,28 @@ describe('useVoteIntegrityFlags', () => {
     await waitFor(() => expect(mockApplyPenalty).toHaveBeenCalledTimes(1))
 
     await act(async () => {
-      finishPenalty!({ penalized_user_count: 1 })
+      finishPenalty!({
+        flag: makeFlag({
+          resolution: 'penalized',
+          resolved_at: '2026-07-16T01:00:00.000Z',
+          resolved_by_id: 'admin-1',
+        }),
+        penalized_user_count: 1,
+      })
     })
   })
 
   it('uses the canonical ApiError payload message and releases the lock for retry', async () => {
     mockApplyPenalty
       .mockRejectedValueOnce(new ApiError('generic', 409, { error: 'Penalty already applied' }))
-      .mockResolvedValueOnce({ penalized_user_count: 1 })
+      .mockResolvedValueOnce({
+        flag: makeFlag({
+          resolution: 'penalized',
+          resolved_at: '2026-07-16T01:00:00.000Z',
+          resolved_by_id: 'admin-1',
+        }),
+        penalized_user_count: 1,
+      })
     const { result } = renderHook(() => useVoteIntegrityFlags(makeInitialData(), 'pending'))
 
     act(() => {
@@ -255,26 +280,21 @@ describe('useVoteIntegrityFlags', () => {
     expect(result.current.actionErrors['flag-1']).toBe('Flag was already resolved')
   })
 
-  it('never unlocks a known-success zero-count penalty when confirmation needs reconciliation', async () => {
-    mockApplyPenalty.mockResolvedValueOnce({ penalized_user_count: 0 })
-    mockGetFlag.mockRejectedValueOnce(new Error('GET unavailable'))
-    const { result } = renderHook(() => useVoteIntegrityFlags(makeInitialData(), 'pending'))
-
-    act(() => result.current.applyPenaltyWithConfirmation('flag-1'))
-    act(() => result.current.applyPenaltyWithConfirmation('flag-1'))
-
-    await waitFor(() => {
-      expect(result.current.reconciliationRequired['flag-1']).toBe(true)
+  it('uses a zero-count successful response without requiring a confirmation read', async () => {
+    mockApplyPenalty.mockResolvedValueOnce({
+      flag: makeFlag({
+        resolution: 'penalized',
+        resolved_at: '2026-07-16T01:00:00.000Z',
+        resolved_by_id: 'admin-1',
+      }),
+      penalized_user_count: 0,
     })
-    expect(result.current.penaltyResults['flag-1']).toBe(0)
-
-    await act(async () => result.current.retryReconciliation('flag-1'))
-    expect(result.current.reconciliationRequired['flag-1']).toBe(false)
-
+    const { result } = renderHook(() => useVoteIntegrityFlags(makeInitialData(), 'pending'))
     act(() => result.current.applyPenaltyWithConfirmation('flag-1'))
     act(() => result.current.applyPenaltyWithConfirmation('flag-1'))
-    await act(async () => {})
-
-    expect(mockApplyPenalty).toHaveBeenCalledOnce()
+    await waitFor(() => expect(result.current.penaltyResults['flag-1']).toBe(0))
+    expect(result.current.flags).toEqual([])
+    expect(mockGetFlag).not.toHaveBeenCalled()
+    expect(result.current.reconciliationRequired['flag-1']).toBeUndefined()
   })
 })

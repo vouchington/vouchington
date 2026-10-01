@@ -1,3 +1,28 @@
+import { adminEditorialStoryTools } from '../admin/editorial-stories.mts'
+import { adminEditorialImportTools } from '../admin/editorial-imports.mts'
+import { adminEditorialCategoryTools } from '../admin/editorial-categories.mts'
+import { adminEditorialCrawlerTools } from '../admin/editorial-crawlers.mts'
+import { adminEditorialReadTools } from '../admin/editorial-reads.mts'
+import { adminReportTools } from '../admin/reports.mts'
+import { adminClearanceTools } from '../admin/clearances.mts'
+import { adminTopicClaimTools } from '../admin/topic-claims.mts'
+import { adminWarningTools } from '../admin/warnings.mts'
+import { adminUserContextTools } from '../admin/user-context.mts'
+import { adminAccountControlTools } from '../admin/account-controls.mts'
+import { adminReportIntegrityFlagTools } from '../admin/report-integrity-flags.mts'
+import { adminReportIntegrityPenaltyTools } from '../admin/report-integrity-penalties.mts'
+import { adminVoteIntegrityFlagTools } from '../admin/vote-integrity-flags.mts'
+import { adminVoteIntegrityPenaltyTools } from '../admin/vote-integrity-penalties.mts'
+import { adminAgentVoteTools } from '../admin/agent-votes.mts'
+import { adminModerationObservabilityTools } from '../admin/moderation-observability.mts'
+import { adminLegalAnalyticsTools } from '../admin/legal-analytics.mts'
+import { adminAppealsReadTools } from '../admin/appeals-reads.mts'
+import { adminDisputesReadTools } from '../admin/disputes-reads.mts'
+import { adminAppealsLifecycleTools } from '../admin/appeals-lifecycle.mts'
+import { adminDisputesLifecycleTools } from '../admin/disputes-lifecycle.mts'
+import { adminSiteOperationsTools } from '../admin/site-operations.mts'
+import { resolveModerationAppealTool } from '../admin/appeals-resolution.mts'
+import { resolveReviewDisputeTool } from '../admin/disputes-resolution.mts'
 import addEntityRelationTool from '../add-entity-relation.mts'
 import addListItemTool from '../add-list-item.mts'
 import compareTopicsTool from '../compare-topics.mts'
@@ -39,9 +64,34 @@ import searchTopicsTool from '../search-topics.mts'
 import setBookmarkTool from '../set-bookmark.mts'
 import updateListTool from '../update-list.mts'
 import updateMyFinancialProfileTool from '../update-my-financial-profile.mts'
-import type { Tool } from '../types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 
 export const ALL_TOOLS: readonly Tool[] = [
+  ...adminEditorialStoryTools,
+  ...adminEditorialImportTools,
+  ...adminEditorialCategoryTools,
+  ...adminEditorialCrawlerTools,
+  ...adminEditorialReadTools,
+  ...adminReportTools,
+  ...adminClearanceTools,
+  ...adminTopicClaimTools,
+  ...adminWarningTools,
+  ...adminUserContextTools,
+  ...adminAccountControlTools,
+  ...adminReportIntegrityFlagTools,
+  ...adminReportIntegrityPenaltyTools,
+  ...adminVoteIntegrityFlagTools,
+  ...adminVoteIntegrityPenaltyTools,
+  ...adminAgentVoteTools,
+  ...adminModerationObservabilityTools,
+  ...adminLegalAnalyticsTools,
+  ...adminAppealsReadTools,
+  ...adminDisputesReadTools,
+  ...adminAppealsLifecycleTools,
+  ...adminDisputesLifecycleTools,
+  ...adminSiteOperationsTools,
+  resolveModerationAppealTool,
+  resolveReviewDisputeTool,
   addEntityRelationTool,
   addListItemTool,
   compareTopicsTool,

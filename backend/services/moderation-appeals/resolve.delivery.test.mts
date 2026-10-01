@@ -46,28 +46,34 @@ describe('moderation appeal delivery requirement', () => {
 
   it('rejects accept before delivery', async () => {
     const appeal = await createWarningAppeal()
-    await expect(resolveModerationAppealAccept(staff.id, appeal.id)).rejects.toMatchObject({
+    await expect(
+      resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user'),
+    ).rejects.toMatchObject({
       status: 422,
     })
   })
 
   it('rejects reduce before delivery', async () => {
     const appeal = await createWarningAppeal()
-    await expect(resolveModerationAppealReduce(staff.id, appeal.id)).rejects.toMatchObject({
+    await expect(
+      resolveModerationAppealReduce(staff.id, appeal.id, 'staff_or_user'),
+    ).rejects.toMatchObject({
       status: 422,
     })
   })
 
   it('rejects deny before delivery', async () => {
     const appeal = await createWarningAppeal()
-    await expect(dismissModerationAppeal(staff.id, appeal.id)).rejects.toMatchObject({
+    await expect(
+      dismissModerationAppeal(staff.id, appeal.id, 'staff_or_user'),
+    ).rejects.toMatchObject({
       status: 422,
     })
   })
 
   it('reduces a delivered appeal and rejects a second resolution', async () => {
     const appeal = await createDeliveredWarningAppeal()
-    const resolved = await resolveModerationAppealReduce(staff.id, appeal.id)
+    const resolved = await resolveModerationAppealReduce(staff.id, appeal.id, 'staff_or_user')
 
     expect(resolved).toMatchObject({
       status: 'resolved',
@@ -76,14 +82,16 @@ describe('moderation appeal delivery requirement', () => {
     })
     expect(resolved.resolved_at).not.toBeNull()
     expect(resolved.created_at).toBeInstanceOf(Date)
-    await expect(resolveModerationAppealReduce(staff.id, appeal.id)).rejects.toMatchObject({
+    await expect(
+      resolveModerationAppealReduce(staff.id, appeal.id, 'staff_or_user'),
+    ).rejects.toMatchObject({
       status: 404,
     })
   })
 
   it('denies a delivered appeal and rejects a second resolution', async () => {
     const appeal = await createDeliveredWarningAppeal()
-    const dismissed = await dismissModerationAppeal(staff.id, appeal.id)
+    const dismissed = await dismissModerationAppeal(staff.id, appeal.id, 'staff_or_user')
 
     expect(dismissed).toMatchObject({
       status: 'dismissed',
@@ -92,7 +100,9 @@ describe('moderation appeal delivery requirement', () => {
     })
     expect(dismissed.resolved_at).not.toBeNull()
     expect(dismissed.created_at).toBeInstanceOf(Date)
-    await expect(dismissModerationAppeal(staff.id, appeal.id)).rejects.toMatchObject({
+    await expect(
+      dismissModerationAppeal(staff.id, appeal.id, 'staff_or_user'),
+    ).rejects.toMatchObject({
       status: 404,
     })
   })
@@ -119,7 +129,9 @@ describe('moderation appeal delivery requirement', () => {
     )
     await deliverModerationAppealForTest(staff.id, appeal.id)
 
-    await expect(dismissModerationAppeal(staff.id, appeal.id)).resolves.toMatchObject({
+    await expect(
+      dismissModerationAppeal(staff.id, appeal.id, 'staff_or_user'),
+    ).resolves.toMatchObject({
       status: 'dismissed',
     })
   })

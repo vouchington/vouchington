@@ -1,13 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import getPostAncestorsTool from './get-post-ancestors.mts'
-import getPostDescendantsTool from './get-post-descendants.mts'
-import getPostTool from './get-post.mts'
-import getStoryTool from './get-story.mts'
-import { MCP_POST_FIELDS, mcpPostSchema } from './mcp-post-output.mts'
-import { mcpStoryItemSchema, mcpStorySchema } from './mcp-story-output.mts'
-import { inlineSchemaReferences } from './route-response-schema.mts'
-import type { Tool } from './types.mts'
+import getPostAncestorsTool from '../get-post-ancestors.mts'
+import getPostDescendantsTool from '../get-post-descendants.mts'
+import getPostTool from '../get-post.mts'
+import getStoryTool from '../get-story.mts'
+import { MCP_POST_FIELDS, mcpPostSchema } from '../mcp-post-output.mts'
+import { mcpStoryItemSchema, mcpStorySchema } from '../mcp-story-output.mts'
+import { inlineSchemaReferences } from '../route-response-schema.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 
 type JsonSchema = Record<string, unknown>
 type OpenApi = {

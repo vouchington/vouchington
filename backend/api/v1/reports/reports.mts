@@ -1,4 +1,5 @@
-import { recordStaffOperation } from '@services/moderator-actions/operation'
+import { rerunReportJudgement } from '@services/moderation-reports/rerun-judgement'
+import { listModerationReportPage } from '@services/moderation-reports/list-page'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
@@ -8,19 +9,10 @@ import {
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import {
-  getModerationReportById,
-  listModerationReports,
-  listClusteredModerationReports,
-  listRedactedModerationReports,
   currentUserCanResolveModerationReport,
-  type ModerationReportSort,
   type ModerationReportResolutionStatus,
-  buildReportPageInfo,
-  withoutClusterCursorMetadata,
-  withoutCursorMetadata,
 } from '@services/moderation-reports'
 import { isModerationStaff } from '@services/users'
-import { parseReportCursor, reportCursorScope } from './reports-cursor.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
 import {
   parseReportCursorQueryParams,
@@ -48,7 +40,6 @@ app.route('/api/v1/reports').get(async (ctx: Context) => {
 
   const isStaff = isModerationStaff(currentUser)
   const { status, sort } = parseReportListFilters(ctx.query, isStaff)
-  const sortParam = ctx.query.sort
   const clusterParam = ctx.query.cluster
   validateRequestContract(ctx, 'GET:/api/v1/reports', {
     query: {
@@ -61,79 +52,28 @@ app.route('/api/v1/reports').get(async (ctx: Context) => {
     },
   })
 
-  const beforeCursor = after || before ? parseReportCursor(ctx, after ?? before!) : undefined
-  const cursorDirection: 'after' | 'before' = before ? 'before' : 'after'
-
-  const cursorScope = reportCursorScope(
-    isStaff ? 'staff' : 'member',
-    isStaff ? null : currentUser.id,
-  )
-  ctx.assert(!beforeCursor || beforeCursor.scope === cursorScope, 422, 'Invalid cursor')
-  const options = { limit, status, sort, beforeCursor: beforeCursor ?? null, cursorDirection }
-
-  if (clusterParam === 'entity') {
-    const clusterSort: ModerationReportSort =
-      sortParam === 'created_at_asc' || sortParam === 'created_at_desc'
-        ? sortParam
-        : 'created_at_desc'
+  const options = { limit, after, before, status, sort }
+  if (clusterParam) {
     ctx.assert(isStaff, 403, 'Forbidden')
-    ctx.assert(!beforeCursor || beforeCursor.cluster, 422, 'Invalid cursor')
-    ctx.assert(
-      !beforeCursor || (beforeCursor.sort === clusterSort && beforeCursor.status === status),
-      422,
-      'Invalid cursor',
-    )
-    const response = await listClusteredModerationReports({
-      ...options,
-      beforeCursor: beforeCursor?.cluster ? beforeCursor : null,
-      sort: clusterSort,
-      cursorScope,
-    })
     ctx.json(
-      apiResponse('GET:/api/v1/reports#clustered', {
-        ...response,
-        results: response.results.map(withoutClusterCursorMetadata),
-        duplicate_clusters: response.duplicate_clusters.map(duplicate => ({
-          ...duplicate,
-          clusters: duplicate.clusters.map(withoutClusterCursorMetadata),
-        })),
-      }),
+      apiResponse(
+        'GET:/api/v1/reports#clustered',
+        await listModerationReportPage('staff', null, { ...options, cluster: 'entity' }),
+      ),
     )
-    return
-  }
-
-  ctx.assert(
-    !beforeCursor ||
-      (!beforeCursor.cluster && beforeCursor.sort === sort && beforeCursor.status === status),
-    422,
-    'Invalid cursor',
-  )
-
-  if (isStaff) {
-    const { reports, hasNextPage, hasPreviousPage } = await listModerationReports(options)
-    const responseReports = reports.map(withoutCursorMetadata)
+  } else if (isStaff) {
     ctx.json(
-      apiResponse('GET:/api/v1/reports#staff', {
-        results: responseReports,
-        page_info: buildReportPageInfo(reports, hasNextPage, hasPreviousPage, {
-          sort,
-          status,
-          scope: cursorScope,
-        }),
-      }),
+      apiResponse(
+        'GET:/api/v1/reports#staff',
+        await listModerationReportPage('staff', null, options),
+      ),
     )
   } else {
-    const { reports, hasNextPage, hasPreviousPage } = await listRedactedModerationReports(options)
-    const responseReports = reports.map(withoutCursorMetadata)
     ctx.json(
-      apiResponse('GET:/api/v1/reports#member', {
-        results: responseReports,
-        page_info: buildReportPageInfo(reports, hasNextPage, hasPreviousPage, {
-          sort,
-          status,
-          scope: cursorScope,
-        }),
-      }),
+      apiResponse(
+        'GET:/api/v1/reports#member',
+        await listModerationReportPage('member', currentUser.id, options),
+      ),
     )
   }
 })
@@ -152,6 +92,7 @@ app.route('/api/v1/reports/:id').patch(async (ctx: Context) => {
   const { resolveModerationReport } = await import('@services/moderation-reports/resolve')
   const report = await resolveModerationReport(id, {
     status: body.status,
+    trainingEvidence: 'staff_or_user',
     resolvedById: currentUser.id,
   })
 
@@ -167,24 +108,7 @@ app.route('/api/v1/reports/:id/judgements').post(async (ctx: Context) => {
   const id = validateUUIDParam(ctx, 'id')
   validateRequestContract(ctx, 'POST:/api/v1/reports/:id/judgements', { path: ctx.params })
 
-  const report = await getModerationReportById(id)
-  ctx.assert(report, 404, 'Report not found')
-
-  const { enqueueReportJudgementAndWait } =
-    await import('@queues/ai-agents/enqueues/report-judgement')
-  // Await the enqueue so a queue-write failure surfaces as a 5xx instead of falsely
-  // reporting the manual re-run as queued.
-  await recordStaffOperation(
-    currentUser.id,
-    { actionType: 'report_judgement_rerun', reportId: report.id },
-    () =>
-      enqueueReportJudgementAndWait(
-        report.entity_type,
-        report.entity_id,
-        report.id,
-        currentUser.id,
-      ),
-  )
+  await rerunReportJudgement(currentUser.id, id)
 
   ctx.setStatus(202)
   ctx.json({ queued: true, rerun_by_id: currentUser.id })

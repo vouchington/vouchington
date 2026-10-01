@@ -25,6 +25,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/analytics": "workspace:^",
+    "@data-stores/graceful-shutdown": "workspace:^",
     "@data-stores/valkey-core": "workspace:^",
     "@glidemq/speedkey": "^0.3.0",
     "@modules/on-error": "workspace:^",

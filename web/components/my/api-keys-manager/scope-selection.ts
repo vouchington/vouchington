@@ -34,16 +34,18 @@ export function scopeResourceRows(
   const rows = new Map<string, ScopeResourceRow>()
   for (const entry of catalog) {
     if (!entry.surfaces.includes(surface) || !audiences.includes(entry.audience)) continue
-    const existing = rows.get(entry.resource)
+    const rowResource =
+      entry.scope === `${entry.resource}:${entry.action}` ? entry.resource : entry.scope
+    const existing = rows.get(rowResource)
     const row = existing ?? {
       descriptionKey: entry.description_key,
-      resource: entry.resource,
+      resource: rowResource,
       umbrella: entry.resource === `mcp.${entry.audience}`,
       read: null,
       write: null,
     }
     row[entry.action] = entry
-    rows.set(entry.resource, row)
+    rows.set(rowResource, row)
   }
   return [...rows.values()].toSorted(
     (a, b) => Number(b.umbrella) - Number(a.umbrella) || a.resource.localeCompare(b.resource),

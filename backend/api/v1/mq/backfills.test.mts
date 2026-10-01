@@ -3,7 +3,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { BACKFILL_REGISTRY } from './backfills-registry.mts'
+import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'
 import { postPublication } from '@queues/post-publication/queues'
 
 describe('backfills', () => {

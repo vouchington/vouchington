@@ -3,7 +3,7 @@ import {
   createBackfillDispatcherTrigger,
   createBackfillTrigger,
   createPriorityBackfillTrigger,
-} from '../backfills-trigger-helpers.mts'
+} from '@services/queue-monitoring/backfills-trigger-helpers'
 
 describe('backfill trigger helpers', () => {
   it('awaits the direct enqueue promise', async () => {

@@ -8,8 +8,8 @@ import { activitypubInbox } from '@queues/activitypub-inbox/queues'
 import { scheduledJobManifest as embeddingReconciliationManifest } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
 import { bedrock_embeddings_batch } from '@queues/bedrock-embeddings-batch/queues'
 import { voteWeightQueue } from '@queues/vote-weight/queues'
-import { EXISTING_DISPATCHER_BACKFILLS } from '../backfills-existing-dispatchers.mts'
-import { BACKFILL_REGISTRY } from '../backfills-registry.mts'
+import { EXISTING_DISPATCHER_BACKFILLS } from '@services/queue-monitoring/backfills-existing-dispatchers'
+import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'
 
 const ALLOWED_EXTERNAL_SOURCES = new Set(['external:kagi-smallweb', 'external:ses-inbound-s3'])
 const EXPECTED_EXISTING_DISPATCHER_BACKFILL_IDS = new Set([

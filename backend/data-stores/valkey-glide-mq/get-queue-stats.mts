@@ -1,9 +1,6 @@
-import {
-  registerWorkerQueueScriptFile,
-  workerQueueCommandClient,
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { registerWorkerQueueScriptFile } from './glide-mq-scripts.mts'
+import { workerQueueCommandClient } from './glide-mq-shared-client.mts'
 import { addGracefulShutdownCallback } from '@data-stores/graceful-shutdown'
 import onError from '@modules/on-error'
 import { Queue } from 'glide-mq'

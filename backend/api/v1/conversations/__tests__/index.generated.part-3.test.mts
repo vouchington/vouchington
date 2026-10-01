@@ -42,7 +42,7 @@ describe('index.generated - post-auth request contract validation', () => {
 
     it('should reject a malformed body from a suspended user with 403, not 422', async () => {
       const suspendedUser = await createTestUser()
-      await suspendUser(admin, suspendedUser.id)
+      await suspendUser(admin, suspendedUser.id, 'allow')
       const request = createRequest()
       await request.authenticateAs(suspendedUser)
       await request
@@ -78,7 +78,7 @@ describe('index.generated - post-auth request contract validation', () => {
 
     it('should reject a suspended user with 403 before validating a malformed conversationId', async () => {
       const suspendedUser = await createTestUser()
-      await suspendUser(admin, suspendedUser.id)
+      await suspendUser(admin, suspendedUser.id, 'allow')
       const request = createRequest()
       await request.authenticateAs(suspendedUser)
       await request

@@ -1,5 +1,5 @@
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { getTopicByAny } from '@services/topics/get'
 import { getPrioritizedReferralLinks } from '@services/prioritized-referral-links/get-prioritized'
 import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'

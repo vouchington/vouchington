@@ -1,10 +1,11 @@
-import type { Context } from '@jongleberry/api-server'
+import type { ModerationReportSort } from './sort-sql.mts'
+import assert from 'http-assert'
+import createHttpError from 'http-errors'
 import {
   MODERATION_REPORT_ENTITY_TYPES,
   MODERATION_REPORT_STATUSES,
-  type ModerationReportSort,
   type ModerationReportStatus,
-} from '@services/moderation-reports'
+} from './config.mts'
 import { hasExactKeys, isPreciseTimestampString } from '@modules/pagination'
 
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -28,14 +29,14 @@ export type ParsedReportCursor =
       entityType: string
     })
 
-export function parseReportCursor(ctx: Context, value: string): ParsedReportCursor {
+export function parseReportCursor(value: string): ParsedReportCursor {
   let decoded: unknown
   try {
     decoded = JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as unknown
   } catch {
-    ctx.throw(422, 'Invalid cursor')
+    throw createHttpError(422, 'Invalid cursor')
   }
-  ctx.assert(isReportCursor(decoded), 422, 'Invalid cursor')
+  assert(isReportCursor(decoded), 422, 'Invalid cursor')
   if (decoded.cluster) {
     return {
       cluster: true,

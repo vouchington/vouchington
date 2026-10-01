@@ -1,5 +1,5 @@
 /* eslint-disable no-mistakes/vitest-mock-test-file-naming -- This pure catalog check uses the DB/Valkey-free project selected by the .no-data.mock suffix. */
-import type { Tool, ToolAnnotations, ToolApiEndpoint } from '@voucha/tools/types'
+import type { Tool, ToolAnnotations, ToolApiEndpoint } from '@services/openai-agents/tool-types'
 import { describe, expect, it } from 'vitest'
 import { findApiHintConflicts } from './find-api-hint-conflicts.mts'
 
@@ -32,6 +32,17 @@ describe('findApiHintConflicts', () => {
         fixtureTool('idempotent_write', IDEMPOTENT_WRITE, ['PUT', 'DELETE']),
       ]),
     ).toEqual([])
+  })
+
+  it('uses explicit staff service semantics rather than inferring them from HTTP methods', () => {
+    const audited = fixtureTool('audited_edit', WRITE, ['PUT'])
+    const guarded = fixtureTool('guarded_pause', IDEMPOTENT_WRITE, ['POST'])
+    for (const tool of [audited, guarded]) tool.meta!.surfaces = ['admin_mcp']
+    expect(findApiHintConflicts([audited, guarded])).toEqual([])
+    audited.meta!.annotations = { readOnlyHint: false } as ToolAnnotations
+    expect(findApiHintConflicts([audited])).toEqual([
+      { tool: 'audited_edit', conflict: 'staff write must declare idempotentHint' },
+    ])
   })
 
   it('reports hints that disagree with the named REST methods', () => {

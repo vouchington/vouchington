@@ -38,10 +38,9 @@ Body: `{ "resolution": "dismissed" | "penalized" | "suspended" }`
 
 Applies a `DEFAULT_PENALTY_MULTIPLIER` (0.2) vote weight penalty to all users who upvoted the flagged entity. Enqueues vote weight recalculation for all affected users.
 
-Response: `{ "penalized_user_count": number }`
+Response: `{ "flag": VoteIntegrityFlag, "penalized_user_count": number }`.
 
-This mutation does not resolve the flag. Resolution remains an explicit `PATCH /flags/:id`
-decision, so applying a penalty never invents a resolution or resolver.
+The transaction locks the unresolved flag, applies the penalties, records staff history, and marks it `penalized` with the acting administrator as resolver. The returned flag is required and reflects the committed decision, including when no upvoters exist. Missing flags return 404; already-resolved flags return 409 without new penalties or history. Clients apply the returned flag directly after success and retain primary-read reconciliation for ambiguous failures.
 
 ## Penalties
 

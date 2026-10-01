@@ -159,3 +159,14 @@ Admins can manually manage story membership:
 - **Set official item**: `PUT /api/v1/stories/:storyId/official`
 
 Items with `story_locked_at` set are never modified by auto-clustering.
+
+REST and the admin MCP story tools share administrator, suspension, target and membership guards.
+Each successful add/remove, official-item selection or rename writes the acting staff user's
+`story_item_add`, `story_item_remove`, `story_official_item_set` or `story_rename` audit action in
+the mutation transaction. Story/item identifiers in these non-joined change-history documents stay JSON.
+`get_editorial_story` is the distinct administrative reader and requires the exact editorial read grant.
+
+Moving or removing the selected official article clears the former story's official reference in
+that same transaction and retains its administrator lock, matching the FK's deletion behavior.
+The official setter locks the article before the story lifecycle lock, so it serializes with
+membership changes and cannot select an article that concurrently left the story.

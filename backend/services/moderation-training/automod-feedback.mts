@@ -83,6 +83,7 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
 
   const trainingFeedback = await recordModerationTrainingFeedback(
     {
+      trainingEvidence: 'staff_or_user',
       sourceType: parsed.sourceType,
       eventType: 'automod_reviewed',
       label: input.outcome === 'false_positive' ? 'false_positive' : 'true_positive',

@@ -8,7 +8,7 @@ import {
   reviewPendingTestModerationReportsByPostSlugPrefixes as reviewReportsByPostSlugPrefixes,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { reportCursorScope } from '../reports-cursor.mts'
+import { reportCursorScope } from '@services/moderation-reports/cursor'
 
 // The shared staff report queue is dirty and parallel: other tests leave pending reports behind
 // and never clean up (see backend/test-helpers/AGENTS.md). This search only asserts properties

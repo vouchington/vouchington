@@ -6,7 +6,7 @@ import { language_detection } from '@queues/language-detection/queues'
 import { notifications } from '@queues/notifications/queues'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import { enqueueRssFeedItemPostUpsertJobs } from './upsert-enqueues.mts'
-import { clearQueueStatsCacheForTesting } from '@services/queue-monitoring'
+import { clearQueueStatsCacheForTesting } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
 import {
   BEDROCK_BATCH_MAX_VALUES,
   bedrockEmbeddingsBatchConfig,

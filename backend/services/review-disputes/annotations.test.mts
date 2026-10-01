@@ -1,3 +1,4 @@
+import { deliverReviewDisputeForTest } from '@voucha/test-helpers/dispute-delivery'
 import { describe, it, expect, beforeAll } from 'vitest'
 import {
   createTestUser,
@@ -46,7 +47,13 @@ async function makeAnnotatedPost(staffId: string) {
     claim_text: `Ann svc test ${crypto.randomUUID()}`,
   })
   const { dispute } = await createReviewDispute(claimant, input)
-  await resolveReviewDisputeAnnotate(staffId, dispute.id, 'Service annotation body.')
+  await deliverReviewDisputeForTest(staffId, dispute.id)
+  await resolveReviewDisputeAnnotate(
+    staffId,
+    dispute.id,
+    'Service annotation body.',
+    'staff_or_user',
+  )
   return { postId, disputeId: dispute.id }
 }
 

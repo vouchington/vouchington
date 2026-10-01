@@ -19,7 +19,7 @@ describe('moderation-appeals staff history', () => {
 
   it.each(resolutions)('$name records history with the resolution', async ({ run, action }) => {
     const { actorId, id } = await createStaffResolutionFixture('appeal')
-    await run(actorId, id)
+    await run(actorId, id, 'staff_or_user')
     expect((await readStaffResolutionState('appeal', id)).resolved_at).not.toBeNull()
     expect((await searchModeratorActions({ actorId })).results).toEqual(
       expect.arrayContaining([
@@ -33,7 +33,7 @@ describe('moderation-appeals staff history', () => {
     const before = await readStaffResolutionState('appeal', id)
     await expect(
       withRejectedStaffActionHistory(actorId, async () => {
-        await run(actorId, id)
+        await run(actorId, id, 'staff_or_user')
       }),
     ).rejects.toThrow('staff history rejected')
     expect(await readStaffResolutionState('appeal', id)).toEqual(before)

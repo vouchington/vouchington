@@ -1,3 +1,4 @@
+import { getLatestTestModerationTrainingFeedback } from '@voucha/test-helpers/entities/moderation-training-feedbacks'
 import { describe, expect, it } from 'vitest'
 import {
   createRandomString,
@@ -31,6 +32,37 @@ import { searchRecentAutomodActions } from './recent-actions.mts'
 // See moderation-training.part-2.test.mts for the community-prompt (passive/unpublish) flow,
 // which shares this setup pattern but not any variables with the agent-moderation flow below.
 describe('moderation-training feedback', () => {
+  it('records feedback only after independent staff or user evidence', async () => {
+    const actor = await createTestUser()
+    const postId = await insertTestPost({
+      title: 'Training evidence',
+      slug: `training-${crypto.randomUUID()}`,
+      createdById: actor.id,
+      markdown: 'Evidence',
+    })
+    const input = {
+      postId,
+      sourceType: 'moderation_report',
+      eventType: 'report_resolved',
+      label: 'accepted',
+      humanAction: 'report_reviewed',
+      actorUserId: actor.id,
+    } as const
+    expect(
+      await recordModerationTrainingFeedback({ ...input, trainingEvidence: 'agent' }),
+    ).toBeNull()
+    const target = { postId, sourceType: input.sourceType, humanAction: input.humanAction }
+    expect(await getLatestTestModerationTrainingFeedback(target)).toBeUndefined()
+    const feedback = await recordModerationTrainingFeedback({
+      ...input,
+      trainingEvidence: 'staff_or_user',
+    })
+    expect(feedback).toMatchObject({ actor_user_id: actor.id, source_type: 'moderation_report' })
+    expect(await getLatestTestModerationTrainingFeedback(target)).toMatchObject({
+      label: 'accepted',
+    })
+  })
+
   it('finds recent low-confidence agent removals and records explicit moderator feedback', async () => {
     const owner = await createTestUser()
     const random = createRandomString(8)
@@ -126,6 +158,7 @@ describe('moderation-training feedback', () => {
     expect(actions.stats.total_count).toBeGreaterThanOrEqual(1)
 
     await recordModerationTrainingFeedback({
+      trainingEvidence: 'staff_or_user',
       sourceType: 'agent_moderation_vote',
       eventType: 'agent_accuracy_voted',
       label: 'true_positive',

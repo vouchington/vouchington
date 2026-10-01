@@ -37,6 +37,7 @@ describe('resolveModerationReport', () => {
     })
 
     const report = await resolveModerationReport(reportId, {
+      trainingEvidence: 'staff_or_user',
       resolvedById: moderator.id,
       status: 'dismissed',
     })
@@ -89,6 +90,7 @@ describe('resolveModerationReport', () => {
 
     await expect(
       resolveModerationReport(reportId, {
+        trainingEvidence: 'staff_or_user',
         communityId: otherCommunity.id,
         resolvedById: moderator.id,
         status: 'reviewed',
@@ -124,12 +126,14 @@ describe('resolveModerationReport', () => {
       reason: 'other',
     })
     await resolveModerationReport(reportId, {
+      trainingEvidence: 'staff_or_user',
       resolvedById: moderator.id,
       status: 'reviewed',
     })
 
     await expect(
       resolveModerationReport(reportId, {
+        trainingEvidence: 'staff_or_user',
         resolvedById: moderator.id,
         status: 'dismissed',
       }),
@@ -159,10 +163,7 @@ describe('resolveModerationReport', () => {
       withFailingTransactionQueryOptionsForTest('recordModeratorAction', queryOptions =>
         resolveModerationReport(
           reportId,
-          {
-            resolvedById: moderator.id,
-            status: 'dismissed',
-          },
+          { trainingEvidence: 'staff_or_user', resolvedById: moderator.id, status: 'dismissed' },
           queryOptions,
         ),
       ),

@@ -47,7 +47,7 @@ import {
   processCrawlChunkBatchResults,
   processImageBatchResultsInBatches,
 } from '@services/bedrock-embeddings-batch/result-processing'
-import { getQueueStats } from '@services/queue-monitoring/get-queue-stats'
+import { getQueueStats } from '@data-stores/valkey-glide-mq/get-queue-stats'
 import { EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME } from '@queues/bedrock-embeddings/config'
 import { getBacklogThreshold, getStaleTtlHours } from '@services/bedrock-embeddings/batch/config'
 

@@ -1,4 +1,4 @@
-import type { ToolOutputSchema } from './types.mts'
+import type { ToolOutputSchema } from '@services/openai-agents/tool-types'
 
 export type JsonSchema = Record<string, unknown>
 

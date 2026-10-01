@@ -52,6 +52,22 @@ describe('scopeResourceRows', () => {
     expect(adminEntries.map(e => e.audience)).toEqual(adminEntries.map(() => 'admin'))
   })
 
+  it('retains every exact administrator capability independently', () => {
+    const expected = catalog.filter(
+      entry => entry.audience === 'admin' && entry.surfaces.includes('oauth'),
+    )
+    const actual = scopeResourceRows(catalog, 'oauth', ['admin'])
+      .flatMap(row => [row.read, row.write])
+      .filter(entry => entry != null)
+    expect(actual.map(entry => entry.scope).toSorted()).toEqual(
+      expected.map(entry => entry.scope).toSorted(),
+    )
+    expect(toggleScope(catalog, [], 'moderation:approve', true).toSorted()).toEqual([
+      'moderation:approve',
+      'moderation:read',
+    ])
+  })
+
   it('never offers administrator scopes on API keys, which are OAuth-only for admin MCP', () => {
     expect(scopeResourceRows(catalog, 'api-key', ['user', 'admin'])).not.toContainEqual(
       expect.objectContaining({ resource: 'mcp.admin' }),

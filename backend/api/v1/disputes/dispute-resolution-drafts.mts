@@ -1,4 +1,4 @@
-import { recordStaffOperation } from '@services/moderator-actions/operation'
+import { rerunReviewDisputeResolutionDraft } from '@services/review-disputes/rerun-resolution-draft'
 import type { Context } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import { apiResponse } from '../../response-contract.mts'
@@ -7,10 +7,7 @@ import {
   validateRequestContract,
   validateUUIDParam,
 } from '../../response-helpers.mts'
-import {
-  currentUserCanResolveReviewDispute,
-  getReviewDisputeByIdFromPrimary,
-} from '@services/review-disputes'
+import { currentUserCanResolveReviewDispute } from '@services/review-disputes'
 
 app.route('/api/v1/disputes/:id/resolution-drafts').post(async (ctx: Context) => {
   const currentUser = await requireAuthAndRateLimit(
@@ -19,24 +16,9 @@ app.route('/api/v1/disputes/:id/resolution-drafts').post(async (ctx: Context) =>
     'POST:/api/v1/disputes/:id/resolution-drafts',
   )
   const id = validateUUIDParam(ctx, 'id')
-  validateRequestContract(ctx, 'POST:/api/v1/disputes/:id/resolution-drafts', {
-    path: ctx.params,
-  })
+  validateRequestContract(ctx, 'POST:/api/v1/disputes/:id/resolution-drafts', { path: ctx.params })
 
-  const dispute = await getReviewDisputeByIdFromPrimary(id)
-  ctx.assert(dispute, 404, 'Dispute not found')
-  ctx.assert(
-    dispute.approved_at == null && dispute.sent_at == null && dispute.resolved_at == null,
-    422,
-    'Only unapproved pending disputes can be rerun',
-  )
-  const { enqueueDisputeResolutionAndWait } =
-    await import('@queues/ai-agents/enqueues/dispute-resolution')
-  await recordStaffOperation(
-    currentUser.id,
-    { actionType: 'dispute_resolution_draft_rerun', reviewDisputeId: id },
-    () => enqueueDisputeResolutionAndWait(id, currentUser.id),
-  )
+  await rerunReviewDisputeResolutionDraft(currentUser.id, id)
 
   ctx.setStatus(202)
   ctx.json(

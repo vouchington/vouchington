@@ -8,7 +8,7 @@ import { COMMUNITY_PAGE_LIMIT, mcpCommunityEntryProperties } from './mcp-communi
 import { mcpPostSchema } from './mcp-post-output.mts'
 import { inlineSchemaReferences } from './route-response-schema.mts'
 import searchCommunitiesTool from './search-communities.mts'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 
 type JsonSchema = Record<string, unknown>
 type OpenApi = {

@@ -1,5 +1,5 @@
 import type { BasicUser } from '@services/users/types'
-import type { Tool, ToolApiEndpoint, ToolOutputSchema } from './types.mts'
+import type { Tool, ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
 import {
   getIndividualCards,
   getIndividualRewardsProgramPointValuations,

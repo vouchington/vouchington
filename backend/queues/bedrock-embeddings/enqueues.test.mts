@@ -8,7 +8,7 @@ import {
 } from './enqueues.mts'
 import { bedrock_embeddings_nova_multimodal_v1_single } from './queues.mts'
 import { EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME } from './config.mts'
-import { clearQueueStatsCacheForTesting } from '@services/queue-monitoring'
+import { clearQueueStatsCacheForTesting } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
 import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
 import {
   overrideDynamicConfigFieldsForTest,

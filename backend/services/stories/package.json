@@ -41,6 +41,7 @@
     "@services/entity-fetch": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/feeds": "workspace:^",
+    "@services/moderator-actions": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/referral-program-link-validations": "workspace:^",

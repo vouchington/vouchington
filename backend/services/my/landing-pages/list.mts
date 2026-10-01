@@ -1,3 +1,5 @@
+import assert from 'http-assert'
+import { getPrivateUserByAny } from '@services/users'
 import { read } from '@data-stores/psql'
 import { buildPageInfo, decodeScopedTierCursor } from '@modules/pagination'
 import { validateUUID } from '@modules/utils'
@@ -32,6 +34,7 @@ export async function listLandingPagesForUserPage(
   options: { limit?: number; after?: string | null } = {},
 ): Promise<LandingPagesPage> {
   validateUUID(userId)
+  assert(await getPrivateUserByAny(userId), 404, 'User not found')
   const limit = Math.floor(Math.max(1, Math.min(options.limit ?? DEFAULT_LIMIT, MAX_LIMIT)))
   const scope = getLandingPagesForUserCursorScope(userId)
   const cursor = options.after

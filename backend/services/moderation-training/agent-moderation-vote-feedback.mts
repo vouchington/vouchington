@@ -1,9 +1,11 @@
+import type { ModerationTrainingEvidence } from './types.mts'
 import assert from 'http-assert'
 import { read, type QueryOptions } from '@data-stores/psql'
 import { recordModerationTrainingFeedback } from './feedback.mts'
 
 export async function recordAgentModerationVoteTrainingFeedback(
   input: {
+    trainingEvidence: ModerationTrainingEvidence
     actorUserId: string
     agentModerationId: string
     score: number | null
@@ -15,6 +17,7 @@ export async function recordAgentModerationVoteTrainingFeedback(
   const score = input.score ?? 0
   await recordModerationTrainingFeedback(
     {
+      trainingEvidence: input.trainingEvidence,
       sourceType: 'agent_moderation_vote',
       eventType: 'agent_accuracy_voted',
       label: getAgentModerationVoteLabel(score, context.flagged),

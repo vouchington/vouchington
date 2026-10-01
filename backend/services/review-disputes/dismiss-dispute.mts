@@ -1,7 +1,11 @@
+import { assertReviewDisputeDelivered } from './assert-delivered.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { recordModerationTrainingFeedback } from '@services/moderation-training'
+import {
+  recordModerationTrainingFeedback,
+  type ModerationTrainingEvidence,
+} from '@services/moderation-training'
 import type { ReviewDisputeResponse } from './types.mts'
 import { getReviewDisputeAfterMutation } from './get.mts'
 import { appendLifecycleChange } from './lifecycle.mts'
@@ -11,7 +15,9 @@ import { DISPUTE_RETURNING, type ReviewDisputeResolutionRow } from './resolve-sh
 export async function dismissReviewDispute(
   staffUserId: string,
   disputeId: string,
+  trainingEvidence: ModerationTrainingEvidence,
 ): Promise<ReviewDisputeResponse> {
+  await assertReviewDisputeDelivered(disputeId)
   const now = new Date()
   await using query = await beginTransaction()
   const { rows } = await query(
@@ -40,6 +46,7 @@ export async function dismissReviewDispute(
       `),
     recordModerationTrainingFeedback(
       {
+        trainingEvidence,
         sourceType: 'review_dispute',
         eventType: 'dispute_resolved',
         label: 'rejected',

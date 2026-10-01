@@ -2,7 +2,10 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { beginTransaction } from '@data-stores/psql'
 import { maybeResolveCase } from '@services/moderation-cases'
-import { recordModerationTrainingFeedback } from '@services/moderation-training'
+import {
+  recordModerationTrainingFeedback,
+  type ModerationTrainingEvidence,
+} from '@services/moderation-training'
 import { assertModerationAppealDelivered } from './assert-delivered.mts'
 import type { ModerationAppeal } from './config.mts'
 import { getModerationAppealAfterMutation } from './get.mts'
@@ -49,6 +52,7 @@ export async function finalizeDeliveredModerationAppeal(
   staffUserId: string,
   appealId: string,
   resolution: DeliveredAppealResolution,
+  trainingEvidence: ModerationTrainingEvidence,
 ): Promise<ModerationAppealResponse> {
   await assertModerationAppealDelivered(appealId)
   const now = new Date()
@@ -79,6 +83,7 @@ export async function finalizeDeliveredModerationAppeal(
       `),
     recordModerationTrainingFeedback(
       {
+        trainingEvidence,
         sourceType: 'moderation_appeal',
         eventType: 'appeal_resolved',
         label: resolution.trainingLabel,

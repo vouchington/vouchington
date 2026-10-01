@@ -59,6 +59,11 @@ describe('apply-ring-penalty', () => {
       const result = await applyVoteRingPenalty(flag!.id, adminUser.id)
       expect(result.penalized_user_count).toBe(3)
 
+      expect(result.flag).toMatchObject({
+        id: flag!.id,
+        resolution: 'penalized',
+        resolved_by_id: adminUser.id,
+      })
       // Verify penalties have the correct multiplier
       const penalties = await getTestPenaltiesByFlagId(flag!.id)
       expect(penalties).toHaveLength(3)
@@ -68,12 +73,12 @@ describe('apply-ring-penalty', () => {
         expect(penalty.revoked_at).toBeNull()
       }
 
-      const unchangedFlag = await getVoteIntegrityFlagByIdFromPrimary(flag!.id)
-      expect(unchangedFlag).toMatchObject({
+      const resolvedFlag = await getVoteIntegrityFlagByIdFromPrimary(flag!.id)
+      expect(resolvedFlag).toMatchObject({
         id: flag!.id,
-        resolution: null,
-        resolved_at: null,
-        resolved_by_id: null,
+        resolution: 'penalized',
+        resolved_at: expect.any(Date),
+        resolved_by_id: adminUser.id,
       })
     }, 60_000)
 
@@ -90,28 +95,19 @@ describe('apply-ring-penalty', () => {
       await expect(applyVoteRingPenalty(uuidv7(), adminUser.id)).rejects.toThrow(Error)
     }, 60_000)
 
-    it('can reapply a flag-sourced penalty after the previous penalty is revoked', async () => {
+    it('rejects a repeated request even after a penalty was revoked', async () => {
       const postId = await makePost(randomSlug())
       const upvoter = await createTestUserDirect({ username: randomUsername() })
       await insertTestPostVote(postId, upvoter!.id, '9.9.9.9', 1)
-
       const flag = await createVoteIntegrityFlag('post', postId, 'ip_correlation', {})
-      expect(flag).not.toBeNull()
-
-      await expect(applyVoteRingPenalty(flag!.id, adminUser.id)).resolves.toEqual({
-        penalized_user_count: 1,
+      const first = await applyVoteRingPenalty(flag!.id, adminUser.id)
+      expect(first.penalized_user_count).toBe(1)
+      const [penalty] = await getTestPenaltiesByFlagId(flag!.id)
+      await revokeVoteWeightPenalty(penalty!.id, adminUser.id)
+      await expect(applyVoteRingPenalty(flag!.id, adminUser.id)).rejects.toMatchObject({
+        status: 409,
       })
-      const [firstPenalty] = await getTestPenaltiesByFlagId(flag!.id)
-      expect(firstPenalty).toBeDefined()
-
-      await revokeVoteWeightPenalty(firstPenalty!.id, adminUser.id)
-      await expect(applyVoteRingPenalty(flag!.id, adminUser.id)).resolves.toEqual({
-        penalized_user_count: 1,
-      })
-
-      const penalties = await getTestPenaltiesByFlagId(flag!.id)
-      expect(penalties).toHaveLength(2)
-      expect(penalties.filter(p => p.revoked_at === null)).toHaveLength(1)
+      expect(await getTestPenaltiesByFlagId(flag!.id)).toHaveLength(1)
     }, 60_000)
   })
 })

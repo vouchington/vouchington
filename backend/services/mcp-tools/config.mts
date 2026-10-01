@@ -2,7 +2,7 @@ import {
   OAUTH_PROTECTED_RESOURCE_PATHS,
   type OAuthResourceAudience,
 } from '@services/oauth-authorization-server/resources'
-import type { ToolSurface } from '@voucha/tools/types'
+import type { ToolSurface } from '@services/openai-agents/tool-types'
 
 export type McpServerConfig = {
   audience: OAuthResourceAudience

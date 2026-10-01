@@ -27,6 +27,8 @@
     "@modules/csv": "workspace:^",
     "@modules/queue-errors": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/admin-imports": "workspace:^",
+    "@queues/article-sync": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/referral-program-link-validations": "workspace:^",

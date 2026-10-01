@@ -1,3 +1,5 @@
+import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
+import { findQueueByName } from '@services/queue-monitoring/queue-inventory'
 import { expectStaffOperationHistory } from '@voucha/test-helpers/staff-operation-history'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -14,6 +16,29 @@ describe('index', () => {
   })
 
   describe('Queue Monitoring API Routes', () => {
+    it('repeated queue controls create only one audited operation per state change', async () => {
+      const actor = await createTestUser({ administrator: true })
+      const queue = findQueueByName('psql')!
+      await queue.resume()
+      const request = createRequest()
+      await request.authenticateAs(actor)
+      try {
+        await request.post('/api/v1/mq/queues/psql/pause').expect(200)
+        await request.post('/api/v1/mq/queues/psql/pause').expect(200)
+        await request.post('/api/v1/mq/queues/psql/resume').expect(200)
+        await request.post('/api/v1/mq/queues/psql/resume').expect(200)
+        const history = await readStaffActionHistory(actor.id)
+        for (const type of ['queue_pause', 'queue_resume']) {
+          expect(
+            history.filter(row => row.action_type === type && row.metadata.phase === 'requested'),
+          ).toHaveLength(1)
+          await expectStaffOperationHistory(actor.id, type)
+        }
+      } finally {
+        await queue.resume()
+      }
+    })
+
     describe('GET /api/v1/mq/stats', () => {
       it('should return 401 when not authenticated', async () => {
         const request = createRequest()
@@ -108,6 +133,7 @@ describe('index', () => {
       it('should pause a valid queue', async () => {
         const request = createRequest()
         await request.authenticateAs(admin)
+        await findQueueByName('psql')!.resume()
         const response = await request.post('/api/v1/mq/queues/psql/pause').expect(200)
 
         expect(response.body).toEqual({ success: true })
@@ -136,6 +162,7 @@ describe('index', () => {
       it('should resume a valid queue', async () => {
         const request = createRequest()
         await request.authenticateAs(admin)
+        await findQueueByName('psql')!.pause()
         const response = await request.post('/api/v1/mq/queues/psql/resume').expect(200)
 
         expect(response.body).toEqual({ success: true })

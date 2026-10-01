@@ -5,6 +5,8 @@ import {
   insertTestStory,
   insertTestRssFeedItem,
   createTestUrlWithHostname,
+  createTestUserDirect,
+  setTestItemStoryId,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 
@@ -31,19 +33,24 @@ describe('update', () => {
 
   it('updateStoryTitle updates title', async () => {
     const story = await insertTestStory({ title: 'Old Title' })
-    const updated = await updateStoryTitle(story.id, 'New Title')
+    const updated = await updateStoryTitle((await createTestUserDirect()).id, story.id, 'New Title')
     expect(updated).toBeDefined()
     expect(updated!.title).toBe('New Title')
   })
 
   it('updateStoryTitle returns null for unknown story', async () => {
-    const result = await updateStoryTitle(randomUUID(), 'Title')
+    const result = await updateStoryTitle((await createTestUserDirect()).id, randomUUID(), 'Title')
     expect(result).toBeNull()
   })
 
   it('adminSetStoryOfficialItem sets lock', async () => {
     const story = await insertTestStory()
-    const result = await adminSetStoryOfficialItem(story.id, itemId)
+    await setTestItemStoryId(itemId, story.id)
+    const result = await adminSetStoryOfficialItem(
+      (await createTestUserDirect()).id,
+      story.id,
+      itemId,
+    )
     expect(result).toBeDefined()
     expect(result!.official_rss_feed_item_id).toBe(itemId)
     expect(result!.official_locked_at).toBeDefined()

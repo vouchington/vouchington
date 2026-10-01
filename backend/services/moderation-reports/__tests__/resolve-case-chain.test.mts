@@ -40,13 +40,21 @@ describe('moderation case chain (report resolution)', () => {
     })
 
     // Resolve only one of two pending reports — case must remain open
-    await resolveModerationReport(reportId1, { resolvedById: staff.id, status: 'reviewed' })
+    await resolveModerationReport(reportId1, {
+      trainingEvidence: 'staff_or_user',
+      resolvedById: staff.id,
+      status: 'reviewed',
+    })
 
     const openCase = await findOpenCaseForEntity({ entityType: 'user', entityId: localTarget.id })
     expect(openCase?.id).toBe(localCaseId)
 
     // Resolve the second report — case should now close
-    await resolveModerationReport(reportId2, { resolvedById: staff.id, status: 'dismissed' })
+    await resolveModerationReport(reportId2, {
+      trainingEvidence: 'staff_or_user',
+      resolvedById: staff.id,
+      status: 'dismissed',
+    })
 
     const closedCase = await findOpenCaseForEntity({ entityType: 'user', entityId: localTarget.id })
     expect(closedCase).toBeNull()
@@ -61,7 +69,11 @@ describe('moderation case chain (report resolution)', () => {
       entityType: 'user',
       entityId: localTarget.id,
     })
-    await resolveModerationReport(reportId, { resolvedById: staff.id, status: 'reviewed' })
+    await resolveModerationReport(reportId, {
+      trainingEvidence: 'staff_or_user',
+      resolvedById: staff.id,
+      status: 'reviewed',
+    })
 
     // First case should now be closed
     const firstCase = await getCaseById(firstCaseId)

@@ -121,9 +121,11 @@ export function useVoteIntegrityFlags(
       )
       return
     }
-    let data: { penalized_user_count: number }
+    let data: { flag: VoteIntegrityFlag; penalized_user_count: number }
     try {
-      data = await applyVoteRingPenalty<{ penalized_user_count: number }>(flagId)
+      data = await applyVoteRingPenalty<{ flag: VoteIntegrityFlag; penalized_user_count: number }>(
+        flagId,
+      )
     } catch (error) {
       if (isAmbiguousIntegrityMutationFailure(error)) {
         mutations.preventPenaltyRetry(flagId)
@@ -140,13 +142,8 @@ export function useVoteIntegrityFlags(
     mutations.preventPenaltyRetry(flagId)
     penaltyBaselineIds.current.delete(flagId)
     setPenaltyResults(previous => ({ ...previous, [flagId]: data.penalized_user_count }))
-    try {
-      const { flag } = await getVoteIntegrityFlagClient<{ flag: VoteIntegrityFlag }>(flagId)
-      applyConfirmedFlag(flag)
-      mutations.release(flagId)
-    } catch {
-      mutations.requireReconciliation(flagId, 'penalty-confirmation')
-    }
+    applyConfirmedFlag(data.flag)
+    mutations.release(flagId)
   }
 
   function updateResolution(flagId: string, resolution: FlagResolution) {

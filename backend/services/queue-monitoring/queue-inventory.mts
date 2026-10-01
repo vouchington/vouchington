@@ -50,7 +50,7 @@ import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
 import { userDeletions } from '@queues/user-deletions/queues'
 import type { Queue } from 'glide-mq'
 
-export default [
+const allQueues = [
   emails,
   entitiesListeners,
   urlsDomainsBlacklist,
@@ -105,3 +105,9 @@ export default [
 ]
   .flat(Infinity)
   .filter(Boolean) as Queue[]
+
+export default allQueues
+export const QUEUE_NAMES = [...new Set(allQueues.map(queue => queue.name))]
+export function findQueueByName(name: string) {
+  return allQueues.find(queue => queue.name === name)
+}

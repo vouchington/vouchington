@@ -1,3 +1,4 @@
+import { deliverReviewDisputeForTest } from '@voucha/test-helpers/dispute-delivery'
 import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -108,8 +109,24 @@ describe('POST /api/v1/disputes/:id/resolution', () => {
       .expect(422)
   })
 
+  it.each(['dismiss', 'remove', 'annotate'])('rejects %s before delivery', async action => {
+    const { dispute } = await makeDisputeFixture(staffUser.id)
+    const request = createRequest()
+    await request.authenticateAs(staffUser)
+    await request
+      .post(`/api/v1/disputes/${dispute.id}/resolution`)
+      .set('Content-Type', 'application/json')
+      .send({ action, body_text: 'Staff annotation.' })
+      .expect(422)
+    const history = (await readStaffActionHistory(staffUser.id)).filter(
+      row => row.review_dispute_id === dispute.id,
+    )
+    expect(history).toEqual([])
+  })
+
   it('dismiss action resolves the dispute', async () => {
     const { dispute } = await makeDisputeFixture(staffUser.id)
+    await deliverReviewDisputeForTest(staffUser.id, dispute.id)
     const request = createRequest()
     await request.authenticateAs(staffUser)
     const response = await request
@@ -125,6 +142,7 @@ describe('POST /api/v1/disputes/:id/resolution', () => {
 
   it('remove action resolves the dispute', async () => {
     const { dispute } = await makeDisputeFixture(staffUser.id)
+    await deliverReviewDisputeForTest(staffUser.id, dispute.id)
     const request = createRequest()
     await request.authenticateAs(staffUser)
     const response = await request
@@ -151,6 +169,7 @@ describe('POST /api/v1/disputes/:id/resolution', () => {
 
   it('annotate action resolves the dispute with an annotation', async () => {
     const { dispute } = await makeDisputeFixture(staffUser.id)
+    await deliverReviewDisputeForTest(staffUser.id, dispute.id)
     const request = createRequest()
     await request.authenticateAs(staffUser)
     const response = await request

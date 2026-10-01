@@ -1,5 +1,5 @@
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { getTopicDataPointInsights } from '@services/data-points/insights'
 import { DATA_POINT_VERTICALS } from '@ts-shared/data-points'
 import type { Money } from '@ts-shared/money'

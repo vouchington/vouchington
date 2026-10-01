@@ -1,5 +1,5 @@
 import type { BasicUser, PrivateUser } from '@services/users/types'
-import type { Tool, ToolMeta } from './types.mts'
+import type { Tool, ToolMeta } from '@services/openai-agents/tool-types'
 import { requirePrivateToolUser } from './private-user.mts'
 import { objectSchema, successSchema } from './output-schema-shapes.mts'
 import { componentSchema } from './route-response-schema.mts'

@@ -1,5 +1,6 @@
+import { getAggregatedQueueStats } from '@data-stores/valkey-glide-mq/get-queue-stats'
 import type { Context } from '@jongleberry/api-server'
-import { currentUserCanAccessQueueStats, getAggregatedQueueStats } from '@services/queue-monitoring'
+import { currentUserCanAccessQueueStats } from '@services/queue-monitoring'
 import app from '../../../app.mts'
 import { requireAuthAndRateLimit } from '../../../response-helpers.mts'
 import '../scheduled-jobs.mts'

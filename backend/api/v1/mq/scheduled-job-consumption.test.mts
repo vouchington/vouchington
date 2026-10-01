@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { ScheduledJobManifest } from '@modules/scheduled-job-manifest'
 import { SCHEDULE_DEFINITIONS } from '../../../entrypoints/worker-cpu/schedule-definitions.mts'
-import { SCHEDULED_JOB_MANIFESTS } from './scheduled-job-manifests.mts'
+import { SCHEDULED_JOB_MANIFESTS } from '@services/queue-monitoring/scheduled-job-manifests'
 
 const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url))
 const schedulePaths = globSync('backend/queues/*/enqueues/schedules.mts', {

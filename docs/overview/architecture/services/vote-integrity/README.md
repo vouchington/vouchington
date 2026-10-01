@@ -14,7 +14,7 @@ Business logic for detecting and acting on suspicious voting patterns.
 | `getVoteIntegrityFlags`                     | Cursor-paginated flag list with optional status filter                 |
 | `getVoteIntegrityFlagByIdFromPrimary`       | Exact primary-pool flag read for mutation reconciliation               |
 | `resolveVoteIntegrityFlag`                  | Marks a flag as resolved                                               |
-| `applyVoteRingPenalty`                      | Applies multiplier penalties without resolving the source flag         |
+| `applyVoteRingPenalty`                      | Atomically applies multiplier penalties and resolves the source flag   |
 | `revokeVoteWeightPenalty`                   | Revokes a penalty and enqueues vote weight recalculation               |
 | `getVoteWeightPenalties`                    | Scoped-cursor penalty list with status, source, user, and flag filters |
 | `getVoteWeightPenaltiesByFlagIdFromPrimary` | Primary-pool flag-scoped list for mutation reconciliation              |

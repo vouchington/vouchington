@@ -3,13 +3,13 @@ import {
   documentedResponseSchema,
 } from '@voucha/test-helpers/openapi-documented-response'
 import { describe, expect, it } from 'vitest'
-import getReferralLinksTool from './get-referral-links.mts'
-import getTopicDetailsTool from './get-topic-details.mts'
-import manageMyCardsTool from './manage-my-cards.mts'
-import manageMyPointValuationsTool from './manage-my-point-valuations.mts'
-import manageMyRewardsStatusesTool from './manage-my-rewards-statuses.mts'
-import manageMySpendingTool from './manage-my-spending.mts'
-import updateMyFinancialProfileTool from './update-my-financial-profile.mts'
+import getReferralLinksTool from '../get-referral-links.mts'
+import getTopicDetailsTool from '../get-topic-details.mts'
+import manageMyCardsTool from '../manage-my-cards.mts'
+import manageMyPointValuationsTool from '../manage-my-point-valuations.mts'
+import manageMyRewardsStatusesTool from '../manage-my-rewards-statuses.mts'
+import manageMySpendingTool from '../manage-my-spending.mts'
+import updateMyFinancialProfileTool from '../update-my-financial-profile.mts'
 
 type JsonSchema = Record<string, unknown>
 

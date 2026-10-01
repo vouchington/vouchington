@@ -10,7 +10,7 @@ import {
   readTestMcpCallAuditRowText,
 } from '@voucha/test-helpers/entities/mcp-call-audit'
 import { ALL_TOOLS } from '@voucha/tools/registry/index'
-import type { Tool } from '@voucha/tools/types'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { issueTestOAuthTokensForClient } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import type { PrivateUser } from '@services/users/types'
 

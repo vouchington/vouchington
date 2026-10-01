@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/services/mcp-tools/README.md](../../../../../backend/services/mcp-tools/README.md)
 
-Implements the MCP (Model Context Protocol) server logic: listing tools, executing tool calls, and handling stateless HTTP requests using the MCP SDK.
+Lists and executes MCP tools through stateless HTTP requests.
 
 ## Modules
 
@@ -18,7 +18,7 @@ Implements the MCP (Model Context Protocol) server logic: listing tools, executi
 | `call-tool.mts`                      | Execute a tool call with full authorization enforcement                                      |
 | `serialize-mcp-tool-result.mts`      | Bounded JSON serializer for MCP tool results                                                 |
 | `build-tool-result.mts`              | Build the `tools/call` result; validate and attach `structuredContent` for declared schemas  |
-| `schema-validator.mts`               | The one Ajv setup for tool arguments and output schemas                                      |
+| `@voucha/tools/schema-validator`     | The one Ajv setup for tool arguments and output schemas                                      |
 | `handle-request.mts`                 | Stateless per-request MCP transport using `WebStandardStreamableHTTPServerTransport`         |
 | `instructions.mts`                   | Per-surface server `instructions` sent on `initialize`                                       |
 | `index.mts`                          | Barrel: exports request handlers, helpers, and user/admin MCP configs                        |
@@ -149,3 +149,5 @@ no audit row names it.
 - Registry: [tools registry](../../../../../backend/tools/registry/)
 - API: [MCP API](../../../../../backend/api/v1/mcp/)
 - API Keys: [api-keys service](../../../../../backend/services/api-keys/)
+
+See [staff actions](read-tools.md#administrative-actions).

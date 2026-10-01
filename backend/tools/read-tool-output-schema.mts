@@ -1,5 +1,5 @@
 import { componentSchema } from './route-response-schema.mts'
-import type { ToolOutputSchema } from './types.mts'
+import type { ToolOutputSchema } from '@services/openai-agents/tool-types'
 
 type JsonSchema = Record<string, unknown>
 

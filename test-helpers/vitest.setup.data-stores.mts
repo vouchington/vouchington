@@ -91,7 +91,7 @@ export async function teardown() {
     /**
      * Clean all queues to avoid unnecessary calls to external services like OpenAI.
      */
-    const { default: queues } = await import('@voucha/api/queues')
+    const { default: queues } = await import('@services/queue-monitoring/queue-inventory')
     await Promise.all(
       queues.map((queue: { obliterate(opts: { force: boolean }): Promise<void> }) =>
         queue.obliterate({ force: true }),

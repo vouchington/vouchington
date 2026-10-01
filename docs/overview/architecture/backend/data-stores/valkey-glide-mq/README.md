@@ -18,6 +18,8 @@ workers, flows) declare this package instead of reaching into the `@data-stores/
 - `workerQueueConnection`, `buildWorkerQueueSettings`, `workerQueuePrefix` - re-exported from
   `@data-stores/valkey-core/glide-mq-client`.
 
+Queue-stat read, aggregate, and bounded oldest-waiting-age functions are exported by `get-queue-stats.mts`. Their cache and Lua reads live here so queue producers can inspect backpressure without depending on the higher-level queue-monitoring service. Staff inventories, queue controls, scheduled jobs, and backfills remain in that service.
+
 ## Related
 
 - Worker Queue client group, shutdown sequencing, and enqueue retry semantics:

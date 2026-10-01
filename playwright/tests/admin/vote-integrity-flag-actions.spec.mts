@@ -104,8 +104,8 @@ test.describe('Vote-integrity flag actions', () => {
     await penaltyBtn.click()
     await penaltyResponse
 
-    // Button reflects the penalty count and is disabled once applied.
-    await expect(penaltyBtn).toContainText('penalized')
-    await expect(penaltyBtn).toBeDisabled()
+    // The committed penalized flag leaves the pending queue immediately.
+    await expect(flagRow).not.toBeAttached()
+    await expect(page.getByTestId('vote-integrity-flag-reconciliation')).toHaveCount(0)
   })
 })

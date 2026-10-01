@@ -120,7 +120,7 @@ async function dispatchRemove(
     if (post?.rejected_at) {
       result = 'already-removed'
     } else {
-      await updateClearanceStatus(entityId, 'rejected', systemUserId)
+      await updateClearanceStatus(entityId, 'rejected', systemUserId, 'agent')
       result = 'removed'
     }
   }
@@ -164,7 +164,11 @@ async function resolveReportIfPending(
 ): Promise<void> {
   if (!reportId) return
   try {
-    await resolveModerationReport(reportId, { status, resolvedById: systemUserId })
+    await resolveModerationReport(reportId, {
+      trainingEvidence: 'agent',
+      status,
+      resolvedById: systemUserId,
+    })
   } catch (err) {
     if ((err as { status?: number }).status === 409) return
     // v8 ignore next -- non-409 DB errors propagate; no test fixture can trigger this without mocking

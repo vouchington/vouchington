@@ -127,7 +127,7 @@ describe('copyright repeat-infringer review outcomes', () => {
 
     const thirdNoticeId = await confirmTestRepeatInfringerNotice(poster.id, moderator)
     await confirmTestRepeatInfringerNotice(poster.id, moderator)
-    await suspendUser(admin, poster.id, 'already suspended')
+    await suspendUser(admin, poster.id, 'allow', 'already suspended')
     const before = await getPrivateUserByAny(poster.id)
     const dirtyBefore = await getTestPostPublicationDirtyWorkForScope({
       type: 'author',

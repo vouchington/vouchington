@@ -1,6 +1,60 @@
 {
   "scopes": [
     {
+      "action": "write",
+      "audience": "admin",
+      "description_key": null,
+      "requires": "account-enforcement:read",
+      "resource": "account-enforcement",
+      "scope": "account-enforcement:penalize",
+      "surfaces": ["oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "admin",
+      "description_key": null,
+      "requires": null,
+      "resource": "account-enforcement",
+      "scope": "account-enforcement:read",
+      "surfaces": ["oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "admin",
+      "description_key": null,
+      "requires": "account-enforcement:read",
+      "resource": "account-enforcement",
+      "scope": "account-enforcement:suspend",
+      "surfaces": ["oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "admin",
+      "description_key": null,
+      "requires": "account-enforcement:read",
+      "resource": "account-enforcement",
+      "scope": "account-enforcement:vote-weight",
+      "surfaces": ["oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "admin",
+      "description_key": null,
+      "requires": "account-enforcement:read",
+      "resource": "account-enforcement",
+      "scope": "account-enforcement:write",
+      "surfaces": ["oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "admin",
+      "description_key": null,
+      "requires": null,
+      "resource": "analytics",
+      "scope": "analytics:read",
+      "surfaces": ["oauth"]
+    },
+    {
       "action": "read",
       "audience": "user",
       "description_key": null,
@@ -47,6 +101,15 @@
     },
     {
       "action": "read",
+      "audience": "admin",
+      "description_key": null,
+      "requires": null,
+      "resource": "copyright-notices",
+      "scope": "copyright-notices:read",
+      "surfaces": ["oauth"]
+    },
+    {
+      "action": "read",
       "audience": "user",
       "description_key": null,
       "requires": null,
@@ -62,6 +125,24 @@
       "resource": "domain-ratings",
       "scope": "domain-ratings:read",
       "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "admin",
+      "description_key": null,
+      "requires": null,
+      "resource": "editorial",
+      "scope": "editorial:read",
+      "surfaces": ["oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "admin",
+      "description_key": null,
+      "requires": "editorial:read",
+      "resource": "editorial",
+      "scope": "editorial:write",
+      "surfaces": ["oauth"]
     },
     {
       "action": "read",
@@ -154,6 +235,51 @@
       "surfaces": ["api-key", "oauth"]
     },
     {
+      "action": "write",
+      "audience": "admin",
+      "description_key": null,
+      "requires": "moderation:read",
+      "resource": "moderation",
+      "scope": "moderation:agent-votes",
+      "surfaces": ["oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "admin",
+      "description_key": null,
+      "requires": "moderation:read",
+      "resource": "moderation",
+      "scope": "moderation:ai-rerun",
+      "surfaces": ["oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "admin",
+      "description_key": null,
+      "requires": "moderation:read",
+      "resource": "moderation",
+      "scope": "moderation:approve",
+      "surfaces": ["oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "admin",
+      "description_key": null,
+      "requires": null,
+      "resource": "moderation",
+      "scope": "moderation:read",
+      "surfaces": ["oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "admin",
+      "description_key": null,
+      "requires": "moderation:read",
+      "resource": "moderation",
+      "scope": "moderation:write",
+      "surfaces": ["oauth"]
+    },
+    {
       "action": "read",
       "audience": "user",
       "description_key": null,
@@ -242,6 +368,42 @@
       "resource": "rss",
       "scope": "rss:read",
       "surfaces": ["api-key"]
+    },
+    {
+      "action": "write",
+      "audience": "admin",
+      "description_key": null,
+      "requires": "site-operations:read",
+      "resource": "site-operations",
+      "scope": "site-operations:config",
+      "surfaces": ["oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "admin",
+      "description_key": null,
+      "requires": "site-operations:read",
+      "resource": "site-operations",
+      "scope": "site-operations:jobs",
+      "surfaces": ["oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "admin",
+      "description_key": null,
+      "requires": "site-operations:read",
+      "resource": "site-operations",
+      "scope": "site-operations:queues",
+      "surfaces": ["oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "admin",
+      "description_key": null,
+      "requires": null,
+      "resource": "site-operations",
+      "scope": "site-operations:read",
+      "surfaces": ["oauth"]
     },
     {
       "action": "read",

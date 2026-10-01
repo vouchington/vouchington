@@ -1,5 +1,5 @@
 import type { BasicUser } from '@services/users/types'
-import type { Tool } from './types.mts'
+import type { Tool } from '@services/openai-agents/tool-types'
 import { getTrendingPosts, trendingPostsPaginationParser } from '@services/trending-posts'
 import type { TrendingPostsResult } from '@services/trending-posts/types'
 import { resolveTopic } from './resolve-topic.mts'
