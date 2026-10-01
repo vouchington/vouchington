@@ -25,7 +25,7 @@ That means:
 
 ## Filing a Copyright Notice
 
-Sign in and use the form at `/copyright/notices/new`. The form asks for:
+Use the form at `/copyright/notices/new`. You don't need to sign in. The form asks for:
 
 - your full legal name, mailing address and email;
 - a description of your copyrighted work;
@@ -34,17 +34,19 @@ Sign in and use the form at `/copyright/notices/new`. The form asks for:
 - a statement, under penalty of perjury, that your notice is accurate and that you're authorized to act for the owner; and
 - your electronic signature.
 
-Once the designated agent's contact details are published on `/copyright/designated-agent`, you can also send a written notice there.
+Once the designated agent's contact details are published on `/copyright/designated-agent`, you can also send a written notice there. Use that route if you can't open the image yourself.
 
-**Your privacy:** if we accept your notice, signed-in members can see the case with your current public Voucha profile. Your legal name, contact details and signature aren't shown on the case.
+**Your privacy:** if we accept your notice and you filed while signed in, signed-in members can see the case with your current public Voucha profile. If you filed without signing in, the case shows no profile for you. Your legal name, contact details and signature aren't shown on the case.
 
 ## What Happens After a Notice
 
 1. **We confirm we got it.** We email you a receipt.
-2. **A moderator reviews it.** A person reviews every notice before we act. We don't act on a notice that's missing required information. We email you when the status changes.
+2. **A moderator reviews it.** A person reviews every notice before we act. We don't act on a notice that's missing required information. If we need more information, we contact you at the email address on your notice.
 3. **If we accept it,** the image is hidden in that post for everyone. The rest of the post stays up, and other posts aren't changed. We email the poster, and the case appears at `/copyright/notices`.
 
 A case records a claim. It doesn't decide who owns the work or whether anyone infringed.
+
+**If you filed without signing in,** you can't follow the case online. The confirmation page and your receipt email show your case ID, so keep it. If we send you an access token for the case, you can use it at `/copyright/notices/:id/guest` to correct your notice, withdraw it, or report a court or Copyright Claims Board filing.
 
 ## If Your Image Was Taken Down
 
