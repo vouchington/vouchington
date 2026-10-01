@@ -48,13 +48,13 @@ RANGE partitioned on `subject_id` (children: default, no retention owner, access
 
 **Indexes:**
 
+- `idx_relat__post__catego__topic_alias__votes_score_sort__pos__id`: `CREATE INDEX idx_relat__post__catego__topic_alias__votes_score_sort__pos__id ON ONLY public.relation__post__category__topic_alias USING btree (votes_score_sort DESC, id) WHERE (votes_score_net > (0)::double precision)`
 - `idx_relation__post__category__topic_alias__id`: `CREATE INDEX idx_relation__post__category__topic_alias__id ON ONLY public.relation__post__category__topic_alias USING btree (id)`
 - `idx_relation__post__category__topic_alias__reverse_index`: `CREATE INDEX idx_relation__post__category__topic_alias__reverse_index ON ONLY public.relation__post__category__topic_alias USING btree (object_id, subject_id)`
 - `idx_relation__post__category__topic_alias__subject__best`: `CREATE INDEX idx_relation__post__category__topic_alias__subject__best ON ONLY public.relation__post__category__topic_alias USING btree (subject_id, votes_score_sort DESC, created_at DESC, object_id DESC) WHERE (deleted_at IS NULL)`
 - `idx_relation__post__category__topic_alias__subject__newest`: `CREATE INDEX idx_relation__post__category__topic_alias__subject__newest ON ONLY public.relation__post__category__topic_alias USING btree (subject_id, created_at DESC, object_id DESC) WHERE (deleted_at IS NULL)`
 - `idx_relation__post__category__topic_alias__trending_topics`: `CREATE INDEX idx_relation__post__category__topic_alias__trending_topics ON ONLY public.relation__post__category__topic_alias USING btree (id, object_id) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))`
 - `idx_relation__post__category__topic_alias__votes_score_sort__id`: `CREATE INDEX idx_relation__post__category__topic_alias__votes_score_sort__id ON ONLY public.relation__post__category__topic_alias USING btree (votes_score_sort DESC, id)`
-- `idx_relation__post__category__topic_alias__votes_score_sort__po`: `CREATE INDEX idx_relation__post__category__topic_alias__votes_score_sort__po ON ONLY public.relation__post__category__topic_alias USING btree (votes_score_sort DESC, id) WHERE (votes_score_net > (0)::double precision)`
 - `relation__post__category__topic_alias_pkey`: `CREATE UNIQUE INDEX relation__post__category__topic_alias_pkey ON ONLY public.relation__post__category__topic_alias USING btree (subject_id, object_id)`
 - `relation__post__category__topic_alias_subject_id_id_key`: `CREATE UNIQUE INDEX relation__post__category__topic_alias_subject_id_id_key ON ONLY public.relation__post__category__topic_alias USING btree (subject_id, id)`
 

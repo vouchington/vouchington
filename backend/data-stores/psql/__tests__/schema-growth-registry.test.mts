@@ -87,19 +87,12 @@ describe('PostgreSQL schema growth registry', () => {
         )
         .map(({ table_name }) => table_name),
     ).toEqual([...PARTITION_POLICIES.keys()].toSorted())
-    expect(rows.filter(({ partition_strategy }) => partition_strategy === 'l')).toEqual([
-      expect.objectContaining({ table_name: 'entity_relation_votes' }),
-    ])
-    expect(rows.filter(({ partition_strategy }) => partition_strategy === null)).not.toContainEqual(
-      expect.objectContaining({ table_name: 'entity_relation_votes' }),
-    )
+    expect(rows.filter(({ partition_strategy }) => partition_strategy === 'l')).toEqual([])
     for (const row of rows) {
       const policy = PARTITION_POLICIES.get(row.table_name)
       if (!policy) continue
-      expect(row.partition_strategy).toBe(policy.strategy === 'LIST -> RANGE' ? 'l' : 'r')
-      expect(row.partition_key).toBe(
-        policy.strategy === 'LIST -> RANGE' ? 'LIST (relation_table)' : `RANGE (${policy.key})`,
-      )
+      expect(row.partition_strategy).toBe('r')
+      expect(row.partition_key).toBe(`RANGE (${policy.key})`)
     }
   })
 })

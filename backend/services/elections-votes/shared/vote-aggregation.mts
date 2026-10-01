@@ -3,6 +3,7 @@ import {
   ELECTION_ENTITY_TABLE_IDENTIFIERS,
   VOTE_ENTITY_ID_COLUMN_IDENTIFIERS,
   VOTE_TABLE_IDENTIFIERS,
+  getEntityRelationVoteTableIdentifier,
 } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { AggregatedElectionStats, EntityElectionConfig } from './types.mts'
@@ -68,7 +69,11 @@ function buildAggregateElectionVoteStatsQuery(
       FROM `)
 
   query.append(
-    assertWhitelistedSqlIdentifier(config.voteTable, VOTE_TABLE_IDENTIFIERS, 'voteTable'),
+    assertWhitelistedSqlIdentifier(
+      relationTable ? getEntityRelationVoteTableIdentifier(relationTable) : config.voteTable,
+      VOTE_TABLE_IDENTIFIERS,
+      'voteTable',
+    ),
   )
   query.append(sql` AS election_vote`)
   appendLegacySentimentPolicyJoin(config, query)
@@ -82,9 +87,6 @@ function buildAggregateElectionVoteStatsQuery(
     ),
   )
   query.append(sql` = ${entityId}
-  `)
-  if (relationTable)
-    query.append(sql`      AND relation_table = ${relationTable}
   `)
   query.append(sql`      ORDER BY election_vote.user_id, election_vote.id DESC
     ), aggregated_stats AS (

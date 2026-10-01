@@ -1,16 +1,8 @@
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import type { SchemaSnapshot, SchemaTableSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
 
-import createEntityRelationsSql from '../../backend/data-stores/psql/config-driven/0000-00-01-entity-relations.mts'
 import { checkRelationalStorage } from './relational-storage-guard.mts'
-import {
-  readTargetEntityRelationSql,
-  verifyEntityRelationVotePartitionForeignKeysAt,
-} from './partition-foreign-key-proof.mts'
+
 import { emptySchemaSnapshot, plainSnapshotTable } from './schema-snapshot-test-fixtures.mts'
 
 function column(type: string, generatedExpression: string | null = null) {
@@ -146,27 +138,5 @@ describe('relational storage guard hardening', () => {
       expect.arrayContaining([expect.stringContaining('new_records.work_key: UUID reference')]),
     )
     expect(danglingErrors.join('\n')).not.toContain('encoded entity reference')
-  })
-
-  it('evaluates partition FK SQL from the requested repo root', async () => {
-    const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
-    await expect(readTargetEntityRelationSql(repoRoot)).resolves.toBe(createEntityRelationsSql())
-    await expect(verifyEntityRelationVotePartitionForeignKeysAt(repoRoot)).resolves.toEqual([])
-    const target = await mkdtemp(join(tmpdir(), 'voucha-partition-fk-'))
-    try {
-      const generatorDir = join(target, 'backend/data-stores/psql/config-driven')
-      await mkdir(generatorDir, { recursive: true })
-      const sql = createEntityRelationsSql().replaceAll(
-        'FOREIGN KEY (subject_id, entity_relation_id)',
-        'UNIQUE (subject_id, entity_relation_id)',
-      )
-      await writeFile(
-        join(generatorDir, '0000-00-01-entity-relations.mts'),
-        `export default function createEntityRelationsSql() {\n  return ${JSON.stringify(sql)}\n}\n`,
-      )
-      await expect(verifyEntityRelationVotePartitionForeignKeysAt(target)).resolves.not.toEqual([])
-    } finally {
-      await rm(target, { force: true, recursive: true })
-    }
   })
 })

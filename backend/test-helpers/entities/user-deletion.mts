@@ -51,7 +51,7 @@ export async function startPausedTestUserSoftDeletion(
 export async function countTestUserDeletionEntityRelationVotes(userId: string): Promise<number> {
   const { rows } = await read<{ count: number }>(sql`
     SELECT COUNT(*)::int AS count
-    FROM entity_relation_votes
+    FROM view_entity_relation_votes
     WHERE user_id = ${userId}
   `)
   return rows[0]?.count ?? 0

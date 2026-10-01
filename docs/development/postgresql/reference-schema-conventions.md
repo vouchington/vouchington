@@ -23,3 +23,8 @@
 Session and vote user agents share the insert-only `user_agent_strings` lookup. Each normalized
 string has one row and no source discriminator or `updated_at`; see
 [shared lookup rules](../postgres-schema-rules.md#shared-lookup-tables).
+
+Relation votes use metadata-generated standalone RANGE parents with table-level composite foreign
+keys. The shared index-name builder retains owner words while fitting 63 bytes; cross-family reads
+use the enum-tagged generated union view. See the
+[R3 contract](../postgres-schema-rules.md#r3--normalize-ids-are-fk-columns-json-is-for-schemaless-data).

@@ -48,6 +48,13 @@ async function cleanupRelationFamily(
   const owner = `retained_${metadata.table_name}`
   const targetColumn = getElectedRelationTargetColumn(relationTable)
   await using query = await beginTransaction()
+  if (!keys)
+    await query(
+      `/* ensureRetainedRelationCleanupProgress */
+       INSERT INTO retained_relation_identity_cleanup_progress (entity_relation)
+       VALUES ($1) ON CONFLICT (entity_relation) DO NOTHING`,
+      [relationTable],
+    )
   const cursor = keys
     ? null
     : (
@@ -58,12 +65,10 @@ async function cleanupRelationFamily(
           `/* lockRetainedRelationCleanupProgress */
            SELECT cursor_subject_id, cursor_relation_id
            FROM retained_relation_identity_cleanup_progress
-           WHERE relation_table = $1 FOR UPDATE`,
+           WHERE entity_relation = $1 FOR UPDATE`,
           [relationTable],
         )
       ).rows[0]
-  if (!keys && !cursor)
-    throw new Error(`Missing retained relation cleanup cursor: ${relationTable}`)
   const { rows: candidates } = await query<{ subject_id: string; id: string }>(
     `/* listRetainedRelationCleanupCandidates */
      SELECT candidate.subject_id, candidate.id FROM ${owner} candidate
@@ -104,7 +109,7 @@ async function cleanupRelationFamily(
       `/* checkpointRetainedRelationCleanup */
        UPDATE retained_relation_identity_cleanup_progress
        SET cursor_subject_id = $2, cursor_relation_id = $3, updated_at = CURRENT_TIMESTAMP
-       WHERE relation_table = $1`,
+       WHERE entity_relation = $1`,
       [relationTable, last?.subject_id ?? null, last?.id ?? null],
     )
   await query.commit()

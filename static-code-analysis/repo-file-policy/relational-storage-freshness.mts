@@ -7,13 +7,11 @@ import {
   ALLOWED_OPAQUE_JSON,
   ALLOWED_TOKEN_CURSOR_PROTOCOL_ID,
   GENERATED_FK_ALIASES,
-  PARTITION_FOREIGN_KEY_COLUMNS,
 } from './relational-storage-catalog.mts'
 import {
   isGeneratedAlias,
   relationalStorageDiagnostic,
   type ObservedRelationalColumns,
-  type RelationalStorageOptions,
 } from './relational-storage-type-rules.mts'
 
 type Catalog = ReadonlySet<string>
@@ -54,7 +52,6 @@ export function appendCatalogFreshness(
   schema: SchemaSnapshot,
   observed: ObservedRelationalColumns,
   errors: string[],
-  options: RelationalStorageOptions,
 ): void {
   checkFreshness('opaque JSON', ALLOWED_OPAQUE_JSON, observed.json, errors)
   checkFreshness(
@@ -80,16 +77,5 @@ export function appendCatalogFreshness(
         `stale or invalid generated FK alias catalog entry: ${alias.expression}; ${alias.oneTargetCheck}`,
       ),
     )
-  }
-  for (const key of PARTITION_FOREIGN_KEY_COLUMNS) {
-    const [tableName, columnName] = key.split('.')
-    if (
-      options.verifiedPartitionForeignKeys?.has(key) &&
-      tableName &&
-      columnName &&
-      schema.tables[tableName]?.columns[columnName]
-    )
-      continue
-    errors.push(relationalStorageDiagnostic(key, 'partition FK proof is missing or stale'))
   }
 }

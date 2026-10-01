@@ -1658,9 +1658,25 @@ rules:
         - web/**/*.{ts,mts,tsx,js,sql}
       extraGeneratedColumns:
         - { table: agent_moderation_votes, column: created_at }
-        - { table: entity_relation_votes, column: created_at }
         - { table: hostname_votes, column: created_at }
         - { table: post_votes, column: created_at }
+        - { table: relation__post__category__topic__votes, column: created_at }
+        - { table: relation__post__category__topic_alias__votes, column: created_at }
+        - { table: relation__post__related__post__votes, column: created_at }
+        - { table: relation__post__related__url__votes, column: created_at }
+        - { table: relation__rss_feed_item__category__topic__votes, column: created_at }
+        - { table: relation__rss_feed_item__category__topic_alias__votes, column: created_at }
+        - { table: relation__topic__category__topic__votes, column: created_at }
+        - { table: relation__topic__faq__post__votes, column: created_at }
+        - { table: relation__topic__faq__url__votes, column: created_at }
+        - { table: relation__topic__guide__url__votes, column: created_at }
+        - { table: relation__topic__landing_page__url__votes, column: created_at }
+        - { table: relation__topic__publisher_type__topic__votes, column: created_at }
+        - { table: relation__topic__related__post__votes, column: created_at }
+        - { table: relation__topic__related__topic__votes, column: created_at }
+        - { table: relation__topic__related__url__votes, column: created_at }
+        - { table: relation__topic__terms_of_service__url__votes, column: created_at }
+        - { table: relation__user__category__topic__votes, column: created_at }
         - { table: rss_feed_item_votes, column: created_at }
         - { table: topic_votes, column: created_at }
         - { table: user_deletion_relation_impacts, column: created_at }

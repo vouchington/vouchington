@@ -248,7 +248,7 @@ describe('required EXPLAIN plan shapes', () => {
 
   it('requires entity-relation vote lookups to prune both partition levels', () => {
     const queryText =
-      'SELECT * FROM entity_relation_votes WHERE relation_table = $1 AND entity_relation_id = $2'
+      'SELECT * FROM relation__post__category__topic__votes WHERE entity_relation_id = $1'
     const pruned = result('entity-relation-votes-by-target', queryText, {
       Plan: {
         'Node Type': 'Seq Scan',
@@ -272,7 +272,7 @@ describe('required EXPLAIN plan shapes', () => {
         ],
       },
     })
-    expect(() => assertRequiredPlanShape(fanout)).toThrow('both partition levels')
+    expect(() => assertRequiredPlanShape(fanout)).toThrow('concrete vote table')
   })
 
   it('requires spending-category pages to use personal and household UUID index order', () => {

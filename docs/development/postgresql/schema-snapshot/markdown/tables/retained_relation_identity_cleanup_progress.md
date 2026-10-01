@@ -8,12 +8,12 @@ Not partitioned — growth: bounded.
 
 | Column               | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                   |
 | -------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------- |
-| `relation_table`     | `text`                     | no       |                     |          |           |           | Metadata family selector for cleanup, not a persisted relation reference. |
+| `entity_relation`    | `elected_entity_relations` | no       |                     |          |           |           | Metadata family selector for cleanup, not a persisted relation reference. |
 | `cursor_subject_id`  | `uuid`                     | yes      |                     |          |           |           | Last scanned subject position, not a durable relationship.                |
 | `cursor_relation_id` | `uuid`                     | yes      |                     |          |           |           | Last scanned relation position, not a durable relationship.               |
 | `updated_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                           |
 
-**Primary key:** `PRIMARY KEY (relation_table)`
+**Primary key:** `PRIMARY KEY (entity_relation)`
 
 **Unique constraints:**
 _none_
@@ -27,7 +27,7 @@ _none_
 
 **Indexes:**
 
-- `retained_relation_identity_cleanup_progress_pkey`: `CREATE UNIQUE INDEX retained_relation_identity_cleanup_progress_pkey ON public.retained_relation_identity_cleanup_progress USING btree (relation_table)`
+- `retained_relation_identity_cleanup_progress_pkey`: `CREATE UNIQUE INDEX retained_relation_identity_cleanup_progress_pkey ON public.retained_relation_identity_cleanup_progress USING btree (entity_relation)`
 
 **Triggers:**
 _none_

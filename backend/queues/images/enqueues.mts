@@ -20,14 +20,13 @@ const enqueueExtractImageMetadataJob = createEnqueueFunction<{ id: string }, 'ex
 })
 
 export function enqueueExtractImageMetadata(imageId: string): EnqueueReturnType {
+  const jobId = `extract-image-metadata-${imageId}`
   return enqueueExtractImageMetadataJob(
     { id: imageId },
     {
       priority: PRIORITY_HIGH,
-      deduplication: {
-        id: `extract-image-metadata-${imageId}`,
-        mode: 'simple',
-      },
+      jobId,
+      deduplication: { id: jobId, mode: 'simple' },
     },
   )
 }

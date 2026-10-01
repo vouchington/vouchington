@@ -30,7 +30,6 @@ import { checkPostPublicationReaderInventory } from './post-publication-reader-i
 import { checkPostPublicationWriterInventory } from './post-publication-writer-inventory.mts'
 import { checkPublicSourceLiterals } from './public-source-literal-guard.mts'
 import { checkRelationalStorage } from './relational-storage-guard.mts'
-import { verifyEntityRelationVotePartitionForeignKeysAt } from './partition-foreign-key-proof.mts'
 
 type RepoFilePolicyOptions = {
   schemaSnapshot?: unknown
@@ -63,22 +62,7 @@ export async function checkRepoFilePolicy(
   checkMonetaryContracts(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
   checkMonetarySnapshot(schema, errors)
   const injectedSnapshot = options.schemaSnapshot !== undefined
-  const partitionFkErrors = injectedSnapshot
-    ? []
-    : await verifyEntityRelationVotePartitionForeignKeysAt(ctx.repoRoot)
-  errors.push(...partitionFkErrors)
-  errors.push(
-    ...checkRelationalStorage(schema, {
-      enforceCatalogFreshness: !injectedSnapshot,
-      verifiedPartitionForeignKeys:
-        !injectedSnapshot && partitionFkErrors.length === 0
-          ? new Set([
-              'entity_relation_votes.entity_relation_id',
-              'entity_relation_votes.subject_id',
-            ])
-          : new Set(),
-    }),
-  )
+  errors.push(...checkRelationalStorage(schema, { enforceCatalogFreshness: !injectedSnapshot }))
   checkSplitMarkdownCanonicalLinkGuard(ctx.repoRoot, trackedFiles, errors)
   checkUuidv7CreatedAtDdl(ctx.repoRoot, trackedFiles, errors)
   checkModerationHistoryGuard(ctx.repoRoot, trackedFiles, errors)

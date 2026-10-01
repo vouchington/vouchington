@@ -77,7 +77,7 @@ export async function clearTestStoryPostRelatedUrlVote(
       SELECT id FROM relation__post__related__url
       WHERE subject_id = ${postId} AND object_id = ${urlId}
     ), cleared AS (
-      DELETE FROM entity_relation_votes
+      DELETE FROM relation__post__related__url__votes
       WHERE entity_relation_id IN (SELECT id FROM target)
     )
     UPDATE relation__post__related__url relation
@@ -104,7 +104,7 @@ export async function getTestStoryPostRelatedUrlVoteState(
     FROM relation__post__related__url relation
     LEFT JOIN LATERAL (
       SELECT user_id, score
-      FROM entity_relation_votes
+      FROM view_entity_relation_votes
       WHERE entity_relation_id = relation.id
       ORDER BY id DESC
       LIMIT 1

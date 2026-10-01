@@ -2,9 +2,34 @@ import { describe, expect, it } from 'vitest'
 import { ELECTION_VOTE_POLICY_SCORES } from '@voucha/types/entities/election'
 import idempotent from '../0000-00-00-entity-elections.mts'
 import generateEntityRelationsSql from '../0000-00-01-entity-relations.mts'
+import generateRelationIndexesSql from '../0000-00-01b-entity-relation-indexes.mts'
+import {
+  entityRelationMetadatum,
+  getEntityRelationVoteTableName,
+} from '@voucha/types/entities/entity-relations-metadata'
 import { VOTE_SCHEMA_CONFIGS } from '../utils/election-schema-config.mts'
 
 describe('0000-00-00-entity-elections', () => {
+  it('keeps every generated declaration within PostgreSQL identifier length without collisions', () => {
+    const generated = [
+      idempotent(),
+      generateEntityRelationsSql(),
+      generateRelationIndexesSql(),
+    ].join('\n')
+    const declarations = [
+      ...generated.matchAll(
+        /(?:CREATE\s+(?:OR\s+REPLACE\s+)?(?:UNIQUE\s+)?(?:TABLE|INDEX|TYPE|VIEW|TRIGGER|FUNCTION)\s+(?:IF\s+NOT\s+EXISTS\s+)?|CONSTRAINT\s+)("[^"\n]+"|[a-z_][a-z_0-9]*)/gi,
+      ),
+    ]
+    expect(declarations.length).toBeGreaterThan(100)
+    const names = declarations.map(match => match[1]!.replaceAll('"', ''))
+    for (const name of names) expect(Buffer.byteLength(name)).toBeLessThanOrEqual(63)
+    const indexes = [
+      ...generated.matchAll(/CREATE\s+(?:UNIQUE\s+)?INDEX\s+IF\s+NOT\s+EXISTS\s+([a-z_0-9]+)/gi),
+    ].map(match => match[1])
+    expect(new Set(indexes).size).toBe(indexes.length)
+  })
+
   it('stores the current outbound ActivityPub Like generation on post vote events', () => {
     const sql = idempotent()
 
@@ -73,7 +98,12 @@ describe('0000-00-00-entity-elections', () => {
       'agent_moderation_votes',
       ELECTION_VOTE_POLICY_SCORES.moderation,
     )
-    assertScoresAllowed(relationSql, 'entity_relation_votes', ELECTION_VOTE_POLICY_SCORES.relation)
+    for (const metadata of entityRelationMetadatum.filter(item => item.election))
+      assertScoresAllowed(
+        relationSql,
+        getEntityRelationVoteTableName(metadata),
+        ELECTION_VOTE_POLICY_SCORES.relation,
+      )
   })
 
   it('range-partitions each vote table by its target UUIDv7 with one default partition', () => {

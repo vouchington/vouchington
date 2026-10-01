@@ -50,10 +50,10 @@ export async function seedPruningProof(): Promise<void> {
       [relationId, fixture.posts[index], fixture.topicId, fixture.userId],
     )
     await write(
-      `/* seedPruningProofVote */ INSERT INTO entity_relation_votes
-        (relation_table, user_id, subject_id, entity_relation_id, score)
-       VALUES ($1, $2, $3, $4, 1)`,
-      [fixture.relationTable, fixture.userId, fixture.posts[index], relationId],
+      `/* seedPruningProofVote */ INSERT INTO relation__post__category__topic__votes
+        (user_id, subject_id, entity_relation_id, score)
+       VALUES ($1, $2, $3, 1)`,
+      [fixture.userId, fixture.posts[index], relationId],
     )
   }
   await write(
@@ -62,12 +62,18 @@ export async function seedPruningProof(): Promise<void> {
     [fixture.otherRelation, fixture.topicId, fixture.otherTopicId, fixture.userId],
   )
   await write(
-    `/* seedPruningProofOtherVote */ INSERT INTO entity_relation_votes
-      (relation_table, user_id, subject_id, entity_relation_id, score)
-     VALUES ('relation__topic__publisher_type__topic', $1, $2, $3, 1)`,
+    `/* seedPruningProofOtherVote */ INSERT INTO relation__topic__publisher_type__topic__votes
+      (user_id, subject_id, entity_relation_id, score)
+     VALUES ( $1, $2, $3, 1)`,
     [fixture.userId, fixture.topicId, fixture.otherRelation],
   )
-  for (const table of [...PRUNING_PARENTS, 'entity_relation_votes', 'posts', 'topics', 'users']) {
+  for (const table of [
+    ...PRUNING_PARENTS,
+    'relation__topic__publisher_type__topic__votes',
+    'posts',
+    'topics',
+    'users',
+  ]) {
     // All identifiers come from the fixed table list above.
     await write(`/* seedPruningProofAnalyze */ ANALYZE ${table}`)
   }
@@ -97,9 +103,11 @@ export async function assertPruningFixturePlacement(): Promise<Record<string, st
   }
   const { rows: otherVotes } = await write<{ count: string }>(
     `/* assertPruningFixtureOtherVote */ SELECT count(*)::text AS count
-     FROM entity_relation_votes WHERE relation_table = 'relation__topic__publisher_type__topic'`,
+     FROM relation__topic__publisher_type__topic__votes`,
   )
-  if (otherVotes[0]?.count !== '1') throw new Error('alternate LIST vote fixture is missing')
-  evidence['entity_relation_votes:other-list'] = ['relation__topic__publisher_type__topic:1']
+  if (otherVotes[0]?.count !== '1') throw new Error('alternate concrete vote fixture is missing')
+  evidence['relation__topic__publisher_type__topic__votes:other-family'] = [
+    'relation__topic__publisher_type__topic:1',
+  ]
   return evidence
 }

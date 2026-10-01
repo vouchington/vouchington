@@ -29,7 +29,7 @@ export async function getEntityRelationElectionsByTargetBatch(
       )
       return `SELECT 'entity_relation_election' AS __entity_type, t.id, t.votes_score_net, t.votes_count_up, t.votes_count_down, input_data.input_order
       FROM "${table}" t
-      JOIN input_data ON t.id = input_data.input_value AND input_data.relation_table = '${table}'
+      JOIN input_data ON t.id = input_data.input_value AND input_data.entity_relation = '${table}'
       WHERE t.deleted_at IS NULL`
     },
   )
@@ -38,7 +38,7 @@ export async function getEntityRelationElectionsByTargetBatch(
     `/* getEntityRelationElectionsByTargetBatch */
     WITH input_data AS (
       SELECT unnest($1::uuid[]) AS input_value,
-             unnest($2::text[]) AS relation_table,
+             unnest($2::text[]) AS entity_relation,
              unnest($3::int[]) AS input_order
     )
     ${tableSelects.join('\n    UNION ALL\n    ')}

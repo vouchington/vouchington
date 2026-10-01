@@ -30,8 +30,8 @@ _none_
 
 **Indexes:**
 
+- `idx_relation__user__dismiss_recommendati__user__subject__newest`: `CREATE INDEX idx_relation__user__dismiss_recommendati__user__subject__newest ON public.relation__user__dismiss_recommendation__user USING btree (subject_id, created_at DESC, object_id DESC) WHERE (deleted_at IS NULL)`
 - `idx_relation__user__dismiss_recommendation__user__reverse_index`: `CREATE INDEX idx_relation__user__dismiss_recommendation__user__reverse_index ON public.relation__user__dismiss_recommendation__user USING btree (object_id, subject_id)`
-- `idx_relation__user__dismiss_recommendation__user__subject__newe`: `CREATE INDEX idx_relation__user__dismiss_recommendation__user__subject__newe ON public.relation__user__dismiss_recommendation__user USING btree (subject_id, created_at DESC, object_id DESC) WHERE (deleted_at IS NULL)`
 - `relation__user__dismiss_recommendation__user_pkey`: `CREATE UNIQUE INDEX relation__user__dismiss_recommendation__user_pkey ON public.relation__user__dismiss_recommendation__user USING btree (subject_id, object_id)`
 
 **Triggers:**

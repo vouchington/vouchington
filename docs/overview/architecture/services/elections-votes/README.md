@@ -13,15 +13,19 @@ Config-driven service for managing election voting across 7 entity types.
 | Post             | `post_votes`             | [`post/config.mts`](../../../../../backend/services/elections-votes/post/config.mts)                         | `PUT` / `DELETE /api/v1/posts/:id/vote`             |
 | Topic            | `topic_votes`            | [`topic/config.mts`](../../../../../backend/services/elections-votes/topic/config.mts)                       | `PUT` / `DELETE /api/v1/topics/:id/vote`            |
 | Hostname         | `hostname_votes`         | [`hostname/config.mts`](../../../../../backend/services/elections-votes/hostname/config.mts)                 | `PUT` / `DELETE /api/v1/hostnames/:id/vote`         |
-| Entity Relation  | `entity_relation_votes`  | [`entity-relation/config.mts`](../../../../../backend/services/elections-votes/entity-relation/config.mts)   | `PUT` / `DELETE /api/v1/entity-relations/:id/vote`  |
+| Entity Relation  | `<relation>__votes`      | [`entity-relation/config.mts`](../../../../../backend/services/elections-votes/entity-relation/config.mts)   | `PUT` / `DELETE /api/v1/entity-relations/:id/vote`  |
 | Agent Moderation | `agent_moderation_votes` | [`agent-moderation/config.mts`](../../../../../backend/services/elections-votes/agent-moderation/config.mts) | `PUT` / `DELETE /api/v1/agent-moderations/:id/vote` |
 | RSS Feed Item    | `rss_feed_item_votes`    | [`rss-feed-item/config.mts`](../../../../../backend/services/elections-votes/rss-feed-item/config.mts)       | `PUT` / `DELETE /api/v1/rss-feed-items/:id/vote`    |
 | User Vouch       | `user_vouch_votes`       | [`user-vouch/config.mts`](../../../../../backend/services/elections-votes/user-vouch/config.mts)             | `PUT` / `DELETE /api/v1/users/:id/vouch-vote`       |
 
-`entity_relation_votes` is an append-only list-partitioned parent. Each election-capable relation
-has its own generated `<relation_table>__votes` partition with a composite foreign key on
-`(subject_id, entity_relation_id)`, so relation partition pruning and target deletion are enforced
-without changing the vote API.
+Each election-capable relation has its own generated `<relation>__votes` parent, partitioned by
+RANGE on `entity_relation_id`. Its table-level composite foreign key on
+`(subject_id, entity_relation_id)` enforces the relation target and cascades target deletion.
+Scoped readers and writers select that concrete parent; export and other cross-family readers use
+`view_entity_relation_votes`, whose `entity_relation` tag uses the metadata-generated
+`elected_entity_relations` enum. Relation votes remain binary, and the neutral/semantic provenance
+flags default to false. The vote API is unchanged. See the
+[R3 storage contract](../../../../development/postgres-schema-rules.md#r3--normalize-ids-are-fk-columns-json-is-for-schemaless-data).
 
 ### Shared Factories ([`shared/`](../../../../../backend/services/elections-votes/shared/))
 

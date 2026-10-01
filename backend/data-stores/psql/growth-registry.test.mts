@@ -151,9 +151,10 @@ describe('schema growth registry', () => {
       retentionOwner: 'cleanupPartitions',
       accessClass: 'retention-window',
     })
-    expect(PARTITION_POLICIES.get('entity_relation_votes')).toMatchObject({
-      strategy: 'LIST -> RANGE',
-      accessClass: 'intentional-fanout',
+    expect(PARTITION_POLICIES.get('relation__post__category__topic__votes')).toMatchObject({
+      strategy: 'RANGE',
+      key: 'entity_relation_id',
+      accessClass: 'target-scoped',
     })
     expect(PARTITION_POLICIES.get('topic_classifier_results')).toMatchObject({
       strategy: 'RANGE',
