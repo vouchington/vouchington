@@ -70,8 +70,9 @@ reachable after the first page. That includes an email whose parse was never rec
 MIME object. A reviewer's decision refreshes the queue from its first page.
 
 `POST /api/v1/copyright-email-intakes/:id/rejections` rejects an email or, with
-`response_kind: needs_information`, asks the sender for more information. It returns `200` with
-`{ reply_queued: boolean }`, so staff learn whether a reply was queued. With a
+`response_kind: needs_information`, asks the sender for more information. That kind requires a
+`response_message` that is not blank and at most 10,000 characters, which follows the fixed reply
+text. It returns `200` with `{ reply_queued: boolean }`, so staff learn whether a reply was queued. With a
 succeeded parse the reply goes to the parsed sender. With no parse row or a failed parse there is
 no sender, so the optional `reply_email` (a valid address of at most 254 characters, or null)
 names the recipient. Without it no reply is queued and `reply_queued` is `false`. On a new
