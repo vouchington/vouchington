@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -223,6 +224,31 @@ describe('web route localization bounds', () => {
     })
     expect(batch.messages).toHaveProperty(alias)
   })
+
+  it.each(['/moderation-transparency', '/communities/[slug]/settings/moderation/analytics'])(
+    'delivers every staff action label the transparency panel renders on %s',
+    pattern => {
+      const route = ROUTE_SELECTORS.find(entry => entry.pattern === pattern)
+      if (!route) throw new Error(`Missing ${pattern} route`)
+      const labels = readFileSync(
+        join(
+          import.meta.dirname,
+          '../../web/components/moderation/moderation-transparency-labels.ts',
+        ),
+        'utf8',
+      )
+      const aliases = [...labels.matchAll(/'(moderation\.staffActions\.\w+)'/g)].flatMap(
+        match => match[1] ?? [],
+      )
+      const batch = resolveLocalizationBatch(database, {
+        consumer: 'web',
+        locales: ['en'],
+        selectors: [WEB_CHROME_SELECTOR, route.selectorId],
+      })
+      expect(aliases.length).toBeGreaterThan(0)
+      for (const alias of aliases) expect(batch.messages).toHaveProperty([alias])
+    },
+  )
 
   it('keeps global status and navbar dialog copy in chrome', () => {
     const batch = resolveLocalizationBatch(database, {

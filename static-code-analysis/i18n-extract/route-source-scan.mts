@@ -3,7 +3,11 @@ export type ClosureScanIssue = {
   reason: string
 }
 
-const ALIAS_BODY = '(?:extracted|common|nav|settings|shared)\\.(?:[A-Za-z0-9_]+\\.)*[A-Za-z0-9_]+'
+/** First segment of every web catalog alias. A quoted token under any other namespace is never
+ * scanned, so its copy would reach no route or chrome selector. `route-source-scan.test.mts` fails
+ * when the web catalog gains a namespace missing from this list. */
+const ALIAS_NAMESPACES = ['common', 'extracted', 'moderation', 'nav', 'settings', 'shared']
+const ALIAS_BODY = `(?:${ALIAS_NAMESPACES.join('|')})\\.(?:[A-Za-z0-9_]+\\.)*[A-Za-z0-9_]+`
 const QUOTED_ALIAS_RE = new RegExp(`['"\`](${ALIAS_BODY})['"\`]`, 'g')
 const UNBOUNDED_KEY_RE = /\bt\(\s*(?:`[^`]*\$\{|(?:['"][^'"]*['"]|[_$A-Za-z][\w$.]*)\s*\+)/
 const COMPUTED_IMPORT_RE = /import\s*\(\s*(?:`[^`]*\$\{|[_$A-Za-z])/
