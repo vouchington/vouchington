@@ -348,6 +348,14 @@ rules:
             module: node:timers/promises
             export: setTimeout
 
+  - name: exported error classes are constructed in production
+    rule: unconstructed-error-class
+    scope: repository
+    options:
+      testFiles:
+        - 'test-helpers/**'
+        - '**/test-helpers/**'
+
   - name: Configuration paths reference tracked repository content
     rule: config-path-references
     scope: repository
