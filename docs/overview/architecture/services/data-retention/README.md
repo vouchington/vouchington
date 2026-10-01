@@ -7,6 +7,13 @@ Cleanup runs are idempotent and process eligible rows in bounded batches so repe
 drain large retention backlogs without one unbounded transaction. Terminal browser-push intent
 retention is 90 days and never selects pending delivery work.
 
+Final user purges take one transaction-scoped advisory lock before any user lifecycle,
+publication, or row lock. Worker concurrency serializes jobs within one worker, but direct service
+calls and overlapping workers can still overlap. Serializing each final purge prevents reciprocal
+`users.deleted_by_id` SET NULL actions from locking another purge's target in reverse order.
+The lock is released at each user's commit or rollback; batches retain their per-user transaction
+boundaries, and an ineligible user releases it without deletion.
+
 ## Key exports
 
 - `runDataRetentionCleanup()` — runs all retention jobs in sequence and returns deletion counts
