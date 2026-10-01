@@ -20,6 +20,13 @@ router** — it forwards relative paths to the in-process backend rather than fa
 presigner) and `vitest.setup.captcha-skip.mts` (skips captcha via an env flag). These sit at the
 external-provider boundary and are permitted per the repo mock policy.
 
+The API-helper in-process servers use `createWebApiTestServer()` from
+[`integration-tests/web-api/routes.mts`](../../../../integration-tests/web-api/routes.mts), which
+retains the production request-client-info listener. Browser URL routers use
+`buildWebApiTestProxyHeaders()` to assign the same first-party headers as the Next.js proxy; real
+session/device cookies still authenticate the request. Deliberately bare application-listener tests
+remain limited to assertions that specifically exclude that HTTP boundary.
+
 ## Coverage
 
 The `web-api` and `web-integration` Vitest projects run with `--coverage` in CI and instrument

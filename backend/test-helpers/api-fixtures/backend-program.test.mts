@@ -247,7 +247,7 @@ describe('PostgreSQL row type contracts', () => {
       declared_language: 'string | null',
       deleted_at: 'Date | null',
       archived_at: 'Date | null',
-      created_via: 'ContentCreationChannel | null',
+      created_via: '"web" | "swift" | "dotnet" | "api" | "mcp" | "system"',
       llm_moderation_content_sha256: 'Buffer<ArrayBufferLike>',
       search_vector: 'string | null',
     }

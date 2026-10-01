@@ -12,8 +12,14 @@ import {
   insertTestCommunity,
   createReferralProgramFixture,
   safeUsername,
+  readTestContentProvenance,
 } from '../../../backend/test-helpers/index.mts'
-import { createWebApiTestCookieHeader, listenOnFetchSafeLoopback } from '../routes.mts'
+import {
+  createWebApiTestServer,
+  buildWebApiTestProxyHeaders,
+  createWebApiTestCookieHeader,
+  listenOnFetchSafeLoopback,
+} from '../routes.mts'
 import type { CookieHeader } from '../routes-extended.mts'
 
 describe('routes-extended', () => {
@@ -47,7 +53,7 @@ describe('routes-extended', () => {
     previousApiBaseUrl = process.env.API_BASE_URL
     previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
 
-    backendServer = http.createServer(serverApp.callback())
+    backendServer = createWebApiTestServer(serverApp.callback())
     backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
     process.env.API_BASE_URL = backendBaseUrl
     process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
@@ -60,7 +66,7 @@ describe('routes-extended', () => {
         return previousFetch(input, init)
       }
 
-      const headers = new Headers(init?.headers)
+      const headers = buildWebApiTestProxyHeaders(init?.headers)
       if (process.env.CF_WORKER_SECRET) {
         headers.set('X-CF-Worker-Secret', process.env.CF_WORKER_SECRET)
       }
@@ -199,6 +205,10 @@ describe('routes-extended', () => {
       const result = await serverRoutes.getTopicRecommendations({ headers: userCookieHeader })
       expect(result.results.some(entry => entry.id === topicRecPostId)).toBe(true)
       expect(result.posts[topicRecPostId]?.post_type).toBe('topic_recommendation')
+      await expect(readTestContentProvenance('posts', topicRecPostId)).resolves.toEqual({
+        createdVia: 'web',
+        oauthClientId: null,
+      })
     })
 
     it('getTopicRecommendation resolves the created topic recommendation', async () => {

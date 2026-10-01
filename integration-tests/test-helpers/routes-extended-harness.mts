@@ -12,7 +12,12 @@ import {
   insertTestCommunity,
 } from '../../backend/test-helpers/index.mts'
 import type { CookieHeader } from '../web-api/routes-extended.mts'
-import { createWebApiTestCookieHeader, listenOnFetchSafeLoopback } from '../web-api/routes.mts'
+import {
+  createWebApiTestServer,
+  buildWebApiTestProxyHeaders,
+  createWebApiTestCookieHeader,
+  listenOnFetchSafeLoopback,
+} from '../web-api/routes.mts'
 
 const EIGHT_DAYS_MS = 8 * 24 * 60 * 60 * 1000
 
@@ -58,7 +63,7 @@ export function installRoutesExtendedHarness(
     previousApiBaseUrl = process.env.API_BASE_URL
     previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
 
-    backendServer = http.createServer(serverApp.callback())
+    backendServer = createWebApiTestServer(serverApp.callback())
     backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
     process.env.API_BASE_URL = backendBaseUrl
     process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
@@ -71,7 +76,7 @@ export function installRoutesExtendedHarness(
         return previousFetch(input, init)
       }
 
-      const headers = new Headers(init?.headers)
+      const headers = buildWebApiTestProxyHeaders(init?.headers)
       const secret = process.env.CF_WORKER_SECRET
       if (options.workerSecret === 'always' && secret) {
         headers.set('X-CF-Worker-Secret', secret)

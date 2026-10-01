@@ -12,7 +12,7 @@ import {
   insertTestUrl,
   insertTestUrlHostname,
 } from '../../../backend/test-helpers/index.mts'
-import { listenOnFetchSafeLoopback } from '../routes.mts'
+import { createWebApiTestServer, listenOnFetchSafeLoopback } from '../routes.mts'
 
 describe('routes — public and direct', () => {
   let backendServer: http.Server
@@ -29,7 +29,7 @@ describe('routes — public and direct', () => {
     previousApiBaseUrl = process.env.API_BASE_URL
     previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
 
-    backendServer = http.createServer(serverApp.callback())
+    backendServer = createWebApiTestServer(serverApp.callback())
     backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
     process.env.API_BASE_URL = backendBaseUrl
     process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl

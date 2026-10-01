@@ -7,7 +7,12 @@ import {
   createTestTopic,
   createTestUser,
 } from '../../../backend/test-helpers/index.mts'
-import { createWebApiTestCookieHeader, listenOnFetchSafeLoopback } from '../routes.mts'
+import {
+  createWebApiTestServer,
+  buildWebApiTestProxyHeaders,
+  createWebApiTestCookieHeader,
+  listenOnFetchSafeLoopback,
+} from '../routes.mts'
 
 describe('routes — public and direct', () => {
   let backendServer: http.Server
@@ -29,7 +34,7 @@ describe('routes — public and direct', () => {
     previousApiBaseUrl = process.env.API_BASE_URL
     previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
 
-    backendServer = http.createServer(serverApp.callback())
+    backendServer = createWebApiTestServer(serverApp.callback())
     backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
     process.env.API_BASE_URL = backendBaseUrl
     process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
@@ -42,7 +47,7 @@ describe('routes — public and direct', () => {
         return previousFetch(input, init)
       }
 
-      const headers = new Headers(init?.headers)
+      const headers = buildWebApiTestProxyHeaders(init?.headers)
       if (process.env.CF_WORKER_SECRET) {
         headers.set('X-CF-Worker-Secret', process.env.CF_WORKER_SECRET)
       }

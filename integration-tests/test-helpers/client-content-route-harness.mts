@@ -13,7 +13,12 @@ import {
   setTestItemStoryId,
   setUserVerificationFields,
 } from '../../backend/test-helpers/index.mts'
-import { createWebApiTestCookieHeader, listenOnFetchSafeLoopback } from '../web-api/routes.mts'
+import {
+  createWebApiTestServer,
+  buildWebApiTestProxyHeaders,
+  createWebApiTestCookieHeader,
+  listenOnFetchSafeLoopback,
+} from '../web-api/routes.mts'
 
 const EIGHT_DAYS_MS = 8 * 24 * 60 * 60 * 1000
 
@@ -81,7 +86,7 @@ export function installClientContentRouteHarness(
     previousApiBaseUrl = process.env.API_BASE_URL
     previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
 
-    backendServer = http.createServer(serverApp.callback())
+    backendServer = createWebApiTestServer(serverApp.callback())
     backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
     process.env.API_BASE_URL = backendBaseUrl
     process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
@@ -94,7 +99,7 @@ export function installClientContentRouteHarness(
       if (!clientRuntimeActive || typeof input !== 'string' || !input.startsWith('/')) {
         return previousFetch(input, init)
       }
-      const headers = new Headers(init?.headers)
+      const headers = buildWebApiTestProxyHeaders(init?.headers)
       if (process.env.CF_WORKER_SECRET) {
         headers.set('X-CF-Worker-Secret', process.env.CF_WORKER_SECRET)
       }

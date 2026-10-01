@@ -23,7 +23,11 @@ import {
 
 import { createHousehold } from '../../../backend/services/individuals-households/index.mts'
 
-import { createWebApiTestCookieHeader, listenOnFetchSafeLoopback } from '../routes.mts'
+import {
+  createWebApiTestServer,
+  createWebApiTestCookieHeader,
+  listenOnFetchSafeLoopback,
+} from '../routes.mts'
 
 describe('routes — user and admin', () => {
   let backendServer: http.Server
@@ -48,7 +52,7 @@ describe('routes — user and admin', () => {
     previousApiBaseUrl = process.env.API_BASE_URL
     previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
 
-    backendServer = http.createServer(serverApp.callback())
+    backendServer = createWebApiTestServer(serverApp.callback())
     backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
     process.env.API_BASE_URL = backendBaseUrl
     process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl

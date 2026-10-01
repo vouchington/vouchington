@@ -2,7 +2,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import http from 'node:http'
 import serverApp from '../../backend/entrypoints/api/index.mts'
-import { listenOnFetchSafeLoopback } from './routes.mts'
+import {
+  createWebApiTestServer,
+  buildWebApiTestProxyHeaders,
+  listenOnFetchSafeLoopback,
+} from './routes.mts'
 import { ApiError } from '@/lib/api/error'
 import { isRateLimitError, getRateLimitMessage } from '@/lib/api/rate-limit-error'
 import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
@@ -26,7 +30,7 @@ describe('web/lib/api utility helpers — integration', () => {
     previousApiBaseUrl = process.env.API_BASE_URL
     previousPublicApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
 
-    backendServer = http.createServer(serverApp.callback())
+    backendServer = createWebApiTestServer(serverApp.callback())
     backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
     process.env.API_BASE_URL = backendBaseUrl
     process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
@@ -40,7 +44,7 @@ describe('web/lib/api utility helpers — integration', () => {
         return previousFetch(input, init)
       }
 
-      const headers = new Headers(init?.headers)
+      const headers = buildWebApiTestProxyHeaders(init?.headers)
       if (process.env.CF_WORKER_SECRET) {
         headers.set('X-CF-Worker-Secret', process.env.CF_WORKER_SECRET)
       }
