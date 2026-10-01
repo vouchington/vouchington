@@ -312,12 +312,6 @@ importers:
       '@services/rss-feed-items':
         specifier: workspace:^
         version: link:../../services/rss-feed-items
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../../services/topics
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -328,9 +322,6 @@ importers:
       '@services/classifiers':
         specifier: workspace:^
         version: link:../../services/classifiers
-      '@services/elections-votes':
-        specifier: workspace:^
-        version: link:../../services/elections-votes
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils

@@ -32,14 +32,11 @@
     "@services/classifier-runs": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
-    "@services/topics": "workspace:^",
-    "@services/users": "workspace:^",
     "@voucha/types": "workspace:^"
   },
   "devDependencies": {
     "@services/ai-usage": "workspace:^",
     "@services/classifiers": "workspace:^",
-    "@services/elections-votes": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "undici": "^8.11.2"
