@@ -34,7 +34,8 @@ export function createSentryOptions(env: Env): CloudflareOptions {
     release: env.GIT_COMMIT ?? undefined,
     enabled,
     tracesSampleRate: 0.1,
-    // No request/response bodies or gen-AI prompts and completions (see sentry-data-collection.mts).
+    // Least-data policy: no client IP, cookies, query strings, bodies, DB values, stack locals
+    // or gen-AI content (see sentry-data-collection.mts).
     dataCollection: createSentryDataCollection(),
     beforeSend: composeSentryBeforeSend(),
     // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).

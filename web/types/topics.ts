@@ -133,7 +133,7 @@ export interface BasicUser {
   display_name?: string | null
   display_name_url_id?: string | null
   is_official_account?: boolean
-  display_account?: { id?: string; name: string | null } | null
+  display_account?: { name: string | null } | null
 }
 
 interface TopicHostname {

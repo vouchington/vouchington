@@ -40,6 +40,7 @@
     "@services/communities": "workspace:^",
     "@services/community-agent-prompts": "workspace:^",
     "@services/copyright-notices": "workspace:^",
+    "@services/feeds": "workspace:^",
     "@services/memberships": "workspace:^",
     "@services/moderation": "workspace:^",
     "@services/moderation-reports": "workspace:^",

@@ -3,9 +3,9 @@ import { getDisplayName, isProfileOwner } from '../user-helpers'
 
 describe('getDisplayName', () => {
   it('prefers display_account.name', () => {
-    expect(
-      getDisplayName({ display_account: { id: 'd1', name: 'Alice Smith' }, username: 'alice' }),
-    ).toBe('Alice Smith')
+    expect(getDisplayName({ display_account: { name: 'Alice Smith' }, username: 'alice' })).toBe(
+      'Alice Smith',
+    )
   })
 
   it('falls back to username when no display_account', () => {

@@ -84,6 +84,9 @@ information-request responses (`web.copyright.email-intake-rejection.reply-queue
 `web.copyright.email-intake-information-request.reply-queued` and `.no-reply`) have only the web
 consumer; native clients have no staff email review action. The
 [request and response contract](api/v1/copyright-notices/README.md) is owned by the API page.
+Table B lists every web copyright surface (policy pages, member cases, notice filing, poster
+responses, guest filing, and the four staff surfaces). Swift and .NET render none of them, and
+Table C tracks each `copyright-*` capability as a native gap.
 
 ### Agent tool manifest handoff
 
@@ -175,3 +178,12 @@ nullable targets and external-operation request/outcome links. Web consumes the 
 contract and localized action labels. Native modlog readers must consume the regenerated contract
 and recognize these action types before release; staff mutation controls remain web-only where
 specified by the domain matrix. External-operation requests without outcomes must not imply success.
+
+### Appeal metrics and public display names
+
+`AppealMetrics` no longer includes `dismissed`. A denied appeal is counted only in `denied`.
+`PublicDisplayAccount` is the display name alone: `{ name }`. OAuth provider identifiers stay on
+the private account objects and are not copied into `display_account`. Web already renders appeal
+success from `success_rate` and `total_closed`, and display names from `display_account.name`, so
+the staff moderation ops row stays full. Swift and .NET drop both decoder fields in
+[vouchington-clients#194](https://github.com/vouchington/vouchington-clients/pull/194).

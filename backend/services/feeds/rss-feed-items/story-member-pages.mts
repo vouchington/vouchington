@@ -2,15 +2,15 @@ import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import { itemHasDiscoverableSourceSql } from '@modules/feed-query-builders/discoverability-sql'
-import { appendRssFeedItemViewerCTEs } from '@services/feeds/rss-feed-items/get-ids/relation-ctes'
-import {
-  appendRssFeedItemViewerEligibilityFilters,
-  buildRssFeedItemSourceMuteFilter,
-} from '@services/feeds/rss-feed-items/get-ids/viewer-eligibility'
 import type { BasicUser } from '@services/users/types'
 import type { PageInfo } from '@voucha/types/pagination'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import assert from 'http-assert'
+import { appendRssFeedItemViewerCTEs } from './get-ids/relation-ctes.mts'
+import {
+  appendRssFeedItemViewerEligibilityFilters,
+  buildRssFeedItemSourceMuteFilter,
+} from './get-ids/viewer-eligibility.mts'
 
 export type StoryMemberRequest = {
   story_id: string

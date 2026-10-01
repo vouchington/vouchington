@@ -214,12 +214,11 @@ describe('getModerationAnalytics review regressions', () => {
       accepted: 0,
       reduced: 0,
       denied: 1,
-      dismissed: 0,
       success_rate: 0,
     })
   })
 
-  it('does not count accepted moderation appeals as dismissed', async () => {
+  it('counts accepted moderation appeals in accepted', async () => {
     const suffix = crypto.randomUUID().slice(0, 8)
     const owner = await createTestUser()
     const appellant = await createTestUser()
@@ -253,7 +252,6 @@ describe('getModerationAnalytics review regressions', () => {
       accepted: 1,
       reduced: 0,
       denied: 0,
-      dismissed: 0,
       success_rate: 1,
     })
   })
