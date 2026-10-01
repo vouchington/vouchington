@@ -79,10 +79,16 @@ server per audience (members and case participants: case-facing events only; sta
 a native client renders only the event types it receives and must not treat an unrecognized type
 as display-safe. Staff guest-capability management (issue, list, revoke, and information requests)
 is web-only staff tooling; its fixtures, including `web.copyright.guest-capabilities.listed`, have
-only the web consumer. Staff email-intake review is web-only staff tooling too. Its rejection and
+only the web consumer. The staff case's emailed information-request delivery state (queued, sent,
+failed, or bounced) comes from `delivery_intents` entries whose `delivery_kind` is
+`staff_information_request`; it is web-only too, and no native client renders it. Staff email-intake review is web-only staff tooling too. Its rejection and
 information-request responses (`web.copyright.email-intake-rejection.reply-queued` and `.no-reply`,
 `web.copyright.email-intake-information-request.reply-queued` and `.no-reply`) have only the web
-consumer; native clients have no staff email review action. The
+consumer; native clients have no staff email review action, including the
+`copyright_email_intake.ses_verdicts` verdicts and the null `raw_email.download_url` that quarantines
+an email SES flagged for malware. The queue fixture (`web.copyright.email-intake-queue.default`)
+also carries `waiting_reason` and `waiting_since`, which list a declined intake whose reply failed
+or bounced; only the web consumer reads them. The
 [request and response contract](api/v1/copyright-notices/README.md) is owned by the API page.
 Table B lists every web copyright surface (policy pages, member cases, notice filing, poster
 responses, guest filing, and the four staff surfaces). Swift and .NET render none of them, and
@@ -105,6 +111,11 @@ the plan owner because native clients do not call these tools. `search_posts` no
 clamped to 100). The default rose from 5 to 25 for `search_posts` and from 10 to 25 for
 `search_topics`. A malformed or foreign `after` cursor returns
 `{ success: false, error: "Invalid cursor" }` instead of throwing.
+
+`search_posts` now applies the MCP post read policy on every surface, so its author no longer sees
+their own private, audience-limited or unapproved posts, and a `similar_post_id` seed that
+`get_post` refuses returns an empty page. The arguments and result shape do not change, and native
+clients do not call this tool, so no client work follows.
 
 ### Media placement contract handoff
 
@@ -162,6 +173,13 @@ server change does not wait on client migrations, so a native build that still c
 route must delete that path in its own client PR. This repository does not edit
 `vouchington-clients`; track any such removal there alongside clients#149 and clients#150.
 
+A6 (#185) drops the agentic-run storage. No response shape changes: `client-generated-chat` never
+exposed run or active-turn state. The 409 for a message-identity conflict stays and now also covers
+a retry that changes `model_provider` or `model_name`, because the completion model is persisted on
+the assistant message. The earlier 409 for a conversation that held an active hosted turn is gone
+with the guard; a new turn is accepted beside an incomplete assistant placeholder. Native clients
+need no change, but must not rely on a model switch under reused message IDs: generate fresh IDs.
+
 ## Orphan tool removal handoff
 
 #1566 removes `search_wikipedia` and `get_wikipedia_summary` from the generated native tool
@@ -170,6 +188,21 @@ and manifest shapes are unchanged. The native client source audit found no hardc
 scope consumers to migrate; clients consume the reduced generated catalog. Topic Wikipedia IDs
 and URLs remain content fields and are unaffected. Hosted research/discovery package deletion
 remains owned by #1546; this change only removes their references to retired tools.
+
+## Community automod action handoff
+
+#221 moves community prompt moderation onto the shared classifier-run lifecycle and replaces the
+per-prompt `on_flag_action` with one community setting, `communities.automod_action`
+(`record_only` by default, `review_queue` or `unpublish`). `Community` responses carry
+`automod_action`, owners and moderators set it with
+`PATCH /api/v1/communities/:idOrSlug/automod-settings`, and the web moderation page renders the
+control. `community_agent_prompts` no longer has `on_flag_action`, so the prompt responses drop that
+field, and the automod simulate response drops `would_unpublish` and `would_unpublish_count` in
+favor of `simulation.community_automod_action`. Swift and .NET must decode the new `Community`
+field and the reduced prompt and simulate shapes, and render the setting where they render the
+automod flag list. Native delivery is tracked by
+[vouchington-clients#199](https://github.com/vouchington/vouchington-clients/issues/199); this
+repository does not edit `vouchington-clients`.
 
 ## Staff action history handoff
 
@@ -187,3 +220,5 @@ the private account objects and are not copied into `display_account`. Web alrea
 success from `success_rate` and `total_closed`, and display names from `display_account.name`, so
 the staff moderation ops row stays full. Swift and .NET drop both decoder fields in
 [vouchington-clients#194](https://github.com/vouchington/vouchington-clients/pull/194).
+
+Financial scope consent (#1271): hosted OAuth consent and the web API-key picker describe financial profile and spending exact grants. Native clients have no consent screen; their shared `native.credentials.mcpUserFullAccess` copy now states that financial profile and spending require separate grants. Native presets must explicitly list financial scopes when they intend to access those resources.

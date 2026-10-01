@@ -69,8 +69,10 @@ jobs:
 
   static-web:
     if: inputs.web
-    # The cached standalone build is consumed by Linux web test jobs.
-    runs-on: ubuntu-latest
+    # The standalone build includes native packages (sharp) and its cache key includes runner.arch, so
+    # every consumer (integration, Playwright, credentialed Playwright) must run on this runner arch
+    # or it misses the cache and rebuilds in each shard. Move them together.
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 35
     permissions:
       contents: read

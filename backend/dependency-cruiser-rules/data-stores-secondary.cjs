@@ -1,12 +1,10 @@
 module.exports = [
   {
-    name: 'no-psql-imports-queues-flows',
-    comment:
-      'backend/queues/ and backend/flows/ must not import @data-stores/psql; ' +
-      'queue and flow producers stay Valkey-only.',
+    name: 'no-psql-imports-queues',
+    comment: 'backend/queues/ must not import @data-stores/psql; queue producers stay Valkey-only.',
     severity: 'error',
     from: {
-      path: '^backend/(queues|flows)/',
+      path: '^backend/queues/',
     },
     to: {
       path: '^backend/data-stores/psql',

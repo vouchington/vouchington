@@ -1,10 +1,13 @@
-# Post and Story Read Tools
+# Post, Story and Community Read Tools
 
 [Back to MCP Tools service](README.md#structured-tool-results)
 
 `get_post`, `get_post_ancestors`, `get_post_descendants` and `get_story` read a post, its thread and
 a news story. Each requires the `posts:read` scope, is read-only, names its REST twin in `meta.api`,
-and sits on the `internal`, `mcp` and `client` surfaces like the other post tools.
+and sits on the `internal`, `mcp` and `client` surfaces like the other post tools. `search_posts`
+is not one of them but follows their [privacy rule](#privacy). The
+[community read tools](#community-read-tools) follow the same shape with the `communities:read`
+scope.
 
 | Tool                   | REST twin                                 | Arguments                                              |
 | ---------------------- | ----------------------------------------- | ------------------------------------------------------ |
@@ -35,6 +38,21 @@ unapproved post) is therefore never returned, even to its author, and a topic re
 never returned. One hidden ancestor hides the whole thread, so a `parent_id`, title or count never
 reveals it.
 
+`search_posts` applies the same rule to what it returns, so a search never lists a post these tools
+would refuse. Its query judges every candidate as a signed-out reader (`public_eligibility_only` in
+`backend/services/posts/search/query-builder/base-filters.mts`), even for the author or an
+administrator, so private, audience-limited and not-yet-cleared posts are not listed. When
+`post_type` includes `comment`, `thread-readability.mts` also drops a comment unless every live
+ancestor is approved and not a topic recommendation, the chain rule above. A `similar_post_id` seed
+that `get_post` would refuse is answered like an id that matches nothing, an empty page, so its
+embedding cannot be probed. The owner's mutes and blocks still remove results.
+
+The inclusion is one-way: a search result is always readable through `get_post`, but a readable
+post may not be found by search, which also needs `broadcast = everyone`, an unarchived post, an
+unsuspended author and no community. The chain check (JavaScript) and the search filter (SQL) must
+stay aligned; `output-schema-contract-search-posts.agreement.test.mts` compares them on shared
+fixtures.
+
 `get_post_descendants` pages with the REST descendants page (`getCommentDescendantsPage`), whose
 cursors are scoped to the thread and never to a viewer; a hidden reply prunes its subtree. A deleted
 post is left out rather than tombstoned, because the `view_posts` read model does not return it, so
@@ -44,3 +62,43 @@ caller, including the author.
 `get_story` needs no owner-and-signed-out check. Stories are public, and the only viewer-dependent
 filters on their articles (`getStoryMemberPagesBatch`) are the owner's own mutes, hides and excluded
 hostnames, which only remove articles, so no article is reachable through private visibility.
+
+## Community read tools
+
+Five tools read communities. Each requires the `communities:read` scope (a resource scope covered by
+the `mcp.user:read` umbrella), is read-only, and names its REST twin in `meta.api`.
+
+| Tool                         | REST twin                                        | Arguments                                                            |
+| ---------------------------- | ------------------------------------------------ | -------------------------------------------------------------------- |
+| `search_communities`         | `GET /api/v1/communities`                        | `q`, `sort` (name, members, virtual_subscriptions), `limit`, `after` |
+| `get_community`              | `GET /api/v1/communities/:idOrSlug`              | `community_id` (UUID or slug)                                        |
+| `get_community_posts`        | `GET /api/v1/communities/:idOrSlug/posts`        | `community_id`, `sort` (new, hot), `q`, `limit`, `after`             |
+| `get_community_pinned_posts` | `GET /api/v1/communities/:idOrSlug/pinned-posts` | `community_id`                                                       |
+| `get_community_members`      | `GET /api/v1/communities/:idOrSlug/members`      | `community_id`, `role` (owner, moderator, member), `limit`, `after`  |
+
+Paged tools take `limit` 1 to 25 (default 20), refuse anything else as invalid params, and return
+`page_info` whose `end_cursor` is passed back as `after` with the same sort. The REST routes allow
+100 on some of these; the tools keep the signed-out cap of 25. A malformed cursor, or one minted by
+another sort, returns `{ success: false, error: "Invalid cursor" }`.
+
+`get_community_posts` returns `pinned_post_ids` instead of hydrated pins, and only on the first
+page that has no `q` filter (pinned posts are left out of every unfiltered page, as on REST).
+`get_community_pinned_posts` hydrates them in pin order.
+
+### Community privacy
+
+The tools act as a signed-out reader for every caller, so they are parity minus private data. Each
+tool resolves its community through `loadCommunityForViewer(null, idOrSlug)`
+(`backend/tools/mcp-community-output.mts`), and a private, deleted or unknown community is
+`{ success: false, error: "Community not found" }` for its member, moderator, owner and an
+administrator alike. `search_communities` filters to public communities. Posts and pins use the
+public post eligibility filter, so a pinned post the public can no longer read is left out, and
+`get_community_members` returns the signed-out roster (owners and moderators, plus regular members
+only when the roster is public). Anonymous posts hide their author from every caller, including the
+author and administrators, and no response carries a viewer sidecar (membership, vote or follow
+state).
+
+Community descriptions, rules and post markdown are wrapped with `wrapExternalContent`; titles and
+names are sanitized. The shared post-page and hashtag-query logic lives in `@services/communities`
+(`getCommunityPostsPage`, `resolveCommunityHashtagQuery`), used by both the REST routes and the
+tools, so the two cannot drift.

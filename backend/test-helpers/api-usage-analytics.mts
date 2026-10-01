@@ -40,3 +40,13 @@ export async function readApiUsageRows(userId: string) {
   const rows = await query(`SELECT * FROM api_usage WHERE user_id = '${userId}'`)
   return rows.sort((a, b) => Number(a.status_code) - Number(b.status_code))
 }
+
+/**
+ * The `api_usage` rows of anonymous REST traffic, which has no user to filter on. A caller that
+ * counts its own rows should start from a fresh analytics directory.
+ */
+export async function readAnonymousApiUsageRows() {
+  await flush()
+  const rows = await query(`SELECT * FROM api_usage WHERE surface = 'rest_anonymous'`)
+  return rows.sort((a, b) => Number(a.status_code) - Number(b.status_code))
+}

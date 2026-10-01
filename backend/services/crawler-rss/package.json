@@ -29,9 +29,9 @@
     "@services/rss-feed-items": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
-    "@vouchington/embeds": "0.0.2",
-    "@vouchington/rss-crawler": "0.1.0",
-    "@vouchington/rss-parser": "0.1.0"
+    "@vouchington/embeds": "^0.0.2",
+    "@vouchington/rss-crawler": "^0.1.0",
+    "@vouchington/rss-parser": "^0.1.0"
   },
   "devDependencies": {
     "@data-stores/analytics": "workspace:^"

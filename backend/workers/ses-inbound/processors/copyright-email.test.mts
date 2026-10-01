@@ -1,4 +1,5 @@
 import { Readable } from 'node:stream'
+import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { describe, expect, it, vi } from 'vitest'
 import {
   processCopyrightInboundEmail,
@@ -23,7 +24,11 @@ describe('processCopyrightInboundEmail', () => {
     const dependencies: CopyrightEmailDependencies = {
       loadSesInboundObjectAndHash: async () => ({
         rawMime: Readable.from([Buffer.from('raw')]),
-        digest: Promise.resolve({ sha256: Buffer.alloc(32, 1), byteSize: 3 }),
+        digest: Promise.resolve({
+          sha256: Buffer.alloc(32, 1),
+          byteSize: 3,
+          sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+        }),
         receivedAt: intake.received_at,
         sourceIdentity: { eTag: '"etag-1"' },
       }),

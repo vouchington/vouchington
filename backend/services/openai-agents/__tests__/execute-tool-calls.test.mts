@@ -5,7 +5,6 @@ import {
   spy,
   spyWith,
   tool,
-  writeEventSpy,
 } from '../../../test-helpers/services/openai-agents/execute-tool-calls-fixtures.mts'
 
 import { describe, expect, it } from 'vitest'
@@ -15,21 +14,17 @@ import type { OpenAIFunctionCall } from '../tool-calls.mts'
 describe.each(VARIANTS)('%s', (_name, run) => {
   it('returns formatted result for a sync executor', async () => {
     const onAfterCall = spy<[OpenAIFunctionCall, unknown]>()
-    const writeRunEvent = writeEventSpy()
     const toolCall = call('my_tool', { x: 3 })
 
     const { toolResults } = await run({
       toolCalls: [toolCall],
       tools: [tool('my_tool', (args: { x: number }) => ({ computed: args.x * 2 }))],
-      writeRunEvent,
       onAfterCall,
     })
 
     expect(toolResults).toHaveLength(1)
     expect(JSON.parse(toolResults[0].output)).toEqual({ computed: 6 })
     expect(toolResults[0].call_id).toBe('call_my_tool')
-    expect(writeRunEvent.calls).toHaveLength(1)
-    expect(writeRunEvent.calls[0]).toEqual(['function_call', toolCall, { computed: 6 }])
     expect(onAfterCall.calls).toHaveLength(1)
     expect(onAfterCall.calls[0]).toEqual([toolCall, { computed: 6 }])
   })
@@ -183,20 +178,17 @@ describe.each(VARIANTS)('%s', (_name, run) => {
   it('handles onBeforeCall skip with default skipResult, does not call onAfterCall', async () => {
     const onAfterCall = spy<[OpenAIFunctionCall, unknown]>()
     const onCallError = spy<[OpenAIFunctionCall, Error]>()
-    const writeRunEvent = writeEventSpy()
     const toolCall = call('my_tool')
 
     const { toolResults } = await run({
       toolCalls: [toolCall],
       tools: [tool('my_tool', () => 'should not run')],
       onBeforeCall: () => ({ skip: true }),
-      writeRunEvent,
       onAfterCall,
       onCallError,
     })
 
     expect(JSON.parse(toolResults[0].output)).toEqual({ skipped: true })
-    expect(writeRunEvent.calls[0]).toEqual(['function_call', toolCall, { skipped: true }])
     expect(onAfterCall.calls).toHaveLength(0)
     expect(onCallError.calls).toHaveLength(0)
   })

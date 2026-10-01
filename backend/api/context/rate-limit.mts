@@ -4,6 +4,7 @@ import {
   isRouteRateLimitEnabled,
   resolveRateLimitIdentities,
 } from '@services/route-rate-limits'
+import { meterRestUsage } from '../rest-usage-meter.mts'
 
 interface RouteRateLimitExtras {
   email?: string
@@ -32,6 +33,7 @@ const extensions = {
     if (extras?.identityMode === 'ip-only') {
       const result = await checkRouteRateLimit(routeKey, { ip: this.ip ?? 'unknown' }, null)
       applyRateLimitResult(this, result)
+      await meterRestUsage(this, routeKey, null)
       return
     }
 
@@ -54,6 +56,7 @@ const extensions = {
     if (extras?.email) identities.email = extras.email
 
     applyRateLimitResult(this, await checkRouteRateLimit(routeKey, identities, null))
+    await meterRestUsage(this, routeKey, sessionData.uid ?? null)
   },
 }
 

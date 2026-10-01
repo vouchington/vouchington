@@ -30,6 +30,7 @@ const communityEntities = communities.map(community => ({
   post_approval_required_at: null,
   allow_review_posts: false,
   allow_data_point_posts: false,
+  automod_action: 'record_only',
   trusted_at: null,
   member_roster_visibility: 'public',
   deleted_at: null,

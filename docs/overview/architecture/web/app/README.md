@@ -34,7 +34,7 @@ Full route catalogue (with auth/permission rules and metadata expectations):
 | [`login/`](../../../../../web/app/login/)                                 | Sign-in surface (full-screen, bypasses shell). |
 | [`news/`](../../../../../web/app/news/)                                   | RSS news feed surface.                         |
 | [`notification-redirect/`](../../../../../web/app/notification-redirect/) | Notification deep-link bouncer (full-screen).  |
-| [`topic-recommendations/`](../../../../../web/app/topic-recommendations/) | Wikipedia-recommendation pages.                |
+| [`topic-recommendations/`](../../../../../web/app/topic-recommendations/) | Topic recommendation list and creation pages.  |
 
 ## Top-Level Files
 

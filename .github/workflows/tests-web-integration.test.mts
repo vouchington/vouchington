@@ -1,5 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { ALLOWED_LABELS } from './runner-policy-classify.mts'
+
+// The runner allowlist owns the versioned ARM label; read it instead of pinning a second literal.
+const armLabel = ALLOWED_LABELS.find(label => label.endsWith('-arm'))
 
 describe('web integration workflow', () => {
   it('provides an image origin to full-stack web integration tests', () => {
@@ -14,7 +18,6 @@ describe('web integration workflow', () => {
     expect(workflow).toContain('node ci/vitest/shard-total.mts test-web-integration')
     expect(workflow).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
     expect(workflow).toContain('shard: ${{ fromJSON(needs.prep.outputs.shard-matrix) }}')
-    expect(workflow).toContain('runs-on: ubuntu-latest')
     expect(workflow).toContain('uses: ./.github/actions/build-web-targets')
     expect(workflow).toContain('--project web-integration --shard ${{ matrix.shard }}')
     expect(workflow).not.toContain('--project web-api')
@@ -34,6 +37,10 @@ describe('web integration workflow', () => {
     expect(prep).toContain("!inputs.shared_build_available && steps.shards.outputs.total != '1'")
     expect(prep).toContain('shared-build-cache-mode: producer')
     expect(tests).toContain('shared-build-cache-mode: consumer')
+    // Producer and consumers share one cache key that includes runner.arch, so both run on ARM64.
+    expect(armLabel).toBeDefined()
+    expect(prep).toContain(`runs-on: ${armLabel}\n`)
+    expect(tests).toContain(`runs-on: ${armLabel}\n`)
     expect(readFileSync('.github/workflows/web.yml', 'utf8')).toContain(
       'shared_build_available: true',
     )

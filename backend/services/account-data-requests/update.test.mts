@@ -23,7 +23,7 @@ describe('expireDataRequests', () => {
     const user = await createTestUser()
     expect(user).toBeDefined()
 
-    const request = await createDataRequest(user!.id)
+    const request = await createDataRequest(user!.id, user!.id)
     const started = await markDataRequestProcessing(request.id)
     expect(started).toBe(true)
 
@@ -50,7 +50,7 @@ describe('expireDataRequests', () => {
     const user = await createTestUser()
     expect(user).toBeDefined()
 
-    const request = await createDataRequest(user!.id)
+    const request = await createDataRequest(user!.id, user!.id)
     expect(await markDataRequestProcessing(request.id)).toBe(true)
 
     const indefiniteS3Key = `indefinite-export-${Math.random().toString(36).slice(2, 10)}.zip`
@@ -72,7 +72,7 @@ describe('expireDataRequests', () => {
 describe('markDataRequestFailed', () => {
   it('returns true on first failure and false on retry', async () => {
     const user = await createTestUser()
-    const request = await createDataRequest(user!.id)
+    const request = await createDataRequest(user!.id, user!.id)
     expect(await markDataRequestFailed(request.id)).toBe(true)
     expect(await markDataRequestFailed(request.id)).toBe(false)
   })
@@ -81,7 +81,7 @@ describe('markDataRequestFailed', () => {
 describe('markDataRequestProcessing', () => {
   it('records an attempt ledger row for a processing claim', async () => {
     const user = await createTestUser()
-    const request = await createDataRequest(user.id)
+    const request = await createDataRequest(user.id, user.id)
 
     expect(await markDataRequestProcessing(request.id, request.processing_attempt_id)).toBe(true)
 
@@ -94,7 +94,7 @@ describe('markDataRequestProcessing', () => {
     const user = await createTestUser()
     expect(user).toBeDefined()
 
-    const request = await createDataRequest(user!.id)
+    const request = await createDataRequest(user!.id, user!.id)
 
     const started = await markDataRequestProcessing(request.id)
     expect(started).toBe(true)
@@ -107,7 +107,7 @@ describe('markDataRequestProcessing', () => {
 
   it('does not claim an export after its owner is deleted', async () => {
     const user = await createTestUser()
-    const request = await createDataRequest(user.id)
+    const request = await createDataRequest(user.id, user.id)
     try {
       await softDeleteUser(user.id)
       expect(await markDataRequestProcessing(request.id)).toBe(false)
@@ -118,7 +118,7 @@ describe('markDataRequestProcessing', () => {
 
   it('does not acquire a provider-effect lease after its owner is deleted', async () => {
     const user = await createTestUser()
-    const request = await createDataRequest(user.id)
+    const request = await createDataRequest(user.id, user.id)
     expect(await markDataRequestProcessing(request.id, request.processing_attempt_id)).toBe(true)
     try {
       await softDeleteUser(user.id)
@@ -132,7 +132,7 @@ describe('markDataRequestProcessing', () => {
 
   it('waits for an in-progress deletion before deciding whether it can claim an export', async () => {
     const user = await createTestUser()
-    const request = await createDataRequest(user.id)
+    const request = await createDataRequest(user.id, user.id)
     const deletion = await startPausedTestUserSoftDeletion(user.id)
     const claim = markDataRequestProcessing(request.id)
     try {

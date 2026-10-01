@@ -34,7 +34,7 @@ describe('CommunityAgentPromptItem simulation', () => {
         time_window_hours: 168,
         sample_count: 2,
         would_flag_count: 1,
-        would_unpublish_count: 0,
+        community_automod_action: 'record_only',
         false_positive_estimate: {
           historical_flagged_count: 0,
           historical_approved_count: 0,
@@ -50,7 +50,6 @@ describe('CommunityAgentPromptItem simulation', () => {
           content_excerpt: 'Matched post body',
           flagged: true,
           reason: 'Matches test prompt',
-          would_unpublish: false,
         },
       ],
     })
@@ -89,7 +88,7 @@ describe('CommunityAgentPromptItem simulation', () => {
         time_window_hours: 168,
         sample_count: 1,
         would_flag_count: 1,
-        would_unpublish_count: 0,
+        community_automod_action: 'record_only',
         false_positive_estimate: null,
       },
       results: [
@@ -101,7 +100,6 @@ describe('CommunityAgentPromptItem simulation', () => {
           content_excerpt: 'Matched post body',
           flagged: true,
           reason: 'Old simulation result',
-          would_unpublish: false,
         },
       ],
     })

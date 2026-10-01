@@ -7,7 +7,7 @@ describe('createDataRequest active-user fence', () => {
     const user = await createTestUser()
     try {
       await softDeleteUser(user.id)
-      await expect(createDataRequest(user.id)).rejects.toMatchObject({ code: '23514' })
+      await expect(createDataRequest(user.id, user.id)).rejects.toMatchObject({ code: '23514' })
     } finally {
       await restoreUser(user.id)
     }

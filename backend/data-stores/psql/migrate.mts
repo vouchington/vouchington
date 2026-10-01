@@ -1,5 +1,4 @@
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import onError, { flushSentry } from '@modules/on-error'
 import {
   cleanupPartitions,
@@ -16,8 +15,7 @@ import { loadSqlParserModule } from './migration-runner/sql-statements.mts'
 import { verifyLiveSchemaMatchesSnapshot } from './schema-snapshot/verify-live-schema.mts'
 import { psql } from './setup.mts'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+const __dirname = import.meta.dirname
 
 export {
   cleanupPartitions,

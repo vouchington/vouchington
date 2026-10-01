@@ -1,7 +1,8 @@
-import type { ScopeAction, ScopeDefinition } from './scope-types.mts'
+import type { ScopeAction, ScopeDefinition, ScopeDescriptionKey } from './scope-types.mts'
 
 const USER_RESOURCE_SCOPES = {
   cards: ['read', 'write'],
+  communities: ['read'],
   'data-points': ['read'],
   'domain-ratings': ['read'],
   'entity-relations': ['read', 'write'],
@@ -16,6 +17,13 @@ const USER_RESOURCE_SCOPES = {
   topics: ['read'],
 } as const
 
+const SENSITIVE_DESCRIPTIONS: Record<string, ScopeDescriptionKey> = {
+  'financial-profile:read': 'financial_profile_read',
+  'financial-profile:write': 'financial_profile_write',
+  'spending:read': 'spending_read',
+  'spending:write': 'spending_write',
+}
+
 export function userResourceDefinitions(): Record<string, ScopeDefinition> {
   return Object.fromEntries(
     Object.entries(USER_RESOURCE_SCOPES).flatMap(([resource, actions]) =>
@@ -25,6 +33,12 @@ export function userResourceDefinitions(): Record<string, ScopeDefinition> {
           action: action as ScopeAction,
           audience: 'user',
           ...(action === 'write' ? { requires: `${resource}:read` } : {}),
+          ...(SENSITIVE_DESCRIPTIONS[`${resource}:${action}`]
+            ? {
+                descriptionKey: SENSITIVE_DESCRIPTIONS[`${resource}:${action}`],
+                requiresExactGrant: true,
+              }
+            : {}),
           resource,
           surfaces: ['api-key', 'oauth'],
         },

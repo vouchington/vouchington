@@ -5,6 +5,7 @@ import type {
 import type { enqueueCopyrightEmailIntakeAndWait } from '@queues/ai-agents/enqueues/copyright-email-intake'
 import type { SesInboundProcessJobData } from '@ts-shared/ses-inbound-contract'
 import { SesInboundTerminalError, type parseSesInboundMime } from './mime.mts'
+import type { SesInboundRawDigest } from './raw-mime-digest.mts'
 import type {
   copySesInboundObjectToCopyrightEvidence,
   loadSesInboundObjectAndHash,
@@ -84,12 +85,13 @@ async function preserveCopyrightEvidence(
     rawSha256: raw.sha256,
     rawMimeType: 'message/rfc822',
     rawByteSize: raw.byteSize,
+    sesVerdicts: raw.sesVerdicts,
   })
   return { intake, sourceIdentity }
 }
 
 async function hashAndCopyCopyrightEvidence(
-  digest: Promise<{ sha256: Buffer; byteSize: number }>,
+  digest: Promise<SesInboundRawDigest>,
   data: SesInboundProcessJobData,
   sourceIdentity: Awaited<ReturnType<typeof loadSesInboundObjectAndHash>>['sourceIdentity'],
   dependencies: CopyrightEmailDependencies,

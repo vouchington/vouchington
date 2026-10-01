@@ -1,9 +1,10 @@
+import type { ClassifierCandidateKind } from '@voucha/types'
 import {
   classifierDecisionResultKey,
   flattenClassifierDecisionResults,
-  serializeClassifierRawResponse,
   type NormalizedClassifierDecisionInput,
 } from './decision-input.mts'
+import { serializeClassifierRawResponse } from './raw-response.mts'
 import {
   ClassifierDecisionReuseError,
   type ClassifierDecisionInputResult,
@@ -14,14 +15,21 @@ import type { LockedClassifierDecisionBatch } from './classifier-decision-batch-
 import { expectedClassifierDecisionResultCount } from './write-decision-results.mts'
 
 export function assertCandidateKindMatchesSubject(
-  configuredCandidateKind: 'topic' | 'story',
-  candidateKind: 'topic' | 'story',
+  configuredCandidateKind: ClassifierCandidateKind,
+  candidateKind: ClassifierCandidateKind,
   subject: NormalizedClassifierDecisionInput['subject'],
+  scope: NormalizedClassifierDecisionInput['scope'],
 ): void {
   if (configuredCandidateKind !== candidateKind) {
     throw new Error('Classifier candidate kind does not match its decision subject and results')
   }
   if (candidateKind === 'story' && subject.rssFeedItemId === null) {
+    throw new Error('Classifier candidate kind does not match its decision subject')
+  }
+  if (
+    candidateKind === 'community_prompt' &&
+    (subject.postId === null || scope.scopeCategory !== 'community_ai')
+  ) {
     throw new Error('Classifier candidate kind does not match its decision subject')
   }
 }

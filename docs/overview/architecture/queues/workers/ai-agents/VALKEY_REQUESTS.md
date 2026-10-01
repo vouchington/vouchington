@@ -15,6 +15,6 @@ connections). See `predecessor-issue#4717`.
 
 ## Notes
 
-- `autotagger-post`, `autotagger-rss-feed-item`, `moderation-*`, `community-moderation-*`, `story-clustering` use only PSQL and external AI APIs — zero shared-singleton Valkey calls.
+- `classifier-run-dispatcher`, `classifier-run`, `reconcile-classifier-runs`, `autotagger-rss-feed-item`, `moderation-*`, `community-moderation-*`, `story-clustering` use only PSQL and external AI APIs — zero shared-singleton Valkey calls.
 - **Conditional:** `story-post` jobs that successfully generate a summary call `updateStoryPostAgentResult` → `invalidate.posts(postId)` = 1 `invokeScript` op on `cacheValkeyClient`.
-- `hasRssFeedItemEmbedding` in the autotagger path is a PSQL query, not a Valkey call.
+- The classifier-run readiness checks (post and feed item embeddings) are PSQL queries, not Valkey calls.

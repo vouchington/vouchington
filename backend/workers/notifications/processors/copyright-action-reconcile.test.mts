@@ -16,7 +16,7 @@ function page(results: string[], endCursor: string | null): CopyrightSweepIdPage
 
 type SweepPages = {
   formReviews?: CopyrightSweepIdPage[]
-  enforcementRequests?: CopyrightSweepIdPage[]
+  pendingEnforcement?: CopyrightSweepIdPage[]
   blockedHoldRestorations?: CopyrightSweepIdPage[]
   dueRestorations?: CopyrightSweepIdPage[]
   actionIntents?: CopyrightSweepIdPage[]
@@ -39,15 +39,14 @@ function reconcileDeps(pages: SweepPages = {}) {
     recoverFormReview: vi.fn<Deps['recoverFormReview']>(async id => {
       log.push(`recover form review ${id}`)
     }),
-    createMissingEnforcementRequests: vi.fn<Deps['createMissingEnforcementRequests']>(async () => {
-      log.push('create missing enforcement requests')
+    recoverDecisionAssessments: vi.fn<Deps['recoverDecisionAssessments']>(async () => {
+      log.push('recover decision assessments')
     }),
-    searchEnforcementRequests: vi.fn<Deps['searchEnforcementRequests']>(
-      sweep(log, 'enforcement requests', pages.enforcementRequests),
+    searchPendingEnforcement: vi.fn<Deps['searchPendingEnforcement']>(
+      sweep(log, 'pending enforcement', pages.pendingEnforcement),
     ),
-    processEnforcementRequest: vi.fn<Deps['processEnforcementRequest']>(async id => {
-      log.push(`process enforcement request ${id}`)
-      return 'completed'
+    enforceAssessment: vi.fn<Deps['enforceAssessment']>(async id => {
+      log.push(`enforce assessment ${id}`)
     }),
     searchDueRestorations: vi.fn<Deps['searchDueRestorations']>(
       sweep(log, 'due restorations', pages.dueRestorations),
@@ -78,7 +77,10 @@ describe('processReconcileCopyrightActionIntents', () => {
   it('walks every page of each sweep in stage order', async () => {
     const { deps, log } = reconcileDeps({
       formReviews: [page(['review-1'], 'review-cursor'), page(['review-2'], null)],
-      enforcementRequests: [page(['request-1'], 'request-cursor'), page(['request-2'], null)],
+      pendingEnforcement: [
+        page(['assessment-1'], 'assessment-cursor'),
+        page(['assessment-2'], null),
+      ],
       blockedHoldRestorations: [page(['notice-1'], 'notice-cursor'), page(['notice-2'], null)],
       dueRestorations: [page(['deadline-1'], 'deadline-cursor'), page(['deadline-2'], null)],
       actionIntents: [page(['intent-1', 'intent-2'], 'intent-cursor'), page(['intent-3'], null)],
@@ -91,11 +93,11 @@ describe('processReconcileCopyrightActionIntents', () => {
       'recover form review review-1',
       'search form reviews',
       'recover form review review-2',
-      'create missing enforcement requests',
-      'search enforcement requests',
-      'process enforcement request request-1',
-      'search enforcement requests',
-      'process enforcement request request-2',
+      'recover decision assessments',
+      'search pending enforcement',
+      'enforce assessment assessment-1',
+      'search pending enforcement',
+      'enforce assessment assessment-2',
       'search blocked hold restorations',
       'recover blocked hold restorations notice-1',
       'search blocked hold restorations',
@@ -111,7 +113,10 @@ describe('processReconcileCopyrightActionIntents', () => {
       'enqueue intent-3',
     ])
     expect(deps.searchFormReviews.mock.calls).toEqual([[{}], [{ after: 'review-cursor' }]])
-    expect(deps.searchEnforcementRequests.mock.calls).toEqual([[{}], [{ after: 'request-cursor' }]])
+    expect(deps.searchPendingEnforcement.mock.calls).toEqual([
+      [{}],
+      [{ after: 'assessment-cursor' }],
+    ])
     expect(deps.searchDueRestorations.mock.calls).toEqual([
       [{ now: NOW }],
       [{ now: NOW, after: 'deadline-cursor' }],
@@ -164,17 +169,17 @@ describe('processReconcileCopyrightActionIntents', () => {
   it('keeps reconciling past failed items and stages, then fails with every error', async () => {
     const { deps } = reconcileDeps({
       formReviews: [page(['failing-review', 'same-page-review'], null)],
-      enforcementRequests: [page(['request'], null)],
+      pendingEnforcement: [page(['assessment'], null)],
       blockedHoldRestorations: [page(['failing-notice', 'same-page-notice'], null)],
       actionIntents: [page(['failing-intent', 'same-page-intent'], null)],
     })
     const reviewFailure = new Error('form review recovery failed')
-    const backfillFailure = new Error('enforcement backfill failed')
+    const recoveryFailure = new Error('decision recovery failed')
     const dueSearchFailure = new Error('due restoration search failed')
     const holdFailure = new Error('blocked hold restoration recovery failed')
     const enqueueFailure = new Error('enqueue failed')
     deps.recoverFormReview.mockRejectedValueOnce(reviewFailure)
-    deps.createMissingEnforcementRequests.mockRejectedValueOnce(backfillFailure)
+    deps.recoverDecisionAssessments.mockRejectedValueOnce(recoveryFailure)
     deps.searchDueRestorations.mockRejectedValueOnce(dueSearchFailure)
     deps.recoverBlockedHoldRestorations.mockRejectedValueOnce(holdFailure)
     deps.enqueueApplyCopyrightAction.mockRejectedValueOnce(enqueueFailure)
@@ -187,13 +192,13 @@ describe('processReconcileCopyrightActionIntents', () => {
     expect(failure).toBeInstanceOf(AggregateError)
     expect((failure as AggregateError).errors).toEqual([
       reviewFailure,
-      backfillFailure,
+      recoveryFailure,
       holdFailure,
       dueSearchFailure,
       enqueueFailure,
     ])
     expect(deps.recoverFormReview).toHaveBeenCalledWith('same-page-review')
-    expect(deps.processEnforcementRequest).toHaveBeenCalledWith('request')
+    expect(deps.enforceAssessment).toHaveBeenCalledWith('assessment')
     expect(deps.recoverBlockedHoldRestorations).toHaveBeenCalledWith('same-page-notice', NOW)
     expect(deps.enqueueApplyCopyrightAction).toHaveBeenCalledWith('same-page-intent')
   })

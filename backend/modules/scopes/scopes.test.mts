@@ -26,6 +26,23 @@ describe('validateScopeSet', () => {
     expect(hasEveryScope(['cards:read', 'cards:write'], ['cards:write'])).toBe(true)
   })
 
+  it('treats communities:read as a read-only resource scope under the user umbrella', () => {
+    expect(hasScope(['mcp.user:read'], 'communities:read')).toBe(true)
+    expect(hasScope(['communities:read'], 'communities:read')).toBe(true)
+    expect(hasScope(['posts:read'], 'communities:read')).toBe(false)
+    expect(hasScope(['mcp.admin:read'], 'communities:read')).toBe(false)
+    expect(SCOPE_DEFINITIONS['communities:read']).toMatchObject({
+      action: 'read',
+      audience: 'user',
+      resource: 'communities',
+      surfaces: ['api-key', 'oauth'],
+    })
+    expect(SCOPE_DEFINITIONS['communities:read']).not.toHaveProperty('requires')
+    expect(
+      validateScopeSet(['communities:read'], { surface: 'oauth', allowMixedAudiences: false }),
+    ).toMatchObject({ valid: true, scopes: ['communities:read'] })
+  })
+
   it('returns scopes in canonical order with audience metadata', () => {
     expect(
       validateScopeSet(['mcp.user:write', 'mcp.user:read'], {
@@ -120,6 +137,16 @@ describe('validateScopeSet', () => {
     expect(
       hasScope(['mcp.user:read', 'mcp.user:write'], 'post-relations.owned-private:write'),
     ).toBe(false)
+  })
+
+  it.each([
+    'financial-profile:read',
+    'financial-profile:write',
+    'spending:read',
+    'spending:write',
+  ] as const)('requires an exact grant for %s', scope => {
+    expect(hasScope(['mcp.user:read', 'mcp.user:write'], scope)).toBe(false)
+    expect(hasScope([scope], scope)).toBe(true)
   })
 
   it('reads a replaced credential surface from the live catalogue', () => {

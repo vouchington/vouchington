@@ -5,11 +5,11 @@ import {
   resolveUsagePlan,
   resolveUsageScopeClass,
   selectUsageQuota,
-  settleUsage,
   type UsageIdentity,
   type UsageQuotaCheck,
   type UsageSurface,
 } from '@services/route-rate-limits'
+import { settleUsageOnClose } from './usage-meter-helpers.mts'
 
 type AuthenticatedMcpCredential = Extract<
   Awaited<ReturnType<typeof authenticateMcpBearer>>,
@@ -21,11 +21,9 @@ export type McpUsageMeter = {
   checkQuota: () => Promise<UsageQuotaCheck>
 }
 
-// Meters one request of a verified credential. The quota is charged, and the usage event emitted,
-// when the response closes, because only then is the real status known: a 2xx or 4xx is charged, a
-// 429 or an actual 5xx is not. The identity is the validated user, API key id, OAuth client id and
-// grant id; the raw bearer token is never read here. A client that disconnects before any response
-// header was sent has no status to charge or report, so it is skipped.
+// Meters one request of a verified credential, settling when the response closes (see
+// `settleUsageOnClose`). The identity is the validated user, API key id, OAuth client id and grant
+// id; the raw bearer token is never read here.
 export function startMcpUsageMeter(
   ctx: Context,
   config: McpServerConfig,
@@ -38,24 +36,14 @@ export function startMcpUsageMeter(
   const scopeClass = resolveUsageScopeClass(authentication.scopes)
   const quota = selectUsageQuota({ surface, plan, scopeClass })
 
-  ctx.res.once('close', () => {
-    if (!ctx.res.headersSent) return
-    // settleUsage reports its own Valkey and analytics failures and never rejects.
-    void settleUsage({
-      surface,
-      identity,
-      plan,
-      scopeClass,
-      quota,
-      statusCode: ctx.res.statusCode,
-      durationMs: performance.now() - startedAt,
-    })
-  })
+  settleUsageOnClose(ctx, { surface, identity, plan, scopeClass, quota }, startedAt)
 
   return { checkQuota: () => checkUsageQuota(surface, identity.userId, quota) }
 }
 
-function usageIdentity(authentication: AuthenticatedMcpCredential): UsageIdentity {
+function usageIdentity(
+  authentication: AuthenticatedMcpCredential,
+): Extract<UsageIdentity, { userId: string }> {
   const userId = authentication.owner.id
   if (authentication.credential === 'api_key') {
     return { credential: 'api_key', userId, apiKeyId: authentication.apiKeyId }

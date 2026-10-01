@@ -12,11 +12,16 @@ import {
   resolveVoteIntegrityFlag,
   applyVoteRingPenalty,
   INTEGRITY_FLAG_STATUSES,
-  VOTE_INTEGRITY_RESOLUTIONS,
   type IntegrityFlagStatus,
   type VoteIntegrityResolution,
 } from '@services/vote-integrity'
-import { requireAuthAndRateLimit } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuthAndRateLimit,
+  validateRequestContract,
+} from '../../response-helpers.mts'
+
+type ResolveVoteIntegrityFlagRequest = { resolution: VoteIntegrityResolution }
 
 const flagsParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -55,6 +60,7 @@ app.route('/api/v1/vote-integrity/flags/:id').get(async (ctx: Context) => {
   )
 
   ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid flag ID')
+  validateRequestContract(ctx, 'GET:/api/v1/vote-integrity/flags/:id', { path: ctx.params })
 
   const flag = await getVoteIntegrityFlagByIdFromPrimary(ctx.params.id!)
   ctx.assert(flag, 404, 'Flag not found')
@@ -72,22 +78,13 @@ app.route('/api/v1/vote-integrity/flags/:id').patch(async (ctx: Context) => {
 
   ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid flag ID')
 
-  const body = await ctx.request.json('10kb')
-  ctx.assert(
-    body !== null && typeof body === 'object' && !Array.isArray(body),
-    422,
-    'Invalid request body',
-  )
-  const { resolution } = body as Record<string, unknown>
-  ctx.assert(typeof resolution === 'string', 422, 'resolution is required')
-  const resolutionAction = VOTE_INTEGRITY_RESOLUTIONS.includes(
-    resolution as VoteIntegrityResolution,
-  )
-    ? (resolution as VoteIntegrityResolution)
-    : null
-  ctx.assert(resolutionAction, 422, 'resolution must be dismissed, penalized, or suspended')
+  const body = await parseJsonBody<ResolveVoteIntegrityFlagRequest>(ctx, '10kb')
+  validateRequestContract(ctx, 'PATCH:/api/v1/vote-integrity/flags/:id', {
+    body,
+    path: ctx.params,
+  })
 
-  const flag = await resolveVoteIntegrityFlag(ctx.params.id!, currentUser.id, resolutionAction)
+  const flag = await resolveVoteIntegrityFlag(ctx.params.id!, currentUser.id, body.resolution)
   ctx.json({ flag })
 })
 
@@ -100,6 +97,9 @@ app.route('/api/v1/vote-integrity/flags/:id/penalties').post(async (ctx: Context
   )
 
   ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid flag ID')
+  validateRequestContract(ctx, 'POST:/api/v1/vote-integrity/flags/:id/penalties', {
+    path: ctx.params,
+  })
 
   const result = await applyVoteRingPenalty(ctx.params.id!, currentUser.id)
   ctx.json(result)

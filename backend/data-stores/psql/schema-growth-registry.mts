@@ -77,6 +77,7 @@ const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
   ['classifier_decision_batch_candidates', defaultRange('batch_id')],
   ['topic_classifier_results', defaultRange('topic_id')],
   ['story_classifier_results', defaultRange('story_id')],
+  ['community_prompt_classifier_results', defaultRange('batch_id')],
   ['rss_feed_crawls', monthlyRange('id')],
   ['post_publication_projection_receipts', defaultRange('post_identity_id')],
   ['post_publication_post_identities', defaultRange('id')],
@@ -95,8 +96,6 @@ const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
   ['rss_feed_item_feed_shares', defaultRange('recipient_user_id')],
   ['post_read_states', defaultRange('user_id')],
   ['rss_feed_item_read_states', defaultRange('user_id')],
-  ['conversation_message_agentic_runs', monthlyRange('id')],
-  ['conversation_message_agentic_runs_events', monthlyRange('conversation_message_agentic_run_id')],
   ['crawls', monthlyRange('id')],
   ['crawl_chunks', monthlyRange('crawl_id')],
   ...VOTE_SCHEMA_CONFIGS.map(({ voteTable, entityIdColumn }): [string, PartitionPolicy] => [

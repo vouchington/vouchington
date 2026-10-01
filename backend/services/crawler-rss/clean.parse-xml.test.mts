@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { it, expect, describe } from 'vitest'
 import { parseRssFeedItemsFromXml } from './clean.mts'
 import {
@@ -10,7 +9,7 @@ import {
 } from '@services/rss-feed-items/media-community'
 
 describe('parseRssFeedItemsFromXml', () => {
-  const __dirname = path.dirname(fileURLToPath(import.meta.url))
+  const __dirname = import.meta.dirname
   const fixturesDir = path.resolve(__dirname, 'fixtures/feed-cleaning')
 
   function loadFixture(fileName: string): Buffer {

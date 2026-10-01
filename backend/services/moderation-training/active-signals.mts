@@ -101,16 +101,15 @@ export async function hasOtherActiveAutomodSignals(input: {
         AND am.flagged IS TRUE
         AND am.deleted_at IS NULL
         AND am.input_sha256 IS NOT DISTINCT FROM p.llm_moderation_content_sha256
-        AND cap.on_flag_action = 'unpublish'
-        AND cpr.unpublished_at IS NOT NULL
-        AND cpr.unpublished_by_id IS NULL
+        AND cpr.automod_action = 'unpublish'
+        AND cpr.automod_flagged_content_sha256 = p.llm_moderation_content_sha256
+        AND cpr.unpublished_at = cpr.automod_flagged_at
         AND NOT EXISTS (
           SELECT 1
           FROM agent_moderations newer_am
           JOIN community_agent_prompts newer_cap ON newer_cap.id = newer_am.prompt_id
           WHERE newer_am.post_id = am.post_id
             AND newer_cap.community_id = cap.community_id
-            AND newer_cap.on_flag_action = 'unpublish'
             AND newer_am.flagged IS TRUE
             AND newer_am.deleted_at IS NULL
             AND newer_am.input_sha256 IS NOT DISTINCT FROM p.llm_moderation_content_sha256

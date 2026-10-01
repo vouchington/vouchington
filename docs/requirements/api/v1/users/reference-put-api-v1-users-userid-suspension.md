@@ -15,3 +15,5 @@ Suspends a user account. Admin only.
 ```
 
 Returns 401 if unauthenticated, 403 if not admin, 404 if user not found, 409 if user is already suspended.
+A non-string `reason` or an unknown body key returns 422 after the administrator gate (a non-string
+`reason` used to be ignored).

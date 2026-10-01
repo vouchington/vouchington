@@ -22,7 +22,9 @@ env:
 
 jobs:
   prep:
-    runs-on: ubuntu-latest
+    # Native ARM64 like the shards it feeds: leaving prep on x64 would put the busier x64 queue wait
+    # back on the critical path between static-web and every shard.
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 8
     permissions:
       contents: read
@@ -45,7 +47,9 @@ jobs:
 
   web-api-tests:
     needs: [prep]
-    runs-on: ubuntu-latest
+    # Native ARM64 matches the production image architecture and draws from a separate hosted pool.
+    # The Postgres and Valkey service images are digest-pinned multi-arch indexes that include linux/arm64.
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 27
     permissions:
       actions: read

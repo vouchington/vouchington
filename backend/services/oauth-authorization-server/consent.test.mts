@@ -66,6 +66,7 @@ describe('OAuth consent', () => {
       client_hostname: null,
       client_name: pending.client.client_name,
       resource: TEST_OAUTH_RESOURCE,
+      sensitive_scopes: [],
     })
     await expect(
       decideOAuthAuthorizationRequest(owner.id, pending.requestId, 'deny', pending.bindingHash),
@@ -80,6 +81,31 @@ describe('OAuth consent', () => {
         scopes: ['mcp.user:read', 'mcp.user:write'],
       },
     ])
+  })
+
+  it('lists every exact-grant scope separately from ordinary permissions', async () => {
+    const sensitive = [
+      'financial-profile:read',
+      'financial-profile:write',
+      'spending:read',
+      'spending:write',
+      'post-relations.owned-private:write',
+    ]
+    const pending = await createTestPendingOAuthAuthorization(owner, {
+      scope: [
+        'mcp.user:read',
+        'entity-relations:read',
+        'entity-relations:write',
+        ...sensitive,
+      ].join(' '),
+    })
+    const request = await getOAuthAuthorizationRequestForUser(
+      owner.id,
+      pending.requestId,
+      pending.bindingHash,
+    )
+    expect(request?.sensitive_scopes).toEqual(expect.arrayContaining(sensitive))
+    expect(request?.sensitive_scopes).toHaveLength(sensitive.length)
   })
 
   it('rejects an expired pending consent request', async () => {

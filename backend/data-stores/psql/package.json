@@ -30,13 +30,13 @@
     "@modules/utils": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/postgres": "0.0.12",
+    "@vouchington/postgres": "^0.0.12",
     "pg": "^8.23.0",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
     "oxfmt": "^0.71.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vouchington-tooling": "^0.26.0"
+    "vouchington-tooling": "^0.27.0"
   }
 }

@@ -23,23 +23,33 @@ import {
   parseJsonBody,
   requireAuth,
   requireAuthAndRateLimit,
+  validateRequestContract,
   validateUUIDParam,
 } from '../../response-helpers.mts'
+import type {
+  CopyrightTerritorialNoticeRequest,
+  CopyrightTerritorialRedressDecisionRequest,
+  CopyrightTerritorialRedressRequest,
+  CopyrightTerritorialReviewRequest,
+} from './territorial-request-types.mts'
 
+// Every handler keeps its admission order (kill switch, content type, authentication and role, rate
+// limit, suspension, CAPTCHA, Idempotency-Key, field-named parsers, path id) and adds the generated
+// contract immediately before the first service call. The service still decides ownership,
+// territorial availability, and existence, so those rejections stay behind a malformed body, as a
+// missing field already did.
 app.route('/api/v1/copyright-uk-notices').post(async (ctx: Context) => {
   setPrivateNoStoreCacheHeaders(ctx)
   assertCopyrightIntakeEnabled()
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/copyright-uk-notices')
   assertNotSuspended(currentUser)
-  const body = await parseJsonBody<Record<string, unknown>>(ctx)
+  const body = await parseJsonBody<CopyrightTerritorialNoticeRequest>(ctx)
   await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'copyright-uk-notices.create' })
   const idempotencyKey = requireIdempotencyKey(ctx)
-  const receipt = await receiveUkCopyrightNotice(
-    currentUser,
-    idempotencyKey,
-    parseTerritorialNoticeBody(body),
-  )
+  const notice = parseTerritorialNoticeBody(body)
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-uk-notices', { body })
+  const receipt = await receiveUkCopyrightNotice(currentUser, idempotencyKey, notice)
   const acknowledgment = await acknowledgeUkCopyrightNotice(currentUser, receipt.notice_id)
   ctx.setStatus(receipt.is_duplicate ? 200 : 201)
   ctx.json({ copyright_uk_notice: receipt, acknowledgment })
@@ -53,10 +63,11 @@ app.route('/api/v1/copyright-uk-notices/:id/acknowledgment-failures').post(async
     'POST:/api/v1/copyright-uk-notices/:id/acknowledgment-failures',
   )
   assertNotSuspended(currentUser)
-  const acknowledgment = await recordUkCopyrightAcknowledgmentFailure(
-    currentUser,
-    validateUUIDParam(ctx, 'id'),
-  )
+  const noticeId = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-uk-notices/:id/acknowledgment-failures', {
+    path: ctx.params,
+  })
+  const acknowledgment = await recordUkCopyrightAcknowledgmentFailure(currentUser, noticeId)
   ctx.json({ acknowledgment })
 })
 
@@ -69,12 +80,14 @@ app.route('/api/v1/copyright-uk-notices/:id/reviews').post(async (ctx: Context) 
   )
   assertNotSuspended(currentUser)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
-  const body = await parseJsonBody<Record<string, unknown>>(ctx)
-  const review = await recordUkCopyrightReview(
-    currentUser,
-    validateUUIDParam(ctx, 'id'),
-    parseTerritorialText(body, 'rationale'),
-  )
+  const body = await parseJsonBody<CopyrightTerritorialReviewRequest>(ctx)
+  const noticeId = validateUUIDParam(ctx, 'id')
+  const rationale = parseTerritorialText(body, 'rationale')
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-uk-notices/:id/reviews', {
+    path: ctx.params,
+    body,
+  })
+  const review = await recordUkCopyrightReview(currentUser, noticeId, rationale)
   ctx.setStatus(201)
   ctx.json({ copyright_uk_review: review })
 })
@@ -87,14 +100,16 @@ app.route('/api/v1/copyright-uk-notices/:id/redress-requests').post(async (ctx: 
     'POST:/api/v1/copyright-uk-notices/:id/redress-requests',
   )
   assertNotSuspended(currentUser)
-  const body = await parseJsonBody<Record<string, unknown>>(ctx)
+  const body = await parseJsonBody<CopyrightTerritorialRedressRequest>(ctx)
   await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'copyright-uk-redress.create' })
-  const redress = await submitUkCopyrightRedress(
-    currentUser,
-    validateUUIDParam(ctx, 'id'),
-    requireIdempotencyKey(ctx),
-    parseTerritorialText(body, 'explanation'),
-  )
+  const noticeId = validateUUIDParam(ctx, 'id')
+  const idempotencyKey = requireIdempotencyKey(ctx)
+  const explanation = parseTerritorialText(body, 'explanation')
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-uk-notices/:id/redress-requests', {
+    path: ctx.params,
+    body,
+  })
+  const redress = await submitUkCopyrightRedress(currentUser, noticeId, idempotencyKey, explanation)
   ctx.setStatus(redress.is_duplicate ? 200 : 201)
   ctx.json({ copyright_uk_redress_request: redress })
 })
@@ -110,13 +125,16 @@ app
     )
     assertNotSuspended(currentUser)
     ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
-    const body = await parseJsonBody<Record<string, unknown>>(ctx)
-    const decision = await recordUkCopyrightRedressDecision(
-      currentUser,
-      validateUUIDParam(ctx, 'id'),
-      validateUUIDParam(ctx, 'redressId'),
-      parseTerritorialRedressDecision(body),
+    const body = await parseJsonBody<CopyrightTerritorialRedressDecisionRequest>(ctx)
+    const noticeId = validateUUIDParam(ctx, 'id')
+    const redressId = validateUUIDParam(ctx, 'redressId')
+    const input = parseTerritorialRedressDecision(body)
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/copyright-uk-notices/:id/redress-requests/:redressId/decisions',
+      { path: ctx.params, body },
     )
+    const decision = await recordUkCopyrightRedressDecision(currentUser, noticeId, redressId, input)
     ctx.setStatus(201)
     ctx.json({ copyright_uk_redress_decision: decision })
   })

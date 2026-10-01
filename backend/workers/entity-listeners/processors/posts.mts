@@ -1,7 +1,9 @@
 import { enqueueCreatePostEmbedding } from '@queues/bedrock-embeddings/enqueues'
 import { enqueueCreatePostModeration } from '@queues/openai-moderation/enqueues'
 import { enqueuePostMentions } from '@queues/post-mentions/enqueues'
-import { enqueuePostAutotaggerFlow } from '@flows/core/enqueues'
+import { enqueueClassifierRunDispatcher } from '@queues/ai-agents/enqueues/classifier-run'
+import { requestApprovedPostClassifierRuns } from '@services/classifier-runs'
+import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
 import { upsertPostElectionVotes } from '@services/elections-votes/post'
 import { getDeletedPostByAny, getPostByAny } from '@services/posts/get'
 import { createPostModerationContent } from '@services/posts/content'
@@ -11,8 +13,7 @@ import { getPrivateUserByAny } from '@services/users/get'
 import { enqueueDetectBanEvasion } from '@queues/ban-evasion/enqueues'
 import { isFirstCommunityPost } from '@services/communities/ban-evasion'
 import { enqueueSpamDetection } from '@queues/spam-detection/enqueues'
-import { enqueueBulkCommunityModerationDispatchers } from '@queues/ai-agents/enqueues/community-moderation'
-import { getApprovedReviewsForPost } from '@services/communities/publications/get'
+import { requestCommunityModerationRunForPost } from '@services/communities/publications/moderation-run'
 import onError from '@modules/on-error'
 import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
 import { resetPostClearanceIfContentCurrent } from '@services/post-clearance'
@@ -20,6 +21,21 @@ import { autoSubscribePostCreator } from './auto-subscribe-post-creator.mts'
 import { makeModerationDeduplicationKey } from './moderation-deduplication-key.mts'
 import { handlePostCommentAction } from './comment-actions.mts'
 import { recoverPostCreatedEffects } from './post-created-recovery.mts'
+
+/**
+ * A post created already approved never passes through the approval decision that requests its
+ * classifier runs, so C6 (tagging) is requested here. The durable request is what the sweep
+ * recovers from, so this never depends on the tagging classifier's configuration; the dispatcher
+ * enqueue only makes the first attempt prompt.
+ */
+async function requestTaggingForApprovedPost(postId: string): Promise<void> {
+  await requestApprovedPostClassifierRuns(postId, [TAGGING_CLASSIFIER_SLUG])
+  await enqueueClassifierRunDispatcher({
+    classifier: TAGGING_CLASSIFIER_SLUG,
+    postId,
+    rssFeedItemId: null,
+  })
+}
 
 export const processPostCreated = async (
   { id }: { id: string },
@@ -41,7 +57,9 @@ export const processPostCreated = async (
     enqueueLanguageDetection('post', post.id),
     enqueueCreatePostEmbedding(post.id),
     enqueuePostMentions(post.id),
-    enqueuePostAutotaggerFlow(post.id, { includeModeration: !bypassCreateModeration }),
+    !bypassCreateModeration
+      ? enqueueCreatePostModeration(post.id, { deduplicationKey: moderationDeduplicationKey })
+      : requestTaggingForApprovedPost(post.id),
     !bypassCreateModeration
       ? enqueueSpamDetection(post.id, {
           contentSha256: content_sha256,
@@ -83,12 +101,8 @@ export const processPostUpdated = async ({
   if (contentChanged) {
     const reset = await resetPostClearanceIfContentCurrent(id, content_sha256)
     if (!reset) return
-    const communityIds = await getApprovedReviewsForPost(id)
-    if (communityIds.length > 0) {
-      void enqueueBulkCommunityModerationDispatchers(
-        communityIds.map(communityId => ({ postId: id, communityId })),
-      )
-    }
+    // The edited content gets its own durable C8 request; a published post only.
+    await requestCommunityModerationRunForPost(id)
     await enqueueSpamDetection(id, {
       contentSha256: content_sha256,
       deduplicationKey: moderationDeduplicationKey,

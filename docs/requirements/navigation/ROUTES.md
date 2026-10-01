@@ -58,7 +58,9 @@ See also: [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md) — maps each ro
   - `/article/community-guidelines` - Community Guidelines article (DB-backed article content, SEO-indexed)
   - `/article/copyright-and-dmca` and `/article/copyright-complaints` - copyright policy and notice/counter-notice guide articles, linked from `/copyright` (DB-backed article content, SEO-indexed)
   - `/copyright` - copyright policy and launch-gated designated-agent, repeat-infringer, and counter-notice information (public, SEO-indexed)
-  - `/copyright/notices`, `/copyright/notices/:id`, and `/copyright/notices/new` - authenticated member case index, redacted accepted-case detail, and structured notice form; not indexed
+  - `/copyright/notices` and `/copyright/notices/:id` - authenticated member case index and redacted accepted-case detail; not indexed
+  - `/copyright/notices/new` - structured notice form, open to signed-out visitors as well as signed-in members (a signed-out filer gets an in-page receipt with the case ID in place of the case list); not indexed
+  - `/copyright/notices/:id/guest` - public correction, withdrawal, and court or CCB filing form for a guest who holds a staff-issued case token; not indexed
   - `/copyright/notices/:id/appeal` and `/copyright/notices/:id/counter-notice` - authenticated poster response forms; server authorization remains authoritative
   - `/copyright/review-queue` and `/copyright/email-review` - authenticated copyright-review staff case and email intake queues, reached from the Moderation intent's Copyright sidebar group; not indexed
 - Memberships:

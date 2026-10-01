@@ -28,7 +28,7 @@ flowchart TD
   update[processPostUpdated] --> changed{Content changed?}
   changed -- Yes --> reset[Reset clearance to pending]
   changed -- Yes --> spam[Enqueue spam detection]
-  changed -- Yes --> community[Re-enqueue community moderation when approved]
+  changed -- Yes --> community[Request a community moderation run when approved]
   community --> dedupe[Deduplicate by content SHA]
   changed -- No --> skip[Keep existing clearance]
   update --> omni[Enqueue OpenAI omni moderation]
@@ -45,9 +45,10 @@ flowchart TD
 ### Community moderation on edit
 
 When post content changes, `processPostUpdated` queries `community_post_reviews` for the post's
-approved, non-unpublished community review and re-enqueues community moderation. The community
-moderation dispatcher deduplicates via content SHA-256 (`getAlreadyModeratedPromptIds`): if content
-hasn't changed since last moderation, all prompts are skipped with zero API calls. Only when content
-actually changes do prompts re-run.
+approved, non-unpublished community review and requests a community moderation run in a transaction
+of its own, then enqueues the shared dispatcher after commit. The request is keyed by the content
+SHA-256, so a replay never queues a second run and a run for content that has not changed makes no
+further API call. Only when content actually changes does a new run ask the community's prompts
+again.
 
 ---

@@ -362,6 +362,718 @@
         },
         {
           "tool": {
+            "name": "get_community_members",
+            "title": "Get Community Members",
+            "description": "List the members of a public community by its UUID or slug, as a signed-out reader sees the roster: the owner and moderators always, and regular members only when the community lets the public see them (member_roster_visibility: public). Returns at most 25 members per page and page_info.end_cursor; pass it as after to get the next page. A private, deleted or unknown community returns { success: false, error: \"Community not found\" }. A malformed cursor returns { success: false, error: \"Invalid cursor\" }.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "community_id": {
+                  "type": "string",
+                  "description": "Community UUID or slug"
+                },
+                "role": {
+                  "type": "string",
+                  "enum": ["owner", "moderator", "member"],
+                  "description": "Only members with this role"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25,
+                  "description": "Members per page, from 1 to 25 (default: 20)"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous page_info.end_cursor, for the next page."
+                }
+              },
+              "required": ["community_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "user_id": {
+                            "type": "string"
+                          },
+                          "username": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "role": {
+                            "enum": ["member", "moderator", "owner"],
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["user_id", "username", "role", "created_at"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["communities:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/communities/:idOrSlug/members"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_community_pinned_posts",
+            "title": "Get Community Pinned Posts",
+            "description": "Get the posts a public community has pinned, in pin order, by its UUID or slug, as a signed-out reader sees them: an anonymous post never names its author, whoever asks. A pinned post the public cannot see is left out. A private, deleted or unknown community returns { success: false, error: \"Community not found\" }.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "community_id": {
+                  "type": "string",
+                  "description": "Community UUID or slug"
+                }
+              },
+              "required": ["community_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "pinned_posts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "post_type": {
+                            "enum": [
+                              "article",
+                              "blog_post",
+                              "comment",
+                              "data_point",
+                              "discussion",
+                              "link",
+                              "review",
+                              "story",
+                              "topic_recommendation"
+                            ],
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "markdown": {
+                            "type": "string"
+                          },
+                          "parent_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "root_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "created_by_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "is_anonymous": {
+                            "type": "boolean"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "slug",
+                          "post_type",
+                          "title",
+                          "markdown",
+                          "parent_id",
+                          "root_id",
+                          "created_by_id",
+                          "is_anonymous",
+                          "created_at",
+                          "updated_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["success", "pinned_posts"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["communities:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/communities/:idOrSlug/pinned-posts"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_community_posts",
+            "title": "Get Community Posts",
+            "description": "List the approved posts of a public community by its UUID or slug, newest first or by hot, as a signed-out reader sees them: an anonymous post never names its author, whoever asks. q matches post text and may carry #hashtags. Pinned posts are left out of every unfiltered page; their ids come back in pinned_post_ids on the first unfiltered page only (read them with get_community_pinned_posts). Returns at most 25 posts per page and page_info.end_cursor; pass it as after, with the same sort, to get the next page. A private, deleted or unknown community returns { success: false, error: \"Community not found\" }. A malformed cursor, or one from a different sort, returns { success: false, error: \"Invalid cursor\" }.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "community_id": {
+                  "type": "string",
+                  "description": "Community UUID or slug"
+                },
+                "sort": {
+                  "type": "string",
+                  "enum": ["new", "hot"],
+                  "description": "Sort order: new (most recent, the default) or hot"
+                },
+                "q": {
+                  "type": "string",
+                  "description": "Keyword search over the posts. Same as the REST q: matches text and #hashtags."
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25,
+                  "description": "Posts per page, from 1 to 25 (default: 20)"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous page_info.end_cursor, for the next page."
+                }
+              },
+              "required": ["community_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "pinned_post_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "post_type": {
+                            "enum": [
+                              "article",
+                              "blog_post",
+                              "comment",
+                              "data_point",
+                              "discussion",
+                              "link",
+                              "review",
+                              "story",
+                              "topic_recommendation"
+                            ],
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "markdown": {
+                            "type": "string"
+                          },
+                          "parent_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "root_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "created_by_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "is_anonymous": {
+                            "type": "boolean"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "slug",
+                          "post_type",
+                          "title",
+                          "markdown",
+                          "parent_id",
+                          "root_id",
+                          "created_by_id",
+                          "is_anonymous",
+                          "created_at",
+                          "updated_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "pinned_post_ids", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["communities:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/communities/:idOrSlug/posts"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_community",
+            "title": "Get Community",
+            "description": "Get one community by its UUID or slug: its name, description, rules, owner and public counts. Only public communities are readable, for every caller: a private, deleted or unknown community returns { success: false, error: \"Community not found\" }, even to its own members, moderators and owner. Use get_community_posts, get_community_pinned_posts and get_community_members to read inside it.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "community_id": {
+                  "type": "string",
+                  "description": "Community UUID or slug"
+                }
+              },
+              "required": ["community_id"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "community": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "markdown": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "rules_markdown": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "member_roster_visibility": {
+                          "enum": ["members", "moderators", "public", "users"],
+                          "type": "string"
+                        },
+                        "list_type": {
+                          "anyOf": [
+                            {
+                              "const": "follow"
+                            },
+                            {
+                              "const": "mute"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allow_review_posts": {
+                          "type": "boolean"
+                        },
+                        "allow_data_point_posts": {
+                          "type": "boolean"
+                        },
+                        "archived_at": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "slug",
+                        "name",
+                        "markdown",
+                        "rules_markdown",
+                        "member_roster_visibility",
+                        "list_type",
+                        "allow_review_posts",
+                        "allow_data_point_posts",
+                        "archived_at",
+                        "created_at",
+                        "updated_at"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "owner": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "username": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["id", "username"],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "metrics": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "member_count": {
+                              "type": "number"
+                            },
+                            "post_count": {
+                              "type": "number"
+                            },
+                            "list_item_count": {
+                              "type": "number"
+                            },
+                            "proxy_follow_count": {
+                              "type": "number"
+                            },
+                            "proxy_mute_count": {
+                              "type": "number"
+                            },
+                            "virtual_subscription_count": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "member_count",
+                            "post_count",
+                            "list_item_count",
+                            "proxy_follow_count",
+                            "proxy_mute_count",
+                            "virtual_subscription_count"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["success", "community", "owner", "metrics"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["communities:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/communities/:idOrSlug"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "get_domain_ratings",
             "title": "Get Domain Ratings",
             "description": "Look up trust signals for a linked source. Provide exactly one of url or hostname. Returns hostname/domain trust votes and, when a URL maps to an RSS source, the associated source topic ratings and metrics.",
@@ -941,7 +1653,7 @@
           "tool": {
             "name": "get_my_profile",
             "title": "Get My Profile",
-            "description": "Get the current user's wallet profile including their cards, point valuations, rewards program statuses, and financial profile (credit score range, income range).",
+            "description": "Get the current user's wallet profile including their cards, point valuations, rewards program statuses.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -1365,168 +2077,6 @@
                   },
                   "required": ["end_cursor", "has_next_page", "start_cursor"],
                   "type": "object"
-                },
-                "financial_profile": {
-                  "anyOf": [
-                    {
-                      "additionalProperties": false,
-                      "properties": {
-                        "cards_opened_24m": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "number"
-                            }
-                          ]
-                        },
-                        "credit_score_range": {
-                          "anyOf": [
-                            {
-                              "const": "300-579"
-                            },
-                            {
-                              "const": "580-669"
-                            },
-                            {
-                              "const": "670-739"
-                            },
-                            {
-                              "const": "740-799"
-                            },
-                            {
-                              "const": "800-850"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "currency": {
-                          "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
-                          "type": "string"
-                        },
-                        "hard_inquiries_12m": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "number"
-                            }
-                          ]
-                        },
-                        "individual_id": {
-                          "type": "string"
-                        },
-                        "stated_income_range": {
-                          "anyOf": [
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "maximum": {
-                                  "anyOf": [
-                                    {
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "amount": {
-                                          "maximum": 9007199254740991,
-                                          "minimum": 0,
-                                          "type": "integer"
-                                        },
-                                        "currency": {
-                                          "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
-                                          "type": "string"
-                                        }
-                                      },
-                                      "required": ["amount", "currency"],
-                                      "type": "object"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
-                                  ]
-                                },
-                                "minimum": {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "amount": {
-                                      "maximum": 9007199254740991,
-                                      "minimum": 0,
-                                      "type": "integer"
-                                    },
-                                    "currency": {
-                                      "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
-                                      "type": "string"
-                                    }
-                                  },
-                                  "required": ["amount", "currency"],
-                                  "type": "object"
-                                }
-                              },
-                              "required": ["maximum", "minimum"],
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "total_credit_limit": {
-                          "anyOf": [
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "amount": {
-                                  "maximum": 9007199254740991,
-                                  "minimum": 0,
-                                  "type": "integer"
-                                },
-                                "currency": {
-                                  "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
-                                  "type": "string"
-                                }
-                              },
-                              "required": ["amount", "currency"],
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "updated_at": {
-                          "type": "string"
-                        },
-                        "years_of_credit_history": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "number"
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "cards_opened_24m",
-                        "credit_score_range",
-                        "currency",
-                        "hard_inquiries_12m",
-                        "individual_id",
-                        "stated_income_range",
-                        "total_credit_limit",
-                        "updated_at",
-                        "years_of_credit_history"
-                      ],
-                      "type": "object"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
                 }
               },
               "required": [
@@ -1536,8 +2086,7 @@
                 "point_valuations",
                 "point_valuations_page_info",
                 "rewards_program_statuses",
-                "rewards_program_statuses_page_info",
-                "financial_profile"
+                "rewards_program_statuses_page_info"
               ],
               "additionalProperties": false
             },
@@ -1563,7 +2112,210 @@
             {
               "method": "GET",
               "path": "/api/v1/my/rewards-program-statuses"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_my_financial_profile",
+            "title": "Get My Financial Profile",
+            "description": "Read the current user's credit score range, stated income range, total credit limit and years of credit history.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
             },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "result": {
+                  "type": "object",
+                  "properties": {
+                    "financial_profile": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "cards_opened_24m": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ]
+                            },
+                            "credit_score_range": {
+                              "anyOf": [
+                                {
+                                  "const": "300-579"
+                                },
+                                {
+                                  "const": "580-669"
+                                },
+                                {
+                                  "const": "670-739"
+                                },
+                                {
+                                  "const": "740-799"
+                                },
+                                {
+                                  "const": "800-850"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "currency": {
+                              "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                              "type": "string"
+                            },
+                            "hard_inquiries_12m": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ]
+                            },
+                            "individual_id": {
+                              "type": "string"
+                            },
+                            "stated_income_range": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "maximum": {
+                                      "anyOf": [
+                                        {
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "amount": {
+                                              "maximum": 9007199254740991,
+                                              "minimum": 0,
+                                              "type": "integer"
+                                            },
+                                            "currency": {
+                                              "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": ["amount", "currency"],
+                                          "type": "object"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "minimum": {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "amount": {
+                                          "maximum": 9007199254740991,
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        },
+                                        "currency": {
+                                          "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["amount", "currency"],
+                                      "type": "object"
+                                    }
+                                  },
+                                  "required": ["maximum", "minimum"],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "total_credit_limit": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "amount": {
+                                      "maximum": 9007199254740991,
+                                      "minimum": 0,
+                                      "type": "integer"
+                                    },
+                                    "currency": {
+                                      "enum": ["aud", "cad", "eur", "gbp", "jpy", "usd"],
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["amount", "currency"],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "updated_at": {
+                              "type": "string"
+                            },
+                            "years_of_credit_history": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "cards_opened_24m",
+                            "credit_score_range",
+                            "currency",
+                            "hard_inquiries_12m",
+                            "individual_id",
+                            "stated_income_range",
+                            "total_credit_limit",
+                            "updated_at",
+                            "years_of_credit_history"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["financial_profile"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["success", "result"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["financial-profile:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
             {
               "method": "GET",
               "path": "/api/v1/my/financial-profile"
@@ -4294,6 +5046,275 @@
             {
               "method": "DELETE",
               "path": "/api/v1/my/spending-categories/:id"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "search_communities",
+            "title": "Search Communities",
+            "description": "Search public communities, as a signed-out reader sees them: a private community never appears, whoever asks. q matches names and descriptions and may carry #hashtags. Sorted by name (the default, A to Z), members or virtual_subscriptions (most first). Returns at most 25 communities per page and page_info.end_cursor; pass it as after, with the same sort, to get the next page. A malformed cursor, or one from a different sort, returns { success: false, error: \"Invalid cursor\" }.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "q": {
+                  "type": "string",
+                  "description": "Keyword search. Same as GET /api/v1/communities q."
+                },
+                "sort": {
+                  "type": "string",
+                  "enum": ["name", "members", "virtual_subscriptions"],
+                  "description": "Sort order: name (A to Z, the default), members (most members first), virtual_subscriptions (most follows first)"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25,
+                  "description": "Communities per page, from 1 to 25 (default: 20)"
+                },
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous page_info.end_cursor, for the next page."
+                }
+              },
+              "required": []
+            },
+            "outputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "community": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "slug": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "markdown": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "rules_markdown": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "member_roster_visibility": {
+                                "enum": ["members", "moderators", "public", "users"],
+                                "type": "string"
+                              },
+                              "list_type": {
+                                "anyOf": [
+                                  {
+                                    "const": "follow"
+                                  },
+                                  {
+                                    "const": "mute"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "allow_review_posts": {
+                                "type": "boolean"
+                              },
+                              "allow_data_point_posts": {
+                                "type": "boolean"
+                              },
+                              "archived_at": {
+                                "anyOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "created_at": {
+                                "type": "string"
+                              },
+                              "updated_at": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "slug",
+                              "name",
+                              "markdown",
+                              "rules_markdown",
+                              "member_roster_visibility",
+                              "list_type",
+                              "allow_review_posts",
+                              "allow_data_point_posts",
+                              "archived_at",
+                              "created_at",
+                              "updated_at"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "owner": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "username": {
+                                    "anyOf": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": ["id", "username"],
+                                "additionalProperties": false
+                              }
+                            ]
+                          },
+                          "metrics": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "member_count": {
+                                    "type": "number"
+                                  },
+                                  "post_count": {
+                                    "type": "number"
+                                  },
+                                  "list_item_count": {
+                                    "type": "number"
+                                  },
+                                  "proxy_follow_count": {
+                                    "type": "number"
+                                  },
+                                  "proxy_mute_count": {
+                                    "type": "number"
+                                  },
+                                  "virtual_subscription_count": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "member_count",
+                                  "post_count",
+                                  "list_item_count",
+                                  "proxy_follow_count",
+                                  "proxy_mute_count",
+                                  "virtual_subscription_count"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        },
+                        "required": ["community", "owner", "metrics"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page_info": {
+                      "type": "object",
+                      "properties": {
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["has_next_page", "start_cursor", "end_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["success", "error"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["communities:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/communities"
             }
           ]
         },

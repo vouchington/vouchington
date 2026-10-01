@@ -35,7 +35,7 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly communityAutomod: Pick<
     typeof import('@/lib/api/client/community-automod'),
-    'recordCommunityAutomodFeedback'
+    'recordCommunityAutomodFeedback' | 'updateCommunityAutomodSettings'
   >
   readonly communityRestrictions: Pick<
     typeof import('@/lib/api/client/community-restrictions'),
@@ -99,7 +99,7 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly memberships: Pick<
     typeof import('@/lib/api/client/memberships'),
-    'createMembershipRefund'
+    'createMembershipRefund' | 'fetchRefundableCharges'
   >
   readonly importExport: Pick<
     typeof import('@/lib/api/client/import-export'),

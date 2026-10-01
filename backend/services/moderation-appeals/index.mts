@@ -1,4 +1,4 @@
-export type { ModerationAppealStatus, ModerationAppealAction } from './config.mts'
+export type { ModerationAppealAction } from './config.mts'
 export { MODERATION_APPEAL_STATUSES } from './config.mts'
 export { parseCreateModerationAppealInput } from './parse.mts'
 export { createModerationAppeal } from './create.mts'

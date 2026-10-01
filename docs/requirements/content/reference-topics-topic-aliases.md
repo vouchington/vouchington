@@ -56,10 +56,11 @@ relation.votes_score_net > 0`, joined to `topic_aliases`. `post_topic_alias_sour
 different, narrower fact — which contributor attached the hashtag via which authored token
 (title/markdown/explicit) — and is written by a structurally independent path from the relation's
 vote score: `replacePostHashtagSources` (`backend/services/posts/hashtag-sources.mts`) recomputes
-source rows synchronously on every edit, while `votes_score_net` is only recomputed by the queued,
-per-actor `finalizePostHashtagCategoryVotes` (`backend/services/posts/hashtag-votes.mts`). No
-constraint or shared transaction ties the two together, and the codebase does not assume they
-agree: `retainTopicAliasPublicationPostImpacts`
+source rows synchronously on every edit, while editor votes and primary score refreshes are applied
+in the same post transaction (`backend/services/posts/hashtag-votes.mts`). Removed relations receive
+a zero vote, including when their relation row is already soft-deleted. Cache publication and
+notification reconciliation run after commit. The codebase still treats authorship and active
+membership as separate facts: `retainTopicAliasPublicationPostImpacts`
 (`backend/services/post-publication/capture-topic-alias.mts`) computes a topic alias's affected
 posts as the union of posts with a source row and posts with an active positive relation, because
 either can exist without the other. This is not a one-off: every impact/invalidation fan-out (cache

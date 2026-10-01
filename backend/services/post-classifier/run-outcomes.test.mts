@@ -21,6 +21,7 @@ import {
   persistClassifierRunOutcomes,
   readClassifierRunOutcomes,
   startClassifierProviderAttempt,
+  type TopicRemotePlan,
 } from '@services/classifier-runs'
 
 const facts = async (setup: PostClassifierExecutionFixture) =>
@@ -164,7 +165,7 @@ describe('post classifier outcomes on the shared lifecycle (real PG)', () => {
 
   it('rejects a threshold that differs from the immutable receipt snapshot', async () => {
     const setup = await createPostClassifierExecutionFixture(true, true)
-    const remote = setup.lease.resolved.remote!
+    const remote = setup.lease.resolved.remote as TopicRemotePlan
     const poisoned = {
       ...setup.lease,
       resolved: {

@@ -28,7 +28,7 @@
     "@data-stores/valkey-core": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@voucha/types": "workspace:^",
-    "valkyries": "^0.8.0"
+    "valkyries": "^0.8.1"
   },
   "devDependencies": {}
 }

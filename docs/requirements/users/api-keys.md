@@ -31,15 +31,18 @@ API keys use a permission-based access control system. Each key has a `permissio
 
 ### Available Permissions
 
-| Permission                           | Description                                           |
-| ------------------------------------ | ----------------------------------------------------- |
-| `rss:read`                           | Access RSS feed endpoints (`/rss/posts`, `/rss/news`) |
-| `topics:read`                        | Read topic and recommendation MCP tools               |
-| `posts:read`                         | Read post MCP tools                                   |
-| `cards:read/write`                   | Read or manage cards; write requires read             |
-| `entity-relations:read/write`        | Read or add relations; write requires read            |
-| `post-relations.owned-private:write` | Add relations or tags to owned private posts only     |
-| `mcp.user:read/write`                | Compatibility grants for existing user MCP keys       |
+| Permission                           | Description                                                     |
+| ------------------------------------ | --------------------------------------------------------------- |
+| `rss:read`                           | Access RSS feed endpoints (`/rss/posts`, `/rss/news`)           |
+| `topics:read`                        | Read topic and recommendation MCP tools                         |
+| `posts:read`                         | Read post MCP tools                                             |
+| `communities:read`                   | Read public community MCP tools                                 |
+| `cards:read/write`                   | Read or manage cards; write requires read                       |
+| `entity-relations:read/write`        | Read or add relations; write requires read                      |
+| `post-relations.owned-private:write` | Add relations or tags to owned private posts only               |
+| `financial-profile:read/write`       | Credit score, income, credit limit and history; exact grants    |
+| `spending:read/write`                | Spending categories, amounts, frequency and notes; exact grants |
+| `mcp.user:read/write`                | User MCP access excluding exact-grant permissions               |
 
 Scopes use the strict lowercase `<resource>:<action>` grammar. Dot-delimited resources compose the
 surface and audience, such as `mcp.user` and `mcp.admin`. Unknown, whitespace-padded, case-normalized,
@@ -62,10 +65,8 @@ the audience label or rendering server-owned English copy. Web and native picker
 catalogue rather than hard-coding scope strings; see the
 [client parity matrix](../CLIENT-PARITY-MATRIX.md#api-key-and-connected-app-contract-handoff).
 See the [Scopes API](../api/v1/scopes/README.md).
-
-MCP keys are user MCP only. The own-private relation capability is visible as a separate picker permission, not part of Standard
-MCP access. Selecting it also selects its relation write and read prerequisites. The picker explains
-that it lets the credential add relations and tags only to the holder's own private posts.
+`financial-profile:*` and `spending:*` require explicit grants; `mcp.user:*` excludes them. `get_my_financial_profile` requires `financial-profile:read`; `get_my_profile` omits financial data. Each write requires its read scope. Pickers describe each permission; consent separates exact grants as sensitive permissions.
+MCP keys are user MCP only. The own-private relation capability is visible as a separate picker permission, not part of Standard MCP access. Selecting it also selects its relation write and read prerequisites. The picker explains that it lets the credential add relations and tags only to the holder's own private posts.
 
 ## Endpoints
 

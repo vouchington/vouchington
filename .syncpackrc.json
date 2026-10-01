@@ -10,7 +10,7 @@
     "backend/entrypoints/*/package.json",
     "ci/package.json",
     "email-templates/package.json",
-    "backend/{agents,data-stores,modules,services,queues,workers,flows}/*/package.json",
+    "backend/{agents,data-stores,modules,services,queues,workers}/*/package.json",
     "web/package.json",
     "cloudflare-worker/package.json",
     "lambdas/*/package.json",
@@ -94,7 +94,6 @@
         "@services/**",
         "@queues/**",
         "@workers/**",
-        "@flows/**",
         "@entrypoints/**",
         "@ts-shared/**",
         "@voucha/**"
@@ -112,7 +111,6 @@
         "@services/**",
         "@queues/**",
         "@workers/**",
-        "@flows/**",
         "@entrypoints/**",
         "@voucha/api",
         "@voucha/backend",
@@ -124,14 +122,13 @@
       "snapTo": ["@backend/worker-runtime"]
     },
     {
-      "label": "External deps may differ across workspaces — each workspace manages its own version",
-      "dependencies": ["**"],
-      "isIgnored": true
+      "label": "Every other external dependency uses one version across all workspaces (Syncpack's default highest-semver policy)",
+      "dependencies": ["**"]
     }
   ],
   "semverGroups": [
     {
-      "label": "Caret (^) range, in effect only for the glide-mq snapTo group because the last versionGroup ignores all other external deps",
+      "label": "Every external dependency uses a caret (^) range; the lockfile records the exact install",
       "dependencies": ["**"],
       "packages": ["**"],
       "range": "^"

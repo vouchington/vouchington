@@ -149,7 +149,7 @@ function makeSimulationResponse({ matched }: { matched: boolean }) {
       time_window_hours: 168,
       sample_count: matched ? 1 : 0,
       would_flag_count: matched ? 1 : 0,
-      would_unpublish_count: 0,
+      community_automod_action: 'record_only',
       false_positive_estimate: {
         historical_flagged_count: 0,
         historical_approved_count: 0,
@@ -166,7 +166,6 @@ function makeSimulationResponse({ matched }: { matched: boolean }) {
             content_excerpt: 'Simulated post body',
             flagged: true,
             reason: 'Matches panel prompt',
-            would_unpublish: false,
           },
         ]
       : [],

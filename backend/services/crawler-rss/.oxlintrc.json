@@ -12,7 +12,9 @@
     "jest",
     "promise",
     "oxc",
-    "typescript"
+    "typescript",
+    "unicorn",
+    "import"
   ],
   "rules": {
     "no-mistakes/postgres-no-manual-transaction": [
@@ -32,12 +34,7 @@
       {
         "targets": [
           {
-            "sourceSpecifierPatterns": [
-              "@queues/**/enqueues",
-              "@queues/**/enqueues/**",
-              "@flows/**/enqueues",
-              "@flows/**/enqueues/**"
-            ],
+            "sourceSpecifierPatterns": ["@queues/**/enqueues", "@queues/**/enqueues/**"],
             "calleeNamePatterns": ["/^enqueue[A-Z].*/"]
           }
         ]

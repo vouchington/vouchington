@@ -2,10 +2,7 @@ import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/v
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
-  ENTITY_LISTENER_ORDERING,
   getEntityListenerReconciliationIntervalSeconds,
-  POST_CATEGORY_FINALIZATION_RECONCILIATION_DEDUPLICATION_ID,
-  POST_CATEGORY_FINALIZATION_RECONCILIATION_DEDUPLICATION_TTL_MS,
   PRIORITY_DEFAULT,
   PRIORITY_DISPATCHER,
   QUEUE_NAME,
@@ -56,36 +53,6 @@ const enqueueReconcileEntitiesJob = createEnqueueFunction<
   jobName: 'reconcileEntities',
   defaults: DEFAULTS,
 })
-
-const enqueueReconcilePostCategoryFinalizationsJob = createEnqueueFunction<
-  Record<string, never>,
-  'processReconcilePostCategoryFinalizations'
->({
-  queue: entitiesListeners,
-  queueName: QUEUE_NAME,
-  jobName: 'processReconcilePostCategoryFinalizations',
-  defaults: DEFAULTS,
-})
-
-export function enqueueReconcilePostCategoryFinalizations(): EnqueueReturnType {
-  return enqueueReconcilePostCategoryFinalizationsJob({}, {
-    priority: PRIORITY_DISPATCHER,
-    ordering: ENTITY_LISTENER_ORDERING.post_category_finalization_reconciliation,
-    deduplication: {
-      id: POST_CATEGORY_FINALIZATION_RECONCILIATION_DEDUPLICATION_ID,
-      mode: 'throttle',
-      ttl: POST_CATEGORY_FINALIZATION_RECONCILIATION_DEDUPLICATION_TTL_MS,
-    },
-  } satisfies Partial<JobOptions>)
-}
-
-/** Chains another bounded page without throttle deduplication; queue ordering keeps it serialized. */
-export function enqueueContinuePostCategoryFinalizations(): EnqueueReturnType {
-  return enqueueReconcilePostCategoryFinalizationsJob({}, {
-    priority: PRIORITY_DISPATCHER,
-    ordering: ENTITY_LISTENER_ORDERING.post_category_finalization_reconciliation,
-  } satisfies Partial<JobOptions>)
-}
 
 export function enqueueReconcileEntities(): EnqueueReturnType {
   const intervalMs = getEntityListenerReconciliationIntervalSeconds() * 1000

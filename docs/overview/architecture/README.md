@@ -104,6 +104,7 @@ When architecture decisions change, update the relevant doc here and cross-link 
 - [Rate Limiting reference](reference-rate-limiting-layer-1-cloudflare-worker-edge.md)
 - [Rate Limiting reference](reference-rate-limiting-layer-3-user-aware-trust-tier-backend.md)
 - [Rate Limiting reference](reference-rate-limiting-layer-4-per-route-rate-limiting-backend.md)
+- [Rate Limiting reference](reference-rate-limiting-rest-usage-quota.md)
 - [Tier 1: CF Worker Edge Cache (Workers Cache)](reference-tier-1-cf-worker-edge-cache-workers-cache.md)
 - [Tier 2: Backend HTTP Cache-Control](reference-tier-2-backend-http-cache-control.md)
 - [Tier 3: Backend Valkey Cache](reference-tier-3-backend-valkey-cache.md)

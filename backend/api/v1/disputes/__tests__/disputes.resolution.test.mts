@@ -14,7 +14,7 @@ import { parseCreateReviewDisputeInput } from '@services/review-disputes/parse'
 import { createReviewDispute } from '@services/review-disputes/create'
 import { updateReviewDisputeDraft } from '@services/review-disputes/update-dispute-draft'
 import { approveReviewDispute } from '@services/review-disputes/approve-dispute'
-import type { ReviewDispute } from '@services/review-disputes'
+type ReviewDispute = Awaited<ReturnType<typeof createReviewDispute>>['dispute']
 
 async function makeDisputeFixture(staffId: string) {
   const creator = await createTestUser()

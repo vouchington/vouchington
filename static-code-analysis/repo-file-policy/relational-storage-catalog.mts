@@ -8,11 +8,7 @@ export const ALLOWED_OPAQUE_JSON = new Set([
   'apple_accounts.apple_user_data',
   'classifier_runs.configuration_json',
   'communities.lingua_rs_results',
-  'conversation_message_agentic_runs.input',
-  'conversation_message_agentic_runs.output',
-  'conversation_message_agentic_runs.error',
-  'conversation_message_agentic_runs_events.input',
-  'conversation_message_agentic_runs_events.output',
+  'community_prompt_classifier_results.raw_response',
   'crawls.lingua_rs_results',
   'crawls.meta_tags',
   'crawls.request_headers',
@@ -51,7 +47,6 @@ export {
 // Tokens, traversal cursors, and a retained table's own primary identity are not foreign references.
 export const ALLOWED_NONRELATION_UUID = new Set([
   'ap_inbox_deliveries.processing_attempt_id',
-  'autotagger_receipts.batch_id',
   'follower_distribution_deliveries.delivery_id',
   'membership_google_play_recovery_cursors.last_evidence_id',
   'membership_google_play_recovery_cursors.sweep_upper_bound_id',

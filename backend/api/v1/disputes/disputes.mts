@@ -12,11 +12,21 @@ import {
   listRedactedReviewDisputes,
   REVIEW_DISPUTE_STATUSES,
   type ReviewDisputeReason,
-  type ReviewDisputeStatus,
 } from '@services/review-disputes'
 import { isModerationStaff } from '@services/users'
-import { apiResponse } from '../../response-contract.mts'
-import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
+import { apiQuery, apiResponse } from '../../response-contract.mts'
+import {
+  defineQueryContract,
+  queryBoolean,
+  queryEnum,
+  queryInteger,
+  queryString,
+} from '@modules/pagination'
+import {
+  beforeIdFromCursor,
+  parseAndValidateCaseListQuery,
+  scopedPageInfo,
+} from '../../case-list-query-helpers.mts'
 import { filterReviewDisputePostContentForViewer } from './dispute-post-content-visibility.mts'
 import './disputes-staff.mts'
 
@@ -27,6 +37,16 @@ type CreateReviewDisputeRequest = {
   claim_text: string
   cf_turnstile_response?: string
 }
+
+const disputesQuery = defineQueryContract({
+  status: queryEnum(REVIEW_DISPUTE_STATUSES, {
+    default: 'pending',
+    description: 'Dispute status; unknown values use pending.',
+  }),
+  mine: queryBoolean({ description: 'Only disputes the caller filed.' }),
+  limit: queryInteger({ minimum: 1, maximum: 100, default: 25 }),
+  after: queryString(),
+})
 
 // POST /api/v1/disputes — file a review dispute
 app.route('/api/v1/disputes').post(async (ctx: Context) => {
@@ -46,47 +66,29 @@ app.route('/api/v1/disputes').post(async (ctx: Context) => {
 
 // GET /api/v1/disputes — list disputes (staff: full, member: redacted)
 app.route('/api/v1/disputes').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/disputes', disputesQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/disputes')
 
-  // Intentional carrier skip: `limit` is an integer on the wire and ctx.query holds raw strings,
-  // so the shared adapter would reject valid requests. Unknown values fall back to defaults here.
-  const limitRaw = ctx.query.limit !== undefined ? Number(ctx.query.limit) : 25
-  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 100) : 25
+  const { status, limit, after, mine } = parseAndValidateCaseListQuery(
+    ctx,
+    'GET:/api/v1/disputes',
+    REVIEW_DISPUTE_STATUSES,
+  )
 
-  const statusParam = ctx.query.status
-  const status: ReviewDisputeStatus =
-    typeof statusParam === 'string' &&
-    REVIEW_DISPUTE_STATUSES.includes(statusParam as ReviewDisputeStatus)
-      ? (statusParam as ReviewDisputeStatus)
-      : 'pending'
-
-  const disputantUserId = ctx.query.mine === 'true' ? currentUser.id : undefined
+  const disputantUserId = mine ? currentUser.id : undefined
   const isStaff = isModerationStaff(currentUser)
   const audience = isStaff ? 'staff' : 'member'
   const cursorScope = `disputes:${status}:${audience}:${disputantUserId ?? 'all'}:id-desc`
-  const beforeId =
-    typeof ctx.query.after === 'string'
-      ? decodeScopedUuidCursor(ctx.query.after, cursorScope, 'Invalid cursor format').id
-      : undefined
 
   const { disputes, hasNextPage } = await listReviewDisputes({
     status,
     limit,
-    beforeId,
+    beforeId: beforeIdFromCursor(after, cursorScope),
     disputantUserId,
   })
   const viewerDisputes = await filterReviewDisputePostContentForViewer(currentUser, disputes)
 
-  const page_info = {
-    has_next_page: hasNextPage,
-    start_cursor: viewerDisputes[0]
-      ? encodeScopedUuidCursor(viewerDisputes[0].id, cursorScope)
-      : null,
-    end_cursor:
-      hasNextPage && viewerDisputes.at(-1)
-        ? encodeScopedUuidCursor(viewerDisputes.at(-1)!.id, cursorScope)
-        : null,
-  }
+  const page_info = scopedPageInfo(viewerDisputes, hasNextPage, cursorScope)
   if (isStaff) {
     ctx.json(apiResponse('GET:/api/v1/disputes#staff', { disputes: viewerDisputes, page_info }))
     return

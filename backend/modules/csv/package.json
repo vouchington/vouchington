@@ -23,6 +23,6 @@
   },
   "scripts": {},
   "dependencies": {
-    "@vouchington/csv": "0.0.1"
+    "@vouchington/csv": "^0.0.1"
   }
 }

@@ -14,6 +14,6 @@
   },
   "dependencies": {
     "@voucha/api-fixtures": "workspace:^",
-    "@vouchington/request-contract-validation": "0.0.1"
+    "@vouchington/request-contract-validation": "^0.0.1"
   }
 }

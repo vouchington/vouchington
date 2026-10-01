@@ -63,11 +63,17 @@ Native dependency policy and automation are owned by the
 Exact pins belong in package-manager, lock, or toolchain files that Dependabot, Renovate, or a
 frozen install can update:
 
-- npm/pnpm specifiers in `package.json`, exact or caret as each workspace chooses (Syncpack enforces a
-  range style only where [`.syncpackrc.json`](../../.syncpackrc.json) configures one), plus
-  `pnpm-lock.yaml`, which records what actually installs
+- `pnpm-lock.yaml`, which records what actually installs
 - `.mise.toml` (Renovate)
 - GitHub Actions 40-hex SHAs with a version comment
+
+`package.json` specifiers are not exact pins. `pnpm run syncpack:lint` ([config](../../.syncpackrc.json))
+requires every external dependency, including first-party `@vouchington/*` packages, to use a caret
+(`^`) range and one version across all workspaces. The lockfile, not the specifier, fixes the
+installed version. Dependabot keeps each specifier's existing prefix, so its bumps stay caret
+ranges, and no repository workflow writes exact specifiers. Run `pnpm run syncpack:fix` after
+adding or editing a dependency. An exception needs its own labelled `.syncpackrc.json` version
+group that states the reason.
 
 Living docs name majors or minimums, or point at those owner files. Do not copy a current `x.y.z`,
 commit SHA, or image digest into markdown. A bot PR must not need a docs path to stay accurate.

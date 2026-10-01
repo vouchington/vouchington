@@ -7,7 +7,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE classifier_candidate_kind AS ENUM ('topic', 'story');
+  CREATE TYPE classifier_candidate_kind AS ENUM ('topic', 'story', 'community_prompt');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -815,6 +815,62 @@ CREATE INDEX IF NOT EXISTS idx_story_classifier_results__classifier_kind
 CREATE INDEX IF NOT EXISTS idx_story_classifier_results__threshold
   ON story_classifier_results (threshold_id, story_id DESC);
 
+-- One community moderation prompt is one yes/no candidate of a single community-scoped call. It has
+-- no stored candidate or threshold revision: the prompt version's defaults are the thresholds, and
+-- the community prompt row itself is the candidate identity. Partitioned by the UUIDv7 batch so a
+-- batch read prunes to one child.
+CREATE TABLE IF NOT EXISTS community_prompt_classifier_results (
+  batch_id UUID NOT NULL,
+  id UUID NOT NULL DEFAULT uuidv7(),
+  community_prompt_id UUID NOT NULL,
+  decision_call_id UUID NOT NULL,
+  classifier_id UUID NOT NULL,
+  candidate_kind classifier_candidate_kind NOT NULL DEFAULT 'community_prompt'
+    CHECK (candidate_kind = 'community_prompt'),
+  prompt_version_id UUID NOT NULL,
+  probability NUMERIC NOT NULL CHECK (probability >= 0 AND probability <= 1),
+  effective_lower_threshold NUMERIC(5,4) NOT NULL,
+  effective_upper_threshold NUMERIC(5,4) NOT NULL,
+  raw_response JSONB NOT NULL,
+  scope_category TEXT NOT NULL DEFAULT 'community_ai'
+    CHECK (scope_category = 'community_ai'),
+  scope_community_id UUID NOT NULL,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (batch_id, id),
+  CONSTRAINT chk_community_prompt_classifier_results__effective_thresholds CHECK (
+    effective_lower_threshold >= 0 AND effective_upper_threshold <= 1
+    AND effective_lower_threshold < effective_upper_threshold
+  ),
+  CONSTRAINT fk_community_prompt_classifier_results__classifier_kind
+    FOREIGN KEY (classifier_id, candidate_kind)
+    REFERENCES classifiers (id, candidate_kind) ON DELETE RESTRICT,
+  CONSTRAINT fk_community_prompt_classifier_results__prompt_community
+    FOREIGN KEY (community_prompt_id, scope_community_id)
+    REFERENCES community_agent_prompts (id, community_id) ON DELETE CASCADE,
+  CONSTRAINT fk_community_prompt_classifier_results__batch_classifier
+    FOREIGN KEY (batch_id, classifier_id)
+    REFERENCES classifier_decision_batches (id, classifier_id) ON DELETE CASCADE,
+  CONSTRAINT fk_community_prompt_classifier_results__batch_prompt
+    FOREIGN KEY (batch_id, prompt_version_id)
+    REFERENCES classifier_decision_batches (id, prompt_version_id) ON DELETE CASCADE,
+  CONSTRAINT fk_community_prompt_classifier_results__batch_scope
+    FOREIGN KEY (batch_id, scope_category, scope_community_id)
+    REFERENCES classifier_decision_batches (id, scope_category, scope_community_id) ON DELETE CASCADE,
+  CONSTRAINT fk_community_prompt_classifier_results__call_batch
+    FOREIGN KEY (decision_call_id, batch_id)
+    REFERENCES classifier_decision_calls (id, batch_id) ON DELETE CASCADE
+) PARTITION BY RANGE (batch_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_community_prompt_classifier_results__batch_prompt_unique
+  ON community_prompt_classifier_results (batch_id, community_prompt_id);
+CREATE INDEX IF NOT EXISTS idx_community_prompt_classifier_results__prompt_community
+  ON community_prompt_classifier_results (community_prompt_id, scope_community_id);
+CREATE INDEX IF NOT EXISTS idx_community_prompt_classifier_results__call_batch
+  ON community_prompt_classifier_results (decision_call_id, batch_id);
+CREATE INDEX IF NOT EXISTS idx_community_prompt_classifier_results__classifier_kind
+  ON community_prompt_classifier_results (classifier_id, candidate_kind);
+
 CREATE OR REPLACE FUNCTION fn_require_classifier_result_batch_scope()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
@@ -874,12 +930,40 @@ CREATE OR REPLACE TRIGGER trigger_story_classifier_results_batch_scope
   BEFORE INSERT OR UPDATE OF batch_id, scope_category, scope_community_id ON story_classifier_results
   FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_result_batch_scope();
 
+CREATE OR REPLACE FUNCTION fn_require_community_prompt_result_configuration()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  batch classifier_decision_batches%ROWTYPE;
+  prompt classifier_prompt_versions%ROWTYPE;
+BEGIN
+  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id FOR SHARE;
+  SELECT * INTO prompt FROM classifier_prompt_versions
+  WHERE id = NEW.prompt_version_id FOR SHARE;
+  IF batch.post_id IS NULL THEN
+    RAISE EXCEPTION 'community prompt classifier results require a post batch' USING ERRCODE = '23514';
+  END IF;
+  IF NEW.effective_lower_threshold IS DISTINCT FROM prompt.default_lower_threshold
+    OR NEW.effective_upper_threshold IS DISTINCT FROM prompt.default_upper_threshold THEN
+    RAISE EXCEPTION 'community prompt classifier result thresholds must match the prompt revision defaults' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE OR REPLACE TRIGGER trigger_community_prompt_classifier_results_configuration
+  BEFORE INSERT OR UPDATE OF batch_id, prompt_version_id, effective_lower_threshold, effective_upper_threshold
+  ON community_prompt_classifier_results
+  FOR EACH ROW EXECUTE FUNCTION fn_require_community_prompt_result_configuration();
+
 CREATE OR REPLACE TRIGGER trigger_topic_classifier_results_append_only
   BEFORE UPDATE ON topic_classifier_results
   FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update();
 
 CREATE OR REPLACE TRIGGER trigger_story_classifier_results_append_only
   BEFORE UPDATE ON story_classifier_results
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update();
+
+CREATE OR REPLACE TRIGGER trigger_community_prompt_classifier_results_append_only
+  BEFORE UPDATE ON community_prompt_classifier_results
   FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update();
 
 COMMENT ON TABLE classifiers IS 'Agent-independent classifier definitions with fixed primitive and candidate kind.';
@@ -899,6 +983,7 @@ COMMENT ON TABLE classifier_decision_batches IS 'One classified post or RSS item
 COMMENT ON TABLE classifier_decision_calls IS 'Ordered shards for one classifier decision batch.';
 COMMENT ON TABLE topic_classifier_results IS 'Per-candidate classifier results for topic candidates, RANGE-partitioned by topic_id.';
 COMMENT ON TABLE story_classifier_results IS 'Per-candidate classifier results for story candidates, RANGE-partitioned by story_id.';
+COMMENT ON TABLE community_prompt_classifier_results IS 'Per-prompt classifier results for community moderation prompts, RANGE-partitioned by batch_id.';
 
 COMMENT ON COLUMN classifiers.slug IS 'Stable machine-readable classifier identifier.';
 COMMENT ON COLUMN classifiers.primitive IS 'Structured-decision primitive used for every prompt version.';
@@ -987,3 +1072,16 @@ COMMENT ON COLUMN story_classifier_results.effective_upper_threshold IS 'Resolve
 COMMENT ON COLUMN story_classifier_results.raw_response IS 'Full native structured-decision answer for audit and diagnostics.';
 COMMENT ON COLUMN story_classifier_results.scope_category IS 'Decision scope copied from the owning batch.';
 COMMENT ON COLUMN story_classifier_results.scope_community_id IS 'Immutable community provenance copied from the owning batch.';
+
+COMMENT ON COLUMN community_prompt_classifier_results.batch_id IS 'Logical decision batch that produced this result and the partition key.';
+COMMENT ON COLUMN community_prompt_classifier_results.community_prompt_id IS 'Community moderation prompt scored by this result; its community must equal the batch scope.';
+COMMENT ON COLUMN community_prompt_classifier_results.decision_call_id IS 'Specific provider call that produced this result.';
+COMMENT ON COLUMN community_prompt_classifier_results.classifier_id IS 'Classifier copied from the owning batch for relational enforcement.';
+COMMENT ON COLUMN community_prompt_classifier_results.candidate_kind IS 'Fixed community_prompt discriminator used only for the classifier-kind foreign key.';
+COMMENT ON COLUMN community_prompt_classifier_results.prompt_version_id IS 'Prompt revision copied from the owning batch for relational enforcement.';
+COMMENT ON COLUMN community_prompt_classifier_results.probability IS 'Native per-prompt probability preserved without threshold mapping.';
+COMMENT ON COLUMN community_prompt_classifier_results.effective_lower_threshold IS 'Prompt-revision lower boundary used for this immutable decision result.';
+COMMENT ON COLUMN community_prompt_classifier_results.effective_upper_threshold IS 'Prompt-revision upper boundary above which this prompt counts as flagged.';
+COMMENT ON COLUMN community_prompt_classifier_results.raw_response IS 'Full native structured-decision answer for audit and diagnostics.';
+COMMENT ON COLUMN community_prompt_classifier_results.scope_category IS 'Always community_ai, copied from the owning batch.';
+COMMENT ON COLUMN community_prompt_classifier_results.scope_community_id IS 'Community provenance copied from the owning batch; deleting the community cascades to its results.';

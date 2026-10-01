@@ -9,7 +9,7 @@ satisfies GDPR "Right to Data Portability" and CCPA "Right to Know" requirements
 - Users can request a download of all their personal data from account settings.
 - Native clients expose the in-app request, status refresh, and ready export download link from the
   settings account-data section.
-- Only one active export request is allowed at a time.
+- Only one active export request is allowed at a time for each requester.
 - Export is prepared as a background job and may take a few minutes.
 - User is notified in the UI when the export is ready (polls for status every 5 seconds).
 - The download is a ZIP file containing CSV files for each data category:
@@ -26,10 +26,64 @@ satisfies GDPR "Right to Data Portability" and CCPA "Right to Know" requirements
   - `bookmarks.csv` – saved/bookmarked data
   - `consents.csv` – legal and cookie consent ledger records
   - `referral-attributions.csv` – referral click attributions
+  - `copyright-*.csv` – the account's copyright records, with a conservative redaction rule (see
+    [Copyright records](#copyright-records))
 - Boolean fields in export CSVs use `true`/`false`; unset values remain empty.
 - Download link expires after 7 days.
 - Users can request a new export at any time after the previous one has expired, failed, or is ready.
-- Admins can request exports on behalf of any user.
+- Admins can request exports on behalf of any user. The account holder never sees those exports (see
+  [Administrator-requested exports](#administrator-requested-exports)).
+
+## Administrator-requested exports
+
+An administrator can run an export for any account through the account's own data-request route, for
+example to preserve records for legal process. That export is for the administrator, not the
+account holder, so it stays invisible to them.
+
+- The request records who asked in `user_data_requests.requested_by_id`; `user_id` stays the subject.
+  A request the account holder made has both columns equal.
+- Every read is scoped to the caller: `GET .../data-request`, the status stream (by `request_id` or
+  latest), and the `download_url` it carries return only requests the caller made. The account
+  holder gets `404` for an administrator's request, and the administrator keeps the requests they
+  made.
+- No notification is sent. The ready email, which carries a seven-day download link, goes only to the
+  subject for an export they requested themselves.
+- An administrator's active export never blocks, or is revealed by a conflict on, the account
+  holder's own request; the single-active-request limit applies per subject and requester.
+- If the requester's account is later deleted, `requested_by_id` becomes `NULL` and no one can read
+  the request through the API; the export still expires and is reclaimed like any other.
+- There is no per-case policy switch. Hiding an administrator's export from its subject is the safe
+  default for a legal-process hold; disclosing it to the user is a separate notice decision (see the
+  [subpoena runbook](../../runbooks/copyright-notices.md)).
+
+## Copyright records
+
+The export carries the user's own copyright records, because the right to know covers them. The rule
+is deliberately conservative: the export reveals nothing the user cannot already see in the app,
+except the user's own submissions. Counsel confirms it as part of the copyright launch readiness
+work in [#1230](https://github.com/vouchington/vouchington/issues/1230).
+
+- **Own filings, decrypted in full.** `copyright-notices-filed.csv` holds each notice the user filed
+  while signed in: claimant name, contact, work description, statements, signature, and target
+  references. `copyright-counter-notices.csv` holds the user's counter-notices with their name,
+  address, telephone, consents, statements, and signature. `copyright-appeals.csv` holds their
+  appeals with the stated reason. Only signed-in submissions made by the account are included; a
+  record a moderator recorded on someone's behalf stays out of the moderator's own export.
+- **The other side, as the participant sees it.** `copyright-cases.csv` lists each accepted case the
+  user is a party to, as claimant or as poster of a targeted image, using the same projection the
+  in-app participant view uses for a member: dates, target visibility and restriction state, the
+  claimant's public profile, and the member timeline. It never contains the other party's legal
+  name, address, email, phone, or signature, staff rationale, notes, AI guidance, raw email, or
+  staff-only timeline events.
+- **Repeat-infringer records about the user.** `copyright-repeat-infringer-incidents.csv` lists
+  incident dates, whether each is operative, the linked notice id, and any staff disposition, with no
+  claimant identity. `copyright-repeat-infringer-reviews.csv` lists decided account reviews with
+  their outcome and dates. Rationales and open reviews are withheld.
+- **Out of scope.** Claimants who only ever used email have no account, so those requests are
+  handled manually. EU and UK redress records, delivery and outbox rows (transport, not user records),
+  and court or CCB filings are not exported; no signed-in court or CCB filing exists yet.
+- **Erased accounts** have no copyright records: their claimant and submitter links are cleared, and
+  the other party's case view loses the attribution.
 
 ## Data Request Lifecycle
 
@@ -63,7 +117,7 @@ columns on read: `failed_at` set means `failed`; `completed_at` set with no `s3_
 | Method | Route                                         | Description                                                                              |
 | ------ | --------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `POST` | `/api/v1/users/:idOrSlug/data-request`        | Create a new export request                                                              |
-| `GET`  | `/api/v1/users/:idOrSlug/data-request`        | Get latest export status and `download_url`                                              |
+| `GET`  | `/api/v1/users/:idOrSlug/data-request`        | Get the caller's latest export status and `download_url`                                 |
 | `GET`  | `/api/v1/users/:idOrSlug/data-request/stream` | Server-Sent Events stream of status until a terminal status (`ready`/`failed`/`expired`) |
 
-Authorization: Users can only access their own requests; admins can access any user's requests.
+Authorization: Users can start an export for themselves, and admins can start one for any user. Reads return only the requests the caller made, so a user never sees an export an admin ran for their account.

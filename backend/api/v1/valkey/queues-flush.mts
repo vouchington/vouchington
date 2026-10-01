@@ -7,8 +7,8 @@ import {
 import onError from '@modules/on-error'
 import { allLiveWorkerQueueNames } from '@modules/worker-queue-inventory'
 import pMap from 'p-map'
+import { scanAndUnlinkKeys, type ScanAndUnlinkKeysClient } from 'valkyries'
 
-const SCAN_COUNT = 500
 const OBLITERATE_CONCURRENCY = 8
 
 /**
@@ -28,8 +28,6 @@ const LEGACY_DEAD_LETTER_QUEUE_NAMES = [
   'memberships-dlq',
   'notifications-dlq',
 ] as const
-
-type UsageScanCursor = Awaited<ReturnType<typeof workerQueueCommandClient.scan>>[0]
 
 /**
  * Every queue name this instance's `queues` flush touches: every policy-managed or universal live
@@ -63,7 +61,7 @@ export function getQueueFlushTargetPrefixes(
  */
 export async function flushQueues(
   signal?: AbortSignal,
-  client: typeof workerQueueCommandClient = workerQueueCommandClient,
+  client: ScanAndUnlinkKeysClient = workerQueueCommandClient,
 ): Promise<{ concern: 'queues'; keysRemoved: number | null }> {
   signal?.throwIfAborted()
   const targets = getQueueFlushTargetNames().map(name => createQueue(name))
@@ -109,9 +107,10 @@ export async function flushQueues(
     await scanUnlinkUsageKeys(client, signal)
   } catch {
     signal?.throwIfAborted()
-    // scanUnlinkUsageKeys() already reports failures via onError() internally (see below); treat
-    // usage-key cleanup as best-effort bookkeeping so a transient Valkey error doesn't turn an
-    // otherwise-successful queue obliteration into a failed flush.
+    // scanAndUnlinkKeys() already reports failures through valkyries' error handler, which
+    // `@data-stores/valkey-core/app-integration` routes to onError(), so don't report again here;
+    // treat usage-key cleanup as best-effort bookkeeping so a transient Valkey error doesn't turn
+    // an otherwise-successful queue obliteration into a failed flush.
   }
 
   return { concern: 'queues', keysRemoved: null }
@@ -122,30 +121,13 @@ function toError(error: unknown): Error {
 }
 
 export async function scanUnlinkUsageKeys(
-  client: typeof workerQueueCommandClient = workerQueueCommandClient,
+  client: ScanAndUnlinkKeysClient = workerQueueCommandClient,
   signal?: AbortSignal,
 ): Promise<number> {
-  signal?.throwIfAborted()
-  try {
-    let removed = 0
-    let cursor: UsageScanCursor = '0'
-    do {
-      signal?.throwIfAborted()
-      // oxlint-disable-next-line no-await-in-loop -- each SCAN advances this cursor before the next page can be requested
-      const [nextCursor, keys] = await client.scan(cursor, {
-        match: `${workerQueuePrefix ?? 'glide'}:usage:*`,
-        count: SCAN_COUNT,
-      })
-      cursor = nextCursor
-      signal?.throwIfAborted()
-      // oxlint-disable-next-line no-await-in-loop -- unlinking this page must settle before requesting the next SCAN page
-      if (keys.length > 0) removed += await client.unlink(keys)
-      signal?.throwIfAborted()
-    } while (cursor !== '0')
-    return removed
-  } catch (err) {
-    if (signal?.aborted && err === signal.reason) throw err
-    onError(err instanceof Error ? err : new Error(String(err)))
-    throw err
-  }
+  const { unlinkedKeys } = await scanAndUnlinkKeys(
+    client,
+    `${workerQueuePrefix ?? 'glide'}:usage:*`,
+    { signal },
+  )
+  return unlinkedKeys
 }

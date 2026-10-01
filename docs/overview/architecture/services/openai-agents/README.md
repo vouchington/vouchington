@@ -9,7 +9,7 @@ OpenAI Responses API tool-call handling — parses function calls from API outpu
 - `getFunctionCallsFromOutput(output)` — extracts `function_call` items from a Responses API output array
 - `formatToolResult(callId, result)` — formats a tool result object for submission back to the Responses API
 - `executeToolCalls(params)` — dispatches tool calls in **parallel** via `Promise.all`; use in `runToolLoop` and other non-streaming callers
-- `streamingExecuteToolCalls(params)` — dispatches tool calls **sequentially** as an async generator, re-yielding executor events; use in the chat orchestrator to stream subagent progress to the client
+- `streamingExecuteToolCalls(params)` — dispatches tool calls **sequentially** as an async generator, re-yielding executor events; it has no production caller since the chat orchestrator was removed
 
 ## Related
 

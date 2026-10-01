@@ -1,5 +1,3 @@
-export type CommunityPromptOnFlagAction = 'none' | 'unpublish'
-
 export type CommunityAgentPrompt = {
   id: string
   community_id: string
@@ -9,7 +7,6 @@ export type CommunityAgentPrompt = {
   model_name: string
   model_provider: string
   slot_allocated: boolean
-  on_flag_action: CommunityPromptOnFlagAction
   activated_at: Date | null
   deactivated_at: Date | null
   created_at: Date

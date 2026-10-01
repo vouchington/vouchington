@@ -182,6 +182,7 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'GET:/api/v1/admin/moderation-analytics': { category: 'read' },
   'GET:/api/v1/communities/:idOrSlug/moderation-analytics': { category: 'read' },
   'PATCH:/api/v1/communities/:idOrSlug/post-type-settings': { category: 'write' },
+  'PATCH:/api/v1/communities/:idOrSlug/automod-settings': { category: 'write' },
   'GET:/api/v1/communities/:idOrSlug/restrictions': { category: 'read' },
   'POST:/api/v1/communities/:idOrSlug/restrictions': { category: 'write' },
   'DELETE:/api/v1/communities/:idOrSlug/restrictions/:id': { category: 'write' },

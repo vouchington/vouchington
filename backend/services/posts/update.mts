@@ -17,14 +17,16 @@ import { normalizeContentLanguageTag } from '@ts-shared/languages/content-langua
 import { assertCommunityNoLinksAllowed } from '@services/communities/restrictions/enforce'
 import sql from 'sql-template-strings'
 import { finalizePostUpdateAndDeliver } from './update/post-commit-delivery.mts'
-import type { PostCategoryFinalization } from './post-category-finalizations.mts'
-import { synchronizePostCategoriesInTransaction } from './update/category-synchronization.mts'
+import { lockPostUpdateMutationScopes } from './category-user-locks.mts'
+import {
+  castSynchronizedPostCategoryVotes,
+  synchronizePostCategoriesInTransaction,
+} from './update/category-synchronization.mts'
 import {
   getPreviousPostPublicationTopicIds,
   recordPostUpdatePublicationChanges,
 } from './update/publication-change.mts'
 import {
-  lockPostUpdatePublicationScopes,
   prepareLockedAdditiveHashtagChanges,
   type AdditiveHashtagIntent,
 } from './update/additive-hashtag.mts'
@@ -43,17 +45,19 @@ export const updatePost = async (
   let contentChanged = false
   let shouldEnqueuePostUpdated = false
   let previousPost = post
-  let previousTopicIds: string[] = []
-  let postCategoryFinalization: PostCategoryFinalization | undefined
   let effectiveChanges = requestedChanges
   let syncHashtagCategories = false
   async function updatePostInTransaction() {
     await using query = await beginTransaction()
+
     async function updatePostRows(query: TransactionQuery) {
-      await query(
-        sql`/* updatePost.lockActiveUser */ SELECT fn_lock_active_user_for_mutation(${creator.id})`,
+      const activeCategoryOwnerId = await lockPostUpdateMutationScopes(
+        query,
+        post.id,
+        creator.id,
+        requestedChanges,
+        additiveIntent,
       )
-      await lockPostUpdatePublicationScopes(query, post.id, additiveIntent)
       const options = { query }
       await query(sql`/* updatePost.lock */ SELECT id FROM posts WHERE id = ${post.id} FOR UPDATE`)
       const currentPost = await getPostByAny(post.id, options)
@@ -73,75 +77,68 @@ export const updatePost = async (
         changes.categories !== undefined
       await assertValidPostCategoryUpdate(creator, currentPost, changes, membershipPlan, options)
       previousPost = currentPost
-      previousTopicIds = await getPreviousPostPublicationTopicIds(
+      const previousTopicIds = await getPreviousPostPublicationTopicIds(
         query,
         currentPost.id,
         syncHashtagCategories || changes.structured_data !== undefined,
       )
-      {
-        // posts
-        // Both title/markdown and structured_data changes affect moderation payload
-        const hasContentUpdates =
-          changes.markdown !== undefined ||
-          changes.title !== undefined ||
-          changes.structured_data !== undefined
-        const hasAiSummaryUpdate =
-          changes.ai_summary_markdown !== undefined &&
-          changes.ai_summary_markdown !== currentPost.ai_summary_markdown
+      const hasContentUpdates =
+        changes.markdown !== undefined ||
+        changes.title !== undefined ||
+        changes.structured_data !== undefined
+      const hasAiSummaryUpdate =
+        changes.ai_summary_markdown !== undefined &&
+        changes.ai_summary_markdown !== currentPost.ai_summary_markdown
 
-        if (currentPost.community_id && hasContentUpdates) {
-          await assertCommunityNoLinksAllowed({
-            communityId: currentPost.community_id,
-            currentUser: creator,
-            options,
-            updates: {
-              title: changes.title,
-              markdown: changes.markdown,
-              structured_data: changes.structured_data,
-              url: changes.url,
-              url_id: changes.url_id,
-            },
-          })
-        }
-
-        if (changes.slug) {
-          await createPostSlug(currentPost, changes.slug, options)
-          changed = true
-        }
-
-        if (await assertValidAudienceUpdate(currentPost, changes, options)) {
-          changed = true
-        }
-
-        if (
-          changes.is_anonymous !== undefined &&
-          changes.is_anonymous !== currentPost.is_anonymous
-        ) {
-          changed = true
-        }
-
-        if (
-          changes.declared_language !== undefined &&
-          normalizeContentLanguageTag(changes.declared_language ?? null) !==
-            currentPost.declared_language
-        ) {
-          changed = true
-        }
-
-        if (hasContentUpdates || hasAiSummaryUpdate) contentChanged = true
-
-        shouldEnqueuePostUpdated =
-          changed || hasContentUpdates || hasAiSummaryUpdate || changes.categories !== undefined
-
-        await writePostUpdates({
-          changed,
-          changes,
-          contentChanged: hasContentUpdates || hasAiSummaryUpdate,
-          creatorId: creator.id,
+      if (currentPost.community_id && hasContentUpdates) {
+        await assertCommunityNoLinksAllowed({
+          communityId: currentPost.community_id,
+          currentUser: creator,
           options,
-          post: currentPost,
+          updates: {
+            title: changes.title,
+            markdown: changes.markdown,
+            structured_data: changes.structured_data,
+            url: changes.url,
+            url_id: changes.url_id,
+          },
         })
       }
+
+      if (changes.slug) {
+        await createPostSlug(currentPost, changes.slug, options)
+        changed = true
+      }
+
+      if (await assertValidAudienceUpdate(currentPost, changes, options)) {
+        changed = true
+      }
+
+      if (changes.is_anonymous !== undefined && changes.is_anonymous !== currentPost.is_anonymous) {
+        changed = true
+      }
+
+      if (
+        changes.declared_language !== undefined &&
+        normalizeContentLanguageTag(changes.declared_language ?? null) !==
+          currentPost.declared_language
+      ) {
+        changed = true
+      }
+
+      if (hasContentUpdates || hasAiSummaryUpdate) contentChanged = true
+
+      shouldEnqueuePostUpdated =
+        changed || hasContentUpdates || hasAiSummaryUpdate || changes.categories !== undefined
+
+      await writePostUpdates({
+        changed,
+        changes,
+        contentChanged: hasContentUpdates || hasAiSummaryUpdate,
+        creatorId: creator.id,
+        options,
+        post: currentPost,
+      })
 
       if (changes.archive === true) {
         if (!currentPost.archived_at) shouldEnqueuePostUpdated = true
@@ -155,11 +152,19 @@ export const updatePost = async (
         createUpdatePostRevision(currentPost, changes, creator.id, options),
         syncPostDataPointTopicsInTransaction(currentPost, changes, options),
       ])
-      postCategoryFinalization = await synchronizePostCategoriesInTransaction({
+      await synchronizePostCategoriesInTransaction({
         changes,
         creator,
         post: currentPost,
         queryOptions: options,
+        syncHashtagCategories,
+      })
+      await castSynchronizedPostCategoryVotes({
+        changes,
+        creator,
+        ownerId: activeCategoryOwnerId,
+        post: currentPost,
+        query,
         syncHashtagCategories,
       })
 
@@ -168,7 +173,6 @@ export const updatePost = async (
       if (contentChanged) {
         await resetPostClearance(post.id, creator.id, options)
       }
-
       await recordPostUpdatePublicationChanges(query, {
         changed,
         changes,
@@ -191,8 +195,6 @@ export const updatePost = async (
     contentChanged,
     previousPost,
     shouldEnqueuePostUpdated,
-    syncHashtagCategories,
-    postCategoryFinalization,
     updatedPost: post2!,
   })
 }

@@ -28,7 +28,7 @@
     "@ts-shared/data-points": "workspace:^",
     "@ts-shared/money": "workspace:^",
     "@voucha/types": "workspace:^",
-    "ajv": "^8.18.0",
+    "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2"

@@ -17,6 +17,10 @@ export type CopyrightStaffEmailIntakeQueueItem = {
   recommendation_id: string | null
   review_path: 'initial' | 'unresolved_thread' | 'matched_thread'
   linked_notice_id: string | null
+  // Why staff see it: still unreviewed, or the reply to its declined intake failed or bounced.
+  waiting_reason: 'awaiting_review' | 'reply_failed' | 'reply_bounced'
+  // `received_at` while unreviewed; the time the reply failed or bounced otherwise.
+  waiting_since: Date
 }
 
 // Names the `(received_at, id)` ascending keyset below; cursors encoded under another scope are
@@ -40,6 +44,7 @@ export async function searchCopyrightStaffEmailIntakes(
   const query = sql`/* searchCopyrightStaffEmailIntakes */
     SELECT intake.id, intake.received_at, COALESCE(parse.status, 'unparsed') AS parse_status,
       recommendation.id AS recommendation_id, link.link_kind, link.copyright_notice_id AS linked_notice_id,
+      reply.state AS reply_state, COALESCE(reply.bounced_at, reply.failed_at, reply.updated_at) AS reply_since,
       to_char(
         intake.received_at AT TIME ZONE 'UTC',
         'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
@@ -55,7 +60,10 @@ export async function searchCopyrightStaffEmailIntakes(
     LEFT JOIN LATERAL (SELECT id FROM copyright_notice_email_intake_recommendations WHERE copyright_notice_email_intake_id = intake.id ORDER BY id DESC LIMIT 1) recommendation ON true
     LEFT JOIN copyright_notice_email_intake_notice_links link
       ON link.copyright_notice_email_intake_id = intake.id
-    WHERE`.append(copyrightEmailIntakeAwaitingReviewSql())
+    LEFT JOIN copyright_notice_delivery_intents reply
+      ON reply.copyright_notice_email_intake_id = intake.id AND reply.state IN ('failed', 'bounced')
+    WHERE (`.append(copyrightEmailIntakeAwaitingReviewSql())
+  query.append(sql` OR reply.id IS NOT NULL)`)
   if (options.after) {
     query.append(sql`
       AND (intake.received_at, intake.id) > (${options.after.timestamp}::timestamptz, ${options.after.id})`)
@@ -71,6 +79,8 @@ export async function searchCopyrightStaffEmailIntakes(
     recommendation_id: string | null
     link_kind: 'initial' | 'thread' | null
     linked_notice_id: string | null
+    reply_state: 'failed' | 'bounced' | null
+    reply_since: Date | null
     cursor_received_at: string
     has_reply_reference: boolean
   }>(query)
@@ -88,6 +98,8 @@ export async function searchCopyrightStaffEmailIntakes(
             ? 'unresolved_thread'
             : 'initial',
       linked_notice_id: row.linked_notice_id,
+      waiting_reason: row.reply_state ? `reply_${row.reply_state}` : 'awaiting_review',
+      waiting_since: row.reply_since ?? row.received_at,
       cursor_received_at: row.cursor_received_at,
     })),
     hasNextPage: rows.length > options.limit,

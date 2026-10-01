@@ -9,13 +9,10 @@ export const AI_AGENTS_DEFAULTS = {
 } as const
 
 export type AIAgentJobName =
-  | 'autotagger-post'
   | 'autotagger-rss-feed-item'
   | 'classifier-run-dispatcher'
   | 'classifier-run'
   | 'reconcile-classifier-runs'
-  | 'community-moderation-dispatcher'
-  | 'community-moderation-prompt'
   | 'report-judgement'
   | 'dispute-resolution'
   | 'appeal-resolution'
@@ -31,11 +28,9 @@ export type AIAgentJobName =
   | 'reconcile-copyright-agent-dispatches'
 
 export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
-  'community-moderation-prompt': 3,
   'classifier-run-dispatcher': 8,
   'classifier-run': 3,
   'reconcile-classifier-runs': 100,
-  'community-moderation-dispatcher': 8,
   'report-judgement': 9,
   'dispute-resolution': 9,
   'appeal-resolution': 9,
@@ -44,7 +39,6 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'copyright-appeal-recommendation': 9,
   'story-post': 10,
   'story-clustering': 15,
-  'autotagger-post': 20,
   'autotagger-rss-feed-item': 20,
   backfill_report_judgements: 100,
   'auto-dispatch-judgement': 10,
@@ -61,17 +55,11 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // blocking it on the spend cap would increase spend, not bound it. `auto-dispatch-judgement` is
 // exempt for the same reason: it only applies an already-computed judgement (remove content, warn
 // a user, escalate, resolve a report) -- it never calls OpenAI itself, and blocking it on the cap
-// would leave harmful content live and reports unactioned. `community-moderation-dispatcher`
-// stays gated: every `community-moderation-prompt` job it can enqueue calls OpenAI.
-// `autotagger-post` and `autotagger-rss-feed-item` (C6) dispatch through the classifier path
-// (`@agents/autotagger/dispatch-classifier.mts`), which calls the seeded `tagging` classifier over
-// OpenRouter/Jev via `createStructuredDecisionClient`, never through the shared `runToolLoop`
-// harness (`backend/agents/_shared/run-tool-loop.mts`). Both are gated here:
-// `createAutotaggerStructuredDecisionHooks` (`@agents/autotagger/structured-decision-attempt-hooks.mts`)
-// wires the client's `beforeAttempt`/`onBilledResponse`/`onUnknownBilledAttempt` hooks to
-// `assertOpenAiSpendCapNotBreached`/`recordAgentResponseUsage`/`latchAccountingUncertainty`
-// (issue #616), so C6's OpenRouter/Jev spend is recorded to `ai_usage_records` and subject to the
-// same daily cap as every other job type below, despite never calling OpenAI itself. `story-post`
+// would leave harmful content live and reports unactioned.
+// `autotagger-rss-feed-item` only runs the collaborative-follower pass, which reads follow and vote
+// relations and never calls a model, so it is spend-free. C6's model call is the shared
+// `classifier-run` job, whose structured-decision client performs the authoritative pre-call cap
+// check and records the spend (see `classifier-run` below). `story-post`
 // is necessary but not sufficient: a non-force retry against a post
 // that already has `ai_summary_markdown` set only re-persists the existing summary to re-trigger
 // the downstream moderation/spam/embedding jobs (`updateStoryPostAgentResult`) -- it never calls
@@ -79,14 +67,12 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // though it cannot itself add to the day's spend. `core.mts`'s gate defers to
 // `wouldStoryPostCallOpenAI` (`backend/workers/ai-agents/processors/process-story-post.mts`) for it.
 export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
-  'community-moderation-prompt': true,
   // The dispatcher only reserves durable intent. The run job can finish local-only/effect replay
   // without provider spend; its structured-decision client performs the authoritative pre-call cap
   // check. The reconciler stops itself on a breach and never calls a provider.
   'classifier-run-dispatcher': false,
   'classifier-run': false,
   'reconcile-classifier-runs': false,
-  'community-moderation-dispatcher': true,
   'report-judgement': true,
   'dispute-resolution': true,
   'appeal-resolution': true,
@@ -95,8 +81,7 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'copyright-appeal-recommendation': true,
   'story-post': true,
   'story-clustering': true,
-  'autotagger-post': true,
-  'autotagger-rss-feed-item': true,
+  'autotagger-rss-feed-item': false,
   backfill_report_judgements: true,
   'auto-dispatch-judgement': false,
   'reconcile-auto-dispatch-judgements': false,

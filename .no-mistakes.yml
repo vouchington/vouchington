@@ -918,6 +918,7 @@ rules:
     rule: package-json-workspace-coverage
     scope: repository
     options:
+      requireNamedPackage: true
       packageRoots:
         - .agents
         - .claude
@@ -1163,7 +1164,6 @@ rules:
         - backend/api/v1
         - backend/data-stores
         - backend/entrypoints
-        - backend/flows
         - backend/modules
         - backend/queues
         - backend/services
@@ -1251,14 +1251,6 @@ rules:
           allowedSubdirs:
             - workers
             - processors
-        - root: backend/flows
-          sourceExtension: .mts
-          allowedRootFiles:
-            - package.json
-            - types.mts
-            - queues.mts
-            - enqueues.mts
-          allowedSubdirs: []
 
   - name: backend agent test coverage
     rule: require-test-per-subdir
@@ -1281,8 +1273,6 @@ rules:
           requiredFiles: [package.json]
           requireAnyOf:
             - [workers.mts, 'workers/*.mts']
-        - root: backend/flows
-          requiredFiles: [package.json, queues.mts, enqueues.mts]
         - root: backend/services
           requiredFiles: [package.json, index.mts]
         - root: backend/agents
@@ -1404,6 +1394,7 @@ rules:
         - .stripe
         - .no-data.mock
         - .real-glide.mock
+        - .actions.mock
         - .mock
         - .generated
         - .routes
@@ -1417,7 +1408,7 @@ rules:
         - .spend-cap-rollover.real-glide.mock
         - .spend-cap
         - .spend-cap-moderation
-        - .spend-cap-autotagger
+        - .autotagger
         - .spend-cap-story-post
         - .spend-cap-mid-loop
         - .mid-loop-breach.mock
@@ -1724,6 +1715,7 @@ rules:
         - community_members.approved_by_id
         - community_members.removed_by_id
         - community_members.suspected_ban_evader_dismissed_by_id
+        - community_post_reviews.automod_dismissed_by_id
         - community_post_reviews.escalated_by_id
         - community_post_reviews.reviewed_by_id
         - community_post_reviews.submitted_by_id

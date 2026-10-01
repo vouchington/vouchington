@@ -7,7 +7,6 @@ mq:
       - any-glob-to-any-file:
           - 'backend/queues/**'
           - 'backend/workers/**'
-          - 'backend/flows/**'
           - 'backend/entrypoints/worker-cpu/**'
           - 'backend/entrypoints/worker-io/**'
           - 'backend/worker-runtime/**'

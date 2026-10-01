@@ -5,10 +5,5 @@
   "similarity": 0.85,
   "minLines": 50,
   "exitCode": 1,
-  "ignore": [
-    "**/migrations/**",
-    "**/fixtures/**",
-    "**/route-selectors.generated.mts",
-    "**/fallback-benefit-catalog.ts"
-  ]
+  "ignore": ["**/migrations/**", "**/fixtures/**", "**/route-selectors.generated.mts"]
 }

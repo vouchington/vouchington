@@ -2,7 +2,9 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import type { ExposureState } from '@services/moderation-exposure'
+import type { getExposureState } from '@services/moderation-exposure'
+
+type ExposureState = Awaited<ReturnType<typeof getExposureState>>
 
 describe('POST /api/v1/moderation/reveals', () => {
   let adminUser: PrivateUser
@@ -43,6 +45,24 @@ describe('POST /api/v1/moderation/reveals', () => {
       .post('/api/v1/moderation/reveals')
       .send({ surface: 'mod_queue', [field]: 'not-a-uuid' })
       .expect(422)
+  })
+
+  it('checks the role before the body contract and records nothing for a malformed body', async () => {
+    const anonymous = await createRequest().post('/api/v1/moderation/reveals').send({ surface: 5 })
+    expect(anonymous.status).toBe(401)
+    expect(anonymous.text).not.toMatch(/schema|must be|required|invalid/i)
+    const outsider = createRequest()
+    await outsider.authenticateAs(regularUser)
+    await outsider.post('/api/v1/moderation/reveals').send({ surface: 5 }).expect(403)
+
+    const req = createRequest()
+    await req.authenticateAs(adminUser)
+    const before = await req.get('/api/v1/moderation/exposure').expect(200)
+    for (const body of [{ surface: 5 }, { surface: 'mod_queue', extra: 1 }, { surface: null }]) {
+      await req.post('/api/v1/moderation/reveals').send(body).expect(422)
+    }
+    const after = await req.get('/api/v1/moderation/exposure').expect(200)
+    expect(after.body.exposure.count).toBe(before.body.exposure.count)
   })
 
   it('records a reveal and returns exposure state for a moderator', async () => {

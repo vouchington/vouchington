@@ -6,7 +6,7 @@ import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { appendCopyrightSubmissionAssessmentInTransaction } from './compliance.mts'
 import { isAutomaticProvisionalWithholdingEnabled } from './config.mts'
-import { processCopyrightEnforcementRequest } from './enforcement-requests.mts'
+import { enforceCopyrightAssessment } from './enforce-assessment.mts'
 import { reverseAutomatedCopyrightRestrictions } from './form-reviews-reversal.mts'
 
 export async function reviewCopyrightFormIntake(input: {
@@ -73,7 +73,7 @@ export async function reviewCopyrightFormIntake(input: {
   )
   await transaction.commit()
   if (input.accepted) {
-    await processCopyrightEnforcementRequest(assessmentId)
+    await enforceCopyrightAssessment(assessmentId)
   } else {
     await reverseAutomatedCopyrightRestrictions(
       intake.notice_id,

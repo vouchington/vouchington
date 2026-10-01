@@ -17,8 +17,8 @@ Source entrypoint: [backend/services/openai-moderation/README.md](../../../../..
 ### Chat Message Safety
 
 `checkMessageSafety(message, { createTextModeration })` in `message-safety.mts` is the shared guard
-for a user chat message. It lives here, next to the provider boundary, so neither the API nor the
-chat agent has to import the other's package.
+for a user chat message. It lives here, next to the provider boundary, so callers do not import the
+API's package.
 
 1. **Pattern detection** — regexes for common prompt-injection phrases throw a 400 with code
    `PROMPT_INJECTION` before any provider call.
@@ -27,8 +27,8 @@ chat agent has to import the other's package.
 
 The provider call is injected as a `CreateTextModeration` capability and defaults to
 `createOpenAIModeration`. The API's `checkApiMessageSafety()` injects its own capability (with
-`apiSafetyCheck` and a per-call idempotency key); `streamChatResponse()` in the
-[chat agent](../../ai-agents/chat/README.md#safety) uses the default provider.
+`apiSafetyCheck` and a per-call idempotency key); a caller that injects nothing uses the default
+provider.
 
 ### Post Moderation
 

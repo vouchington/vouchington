@@ -72,7 +72,6 @@ export { getIndividualRewardsProgramPointValuations } from '@services/individual
 export { getHouseholdSpendingCategoriesByUserId } from '@services/individuals-households'
 export { getIndividualRewardsProgramStatuses } from '@services/individuals-households'
 export { getUserPostsCollection } from '@services/entity-fetch/profile-collections'
-export { refreshContributionAdmissionPostResponses } from '@services/contribution-gating/refresh-post-response'
 export { listRemoteFollowerInboxPage } from '@services/remote-actors'
 export { getStoryPostRelatedUrlProjectionSourcePage } from '@services/stories/story-post-related-url-projection'
 export { getStoryPreviews } from '@services/stories/story-previews'

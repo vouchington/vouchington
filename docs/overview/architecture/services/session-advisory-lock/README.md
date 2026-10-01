@@ -13,15 +13,13 @@ and the text thrown when the lock was not held:
 - [Bluesky disconnect](../../../../../backend/services/bluesky-follows/disconnect-lock.mts) uses a
   two-integer key. That space stays disjoint from Bluesky's one-bigint user/DID transaction locks
   ([why](../bluesky-follows/README.md)).
-- [Post finalization](../../../../../backend/services/posts/update/post-finalization-lock.mts) uses
-  its own two-integer key.
 - [Election vote requests](../../../../../backend/services/elections-votes/shared/request-lock.mts)
   use one `hashtextextended` bigint and the key
   `vote-request:${entityType}:${userId}:${entityId}`.
 
 When the operation and unlock both fail, Bluesky disconnect reports the unlock error through
-`onError` and throws the operation error unchanged. Election vote requests and post finalization
-attach the unlock error as `cause` when the operation error does not already have one.
+`onError` and throws the operation error unchanged. Election vote requests attach the unlock error
+as `cause` when the operation error does not already have one.
 
 ```mermaid
 sequenceDiagram

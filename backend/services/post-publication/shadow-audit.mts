@@ -9,7 +9,6 @@ import {
 export type { PostPublicationShadowAuditResult } from './shadow-audit-result.mts'
 import { recordPostPublicationShadowRepair } from './record-shadow-repair.mts'
 import type { ShadowAuditCandidate } from './shadow-audit-types.mts'
-export type { ShadowAuditCandidate } from './shadow-audit-types.mts'
 
 const SHADOW_AUDIT_CHECKPOINT = 'post-publication-shadow'
 export const POST_PUBLICATION_SHADOW_AUDIT_PAGE_SIZE = 100

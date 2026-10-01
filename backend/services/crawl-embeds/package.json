@@ -28,8 +28,8 @@
     "@modules/utils": "workspace:^",
     "@queues/crawl-embeds": "workspace:^",
     "@voucha/config": "workspace:^",
-    "@vouchington/crawler-html": "0.0.1",
-    "@vouchington/embeds": "0.0.2",
+    "@vouchington/crawler-html": "^0.0.1",
+    "@vouchington/embeds": "^0.0.2",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
     "ssrf-guard": "^1.0.0"

@@ -4,7 +4,7 @@
  * This is the single source of truth for which tables need time-based partitions.
  * Used by both:
  * - Config-driven migrations (initial partition creation)
- * - Monthly scheduled job (ongoing partition creation for conversation tables)
+ * - Monthly scheduled job (ongoing partition creation for crawl and RSS history tables)
  */
 
 export type MonthlyPartitionTableConfig = {
@@ -41,27 +41,14 @@ export const POST_PARTITION_TABLES: string[] = [
 
 /**
  * Classifier results retain one row per candidate. Topic and story ownership use
- * separate parents so UUIDv7 RANGE pruning remains direct for either entity.
+ * separate parents so UUIDv7 RANGE pruning remains direct for either entity. Community prompt
+ * results have no stable per-prompt key worth pruning on, so they range over their decision batch.
  */
 export const CLASSIFIER_RESULT_PARTITION_TABLES: string[] = [
   'classifier_decision_batch_candidates',
   'topic_classifier_results',
   'story_classifier_results',
-]
-
-/**
- * Conversation tables - partitioned by UUIDv7 timestamp
- * Monthly partitions for 30-day retention via partition drop
- */
-export const CONVERSATION_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
-  monthlyPartitionTable('conversation_message_agentic_runs', {
-    retentionDays: 30,
-    dropPriority: 1,
-  }),
-  monthlyPartitionTable('conversation_message_agentic_runs_events', {
-    retentionDays: 30,
-    dropPriority: 0,
-  }),
+  'community_prompt_classifier_results',
 ]
 
 /**
@@ -139,10 +126,9 @@ export const CRAWL_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
 ]
 
 /**
- * All tables that require monthly RANGE partitions (conversation tables with retention)
+ * All tables that require monthly RANGE partitions (crawl and RSS history with retention)
  */
 export const ALL_MONTHLY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
-  ...CONVERSATION_PARTITION_TABLES,
   ...CRAWL_PARTITION_TABLES,
   ...RSS_PARTITION_TABLES,
 ]

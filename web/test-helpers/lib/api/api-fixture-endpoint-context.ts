@@ -62,6 +62,7 @@ import * as serverMy from '../../../lib/api/server/my'
 import * as serverPsql from '../../../lib/api/server/psql'
 import * as serverReferralLinks from '../../../lib/api/server/referral-links'
 import * as serverReports from '../../../lib/api/server/reports'
+import * as serverRssFeedCategories from '../../../lib/api/server/rss-feed-categories'
 import * as serverRssFeedItems from '../../../lib/api/server/rss-feed-items'
 import * as serverOAuthApps from '../../../lib/api/server/oauth-apps'
 import * as serverOAuthGrants from '../../../lib/api/server/oauth-grants'
@@ -142,6 +143,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     psql: serverPsql,
     referralLinks: serverReferralLinks,
     reports: serverReports,
+    rssFeedCategories: serverRssFeedCategories,
     rssFeedItems: serverRssFeedItems,
     scopes: serverScopes,
     topicRecommendations: serverTopicRecommendations,

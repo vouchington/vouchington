@@ -1,32 +1,37 @@
-import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
-import { PRIMARY_REFRESH_BATCH_SIZE } from '@services/elections-votes/entity-relation/vote-stats-batch'
-import { refreshEntityRelationVoteStatsBatchFromPrimaryWithFallback } from '@services/elections-votes/entity-relation/refresh-stats'
+import { registerPostCommitAction, type TransactionQuery } from '@data-stores/psql'
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
+import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
+import {
+  publishEntityRelationElectionVoteStats,
+  updateEntityRelationElectionVoteStatsFromPrimaryBatch,
+} from '@services/elections-votes/entity-relation/vote-stats-batch'
 
-type CategoryVoteStatsDependencies = {
-  refresh: typeof refreshEntityRelationVoteStatsBatchFromPrimaryWithFallback
-  enqueueNotifications: typeof enqueueReconcilePostNotifications
-}
-const dependencies: CategoryVoteStatsDependencies = {
-  refresh: refreshEntityRelationVoteStatsBatchFromPrimaryWithFallback,
-  enqueueNotifications: enqueueReconcilePostNotifications,
-}
-
-/** One relation table and one atomic stats chunk per refresh/fallback boundary. */
-export async function refreshPostCategoryVoteStats(
+/** Recomputes category scores atomically and publishes their cache and notification effects later. */
+export async function refreshPostCategoryVoteStatsInTransaction(
+  query: TransactionQuery,
   postId: string,
-  relationTable: string,
-  relations: Array<{ id?: string }>,
-  effects: CategoryVoteStatsDependencies = dependencies,
+  relationIdsByTable: ReadonlyMap<string, readonly string[]>,
 ): Promise<void> {
-  const targets = relations.flatMap(relation =>
-    relation.id ? [createEntityRelationElectionTarget(relation.id, relationTable)] : [],
+  const targets = [...relationIdsByTable].flatMap(([relationTable, relationIds]) =>
+    relationIds.map(entityRelationId =>
+      createEntityRelationElectionTarget(entityRelationId, relationTable),
+    ),
   )
-  for (let offset = 0; offset < targets.length; offset += PRIMARY_REFRESH_BATCH_SIZE) {
-    // oxlint-disable-next-line no-await-in-loop -- each committed chunk publishes before another chunk can fail.
-    const changed = await effects.refresh(
-      targets.slice(offset, offset + PRIMARY_REFRESH_BATCH_SIZE),
-    )
-    if (changed && changed.length > 0) void effects.enqueueNotifications(postId)
-  }
+  const changedTargets =
+    targets.length === 0
+      ? []
+      : await updateEntityRelationElectionVoteStatsFromPrimaryBatch(targets, {
+          query,
+          invalidateCache: false,
+          enqueueTopHashtagRefresh: false,
+        })
+
+  registerPostCommitAction(query, async () => {
+    await Promise.all([
+      changedTargets.length > 0
+        ? publishEntityRelationElectionVoteStats(changedTargets)
+        : Promise.resolve(),
+      enqueueReconcilePostNotifications(postId),
+    ])
+  })
 }

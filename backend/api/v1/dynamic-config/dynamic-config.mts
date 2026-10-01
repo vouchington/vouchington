@@ -9,7 +9,9 @@ import {
   listDynamicConfigNamespaces,
   updateDynamicConfigNamespace,
 } from '@services/dynamic-config-admin'
-import { requireAuth, parseJsonBody } from '../../response-helpers.mts'
+import { requireAuth, parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
+
+type UpdateDynamicConfigNamespaceRequest = { config: Record<string, unknown> }
 
 app.route('/api/v1/dynamic-config/namespaces').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/dynamic-config/namespaces')
@@ -29,6 +31,9 @@ app.route('/api/v1/dynamic-config/namespaces/:namespace/history').get(async (ctx
     403,
     'Forbidden',
   )
+  validateRequestContract(ctx, 'GET:/api/v1/dynamic-config/namespaces/:namespace/history', {
+    path: ctx.params,
+  })
 
   const history = await listDynamicConfigNamespaceHistory(currentUser, namespace)
   ctx.json({ history })
@@ -44,6 +49,9 @@ app.route('/api/v1/dynamic-config/namespaces/:namespace').get(async (ctx: Contex
     403,
     'Forbidden',
   )
+  validateRequestContract(ctx, 'GET:/api/v1/dynamic-config/namespaces/:namespace', {
+    path: ctx.params,
+  })
 
   const dynamicConfigNamespace = await getDynamicConfigNamespace(currentUser, namespace)
   ctx.json({ namespace: dynamicConfigNamespace })
@@ -60,12 +68,11 @@ app.route('/api/v1/dynamic-config/namespaces/:namespace').patch(async (ctx: Cont
     'Forbidden',
   )
 
-  const body = await parseJsonBody<{ config?: Record<string, unknown> }>(ctx)
-  ctx.assert(
-    body?.config && typeof body.config === 'object' && !Array.isArray(body.config),
-    400,
-    'Missing config object',
-  )
+  const body = await parseJsonBody<UpdateDynamicConfigNamespaceRequest>(ctx)
+  validateRequestContract(ctx, 'PATCH:/api/v1/dynamic-config/namespaces/:namespace', {
+    body,
+    path: ctx.params,
+  })
   try {
     const result = await updateDynamicConfigNamespace(currentUser, namespace, body.config)
     ctx.json({ namespace: result!.namespace, changed: result!.changed })

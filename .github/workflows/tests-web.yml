@@ -18,7 +18,8 @@ permissions:
 
 jobs:
   prep:
-    runs-on: ubuntu-latest
+    # Same ARM64 pool as the shards it gates, so the critical path does not wait in the x64 queue first.
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 8
     permissions:
       contents: read

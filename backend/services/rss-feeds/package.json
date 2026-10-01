@@ -67,6 +67,6 @@
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/rss-parser": "0.1.0"
+    "@vouchington/rss-parser": "^0.1.0"
   }
 }

@@ -1,14 +1,7 @@
 import type { Job } from 'glide-mq'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import type { AIAgentJobName } from '@queues/ai-agents/config'
-import {
-  processAutotaggerPost,
-  processAutotaggerRssFeedItem,
-} from './processors/process-autotagger.mts'
-import {
-  processCommunityModerationDispatcher,
-  processCommunityModerationPrompt,
-} from './processors/process-community-moderation.mts'
+import { processAutotaggerRssFeedItem } from './processors/process-autotagger.mts'
 import { processStoryClustering } from './processors/process-misc.mts'
 import { processStoryPost } from './processors/process-story-post.mts'
 import { processReportJudgement } from './processors/process-report-judgement.mts'
@@ -32,10 +25,6 @@ export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
   const name = job.name as AIAgentJobName
 
   switch (name) {
-    case 'autotagger-post':
-      return processAutotaggerPost(
-        job as Job<import('@queues/ai-agents/types').AutotaggerPostJobData>,
-      )
     case 'autotagger-rss-feed-item':
       return processAutotaggerRssFeedItem(
         job as Job<import('@queues/ai-agents/types').AutotaggerRssFeedItemJobData>,
@@ -51,14 +40,6 @@ export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
     case 'reconcile-classifier-runs':
       return processReconcileClassifierRuns(
         job.data as import('@queues/ai-agents/types').ReconcileClassifierRunsJobData,
-      )
-    case 'community-moderation-dispatcher':
-      return processCommunityModerationDispatcher(
-        job as Job<import('@queues/ai-agents/types').CommunityModerationDispatcherJobData>,
-      )
-    case 'community-moderation-prompt':
-      return processCommunityModerationPrompt(
-        job as Job<import('@queues/ai-agents/types').CommunityModerationPromptJobData>,
       )
     case 'story-clustering':
       return processStoryClustering(

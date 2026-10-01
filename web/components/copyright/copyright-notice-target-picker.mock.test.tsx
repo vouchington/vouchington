@@ -1,10 +1,13 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { ApiError } from '@/lib/api/error'
 import {
   resolveCopyrightNoticeTargets,
   type CopyrightNoticeResolvedTarget,
 } from '@/lib/api/client/copyright-notice-targets'
 import { CopyrightNoticeTargetPicker } from './copyright-notice-target-picker'
+
+configure({ testIdAttribute: 'data-pw' })
 
 vi.mock(import('@/lib/api/client/copyright-notice-targets'), () => ({
   resolveCopyrightNoticeTargets: vi.fn<typeof resolveCopyrightNoticeTargets>(),
@@ -53,6 +56,61 @@ describe('CopyrightNoticeTargetPicker', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: 'Find hosted material' }))
     await waitFor(() => expect(onChange).toHaveBeenCalledWith([]))
+  })
+
+  it('offers the designated-agent email path before and after a lookup', async () => {
+    mockResolveTargets.mockRejectedValue(new Error('not found'))
+    render(
+      <CopyrightNoticeTargetPicker
+        targets={[]}
+        onChange={vi.fn<(targets: CopyrightNoticeResolvedTarget[]) => void>()}
+      />,
+    )
+    expect(screen.getByTestId('copyright-designated-agent-hint')).toHaveTextContent(
+      /cannot open the image yourself/i,
+    )
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Hosted use URL'), {
+      target: { value: 'https://voucha.ai/discussion/missing' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Find hosted material' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(/could not find hosted material/i)
+    expect(screen.getByRole('link', { name: 'designated agent' })).toHaveAttribute(
+      'href',
+      '/copyright/designated-agent',
+    )
+
+    fireEvent.change(screen.getByLabelText('Hosted use URL'), {
+      target: { value: 'https://voucha.ai/discussion/other' },
+    })
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByTestId('copyright-designated-agent-hint')).toBeInTheDocument()
+  })
+
+  it('shows the same not-found copy whatever the lookup failure was', async () => {
+    const copies = new Set<string>()
+    for (const failure of [
+      new ApiError('Post not found', 404),
+      new ApiError('Hosted image placement was not found', 422),
+      new Error('This hosted use does not have any available images.'),
+    ]) {
+      mockResolveTargets.mockRejectedValueOnce(failure)
+      const { unmount } = render(
+        <CopyrightNoticeTargetPicker
+          targets={[]}
+          onChange={vi.fn<(targets: CopyrightNoticeResolvedTarget[]) => void>()}
+        />,
+      )
+      fireEvent.change(screen.getByLabelText('Hosted use URL'), {
+        target: { value: 'https://voucha.ai/discussion/missing' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Find hosted material' }))
+      copies.add((await screen.findByRole('alert')).textContent ?? '')
+      unmount()
+    }
+    expect([...copies]).toHaveLength(1)
   })
 
   it('does not select more than twenty hosted images', async () => {

@@ -1,7 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
@@ -12,7 +11,7 @@ vi.mock<typeof import('node:fs/promises')>(import('node:fs/promises'), async imp
 
 const TICKER_INTERVAL_MS = 30_000
 const MIGRATIONS_DIRECTORY = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
+  import.meta.dirname,
   '../../../../../data-stores/psql/migrations',
 )
 

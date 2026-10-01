@@ -28,6 +28,8 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store,sharin
 # and shared-workspace source changes.
 
 # Copy workspace packages: resolved via tsconfig paths (../backend/types, ../ts-shared/*).
+# The shared membership catalog and validator are build-generation inputs;
+# next.config regenerates the web JSON snapshot before bundling.
 # Source must exist at the resolved path for Next.js
 # webpack to bundle them correctly.
 COPY backend/types/ /app/backend/types/

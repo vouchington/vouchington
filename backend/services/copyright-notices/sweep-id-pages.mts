@@ -64,9 +64,8 @@ function appendCopyrightSweepKeyset(
   limit: number,
 ): void {
   if (column === 'enforcementAssessment') {
-    if (afterId)
-      query.append(sql`\n      AND copyright_notice_submission_assessment_id > ${afterId}`)
-    query.append(sql`\n    ORDER BY copyright_notice_submission_assessment_id LIMIT ${limit + 1}`)
+    if (afterId) query.append(sql`\n      AND assessment.id > ${afterId}`)
+    query.append(sql`\n    ORDER BY assessment.id LIMIT ${limit + 1}`)
     return
   }
   if (column === 'formReviewIntake') {

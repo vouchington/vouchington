@@ -74,7 +74,9 @@ export function CopyrightStaffGuestCapability({ noticeId }: { noticeId: string }
       await requestCopyrightGuestInformation(noticeId, capabilityId, statement.trim())
       setStatement('')
       setRequestFor(null)
-      onSuccess('Information request recorded. Guest access expiry is unchanged.')
+      onSuccess(
+        'Information request queued by email to the claimant. Guest access expiry is unchanged.',
+      )
     }, 'Could not request information')
   }
   return (

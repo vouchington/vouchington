@@ -23,7 +23,6 @@ describe('resolved Storybook browser Vitest config', () => {
       output = execFileSync(
         process.execPath,
         [
-          '--experimental-strip-types',
           '--input-type=module',
           '--eval',
           `const { createVitest } = await import('vitest/node')

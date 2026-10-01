@@ -5,6 +5,7 @@ import { createDataRequestOrConflict } from './create-or-conflict.mts'
 const buildRequest = (overrides: Partial<UserDataRequest> = {}): UserDataRequest => ({
   id: '019c8390-0000-7000-8000-000000000001',
   user_id: '00000000-0000-7000-8000-000000000001',
+  requested_by_id: '00000000-0000-7000-8000-000000000001',
   queued_at: new Date('2026-02-22T00:00:00.000Z'),
   processing_attempt_id: '019c8390-0000-7000-8000-000000000002',
   dispatched_at: new Date('2026-02-22T00:00:00.000Z'),
@@ -30,17 +31,25 @@ describe('createDataRequestOrConflict', () => {
       .mockResolvedValueOnce(existing)
     const createDataRequest = vi.fn<VitestLooseMock>().mockRejectedValueOnce({
       code: '23505',
-      constraint: 'idx_user_data_requests__active_per_user',
+      constraint: 'idx_user_data_requests__active_per_requester',
     })
 
-    const result = await createDataRequestOrConflict(existing.user_id!, {
+    const result = await createDataRequestOrConflict(existing.user_id!, existing.requested_by_id!, {
       createDataRequest,
       getLatestDataRequest,
     })
 
     expect(result).toEqual({ type: 'conflict', existing })
     expect(getLatestDataRequest).toHaveBeenCalledTimes(2)
-    expect(createDataRequest).toHaveBeenCalledTimes(1)
+    expect(getLatestDataRequest).toHaveBeenNthCalledWith(
+      2,
+      existing.user_id,
+      existing.requested_by_id,
+    )
+    expect(createDataRequest).toHaveBeenCalledExactlyOnceWith(
+      existing.user_id,
+      existing.requested_by_id,
+    )
   })
 
   it('returns null conflict metadata when the follow-up read is no longer active', async () => {
@@ -54,10 +63,10 @@ describe('createDataRequestOrConflict', () => {
       .mockResolvedValueOnce(latest)
     const createDataRequest = vi.fn<VitestLooseMock>().mockRejectedValueOnce({
       code: '23505',
-      constraint: 'idx_user_data_requests__active_per_user',
+      constraint: 'idx_user_data_requests__active_per_requester',
     })
 
-    const result = await createDataRequestOrConflict(latest.user_id!, {
+    const result = await createDataRequestOrConflict(latest.user_id!, latest.requested_by_id!, {
       createDataRequest,
       getLatestDataRequest,
     })
@@ -71,10 +80,14 @@ describe('createDataRequestOrConflict', () => {
     const createDataRequest = vi.fn<VitestLooseMock>().mockRejectedValueOnce(new Error('boom'))
 
     await expect(
-      createDataRequestOrConflict('00000000-0000-7000-8000-000000000002', {
-        createDataRequest,
-        getLatestDataRequest,
-      }),
+      createDataRequestOrConflict(
+        '00000000-0000-7000-8000-000000000002',
+        '00000000-0000-7000-8000-000000000003',
+        {
+          createDataRequest,
+          getLatestDataRequest,
+        },
+      ),
     ).rejects.toThrow('boom')
   })
 })

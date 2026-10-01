@@ -1,10 +1,5 @@
-export type AutotaggerPostJobData = {
-  id: string
-}
-
 export type AutotaggerRssFeedItemJobData = {
   rss_feed_item_id: string
-  embedding_retries?: number
 }
 
 /** Reserves the run of one requested subject, then enqueues it. Exactly one subject id is set. */
@@ -33,17 +28,6 @@ export type ReconcileClassifierRunsJobData = {
   phase?: 'incomplete' | 'requests'
   classifier?: string
   after?: string | null
-}
-
-export type CommunityModerationDispatcherJobData = {
-  postId: string
-  communityId: string
-}
-
-export type CommunityModerationPromptJobData = {
-  postId: string
-  communityId: string
-  promptId: string
 }
 
 export type StoryClusteringJobData = {
@@ -101,12 +85,9 @@ export type OpenAiSpendCapRecheckJobData = {
 }
 
 export type AIAgentJobData = (
-  | AutotaggerPostJobData
   | AutotaggerRssFeedItemJobData
   | ClassifierRunDispatcherJobData
   | ClassifierRunJobData
-  | CommunityModerationDispatcherJobData
-  | CommunityModerationPromptJobData
   | ReportJudgementJobData
   | DisputeResolutionJobData
   | AppealResolutionJobData

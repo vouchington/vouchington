@@ -41,8 +41,8 @@ a counter-notice is compliant or that a hold is qualifying.
 
 ## Work claim ownership
 
-Action intents, delivery intents, email intake responses, enforcement requests, and form screening
-executions rotate a UUID `lease_token` on each claim or reclaim. Workers carry that token through
+Action intents, delivery intents (case deliveries and replies to declined email intakes alike), and
+form screening executions rotate a UUID `lease_token` on each claim or reclaim. Workers carry that token through
 completion and failure; a worker whose claim was reclaimed cannot change the newer owner's state.
 Action delivery also checks ownership under its row lock before placement mutations and again after
 external projection. A per-intent advisory lock prevents reclaim during compensation; action
@@ -63,7 +63,7 @@ results; only completion of the current token supplies idempotency.
 Automatic authority requires a current completed clear result for the same intake, an exact
 associated current compliant assessment, complete signed-in statutory fields, and no rejected form
 review. The [canonical predicate](../../../backend/data-stores/psql/migrations/0641-00-00-copyright-delivery-transport.sql)
-is checked again under the form fence at enforcement claim and final admission. Pending/failed
+is checked again under the form fence when a restriction is imposed. Pending/failed
 staff projections expose their state with null recommendation, rationale, and guidance; stale
 private rationale never appears as current. A staff approval during either state creates human
 authority.
@@ -89,8 +89,8 @@ changes its revision/deadline, or gates its delivery workers.
 
 ## Delivery obligations
 
-Each claimant receipt, poster restriction notice, status update, and counter-notice forwarding is
-recorded as an idempotent `copyright_notice_delivery_intents` row before it reaches a transport.
+Each claimant receipt, poster restriction notice, status update, counter-notice forwarding, and
+staff information request is recorded as an idempotent `copyright_notice_delivery_intents` row before it reaches a transport.
 The row is staff-visible through the private case aggregate and transitions from `pending` to
 `claimed`, then `sent`, `failed`, or `bounced`. A retryable failure returns to `pending`; bounded
 retry uses exponential backoff and stops after five attempts so poison deliveries cannot
@@ -103,6 +103,15 @@ can correlate it. Copyright emails opt out of the generic operational BCC becaus
 statutory personal information. The email transport worker is activation-blocking infrastructure: it must claim these
 rows, resolve private recipient evidence case-scoped, and report SES bounces before
 `COPYRIGHT_INTAKE_ENABLED` is enabled.
+
+The reply to a declined email intake is the same kind of row, with no case: it carries the intake's
+id instead of a notice id, a `delivery_kind` of `email_intake_rejected` or
+`email_intake_needs_information`, and the `correspondent` role. A check keeps exactly one of the
+two ids set, and a unique constraint keeps one reply per intake. The rendered body is stored
+encrypted on the row and cannot change, so every retry sends the same text and never the staff
+rationale. The sender's address goes in the row's recipient record, so SES bounces correlate to it
+like any other delivery. These rows never appear as a case in the staff queue or the case
+aggregate, and never match an inbound reply to a case.
 
 ## Placement enforcement boundary
 
@@ -173,7 +182,8 @@ Reversing or lifting one does not override another copyright case, a safety rest
 replacement, or a court order affecting the same placement. Erasing a staff account may null its
 foreign key, but cannot erase the decision timestamp, outcome, or lifecycle record.
 If erasure happens after a form rejection but before its effects finish, recovery uses the durable
-rejection to reverse provisional restrictions and close pending automated enforcement requests.
+rejection to reverse provisional restrictions; an automated assessment on a rejected form owes no
+restriction.
 
 Lifecycle events hold one typed source reference per event (except the case-level initial receipt),
 with a concrete foreign key and database-checked same-case ownership. Action events point to the
@@ -212,8 +222,10 @@ a succeeded parse the reply goes to the parsed sender. With no parse row or a fa
 moderator may type a reply address, validated like the claimant email on approval; without one no
 reply is queued, and the decision response reports `reply_queued: false` so staff see that nothing
 was sent. An address typed beside a parsed sender is refused. A parse that lands after the decision
-sends nothing, because the response is created only at decision time. See the
-[API](../api/v1/copyright-notices/README.md) for the contract.
+sends nothing, because the response is created only at decision time. When that reply fails or
+bounces, the intake returns to the email review page with the reason (`reply_failed` or
+`reply_bounced`) and how long it has waited since the failure, so a declined sender who was never
+answered is visible to staff. See the [API](../api/v1/copyright-notices/README.md) for the contract.
 
 Email extraction includes the claimant, contact, work, hosted URLs, signature, and both statutory
 declarations, with short source excerpts for moderator verification. Missing declarations remain
@@ -263,6 +275,25 @@ version and ETag are pinned and copied into the private evidence bucket before p
 failures remain immutable staff-visible intakes with the original evidence; they are not dropped or
 promoted automatically.
 
+Each email intake records the five verdicts Amazon SES reached when it received the message: SPF,
+DKIM, DMARC, spam, and malware. Each is `pass`, `fail`, `gray`, `processing_failed`, or `unknown`,
+and is written once with the intake, so a replay keeps the first values. They come only from the
+headers SES itself prepended above `X-SES-RECEIPT`; a header a sender planted below it is ignored,
+and a verdict SES did not report is `unknown`, never `pass`. That boundary assumes SES always writes
+`X-SES-RECEIPT` on a received message. DKIM `pass` means a signature validated, not that the signing
+domain aligns with the From address. The staff review page shows all five. An SPF, DKIM, or DMARC
+failure (or a spam verdict) is a risk note beside the evidence and never rejects, delays, or
+decides a notice, because a legitimate claimant can fail them through a forwarder or mailing list.
+
+A malware `fail` quarantines the original: the raw `.eml` route refuses with `409` (code
+`COPYRIGHT_EMAIL_QUARANTINED`), the intake response carries `raw_email.download_url: null`, and the
+review page shows a warning instead of the link. Staff review the parsed text only, and the intake can
+still be decided. Any other malware verdict keeps the download available. `gray` means SES
+could not classify the message, `processing_failed` means the scan did not complete, and `unknown`
+means SES reported nothing. The review page warns staff to open the original only in isolation. Blocking
+on `processing_failed` would hand the decision to the sender, because a malformed MIME message can force
+that verdict and so keep a valid notice out of staff view.
+
 Private contact details, signatures, raw text, attachments, staff rationale, agent output, and
 storage keys are never member fields. Accepted cases use an explicit authenticated-member allowlist.
 The claimant link comes from the account's current public profile, not a legal-name or signature
@@ -276,6 +307,18 @@ allowlisted lifecycle timeline, and the claimant's current public profile when o
 never expose legal claimant or poster identity, email, mailing address, signature, raw email,
 evidence artifacts, encrypted fields, moderator rationale, or agent recommendation. A guest or
 erased claimant has no member-visible profile link.
+
+`/copyright/notices/new` is public. A signed-out visitor files with the same Turnstile check,
+statutory fields, and § 512(f) warning as a signed-in member, and the notice is a guest filing as
+described below. The API returns only the case identifier, and a guest has no case read, so after
+filing the form shows an in-page receipt with that identifier in place of the sign-in-only case
+list. The receipt states what a guest can rely on: the receipt email to the address on the notice
+and, only if staff issue one, a capability token for `/copyright/notices/:id/guest`. There is no
+online status view for a guest, and nothing emails a form claimant a review outcome or a request
+for more information, so the receipt promises neither. The hosted
+material field and its lookup error both point to the designated-agent page for a claimant who
+cannot open the image. That copy is the same for every lookup failure, so it never says whether a
+hidden image exists.
 
 The timeline is an audience allowlist decided per event type in
 `backend/services/copyright-notices/timeline-visibility.mts`, and a database-backed test fails when
@@ -307,6 +350,20 @@ more information without extending the capability. Staff list a case's capabilit
 with issuer, expiry, and revocation state but never the token, at
 `GET /api/v1/copyright-notices/:id/guest-capabilities`, so they can revoke tokens after a reload.
 
+That request is the provider's attempt to contact the notifier about a deficient notice (17 U.S.C.
+§ 512(c)(3)(B)(ii)), so it never depends on staff reaching the claimant another way. In one
+transaction it records the outbound correspondence and exactly one email delivery intent with a
+`delivery_kind` of `staff_information_request` and the `claimant` role, addressed to the claimant
+email retained from the case's receipt. Guest and signed-in form notices behave alike, and the
+claimant need not hold a capability or an account. A constraint keeps that kind to the claimant
+role, the email channel, no user, and a correspondence row. The text is encrypted on the
+correspondence row and never logged, and a retry sends the same text. The case aggregate shows the
+delivery as queued, sent, failed, or bounced beside the request, and a failed or bounced one also
+raises the queue's `delivery_failed` reason. A case with no retained claimant email refuses the
+request with 422 rather than recording a request nobody can receive. Issuing a capability sends no
+email: staff hand the token over themselves, and a claimant email address proves nothing about who
+may act on the case.
+
 Claimants and affected posters receive a participant projection for their own submissions. Copyright
 review staff receive a separate queue and private case projection. Staff-only routes may expose
 evidence metadata and agent recommendations needed to perform human review, but not to ordinary
@@ -314,9 +371,10 @@ members. All mutation routes remain server-authorized even when an authenticated
 appeal or counter-notice form.
 
 The staff queue lists a case while it has any open item: an unreviewed form intake, restriction,
-appeal, counter-notice, or qualifying court or CCB filing; a failed action or delivery; an
-incomplete enforcement request; or an open restoration deadline at or past `escalation_at`. An open
-deadline before escalation does not queue a case by itself. Each case carries its distinct
+appeal, counter-notice, or qualifying court or CCB filing; a failed action or delivery; a compliant
+assessment with a target it has not yet restricted (`enforcement_pending`); or an open restoration
+deadline at or past `escalation_at`. An open deadline before escalation does not queue a case by
+itself. Each case carries its distinct
 `reasons`, the `waiting_since` time of its oldest open item, and its earliest open deadline. The
 queue orders cases by urgency: a missed restoration deadline first, then a deadline past escalation,
 then all other work, each oldest wait first. Urgency depends on the clock, so a case can move to an
@@ -338,8 +396,9 @@ off:
   intake waits in the staff queue like a guest form;
 - a moderator's acceptance of that intake records a human assessment and withholds its targets, and
   a rejection closes it;
-- an automated enforcement request that already exists stays pending and in the staff queue, and
-  enforces nothing, until a moderator decides the intake; and
+- an automated assessment that already exists and has not yet restricted its targets stays in the
+  staff queue as `enforcement_pending`, and restricts nothing, until a moderator decides the intake;
+  and
 - restrictions that already exist are unchanged and still need their own human decision.
 
 Keep the switch off until both prerequisites ship:
@@ -494,6 +553,31 @@ legal hold on a placement whose post author is that account. A qualifying hold i
 with an original claimant, the same material, a proceeding kind, a commencement time, and a
 designated-agent receipt, and with no resolution row. An open review alone does not block deletion.
 
+## Data export
+
+The account data export (GDPR Art. 15, CCPA right to know) includes the account's copyright records
+under a deliberately conservative redaction rule, so the export reveals nothing new. Counsel
+confirms the rule under [#1230](https://github.com/vouchington/vouchington/issues/1230).
+
+- The account's own signed-in submissions are exported decrypted in full: filed notices (claimant
+  name, contact, work description, statements, signature, target references), counter-notices (name,
+  address, telephone, consents, statements, signature), and appeals (reason).
+- A case the account is party to from the other side uses only the participant projection a
+  non-staff member already sees: accepted cases, dates, target visibility and restriction state, the
+  claimant's public profile, and the member timeline. The export never decrypts or includes the
+  other party's legal name, address, email, phone, or signature, and never includes moderator
+  rationale, internal notes, agent recommendations, reviewer identities, staff-only timeline events,
+  or raw email.
+- Repeat-infringer incidents about the account list their dates, operative state, linked notice id,
+  and any staff disposition, with no claimant identity. Decided reviews list outcome and dates; rationales
+  and open reviews are withheld.
+- Delivery intents, email intake responses, and other outbox rows are transport, not user records,
+  and are not exported. EU and UK redress records and court or CCB filings are not exported, and
+  claimants who only used email have no account, so they use a manual request.
+- An erased account's export has no copyright records.
+
+See [account data export](../users/ACCOUNT-DATA-EXPORT.md#copyright-records) for the files.
+
 ## Evidence retention
 
 Retention deletion is not built yet, so nothing is deleted today. Case records, evidence objects,
@@ -515,7 +599,8 @@ A five-minute sweep sends one Sentry warning when copyright work is late. It cou
 The email set uses the email-review queue's own rule: no intake review, and either no notice link
 or a matched reply whose correspondence is neither admitted nor rejected. An intake counts whether
 or not its parse was recorded, and the queue lists an unparsed intake too, so a stuck email is
-never invisible to staff.
+never invisible to staff. An intake listed only because its decline reply failed or bounced is not
+counted: that set measures unreviewed work, and the reply failure has its own reason on the queue.
 
 `reviewTargetMinutes` lives in the audited `copyright` dynamic-config namespace. Its default is `0`,
 which means unset: both waiting counts stay off until an operator records an approved target. Missed

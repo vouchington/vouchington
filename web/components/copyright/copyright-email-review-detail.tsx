@@ -8,6 +8,8 @@ import {
 } from './copyright-email-approval-model'
 import type { CopyrightEmailIntake } from '@/lib/api/client/copyright-email-intakes'
 import { CopyrightEmailInformationRequestField } from './copyright-email-information-request-field'
+import { CopyrightEmailOriginalDownload } from './copyright-email-original-download'
+import { CopyrightEmailSesVerdicts } from './copyright-email-ses-verdicts'
 import { isValidCopyrightEmailInformationMessage } from './copyright-email-information-request-model'
 import { CopyrightEmailReplyAddressField } from './copyright-email-reply-address-field'
 import { CopyrightEmailCorrespondenceFields } from './copyright-email-correspondence-fields'
@@ -64,12 +66,11 @@ export function CopyrightEmailReviewDetail({
       <pre className='overflow-auto rounded border p-3 text-xs'>
         {JSON.stringify(detail.raw_email, null, 2)}
       </pre>
-      <Button
-        asChild
-        variant='outline'
-      >
-        <a href={detail.raw_email.download_url}>Download original email and attachments</a>
-      </Button>
+      <CopyrightEmailSesVerdicts verdicts={detail.ses_verdicts} />
+      <CopyrightEmailOriginalDownload
+        downloadUrl={detail.raw_email.download_url}
+        virus={detail.ses_verdicts.virus}
+      />
       <h3 className='font-medium'>Parsed email</h3>
       <pre className='overflow-auto rounded border p-3 text-xs'>
         {JSON.stringify(detail.parsed_email, null, 2)}

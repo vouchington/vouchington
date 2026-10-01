@@ -1,4 +1,3 @@
-import { setTimeout as sleep } from 'node:timers/promises'
 import {
   createTestPost,
   createTestTopic,
@@ -37,15 +36,17 @@ export async function insertPersonalizedTopicFixture(viewer: PrivateUser) {
   await upsertTopicElectionVotes(followedUser.id, [{ entityId: topicEntity.id, score: 1 }])
   await upsertTopicElectionVotes(unfollowedUser.id, [{ entityId: topicEntity.id, score: -1 }])
 
+  // Explicit timestamps give deterministic review ordering without sleeping between inserts.
+  const unfollowedCreatedAt = new Date()
+  const followedCreatedAt = new Date(unfollowedCreatedAt.getTime() - 1000)
   const followedReviewTitle = `Followed Review ${unique}`
   await insertTestReview({
     userId: followedUser.id,
     topicRatings: [{ topicId: topic.id, rating: 5 }],
     title: followedReviewTitle,
     markdown: 'followed review',
+    createdAt: followedCreatedAt,
   })
-
-  await sleep(20)
 
   const unfollowedReviewTitle = `Unfollowed Review ${unique}`
   await insertTestReview({
@@ -53,6 +54,7 @@ export async function insertPersonalizedTopicFixture(viewer: PrivateUser) {
     topicRatings: [{ topicId: topic.id, rating: 3 }],
     title: unfollowedReviewTitle,
     markdown: 'unfollowed review',
+    createdAt: unfollowedCreatedAt,
   })
 
   return {

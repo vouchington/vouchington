@@ -2,7 +2,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
 import { getActiveMembershipCatalogFromPrimary } from '@services/memberships'
-import { membershipBenefitCatalog } from '@services/memberships/benefit-catalog'
+import { membershipBenefitCatalog } from '@ts-shared/utils/membership-benefit-catalog'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 app.route('/api/v1/memberships/plans').get(async (ctx: Context) => {

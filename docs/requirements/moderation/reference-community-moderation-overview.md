@@ -10,21 +10,21 @@ flowchart TD
   Create[Create custom prompt] --> Prompt[community_agent_prompts]
   Prompt --> Allocate[Allocate creator slot]
   Allocate --> Active[Active prompt]
-  Post[Community post published] --> Dispatcher[Community moderation dispatcher]
-  Builtins --> Dispatcher
-  Active --> Dispatcher
-  Dispatcher --> Results[(agent_moderations)]
+  Post[Community post published] --> Run[community-moderation classifier run]
+  Builtins --> Run
+  Active --> Run
+  Run --> Results[(agent_moderations)]
   Results --> View[Owner, moderator, or Plus+ member views results]
-  Results --> Flag{on_flag_action}
-  Flag -- review_queue --> Review[Move to review queue]
+  Results --> Flag{communities.automod_action}
+  Flag -- review_queue --> Review[Flag the review for moderators]
   Flag -- unpublish --> Unpublish[Automod unpublishes community post]
-  Flag -- none --> Store[Store result only]
+  Flag -- record_only --> Store[Store result only]
 ```
 
 1. **Toggle built-in agents** — an owner or moderator enables global label agents for the community
 2. **Create a prompt** — an owner or moderator writes a system prompt describing what to flag
 3. **Allocate a slot** — the creator allocates one of their plan's slots to activate the prompt
-4. **Posts are evaluated** — when a post is published in the community, enabled built-ins and active prompts run against it
+4. **Posts are evaluated** — when a post is published in the community, enabled built-ins and active prompts run against it. The community's automod action (`record_only` by default, `review_queue`, or `unpublish`) decides what a flagged post does; owners and moderators set it per community
 5. **View results** — owners, moderators, and Plus+ members can see per-prompt moderation results
 
 ## Built-In Community AI Agents

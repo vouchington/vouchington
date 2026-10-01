@@ -19,6 +19,7 @@ const communityColumnNames = Object.keys({
   post_approval_required_at: true,
   allow_review_posts: true,
   allow_data_point_posts: true,
+  automod_action: true,
   trusted_at: true,
   profile_image_id: true,
   banner_image_id: true,

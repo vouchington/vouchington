@@ -22,8 +22,8 @@
   "scripts": {},
   "dependencies": {
     "@ts-shared/utils": "workspace:^",
-    "@vouchington/localization": "0.2.0",
-    "@vouchington/utils": "0.5.3",
+    "@vouchington/localization": "^0.2.0",
+    "@vouchington/utils": "^0.5.3",
     "fast-xml-parser": "^5.11.1"
   }
 }

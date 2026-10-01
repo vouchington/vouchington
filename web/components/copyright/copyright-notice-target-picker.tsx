@@ -6,6 +6,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { LabeledInput } from './copyright-form-fields'
 import {
+  CopyrightDesignatedAgentHint,
+  CopyrightTargetNotFound,
+} from './copyright-designated-agent-hint'
+import {
   resolveCopyrightNoticeTargets,
   type CopyrightNoticeResolvedTarget,
 } from '@/lib/api/client/copyright-notice-targets'
@@ -23,6 +27,7 @@ export function CopyrightNoticeTargetPicker({
   const [targetUrl, setTargetUrl] = useState('')
   const [resolvedTargets, setResolvedTargets] = useState<CopyrightNoticeResolvedTarget[]>([])
   const [resolving, setResolving] = useState(false)
+  const [lookupFailed, setLookupFailed] = useState(false)
   const resolutionRequest = useRef(0)
 
   async function resolve() {
@@ -30,6 +35,7 @@ export function CopyrightNoticeTargetPicker({
     const request = ++resolutionRequest.current
     const requestedUrl = targetUrl.trim()
     setResolving(true)
+    setLookupFailed(false)
     try {
       const resolved = await resolveCopyrightNoticeTargets(requestedUrl)
       if (request !== resolutionRequest.current) return
@@ -41,6 +47,7 @@ export function CopyrightNoticeTargetPicker({
         fallback: 'We could not find hosted material at that URL. Check the link and try again.',
         tags: { form: 'copyright-notice-target' },
       })
+      setLookupFailed(true)
       setResolvedTargets([])
       onChange([])
     } finally {
@@ -52,6 +59,7 @@ export function CopyrightNoticeTargetPicker({
     resolutionRequest.current++
     setTargetUrl(value)
     setResolvedTargets([])
+    setLookupFailed(false)
     setResolving(false)
     onChange([])
   }
@@ -91,6 +99,7 @@ export function CopyrightNoticeTargetPicker({
           {resolving ? 'Finding material…' : 'Find hosted material'}
         </Button>
       </div>
+      {lookupFailed ? <CopyrightTargetNotFound /> : <CopyrightDesignatedAgentHint />}
       {resolvedTargets.length > 0 && (
         <div className='space-y-2'>
           {resolvedTargets.map((target, index) => {

@@ -41,14 +41,21 @@ intake queue shows each message's wait age.
    could open directly at submission; any other target was refused with the same 422 as a missing one
    and nothing was recorded, so a rightsholder who cannot see the material needs the email path.
 4. Record missing elements as an assessment and request information. Do not silently reject a
-   substantially compliant notice for failing to match Voucha's form wording.
+   substantially compliant notice for failing to match Voucha's form wording. For a form-filed
+   case, send the request from the case's Guest access section (issue access, then Request
+   information). It is emailed to the claimant address on the notice, with no need to contact the
+   claimant another way. Its state (Queued, Sent, Failed, or Bounced) shows under Information
+   request delivery. Retry a failed one under Delivery failures, and verify the address after a
+   bounce. A case with no retained claimant email refuses the request with 422.
 5. To reject an email or ask the sender for more information, check who will receive the reply. An
    email with a parsed sender replies to that sender. An email with no parsed sender (a `failed`
    or `unparsed` parse) has nobody to reply to, so the reply field appears and a decision queues no
    reply unless you type an address there. Type one only when the original MIME shows a sender
    worth answering; the server refuses an address for an email that has a parsed sender. The
    staff page then reports "A reply was queued." or "No reply sent."; the API returns
-   `reply_queued`.
+   `reply_queued`. If the queued reply later fails or bounces, the intake returns to the email-review
+   queue with a `reply_failed` or `reply_bounced` reason and the time since the failure. The reply
+   has no replay control yet (tracked in #1657), so contact the sender by another channel.
    - **Reject email intake** closes the intake without opening a case. It needs the review
      rationale, plus the manual-fallback reason when there is no recommendation.
    - **Request information** closes the intake the same way and sends your message to the sender.
@@ -64,6 +71,29 @@ intake queue shows each message's wait age.
    a guest form. Accept it to withhold its targets, or reject it. The screen is advisory only.
 7. If a signed-in case was provisionally restricted automatically, record a human `confirm`,
    `modify`, or `reverse` decision even when nobody appeals.
+
+### Email authentication and malware verdicts
+
+The email review page lists the SPF, DKIM, DMARC, spam, and malware verdicts Amazon SES recorded
+when it received the message, each shown as Pass, Fail, Inconclusive, Check failed, or Not reported.
+
+- An SPF, DKIM, or DMARC failure, or a spam verdict, adds an Authentication risk note. It is context,
+  not a decision: a real claimant can fail these through a forwarder or mailing list, so weigh the
+  note with the rest of the evidence and decide the intake as usual. Do not reject a notice for it
+  alone. DKIM Pass means a signature validated, not that the signing domain matches the From address.
+- Not reported means SES did not state a verdict, so treat it as unverified, never as Pass.
+
+### Quarantined originals
+
+When SES reports malware in an email (Malware: Fail) the page shows "Original email withheld" in
+place of the download link, and the raw `.eml` route answers `409 COPYRIGHT_EMAIL_QUARANTINED`. Review
+the parsed text and decide the intake normally; do not look for another way to open the original.
+Report a suspected false positive to engineering rather than working around it.
+
+When the malware verdict is Inconclusive, Check failed, or Not reported, the download stays
+available and the page warns you. Download it only if the parsed text is not enough, and open it in
+an isolated environment. Those verdicts do not block the download because a sender can force Check
+failed with a malformed message, and blocking would keep a valid notice from review.
 
 ## Intake activation
 
@@ -308,7 +338,7 @@ Its `reason` tag has the same value, and one boolean tag per count shows which c
     or CCB filing awaiting assessment or resolution, timed from receipt;
   - an active restriction with no human review, timed from when it was imposed;
   - a failed media action or failed or bounced delivery, timed from the failure; and
-  - an enforcement request that has not completed, timed from its creation.
+  - a compliant assessment with a target it has not yet restricted, timed from the assessment.
 
   Deadline items are left out here because the two counts below cover them.
 
@@ -426,10 +456,12 @@ sufficient to identify an alleged infringer, to the extent Voucha has it.
    If counsel directs preservation, an administrator requests an
    [account data export](../requirements/users/ACCOUNT-DATA-EXPORT.md) for the account and saves
    the download to the matter file before its link expires. The export omits session IP
-   addresses, so capture any that counsel needs from `user_sessions`. The account holder can see
-   this export: their data page shows the latest request, whoever made it, along with its status
-   and download link, and blocks the account holder's own request while it runs. Counsel decides
-   whether to request the export together with the user-notice decision in step 4.
+   addresses, so capture any that counsel needs from `user_sessions`. The account holder cannot see
+   this export: it is recorded against the administrator who requested it, so their data page, its
+   status stream and its download link do not return it, no ready email is sent, and it does not
+   block their own export request. Only that administrator can read its status and download link,
+   through the data-request route on the account. Counsel still decides separately, in step 4,
+   whether to give the user notice of the legal process.
 
 6. **Records that may exist.** Produce only what counsel approves.
    - Account: the export categories (username, profile, creation date, email addresses, phone

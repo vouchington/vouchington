@@ -10,6 +10,7 @@ import {
   insertTestCommunityPostReview,
   insertTestAgentModeration,
   insertTestPost,
+  setTestCommunityPostReviewAutomodFlag,
   updateTestCommunityPostReviewState,
 } from '@voucha/test-helpers'
 import { recordAutomodActionFeedback } from './automod-feedback.mts'
@@ -25,7 +26,7 @@ import { searchRecentAutomodActions } from './recent-actions.mts'
 // community-post-review state and agent-moderation rows, not on createPost's real
 // write-path side effects.
 describe('moderation-training feedback', () => {
-  it('records community-prompt automod feedback for passive and unpublish prompts', async () => {
+  it('records community-prompt automod feedback only for posts the unpublish action removed', async () => {
     const owner = await createTestUser()
     const random = createRandomString(8)
     const community = await insertTestCommunity({
@@ -37,18 +38,34 @@ describe('moderation-training feedback', () => {
       userId: owner.id,
       role: 'owner',
     })
-    const passivePrompt = await insertTestCommunityAgentPrompt({
-      communityId: community.id,
-      createdById: owner.id,
-      slotAllocated: true,
-      onFlagAction: 'none',
-    })
     const unpublishPrompt = await insertTestCommunityAgentPrompt({
       communityId: community.id,
       createdById: owner.id,
       slotAllocated: true,
-      onFlagAction: 'unpublish',
     })
+    const reviewQueuePostId = await insertTestPost({
+      title: `Prompt review queue ${random}`,
+      slug: `prompt-review-queue-${random}`,
+      createdById: owner.id,
+      markdown: `Prompt review queue ${random}.`,
+      postType: 'discussion',
+    })
+    await insertTestCommunityPostReview({
+      communityId: community.id,
+      postId: reviewQueuePostId,
+      submittedById: owner.id,
+    })
+    await setTestCommunityPostReviewAutomodFlag({
+      postId: reviewQueuePostId,
+      action: 'review_queue',
+    })
+    await insertTestAgentModeration({
+      postId: reviewQueuePostId,
+      agentId: unpublishPrompt.agent_id,
+      promptId: unpublishPrompt.id,
+      flagged: true,
+    })
+    const flaggedAt = new Date()
     const promptPostId = await insertTestPost({
       title: `Prompt candidate ${random}`,
       slug: `prompt-candidate-${random}`,
@@ -64,13 +81,12 @@ describe('moderation-training feedback', () => {
     await updateTestCommunityPostReviewState({
       communityId: community.id,
       postId: promptPostId,
-      unpublishedAt: new Date(),
+      unpublishedAt: flaggedAt,
     })
-    await insertTestAgentModeration({
+    await setTestCommunityPostReviewAutomodFlag({
       postId: promptPostId,
-      agentId: passivePrompt.agent_id,
-      promptId: passivePrompt.id,
-      flagged: true,
+      action: 'unpublish',
+      flaggedAt,
     })
     await insertTestAgentModeration({
       postId: promptPostId,
@@ -83,6 +99,7 @@ describe('moderation-training feedback', () => {
       sourceType: 'community_prompt',
       limit: 5,
     })
+    // The review-queue flag leaves the post published, so it is not an unpublish to give feedback on.
     expect(promptActions.actions).toEqual([
       expect.objectContaining({
         post_id: promptPostId,
@@ -120,10 +137,16 @@ describe('moderation-training feedback', () => {
       postId: keepPromptPostId,
       submittedById: owner.id,
     })
+    const keepFlaggedAt = new Date()
     await updateTestCommunityPostReviewState({
       communityId: community.id,
       postId: keepPromptPostId,
-      unpublishedAt: new Date(),
+      unpublishedAt: keepFlaggedAt,
+    })
+    await setTestCommunityPostReviewAutomodFlag({
+      postId: keepPromptPostId,
+      action: 'unpublish',
+      flaggedAt: keepFlaggedAt,
     })
     await insertTestAgentModeration({
       postId: keepPromptPostId,

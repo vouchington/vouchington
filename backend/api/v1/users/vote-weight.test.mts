@@ -54,13 +54,13 @@ describe('vote-weight', () => {
         .expect(400)
     })
 
-    it('returns 400 for non-number weight', async () => {
+    it('returns 422 for non-number weight', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)
       await request
         .put(`/api/v1/users/${targetUser.id}/vote-weight`)
         .send({ weight: 'abc' })
-        .expect(400)
+        .expect(422)
     })
   })
 

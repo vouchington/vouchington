@@ -12,6 +12,7 @@
       "allow_review_posts": false,
       "archived_at": null,
       "archived_by_id": null,
+      "automod_action": "record_only",
       "banner_image_id": "00000000-0000-7000-8000-000000000204",
       "banner_image_placement": {
         "image_id": "00000000-0000-7000-8000-000000000204",

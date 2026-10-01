@@ -1,6 +1,6 @@
 exports backend/agents/_shared/create-response.mts getBackgroundResponseHooks
 exports backend/agents/_shared/create-response.mts getOpenAIResponseAttemptHooks
-exports backend/agents/chat/stream.mts streamChatResponse
+exports backend/agents/classifiers/execute-single-call.mts executeSingleCallClassifierDecision
 exports backend/agents/classifiers/execute.mts executeClassifierDecision
 exports backend/agents/classifiers/safe-content.mts classifierChoiceKey
 exports backend/agents/classifiers/safe-content.mts classifierPrompt
@@ -25,6 +25,7 @@ exports backend/data-stores/psql/schema-growth-registry.mts buildSchemaGrowthReg
 exports backend/data-stores/psql/schema-growth-retained-identities.mts RETAINED_MISSING_UPDATED_AT
 exports backend/data-stores/valkey-core/app-integration.mts getValkeyAnalyticsPromiseForTest
 exports backend/data-stores/valkey-core/app-integration.mts resetValkeyAnalyticsLoaderForTest
+exports backend/data-stores/valkey-glide-mq/glide-mq-factory.mts createFlowProducer
 exports backend/data-stores/valkey-glide-mq/index.mts buildWorkerQueueSettings
 exports backend/data-stores/valkey/clients.mts closeDynamicConfigValkeySubscriptionClient
 exports backend/data-stores/valkey/dynamic-config.mts dynamicConfigs
@@ -130,21 +131,14 @@ exports backend/services/communities/search.test-suites.mts communitySearchSplit
 exports backend/services/community-member-vacations/manage.mts getMyCommunityVacation
 exports backend/services/contribution-gating/admission.mts canonicalizeAdmissionIntent
 exports backend/services/contribution-gating/limits.mts getContributionLimitActionForPostType
-exports backend/services/conversations-messages/agentic-runs.mts getConversationMessageAgenticRunById
-exports backend/services/conversations-messages/agentic-runs.mts getConversationMessageAgenticRunEventsByRunId
-exports backend/services/conversations-messages/agentic-runs.mts getConversationMessageAgenticRunsByConversationMessageId
-exports backend/services/conversations-messages/agentic-runs.mts getLatestConversationMessageAgenticRunByConversationMessageId
-exports backend/services/conversations-messages/agentic-runs.mts hasRunningAgenticRunByConversationId
 exports backend/services/conversations-messages/conversations.mts getConversationByCreatedByAndTitle
 exports backend/services/conversations-messages/conversations.mts updateConversationLastResponseId
 exports backend/services/conversations-messages/create.mts createConversationMessage
 exports backend/services/conversations-messages/update-message.mts updateConversationMessageContent
-exports backend/services/conversations-messages/update.mts failChatEnqueue
 exports backend/services/copyright-notices/appeal-recommendations.mts copyrightAppealRecommendations
 exports backend/services/copyright-notices/email-intake-parses.mts getCopyrightEmailIntakeForAgent
 exports backend/services/copyright-notices/email-intake-test-fixtures.mts createParsedCopyrightEmailIntake
 exports backend/services/copyright-notices/eu-notice-receipt.mts receiveEuCopyrightNoticeInTransaction
-exports backend/services/copyright-notices/form-screening-executions.mts claimCopyrightFormScreening
 exports backend/services/copyright-notices/form-screening-executions.mts failCopyrightFormScreening
 exports backend/services/copyright-notices/guest-capabilities.mts authorizeCopyrightGuestCapability
 exports backend/services/copyright-notices/index.mts authorizeCopyrightGuestCapability
@@ -152,7 +146,6 @@ exports backend/services/copyright-notices/index.mts claimCopyrightDeliveryInten
 exports backend/services/copyright-notices/index.mts copyrightAppealRecommendations
 exports backend/services/copyright-notices/index.mts copyrightGuestCapabilityMaxLifetimeMs
 exports backend/services/copyright-notices/index.mts getCopyrightRepeatInfringerAccount
-exports backend/services/copyright-notices/index.mts markCopyrightDeliveryIntentSent
 exports backend/services/copyright-notices/index.mts recordCopyrightRepeatInfringerDisposition
 exports backend/services/copyright-notices/repeat-infringer-incidents.mts getCopyrightRepeatInfringerAccount
 exports backend/services/copyright-notices/restoration-hold-scene.mts recordOrdinaryCopyrightHold
@@ -279,7 +272,6 @@ exports backend/services/post-publication/test-fixtures.mts reconcileTestPublica
 exports backend/services/post-publication/test-fixtures.mts recordTestStoryTopicPublicationChange
 exports backend/services/posts/create-link-post.mts createLinkPost
 exports backend/services/posts/privacy-filter.mts buildPrivacyFilter
-exports backend/services/posts/review-successions/audit.mts REVIEW_SUCCESSION_HISTORY_AUDIT_PAGE_SIZE
 exports backend/services/posts/review-successions/index.mts listReviewSuccessionsForPostIds
 exports backend/services/posts/review-successions/index.mts terminalizeActiveReviewSuccessionForManualPost
 exports backend/services/posts/review-successions/list.mts listReviewSuccessionsForPostIds
@@ -301,6 +293,7 @@ exports backend/services/route-rate-limits/activitypub-inbox.mts isActivityPubIn
 exports backend/services/route-rate-limits/config.mts ROUTE_REGISTRY
 exports backend/services/rss-feed-items/categories.mts buildRssFeedItemCategorySqlBatches
 exports backend/services/rss-feed-items/categories.mts getRssFeedItemCategories
+exports backend/services/rss-feed-items/categories.mts getRssFeedItemMappedTopics
 exports backend/services/rss-feed-items/category-topic-votes.mts clearCategorizerVotesForUnreferencedCategoryTopicRelations
 exports backend/services/rss-feed-items/chapters.mts normalizePodcastChapters
 exports backend/services/rss-feed-items/get.mts getRssFeedItemKeyByGuid
@@ -382,15 +375,7 @@ exports backend/workers/sitemaps/processors.mts backfillDispatcherDependencies
 exports backend/workers/sitemaps/processors.mts updatePostDaySitemapDependencies
 exports backend/workers/sitemaps/processors.mts updateSitemapIndexDependencies
 exports backend/workers/story-post-related-url-projections/processors.mts processReconcileStoryPostRelatedUrlProjections
-types backend/agents/chat/stream.mts ChatStreamEvent
 types backend/services/ap-inbox-activities/durable-delivery-transition-contract.mts ActivityPubInboxDeliveryTransitionDimensions
 types backend/services/copyright-notices/index.mts CopyrightAgentDispatchPage
 types backend/services/copyright-notices/index.mts CopyrightReviewTargetBreaches
-types backend/services/moderation-appeals/get.mts ModerationCaseTrace
-types backend/services/moderation-exposure/index.mts ExposureState
 types backend/services/post-publication/capture-keys.mts PostPublicationRetainedKey
-types backend/services/post-publication/shadow-audit.mts ShadowAuditCandidate
-types backend/services/review-disputes/index.mts ReviewDispute
-types backend/services/topic-claims/index.mts TopicClaim
-types backend/services/topic-claims/index.mts TopicClaimState
-types backend/services/topic-claims/index.mts TopicClaimVerificationMethod

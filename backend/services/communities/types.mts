@@ -3,6 +3,7 @@ export type {
   CommunityVisibility,
   CommunityMemberRosterVisibility,
   CommunityMemberRole,
+  CommunityAutomodAction,
   CommunityListType,
   CommunityRestrictionType,
   Community,

@@ -10,6 +10,7 @@ import type {
   markDataRequestProcessing,
   markDataRequestReady,
   uploadExportToS3,
+  wasDataRequestMadeBySubject,
   writeExportFiles,
   zipDir,
 } from '@services/account-data-requests'
@@ -36,6 +37,7 @@ const mockPublishTerminalStatus =
   vi.fn<(requestId: string, status: 'ready' | 'failed') => Promise<void>>()
 const mockUploadExportToS3 = vi.fn<typeof uploadExportToS3>()
 const mockWriteExportFiles = vi.fn<typeof writeExportFiles>()
+const mockWasDataRequestMadeBySubject = vi.fn<typeof wasDataRequestMadeBySubject>()
 const mockZipDir = vi.fn<typeof zipDir>()
 const PROCESSING_ATTEMPT_ID = 'attempt-456'
 
@@ -68,6 +70,7 @@ describe('processExportRequest', () => {
     mockMarkDataRequestReady.mockResolvedValue(true)
     mockPublishTerminalStatus.mockResolvedValue(undefined)
     mockUploadExportToS3.mockResolvedValue(s3Key)
+    mockWasDataRequestMadeBySubject.mockResolvedValue(true)
     mockWriteExportFiles.mockResolvedValue(undefined)
     mockZipDir.mockResolvedValue(undefined)
   })
@@ -225,28 +228,27 @@ describe('processExportRequest', () => {
     expect(mockMarkDataRequestFailed).not.toHaveBeenCalled()
   })
 
-  it('resolves successfully when getPrivateUserByAny rejects (best-effort email)', async () => {
-    mockGetPrivateUserByAny.mockRejectedValue(new Error('DB error'))
+  it.each([
+    ['getPrivateUserByAny', mockGetPrivateUserByAny],
+    ['getExportDownloadUrl', mockGetExportDownloadUrl],
+    ['wasDataRequestMadeBySubject', mockWasDataRequestMadeBySubject],
+    ['email enqueue', mockEnqueueSendDataExportReadyEmail],
+  ])('resolves successfully when %s rejects (best-effort email)', async (_name, mock) => {
+    mock.mockRejectedValue(new Error('best-effort failure'))
 
     await expect(runExportRequest(requestId, userId)).resolves.toBeUndefined()
     expect(mockMarkDataRequestFailed).not.toHaveBeenCalled()
-    expect(mockEnqueueSendDataExportReadyEmail).not.toHaveBeenCalled()
   })
 
-  it('resolves successfully when getExportDownloadUrl rejects (best-effort email)', async () => {
-    mockGetExportDownloadUrl.mockRejectedValue(new Error('Sign error'))
+  it('does not email the subject about an export that someone else requested', async () => {
+    mockWasDataRequestMadeBySubject.mockResolvedValue(false)
 
-    await expect(runExportRequest(requestId, userId)).resolves.toBeUndefined()
-    expect(mockMarkDataRequestFailed).not.toHaveBeenCalled()
+    await runExportRequest(requestId, userId)
+
+    expect(mockWasDataRequestMadeBySubject).toHaveBeenCalledWith(requestId)
+    expect(mockPublishTerminalStatus).toHaveBeenCalledWith(requestId, 'ready')
+    expect(mockGetExportDownloadUrl).not.toHaveBeenCalled()
     expect(mockEnqueueSendDataExportReadyEmail).not.toHaveBeenCalled()
-  })
-
-  it('resolves successfully when email enqueue rejects (best-effort email)', async () => {
-    mockEnqueueSendDataExportReadyEmail.mockRejectedValue(new Error('enqueue failed'))
-
-    await expect(runExportRequest(requestId, userId)).resolves.toBeUndefined()
-    expect(mockMarkDataRequestFailed).not.toHaveBeenCalled()
-    expect(mockEnqueueSendDataExportReadyEmail).toHaveBeenCalled()
   })
 })
 
@@ -291,6 +293,7 @@ function getExportRequestDependencies() {
     markDataRequestReady: mockMarkDataRequestReady,
     publishTerminalStatus: mockPublishTerminalStatus,
     uploadExportToS3: mockUploadExportToS3,
+    wasDataRequestMadeBySubject: mockWasDataRequestMadeBySubject,
     writeExportFiles: mockWriteExportFiles,
     zipDir: mockZipDir,
   }

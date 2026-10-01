@@ -56,7 +56,6 @@ import {
   seedTopicParentRelations,
   seedTopics,
   seedUrls,
-  seedCommittedPostAdmissionReservations,
   seedTopicImportAttempts,
   seedUsers,
 } from './seed-data/core.mts'
@@ -91,7 +90,6 @@ async function main() {
   await seedTopicParentRelations(500)
   await seedPosts(100_000)
   await seedPostFeedShares()
-  await seedCommittedPostAdmissionReservations()
   await seedUserRemovedPlatformPosts()
   await checkpointSeed('posts')
   await seedEntityRelations(50_000)

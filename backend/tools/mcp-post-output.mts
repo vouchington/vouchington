@@ -1,4 +1,5 @@
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
+import { getPostByAnyCachedBatch } from '@services/entity-fetch'
 import { maskAnonymousPost, type Post } from '@services/posts'
 import { closedObject, pickProperties } from './read-tool-output-schema.mts'
 
@@ -59,4 +60,13 @@ export async function toMcpPost(post: Post): Promise<McpPost> {
     created_at: new Date(post.created_at).toISOString(),
     updated_at: new Date(post.updated_at).toISOString(),
   }
+}
+
+/**
+ * The posts among `ids` that exist, mapped for MCP, in the order of `ids`. The caller has already
+ * decided that each id is readable: this only hydrates, it does not check access.
+ */
+export async function loadMcpPosts(ids: string[]): Promise<McpPost[]> {
+  const posts = await getPostByAnyCachedBatch(ids)
+  return Promise.all(posts.filter((post): post is Post => Boolean(post)).map(toMcpPost))
 }
