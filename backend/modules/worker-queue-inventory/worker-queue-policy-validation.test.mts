@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  type WorkerQueuePolicy,
-  validateWorkerQueuePolicy,
-  workerQueuePolicy,
-} from './worker-queue-policy.mts'
+import { validateWorkerQueuePolicy, workerQueuePolicy } from './worker-queue-policy.mts'
 
 describe('worker queue inventory policy validation', () => {
   it('accepts the checked-in queue classification', () => {
@@ -63,6 +59,6 @@ describe('worker queue inventory policy validation', () => {
   })
 })
 
-function mutablePolicy(): WorkerQueuePolicy {
+function mutablePolicy(): ReturnType<typeof validateWorkerQueuePolicy> {
   return structuredClone(workerQueuePolicy)
 }
