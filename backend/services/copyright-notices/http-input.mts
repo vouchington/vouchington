@@ -93,3 +93,48 @@ export function parseCopyrightTargetIds(value: unknown): string[] {
   assert(new Set(value).size === value.length, 422, 'target_ids must be unique')
   return value as string[]
 }
+
+export function parseCopyrightAppealForm(body: Record<string, unknown>) {
+  const targetIds = parseCopyrightTargetIds(body.target_ids)
+  const reason = body.reason
+  assert(boundedString(reason, 50_000), 422, 'reason is required')
+  return { reason, targetIds }
+}
+
+export function parseCopyrightCounterNoticeForm(body: Record<string, unknown>) {
+  const targetIds = parseCopyrightTargetIds(body.target_ids)
+  const { name, address, telephone, electronic_signature: electronicSignature } = body
+  assert(
+    boundedString(name, 200) &&
+      boundedString(address, 4096) &&
+      boundedString(telephone, 100) &&
+      boundedString(electronicSignature, 500),
+    422,
+    'name, address, telephone, and electronic_signature are required',
+  )
+  assert(
+    body.consent_to_federal_jurisdiction === true,
+    422,
+    'consent_to_federal_jurisdiction must be accepted',
+  )
+  assert(
+    body.consent_to_service_of_process === true,
+    422,
+    'consent_to_service_of_process must be accepted',
+  )
+  assert(
+    body.good_faith_misidentification_under_penalty_of_perjury === true,
+    422,
+    'good_faith_misidentification_under_penalty_of_perjury must be accepted',
+  )
+  return {
+    name,
+    address,
+    telephone,
+    consentToFederalJurisdiction: true,
+    consentToServiceOfProcess: true,
+    goodFaithMisidentificationUnderPenaltyOfPerjury: true,
+    electronicSignature,
+    targetIds,
+  }
+}
