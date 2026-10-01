@@ -10,6 +10,7 @@ import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
+import { GIT_LS_FILES_MAX_BUFFER_BYTES } from '../../.github/workflows/trivy-policy-helpers.mts'
 import {
   isGhApiShellScriptFile,
   isGhApiWorkflowFile,
@@ -20,9 +21,8 @@ import {
 const root = resolve(import.meta.dirname, '../..')
 
 function allTrackedFiles(): string[] {
-  return execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
-    .split('\0')
-    .filter(Boolean)
+  const options = { cwd: root, encoding: 'utf8', maxBuffer: GIT_LS_FILES_MAX_BUFFER_BYTES } as const
+  return execFileSync('git', ['ls-files', '-z'], options).split('\0').filter(Boolean)
 }
 
 describe('gh api shell-quoting guard', () => {

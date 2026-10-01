@@ -9,6 +9,7 @@ import {
   primaryPathFilters as ciPathFilters,
   runtimePathFilters as ciRuntimeFilters,
 } from '../.github/test-helpers/path-filter-test-fixtures.mts'
+import { GIT_LS_FILES_MAX_BUFFER_BYTES } from '../.github/workflows/trivy-policy-helpers.mts'
 
 /**
  * Every top-level package is hand-registered in four places: `.syncpackrc.json` `source`,
@@ -26,7 +27,11 @@ function readYaml<T>(relativePath: string): T {
   return parseYaml(readFileSync(`${repoRoot}/${relativePath}`, 'utf8')) as T
 }
 
-const allTrackedFiles = execFileSync('git', ['ls-files'], { cwd: repoRoot, encoding: 'utf8' })
+const allTrackedFiles = execFileSync('git', ['ls-files'], {
+  cwd: repoRoot,
+  encoding: 'utf8',
+  maxBuffer: GIT_LS_FILES_MAX_BUFFER_BYTES,
+})
   .split('\n')
   .filter(Boolean)
 

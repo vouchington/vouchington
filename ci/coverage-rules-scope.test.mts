@@ -10,12 +10,18 @@ import {
 import { matchRule } from 'coverage-check/src/rules.mts'
 import { describe, expect, it } from 'vitest'
 
+import { GIT_LS_FILES_MAX_BUFFER_BYTES } from '../.github/workflows/trivy-policy-helpers.mts'
 import { coverageConfigForScope } from '../test-helpers/vitest-config/coverage-config.mts'
 
 const RULES_PATH = '.coverage-rules.yml'
 
 function repoFiles(): string[] {
-  return execFileSync('git', ['ls-files'], { encoding: 'utf8' }).split('\n').filter(Boolean)
+  return execFileSync('git', ['ls-files'], {
+    encoding: 'utf8',
+    maxBuffer: GIT_LS_FILES_MAX_BUFFER_BYTES,
+  })
+    .split('\n')
+    .filter(Boolean)
 }
 
 function reachableFiles(): string[] {

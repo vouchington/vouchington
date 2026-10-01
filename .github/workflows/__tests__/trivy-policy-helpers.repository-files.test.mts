@@ -4,13 +4,19 @@ import { describe, expect, it } from 'vitest'
 
 import { GIT_LS_FILES_MAX_BUFFER_BYTES } from '../trivy-policy-helpers.mts'
 
-describe('trivy-policy-helpers', () => {
-  it('allows a bounded tracked-file manifest sufficient for the repository', () => {
-    const manifest = execFileSync('git', ['ls-files', '-z'], {
-      encoding: 'utf8',
-      maxBuffer: GIT_LS_FILES_MAX_BUFFER_BYTES,
-    })
+// Node's execFileSync/spawnSync default `maxBuffer`; the full-repo listing crossed it in #1571.
+const NODE_DEFAULT_MAX_BUFFER_BYTES = 1024 * 1024
 
-    expect(Buffer.byteLength(manifest)).toBeLessThanOrEqual(GIT_LS_FILES_MAX_BUFFER_BYTES)
+describe('GIT_LS_FILES_MAX_BUFFER_BYTES', () => {
+  it('stays above the Node default that the full-repo listing overflowed in #1571', () => {
+    expect(GIT_LS_FILES_MAX_BUFFER_BYTES).toBeGreaterThan(NODE_DEFAULT_MAX_BUFFER_BYTES)
+  })
+
+  it('covers the full-repository tracked-file listing; raise the constant if this fails', () => {
+    // Measure without a cap so a listing past the shared buffer fails this assertion, with the
+    // fix in its title, instead of surfacing as `spawnSync git ENOBUFS` in an unrelated Tooling test.
+    const listingBytes = execFileSync('git', ['ls-files', '-z'], { maxBuffer: Infinity }).length
+
+    expect(listingBytes).toBeLessThanOrEqual(GIT_LS_FILES_MAX_BUFFER_BYTES)
   })
 })
