@@ -41,7 +41,7 @@ Once the designated agent's contact details are published on `/copyright/designa
 ## What Happens After a Notice
 
 1. **We confirm we got it.** We email you a receipt.
-2. **A moderator reviews it.** A person reviews every notice before we act. We don't act on a notice that's missing required information. If we need more information, we contact you at the email address on your notice.
+2. **A moderator reviews it.** A person reviews every notice before we act. We don't act on a notice that's missing required information.
 3. **If we accept it,** the image is hidden in that post for everyone. The rest of the post stays up, and other posts aren't changed. We email the poster, and the case appears at `/copyright/notices`.
 
 A case records a claim. It doesn't decide who owns the work or whether anyone infringed.

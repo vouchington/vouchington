@@ -46,7 +46,7 @@ export function CopyrightGuestReceipt({
       )}
       <h3 className='text-lg font-medium'>How your case is tracked</h3>
       <ul className='list-disc space-y-2 pl-5 text-sm'>
-        <li>A moderator reviews every notice. We will contact you at {email} if we need more.</li>
+        <li>A moderator reviews every notice before we act.</li>
         <li>You filed without signing in, so you cannot follow this case online.</li>
         <li>
           If Voucha sends you an access token for this case, enter it at{' '}
