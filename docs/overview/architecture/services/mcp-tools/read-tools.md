@@ -23,8 +23,7 @@ post, a malformed cursor) never surfaces as a tool failure. `after` is the opaqu
 `page_info.end_cursor` of the previous page, and a malformed one returns `Invalid cursor`.
 
 Post markdown and article markdown are wrapped with `wrapExternalContent`, and titles are sanitized
-like the `search_posts` and `search_rss_feed_items` results. The tools are not on the output-schema
-ratchet list.
+like the `search_posts` and `search_rss_feed_items` results.
 
 ## Privacy
 
