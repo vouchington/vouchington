@@ -2,8 +2,9 @@ import { createTestUser } from './index.mts'
 import { createParsedCopyrightEmailIntake } from '../services/copyright-notices/email-intake-test-fixtures.mts'
 import { rejectCopyrightEmailIntake } from '../services/copyright-notices/email-rejection.mts'
 import { beginTransaction, read, write } from '@data-stores/psql'
-import { decryptSecret } from '@modules/token-secrets'
+import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import { completeCopyrightActionIntentInTransaction } from '../services/copyright-notices/action-delivery-locking.mts'
 
 export async function expireTestCopyrightEnforcementClaim(assessmentId: string): Promise<void> {
@@ -46,12 +47,22 @@ export async function createTestRejectedCopyrightResponse(): Promise<string> {
   return responseId
 }
 
-export async function corruptTestCopyrightResponseSubject(responseId: string): Promise<void> {
-  await write(sql`/* corruptTestCopyrightResponseSubject */
-    UPDATE copyright_notice_email_intake_responses
-    SET subject_ciphertext = ${'invalid-encrypted-response'}
-    WHERE id = ${responseId}
+/** Seeds unreadable persisted content without updating immutable response facts. */
+export async function createTestUnreadableCopyrightResponse(): Promise<string> {
+  const intake = await createParsedCopyrightEmailIntake()
+  const id = uuidv7()
+  const purpose = `copyright-email-intake-response:${id}`
+  await write(sql`/* createTestUnreadableCopyrightResponse */
+    INSERT INTO copyright_notice_email_intake_responses (
+      id, copyright_notice_email_intake_id, response_kind, recipient_email_ciphertext,
+      subject_ciphertext, body_ciphertext, idempotency_key
+    ) VALUES (
+      ${id}, ${intake.id}, 'rejected', ${encryptSecret('claimant@example.test', purpose)},
+      ${'invalid-encrypted-response'}, ${encryptSecret('Response body', purpose)},
+      ${`copyright-email-intake-response:${intake.id}`}
+    )
   `)
+  return id
 }
 
 export async function readTestCopyrightResponseFailure(responseId: string) {

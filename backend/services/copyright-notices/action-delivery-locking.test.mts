@@ -2,7 +2,7 @@ import { readCopyrightEnforcementRequest } from '@voucha/test-helpers/data-store
 import { describe, expect, it } from 'vitest'
 import {
   completeTestCopyrightActionClaim,
-  corruptTestCopyrightResponseSubject,
+  createTestUnreadableCopyrightResponse,
   readTestCopyrightResponseFailure,
   createTestRejectedCopyrightResponse,
   expireTestCopyrightEnforcementClaim,
@@ -117,8 +117,7 @@ describe('copyright queue lease fencing', () => {
   })
 
   it('records an owned retry failure when intake response preparation cannot decrypt', async () => {
-    const responseId = await createTestRejectedCopyrightResponse()
-    await corruptTestCopyrightResponseSubject(responseId)
+    const responseId = await createTestUnreadableCopyrightResponse()
     await expect(prepareCopyrightEmailIntakeResponseDelivery(responseId)).rejects.toThrow(
       'Invalid encrypted secret format',
     )
