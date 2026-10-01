@@ -221,6 +221,10 @@ explicit manual-fallback reason while reviewing the preserved original.
 For email approvals, staff resolve each recommended hosted URL to live image placements and select
 verified targets. If a URL cannot be resolved, the review surface explains the failure and allows
 manual target identification; approval still validates the chosen target against the live placement.
+A target is valid only while its post is publicly visible, the same eligibility that governs
+anonymous discovery. Approving a target on a private, draft, unpublished, or otherwise hidden post
+fails with a 422 that says it is not publicly visible, so staff can tell that case apart from a
+missing placement.
 
 The signed-in form is already structured. Its agent is only an anti-spam and obvious-invalidity
 screen, not a legal merits decision. The recommendation remains a separate immutable record; it
@@ -237,6 +241,11 @@ HMAC-derived guest network digest rather than the source address.
 
 Hosted-use selection accepts canonical post URLs, including `/story/:id`, and verifies their images
 through the post API. Query strings, fragments, and foreign hosts are rejected.
+
+A claimant form resolves a target only on a publicly visible post. A target on a private, draft,
+unpublished, or otherwise hidden post receives the same 422 as a target that does not exist (same
+status, message, and body, with nothing stored), so the form cannot be used to learn whether a hidden
+post or image exists. Staff approving an emailed notice get the explicit reason instead, as above.
 
 Email admission trusts the SES receipt-rule classification and the configured
 `copyright-incoming/` object prefix, never recipient headers inside untrusted MIME. The original S3

@@ -3,7 +3,10 @@
 Source entrypoint: [backend/api/v1/copyright-notices/README.md](../../../../../backend/api/v1/copyright-notices/README.md)
 
 Structured US copyright notices use CAPTCHA or App Attest, rate limiting, UUID idempotency, and
-server-resolved hosted image placements. EU and UK notices are separate routes and stay
+server-resolved hosted image placements on publicly visible posts. A claimant naming a post that is
+not publicly visible receives the same `422` as for a target that does not exist, so the route does
+not reveal hidden posts; staff approval of an emailed notice instead returns a `422` saying the
+placement is not publicly visible. EU and UK notices are separate routes and stay
 unavailable until an administrator records an unwithdrawn territorial policy approval. Duplicate post and image pairs receive a validation error
 before persistence. Signed-in and guest claimants may submit a notice, but only a deterministically
 complete signed-in notice with a durable `not_obviously_invalid` anti-spam recommendation is

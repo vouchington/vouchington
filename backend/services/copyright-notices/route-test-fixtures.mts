@@ -7,7 +7,13 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 
-export async function createCopyrightFormFixture() {
+type TestPostVisibility = Pick<
+  Parameters<typeof insertTestPost>[0],
+  'broadcast' | 'clearanceStatus' | 'privacy'
+>
+
+/** Creates a claimant, a poster, and a hosted image; `visibility` makes the post non-public. */
+export async function createCopyrightFormFixture(visibility: TestPostVisibility = {}) {
   const [claimant, poster] = await Promise.all([createTestUser(), createTestUser()])
   const [postId, imageId] = await Promise.all([
     insertTestPost({
@@ -15,6 +21,7 @@ export async function createCopyrightFormFixture() {
       slug: `copyright-route-test-${crypto.randomUUID()}`,
       createdById: poster.id,
       markdown: 'Hosted image for a copyright-notice route test.',
+      ...visibility,
     }),
     insertTestImage(poster.id),
   ])

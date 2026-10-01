@@ -66,9 +66,11 @@ export async function createCopyrightFormIntake(
   const purpose = copyrightFormSecretPurpose(input.idempotencyKey)
   const now = new Date()
   const targets: CopyrightNoticeTargetInput[] = []
+  const claimantResolution = { audience: 'claimant', query: transaction } as const
   for (const target of input.request.claimantTargets) {
     // oxlint-disable-next-line no-await-in-loop -- one transaction owns the idempotency lock and authoritative target snapshot.
-    targets.push(await resolveCopyrightImagePlacement(target, transaction))
+    const resolved = await resolveCopyrightImagePlacement(target, claimantResolution)
+    targets.push(resolved)
   }
   const notice = await createCopyrightNoticeAggregateInTransaction(
     {

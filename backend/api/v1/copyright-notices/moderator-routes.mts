@@ -208,7 +208,7 @@ app.route('/api/v1/copyright-email-intakes/:id/approvals').post(async (ctx: Cont
   )
   const input = parseCopyrightNoticeForm(body)
   const targets = await Promise.all(
-    input.targets.map(target => resolveCopyrightImagePlacement(target)),
+    input.targets.map(target => resolveCopyrightImagePlacement(target, { audience: 'staff' })),
   )
   const promoted = await promoteCopyrightEmailIntake({
     currentUser,

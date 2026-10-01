@@ -35,7 +35,11 @@ intake queue shows each message's wait age.
 2. For email, compare the structured extraction with the inert original and correct it before
    accepting the case. Verify each extracted declaration against its recorded source excerpt. If no
    recommendation exists, use the explicit manual-fallback reason; never silently bypass the agent.
-3. Confirm the target is an exact Voucha-hosted placement and preserve its captured revision.
+3. Confirm the target is an exact Voucha-hosted placement and preserve its captured revision. Approval
+   refuses a target whose post is not publicly visible (private, draft, unpublished, or otherwise
+   hidden) with "Hosted image placement is not publicly visible". Nothing is consumed, so correct the
+   target or reject the intake. A claimant form never reaches you with such a target: the form
+   answers it exactly like a missing target and records nothing.
 4. Record missing elements as an assessment and request information. Do not silently reject a
    substantially compliant notice for failing to match Voucha's form wording.
 5. To reject an email or ask the sender for more information, check who will receive the reply. An
