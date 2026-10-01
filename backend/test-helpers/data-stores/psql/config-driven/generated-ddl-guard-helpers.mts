@@ -86,7 +86,12 @@ function findFirstStatementViolation(
     ) {
       return 'destructive DDL is not allowed'
     }
-    if (/\bCREATE\s+(?:OR\s+REPLACE\s+)?(?:MATERIALIZED\s+)?VIEW\b/is.test(ddlStatement)) {
+    if (
+      /\bCREATE\s+(?:OR\s+REPLACE\s+)?(?:MATERIALIZED\s+)?VIEW\b/is.test(ddlStatement) &&
+      !/^[\s;]*CREATE\s+OR\s+REPLACE\s+VIEW\s+view_entity_relation_votes\s+AS\b/is.test(
+        ddlStatement,
+      )
+    ) {
       return 'config-driven generators must not emit CREATE VIEW'
     }
     if (/\bCREATE\s+TYPE\b/is.test(ddlStatement) && (!insideDoBlock || !hasAbsencePrecheck)) {

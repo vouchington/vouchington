@@ -67,7 +67,7 @@ export async function clearCategorizerVotesInTransaction(
   await query(
     `/* clearCategoriesForUnlinkedTopicAlias lock */
       SELECT pg_advisory_xact_lock(
-        hashtextextended('entity_relation_votes:' || $1::text || ':' || relation_id::text, 0)
+        hashtextextended('relation__rss_feed_item__category__topic__votes:' || $1::text || ':' || relation_id::text, 0)
       )
       FROM unnest($2::uuid[]) AS input(relation_id)
       ORDER BY relation_id`,

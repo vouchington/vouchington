@@ -115,14 +115,14 @@ async function getStaleCategoryTopicAliasIds(
 async function getCategoryRelationTargetsForItems(
   itemIds: string[],
 ): Promise<ReturnType<typeof createEntityRelationElectionTarget>[]> {
-  const { rows } = await write<{ id: string; relation_table: string }>(
+  const { rows } = await write<{ id: string; entity_relation: string }>(
     `/* reconcileRssFeedItemCategorySnapshots relationTargets */
-      SELECT id, 'relation__rss_feed_item__category__topic'::text AS relation_table
+      SELECT id, 'relation__rss_feed_item__category__topic'::text AS entity_relation
       FROM relation__rss_feed_item__category__topic WHERE subject_id = ANY($1::uuid[]) AND deleted_at IS NULL
       UNION ALL
-      SELECT id, 'relation__rss_feed_item__category__topic_alias'::text AS relation_table
+      SELECT id, 'relation__rss_feed_item__category__topic_alias'::text AS entity_relation
       FROM relation__rss_feed_item__category__topic_alias WHERE subject_id = ANY($1::uuid[]) AND deleted_at IS NULL`,
     [itemIds],
   )
-  return rows.map(row => createEntityRelationElectionTarget(row.id, row.relation_table))
+  return rows.map(row => createEntityRelationElectionTarget(row.id, row.entity_relation))
 }

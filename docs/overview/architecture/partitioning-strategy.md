@@ -32,90 +32,90 @@ This block is rendered from the typed registry, and its normalized rows are chec
 
 <!-- schema-growth-registry:start -->
 
-| Table                                                   | Strategy      | Key                                    | Children           | Retention owner   | Access class       |
-| ------------------------------------------------------- | ------------- | -------------------------------------- | ------------------ | ----------------- | ------------------ |
-| `agent_moderation_votes`                                | RANGE         | `agent_moderation_id`                  | default            | none              | target-scoped      |
-| `agent_moderations`                                     | RANGE         | `post_id`                              | default            | none              | target-scoped      |
-| `ai_usage_records`                                      | RANGE         | `id`                                   | default            | none              | target-scoped      |
-| `classifier_decision_batch_candidates`                  | RANGE         | `batch_id`                             | default            | none              | target-scoped      |
-| `community_post_review_changes`                         | RANGE         | `id`                                   | default            | none              | target-scoped      |
-| `community_prompt_classifier_results`                   | RANGE         | `batch_id`                             | default            | none              | target-scoped      |
-| `conversation_messages`                                 | RANGE         | `conversation_id`                      | default            | none              | target-scoped      |
-| `crawl_chunks`                                          | RANGE         | `crawl_id`                             | monthly            | cleanupPartitions | retention-window   |
-| `crawls`                                                | RANGE         | `id`                                   | monthly            | cleanupPartitions | retention-window   |
-| `entity_relation_votes`                                 | LIST -> RANGE | `relation_table -> entity_relation_id` | list-default-range | none              | intentional-fanout |
-| `hostname_votes`                                        | RANGE         | `hostname_id`                          | default            | none              | target-scoped      |
-| `mcp_call_audit_events`                                 | RANGE         | `id`                                   | default            | none              | target-scoped      |
-| `notifications`                                         | RANGE         | `user_id`                              | default            | none              | target-scoped      |
-| `post_autotagger_results`                               | RANGE         | `post_id`                              | default            | none              | target-scoped      |
-| `post_clearance_changes`                                | RANGE         | `id`                                   | default            | none              | target-scoped      |
-| `post_data_point_topics`                                | RANGE         | `post_id`                              | default            | none              | target-scoped      |
-| `post_explicit_topic_categories`                        | RANGE         | `post_id`                              | default            | none              | target-scoped      |
-| `post_feed_shares`                                      | RANGE         | `recipient_user_id`                    | default            | none              | target-scoped      |
-| `post_publication_dirty_work_keys`                      | RANGE         | `dirty_work_id`                        | default            | none              | target-scoped      |
-| `post_publication_post_identities`                      | RANGE         | `id`                                   | default            | none              | target-scoped      |
-| `post_publication_projection_receipts`                  | RANGE         | `post_identity_id`                     | default            | none              | target-scoped      |
-| `post_read_states`                                      | RANGE         | `user_id`                              | default            | none              | target-scoped      |
-| `post_review_topic_ratings`                             | RANGE         | `post_id`                              | default            | none              | target-scoped      |
-| `post_revisions`                                        | RANGE         | `id`                                   | default            | none              | target-scoped      |
-| `post_topic_recommendations`                            | RANGE         | `post_id`                              | default            | none              | target-scoped      |
-| `post_votes`                                            | RANGE         | `post_id`                              | default            | none              | target-scoped      |
-| `posts`                                                 | RANGE         | `id`                                   | default            | none              | target-scoped      |
-| `relation__post__category__topic`                       | RANGE         | `subject_id`                           | default            | none              | target-scoped      |
-| `relation__post__category__topic__votes`                | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__post__category__topic_alias`                 | RANGE         | `subject_id`                           | default            | none              | target-scoped      |
-| `relation__post__category__topic_alias__votes`          | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__post__mentioned__post`                       | RANGE         | `subject_id`                           | default            | none              | target-scoped      |
-| `relation__post__mentioned__topic`                      | RANGE         | `subject_id`                           | default            | none              | target-scoped      |
-| `relation__post__mentioned__user`                       | RANGE         | `subject_id`                           | default            | none              | target-scoped      |
-| `relation__post__related__post`                         | RANGE         | `subject_id`                           | default            | none              | target-scoped      |
-| `relation__post__related__post__votes`                  | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__post__related__url`                          | RANGE         | `subject_id`                           | default            | none              | target-scoped      |
-| `relation__post__related__url__votes`                   | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__rss_feed_item__category__topic__votes`       | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__rss_feed_item__category__topic_alias__votes` | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__topic__category__topic__votes`               | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__topic__faq__post__votes`                     | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__topic__faq__url__votes`                      | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__topic__guide__url__votes`                    | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__topic__landing_page__url__votes`             | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__topic__publisher_type__topic__votes`         | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__topic__related__post__votes`                 | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__topic__related__topic__votes`                | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__topic__related__url__votes`                  | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__topic__terms_of_service__url__votes`         | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `relation__user__category__topic__votes`                | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
-| `retained_image_identities`                             | RANGE         | `id`                                   | default            | none              | target-scoped      |
-| `retained_image_placement_bindings`                     | RANGE         | `placement_id`                         | default            | none              | target-scoped      |
-| `retained_post_identities`                              | RANGE         | `id`                                   | default            | none              | target-scoped      |
-| `retained_rss_feed_item_identities`                     | RANGE         | `id`                                   | default            | none              | target-scoped      |
-| `rss_feed_crawls`                                       | RANGE         | `id`                                   | monthly            | cleanupPartitions | retention-window   |
-| `rss_feed_item_feed_shares`                             | RANGE         | `recipient_user_id`                    | default            | none              | target-scoped      |
-| `rss_feed_item_read_states`                             | RANGE         | `user_id`                              | default            | none              | target-scoped      |
-| `rss_feed_item_votes`                                   | RANGE         | `rss_feed_item_id`                     | default            | none              | target-scoped      |
-| `rss_feed_items`                                        | RANGE         | `id`                                   | default            | none              | target-scoped      |
-| `session_referral_attributions`                         | RANGE         | `id`                                   | default            | none              | target-scoped      |
-| `story_classifier_results`                              | RANGE         | `story_id`                             | default            | none              | target-scoped      |
-| `topic_classifier_results`                              | RANGE         | `topic_id`                             | default            | none              | target-scoped      |
-| `topic_votes`                                           | RANGE         | `topic_id`                             | default            | none              | target-scoped      |
-| `user_sessions`                                         | RANGE         | `id`                                   | default            | none              | target-scoped      |
-| `user_vouch_votes`                                      | RANGE         | `target_user_id`                       | default            | none              | target-scoped      |
-| `web_push_subscriptions`                                | RANGE         | `user_id`                              | default            | none              | target-scoped      |
+| Table                                                   | Strategy | Key                   | Children | Retention owner   | Access class     |
+| ------------------------------------------------------- | -------- | --------------------- | -------- | ----------------- | ---------------- |
+| `agent_moderation_votes`                                | RANGE    | `agent_moderation_id` | default  | none              | target-scoped    |
+| `agent_moderations`                                     | RANGE    | `post_id`             | default  | none              | target-scoped    |
+| `ai_usage_records`                                      | RANGE    | `id`                  | default  | none              | target-scoped    |
+| `classifier_decision_batch_candidates`                  | RANGE    | `batch_id`            | default  | none              | target-scoped    |
+| `community_post_review_changes`                         | RANGE    | `id`                  | default  | none              | target-scoped    |
+| `community_prompt_classifier_results`                   | RANGE    | `batch_id`            | default  | none              | target-scoped    |
+| `conversation_messages`                                 | RANGE    | `conversation_id`     | default  | none              | target-scoped    |
+| `crawl_chunks`                                          | RANGE    | `crawl_id`            | monthly  | cleanupPartitions | retention-window |
+| `crawls`                                                | RANGE    | `id`                  | monthly  | cleanupPartitions | retention-window |
+| `hostname_votes`                                        | RANGE    | `hostname_id`         | default  | none              | target-scoped    |
+| `mcp_call_audit_events`                                 | RANGE    | `id`                  | default  | none              | target-scoped    |
+| `notifications`                                         | RANGE    | `user_id`             | default  | none              | target-scoped    |
+| `post_autotagger_results`                               | RANGE    | `post_id`             | default  | none              | target-scoped    |
+| `post_clearance_changes`                                | RANGE    | `id`                  | default  | none              | target-scoped    |
+| `post_data_point_topics`                                | RANGE    | `post_id`             | default  | none              | target-scoped    |
+| `post_explicit_topic_categories`                        | RANGE    | `post_id`             | default  | none              | target-scoped    |
+| `post_feed_shares`                                      | RANGE    | `recipient_user_id`   | default  | none              | target-scoped    |
+| `post_publication_dirty_work_keys`                      | RANGE    | `dirty_work_id`       | default  | none              | target-scoped    |
+| `post_publication_post_identities`                      | RANGE    | `id`                  | default  | none              | target-scoped    |
+| `post_publication_projection_receipts`                  | RANGE    | `post_identity_id`    | default  | none              | target-scoped    |
+| `post_read_states`                                      | RANGE    | `user_id`             | default  | none              | target-scoped    |
+| `post_review_topic_ratings`                             | RANGE    | `post_id`             | default  | none              | target-scoped    |
+| `post_revisions`                                        | RANGE    | `id`                  | default  | none              | target-scoped    |
+| `post_topic_recommendations`                            | RANGE    | `post_id`             | default  | none              | target-scoped    |
+| `post_votes`                                            | RANGE    | `post_id`             | default  | none              | target-scoped    |
+| `posts`                                                 | RANGE    | `id`                  | default  | none              | target-scoped    |
+| `relation__post__category__topic`                       | RANGE    | `subject_id`          | default  | none              | target-scoped    |
+| `relation__post__category__topic__votes`                | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__post__category__topic_alias`                 | RANGE    | `subject_id`          | default  | none              | target-scoped    |
+| `relation__post__category__topic_alias__votes`          | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__post__mentioned__post`                       | RANGE    | `subject_id`          | default  | none              | target-scoped    |
+| `relation__post__mentioned__topic`                      | RANGE    | `subject_id`          | default  | none              | target-scoped    |
+| `relation__post__mentioned__user`                       | RANGE    | `subject_id`          | default  | none              | target-scoped    |
+| `relation__post__related__post`                         | RANGE    | `subject_id`          | default  | none              | target-scoped    |
+| `relation__post__related__post__votes`                  | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__post__related__url`                          | RANGE    | `subject_id`          | default  | none              | target-scoped    |
+| `relation__post__related__url__votes`                   | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__rss_feed_item__category__topic__votes`       | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__rss_feed_item__category__topic_alias__votes` | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__topic__category__topic__votes`               | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__topic__faq__post__votes`                     | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__topic__faq__url__votes`                      | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__topic__guide__url__votes`                    | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__topic__landing_page__url__votes`             | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__topic__publisher_type__topic__votes`         | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__topic__related__post__votes`                 | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__topic__related__topic__votes`                | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__topic__related__url__votes`                  | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__topic__terms_of_service__url__votes`         | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `relation__user__category__topic__votes`                | RANGE    | `entity_relation_id`  | default  | none              | target-scoped    |
+| `retained_image_identities`                             | RANGE    | `id`                  | default  | none              | target-scoped    |
+| `retained_image_placement_bindings`                     | RANGE    | `placement_id`        | default  | none              | target-scoped    |
+| `retained_post_identities`                              | RANGE    | `id`                  | default  | none              | target-scoped    |
+| `retained_rss_feed_item_identities`                     | RANGE    | `id`                  | default  | none              | target-scoped    |
+| `rss_feed_crawls`                                       | RANGE    | `id`                  | monthly  | cleanupPartitions | retention-window |
+| `rss_feed_item_feed_shares`                             | RANGE    | `recipient_user_id`   | default  | none              | target-scoped    |
+| `rss_feed_item_read_states`                             | RANGE    | `user_id`             | default  | none              | target-scoped    |
+| `rss_feed_item_votes`                                   | RANGE    | `rss_feed_item_id`    | default  | none              | target-scoped    |
+| `rss_feed_items`                                        | RANGE    | `id`                  | default  | none              | target-scoped    |
+| `session_referral_attributions`                         | RANGE    | `id`                  | default  | none              | target-scoped    |
+| `story_classifier_results`                              | RANGE    | `story_id`            | default  | none              | target-scoped    |
+| `topic_classifier_results`                              | RANGE    | `topic_id`            | default  | none              | target-scoped    |
+| `topic_votes`                                           | RANGE    | `topic_id`            | default  | none              | target-scoped    |
+| `user_sessions`                                         | RANGE    | `id`                  | default  | none              | target-scoped    |
+| `user_vouch_votes`                                      | RANGE    | `target_user_id`      | default  | none              | target-scoped    |
+| `web_push_subscriptions`                                | RANGE    | `user_id`             | default  | none              | target-scoped    |
 
 <!-- schema-growth-registry:end -->
 
 Ordinary vote parents are generated from `VOTE_SCHEMA_CONFIGS`. Relation tables and their vote
 parents are generated from `entityRelationMetadatum`; do not duplicate either list in code.
-`entity_relation_votes` retains LIST grouping so each concrete relation can enforce its FK, then
-uses RANGE by relation ID. Both keys are required for full two-level pruning. Voter-only maintenance
-and export intentionally fan out and rely on local `user_id` indexes.
+Each concrete relation vote parent enforces its composite relation FK and uses RANGE by
+`entity_relation_id`. Scoped readers select that parent and bind the relation ID. Cross-family
+readers use the enum-tagged `view_entity_relation_votes` union. Voter-only maintenance and export
+intentionally fan out and rely on local `user_id` indexes.
 
 The [isolated EXPLAIN pruning proof](../../development/postgresql/explain-analyze/README.md#explicit-range-pruning)
 uses a disposable migrated sibling database with two populated explicit ranges and the default
 for review ratings, conversation messages, and relation votes. Actual review, conversation, and
 vote-stat service calls must execute only their target leaves in forced custom and generic plans.
 The vote-stat batch binds both the exact target set and its UUID range bounds because joining
-only that id list did not prune nested RANGE children. This is query evidence for retaining the
+only that id list did not prune RANGE children. This is query evidence for retaining the
 current production default-only layout until growth or measured pressure warrants explicit ranges.
 
 `web_push_endpoint_owners` is intentionally unpartitioned: its SHA-256 endpoint key is the global

@@ -17,12 +17,12 @@ import {
 type EntityRow = {
   entity_type: string
   entity_id: string
-  relation_table: string | null
+  entity_relation: string | null
 }
 
 export async function enqueueElectionUpdatesForUser(userId: string): Promise<string[]> {
   const { rows } = await read<EntityRow>(sql`/* enqueueElectionUpdatesForUser */
-    SELECT 'post' AS entity_type, post_id AS entity_id, NULL::text AS relation_table
+    SELECT 'post' AS entity_type, post_id AS entity_id, NULL::text AS entity_relation
     FROM post_votes
     WHERE user_id = ${userId}
 
@@ -46,8 +46,8 @@ export async function enqueueElectionUpdatesForUser(userId: string): Promise<str
 
     UNION ALL
 
-    SELECT 'entity_relation', entity_relation_id, relation_table
-    FROM entity_relation_votes
+    SELECT 'entity_relation', entity_relation_id, entity_relation::text
+    FROM view_entity_relation_votes
     WHERE user_id = ${userId}
 
     UNION ALL
@@ -72,9 +72,9 @@ export async function enqueueElectionUpdatesForUser(userId: string): Promise<str
 
   const entityRelationTargets = rows.flatMap(row =>
     row.entity_type === 'entity_relation' &&
-    row.relation_table &&
-    entityRelationElectionTables.has(row.relation_table)
-      ? [createEntityRelationElectionTarget(row.entity_id, row.relation_table)]
+    row.entity_relation &&
+    entityRelationElectionTables.has(row.entity_relation)
+      ? [createEntityRelationElectionTarget(row.entity_id, row.entity_relation)]
       : [],
   )
   const enqueueResults = await Promise.all([

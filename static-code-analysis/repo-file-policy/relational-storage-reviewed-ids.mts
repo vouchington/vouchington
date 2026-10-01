@@ -1,3 +1,12 @@
+import {
+  entityRelationMetadatum,
+  getEntityRelationVoteTableName,
+} from '../../backend/types/entities/entity-relations-metadata.mts'
+
+const electedVoteTables = entityRelationMetadatum.flatMap(metadata =>
+  metadata.election ? [getEntityRelationVoteTableName(metadata)] : [],
+)
+
 // Reviewed non-relationship ids. Each key is an exact table.column from the committed PostgreSQL
 // schema snapshot with a one-line reason. The two categories are defined in
 // docs/development/postgres-schema-rules.md#prelaunch-relational-storage. A key that gains a
@@ -13,7 +22,7 @@ function reviewed(reason: string, keys: readonly string[]): ReviewedIds {
 export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
   ...reviewed('Client-issued device token; no devices table exists.', [
     'agent_moderation_votes.device_id',
-    'entity_relation_votes.device_id',
+    ...electedVoteTables.map(table => `${table}.device_id`),
     'hostname_votes.device_id',
     'post_votes.device_id',
     'rss_feed_item_votes.device_id',
@@ -113,7 +122,7 @@ export const ALLOWED_AUDIT_SNAPSHOT_ID = new Map<string, string>([
   ],
   ...reviewed('Session id recorded at vote time; sessions live outside PostgreSQL.', [
     'agent_moderation_votes.session_id',
-    'entity_relation_votes.session_id',
+    ...electedVoteTables.map(table => `${table}.session_id`),
     'hostname_votes.session_id',
     'post_votes.session_id',
     'rss_feed_item_votes.session_id',

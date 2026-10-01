@@ -5,7 +5,7 @@ import type { EntityRelationElectionTarget } from '@queues/elections/types'
 import { createEntityRelationElectionTarget, entityRelationElectionTables } from './target.mts'
 
 const relationTableSelects = [...entityRelationElectionTables].map(
-  table => `SELECT '${table}'::text AS relation_table FROM "${table}"
+  table => `SELECT '${table}'::text AS entity_relation FROM "${table}"
       WHERE id = $1 AND deleted_at IS NULL`,
 )
 
@@ -21,7 +21,7 @@ export async function resolveEntityRelationElectionTargetById(
   if (!isUUID(entityRelationId)) {
     throw createError(422, `Invalid entity relation ID: ${entityRelationId}`)
   }
-  const { rows } = await read<{ relation_table: string }>(
+  const { rows } = await read<{ entity_relation: string }>(
     `/* resolveEntityRelationElectionTargetById */
     ${relationTableSelects.join('\n    UNION ALL\n    ')}
     LIMIT 2`,
@@ -31,6 +31,6 @@ export async function resolveEntityRelationElectionTargetById(
     throw createError(409, 'Entity relation id is ambiguous across relation families')
   }
   return rows[0]
-    ? createEntityRelationElectionTarget(entityRelationId, rows[0].relation_table)
+    ? createEntityRelationElectionTarget(entityRelationId, rows[0].entity_relation)
     : null
 }

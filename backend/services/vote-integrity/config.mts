@@ -31,7 +31,10 @@ export const ENTITY_VOTE_TABLES: Record<string, EntityVoteTableConfig> = {
   topic: { voteTable: 'topic_votes', entityIdColumn: 'topic_id' },
   hostname: { voteTable: 'hostname_votes', entityIdColumn: 'hostname_id' },
   rss_feed_item: { voteTable: 'rss_feed_item_votes', entityIdColumn: 'rss_feed_item_id' },
-  entity_relation: { voteTable: 'entity_relation_votes', entityIdColumn: 'entity_relation_id' },
+  entity_relation: {
+    voteTable: 'view_entity_relation_votes',
+    entityIdColumn: 'entity_relation_id',
+  },
   agent_moderation: {
     voteTable: 'agent_moderation_votes',
     entityIdColumn: 'agent_moderation_id',

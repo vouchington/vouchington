@@ -335,6 +335,267 @@ UNION ALL
   WHERE (deleted_at IS NULL);
 ```
 
+## `view_entity_relation_votes`
+
+Current concrete relation vote ledgers combined for cross-family reads; writes target each concrete table.
+
+```sql
+ SELECT 'relation__user__category__topic'::elected_entity_relations AS entity_relation,
+    relation__user__category__topic__votes.user_id,
+    relation__user__category__topic__votes.subject_id,
+    relation__user__category__topic__votes.entity_relation_id,
+    relation__user__category__topic__votes.id,
+    relation__user__category__topic__votes.score,
+    relation__user__category__topic__votes.score_is_neutral,
+    relation__user__category__topic__votes.score_is_semantic,
+    relation__user__category__topic__votes.ip_address,
+    relation__user__category__topic__votes.device_id,
+    relation__user__category__topic__votes.session_id,
+    relation__user__category__topic__votes.user_agent_id,
+    relation__user__category__topic__votes.created_at
+   FROM relation__user__category__topic__votes
+UNION ALL
+ SELECT 'relation__post__category__topic'::elected_entity_relations AS entity_relation,
+    relation__post__category__topic__votes.user_id,
+    relation__post__category__topic__votes.subject_id,
+    relation__post__category__topic__votes.entity_relation_id,
+    relation__post__category__topic__votes.id,
+    relation__post__category__topic__votes.score,
+    relation__post__category__topic__votes.score_is_neutral,
+    relation__post__category__topic__votes.score_is_semantic,
+    relation__post__category__topic__votes.ip_address,
+    relation__post__category__topic__votes.device_id,
+    relation__post__category__topic__votes.session_id,
+    relation__post__category__topic__votes.user_agent_id,
+    relation__post__category__topic__votes.created_at
+   FROM relation__post__category__topic__votes
+UNION ALL
+ SELECT 'relation__post__category__topic_alias'::elected_entity_relations AS entity_relation,
+    relation__post__category__topic_alias__votes.user_id,
+    relation__post__category__topic_alias__votes.subject_id,
+    relation__post__category__topic_alias__votes.entity_relation_id,
+    relation__post__category__topic_alias__votes.id,
+    relation__post__category__topic_alias__votes.score,
+    relation__post__category__topic_alias__votes.score_is_neutral,
+    relation__post__category__topic_alias__votes.score_is_semantic,
+    relation__post__category__topic_alias__votes.ip_address,
+    relation__post__category__topic_alias__votes.device_id,
+    relation__post__category__topic_alias__votes.session_id,
+    relation__post__category__topic_alias__votes.user_agent_id,
+    relation__post__category__topic_alias__votes.created_at
+   FROM relation__post__category__topic_alias__votes
+UNION ALL
+ SELECT 'relation__post__related__post'::elected_entity_relations AS entity_relation,
+    relation__post__related__post__votes.user_id,
+    relation__post__related__post__votes.subject_id,
+    relation__post__related__post__votes.entity_relation_id,
+    relation__post__related__post__votes.id,
+    relation__post__related__post__votes.score,
+    relation__post__related__post__votes.score_is_neutral,
+    relation__post__related__post__votes.score_is_semantic,
+    relation__post__related__post__votes.ip_address,
+    relation__post__related__post__votes.device_id,
+    relation__post__related__post__votes.session_id,
+    relation__post__related__post__votes.user_agent_id,
+    relation__post__related__post__votes.created_at
+   FROM relation__post__related__post__votes
+UNION ALL
+ SELECT 'relation__post__related__url'::elected_entity_relations AS entity_relation,
+    relation__post__related__url__votes.user_id,
+    relation__post__related__url__votes.subject_id,
+    relation__post__related__url__votes.entity_relation_id,
+    relation__post__related__url__votes.id,
+    relation__post__related__url__votes.score,
+    relation__post__related__url__votes.score_is_neutral,
+    relation__post__related__url__votes.score_is_semantic,
+    relation__post__related__url__votes.ip_address,
+    relation__post__related__url__votes.device_id,
+    relation__post__related__url__votes.session_id,
+    relation__post__related__url__votes.user_agent_id,
+    relation__post__related__url__votes.created_at
+   FROM relation__post__related__url__votes
+UNION ALL
+ SELECT 'relation__topic__related__topic'::elected_entity_relations AS entity_relation,
+    relation__topic__related__topic__votes.user_id,
+    relation__topic__related__topic__votes.subject_id,
+    relation__topic__related__topic__votes.entity_relation_id,
+    relation__topic__related__topic__votes.id,
+    relation__topic__related__topic__votes.score,
+    relation__topic__related__topic__votes.score_is_neutral,
+    relation__topic__related__topic__votes.score_is_semantic,
+    relation__topic__related__topic__votes.ip_address,
+    relation__topic__related__topic__votes.device_id,
+    relation__topic__related__topic__votes.session_id,
+    relation__topic__related__topic__votes.user_agent_id,
+    relation__topic__related__topic__votes.created_at
+   FROM relation__topic__related__topic__votes
+UNION ALL
+ SELECT 'relation__topic__category__topic'::elected_entity_relations AS entity_relation,
+    relation__topic__category__topic__votes.user_id,
+    relation__topic__category__topic__votes.subject_id,
+    relation__topic__category__topic__votes.entity_relation_id,
+    relation__topic__category__topic__votes.id,
+    relation__topic__category__topic__votes.score,
+    relation__topic__category__topic__votes.score_is_neutral,
+    relation__topic__category__topic__votes.score_is_semantic,
+    relation__topic__category__topic__votes.ip_address,
+    relation__topic__category__topic__votes.device_id,
+    relation__topic__category__topic__votes.session_id,
+    relation__topic__category__topic__votes.user_agent_id,
+    relation__topic__category__topic__votes.created_at
+   FROM relation__topic__category__topic__votes
+UNION ALL
+ SELECT 'relation__topic__publisher_type__topic'::elected_entity_relations AS entity_relation,
+    relation__topic__publisher_type__topic__votes.user_id,
+    relation__topic__publisher_type__topic__votes.subject_id,
+    relation__topic__publisher_type__topic__votes.entity_relation_id,
+    relation__topic__publisher_type__topic__votes.id,
+    relation__topic__publisher_type__topic__votes.score,
+    relation__topic__publisher_type__topic__votes.score_is_neutral,
+    relation__topic__publisher_type__topic__votes.score_is_semantic,
+    relation__topic__publisher_type__topic__votes.ip_address,
+    relation__topic__publisher_type__topic__votes.device_id,
+    relation__topic__publisher_type__topic__votes.session_id,
+    relation__topic__publisher_type__topic__votes.user_agent_id,
+    relation__topic__publisher_type__topic__votes.created_at
+   FROM relation__topic__publisher_type__topic__votes
+UNION ALL
+ SELECT 'relation__topic__faq__post'::elected_entity_relations AS entity_relation,
+    relation__topic__faq__post__votes.user_id,
+    relation__topic__faq__post__votes.subject_id,
+    relation__topic__faq__post__votes.entity_relation_id,
+    relation__topic__faq__post__votes.id,
+    relation__topic__faq__post__votes.score,
+    relation__topic__faq__post__votes.score_is_neutral,
+    relation__topic__faq__post__votes.score_is_semantic,
+    relation__topic__faq__post__votes.ip_address,
+    relation__topic__faq__post__votes.device_id,
+    relation__topic__faq__post__votes.session_id,
+    relation__topic__faq__post__votes.user_agent_id,
+    relation__topic__faq__post__votes.created_at
+   FROM relation__topic__faq__post__votes
+UNION ALL
+ SELECT 'relation__topic__related__post'::elected_entity_relations AS entity_relation,
+    relation__topic__related__post__votes.user_id,
+    relation__topic__related__post__votes.subject_id,
+    relation__topic__related__post__votes.entity_relation_id,
+    relation__topic__related__post__votes.id,
+    relation__topic__related__post__votes.score,
+    relation__topic__related__post__votes.score_is_neutral,
+    relation__topic__related__post__votes.score_is_semantic,
+    relation__topic__related__post__votes.ip_address,
+    relation__topic__related__post__votes.device_id,
+    relation__topic__related__post__votes.session_id,
+    relation__topic__related__post__votes.user_agent_id,
+    relation__topic__related__post__votes.created_at
+   FROM relation__topic__related__post__votes
+UNION ALL
+ SELECT 'relation__topic__related__url'::elected_entity_relations AS entity_relation,
+    relation__topic__related__url__votes.user_id,
+    relation__topic__related__url__votes.subject_id,
+    relation__topic__related__url__votes.entity_relation_id,
+    relation__topic__related__url__votes.id,
+    relation__topic__related__url__votes.score,
+    relation__topic__related__url__votes.score_is_neutral,
+    relation__topic__related__url__votes.score_is_semantic,
+    relation__topic__related__url__votes.ip_address,
+    relation__topic__related__url__votes.device_id,
+    relation__topic__related__url__votes.session_id,
+    relation__topic__related__url__votes.user_agent_id,
+    relation__topic__related__url__votes.created_at
+   FROM relation__topic__related__url__votes
+UNION ALL
+ SELECT 'relation__topic__faq__url'::elected_entity_relations AS entity_relation,
+    relation__topic__faq__url__votes.user_id,
+    relation__topic__faq__url__votes.subject_id,
+    relation__topic__faq__url__votes.entity_relation_id,
+    relation__topic__faq__url__votes.id,
+    relation__topic__faq__url__votes.score,
+    relation__topic__faq__url__votes.score_is_neutral,
+    relation__topic__faq__url__votes.score_is_semantic,
+    relation__topic__faq__url__votes.ip_address,
+    relation__topic__faq__url__votes.device_id,
+    relation__topic__faq__url__votes.session_id,
+    relation__topic__faq__url__votes.user_agent_id,
+    relation__topic__faq__url__votes.created_at
+   FROM relation__topic__faq__url__votes
+UNION ALL
+ SELECT 'relation__topic__guide__url'::elected_entity_relations AS entity_relation,
+    relation__topic__guide__url__votes.user_id,
+    relation__topic__guide__url__votes.subject_id,
+    relation__topic__guide__url__votes.entity_relation_id,
+    relation__topic__guide__url__votes.id,
+    relation__topic__guide__url__votes.score,
+    relation__topic__guide__url__votes.score_is_neutral,
+    relation__topic__guide__url__votes.score_is_semantic,
+    relation__topic__guide__url__votes.ip_address,
+    relation__topic__guide__url__votes.device_id,
+    relation__topic__guide__url__votes.session_id,
+    relation__topic__guide__url__votes.user_agent_id,
+    relation__topic__guide__url__votes.created_at
+   FROM relation__topic__guide__url__votes
+UNION ALL
+ SELECT 'relation__topic__landing_page__url'::elected_entity_relations AS entity_relation,
+    relation__topic__landing_page__url__votes.user_id,
+    relation__topic__landing_page__url__votes.subject_id,
+    relation__topic__landing_page__url__votes.entity_relation_id,
+    relation__topic__landing_page__url__votes.id,
+    relation__topic__landing_page__url__votes.score,
+    relation__topic__landing_page__url__votes.score_is_neutral,
+    relation__topic__landing_page__url__votes.score_is_semantic,
+    relation__topic__landing_page__url__votes.ip_address,
+    relation__topic__landing_page__url__votes.device_id,
+    relation__topic__landing_page__url__votes.session_id,
+    relation__topic__landing_page__url__votes.user_agent_id,
+    relation__topic__landing_page__url__votes.created_at
+   FROM relation__topic__landing_page__url__votes
+UNION ALL
+ SELECT 'relation__topic__terms_of_service__url'::elected_entity_relations AS entity_relation,
+    relation__topic__terms_of_service__url__votes.user_id,
+    relation__topic__terms_of_service__url__votes.subject_id,
+    relation__topic__terms_of_service__url__votes.entity_relation_id,
+    relation__topic__terms_of_service__url__votes.id,
+    relation__topic__terms_of_service__url__votes.score,
+    relation__topic__terms_of_service__url__votes.score_is_neutral,
+    relation__topic__terms_of_service__url__votes.score_is_semantic,
+    relation__topic__terms_of_service__url__votes.ip_address,
+    relation__topic__terms_of_service__url__votes.device_id,
+    relation__topic__terms_of_service__url__votes.session_id,
+    relation__topic__terms_of_service__url__votes.user_agent_id,
+    relation__topic__terms_of_service__url__votes.created_at
+   FROM relation__topic__terms_of_service__url__votes
+UNION ALL
+ SELECT 'relation__rss_feed_item__category__topic'::elected_entity_relations AS entity_relation,
+    relation__rss_feed_item__category__topic__votes.user_id,
+    relation__rss_feed_item__category__topic__votes.subject_id,
+    relation__rss_feed_item__category__topic__votes.entity_relation_id,
+    relation__rss_feed_item__category__topic__votes.id,
+    relation__rss_feed_item__category__topic__votes.score,
+    relation__rss_feed_item__category__topic__votes.score_is_neutral,
+    relation__rss_feed_item__category__topic__votes.score_is_semantic,
+    relation__rss_feed_item__category__topic__votes.ip_address,
+    relation__rss_feed_item__category__topic__votes.device_id,
+    relation__rss_feed_item__category__topic__votes.session_id,
+    relation__rss_feed_item__category__topic__votes.user_agent_id,
+    relation__rss_feed_item__category__topic__votes.created_at
+   FROM relation__rss_feed_item__category__topic__votes
+UNION ALL
+ SELECT 'relation__rss_feed_item__category__topic_alias'::elected_entity_relations AS entity_relation,
+    relation__rss_feed_item__category__topic_alias__votes.user_id,
+    relation__rss_feed_item__category__topic_alias__votes.subject_id,
+    relation__rss_feed_item__category__topic_alias__votes.entity_relation_id,
+    relation__rss_feed_item__category__topic_alias__votes.id,
+    relation__rss_feed_item__category__topic_alias__votes.score,
+    relation__rss_feed_item__category__topic_alias__votes.score_is_neutral,
+    relation__rss_feed_item__category__topic_alias__votes.score_is_semantic,
+    relation__rss_feed_item__category__topic_alias__votes.ip_address,
+    relation__rss_feed_item__category__topic_alias__votes.device_id,
+    relation__rss_feed_item__category__topic_alias__votes.session_id,
+    relation__rss_feed_item__category__topic_alias__votes.user_agent_id,
+    relation__rss_feed_item__category__topic_alias__votes.created_at
+   FROM relation__rss_feed_item__category__topic_alias__votes;
+```
+
 ## `view_list_items`
 
 ```sql

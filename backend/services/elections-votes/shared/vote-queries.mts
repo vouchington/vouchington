@@ -46,7 +46,8 @@ export async function fetchElectionVoteRowsByUser(
     query.append(config.entityIdColumn)
     query.append(sql` = ANY(${entityIds})`)
   }
-  if (relationTable) query.append(sql` AND election_vote.relation_table = ${relationTable}`)
+  if (relationTable && config.voteTable === 'view_entity_relation_votes')
+    query.append(sql` AND election_vote.entity_relation = ${relationTable}`)
   if (pagination?.afterEntityId) {
     query.append(sql` AND election_vote.`)
     query.append(config.entityIdColumn)

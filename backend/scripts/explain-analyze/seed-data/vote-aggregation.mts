@@ -16,7 +16,7 @@ import { seedFreshRelationId, seedRelationIdAfterPost, seedUuid } from './common
 // trending-posts, trending-posts-by-topic, trending-topics, and rss-feed-search-by-publisher-type
 // all filter on denormalized votes_score_net columns (posts.votes_score_net, and the election
 // relation tables' own votes_score_net). Those columns are only kept in sync by the application's
-// real vote-write path — bulk-INSERTing post_votes/entity_relation_votes rows during seeding never
+// real vote-write path — bulk-INSERTing concrete vote ledger rows during seeding never
 // touches them, so they stay at their zero default regardless of how many vote rows exist. Rather
 // than recomputing every seeded post/relation, recompute only the exact rows those scenarios read:
 // post index 0 (already boosted net-positive by seedVotes in votes-and-aliases.mts) and the two
@@ -32,11 +32,10 @@ export async function seedVoteAggregation(): Promise<void> {
     await using transaction = await beginTransaction()
     const query = transaction
     await query(
-      `/* seedExplainData */ INSERT INTO entity_relation_votes
-         (relation_table, user_id, subject_id, entity_relation_id, score)
-       VALUES
-         ('relation__post__category__topic', $1, $2, $3, 1),
-         ('relation__topic__publisher_type__topic', $4, $5, $6, 1)`,
+      `/* seedExplainData */ WITH inserted AS (INSERT INTO relation__post__category__topic__votes
+         (user_id, subject_id, entity_relation_id, score) VALUES ($1, $2, $3, 1))
+       INSERT INTO relation__topic__publisher_type__topic__votes
+         (user_id, subject_id, entity_relation_id, score) VALUES ($4, $5, $6, 1)`,
       [
         seedUuid(3, '01'),
         seedPostId,
@@ -94,9 +93,9 @@ export async function seedPostCategoryRelationVoteDensity(): Promise<void> {
     await using transaction = await beginTransaction()
     const query = transaction
     await query(
-      `/* seedExplainData */ INSERT INTO entity_relation_votes
-         (relation_table, user_id, subject_id, entity_relation_id, score)
-       SELECT 'relation__post__category__topic', voter_id, post_id, relation_id, 1
+      `/* seedExplainData */ INSERT INTO relation__post__category__topic__votes
+         (user_id, subject_id, entity_relation_id, score)
+       SELECT voter_id, post_id, relation_id, 1
        FROM unnest($1::uuid[], $2::uuid[], $3::uuid[]) AS t(voter_id, post_id, relation_id)`,
       [voterIds, postIds, relationIds],
     )
@@ -171,9 +170,9 @@ export async function seedRelatedUrlPostRelations(): Promise<void> {
         [relationId, seedUuid(postIndex, '05'), urlId, voterId],
       )
       await query(
-        `/* seedExplainData */ INSERT INTO entity_relation_votes
-           (relation_table, user_id, subject_id, entity_relation_id, score)
-         VALUES ('relation__post__related__url', $1, $2, $3, 1)`,
+        `/* seedExplainData */ INSERT INTO relation__post__related__url__votes
+           (user_id, subject_id, entity_relation_id, score)
+         VALUES ( $1, $2, $3, 1)`,
         [voterId, seedUuid(postIndex, '05'), relationId],
       )
     }

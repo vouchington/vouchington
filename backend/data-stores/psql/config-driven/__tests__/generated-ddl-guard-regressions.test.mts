@@ -6,6 +6,22 @@ import { findFirstGeneratedDdlViolation } from '../../../../test-helpers/data-st
 
 describe('config-driven generated DDL guard regressions', () => {
   beforeAll(() => Promise.all([loadSqlParserModule(), initSqlAst()]))
+  it('permits only the reviewed replaceable metadata-derived relation vote view', () => {
+    expect(
+      findFirstGeneratedDdlViolation(
+        'DO $$ BEGIN NULL; END $$; CREATE OR REPLACE VIEW view_entity_relation_votes AS SELECT 1;',
+      ),
+    ).toBeNull()
+    expect(findFirstGeneratedDdlViolation('CREATE OR REPLACE VIEW other_votes AS SELECT 1;')).toBe(
+      'config-driven generators must not emit CREATE VIEW',
+    )
+    expect(
+      findFirstGeneratedDdlViolation(
+        'CREATE MATERIALIZED VIEW view_entity_relation_votes AS SELECT 1;',
+      ),
+    ).toBe('config-driven generators must not emit CREATE VIEW')
+  })
+
   it('rejects generated structural DDL without migration-owned guards', () => {
     expect(findFirstGeneratedDdlViolation('CREATE TABLE vote_edges (id UUID);')).toBe(
       'CREATE TABLE must use IF NOT EXISTS',

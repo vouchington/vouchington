@@ -17,9 +17,9 @@ export type SchemaIdPolicy = 'uuidv7' | 'natural-or-provider' | 'static-identity
 export type PartitionAccessClass = 'target-scoped' | 'retention-window' | 'intentional-fanout'
 
 export type PartitionPolicy = {
-  strategy: 'RANGE' | 'LIST -> RANGE'
+  strategy: 'RANGE'
   key: string
-  children: 'default' | 'monthly' | 'list-default-range'
+  children: 'default' | 'monthly'
   retentionOwner: 'cleanupPartitions' | null
   accessClass: PartitionAccessClass
 }
@@ -105,16 +105,6 @@ const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
   ...entityRelationMetadatum.flatMap(({ subject_type, table_name }): [string, PartitionPolicy][] =>
     subject_type === 'post' ? [[table_name, defaultRange('subject_id')]] : [],
   ),
-  [
-    'entity_relation_votes',
-    {
-      strategy: 'LIST -> RANGE',
-      key: 'relation_table -> entity_relation_id',
-      children: 'list-default-range',
-      retentionOwner: null,
-      accessClass: 'intentional-fanout',
-    },
-  ],
   ...entityRelationMetadatum.flatMap((metadata): [string, PartitionPolicy][] =>
     metadata.election
       ? [[getEntityRelationVoteTableName(metadata), defaultRange('entity_relation_id')]]

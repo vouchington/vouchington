@@ -29,26 +29,27 @@ describe('user-subject entity relation tables', () => {
     const sql = generateEntityRelationsSql()
     const electionRelations = entityRelationMetadatum.filter(metadata => metadata.election)
 
-    expect(sql).toContain('CREATE TABLE IF NOT EXISTS entity_relation_votes')
-    expect(sql).toContain('PARTITION BY LIST (relation_table)')
+    expect(sql).not.toContain('CREATE TABLE IF NOT EXISTS entity_relation_votes')
+    expect(sql).toContain('CREATE OR REPLACE VIEW view_entity_relation_votes AS')
+    expect(sql).toContain('CREATE TYPE elected_entity_relations AS ENUM')
+    expect(sql).toContain('entity_relation elected_entity_relations PRIMARY KEY')
+    expect(sql).not.toContain('INSERT INTO retained_relation_identity_cleanup_progress')
     for (const metadata of electionRelations) {
       const voteTable = getEntityRelationVoteTableName(metadata)
-      expect(sql).toContain(
-        `CREATE TABLE IF NOT EXISTS ${voteTable}\nPARTITION OF entity_relation_votes`,
-      )
+      expect(sql).toContain(`CREATE TABLE IF NOT EXISTS ${voteTable} (`)
       expect(sql).toContain(
         `FOREIGN KEY (subject_id, entity_relation_id) REFERENCES ${metadata.table_name} (subject_id, id) ON DELETE CASCADE`,
       )
-      expect(sql).toContain(`FOR VALUES IN ('${metadata.table_name}')`)
       expect(sql).toContain(`CREATE TABLE IF NOT EXISTS ${voteTable}__default`)
       expect(sql).toContain(`PARTITION OF ${voteTable} DEFAULT`)
     }
     expect(sql.match(/PARTITION BY RANGE \(entity_relation_id\)/g)).toHaveLength(
       electionRelations.length,
     )
+    expect(sql).toContain('score_is_neutral BOOLEAN NOT NULL DEFAULT FALSE')
+    expect(sql).toContain('score_is_semantic BOOLEAN NOT NULL DEFAULT FALSE')
     expect(sql).toContain('UNIQUE (subject_id, id)')
-    expect(sql).toContain('PRIMARY KEY (relation_table, entity_relation_id, id)')
-    expect(sql).toContain("FOR VALUES IN ('relation__topic__related__post')")
+    expect(sql).toContain('PRIMARY KEY (entity_relation_id, id)')
     expect(sql).toContain('CREATE TABLE IF NOT EXISTS relation__user__category__topic')
     expect(sql).toContain('CREATE TABLE IF NOT EXISTS relation__user__category__topic__votes')
     expect(sql).not.toContain('CREATE OR REPLACE VIEW entity_relation_votes AS')

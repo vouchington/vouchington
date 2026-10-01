@@ -1,6 +1,6 @@
 export type VoteSchemaConfig = {
   entityType: string
-  entityTable: string | null // null for dynamic entity_relation tables
+  entityTable: string
   voteTable: string
   entityIdColumn: string // the FK column name in the vote table (simple FK case)
   entityKeyColumns: string[] // PK/unique columns of entity used for FK reference

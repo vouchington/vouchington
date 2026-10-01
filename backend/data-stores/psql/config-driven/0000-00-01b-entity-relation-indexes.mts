@@ -2,6 +2,7 @@ import {
   entityRelationMetadatum,
   type EntityRelationMetadata,
 } from '@voucha/types/entities/entity-relations-metadata'
+import { getElectionIndexName } from './utils/election-sql-identifiers.mts'
 import { buildConstraintAddAndValidateSql } from './utils/catalog-guarded-ddl.mts'
 
 const ACTIVE_SUBJECT_BEST_INDEX_COLUMNS =
@@ -34,28 +35,28 @@ function createEntityRelationIndexes(metadata: EntityRelationMetadata): string {
   // UUIDv7 id values are probabilistically unique without an enforced constraint.
   if (metadata.election) {
     query += `
-CREATE INDEX IF NOT EXISTS idx_${metadata.table_name}__id
+CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'id')}
 ON "${metadata.table_name}" (id);
 
-CREATE INDEX IF NOT EXISTS idx_${metadata.table_name}__votes_score_sort__id
+CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'votes_score_sort__id')}
 ON "${metadata.table_name}" (votes_score_sort DESC, id);
 
-CREATE INDEX IF NOT EXISTS idx_${metadata.table_name}__votes_score_sort__pos__id
+CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'votes_score_sort__pos__id')}
 ON "${metadata.table_name}" (votes_score_sort DESC, id)
 WHERE votes_score_net > 0;
 
-CREATE INDEX IF NOT EXISTS idx_${metadata.table_name}__subject__best
+CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'subject__best')}
 ON "${metadata.table_name}" (${ACTIVE_SUBJECT_BEST_INDEX_COLUMNS})
 WHERE deleted_at IS NULL;
 
-CREATE INDEX IF NOT EXISTS idx_${metadata.table_name}__trending_topics
+CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'trending_topics')}
 ON "${metadata.table_name}" (id, object_id)
 WHERE deleted_at IS NULL AND votes_score_net > 0;
 `
   }
 
   query += `
-CREATE INDEX IF NOT EXISTS idx_${metadata.table_name}__subject__newest
+CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'subject__newest')}
 ON "${metadata.table_name}" (${ACTIVE_SUBJECT_NEWEST_INDEX_COLUMNS})
 WHERE deleted_at IS NULL;
 `
@@ -63,14 +64,14 @@ WHERE deleted_at IS NULL;
   // Create order index (if enabled)
   if (metadata.order_index) {
     query += `
-CREATE INDEX IF NOT EXISTS idx_${metadata.table_name}__order_index
+CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'order_index')}
 ON "${metadata.table_name}" (${subjectColumns}, order_index ASC, object_id ASC);
 `
   }
 
   // Create reverse lookup index (for all tables)
   query += `
-CREATE INDEX IF NOT EXISTS idx_${metadata.table_name}__reverse_index
+CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'reverse_index')}
 ON "${metadata.table_name}" (${objectColumns}, ${subjectColumns});
 `
 

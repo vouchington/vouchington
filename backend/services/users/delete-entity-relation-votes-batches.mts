@@ -1,3 +1,4 @@
+import { getEntityRelationVoteTableIdentifier } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
   lockPostPublicationPostScopes,
@@ -27,7 +28,7 @@ export async function deleteUserEntityRelationVotesBatch(
     query,
     requestId,
     deleted.map(row => ({
-      relationTable: row.relation_table,
+      relationTable: row.entity_relation,
       subjectId: row.subject_id,
       entityRelationId: row.entity_relation_id,
     })),
@@ -38,7 +39,7 @@ export async function deleteUserEntityRelationVotesBatch(
 type EntityRelationVoteBatch = {
   candidates: {
     id: string
-    relation_table: string
+    entity_relation: string
     subject_id: string
     entity_relation_id: string
   }[]
@@ -52,15 +53,15 @@ async function getEntityRelationVoteBatch(
 ): Promise<EntityRelationVoteBatch> {
   const { rows: candidates } = await query<{
     id: string
-    relation_table: string
+    entity_relation: string
     subject_id: string
     entity_relation_id: string
   }>(sql`/* deleteUserEntityRelationVotesBatch:candidates */
-    SELECT id, relation_table, subject_id, entity_relation_id FROM entity_relation_votes
+    SELECT id, entity_relation, subject_id, entity_relation_id FROM view_entity_relation_votes
     WHERE user_id = ${userId} ORDER BY id LIMIT ${batchSize}
   `)
   const targets = candidates.map(candidate => ({
-    relationTable: candidate.relation_table,
+    relationTable: candidate.entity_relation,
     subjectId: candidate.subject_id,
     entityRelationId: candidate.entity_relation_id,
   }))
@@ -74,25 +75,34 @@ async function deleteEntityRelationVoteBatch(
   batch: EntityRelationVoteBatch,
 ) {
   await lockEntityRelationVoteScopes(query, batch.scopes)
+  const families = [
+    ...new Set(batch.candidates.map(candidate => candidate.entity_relation)),
+  ].toSorted()
+  const statement = sql`/* deleteUserEntityRelationVotesBatch:delete */ WITH `
+  families.forEach((family, index) => {
+    if (index > 0) statement.append(', ')
+    const candidates = batch.candidates.filter(candidate => candidate.entity_relation === family)
+    statement.append(
+      `deleted_${index} AS (DELETE FROM ${getEntityRelationVoteTableIdentifier(family)} vote `,
+    )
+    statement.append(sql`USING UNNEST(
+      ${candidates.map(candidate => candidate.subject_id)}::uuid[],
+      ${candidates.map(candidate => candidate.entity_relation_id)}::uuid[],
+      ${candidates.map(candidate => candidate.id)}::uuid[]
+    ) AS selected(subject_id, entity_relation_id, vote_id)
+    WHERE vote.subject_id = selected.subject_id
+      AND vote.entity_relation_id = selected.entity_relation_id
+      AND vote.id = selected.vote_id AND vote.user_id = ${userId}
+    RETURNING ${family}::elected_entity_relations AS entity_relation, vote.subject_id, vote.entity_relation_id)`)
+  })
+  statement.append(
+    families.map((_family, index) => `SELECT * FROM deleted_${index}`).join(' UNION ALL '),
+  )
   const { rows: deleted } = await query<{
-    relation_table: string
+    entity_relation: string
     subject_id: string
     entity_relation_id: string
-  }>(sql`/* deleteUserEntityRelationVotesBatch:delete */
-    DELETE FROM entity_relation_votes vote
-    USING UNNEST(
-      ${batch.candidates.map(candidate => candidate.relation_table)}::text[],
-      ${batch.candidates.map(candidate => candidate.subject_id)}::uuid[],
-      ${batch.candidates.map(candidate => candidate.entity_relation_id)}::uuid[],
-      ${batch.candidates.map(candidate => candidate.id)}::uuid[]
-    ) AS selected(relation_table, subject_id, entity_relation_id, vote_id)
-    WHERE vote.relation_table = selected.relation_table
-      AND vote.subject_id = selected.subject_id
-      AND vote.entity_relation_id = selected.entity_relation_id
-      AND vote.id = selected.vote_id
-      AND vote.user_id = ${userId}
-    RETURNING vote.relation_table, vote.subject_id, vote.entity_relation_id
-  `)
+  }>(statement)
   return deleted
 }
 

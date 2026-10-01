@@ -13,9 +13,7 @@ export default () => VOTE_SCHEMA_CONFIGS.map(createVoteSchemaSql).join('\n\n')
 function createVoteSchemaSql(config: VoteSchemaConfig): string {
   const parts: string[] = [`-- ${config.entityType} vote schema`]
 
-  if (config.entityTable !== null) {
-    parts.push(addEntityVoteColumnsSql(config))
-  }
+  parts.push(addEntityVoteColumnsSql(config))
 
   parts.push(createVoteTableSql(config))
   parts.push(createVoteDefaultPartitionSql(config.voteTable))
@@ -25,7 +23,7 @@ function createVoteSchemaSql(config: VoteSchemaConfig): string {
 }
 
 function addEntityVoteColumnsSql(config: VoteSchemaConfig): string {
-  const table = config.entityTable!
+  const table = config.entityTable
   const sortCols = (config.entitySortColumns ?? config.entityKeyColumns).join(', ')
   const deletedAtClause = config.deletedAtFilter ? ' AND deleted_at IS NULL' : ''
   return `CREATE INDEX IF NOT EXISTS idx_${table}__votes_score_sort__id
@@ -67,11 +65,7 @@ function buildVoteTableExtraColumns(config: VoteSchemaConfig): string[] {
     ]
   }
 
-  if (config.entityTable !== null) {
-    return [
-      `${config.entityIdColumn} UUID NOT NULL REFERENCES ${config.entityTable} ON DELETE CASCADE,`,
-    ]
-  }
-
-  return [`${config.entityIdColumn} UUID NOT NULL,`]
+  return [
+    `${config.entityIdColumn} UUID NOT NULL REFERENCES ${config.entityTable} ON DELETE CASCADE,`,
+  ]
 }
