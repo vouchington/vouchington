@@ -10,7 +10,7 @@ get copied hooks, skills, or `AGENTS.md`.
   [`.claude/skills/`](../../../.claude/skills). `OPENCODE_DISABLE_CLAUDE_CODE` disables that
   Claude-compat layer; it does not disable `AGENTS.md`.
 - Project config: [`opencode.json`](../../../opencode.json) at the repository root (`autoupdate: false`). It
-  registers the local Agent Blackboard wrapper in the V1 `mcp` object and allows exactly its eight
-  current provider tools. Local users `/connect` for a provider; this tree does not pin a default model.
+  registers the `vouchington-tooling` server in the V1 `mcp` object and allows its seven tools by
+  name (no wildcard is documented). Local users `/connect` for a provider; this tree does not pin a default model.
 - Do not add `CLAUDE.md`. It is gitignored.
 - Capability map: [agent-harness-parity.md](../agent-harness-parity.md).

@@ -24,27 +24,64 @@ describe('Blackboard identity resolution', () => {
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
   })
 
-  it('keeps each selected session paired with its matching agent', () => {
+  it('keeps the session paired with the one harness whose own env is set', () => {
+    for (const [env, agent, sessionId] of [
+      [{ CLAUDE_CODE_SESSION_ID: 'claude' }, 'claude-code', 'claude'],
+      [{ CODEX_THREAD_ID: 'codex' }, 'codex', 'codex'],
+      [{ CURSOR_SESSION_ID: 'cursor' }, 'cursor', 'cursor'],
+      [{ GROK_SESSION_ID: 'grok', GROK_HOOK_EVENT: '1' }, 'grok', 'grok'],
+      [{ CLAUDECODE: '1', GROK_SESSION_ID: 'grok' }, 'grok', 'grok'],
+      // One id exported by two harnesses names one session, so it is not a conflict.
+      [{ CLAUDE_CODE_SESSION_ID: 'same', GROK_SESSION_ID: 'same' }, 'claude-code', 'same'],
+    ] as const) {
+      expect(resolveAmbientBlackboardIdentity({ env })).toMatchObject({ agent, sessionId })
+    }
+  })
+
+  it('asks for an explicit session id when several harnesses own different ids', () => {
+    for (const env of [
+      { CLAUDE_CODE_SESSION_ID: 'claude', CODEX_THREAD_ID: 'codex' },
+      { CLAUDE_CODE_SESSION_ID: 'claude', GROK_SESSION_ID: 'grok', GROK_HOOK_EVENT: '1' },
+      { CLAUDECODE: '1', CODEX_THREAD_ID: 'codex', GROK_SESSION_ID: 'grok' },
+      { CURSOR_SESSION_ID: 'cursor', GROK_SESSION_ID: 'grok' },
+    ]) {
+      expect(() => resolveSessionId({ env })).toThrow(/ambiguous session id.*--session-id/u)
+      expect(() => defaultBlackboardAgent(env)).toThrow(/ambiguous session id/u)
+    }
+    expect(() =>
+      resolveSessionId({ env: { CLAUDE_CODE_SESSION_ID: 'a', CODEX_THREAD_ID: 'b' } }),
+    ).toThrow('CLAUDE_CODE_SESSION_ID, CODEX_THREAD_ID')
+  })
+
+  it('does not treat markers as session owners', () => {
     expect(
       resolveAmbientBlackboardIdentity({
-        env: { CLAUDE_CODE_SESSION_ID: 'claude', CODEX_THREAD_ID: 'codex' },
+        env: { CLAUDECODE: '1', CODEX_THREAD_ID: 'codex', GROK_AGENT: '1', CURSOR_AGENT: '1' },
       }),
-    ).toMatchObject({ agent: 'claude-code', sessionId: 'claude' })
+    ).toBeUndefined()
+  })
+
+  it('lets an explicit id or runtime hint settle a conflicting environment', () => {
+    const env = { CLAUDE_CODE_SESSION_ID: 'claude', CODEX_THREAD_ID: 'codex' }
+    expect(resolveAmbientBlackboardIdentity({ env, sessionIdArg: 'codex' })).toEqual({
+      agent: 'codex',
+      harness: 'codex',
+      sessionId: 'codex',
+    })
+    expect(resolveAmbientBlackboardIdentity({ env, runtime: 'codex' })).toEqual({
+      agent: 'codex',
+      harness: 'codex',
+      sessionId: 'codex',
+    })
+    // An id that no harness issued has no inferable owner, so the label is left unset.
+    expect(resolveAmbientBlackboardIdentity({ env, sessionIdArg: 'payload' })).toBeUndefined()
+    expect(requireBlackboardIdentity({ agentArg: 'codex', env, sessionIdArg: 'payload' })).toEqual({
+      agent: 'codex',
+      sessionId: 'payload',
+    })
     expect(
-      resolveAmbientBlackboardIdentity({
-        env: { CLAUDE_CODE_SESSION_ID: 'claude', GROK_SESSION_ID: 'grok', GROK_HOOK_EVENT: '1' },
-      }),
-    ).toMatchObject({ agent: 'claude-code', sessionId: 'claude' })
-    expect(
-      resolveAmbientBlackboardIdentity({
-        env: { CLAUDECODE: '1', CODEX_THREAD_ID: 'codex', GROK_SESSION_ID: 'grok' },
-      }),
-    ).toMatchObject({ agent: 'codex', sessionId: 'codex' })
-    expect(
-      resolveAmbientBlackboardIdentity({
-        env: { CURSOR_SESSION_ID: 'cursor', GROK_SESSION_ID: 'grok' },
-      }),
-    ).toMatchObject({ agent: 'grok', sessionId: 'grok' })
+      resolveAmbientBlackboardIdentity({ env, runtime: 'codex', sessionIdArg: 'payload' }),
+    ).toMatchObject({ agent: 'codex', sessionId: 'payload' })
   })
 
   it('fails closed for ambiguous Claude-compat signals and invalid selected ids', () => {
@@ -57,11 +94,9 @@ describe('Blackboard identity resolution', () => {
     expect(
       resolveSessionId({ env: { CLAUDECODE: '1', CODEX_THREAD_ID: 'ambiguous', GROK_AGENT: '1' } }),
     ).toBeUndefined()
-    expect(() =>
-      requireBlackboardIdentity({
-        env: { CODEX_THREAD_ID: '../invalid', GROK_SESSION_ID: 'valid-grok' },
-      }),
-    ).toThrow('invalid session id format: ../invalid')
+    expect(() => requireBlackboardIdentity({ env: { CODEX_THREAD_ID: '../invalid' } })).toThrow(
+      'invalid session id format: ../invalid',
+    )
   })
 
   it('honors explicit session ids without requiring an ambient harness', async () => {

@@ -66,8 +66,6 @@ invoke `db-clean` directly only when a documented workflow specifically needs th
   worktree; `--list` and `--dry-run` are read-only.
 - `node dev/pr-description.mts create|update ...` — Creates or replaces a GitHub PR body after
   validation; `validate` is read-only.
-- `node dev/blackboard-journal.mts append|entries ...` — Appends one session note as a journal entry
-  to the shared agent-blackboard stack, or reads a session's journal entries back.
 - `pnpm exec vouchington link-skill <name> --source-root .agents/skills --target-root .claude/skills`
   — Creates the tracked `.claude/skills/<name>` symlink after `.agents/skills/<name>/SKILL.md`
   exists; no-ops when the relative target is already correct.
@@ -104,43 +102,29 @@ one-at-a-time operations owned by the canonical
 
 #### Blackboard journal
 
-Stage each note in a non-empty UTF-8 file, then append it with:
+Agents journal through the `vouchington-tooling` MCP server, not a command. One `journal_append`
+call writes one entry (its `markdown` argument carries the note), `journal_entries` reads a
+session's entries back (every type, oldest first, full envelope), and `outbox_status` and `outbox_flush` manage interactive
+pending delivery. Every call passes the `sessionId` the SessionStart hook printed as
+`Blackboard sessionId: <id>`. The server owns the entry `timestamp` (the call takes none) and a retry
+repeats the identical call, with the same `sourceEventId` and content. When the server is not
+connected, stop and report; there is no CLI fallback. See
+[the `blackboard` skill](../../../.agents/skills/blackboard/SKILL.md) and
+[agent-blackboard](../agent-blackboard.md#mcp-server-js-client-and-cli-integration) for the
+argument contract and the `pending` result.
 
-```bash
-node dev/blackboard-journal.mts append --file <note-file> --mode <interactive|autonomous> --source-event-id <id> --work-outcome <outcome> --coverage-status <status> [--coverage-source <source,...>] [--dropped-count <n>] [--outbox-directory <path>] [--session-id <id>] [--parent-session-id <id>] [--agent <name>] [--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]
-node dev/blackboard-journal.mts append --file <note-file> --mode <interactive|autonomous> --source-event-id <id> --work-outcome <outcome> --coverage-status <status> [--coverage-source <source,...>] [--dropped-count <n>] [--outbox-directory <path>] --root-codex [--new-root-codex-session] [--agent codex] [--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]
-```
-
-Read a session's journal entries back (oldest first) with:
-
-```bash
-node dev/blackboard-journal.mts entries [--session-id <id> | --root-codex [--new-root-codex-session]]
-```
-
-`entries` accepts at most one identity override: `--session-id <id>` or interactive-root
-`--root-codex`. Root mode refreshes and reads back the worktree-local identity before the server
-read.
-
-The commands accept no positional note or stdin input. `append` reads the file without trimming,
-validates it is non-empty UTF-8, and calls `appendJournal`. `--mode`, `--source-event-id`,
-`--work-outcome`, and `--coverage-status` are required. `--coverage-source` is an optional
-comma-separated list, and an omitted `--dropped-count` means 0. Interactive mode requires
-`--outbox-directory`; autonomous mode must omit it. Success prints one JSON delivery result.
-[`agent-session-id/resolve.mts`](../../../dev/agent-session-id/resolve.mts)
-resolves a coherent harness, agent, and session when either CLI override is absent. Cursor CLI also
-reads `.local/cursor-session-id`; native Grok with `GROK_AGENT` reads
-`.local/grok-session-id`. An interactive root Codex call always passes `--root-codex`; an absent-thread
-new root session also passes `--new-root-codex-session` exactly once, then reuses
-`.local/codex-session-id`. A real thread id replaces it; children and
-detached processes must not pass either root flag. Root Codex uses this script path rather than the MCP
-procedure because only the script can invoke the root resolver.
-
-A thrown failure (missing token, unreachable blackboard stack, or rejected envelope) hard-fails
-nonzero and prints a shell-quoted `Replay with: ...` command for the same flags. Interactive
-transport trouble can instead return `pending` after the explicit outbox retains the envelope;
-that exit is 0, so read the JSON status. See
-[docs/development/agent-blackboard.md](../agent-blackboard.md) for bringing the
-stack up.
+Retrospective saves remain scripts, and they resolve identity through
+[`agent-session-id/resolve.mts`](../../../dev/agent-session-id/resolve.mts) when `--session-id` is
+absent. Cursor CLI with `CURSOR_AGENT` reads `.local/cursor-session-id`; native Grok with `GROK_AGENT`
+reads `.local/grok-session-id`; several harnesses exporting different session ids fail with a request
+for `--session-id`. An interactive root Codex call always passes `--root-codex`, and reuses
+`.local/codex-session-id`, which the SessionStart hook already persisted. A real thread id replaces
+it. Only when the hook printed `NOT RESOLVED` does an absent-thread new root session also pass
+`--new-root-codex-session`, exactly once; children and detached processes must not pass either root
+flag. A thrown save failure exits nonzero and prints a shell-quoted `Replay with: ...` command for
+the same flags; interactive transport trouble can instead return `pending` after the explicit outbox
+retains the envelope (exit 0, so read the JSON status). See
+[docs/development/agent-blackboard.md](../agent-blackboard.md) for bringing the stack up.
 
 `node dev/retrospective-save.mts compose --input <json-file>` assembles routine facts and markers,
 including validated work outcome and coverage front matter. `save --mode interactive|autonomous --file <path>`
@@ -178,8 +162,6 @@ failures, command invocations, cumulative token deltas, recursive subagent spend
 
 These are invoked by agent hooks, tests, CI, or higher-level scripts rather than as routine developer
 commands: `check-fresh-base`, `check-web-init`, `node dev/check-blackboard.mts`,
-`dev/blackboard-mcp` (the `agent-blackboard` MCP server entrypoint registered in `.mcp.json` and
-`.codex/config.toml`; launched by the agent runtime, not run directly),
 `node dev/codex-hooks/persist-session-id.mts claude`,
 `node dev/journal-checkpoint.mts compact [claude|codex]`,
 `node dev/codex-hooks/post-tool-use-command.mts <claude|codex>`,

@@ -6,8 +6,17 @@ behind step 8.
 
 ## Snapshot partition boundary
 
-`snapshot_export` is the sole bulk read. Its terminal manifest and client-side checksum establish that
-the root received a complete best-effort export before any partition is delegated. The root must first
+The `snapshot_export` tool of the `vouchington-tooling` MCP server is the sole bulk read, and the
+file it writes is the only source of full records: `journal_entries` reads one session at a time
+with no checksum or manifest, so it cannot prove a bulk read complete. Before the export, the root
+calls `outbox_flush` then `outbox_status` for every worktree that `git worktree list` prints (each
+path as `worktree`) and stops if any reports a `worktreePendingCount` above 0 (never `pendingCount`
+or `status`, which cover only the root's own session); it repeats that drain before any
+`session_archive` and never archives while any worktree still has pending records, because an
+archived session refuses later delivery. A removed worktree or another machine cannot be drained, which is why the age
+cutoffs below delay distillation. Its terminal manifest and client-side checksum establish that
+the root received a complete best-effort export before any partition is delegated, and the root
+stops on any mismatch rather than treating missing records as absent. The root must first
 check schema version, complete status, a nonempty generated-export `cleanupToken`, and exact equality
 between manifest counts and compact export counts, then pass the cleanup token, counts, and SHA-256
 value to the partition CLI. The partitioner returns `directory` and `partitions`, and preserves a
@@ -28,10 +37,14 @@ must attach the contributing session IDs to every theme so the mapping survives 
 root's later merge and deduplication — the root archives only the eligible sessions it fully
 processed, and needs that mapping to withhold archival from just the sessions behind a failed or
 deferred theme.
-Do not archive while inspectors are still running, and re-check each session's `lastEntryAt` against
-its exported value immediately before archiving it — a session resumed since the snapshot was taken
-must be skipped this round and reconsidered next. Always remove both the generated partition directory
-and the exported snapshot after the root merges summaries, including on an issue-validation failure.
+Do not archive while inspectors are still running. Immediately before each `session_archive`,
+read that session with `journal_entries` (every entry of every type, oldest first) and archive it
+only if its entries match the verified snapshot's entries for the same session by source identity
+(`sourceEventId`, or `createdAt` for a legacy entry that has none), with nothing added and nothing
+missing (two empty entry sets match); a session resumed or given a retrospective since the export,
+or a result that is not `{ sessionId, entries }`, is left for the next pass. Always remove both the generated partition directory and the exported
+snapshot after the last `session_archive` (the check above reads the snapshot), or after the root
+merges summaries when nothing is archived, including on an issue-validation failure.
 Partition and cleanup commands require the original `cleanupToken`; the root retains that capability
 and never delegates it. Cleanup retries use the same token with the original directory and snapshot
 paths. If partitioning fails before a directory is returned, cleanup receives the validated generated

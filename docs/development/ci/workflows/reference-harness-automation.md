@@ -141,7 +141,7 @@ closes the race while the session is running.
 [`ci/harness-session-dispatch.mts`](../../../../ci/harness-session-dispatch.mts) validates
 `HARNESS_TARGET`, session IDs, concurrency IDs, queue TTL, timeout, priority, and repository
 identity locally, then delegates transport to the first-party `auto-harness-client` npm library.
-Prompts are capped at 64 KiB and metadata is a JSON object capped at 8 KiB; new sessions have a
+Prompts are capped at 64 KiB, measured after the preflight below is prepended, and metadata is a JSON object capped at 8 KiB; new sessions have a
 fixed one-hour queue TTL and the assigned-session timeout remains 6,300 seconds. The API key is
 never available to caller checkout or prompt-rendering jobs; only each caller's `dispatch` job
 forwards it, by explicit name, into the `harness-dispatch.yml` call. Caller concurrency IDs are
@@ -160,6 +160,19 @@ active or resumed session keeps the Command it was originally dispatched against
 so they carry no checkpoint to invalidate, but they share the same concurrency-ID residual as
 `/shepherd` — see [Accepted risk](reference-harness-automation-accepted-risk.md#residual-risk) for
 the per-surface breakdown, not restated here.
+
+Every prompt the dispatcher sends, for a new session or a Shepherd resume, is prefixed with the
+MCP preflight from [`ci/harness-mcp-preflight.mts`](../../../../ci/harness-mcp-preflight.mts). The
+agent's first action is one `outbox_status` call to the project `vouchington-tooling` MCP server. If
+the tool is missing, the call errors, or the SessionStart output says `STOP WORK` or
+`NOT RESOLVED`, the agent makes no change and ends its final message with
+`PREFLIGHT FAILED: vouchington-tooling MCP server is not connected`. The dispatcher cannot see the
+host's MCP connection, so this is an agent-side gate that turns a missing server into a visible
+failed session with no PR or comment, never a silent loss of journal entries. Shepherd resumes carry
+it too: a resume re-enters a host process whose server may have died since the first turn, and the
+gate costs one call. Whether Auto Harness hosts load the project `.mcp.json` server at all is an
+open Phase 0 item of [#1154](https://github.com/vouchington/vouchington/issues/1154); until it is
+confirmed, expect this gate to fail on a host that does not.
 
 A `HARNESS_TARGET`/`HARNESS_FALLBACKS` repoint (e.g. from a provider-level route to a specific
 `claude-print-auto` Command) is a plain variable update — it changes only which Command a _new_

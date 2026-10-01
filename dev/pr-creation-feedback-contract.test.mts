@@ -87,6 +87,12 @@ describe('agent-authored PR creation feedback contract', () => {
 
     expect(retrospective).toContain('vouchington-workflow:retrospective')
     expect(retrospective).toContain('node dev/retrospective-save.mts')
+    expect(retrospective).toContain(
+      "never through the `vouchington-tooling` server's `journal_append`",
+    )
+    expect(normalized('.agents/skills/blackboard/SKILL.md')).toContain(
+      '`journal_append` stores only journal entries',
+    )
     expect(retrospective).toContain('[PR feedback](pr-feedback.md)')
   })
 
@@ -109,10 +115,35 @@ describe('agent-authored PR creation feedback contract', () => {
     expect(distill).toContain('manifest.schemaVersion === 1')
     expect(distill).toContain('--retro-days')
     expect(distill).toContain('--session-days')
-    expect(distill).toContain('selection.inactiveForHours')
+    expect(distill).toContain('never pass `inactiveForHours` to `snapshot_export`')
+    expect(distill.indexOf('`outbox_flush`')).toBeLessThan(snapshotExportIndex)
+    expect(distill).toContain('`git worktree list`')
+    expect(distill).toContain('reports a `worktreePendingCount` above 0')
+    expect(distill).toContain('never `pendingCount` or `status`')
+    expect(distill).toContain(
+      "never call `session_archive` while any worktree's `outbox_status` reports a `worktreePendingCount` above 0",
+    )
+    expect(distill).toContain('differ only in the server-assigned `timestamp` are one event')
+    expect(distill).toContain('stops on any mismatch')
     expect(distill).toContain('entry-type-unresolved')
-    expect(distill).toContain('lastEntryAt')
+    expect(distill).toContain('Immediately before each `session_archive`')
+    expect(distill).toContain('by source identity (`sourceEventId`')
+    expect(distill).toContain('two empty entry sets match')
+    expect(distill).toContain('Cleanup runs after the last `session_archive`')
     expect(distill).toContain('[distilling.md](distilling.md)')
+  })
+
+  it('teaches journal_append callers that the server owns the timestamp and a retry is identical', () => {
+    const blackboard = normalized('.agents/skills/blackboard/SKILL.md')
+    const retry = blackboard.slice(blackboard.indexOf('## Recording an entry'))
+
+    expect(retry).toContain('Never pass a `timestamp`')
+    expect(retry).toContain('repeat the identical call with the same `sourceEventId` and content')
+    expect(retry).toContain('returns the stored timestamp')
+    expect(retry).toContain('`pendingCount` is this session')
+    expect(retry).toContain('`worktreePendingCount` every session')
+    // The prohibition is the only place the adapter may name `timestamp` as an argument.
+    expect(blackboard.replace('Never pass a `timestamp`', '')).not.toContain('`timestamp`')
   })
 
   it('keeps retrospective mechanics local without weakening the canonical evidence boundary', () => {

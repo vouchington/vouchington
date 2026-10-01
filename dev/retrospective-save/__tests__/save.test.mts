@@ -267,14 +267,14 @@ describe('runSave hard-fail + replay contract', () => {
     expect(rejection.version).toBe('1.2.3')
   })
 
-  it('keeps a Grok-compat Codex child paired as Codex', async () => {
+  it('keeps a Grok-compat Codex child paired as Codex when the session id is explicit', async () => {
     const dir = await makeTempDir()
     const stagedFile = await makeStagedFile(dir, validRetroMarkdown())
     const ensureCalls: unknown[] = []
     let appended = entryFixture({ data: { type: 'retrospective' } })
     let getCallCount = 0
     await runSave(
-      ['--file', stagedFile],
+      ['--file', stagedFile, '--session-id', 'codex-id', '--agent', 'codex'],
       { ...HOSTED_ENV, CLAUDECODE: '1', CODEX_THREAD_ID: 'codex-id', GROK_SESSION_ID: 'grok-id' },
       {
         entries: entriesClientFixture({

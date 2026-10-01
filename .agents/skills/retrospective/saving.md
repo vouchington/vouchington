@@ -119,8 +119,8 @@ The command:
    identities are only fallbacks. An interactive root Codex session always passes `--root-codex`;
    an absent-thread new root session adds `--new-root-codex-session` exactly once before later calls reuse it;
    children never pass it and remain fail-closed without their own identity.
-   Deterministic direct collisions resolve Codex, Grok, then Cursor;
-   Claude-compat ambiguous sessions need `--session-id` explicitly; a fully detached process needs
+   Several harnesses exporting different session ids, and Claude-compat ambiguous sessions, fail
+   and need `--session-id` explicitly; a fully detached process needs
    both `--session-id` and `--agent`. A real Claude Code
    session (`CLAUDECODE=1`) with no `CLAUDE_CODE_SESSION_ID` of its own fails closed instead of
    inheriting a foreign or persisted id, except for a genuine Grok Claude-compat process, whose
@@ -136,7 +136,8 @@ The command:
 
 Interactive save uses `--mode interactive`; a hosted delivery outage returns visible pending state
 only after the bounded private outbox durably preserves sanitized feedback. Inspect and flush through
-`node dev/blackboard-journal.mts outbox-status|outbox-flush`. `--mode autonomous` requires verified
+the `outbox_status` and `outbox_flush` tools of the `vouchington-tooling` MCP server, which cover
+the same worktree outbox. `--mode autonomous` requires verified
 read-back and does not fall back to that outbox. A successful work outcome with blocked delivery is not fully reported.
 Invalid content, identity conflicts, saturation, and persistence failure exit nonzero with `Error:`
 and a pinned replay command. Do not discard pending records or claim acknowledged delivery.
@@ -172,11 +173,12 @@ Both no-retrospective states exit 0 and share the `No retrospective saved yet` p
 branches on two prefixes, not three. Unlike `save`, `check` never creates the agent-blackboard session
 — it is server-read-only, so running it costs nothing even for a session that will never get a
 retrospective. `check --root-codex` may create or refresh the ignored local Codex persistence file.
-Interactive root Codex always passes `--root-codex` here, to
-`node dev/blackboard-journal.mts entries --root-codex`, and to
+Interactive root Codex always passes `--root-codex` here and to
 `node dev/session-friction/report.mts --root-codex`. Each root-aware read refreshes and reads back
-the worktree-local Codex identity before its server request. An absent-thread new root adds
-`--new-root-codex-session` to exactly the first root script call; children do none of them.
+the worktree-local Codex identity before its server request. The SessionStart hook has already
+persisted a root session's id, so an absent-thread new root adds `--new-root-codex-session` to
+exactly the first root script call only when the hook printed `NOT RESOLVED`; children do none of
+them.
 
 A failing `check` (missing token, unreachable server, invalid session id format) exits nonzero with
 `Error: <message>` on stderr and no `Replay with:` line — there is no staged file to replay. This is

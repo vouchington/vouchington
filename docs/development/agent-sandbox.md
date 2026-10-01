@@ -162,9 +162,9 @@ Claude's OS sandbox unsets every name in [`.claude/settings.json`](../../.claude
 A command in `sandbox.excludedCommands` runs outside that sandbox and still receives the
 variables. `dev/check-blackboard.mts` stays excluded for that reason: a sandboxed probe cannot
 tell a withheld `AGENT_BLACKBOARD_TOKEN` from an outage
-([Advisory availability probe](agent-blackboard.md#advisory-availability-probe)).
+([SessionStart availability check](agent-blackboard.md#sessionstart-availability-check)).
 
-Codex `[mcp_servers.agent-blackboard].env_vars` forwards `AGENT_BLACKBOARD_URL` and
+Codex `[mcp_servers.vouchington-tooling].env_vars` forwards `AGENT_BLACKBOARD_URL` and
 `AGENT_BLACKBOARD_TOKEN` into the MCP server. That pass-through is a separate control. Grok
 [`.grok/sandbox.toml`](../../.grok/sandbox.toml) and Cursor
 [`.cursor/sandbox.json`](../../.cursor/sandbox.json) configure writable roots and have no
@@ -328,7 +328,8 @@ Report consequential tool and sandbox outcomes through the supported Blackboard 
 issue filing. Record the command boundary, sanitized diagnostic, work outcome, and evidence coverage
 separately. A refusal, missing credential, network error, Git write denial, and `E2BIG` require
 different remedies; frequency alone does not justify broadening bypasses. Automatic hooks remain
-local-only. agent-blackboard stays separate from auto-harness. See
+local-only. Automation runs only check that the `vouchington-tooling` server is connected (the
+dispatcher's preflight). See
 [the delivery contract](agent-blackboard.md#interactive-pending-delivery).
 
 ## See also

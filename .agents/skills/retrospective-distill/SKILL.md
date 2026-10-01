@@ -23,17 +23,31 @@ comparison false — and these flags gate destructive archival. The root compute
 once — `retroCutoff = now - retro-days` and `sessionCutoff = now - session-days` — and passes both
 into every partition prompt so inspectors never read their own clock.
 
-Use the `agent-blackboard` MCP server in write-capable mode. First call `snapshot_export`; it always
-exports only non-archived sessions and returns a private local snapshot path, counts, checksum, and
-terminal manifest. This requires `agent-blackboard` 0.5.0 or later; if the installed MCP server lacks
-the tool, stop and report the dependency mismatch rather than falling back to paginated session reads.
-Never pass `selection.inactiveForHours` to `snapshot_export`: a session with zero entries never
-matches that filter (`lastEntryAt === null`), so filtering server-side would permanently hide the
-feedback gaps in retro-less sessions this workflow exists to sweep up. Always export unfiltered and classify
-effective age from deduplicated entry timestamps, falling back to session `createdAt` when empty.
-Before delegation, the root verifies `manifest.schemaVersion === 1`, `manifest.status === "complete"`,
-that the generated export returned a nonempty `cleanupToken`, and that manifest counts exactly match
-the compact export counts (including the terminal manifest record). It then runs `pnpm exec
+Use the `vouchington-tooling` MCP server. First drain every worktree's outbox: for each path that
+`git worktree list` prints, call `outbox_flush` and then `outbox_status` with that path as
+`worktree`, and stop if any of them reports a `worktreePendingCount` above 0. Use the worktree count,
+never `pendingCount` or `status`, which cover only the root's own session: the sessions to distill
+belong to other agents. An archived session refuses later delivery, so a retained record would never
+be distilled. Then call `snapshot_export` with the root's
+own `sessionId`; it always exports only non-archived sessions and returns a private local snapshot
+path, counts, checksum, and terminal manifest, never the records. If the server is not connected,
+stop and report it rather than falling back to a CLI command or paginated session reads.
+A removed worktree or another machine cannot be drained. The canonical skill covers that with
+`inactiveForHours` selection, which Vouchington overrides: never pass `inactiveForHours` to
+`snapshot_export`, because a session with zero entries never matches that filter
+(`lastEntryAt === null`), so filtering server-side would permanently hide the feedback gaps in
+retro-less sessions this workflow exists to sweep up. Export without it and classify effective age
+from deduplicated entry timestamps, falling back to session `createdAt` when empty. The
+`retroCutoff` and `sessionCutoff` below supply the delay for records that cannot be drained.
+Full records (storage type, repository tags, source identity, coverage, and outcomes) come only from
+the exported file's partitions. Never distill from `journal_entries`, which reads one session at a
+time with no checksum or manifest.
+Before delegation, the root verifies the snapshot file against the returned checksum, counts, and
+terminal manifest with the approved snapshot reader below and stops on any mismatch rather than
+treating missing records as absent. It checks `manifest.schemaVersion === 1`,
+`manifest.status === "complete"`, that the generated export returned a nonempty `cleanupToken`, and
+that manifest counts exactly match the compact export counts (including the terminal manifest
+record). It then runs `pnpm exec
 agent-blackboard snapshot partition --path <path> --cleanup-token <cleanupToken> --checksum <sha256>
 --sessions <count> --entries <count> --records <count> --bytes <count>` once, passing the returned
 cleanup capability, checksum, and all four counts. The omitted-path export is an absolute
@@ -69,8 +83,9 @@ versioned feedback envelope fails the shared validator — even if it
 also has a retrospective entry — report it separately and give it no issue-filing pass or archival
 this run, regardless of its age, rather than treating an untyped entry as journal evidence; a
 **retrospective** session when it has a retrospective entry and no unresolved entry; report quarantine counts/reasons and continue clean unrelated sessions.
-Deduplicate versioned source events by session and `sourceEventId` before theme counting; conflicting
-payloads stay quarantined. A
+Deduplicate versioned source events by session and `sourceEventId` before theme counting; copies that
+differ only in the server-assigned `timestamp` are one event, and any other difference is a
+conflicting payload that stays quarantined. A
 **checkpoint-only** session when it has at least one entry, no retrospective entry, and
 every entry satisfies `isCheckpointEntry` (journal auto-append noise, #9337); a **journal-only**
 session when it has at least one entry, no retrospective entry, and at least one entry is not a
@@ -83,8 +98,8 @@ bounded assignment cleanly (see [the `blackboard` skill](../blackboard/SKILL.md)
 `retroAt` as the newest retrospective entry's `createdAt`, and `lastActive` as
 the newest normalized entry's `createdAt` (falling back to `session.createdAt` when there
 are no entries). An identical replay does not advance effective activity; a new source event does.
-Keep the exported `session.lastEntryAt` unchanged for the archival race check below. Every shape
-except entry-type-unresolved is **eligible**
+Leave the verified snapshot file in place until cleanup: it is the reference for the archival check
+below. Every shape except entry-type-unresolved is **eligible**
 when `(has a retrospective AND retroAt < retroCutoff) OR (lastActive < sessionCutoff)` — eligible on
 session age alone covers a checkpoint-only, journal-only, or zero-entry session that has simply gone
 stale, which is the case a retro-only gate used to leave stuck forever. Everything else is **not yet
@@ -101,9 +116,19 @@ stderr verbatim in an issue body, since a journal checkpoint (unlike a retrospec
 the canonical evidence-minimization boundary) can carry unredacted secrets. An entry-type-unresolved
 session gets no issue-filing pass this run.
 
-Before archiving an eligible session, re-read its current `lastEntryAt` and compare it to the value
-captured at export time; if it advanced, the session was resumed since the snapshot, and it must be
-skipped for archival this run and reconsidered next round. Archive every eligible session after all
+Immediately before each `session_archive`, read that session with `journal_entries` (its
+`sessionId`) and archive it only if its entries match the verified snapshot's entries for the same
+session by source identity (`sourceEventId`, or `createdAt` for a legacy entry that has none): the
+same set, with nothing added and nothing missing; two empty entry sets match, so a zero-entry session
+is archivable. Otherwise the session changed since the snapshot (it was resumed, or a retrospective
+was saved after the export), so leave it unarchived for the next pass; so is a result that is not
+`{ sessionId, entries }`. `session_archive` has no such guard of its own, and archiving freezes only
+the session's metadata, so its entries stay appendable. Invoking this skill is the local archival
+authorization for eligible sessions: archive each one with a separate `session_archive` call whose
+`sessionId` is the archived session, not the root's. Before any `session_archive`, repeat the
+drain across every worktree, and never call `session_archive` while any worktree's `outbox_status`
+reports a `worktreePendingCount` above 0: an archived session refuses later delivery and would
+strand the retained record. Archive every eligible session after all
 issue work completes, whether or not it produced a theme: no actionable content is a disposition, not
 a deferral. Two exceptions, both keyed by the theme→session-ID mapping above: skip archival for
 exactly the sessions that contributed to a theme whose issue mutation failed this run (they remain
@@ -113,8 +138,8 @@ PR-creation-feedback theme (below) — since deferral promises re-evaluation nex
 would foreclose it. In a `finally` cleanup path owned by the root, run `pnpm exec
 agent-blackboard snapshot cleanup --directory <path> --path <path> --cleanup-token <cleanupToken>`;
 or, if partitioning failed before a directory was returned, run cleanup with the validated snapshot
-path and cleanup token alone. Cleanup happens after summary merging even when no session is eligible
-for archival.
+path and cleanup token alone. Cleanup runs after the last `session_archive` (the archival check reads
+the snapshot), and after summary merging even when no session is eligible for archival.
 
 Cluster journal and retrospective findings by root cause. A journal item that already names an open
 issue is skipped unless a retrospective supplies genuinely new evidence; a closed or superseded
@@ -130,7 +155,7 @@ eligible-with-retro vs. eligible-stale (splitting eligible-stale into checkpoint
 zero-entry-child, and zero-entry-root). Do not ask the user for subset or style; the local summary is
 the record of the complete run.
 
-Use the hosted `agent-blackboard` connection documented in
+Use the `vouchington-tooling` server and hosted connection documented in
 [agent-blackboard.md](../../../docs/development/agent-blackboard.md), then follow
 [distilling.md](distilling.md) for Vouchington grouping and disposition policy. Create any issue via
 [github-issue](../github-issue/SKILL.md), not by bypassing local taxonomy and duplicate checks.

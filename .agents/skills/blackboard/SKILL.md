@@ -8,20 +8,54 @@ description: Read or record Vouchington session findings in agent-blackboard.
 ## Canonical skill (required)
 
 Claude Code and Codex load `vouchington-workflow:blackboard`; Grok, Cursor, and OpenCode read
-`node_modules/vouchington-tooling/skills/blackboard/SKILL.md`. Every harness also reads the provider
-mechanics in
-`node_modules/agent-blackboard/dist/plugin/skills/agent-blackboard/SKILL.md`. Resolve supporting
-resources relative to their owning skill directories. If either canonical skill cannot be read, stop and report the missing prerequisite; never apply this overlay alone. Vouchington keeps its
-project MCP registration instead of enabling the provider plugin, which would register a duplicate
-server.
+`node_modules/vouchington-tooling/skills/blackboard/SKILL.md`. Resolve supporting resources relative
+to their owning skill directories. If the canonical skill cannot be read, stop and report the missing
+prerequisite; never apply this overlay alone. It owns the tool contract: the seven tools, what
+`sessionId` means for each, the `journal_append` envelope, retry, and the distillation flow. This
+overlay adds only repository policy.
 
 ## Vouchington additions
 
-Use the hosted deployment and delivery rules in
-[agent-blackboard.md](../../../docs/development/agent-blackboard.md). The supported local replay
-path is `node dev/blackboard-journal.mts`; retrospective persistence still goes through
-`node dev/retrospective-save.mts`. Codex, Claude, Cursor, Grok, and OpenCode each register the
-same local MCP wrapper and preauthorize exactly the eight-provider-tool catalog documented there.
+Every harness registers the project MCP server `vouchington-tooling` (`vouchington mcp`, launched
+from this worktree's `node_modules/.bin`) and approves its tools server-wide; see
+[agent-blackboard.md](../../../docs/development/agent-blackboard.md). Call only that server's tools.
+Their names differ by harness:
+
+- Claude Code: `mcp__vouchington-tooling__<tool>`.
+- Codex: `mcp__vouchington_tooling__<tool>` (underscores).
+- Grok: `vouchington-tooling__<tool>`, found with `search_tool` and called with `use_tool`.
+- Cursor: the `vouchington-tooling` namespace, deferred behind `GetDynamicTools` and
+  `CallDynamicTool`.
+
+Grok and Cursor load these tools lazily, so search for `journal_append` before concluding the server
+is missing.
+
+- **Never call `mcp__plugin_agent-blackboard_*` tools.** They are the provider plugin's raw tools.
+  Its `entry_append` skips the feedback envelope (source identity, outcome, coverage, repository
+  attribution, and the outbox), so the entry would be unvalidated and could not be retried
+  exactly. Vouchington does not enable that plugin; ignore it if a user-level install offers it.
+- **`sessionId` comes from the SessionStart hook.** `dev/check-blackboard.mts` prints
+  `Blackboard sessionId: <id>` at every session start, including after compaction. Pass that value
+  verbatim wherever a tool takes `sessionId`. It is the id of the harness that ran the hook, and for
+  one running harness it matches `dev/agent-session-id/resolve.mts`, including an interactive root
+  Codex session. If the line reads `NOT RESOLVED` or is missing, never guess or reuse another
+  session's id; stop journaling and report it. The one exception is headless Grok.
+- **Headless Grok has no such line.** `grok --prompt-file ...` injects no SessionStart context. Only
+  Grok, and only when no `Blackboard sessionId:` line is anywhere in context, read
+  `.local/grok-session-id` in the worktree root and use its contents. The Grok SessionStart hook
+  `dev/codex-hooks/persist-session-id.mts` writes it. Two Grok sessions sharing a worktree
+  overwrite each other's file, so treat the value as unresolved when another Grok session may be
+  running there.
+- **`repositories` defaults to `["vouchington/vouchington"]`.** When the note concerns other
+  repositories, list each of them, including `vouchington/vouchington` when it also applies.
+- **`mode` is `interactive` for an attended session and `autonomous` for an automation runner.**
+  Interactive mode retains a failed delivery in the worktree outbox and reports it as pending.
+  Autonomous mode has no outbox, so a failed delivery is an error to report.
+- **`journal_append` stores only journal entries.** Never save a retrospective through it: a
+  composed retrospective goes through the retrospective writer, `node dev/retrospective-save.mts`
+  (see [the `retrospective` skill](../retrospective/SKILL.md)). That writer validates the
+  retrospective document and writes to the same worktree outbox that `outbox_status` and
+  `outbox_flush` cover.
 
 ## Mandatory journal triggers
 
@@ -47,83 +81,67 @@ contemporaneous record.
 Never search shell profiles, `env`, or `.env*` files for a credential; never print, inline, export,
 or probe its value. Check presence only with `[ -n "${VAR+x}" ] && echo SET || echo UNSET`.
 A sandbox denial is expected and is not a recovery target. A missing or stale credential blocks
-hosted delivery. In interactive mode use the supported writer so sanitized feedback
-is retained durably and visibly pending. Do not silently drop it or invent another fallback. Ask the
-user to refresh the connection when needed, then restart the MCP client or retry the supported
-outbox flush. Saturation and persistence failure require reporting the concrete blocker.
+hosted delivery. In interactive mode `journal_append` retains the sanitized entry in the worktree
+outbox and reports it as pending; do not silently drop it or invent another fallback. Ask the user
+to refresh the connection when needed and to restart the MCP client (a newly exported value does not
+reach a running server), then call `outbox_flush`. Saturation and persistence failure require
+reporting the concrete blocker.
 
-## MCP procedure
+## Server unavailable
 
-MCP provides provider reads and explicit session management. Raw `entry_append` bypasses the
-validated writer; use `dev/blackboard-journal.mts` for journal feedback and
-`dev/retrospective-save.mts` for retrospectives. Repository hooks remain local and advisory.
+If the `vouchington-tooling` tools are missing or a call reports the server is not connected, stop
+and report it. Do not fall back to a CLI command, a script, or a provider tool, and do not continue
+work that depends on the journal. The SessionStart hook prints a `STOP WORK` line when the server
+cannot launch from this worktree. The fix is a workspace-setup step, not a deployment outage: run
+`./dev/initialize monorepo` from the worktree root, then take the reconnect step the line names:
+`/mcp` in Claude Code, a restart of Codex or Grok, or `cursor-agent mcp enable vouchington-tooling`
+in Cursor (a headless `cursor-agent -p` run passes `--approve-mcps` instead). Then start a fresh
+session.
 
-## Script procedure
+## Recording an entry
 
-Write the concrete note to a UTF-8 file under `$TMPDIR`, then run:
+Make one `journal_append` call and pass the note as `markdown`; no temporary file or replay command
+is involved. Never pass a `timestamp`: the server owns it, rejects the argument, and returns the one
+it used. To retry a failed or timed-out call, repeat the identical call with the same
+`sourceEventId` and content; the tool returns the stored timestamp. The tool rejects different
+content under an existing `sourceEventId`. Interactive `pending` means the outbox retained the
+entry: check the counts with `outbox_status` (`pendingCount` is this session's unsent records,
+`worktreePendingCount` every session's in the worktree) and deliver with `outbox_flush` once the
+deployment is reachable.
 
-```bash
-node dev/blackboard-journal.mts append --file <note-file> \
-  --mode interactive|autonomous \
-  --source-event-id <id> \
-  --work-outcome <outcome> \
-  --coverage-status <status>
-```
-
-Pass `--coverage-source <source,...>` when naming inspected sources, and `--dropped-count <n>` when
-the dropped count is not zero. Interactive mode also requires `--outbox-directory <path>`.
-Autonomous mode must omit that flag. Stdout is one JSON delivery result: `delivered` is
-acknowledged, and interactive `pending` means the supplied outbox retained the note while the
-process still exits 0.
-
-The script tags the entry and its session with `vouchington/vouchington`. When the note concerns
-other repositories, pass one `--repository <owner/name>` per repository instead, including
-`vouchington/vouchington` when it also applies.
-
-For a non-root session pass explicit `--session-id <id>` unless the runtime environment already
-supplies it, and for a child, `--parent-session-id <parent-id>`. An interactive root Codex invocation
-always passes `--root-codex`. At the start of each new interactive root Codex session where
-`CODEX_THREAD_ID` is absent, pass `--new-root-codex-session` exactly once with it; this ignores a
-prior fallback and persists a new ignored `.local/codex-session-id`. All later root calls pass only
-`--root-codex`; a real thread id always replaces the persisted value. This root-CLI identity is
-independent from explicit session ids carried by automatic hook payloads. Never pass either root
-flag from a child or detached process. On a nonzero exit, read `Error:` and `Replay with:` from stderr, fix the stated cause, and run the
-replay command. Do not write the note to a different path instead. Replay preserves the source event id and the other flags.
-
-When `CODEX_THREAD_ID` is absent, the runtime provides no signal from which tooling can infer the
-new-session boundary. Omitting the one-time flag reuses stale identity; passing it twice fragments
-one session. Rotate exactly once before any other root-aware call.
-
-Choose at most one CLI identity override: an explicit `--session-id`, or interactive-root
-`--root-codex`; the two flags are rejected together. A non-root runtime may still supply its
-identity through the environment. Use one identity consistently for the task.
+An autonomous runner's admission `journal_append` (after `session_ensure`, before it launches an
+attempt) is the exception to reuse: give every attempt its own `sourceEventId`, for example one that
+includes the attempt number. Repeating an earlier id returns the earlier receipt, which does not
+prove a fresh write. Only a retry of the same attempt repeats its `sourceEventId`.
 
 ## Reading journal entries back
 
-Use `entry_get({ sessionId, format: "json" })`, filter `data.type === "journal"`, and sort
-oldest-first by `createdAt`; or run `node dev/blackboard-journal.mts entries [--session-id <id>]`
-(`--root-codex` for interactive root Codex; include `--new-root-codex-session` exactly once only
-when that root session first lacks `CODEX_THREAD_ID`).
-A zero-entry session reports `No journal entries found` and is not an error. Other read failures use
-the same hard-fail contract. Do not replace validated retrospective persistence with a raw append.
+Call `journal_entries` with the `sessionId` to read. It returns `{ sessionId, entries }`: every
+entry of that one session, of every type (journal, retrospective, and legacy), oldest first, each
+with its full envelope (`type`, `repositories`, `sourceEventId`, and the rest). A zero-entry session
+has no entries, which is not an error. Use it to find out whether the session already has a
+retrospective and to keep an entry's repository tags. It reads one session with no checksum or
+manifest, so never distill from it; [retrospective-distill](../retrospective-distill/SKILL.md)
+reads the exported snapshot file.
 
 ## Child identity for spawned agents
 
-Pass the parent's own session id in the assignment prompt at spawn time — there is no separate
-identity round-trip. A spawned child resolves its own session id from its runtime environment (for
-example `CODEX_THREAD_ID` for Codex, `CLAUDE_CODE_SESSION_ID` for Claude Code) through the shared
-`dev/agent-session-id/resolve.mts` identity policy, the same way any
-other Vouchington blackboard consumer does, and calls `session_ensure` — or
-`node dev/blackboard-journal.mts append` with `--file <note-file>`, `--parent-session-id <parent-id>`,
-and the same feedback flags — using that resolved id, the parent id it was given, its own `agent`
-name (`--agent` when the runtime
-environment mixes harness identities), and its version before any
-blackboard-aware or substantive work. If the runtime environment supplies no session identity, or
-the ensure fails, the child stops and reports the blocker rather than guessing an ID, passing
-`--root-codex`, or
-substituting its canonical task path. A resolved id must satisfy the shared plain-token grammar
-(`isValidSessionId` in `dev/agent-session-id/valid-id.mts`); never pass a path, URL, or synthesized
-value to `session_ensure`.
+Pass the parent's own session id in the assignment prompt at spawn time. A spawned child needs its
+own `sessionId` for every call, obtained in this order:
+
+1. The `Blackboard sessionId:` line its own SessionStart hook printed, when the harness runs the
+   hook for the child.
+2. Otherwise its runtime environment: `CODEX_THREAD_ID` for Codex, read with
+   `printenv CODEX_THREAD_ID`. Use it only for Codex; when a child also inherits another harness's
+   session env, `dev/agent-session-id/resolve.mts` refuses to guess, so this step is the answer.
+
+The child then calls `session_ensure` with that id as `sessionId`, the parent id it was given as
+`parentSessionId`, its own `agent` name, and its version, before any blackboard-aware or substantive
+work. Its first `journal_append` also ensures the session, but `session_ensure` is the explicit
+identity step. If the child finds no session identity, or the ensure fails, it stops and reports the
+blocker instead of guessing an id, borrowing the parent's, or substituting its canonical task path.
+A resolved id must satisfy the shared plain-token grammar (`isValidSessionId` in
+`dev/agent-session-id/valid-id.mts`); never pass a path, URL, or synthesized value.
 
 A Claude Code Agent-tool subagent is the one exception: Claude Code does not expose a session id
 distinct from its parent's `CLAUDE_CODE_SESSION_ID`, so a subagent must never call `session_ensure`

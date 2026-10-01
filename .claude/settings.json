@@ -1,5 +1,5 @@
 {
-  "enabledMcpjsonServers": ["agent-blackboard"],
+  "enabledMcpjsonServers": ["vouchington-tooling"],
   "permissions": {
     "allow": [
       "Bash(pnpm exec *)",
@@ -38,8 +38,6 @@
       "Bash(./dev/stop-services *)",
       "Bash(./dev/status)",
       "Bash(./dev/status *)",
-      "Bash(node dev/blackboard-journal.mts)",
-      "Bash(node dev/blackboard-journal.mts *)",
       "Bash(node dev/retrospective-save.mts)",
       "Bash(node dev/retrospective-save.mts *)",
       "Bash(node dev/check-blackboard.mts)",
@@ -146,14 +144,7 @@
       "WebFetch(domain:docs.aws.amazon.com)",
       "WebFetch(domain:valkey.io)",
       "mcp__github__get_job_logs",
-      "mcp__agent-blackboard__entry_append",
-      "mcp__agent-blackboard__entry_get",
-      "mcp__agent-blackboard__session_archive",
-      "mcp__agent-blackboard__session_create",
-      "mcp__agent-blackboard__session_ensure",
-      "mcp__agent-blackboard__session_patch",
-      "mcp__agent-blackboard__session_search",
-      "mcp__agent-blackboard__snapshot_export",
+      "mcp__vouchington-tooling__*",
       "Grep(*)",
       "Glob(*)",
       "Read(*)",
@@ -324,7 +315,7 @@
           },
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/dev/check-blackboard.mts\""
+            "command": "node \"$(git rev-parse --show-toplevel)/dev/check-blackboard.mts\" claude"
           },
           {
             "type": "command",
@@ -405,6 +396,7 @@
     ]
   },
   "enabledPlugins": {
+    "agent-blackboard@agent-blackboard": false,
     "vouchington-workflow@vouchington": true,
     "vouchington-testing@vouchington": true,
     "vouchington-database@vouchington": true,
@@ -463,8 +455,6 @@
       "./dev/stop-services *",
       "./dev/status",
       "./dev/status *",
-      "node dev/blackboard-journal.mts",
-      "node dev/blackboard-journal.mts *",
       "node dev/retrospective-save.mts",
       "node dev/retrospective-save.mts *",
       "node dev/check-blackboard.mts",

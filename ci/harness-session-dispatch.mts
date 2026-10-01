@@ -15,6 +15,7 @@ import {
 } from 'auto-harness-client/actions'
 
 import { withSingleRetry } from './harness-dispatch-retry.mts'
+import { withMcpPreflight } from './harness-mcp-preflight.mts'
 import { HARNESS_SESSION_ID } from './shepherd-checkpoint.mts'
 
 export { HarnessDispatchError }
@@ -56,7 +57,8 @@ export async function dispatchHarnessSession(
 
   const baseUrl = parseHarnessApiOrigin(environment)
   const apiKey = requiredEnvironmentValue(environment, 'HARNESS_API_KEY')
-  const prompt = requiredEnvironmentValue(environment, 'HARNESS_PROMPT')
+  // The wire prompt, preflight included, is what the size cap bounds.
+  const prompt = withMcpPreflight(requiredEnvironmentValue(environment, 'HARNESS_PROMPT'))
   if (Buffer.byteLength(prompt, 'utf8') > MAX_PROMPT_BYTES) {
     throw new HarnessDispatchError('PROMPT_TOO_LARGE', 'HARNESS_PROMPT exceeds 65536 bytes')
   }

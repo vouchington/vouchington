@@ -452,11 +452,17 @@ Policy Contract](../../testing/backend/api-fixtures.md#local-llm-endpoint-policy
 
 The parser-backed
 [`agent-blackboard-mcp-config.test.mts`](../../../../static-code-analysis/repo-file-policy/agent-blackboard-mcp-config.test.mts)
-check keeps the shared `.mcp.json` and Codex `.codex/config.toml` Agent Blackboard registrations
-tracked and equivalent across command, arguments, and forwarded environment-variable names. It
-also prevents the Codex server from becoming required before fresh-worktree dependencies exist and
-executes the tracked registration from a nested repository directory so the launcher cannot regain
-a root-cwd assumption.
+check keeps the `vouchington-tooling` MCP registration in every harness config (`.mcp.json`,
+`.codex/config.toml`, `.cursor/mcp.json`, `.grok/config.toml`, `opencode.json`) tracked and
+equivalent across command, arguments, and forwarded environment-variable names, and rejects a
+second blackboard server beside it. It requires server-wide approval instead of per-tool entries
+(OpenCode lists the seven tools because its docs confirm no wildcard), prevents the Codex server
+from becoming required before fresh-worktree dependencies exist, and executes the tracked
+registration from a nested repository directory so the launcher cannot regain a root-cwd
+assumption. The companion
+[`agent-blackboard-mcp-hooks.test.mts`](../../../../static-code-analysis/repo-file-policy/agent-blackboard-mcp-hooks.test.mts)
+check keeps every PreToolUse matcher from matching an `mcp__` tool and pins the deletion of the
+replaced journal CLI and its wrapper.
 
 The `run:`-scalar extraction and shell-argument scanning that rejects an unquoted `?` or `&` in a
 `gh api` argument was extracted to the published
