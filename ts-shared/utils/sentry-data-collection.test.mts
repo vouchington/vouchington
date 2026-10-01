@@ -36,6 +36,8 @@ describe('createSentryDataCollection', () => {
       urlQueryParams: false,
       databaseQueryData: false,
       stackFrameVariables: false,
+      queues: false,
+      graphQL: { document: false, variables: false },
       genAI: { inputs: false, outputs: false },
     })
   })

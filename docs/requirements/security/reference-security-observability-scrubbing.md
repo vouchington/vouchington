@@ -78,7 +78,8 @@ payload and is outside the scope of this change.
 
 Sentry v11 collects by default what `@sentry/core`'s `resolveDataCollectionOptions` resolves: the
 client IP, cookies, query strings, every HTTP body, bound database values, stack-frame local
-variables and every gen-AI input and output. Request bodies carry copyright notice and
+variables, queue task arguments, GraphQL documents and variables, and every gen-AI input and
+output. Request bodies carry copyright notice and
 counter-notice fields (legal identities, addresses, perjury statements) and other form data. Gen-AI
 inputs carry the same content as LLM prompts, plus MCP tool arguments and results. The product
 rule is that the least data leaves the app, so the scrubbers above are defense in depth behind a
@@ -100,6 +101,9 @@ owns the policy, and every SDK init site passes it as `dataCollection`:
 - `databaseQueryData` is off. It stops bound query parameters, write payloads and returned rows
   (see below).
 - `stackFrameVariables` is off. It stops local variable values in stack frames (see below).
+- `queues` is off. It stops the arguments passed to queue tasks (see below).
+- `graphQL.document` and `graphQL.variables` are off. They stop GraphQL operation documents and
+  variables (see below).
 - `genAI.inputs` and `genAI.outputs` are off. They stop prompts, completions and MCP tool
   arguments and results.
 
@@ -110,9 +114,9 @@ plus Cloudflare's `cf-pseudo-ipv4`; the SDK matches deny terms by substring, so 
 `@sentry/cloudflare` pass raw request headers to `httpHeadersToSpanAttributes`, which filters only
 credential-like names. `userInfo: false` alone does not touch that path.
 
-Left at the SDK default because nothing in the repo can reach them: `httpHeaders.response` (response
-headers carry no client IP), `graphQL` and `queues` (no GraphQL or Kafka integration is
-registered), and `frameContextLines` (source lines, not request data).
+Left at the SDK default because they carry no user data: `httpHeaders.response` (response headers
+carry no client IP, and `Set-Cookie` is covered by `cookies`) and `frameContextLines` (source
+lines, not request data).
 
 - `genAI.inputs`/`genAI.outputs` are the fallback for the AI integrations (OpenAI, Anthropic and
   the rest of `ai/core`, plus Vercel AI) and the MCP server integration. Each uses `genAI` unless
@@ -128,6 +132,14 @@ registered), and `frameContextLines` (source lines, not request data).
   (`integrations/local-variables/local-variables-async.js` in `@sentry/node`), which is off unless
   the `includeLocalVariables` client option is set. The repository never sets it. The option is off
   so that turning that client option on cannot attach local variables, which can hold user input.
+- `queues` is read only by the Kafka integration (`integrations/kafkajs/spans.js` in
+  `@sentry/server-utils`), which attaches the message key. `kafkajs` is not a dependency. The AWS
+  SDK instrumentation that covers SQS does not read the option. It is off so that adding a queue
+  integration later cannot start sending task arguments.
+- `graphQL` is read only by the GraphQL integration (`integrations/graphql/utils.js` in
+  `@sentry/server-utils`), which attaches the operation document with literal values redacted and
+  never attaches variable values. `graphql` is not a dependency, so nothing is attached today. Both
+  flags are off so that adding a GraphQL server later cannot start sending operations.
 - `userInfo: false` also means no automatic `user.*` fields from instrumentation and no client
   address on the Node HTTP server span. The repository never calls `setUser`.
 - Browser reports reach Sentry through the Worker tunnel, which forwards only the envelope, so
@@ -157,6 +169,7 @@ These SDK behaviors were verified by reading `@sentry/core@11.0.0`
 `integrations/supabase.js`, `integrations/mcp-server/transport.js`, `tracing/spans/envelope.js`),
 `@sentry/node@11.0.0` (`integrations/local-variables/local-variables-async.js`),
 `@sentry/server-utils@11.0.0` (`ai/core/utils.js`, `integrations/index.js`,
+`integrations/graphql/utils.js`, `integrations/kafkajs/spans.js`,
 `integrations/vercel-ai/vercel-ai-dc-subscriber.js`) and
 `@sentry/cloudflare@11.0.0` (`integrations/httpServer.js`, `wrapRequestHandlerWithInit.js`).
 
@@ -216,7 +229,7 @@ attachments, replays, or logs. Lambda events retain their pre-existing broader d
 same normalized `http.request.header.*` and cookie-key shapes covered here.
 
 The client IP, cookies, query strings, request bodies, bound database values, stack-frame
-variables and gen-AI content are off at the source through `dataCollection` (see
+variables, queue task arguments, GraphQL operations and gen-AI content are off at the source through `dataCollection` (see
 [Data collection](#data-collection-the-least-data-policy)). The scrubbers still drop
 `event.request.data` and the `http.request.body.data` span attribute, because `requestdata.js`
 copies body data that reached the scope by any other path.

@@ -9,9 +9,9 @@
 //   copies raw request headers onto spans whatever `userInfo` says. It matches by substring.
 // - `cookies: false` drops the Cookie and Set-Cookie headers and the parsed cookies.
 // - `urlQueryParams: false` drops query strings from URLs and `url.query` attributes.
-// - `databaseQueryData` and `stackFrameVariables` are `false` fail-closed: no integration this app
-//   registers reads them today, but each would attach bound values or local variables, which can
-//   hold user input.
+// - `databaseQueryData`, `stackFrameVariables`, `queues` and `graphQL` are `false` fail-closed: no
+//   integration this app registers reads them today, but each would attach bound values, local
+//   variables, queue task arguments or GraphQL documents and variables, which can hold user input.
 // The credential scrubbers in `sentry-event-scrubbing.mts` stay as defense in depth.
 
 // The SDK's own client-IP header list (`@sentry/core` getIpAddress), plus Cloudflare's pseudo-IPv4.
@@ -39,6 +39,8 @@ export interface SentryDataCollectionPolicy {
   urlQueryParams: false
   databaseQueryData: false
   stackFrameVariables: false
+  queues: false
+  graphQL: { document: false; variables: false }
   genAI: { inputs: false; outputs: false }
 }
 
@@ -52,6 +54,8 @@ export function createSentryDataCollection(): SentryDataCollectionPolicy {
     urlQueryParams: false,
     databaseQueryData: false,
     stackFrameVariables: false,
+    queues: false,
+    graphQL: { document: false, variables: false },
     genAI: { inputs: false, outputs: false },
   }
 }

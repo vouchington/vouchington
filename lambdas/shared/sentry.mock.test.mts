@@ -150,6 +150,8 @@ describe('initSentry', () => {
       urlQueryParams: false,
       databaseQueryData: false,
       stackFrameVariables: false,
+      queues: false,
+      graphQL: { document: false, variables: false },
     })
   })
 
