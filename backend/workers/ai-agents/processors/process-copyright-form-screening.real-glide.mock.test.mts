@@ -8,6 +8,7 @@ import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { processCopyrightFormScreening } from './process-copyright-form-screening.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
+import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 vi.mock(import('@modules/openai-utils/create-response'), async importOriginal => ({
@@ -18,6 +19,7 @@ vi.mock(import('@modules/openai-utils/create-response'), async importOriginal =>
 }))
 
 describe('copyright screening worker with real GlideMQ and PostgreSQL', () => {
+  useCopyrightIntakeEnvironment()
   useAutomaticProvisionalWithholding()
 
   it('recovers a completed screening effect and duplicate wakeup without repeating its provider', async () => {
