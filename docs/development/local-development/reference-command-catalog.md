@@ -181,7 +181,6 @@ commands: `check-fresh-base`, `check-web-init`, `node dev/check-blackboard.mts`,
 `dev/blackboard-mcp` (the `agent-blackboard` MCP server entrypoint registered in `.mcp.json` and
 `.codex/config.toml`; launched by the agent runtime, not run directly),
 `node dev/codex-hooks/persist-session-id.mts claude`,
-`node dev/journal-checkpoint.mts compact [claude|codex]`,
 `node dev/codex-hooks/post-tool-use-command.mts <claude|codex>`,
 `node dev/session-friction/record.mts [permission-request]`,
 `check-worktree-ports`, `check-db-backed-test-setup.mts`, `playwright-server-check`,
@@ -189,20 +188,9 @@ commands: `check-fresh-base`, `check-web-init`, `node dev/check-blackboard.mts`,
 policy entrypoints. Files under `dev/lib/` are sourced implementation helpers, not standalone
 commands.
 
-`node dev/journal-checkpoint.mts compact [claude|codex]` and
-`node dev/codex-hooks/post-tool-use-command.mts <claude|codex>` are the two halves of the mechanical
-journal auto-append trigger for #9337 — a SessionStart(compact) hook, and the merged PostToolUse
-hook (which also runs the journal-checkpoint tool pipeline, session-friction recording, and the tmux
-reminder in-process, replacing three separately-spawned Codex hook processes per tool call with
-one) — that append real `dev/blackboard-journal.mts`-shaped
-entries at defined checkpoints (post-compaction, every 3rd repeated high-signal command failure on
-Claude Code, and corroborated PR-create/push milestones on both runtimes). Every appended entry keeps
-`type: "journal"` but also carries a structural `checkpoint` field
-(`dev/journal-checkpoint/checkpoint-entry.mts`'s `CheckpointKind`:
-`'compaction' | 'command-failure' | 'pr-create' | 'push'`) so `node dev/retrospective-distill.mts` can
-tell an auto-appended checkpoint apart from hand-written journal reflection without depending on the
-rendered `## Auto-append: ` heading (#10978). The optional runtime argv is the same contract as
-`pre-tool-use.mts`. It is fail-open by design — see
-[reference-agent-session-hooks.md](reference-agent-session-hooks.md) and
-[agent-blackboard](../agent-blackboard.md) — and is not a substitute for
-[the `blackboard` skill](../../../.agents/skills/blackboard/SKILL.md)'s agent-initiated journaling.
+`node dev/codex-hooks/post-tool-use-command.mts <claude|codex>` is the merged PostToolUse hook: it
+runs session-friction recording and the tmux reminder in-process, replacing three separately-spawned
+Codex hook processes per tool call with one. No hook appends Blackboard journal entries; agents
+write their own, following [the `blackboard` skill](../../../.agents/skills/blackboard/SKILL.md).
+See [reference-agent-session-hooks.md](reference-agent-session-hooks.md) and
+[agent-blackboard](../agent-blackboard.md#agent-written-journal-entries).

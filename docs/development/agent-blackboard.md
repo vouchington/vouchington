@@ -164,8 +164,7 @@ it back. A raw MCP `entry_append` would bypass those repository-owned invariants
 
 ## Child-agent identity
 
-A spawned delegation child (as opposed to a hook child, which receives its identity via hook argv —
-see [Automatic checkpoint journaling](#automatic-checkpoint-journaling)) resolves its own session id
+A spawned delegation child resolves its own session id
 from its runtime environment — Codex's `CODEX_THREAD_ID`, Claude Code's `CLAUDE_CODE_SESSION_ID`, and
 so on — the same way any other Vouchington blackboard consumer does
 (`dev/agent-session-id/resolve.mts`). The resolver keeps one coherent harness, agent label, and
@@ -202,7 +201,7 @@ persistence files. Root authority is self-attested rather than detectable; a chi
 the workflow and passes either root flag inherits the root identity. Automatic hooks keep using
 their explicit payload id and never write the root
 file because hook metadata cannot distinguish a root from a spawned Codex child.
-Consequently, an ID-less root session cannot join automatic hook checkpoint or friction evidence
+Consequently, an ID-less root session cannot join hook-recorded friction evidence
 recorded under a distinct hook payload id; that evidence is out of scope until the runtime supplies
 a trustworthy root `CODEX_THREAD_ID`.
 Children continue to stop when they lack their own identity. `./dev/reset-worktree` preserves the
@@ -212,49 +211,18 @@ Without a runtime thread ID, this exactly-once boundary is necessarily caller-de
 flag at a new session reuses stale identity, while passing it again mid-session fragments the
 session. The root workflow must therefore perform one rotation before any other root-aware call.
 
-## Automatic checkpoint journaling
+## Agent-written journal entries
 
-`dev/journal-checkpoint.mts` (#9337) mechanically appends `type:"journal"` entries at three defined
-checkpoints, instead of relying on an agent to remember to journal. Each entry also carries a
-structural `checkpoint` field (`dev/journal-checkpoint/checkpoint-entry.mts`'s `CheckpointKind`:
-`'compaction' | 'command-failure' | 'pr-create' | 'push'`), so `node dev/retrospective-distill.mts`
-(#10978) can classify these as `checkpoint-only` sessions — distinct from hand-written journal
-reflection — without depending on the rendered `## Auto-append: ` heading:
+Agents write their own journal entries, following the triggers in the
+[`blackboard` skill](../../.agents/skills/blackboard/SKILL.md). Hooks do not append them: the
+SessionStart `compact` hook and the PostToolUse checkpoint pipeline that once journaled
+post-compaction facts, repeated command failures, and PR/push milestones (#9337) were removed
+in #1201. Mechanical detail comes from the transcript readers instead, for example
+`pnpm exec vouchington retrospective-transcript`.
 
-1. **Post-compaction** — a SessionStart hook gated to the `compact` restart source computes the same
-   facts as `pnpm exec vouchington retrospective-transcript` from the pre-compaction transcript and
-   journals them.
-2. **Repeated command failure** — a PostToolUse hook tracks high-signal test/lint/CI command
-   failures (`vitest`, `playwright`, `no-mistakes`, `tsgo`, `oxlint`, `gh run`, `pr-shepherd`) in a
-   session+worktree-scoped counter and journals every 3rd one with the last 3 failures' command and
-   truncated stderr.
-3. **PR/push milestone** — the same PostToolUse hook journals a corroborated `gh pr create` (a PR URL
-   in the output) or `git push` (a non-rejected ref-update line) as soon as it completes.
-
-Checkpoint `sessions.ensure` must use the invoking runtime's agent identity. There is no
-`claude-code` fallback: unknown identity skips the checkpoint (fail-open, no session create) and
-hard-fails agent-initiated `append`/`save`. Codex hook children do not receive `CODEX_THREAD_ID`;
-the session id comes from each hook payload and remains independent from the root-only
-`.local/codex-session-id`. Agent identity comes from the hook command argv (`compact|tool codex` in
-[`.codex/config.toml`](../../.codex/config.toml), `claude` in
-[`.claude/settings.json`](../../.claude/settings.json)) and, for compact, from a resolved Codex
-rollout or Claude project transcript path. Grok Claude-compat still wins via `GROK_SESSION_ID` /
-`GROK_HOOK_EVENT`. `GROK_AGENT` remains the main-shell CLI marker and does not override an explicit
-hook runtime argv. The hosted client's exact-field `ensure` (caller-provided `agent`, no rewrite of
-`parentSessionId`/`agent`/`version`) is the identity contract, not a defect to work around. A
-session already created with the wrong agent stays mismatched until a new session id is used.
-
-These checkpoints are deliberately **fail-open**: `dev/journal-checkpoint/append.mts` swallows every
-failure (missing credential, network error, sandboxed run, stale session) and never surfaces as hook
-noise, a blocked tool call, or a nonzero exit. An agent-initiated
-`dev/blackboard-journal.mts append` instead preserves interactive outage feedback in its bounded
-outbox and exposes pending delivery. A
-silently-skipped checkpoint is not a bug to chase; it means a credential, network, or session
-precondition wasn't met for that one hook invocation. See
-[reference-agent-session-hooks.md](local-development/reference-agent-session-hooks.md) for the hook wiring
-and [reference-command-catalog.md](local-development/reference-command-catalog.md) for the entrypoint.
-Automatic checkpoints are a safety net, not a substitute for an agent writing its own thoughtful
-journal notes — see the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md).
+Entries those hooks already appended keep their structural `checkpoint` field and stay in Blackboard
+until archived, so `node dev/retrospective-distill.mts` still classifies a session made only of them
+as `checkpoint-only` (`dev/retrospective-distill/checkpoint-entry.mts`).
 
 ## Advisory availability probe
 
@@ -354,16 +322,15 @@ scaling, or repairing that infrastructure is the deployment owner's responsibili
 
 ## Files
 
-| File                         | Purpose                                                                                                                        |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `package.json`               | Pins the published package as a root development dependency                                                                    |
-| `.mcp.json`                  | Shared Agent Blackboard MCP launcher for Claude compatibility                                                                  |
-| `.codex/config.toml`         | Non-required, worktree-root-resolving Codex launcher plus exact per-tool approvals                                             |
-| `.cursor/mcp.json`           | Native Cursor launcher; `cli.json` and `permissions.json` own its exact tool allowlists                                        |
-| `.grok/config.toml`          | Native Grok launcher and exact `MCPTool(...)` allowlist                                                                        |
-| `opencode.json`              | Native OpenCode V1 launcher and exact `agent-blackboard_<tool>` permission entries                                             |
-| `dev/blackboard/client.mts`  | Resolves the hosted URL/token and constructs the published JS clients                                                          |
-| `dev/check-blackboard.mts`   | Advisory SessionStart probe of the hosted connection                                                                           |
-| `dev/blackboard-journal.mts` | Supported file/replay-oriented journal path for the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md)             |
-| `dev/journal-checkpoint.mts` | SessionStart(compact)/PostToolUse dispatcher for the [automatic checkpoint journaling](#automatic-checkpoint-journaling) below |
-| `dev/blackboard-mcp`         | Cwd-independent wrapper that starts the installed CLI's `mcp` subcommand for both registrations                                |
+| File                         | Purpose                                                                                                            |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `package.json`               | Pins the published package as a root development dependency                                                        |
+| `.mcp.json`                  | Shared Agent Blackboard MCP launcher for Claude compatibility                                                      |
+| `.codex/config.toml`         | Non-required, worktree-root-resolving Codex launcher plus exact per-tool approvals                                 |
+| `.cursor/mcp.json`           | Native Cursor launcher; `cli.json` and `permissions.json` own its exact tool allowlists                            |
+| `.grok/config.toml`          | Native Grok launcher and exact `MCPTool(...)` allowlist                                                            |
+| `opencode.json`              | Native OpenCode V1 launcher and exact `agent-blackboard_<tool>` permission entries                                 |
+| `dev/blackboard/client.mts`  | Resolves the hosted URL/token and constructs the published JS clients                                              |
+| `dev/check-blackboard.mts`   | Advisory SessionStart probe of the hosted connection                                                               |
+| `dev/blackboard-journal.mts` | Supported file/replay-oriented journal path for the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) |
+| `dev/blackboard-mcp`         | Cwd-independent wrapper that starts the installed CLI's `mcp` subcommand for both registrations                    |

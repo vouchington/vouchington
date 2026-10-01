@@ -39,8 +39,8 @@ Journal the observation before filing or commenting through
 unavailable filing uses `none`. Capture first-party tool and sandbox failures with the observed
 command boundary, sanitized diagnostic, occurrence count, and disposition. Architectural findings
 need a concrete affected path, an observed contract mismatch, and evidence; distinguish a finding,
-`none observed`, and `not assessed` or `unavailable`. Automatic checkpoints are only a fail-open safety net, never a substitute for this
-contemporaneous record.
+`none observed`, and `not assessed` or `unavailable`. Hooks do not journal on your behalf, so this
+contemporaneous record is the only source of journal entries.
 
 ## Credential failures
 
