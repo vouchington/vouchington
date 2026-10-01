@@ -28,7 +28,7 @@ Radix `Select` (and other primitives that use an internal `BubbleInput`) dispatc
 
 **Fix:** render the `<form>` with `className='contents'` (CSS `display: contents`) and use a `form=` attribute on the text inputs so they associate with the form element without making the `Select` a descendant of the form DOM tree. See `web/components/shared/list-filters.tsx` for the canonical pattern.
 
-**Regression guard:** `web/components/shared/__tests__/list-filters.mock.test.tsx` contains a test asserting `router.push` is called exactly once when the sort dropdown changes.
+**Regression guard:** `web/components/shared/__tests__/list-filters.part-2.test.tsx` contains a test asserting `router.push` is called exactly once when the sort dropdown changes.
 
 ### Tooltip inside Dialog — ESC hijacking
 
