@@ -32,6 +32,7 @@ const resultGateAction = 'vouchington/vouchington-tooling/.github/actions/ci-req
 const read = (path: string): string => readFileSync(path, 'utf8')
 const readWorkflow = (path: string): Workflow => load(read(path)) as Workflow
 const needsOf = (job: Job): string[] => [job.needs ?? []].flat()
+const clausesOf = (condition = ''): string[] => condition.split('&&').map(clause => clause.trim())
 
 const fullLcovUploads = (reusable: string): Step[] =>
   Object.values(readWorkflow(reusable).jobs ?? {}).flatMap(job =>
@@ -133,9 +134,22 @@ describe('area coverage wiring', () => {
     },
   )
 
-  // The area gate reads every suite's full LCOV on every event, so no upload may hang off the
-  // pull-request-only coverage pair, and a lost upload must fail its producer.
-  it('requires each full LCOV upload independently of the PR-only coverage pair', () => {
+  // A merge group's diff is the pull request's diff, so re-checking it in the queue would only add
+  // a job per area and an ejection path. Queue runs still upload every suite's LCOV to Codecov.
+  it.each(areas)('$area runs the blocking patch coverage on pull requests only', ({ jobs }) => {
+    const [, coverage] = jobCalling(jobs, areaCoverageWorkflow)
+    const [, codecov] = jobCalling(jobs, codecovWorkflow)
+
+    expect(clausesOf(coverage.if)).toEqual(
+      expect.arrayContaining(['!cancelled()', "github.event_name == 'pull_request'"]),
+    )
+    expect(coverage.if).not.toContain('merge_group')
+    expect(codecov.if).not.toContain('github.event_name')
+  })
+
+  // Merge groups still upload every suite's full LCOV for Codecov's main baseline, so no upload may
+  // hang off the pull-request-only coverage check, and a lost upload must fail its producer.
+  it('requires each full LCOV upload independently of the PR-only coverage check', () => {
     const reusables = [
       ...new Set(
         areas.flatMap(({ jobs }) =>
