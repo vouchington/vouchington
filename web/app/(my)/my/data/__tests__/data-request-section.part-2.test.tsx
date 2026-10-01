@@ -1,4 +1,5 @@
 import {
+  createFutureExpiresAt,
   createJsonResponse,
   installDataRequestDoubles,
   MockEventSource,
@@ -23,7 +24,7 @@ describe('DataRequestSection', () => {
   })
   it('retries when REST refresh returns ready without a download link', async () => {
     const es = await renderReadyWithoutDownloadLink({
-      refreshExpiresAt: '2027-01-01T00:00:00.000Z',
+      refreshExpiresAt: createFutureExpiresAt(),
       requestId: 'request-pending-no-url',
       userId: 'user-sse-ready-no-url',
     })
@@ -181,7 +182,7 @@ describe('DataRequestSection', () => {
         id: 'request-completed-during-gap',
         status: 'ready',
         created_at: '2026-01-01T00:00:00.000Z',
-        expires_at: '2027-01-01T00:00:00.000Z',
+        expires_at: createFutureExpiresAt(),
         download_url: 'https://s3.example.com/export.zip',
       }),
     )

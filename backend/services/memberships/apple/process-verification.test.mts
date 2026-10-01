@@ -289,7 +289,7 @@ function makeVerifier(
         bundleId: fixture.applicationId,
         productId: fixture.providerProductId,
         purchaseDate: Date.parse('2026-08-01T00:00:00.000Z'),
-        expiresDate: Date.parse('2026-10-01T00:00:00.000Z'),
+        expiresDate: Math.floor(performance.timeOrigin) + 30 * 86_400_000, // per-run, future
         signedDate: Date.parse('2026-09-01T00:00:00.000Z'),
         environment: Environment.SANDBOX,
         inAppOwnershipType: InAppOwnershipType.PURCHASED,
