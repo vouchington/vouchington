@@ -7994,9 +7994,6 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/ai-agents':
-        specifier: workspace:^
-        version: link:../../queues/ai-agents
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings
