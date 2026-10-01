@@ -1,9 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Queue } from 'glide-mq'
-import {
-  closeAndUnregisterGlideMQInstance,
-  workerQueueCommandClient,
-} from '@data-stores/valkey-glide-mq'
+import type { ScanAndUnlinkKeysClient } from 'valkyries'
+import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
 import {
   allLiveWorkerQueueNames,
   UNIVERSAL_WORKER_QUEUE_NAMES,
@@ -14,6 +12,29 @@ import {
   getQueueFlushTargetPrefixes,
   scanUnlinkUsageKeys,
 } from './queues-flush.mts'
+import { sentryCaptureExceptionMock as captureException } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
+
+/** A fake Valkey client whose `unlink()` records the keys it removes unless the test replaces it. */
+function createUsageClient(
+  scan: ScanAndUnlinkKeysClient['scan'],
+  unlink?: ScanAndUnlinkKeysClient['unlink'],
+) {
+  const unlinked: string[] = []
+  const client: ScanAndUnlinkKeysClient = {
+    scan,
+    unlink:
+      unlink ??
+      (async keys => {
+        unlinked.push(...keys.map(key => key.toString()))
+        return keys.length
+      }),
+  }
+  return { client, unlinked }
+}
+
+function reportedCount(error: unknown): number {
+  return captureException.mock.calls.filter(([reported]) => reported === error).length
+}
 
 describe('queue flush targets', () => {
   it('includes every live worker queue exactly once', () => {
@@ -33,32 +54,64 @@ describe('queue flush targets', () => {
 })
 
 describe('scanUnlinkUsageKeys', () => {
-  it('rethrows scan failures instead of swallowing them', async () => {
+  it('unlinks every page of the usage namespace and returns the removed count', async () => {
+    const scan = vi
+      .fn<ScanAndUnlinkKeysClient['scan']>()
+      .mockResolvedValueOnce(['7', ['glide:usage:one', 'glide:usage:two']])
+      .mockResolvedValueOnce(['0', ['glide:usage:three']])
+    const { client, unlinked } = createUsageClient(scan)
+    const usagePattern = `${getQueueFlushTargetPrefixes().at(-1)}*`
+
+    await expect(scanUnlinkUsageKeys(client)).resolves.toBe(3)
+
+    expect(unlinked).toEqual(['glide:usage:one', 'glide:usage:two', 'glide:usage:three'])
+    expect(scan.mock.calls.map(([, options]) => options?.match)).toEqual([
+      usagePattern,
+      usagePattern,
+    ])
+  })
+
+  it('rethrows scan failures and reports them exactly once', async () => {
     const scanError = new Error('scan boom')
-    const client = {
-      scan: () => Promise.reject(scanError),
-    } as unknown as typeof workerQueueCommandClient
+    const { client, unlinked } = createUsageClient(() => Promise.reject(scanError))
 
     await expect(scanUnlinkUsageKeys(client)).rejects.toBe(scanError)
+    expect(unlinked).toEqual([])
+    expect(reportedCount(scanError)).toBe(1)
+  })
+
+  it('rethrows unlink failures and reports them exactly once', async () => {
+    const unlinkError = new Error('unlink boom')
+    const { client } = createUsageClient(
+      async () => ['0', ['glide:usage:one']],
+      () => Promise.reject(unlinkError),
+    )
+
+    await expect(scanUnlinkUsageKeys(client)).rejects.toBe(unlinkError)
+    expect(reportedCount(unlinkError)).toBe(1)
+  })
+
+  it('does not scan when already cancelled', async () => {
+    const reason = new Error('cancelled before usage scan')
+    const scan = vi.fn<ScanAndUnlinkKeysClient['scan']>()
+    const { client } = createUsageClient(scan)
+
+    await expect(scanUnlinkUsageKeys(client, AbortSignal.abort(reason))).rejects.toBe(reason)
+    expect(scan).not.toHaveBeenCalled()
+    expect(reportedCount(reason)).toBe(0)
   })
 
   it('does not unlink when cancellation arrives during a scan', async () => {
     const controller = new AbortController()
     const reason = new Error('cancel usage scan')
-    let unlinkCalls = 0
-    const client = {
-      async scan() {
-        controller.abort(reason)
-        return ['1', ['glide:usage:one']] as const
-      },
-      async unlink() {
-        unlinkCalls += 1
-        return 1
-      },
-    }
+    const { client, unlinked } = createUsageClient(async () => {
+      controller.abort(reason)
+      return ['1', ['glide:usage:one']]
+    })
 
-    await expect(scanUnlinkUsageKeys(client as never, controller.signal)).rejects.toBe(reason)
-    expect(unlinkCalls).toBe(0)
+    await expect(scanUnlinkUsageKeys(client, controller.signal)).rejects.toBe(reason)
+    expect(unlinked).toEqual([])
+    expect(reportedCount(reason)).toBe(0)
   })
 })
 
@@ -156,17 +209,17 @@ describe('flushQueues', () => {
     }
   })
 
-  it('keeps usage cleanup best-effort after successful obliteration', async () => {
+  it('keeps usage cleanup best-effort and reports its failure exactly once', async () => {
     obliterate.mockResolvedValue(undefined)
     close.mockResolvedValue(undefined)
-    const client = {
-      scan: () => Promise.reject(new Error('usage scan boom')),
-    } as unknown as typeof workerQueueCommandClient
+    const scanError = new Error('usage scan boom')
+    const { client } = createUsageClient(() => Promise.reject(scanError))
 
     await expect(flushQueues(undefined, client)).resolves.toEqual({
       concern: 'queues',
       keysRemoved: null,
     })
+    expect(reportedCount(scanError)).toBe(1)
   })
 
   it('stops starting obliterations after cancellation and closes every handle', async () => {
@@ -211,21 +264,15 @@ describe('flushQueues', () => {
   it('does not swallow cancellation from usage cleanup', async () => {
     const controller = new AbortController()
     const reason = new Error('cancel queue usage cleanup')
-    let unlinkCalls = 0
     obliterate.mockResolvedValue(undefined)
     close.mockResolvedValue(undefined)
-    const client = {
-      async scan() {
-        controller.abort(reason)
-        return ['1', ['glide:usage:one']] as const
-      },
-      async unlink() {
-        unlinkCalls += 1
-        return 1
-      },
-    } as unknown as typeof workerQueueCommandClient
+    const { client, unlinked } = createUsageClient(async () => {
+      controller.abort(reason)
+      return ['1', ['glide:usage:one']]
+    })
 
     await expect(flushQueues(controller.signal, client)).rejects.toBe(reason)
-    expect(unlinkCalls).toBe(0)
+    expect(unlinked).toEqual([])
+    expect(reportedCount(reason)).toBe(0)
   })
 })

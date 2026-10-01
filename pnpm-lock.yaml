@@ -1377,6 +1377,9 @@ importers:
       uuid:
         specifier: ^14.0.2
         version: 14.0.2
+      valkyries:
+        specifier: ^0.8.1
+        version: 0.8.1
     devDependencies:
       '@aws-sdk/client-cloudfront':
         specifier: ^3.1142.0
@@ -1507,8 +1510,8 @@ importers:
         specifier: ^2.5.3
         version: 2.5.3
       valkyries:
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.1
+        version: 0.8.1
     devDependencies:
       uuid:
         specifier: ^14.0.2
@@ -1526,8 +1529,8 @@ importers:
         specifier: workspace:^
         version: link:../../modules/on-error
       valkyries:
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.1
+        version: 0.8.1
 
   backend/data-stores/valkey-glide-mq:
     dependencies:
@@ -1547,8 +1550,8 @@ importers:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1(supports-color@10.2.2))
       valkyries:
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.1
+        version: 0.8.1
 
   backend/data-stores/valkey-pubsub:
     dependencies:
@@ -1565,8 +1568,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       valkyries:
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.1
+        version: 0.8.1
 
   backend/data-stores/valkey-rate-limiter:
     dependencies:
@@ -1574,8 +1577,8 @@ importers:
         specifier: workspace:^
         version: link:../valkey-core
       valkyries:
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.1
+        version: 0.8.1
 
   backend/entrypoints/api:
     dependencies:
@@ -10256,8 +10259,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       valkyries:
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.1
+        version: 0.8.1
     devDependencies:
       '@services/entity-cache':
         specifier: workspace:^
@@ -22086,8 +22089,8 @@ packages:
     resolution: {integrity: sha512-TQ5pAGhd5whStmqWvYF4OjQROlmv9SMFVt37qoCBdqRffuuklWYQlCNnEs2ZaIBD1kZRNnikiZOS1eqgkar0iw==}
     engines: {node: '>= 0.10'}
 
-  valkyries@0.8.0:
-    resolution: {integrity: sha512-oNEKunMsnZMR0Ioz8tt3HksnbFf4WQhfzgeC2DoJJ7G0gVNAyc9EYk3lXtGuuUumlOwYOQPVxiuVK6gd1Y+7Bg==}
+  valkyries@0.8.1:
+    resolution: {integrity: sha512-9ddwmEBr/ex50NJK5H3FIsGQWPhaZOAklXV4NnM/eXm82dR+SJrQIELWtJvXV/0rqI4UCnfDIVlsiy2oF/tGmQ==}
     engines: {node: '>=24.0.0'}
 
   vary@1.1.2:
@@ -31516,7 +31519,7 @@ snapshots:
 
   validator@13.15.35: {}
 
-  valkyries@0.8.0:
+  valkyries@0.8.1:
     dependencies:
       '@valkey/valkey-glide': 2.5.3
 
