@@ -30,10 +30,11 @@ export function parseTerritorialRedressDecision(body: Record<string, unknown>): 
   disposition: ReturnType<typeof assertStaffDisposition>
   rationale: string
 } {
-  return {
-    disposition: assertStaffDisposition(body.staff_disposition),
-    rationale: typeof body.rationale === 'string' ? body.rationale : '',
-  }
+  const disposition = assertStaffDisposition(body.staff_disposition)
+  // The service rejects a blank rationale with this message; a non-string one is rejected here so
+  // the generated request contract never answers it with a generic carrier message.
+  assert(typeof body.rationale === 'string', 422, 'rationale is required')
+  return { disposition, rationale: body.rationale }
 }
 
 export function parseTerritorialReportPeriod(body: Record<string, unknown>): {
