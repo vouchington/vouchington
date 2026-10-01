@@ -9,7 +9,7 @@ import {
   HOST,
   METHOD,
   PATH,
-} from './verify-test-helpers.mts'
+} from '@voucha/test-helpers/modules/http-signatures/verify-test-helpers'
 
 describe('verifySignature', () => {
   describe('date handling', () => {

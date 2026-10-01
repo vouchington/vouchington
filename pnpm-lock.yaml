@@ -193,6 +193,9 @@ importers:
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:test-helpers
 
   backend/agents/_shared:
     dependencies:

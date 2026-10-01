@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { StructuredDecisionResult } from '@modules/structured-decisions'
 import { assertCompleteCandidateCoverage, resultsForShard } from './results.mts'
 import { classifierChoiceKey, classifierPrompt } from './safe-content.mts'
-import { makeInput, storyAId, topicAId } from './test-helpers.mts'
+import { makeInput, storyAId, topicAId } from '@voucha/test-helpers/agents/classifiers/test-helpers'
 import type { ClassifierQuestionBinding } from './types.mts'
 
 const noulBindings = makeInput({}).bindings

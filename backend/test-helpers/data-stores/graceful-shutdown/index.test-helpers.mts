@@ -12,7 +12,7 @@ export async function loadSubject() {
   const onGracefulShutdownValkey = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
   const onGracefulShutdownPSQL = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
 
-  const mod = await import('./index.mts')
+  const mod = await import('@data-stores/graceful-shutdown')
   const onGracefulShutdown = (signal: string) =>
     mod.onGracefulShutdown(signal, { onGracefulShutdownValkey, onGracefulShutdownPSQL })
   const gracefulShutdown = (deps: { logger?: (...args: unknown[]) => void } = {}) =>

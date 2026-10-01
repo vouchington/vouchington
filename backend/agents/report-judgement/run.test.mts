@@ -11,7 +11,7 @@ import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-co
 import { getLatestJudgementForEntity } from '@services/moderation-reports/judgements'
 import { moderationAiConfig } from '@services/moderation'
 import { runReportJudgementAgent } from './run.mts'
-import { makeReportJudgementModelCaller } from './test-helpers.mts'
+import { makeReportJudgementModelCaller } from '@voucha/test-helpers/agents/report-judgement/test-helpers'
 
 describe('runReportJudgementAgent', () => {
   beforeEach(() => {
