@@ -81,6 +81,12 @@ app.route('/api/v1/report-integrity/flags/:id').patch(async (ctx: Context) => {
 
   const id = validateUUIDParam(ctx, 'id')
   const body = await parseJsonBody<ResolveReportIntegrityFlagRequest>(ctx, '10kb')
+  // Name the penalties route before the generic enum rejection; the body may be any JSON value.
+  ctx.assert(
+    (body as { resolution?: unknown } | null)?.resolution !== 'penalized',
+    422,
+    'resolution must be dismissed; use POST /api/v1/report-integrity/flags/:id/penalties to penalize',
+  )
   validateRequestContract(ctx, 'PATCH:/api/v1/report-integrity/flags/:id', {
     body,
     path: ctx.params,
