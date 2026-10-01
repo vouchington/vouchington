@@ -16,10 +16,10 @@ describe('individual card storage errors', () => {
 
     expect(failure.result).toMatchObject({ code: '25P02' })
     expect(failure.result).toBe(failure.error)
-    expect(await getIndividualCards(user, user)).toEqual([])
+    expect((await getIndividualCards(user, user)).results).toEqual([])
     await expect(createIndividualCard(user, user, cardId)).resolves.toMatchObject({
       card_id: cardId,
     })
-    expect(await getIndividualCards(user, user)).toHaveLength(1)
+    expect((await getIndividualCards(user, user)).results).toHaveLength(1)
   })
 })
