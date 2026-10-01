@@ -27,7 +27,7 @@ export async function createCopyrightCaseFixture() {
   await insertTestPostImage({ postId, imageId })
   const hostedUseUrl = `https://voucha.ai/discussion/${postId}`
   const { intake } = await createCopyrightFormIntake({
-    requesterUserId: claimant.id,
+    currentUser: claimant,
     requesterIdentity: `user:${claimant.id}`,
     idempotencyKey: crypto.randomUUID(),
     request: {
