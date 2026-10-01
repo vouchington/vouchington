@@ -6,6 +6,12 @@ const rejection = {
   recommendation_id: null,
   manual_fallback_reason: 'No agent output.',
 }
+const informationRequest = {
+  ...rejection,
+  rationale: 'The notice does not identify the allegedly infringing URLs.',
+  response_kind: 'needs_information',
+  response_message: 'Please identify the copyrighted work and each allegedly infringing URL.',
+}
 
 function rejectionCase(
   id: string,
@@ -41,6 +47,16 @@ export const webCopyrightEmailIntakeApiFixtureCases: ApiFixtureCase[] = [
   rejectionCase(
     'web.copyright.email-intake-rejection.no-reply',
     { ...rejection, reply_email: null },
+    false,
+  ),
+  rejectionCase(
+    'web.copyright.email-intake-information-request.reply-queued',
+    { ...informationRequest, reply_email: 'reporter@example.test' },
+    true,
+  ),
+  rejectionCase(
+    'web.copyright.email-intake-information-request.no-reply',
+    { ...informationRequest, reply_email: null },
     false,
   ),
 ]

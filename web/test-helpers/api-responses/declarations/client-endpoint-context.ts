@@ -60,7 +60,9 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly copyrightEmailIntakes: Pick<
     typeof import('@/lib/api/client/copyright-email-intakes'),
-    'listCopyrightEmailIntakes' | 'rejectCopyrightEmailIntake'
+    | 'listCopyrightEmailIntakes'
+    | 'rejectCopyrightEmailIntake'
+    | 'requestCopyrightEmailIntakeInformation'
   >
   readonly copyrightNotices: Pick<
     typeof import('@/lib/api/client/copyright-notices'),

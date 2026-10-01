@@ -16,6 +16,7 @@ import {
   listCopyrightEmailIntakes,
   rejectCopyrightEmailCorrespondence,
   rejectCopyrightEmailIntake,
+  requestCopyrightEmailIntakeInformation,
 } from '../copyright-email-intakes'
 import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
 import {
@@ -100,6 +101,23 @@ describe('copyright email intake client', () => {
           manual_fallback_reason: 'No recommendation.',
           reply_email: 'reporter@example.test',
         },
+      ],
+    })
+    const informationRequest = {
+      rationale: 'The notice names no URLs.',
+      recommendation_id: null,
+      manual_fallback_reason: 'No recommendation.',
+      reply_email: 'reporter@example.test',
+      response_message: 'Please list each allegedly infringing URL.',
+    }
+    mockPost.mockClear()
+    await expectApiWrapperCall({
+      mock: mockPost,
+      response: { reply_queued: true },
+      call: () => requestCopyrightEmailIntakeInformation('intake-1', informationRequest),
+      expectedArgs: [
+        '/api/v1/copyright-email-intakes/intake-1/rejections',
+        { ...informationRequest, response_kind: 'needs_information' },
       ],
     })
     const approval = {
