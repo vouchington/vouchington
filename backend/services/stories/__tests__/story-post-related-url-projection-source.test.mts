@@ -35,7 +35,7 @@ describe('story projection source eligibility database failure', () => {
       postType: 'story',
       title: 'Projection source failure',
       slug: `projection-source-${randomUUID()}`,
-      markdown: null,
+      markdown: '',
     })
     await insertTestPostStory(postId, story.id, user.id)
     {
