@@ -12,7 +12,7 @@ flowchart TD
   omni --> flagged{Flagged?}
   flagged -- Yes --> hidden[Hide or reject post]
   flagged -- No --> approved[Clearance approved]
-  approved --> classifier[post-classifier-dispatcher]
+  approved --> classifier[classifier-run-dispatcher]
   classifier --> labels[Label classifiers and local AI-generated detector]
   labels --> effects[Topic votes and tags]
   post --> community[community-moderation-dispatcher]

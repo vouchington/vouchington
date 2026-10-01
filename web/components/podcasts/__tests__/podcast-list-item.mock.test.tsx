@@ -1,17 +1,11 @@
-import { mockLucideReact } from '@/test-helpers/lucide-icons'
+import { navMockModule } from '@/test-helpers/next-navigation-mock'
+import '@/test-helpers/components/podcast.mock-support'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { PodcastListItem } from '../podcast-list-item'
 import type { ViewRssFeed } from '@/types/rss-feeds'
 
-vi.mock(
-  import('next/navigation'),
-  () =>
-    ({
-      useRouter: () => ({ refresh: () => undefined }),
-      usePathname: () => '/',
-    }) as unknown as typeof import('next/navigation'),
-)
+vi.mock(import('next/navigation'), () => navMockModule)
 
 vi.mock(import('next/dynamic'), () => ({
   default: () => () => null,
@@ -20,61 +14,6 @@ vi.mock(import('next/dynamic'), () => ({
 vi.mock(import('@/components/shared/follow-button'), () => ({
   FollowButton: () => null,
 }))
-
-vi.mock(import('next/image'), () => {
-  const Img = 'img' as const
-
-  return {
-    default: ({
-      src,
-      alt,
-      ...props
-    }: {
-      src: string
-      alt: string
-      width: number
-      height: number
-      className?: string
-      'data-pw'?: string
-    }) => (
-      <Img
-        src={src}
-        alt={alt}
-        {...props}
-      />
-    ),
-  } as unknown as typeof import('next/image')
-})
-
-vi.mock(
-  import('next/link'),
-  () =>
-    ({
-      default: ({
-        href,
-        children,
-        ...props
-      }: {
-        href: string
-        children: React.ReactNode
-        prefetch?: boolean
-      }) => (
-        <a
-          href={href}
-          {...props}
-        >
-          {children}
-        </a>
-      ),
-    }) as unknown as typeof import('next/link'),
-)
-
-vi.mock(import('lucide-react'), () =>
-  mockLucideReact({
-    Mic: () => <svg data-testid='mic-icon' />,
-    Lock: () => <svg data-testid='lock-icon' />,
-  }),
-)
 
 // SourceListItemMeta calls useAuth() which requires AuthProvider; mock the whole component
 // since this test file focuses on PodcastListItem's own rendering.

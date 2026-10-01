@@ -24,11 +24,11 @@
   "scripts": {},
   "dependencies": {
     "@agents/_shared": "workspace:^",
+    "@agents/classifier-runs": "workspace:^",
     "@agents/classifiers": "workspace:^",
-    "@modules/on-error": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
     "@services/ai-usage": "workspace:^",
-    "@services/classifiers": "workspace:^",
+    "@services/classifier-runs": "workspace:^",
     "@services/moderation": "workspace:^",
     "@services/post-classifier": "workspace:^",
     "@services/posts": "workspace:^",

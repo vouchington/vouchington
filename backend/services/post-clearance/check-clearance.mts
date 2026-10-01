@@ -1,11 +1,16 @@
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { enqueuePostClassifierDispatcher } from '@queues/ai-agents/enqueues/post-classifier'
+import { enqueueClassifierRunDispatcher } from '@queues/ai-agents/enqueues/classifier-run'
+import { requestClassifierRuns } from '@services/classifier-runs'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
 import { getModerationSystemUserId } from '@services/users/system-users'
+import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 import { POST_MODERATION_POLICY_REVISION } from './moderation-ledger-types.mts'
+
+/** Classifiers that run on an approved post, each through the shared classifier-run lifecycle. */
+const APPROVAL_CLASSIFIER_SLUGS = [POST_CLASSIFIER_SLUG] as const
 
 /** Projects the current moderation version into the coarse post lifecycle. */
 export async function checkPostClearance(postId: string): Promise<void> {
@@ -16,7 +21,15 @@ export async function checkPostClearance(postId: string): Promise<void> {
 
   const row = updatedRows[0]
   if (row) await invalidate.posts(postId)
-  if (row?.clearance_status === 'approved') await enqueuePostClassifierDispatcher(postId)
+  if (row?.clearance_status === 'approved') {
+    // The durable request, written in the approval transaction, is what the sweep recovers from; this
+    // enqueue only makes the first attempt prompt.
+    await Promise.all(
+      APPROVAL_CLASSIFIER_SLUGS.map(classifier =>
+        enqueueClassifierRunDispatcher({ classifier, postId, rssFeedItemId: null }),
+      ),
+    )
+  }
 }
 
 async function applyClearanceDecision(
@@ -28,6 +41,7 @@ async function applyClearanceDecision(
   const { rows: updatedRows } = await query<{
     clearance_status: 'approved' | 'rejected' | 'in_review'
     community_id: string | null
+    input_sha256: Buffer
   }>(
     `/* checkPostClearance */
       WITH current_version AS (
@@ -114,7 +128,7 @@ async function applyClearanceDecision(
           THEN inserted_change.created_at ELSE NULL END
       FROM inserted_change
       WHERE posts.id = inserted_change.post_id
-      RETURNING posts.community_id,
+      RETURNING posts.community_id, posts.llm_moderation_content_sha256 AS input_sha256,
         CASE
           WHEN inserted_change.change_type = 'approve' THEN 'approved'
           WHEN inserted_change.change_type = 'reject' THEN 'rejected'
@@ -129,6 +143,15 @@ async function applyClearanceDecision(
       { actionType: 'reject', postId, communityId: updated.community_id },
       { query },
     )
+  }
+  if (updated?.clearance_status === 'approved') {
+    // Independent of any classifier configuration, so a missing or unresolvable configuration can
+    // never block approval and the sweep can still recover the subject.
+    await requestClassifierRuns(query, {
+      subject: { postId, rssFeedItemId: null },
+      inputSha256: updated.input_sha256,
+      classifierSlugs: APPROVAL_CLASSIFIER_SLUGS,
+    })
   }
   if (updated) {
     await recordPostPublicationChange(query, {

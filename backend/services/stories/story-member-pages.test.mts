@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createTestStoryMembers } from '@voucha/test-helpers/entities/story-member-pages'
 import { enableQueryCapture, stopTestQueryCapture } from '@voucha/test-helpers/query-capture'
-import { getStoryMemberPagesBatch } from './story-member-pages.mts'
+import { getStoryMemberPagesBatch } from '@services/feeds/rss-feed-items/story-member-pages'
 import { getStoryPreviewRequests } from './story-previews.mts'
 
 describe('bounded story members', () => {

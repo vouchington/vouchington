@@ -1,8 +1,8 @@
 import app from '../../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isAdminUser } from '@services/users'
+import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
 import {
-  getStoryById,
   getStoryItemIds,
   adminAssignItemToStory,
   adminRemoveItemFromStory,

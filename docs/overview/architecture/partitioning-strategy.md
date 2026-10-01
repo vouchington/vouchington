@@ -49,7 +49,6 @@ This block is rendered from the typed registry, and its normalized rows are chec
 | `mcp_call_audit_events`                                 | RANGE         | `id`                                   | default            | none              | target-scoped      |
 | `notifications`                                         | RANGE         | `user_id`                              | default            | none              | target-scoped      |
 | `post_autotagger_results`                               | RANGE         | `post_id`                              | default            | none              | target-scoped      |
-| `post_classifier_applications`                          | RANGE         | `post_id`                              | default            | none              | target-scoped      |
 | `post_clearance_changes`                                | RANGE         | `id`                                   | default            | none              | target-scoped      |
 | `post_data_point_topics`                                | RANGE         | `post_id`                              | default            | none              | target-scoped      |
 | `post_explicit_topic_categories`                        | RANGE         | `post_id`                              | default            | none              | target-scoped      |
@@ -261,7 +260,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `bluesky_link_authorizations`, `bluesky_link_completions`, `bluesky_linked_accounts`,
   `boilerplate_removal_urls`, `boilerplate_removals`, `classifier_candidate_community_overrides`,
   `classifier_candidate_thresholds`, `classifier_candidates`, `classifier_decision_batches`, `classifier_decision_calls`,
-  `classifier_prompt_versions`, `classifier_topic_vote_applications`, `classifiers`, `community_agent_prompts`,
+  `classifier_prompt_versions`, `classifier_run_requests`, `classifier_runs`, `classifier_topic_vote_applications`, `classifiers`, `community_agent_prompts`,
   `community_application_answers`, `community_application_questions`, `community_applications`,
   `community_auto_tagger_agents`,
   `community_bans`, `community_invites`, `community_member_vacations`,
@@ -287,7 +286,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `moderator_action_community_restrictions`, `oauth_access_tokens`, `oauth_authorization_codes`, `oauth_authorization_requests`,
   `oauth_clients`, `oauth_grants`, `oauth_refresh_token_families`, `oauth_refresh_tokens`,
   `phone_number_login_tokens`, `podcast_playback_positions`, `post__stories`,
-  `post_autotagger_result_topics`, `post_dispute_annotations`, `post_locks`,
+  `post_autotagger_result_topics`, `post_classifier_local_outcomes`, `post_dispute_annotations`, `post_locks`,
   `post_topic_recommendations_hostnames`, `referral_program_link_validations`,
   `referral_program_link_validations_rules`, `report_abuse_penalties`,
   `report_integrity_flag_reporters`, `retailer_countries`,

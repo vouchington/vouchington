@@ -33,6 +33,8 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'classifier_candidates',
   'classifier_decision_batches',
   'classifier_decision_calls',
+  'classifier_run_requests',
+  'classifier_runs',
   'classifier_prompt_versions',
   'classifier_topic_vote_applications',
   'classifiers',

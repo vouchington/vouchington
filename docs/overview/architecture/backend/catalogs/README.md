@@ -124,6 +124,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../services/bookmarks/README.md`](../../services/bookmarks/README.md)
 - [`../services/browser-crawl/README.md`](../../services/browser-crawl/README.md)
 - [`../services/captcha/README.md`](../../services/captcha/README.md)
+- [`../services/classifier-runs/README.md`](../../services/classifier-runs/README.md)
 - [`../services/classifiers/README.md`](../../services/classifiers/README.md)
 - [`../services/comments/README.md`](../../services/comments/README.md)
 - [`../services/communities/README.md`](../../services/communities/README.md)

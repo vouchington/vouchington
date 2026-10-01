@@ -448,6 +448,7 @@ CREATE TABLE IF NOT EXISTS classifier_decision_batches (
     REFERENCES classifier_prompt_versions (id, classifier_id) ON DELETE RESTRICT,
   CONSTRAINT uq_classifier_decision_batches__id__classifier UNIQUE (id, classifier_id),
   CONSTRAINT uq_classifier_decision_batches__id__post UNIQUE (id, post_id),
+  CONSTRAINT uq_classifier_decision_batches__id__rss_feed_item UNIQUE (id, rss_feed_item_id),
   CONSTRAINT uq_classifier_decision_batches__id__prompt UNIQUE (id, prompt_version_id),
   CONSTRAINT uq_classifier_decision_batches__id__scope UNIQUE (id, scope_category, scope_community_id)
 );

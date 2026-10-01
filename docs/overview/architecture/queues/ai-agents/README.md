@@ -8,22 +8,22 @@ single coordinator that releases jobs when an operator relaxes the daily cap.
 
 ## Summary
 
-| Processor                                    | Job Name                                 | Description                                                                                                                                                    |
-| -------------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `processAutotaggerPost`                      | `autotagger-post`                        | Runs the autotagger agent on a post                                                                                                                            |
-| `processAutotaggerRssFeedItem`               | `autotagger-rss-feed-item`               | Runs the autotagger agent on an RSS feed item                                                                                                                  |
-| `processPostClassifierDispatcher`            | `post-classifier-dispatcher`             | Reserves one approved post/content/configuration receipt and awaits its classifier child enqueue                                                               |
-| `processPostClassifier`                      | `post-classifier`                        | Applies one fixed classifier receipt after primary approval and fingerprint revalidation                                                                       |
-| `processReconcilePostClassifierApplications` | `reconcile-post-classifier-applications` | Re-enqueues unfinished classifier receipts up to ten counted times each; terminal uncommitted remote failures stay terminal and alarm                          |
-| `processCommunityModerationDispatcher`       | `community-moderation-dispatcher`        | Dispatches community moderation prompt jobs; post-created recovery awaits queue delivery so failures retain the reconciliation checkpoint                      |
-| `processCommunityModerationPrompt`           | `community-moderation-prompt`            | Runs a community moderation prompt on a post                                                                                                                   |
-| `processCopyrightEmailIntake`                | `copyright-email-intake`                 | Parses a preserved copyright-inbox email into an advisory structured recommendation; moderator approval remains mandatory                                      |
-| `processCopyrightFormScreening`              | `copyright-form-screening`               | Screens a structured form only for obvious spam or invalidity; a clear signed-in result may provisionally restrict pending mandatory human review              |
-| `processCopyrightAppealRecommendation`       | `copyright-appeal-recommendation`        | Persists advisory appeal analysis for a moderator; it never changes a restriction or restores material                                                         |
-| `processStoryPost`                           | `story-post`                             | Generates or refreshes a story summary; entity recovery uses the awaited enqueue so queue failure retains the durable checkpoint for retry.                    |
-| `processStoryClustering`                     | `story-clustering`                       | Clusters an RSS feed item into stories; re-enqueues with 5 s delay (up to 10 times) when embedding is not yet visible — mirrors the autotagger retry pattern   |
-| `processReconcileBackgroundResponses`        | `reconcile-background-responses`         | Crash-recovery sweep of orphaned OpenAI `background: true` responses (cancel/retrieve/record); see [Background Response Sweeper](#background-response-sweeper) |
-| `processReconcileCopyrightAgentDispatches`   | `reconcile-copyright-agent-dispatches`   | Re-enqueues advisory email, form-screening, and appeal gaps; applies saved clear form screens without another model run                                        |
+| Processor                                  | Job Name                               | Description                                                                                                                                                    |
+| ------------------------------------------ | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `processAutotaggerPost`                    | `autotagger-post`                      | Runs the autotagger agent on a post                                                                                                                            |
+| `processAutotaggerRssFeedItem`             | `autotagger-rss-feed-item`             | Runs the autotagger agent on an RSS feed item                                                                                                                  |
+| `processClassifierRunDispatcher`           | `classifier-run-dispatcher`            | Reserves one run for an approved subject/content/configuration and awaits its `classifier-run` enqueue; a subject that is not ready leaves its request pending |
+| `processClassifierRun`                     | `classifier-run`                       | Runs one reserved classifier run through the shared lifecycle after primary revalidation of the content and configuration fingerprints                         |
+| `processReconcileClassifierRuns`           | `reconcile-classifier-runs`            | Two-phase sweep: re-enqueues incomplete runs up to ten counted times each, then dispatches pending requests that never got a run; stops on a spend-cap breach  |
+| `processCommunityModerationDispatcher`     | `community-moderation-dispatcher`      | Dispatches community moderation prompt jobs; post-created recovery awaits queue delivery so failures retain the reconciliation checkpoint                      |
+| `processCommunityModerationPrompt`         | `community-moderation-prompt`          | Runs a community moderation prompt on a post                                                                                                                   |
+| `processCopyrightEmailIntake`              | `copyright-email-intake`               | Parses a preserved copyright-inbox email into an advisory structured recommendation; moderator approval remains mandatory                                      |
+| `processCopyrightFormScreening`            | `copyright-form-screening`             | Screens a structured form only for obvious spam or invalidity; a clear signed-in result may provisionally restrict pending mandatory human review              |
+| `processCopyrightAppealRecommendation`     | `copyright-appeal-recommendation`      | Persists advisory appeal analysis for a moderator; it never changes a restriction or restores material                                                         |
+| `processStoryPost`                         | `story-post`                           | Generates or refreshes a story summary; entity recovery uses the awaited enqueue so queue failure retains the durable checkpoint for retry.                    |
+| `processStoryClustering`                   | `story-clustering`                     | Clusters an RSS feed item into stories; re-enqueues with 5 s delay (up to 10 times) when embedding is not yet visible — mirrors the autotagger retry pattern   |
+| `processReconcileBackgroundResponses`      | `reconcile-background-responses`       | Crash-recovery sweep of orphaned OpenAI `background: true` responses (cancel/retrieve/record); see [Background Response Sweeper](#background-response-sweeper) |
+| `processReconcileCopyrightAgentDispatches` | `reconcile-copyright-agent-dispatches` | Re-enqueues advisory email, form-screening, and appeal gaps; applies saved clear form screens without another model run                                        |
 
 ## Architecture
 
@@ -61,8 +61,8 @@ agentic-run removal work.
 - [`enqueues/copyright-form-screening.mts`](../../../../../backend/queues/ai-agents/enqueues/copyright-form-screening.mts) — stable-ID structured form anti-spam jobs
 - [`enqueues/copyright-appeal-recommendation.mts`](../../../../../backend/queues/ai-agents/enqueues/copyright-appeal-recommendation.mts) — stable-ID advisory appeal recommendation jobs
 - [`enqueues/reconcile-copyright-agent-dispatches.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-copyright-agent-dispatches.mts) - copyright agent delivery recovery job
-- [`enqueues/post-classifier.mts`](../../../../../backend/queues/ai-agents/enqueues/post-classifier.mts) — durable post-classifier dispatch and child jobs
-- [`enqueues/reconcile-post-classifier-applications.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-post-classifier-applications.mts) — five-minute receipt recovery
+- [`enqueues/classifier-run.mts`](../../../../../backend/queues/ai-agents/enqueues/classifier-run.mts) — durable classifier-run dispatch and stable-id run jobs
+- [`enqueues/reconcile-classifier-runs.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-classifier-runs.mts) — five-minute cursor-paginated run and request recovery
 - [`enqueues/story-clustering.mts`](../../../../../backend/queues/ai-agents/enqueues/story-clustering.mts) — story clustering jobs
 - [`enqueues/story-post.mts`](../../../../../backend/queues/ai-agents/enqueues/story-post.mts) — fire-and-forget creation enqueue plus an awaited recovery variant that propagates delivery failure
 - [`enqueues/reconcile-background-responses.mts`](../../../../../backend/queues/ai-agents/enqueues/reconcile-background-responses.mts) — background-response sweeper job

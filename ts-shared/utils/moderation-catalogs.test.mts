@@ -50,7 +50,8 @@ describe('moderation catalogs', () => {
   })
 
   it('exports moderator action types', () => {
-    expect(MODERATOR_ACTION_TYPES).toEqual([
+    // Independent expected contracts are grouped by the surfaces that emit audit actions.
+    const contentAndMembershipActions = [
       'remove',
       'approve',
       'reject',
@@ -68,17 +69,21 @@ describe('moderation catalogs', () => {
       'unsuspend',
       'remove_member',
       'change_role',
+    ]
+    const reportAndAppealResolutionActions = [
       'resolve_report',
       'dismiss_report',
       'resolve_appeal',
       'dismiss_appeal',
-      'topic_claim_verify',
-      'topic_claim_reject',
-      'topic_claim_revoke',
+    ]
+    const topicClaimActions = ['topic_claim_verify', 'topic_claim_reject', 'topic_claim_revoke']
+    const reportAssignmentActions = [
       'report_claim',
       'report_unclaim',
       'report_escalate',
       'report_deescalate',
+    ]
+    const integrityAndVoteActions = [
       'report_integrity_flag_review',
       'report_integrity_penalty_apply',
       'report_integrity_penalty_revoke',
@@ -89,18 +94,26 @@ describe('moderation catalogs', () => {
       'vote_weight_reset',
       'agent_moderation_vote_set',
       'agent_moderation_vote_delete',
+    ]
+    const moderationReviewActions = [
       'mod_note_delete',
       'report_judgement_rerun',
       'appeal_resolution_draft_rerun',
       'dispute_resolution_draft_rerun',
+    ]
+    const oauthClientAndCrawlerActions = [
       'oauth_client_verify',
       'oauth_client_unverify',
       'crawler_create',
       'crawler_update',
       'crawler_delete',
+    ]
+    const rssCategoryActions = [
       'rss_category_assign',
       'rss_category_reject',
       'rss_category_unreject',
+    ]
+    const queueAndMaintenanceActions = [
       'queue_pause',
       'queue_resume',
       'queue_retry_failed',
@@ -108,6 +121,18 @@ describe('moderation catalogs', () => {
       'backfill_run',
       'article_sync_run',
       'import_batch_create',
+    ]
+
+    expect(MODERATOR_ACTION_TYPES).toEqual([
+      ...contentAndMembershipActions,
+      ...reportAndAppealResolutionActions,
+      ...topicClaimActions,
+      ...reportAssignmentActions,
+      ...integrityAndVoteActions,
+      ...moderationReviewActions,
+      ...oauthClientAndCrawlerActions,
+      ...rssCategoryActions,
+      ...queueAndMaintenanceActions,
     ])
   })
 })

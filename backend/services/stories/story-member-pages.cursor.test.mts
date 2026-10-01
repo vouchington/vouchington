@@ -4,7 +4,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { storyRelatedItemsConfig } from './story-related-items-config.mts'
 import { getStoryPreviews } from './story-previews.mts'
-import { getStoryMemberPagesBatch } from './story-member-pages.mts'
+import { getStoryMemberPagesBatch } from '@services/feeds/rss-feed-items/story-member-pages'
 
 describe('story member cursors', () => {
   it('continues a preview with a larger page without gaps or duplicates', async () => {

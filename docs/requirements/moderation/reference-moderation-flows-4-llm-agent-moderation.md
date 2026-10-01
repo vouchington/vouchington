@@ -4,7 +4,7 @@
 
 ## 4. LLM Agent Moderation
 
-**Trigger:** Post clearance approved (enqueues `post-classifier-dispatcher`). Community prompts run
+**Trigger:** Post clearance approved (enqueues `classifier-run-dispatcher`). Community prompts run
 separately through `community-moderation-dispatcher` and `community-moderation-prompt`.
 
 **Baseline vs community-opt-in moderators:**

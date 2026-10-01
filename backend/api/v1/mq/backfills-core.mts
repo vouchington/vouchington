@@ -17,7 +17,7 @@ import {
 } from '@queues/language-detection/enqueues'
 import { enqueueBackfillFollowerDistributions } from '@queues/follower-distributions/enqueues'
 import { enqueueBackfillReportJudgements } from '@queues/ai-agents/enqueues/report-judgement'
-import { enqueueReconcilePostClassifierApplications } from '@queues/ai-agents/enqueues/reconcile-post-classifier-applications'
+import { enqueueReconcileClassifierRuns } from '@queues/ai-agents/enqueues/reconcile-classifier-runs'
 import { enqueueBackfillReportIntegrity } from '@queues/report-integrity/enqueues'
 import {
   enqueueBackfillBlueskyDisconnectRequests,
@@ -35,12 +35,13 @@ import { POST_PUBLICATION_BACKFILLS } from './backfills-post-publication.mts'
 export const CORE_BACKFILLS: BackfillEntry[] = [
   ...POST_PUBLICATION_BACKFILLS,
   {
-    id: 'post-classifier-applications',
+    id: 'classifier-runs',
     queue_name: 'ai_agents',
-    job_name: 'reconcile-post-classifier-applications',
-    description: 'Re-enqueue incomplete post classifier receipts from their durable identity',
-    source_table: 'post_classifier_applications',
-    trigger: createBackfillTrigger(enqueueReconcilePostClassifierApplications),
+    job_name: 'reconcile-classifier-runs',
+    description:
+      'Re-enqueue incomplete classifier runs and dispatch requested subjects that never got a receipt',
+    source_table: 'classifier_runs',
+    trigger: createBackfillTrigger(enqueueReconcileClassifierRuns),
   },
   {
     id: 'crawl-embeds-pending',
@@ -54,7 +55,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
     id: 'ses-inbound-reconciliation',
     queue_name: 'ses_inbound',
     job_name: SES_INBOUND_RECONCILE_JOB_NAME,
-    description: 'Re-enqueue raw inbound support emails still present in S3',
+    description: 'Re-enqueue raw inbound copyright emails still present in S3',
     source_table: 'external:ses-inbound-s3',
     trigger: createBackfillTrigger(enqueueSesInboundReconcile),
   },
