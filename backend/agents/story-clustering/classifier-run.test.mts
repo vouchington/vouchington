@@ -166,7 +166,9 @@ describe('executeStoryClusteringRun (real PG)', () => {
     const { incoming } = await incomingWithNeighbors(1)
     const lease = await claimStoryClusteringLease(incoming)
 
-    await expect(completeClassifierRun(adapter, lease)).rejects.toThrow()
+    await expect(completeClassifierRun(adapter, lease)).rejects.toThrow(
+      'outcomes must persist before completion',
+    )
     expect(await getSubjectClassifierRunFacts(incoming.subject)).toMatchObject([
       { completed_at: null },
     ])

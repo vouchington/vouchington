@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  classifierCandidateKindFamily,
-  classifierResultEntityId,
-  classifierResultKey,
-} from './candidate-family.mts'
+import { classifierCandidateKindFamily } from './candidate-family.mts'
+import { classifierDecisionEntityId, classifierDecisionResultKey } from './decision-input.mts'
 import type { ClassifierDecisionInputResult } from './types.mts'
 
 describe('classifier candidate family', () => {
@@ -11,6 +8,7 @@ describe('classifier candidate family', () => {
     expect(classifierCandidateKindFamily('topic')).toBe('topic')
     expect(classifierCandidateKindFamily('story')).toBe('story')
     expect(classifierCandidateKindFamily('rss_feed_item')).toBe('story')
+    expect(classifierCandidateKindFamily('community_prompt')).toBe('community_prompt')
   })
 
   it('keys every result kind by its own entity, so a story and an item with equal ids never collide', () => {
@@ -22,8 +20,8 @@ describe('classifier candidate family', () => {
       { ...base, candidateKind: 'topic', topicId: shared, storedCandidateId: null },
     ]
 
-    expect(results.map(classifierResultEntityId)).toEqual([shared, shared, shared])
-    expect(new Set(results.map(classifierResultKey)).size).toBe(3)
-    expect(classifierResultKey(results[1]!)).toBe(`rss_feed_item:${shared}`)
+    expect(results.map(classifierDecisionEntityId)).toEqual([shared, shared, shared])
+    expect(new Set(results.map(classifierDecisionResultKey)).size).toBe(3)
+    expect(classifierDecisionResultKey(results[1]!)).toBe(`rss_feed_item:${shared}`)
   })
 })

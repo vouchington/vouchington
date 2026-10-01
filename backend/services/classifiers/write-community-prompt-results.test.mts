@@ -28,6 +28,7 @@ function inputFor(scope: NormalizedClassifierDecisionInput['scope']) {
 const row: PersistedInputRow = {
   candidateId: null,
   decisionCallId: callId,
+  entityKind: 'community_prompt',
   entityId: promptId,
   probability: 0.9,
   rawResponse: '{"probability":0.9,"type":"noul"}',

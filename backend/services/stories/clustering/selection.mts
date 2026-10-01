@@ -44,9 +44,7 @@ export function selectStoryClusteringOutcome(
     if (result.probability !== best.probability) {
       return result.probability > best.probability ? result : best
     }
-    return classifierDecisionResultKey(result) < classifierDecisionResultKey(best)
-      ? result
-      : best
+    return classifierDecisionResultKey(result) < classifierDecisionResultKey(best) ? result : best
   })
   return outcomeFor(winner)
 }

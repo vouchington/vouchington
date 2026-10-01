@@ -662,9 +662,6 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds
-      '@services/urls':
-        specifier: workspace:^
-        version: link:../../services/urls
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers

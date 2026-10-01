@@ -6,7 +6,11 @@ import type {
   PersistedClassifierDecision,
   PersistedClassifierDecisionResult,
 } from '../services/classifiers/types.mts'
-import type { ClassifierRunLease, RemotePlan } from '../services/classifier-runs/types.mts'
+import type {
+  ClassifierRunLease,
+  RemotePlan,
+  StoryRunCandidate,
+} from '../services/classifier-runs/types.mts'
 
 /** Pure builders for the receipt, the provider input and the persisted decision of one run. */
 export const classifierId = randomUUID()
@@ -24,7 +28,11 @@ export const globalScope: ClassifierDecisionScope = {
   scopeCommunityId: null,
 }
 
-export function leaseFor(remote: RemotePlan | null, capturedTopicIds: readonly string[] = []) {
+export function leaseFor(
+  remote: RemotePlan | null,
+  capturedTopicIds: readonly string[] = [],
+  capturedStoryCandidates: readonly StoryRunCandidate[] = [],
+) {
   return {
     runId: randomUUID(),
     subject,
@@ -39,6 +47,7 @@ export function leaseFor(remote: RemotePlan | null, capturedTopicIds: readonly s
     leaseToken: randomUUID(),
     decisionBatchId: batchId,
     capturedTopicIds,
+    capturedStoryCandidates,
   } satisfies ClassifierRunLease<unknown>
 }
 

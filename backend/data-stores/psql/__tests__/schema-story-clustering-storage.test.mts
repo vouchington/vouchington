@@ -32,10 +32,6 @@ function insertResult(
     ) RETURNING probability::text`)
 }
 
-afterAll(async () => {
-  await onGracefulShutdown()
-})
-
 describe('story-clustering result storage', () => {
   it('scores a standalone RSS item candidate in the story result family, once per decision', async () => {
     const fixture = await createClassifierFixture()
@@ -98,6 +94,11 @@ describe('story-clustering result storage', () => {
 })
 
 describe('story-clustering run candidate storage', () => {
+  // The last describe in the file, so the pool outlives every test above.
+  afterAll(async () => {
+    await onGracefulShutdown()
+  })
+
   async function reservedRun() {
     const { unit, near } = makeStoryClusteringVectors()
     const fixture = await createClassifierFixture()
