@@ -10,31 +10,31 @@ CREATE OR REPLACE VIEW view_embedded_users AS
 
     CASE
       WHEN users.use_display_name_from = 'facebook' THEN (
-        SELECT jsonb_build_object('id', '', 'name', fa.facebook_user_data->>'name')
+        SELECT jsonb_build_object('name', fa.facebook_user_data->>'name')
         FROM facebook_accounts fa WHERE fa.user_id = users.id
       )
       WHEN users.use_display_name_from = 'apple' THEN (
-        SELECT jsonb_build_object('id', '', 'name', aa.apple_user_data->>'name')
+        SELECT jsonb_build_object('name', aa.apple_user_data->>'name')
         FROM apple_accounts aa WHERE aa.user_id = users.id
       )
       WHEN users.use_display_name_from = 'google' THEN (
-        SELECT jsonb_build_object('id', '', 'name', ga.google_user_data->>'name')
+        SELECT jsonb_build_object('name', ga.google_user_data->>'name')
         FROM google_accounts ga WHERE ga.user_id = users.id
       )
       WHEN users.use_display_name_from = 'x' THEN (
-        SELECT jsonb_build_object('id', '', 'name', xa.x_user_data->>'name')
+        SELECT jsonb_build_object('name', xa.x_user_data->>'name')
         FROM x_accounts xa WHERE xa.user_id = users.id
       )
       WHEN users.use_display_name_from = 'linkedin' THEN (
-        SELECT jsonb_build_object('id', '', 'name', la.linkedin_user_data->>'name')
+        SELECT jsonb_build_object('name', la.linkedin_user_data->>'name')
         FROM linkedin_accounts la WHERE la.user_id = users.id
       )
       WHEN users.use_display_name_from = 'microsoft' THEN (
-        SELECT jsonb_build_object('id', '', 'name', ma.microsoft_user_data->>'name')
+        SELECT jsonb_build_object('name', ma.microsoft_user_data->>'name')
         FROM microsoft_accounts ma WHERE ma.user_id = users.id
       )
       WHEN users.use_display_name_from = 'github' THEN (
-        SELECT jsonb_build_object('id', '', 'name', gha.github_user_data->>'name')
+        SELECT jsonb_build_object('name', gha.github_user_data->>'name')
         FROM github_accounts gha WHERE gha.user_id = users.id
       )
       ELSE NULL

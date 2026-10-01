@@ -31,41 +31,52 @@ color, background, or inset ring/shadow treatments instead.
 
 ## Visibility Matrix
 
-| Section                          | Link                                                     | Route                         | Unauth | Auth | Admin | Investor |
-| -------------------------------- | -------------------------------------------------------- | ----------------------------- | ------ | ---- | ----- | -------- |
-| **Explore**                      | News Feed                                                | `/feed/news`                  | —      | yes  | yes   | yes      |
-|                                  | Posts Feed                                               | `/feed/posts`                 | —      | yes  | yes   | yes      |
-|                                  | News                                                     | `/news`                       | yes    | yes  | yes   | yes      |
-|                                  | Discussions                                              | `/discussions`                | yes    | yes  | yes   | yes      |
-|                                  | Reviews                                                  | `/reviews`                    | yes    | yes  | yes   | yes      |
-|                                  | Data Points                                              | `/data-points`                | yes    | yes  | yes   | yes      |
-|                                  | Communities                                              | `/communities`                | yes    | yes  | yes   | yes      |
-| **Share**                        | Landing Pages                                            | `/my/landing-pages`           | —      | yes  | yes   | yes      |
-|                                  | Referrals                                                | `/my/referrals`               | —      | yes  | yes   | yes      |
-| **Topics**                       | All Topics                                               | `/topics`                     | yes    | yes  | yes   | yes      |
-|                                  | Sources                                                  | `/sources`                    | yes    | yes  | yes   | yes      |
-|                                  | Referral Programs                                        | `/referral-programs`          | yes    | yes  | yes   | yes      |
-| **Trust**                        | Domains                                                  | `/domains`                    | yes    | yes  | yes   | yes      |
-| **Growth**                       | Growth                                                   | `/growth`                     | —      | —    | yes   | yes      |
-| **Users & Friends**              | Users                                                    | `/users`                      | —      | yes  | yes   | yes      |
-|                                  | Find Friends                                             | `/my/friend-recommendations`  | —      | yes  | yes   | yes      |
-| **CMS**                          | URLs                                                     | `/urls`                       | —      | —    | yes   | —        |
-|                                  | Review Queue                                             | `/posts/review-queue`         | —      | —    | yes   | —        |
-|                                  | Moderation Analytics                                     | `/admin/moderation-analytics` | —      | —    | yes   | —        |
-|                                  | OAuth Apps                                               | `/admin/oauth-clients`        | —      | —    | yes   | —        |
-|                                  | Recommend New Topics (page: "New Topic Recommendations") | `/topic-recommendations`      | —      | yes  | yes   | yes      |
-|                                  | Create Topic                                             | `/topics/create`              | —      | —    | yes   | —        |
-|                                  | Topic Aliases                                            | `/topics/aliases`             | —      | —    | yes   | —        |
-|                                  | RSS Feed Categories                                      | `/rss-feed-categories`        | —      | —    | yes   | —        |
-|                                  | Curated Asides                                           | `/curated-asides/topics`      | —      | —    | yes   | —        |
-| **Settings / Admin**             | Memberships                                              | `/memberships/grants`         | —      | —    | yes   | —        |
-| **Engineering / Operations**     | Queues                                                   | `/admin/queues`               | —      | —    | yes   | —        |
-|                                  | PostgreSQL                                               | `/admin/postgresql`           | —      | —    | yes   | —        |
-|                                  | Valkey                                                   | `/admin/valkey`               | —      | —    | yes   | —        |
-| **Engineering / Dynamic Config** | Dynamic Config                                           | `/admin/dynamic-config`       | —      | —‡   | yes   | yes      |
-|                                  | Vote Integrity                                           | `/vote-integrity/flags`       | —      | —    | yes   | —        |
+| Section                          | Link                                                     | Route                         | Unauth | Auth | Moderator | Admin | Investor |
+| -------------------------------- | -------------------------------------------------------- | ----------------------------- | ------ | ---- | --------- | ----- | -------- |
+| **Explore**                      | News Feed                                                | `/feed/news`                  | —      | yes  | yes       | yes   | yes      |
+|                                  | Posts Feed                                               | `/feed/posts`                 | —      | yes  | yes       | yes   | yes      |
+|                                  | News                                                     | `/news`                       | yes    | yes  | yes       | yes   | yes      |
+|                                  | Discussions                                              | `/discussions`                | yes    | yes  | yes       | yes   | yes      |
+|                                  | Reviews                                                  | `/reviews`                    | yes    | yes  | yes       | yes   | yes      |
+|                                  | Data Points                                              | `/data-points`                | yes    | yes  | yes       | yes   | yes      |
+|                                  | Communities                                              | `/communities`                | yes    | yes  | yes       | yes   | yes      |
+| **Share**                        | Landing Pages                                            | `/my/landing-pages`           | —      | yes  | yes       | yes   | yes      |
+|                                  | Referrals                                                | `/my/referrals`               | —      | yes  | yes       | yes   | yes      |
+| **Topics**                       | All Topics                                               | `/topics`                     | yes    | yes  | yes       | yes   | yes      |
+|                                  | Sources                                                  | `/sources`                    | yes    | yes  | yes       | yes   | yes      |
+|                                  | Referral Programs                                        | `/referral-programs`          | yes    | yes  | yes       | yes   | yes      |
+| **Trust**                        | Domains                                                  | `/domains`                    | yes    | yes  | yes       | yes   | yes      |
+| **Growth**                       | Growth                                                   | `/growth`                     | —      | —    | —         | yes   | yes      |
+| **Users & Friends**              | Users                                                    | `/users`                      | —      | yes  | yes       | yes   | yes      |
+|                                  | Find Friends                                             | `/my/friend-recommendations`  | —      | yes  | yes       | yes   | yes      |
+| **CMS**                          | URLs                                                     | `/urls`                       | —      | yes  | yes       | yes   | yes      |
+|                                  | Review Queue                                             | `/posts/review-queue`         | —      | —    | —         | yes   | —        |
+|                                  | Moderation Analytics                                     | `/admin/moderation-analytics` | —      | —    | —         | yes   | —        |
+|                                  | OAuth Apps                                               | `/admin/oauth-clients`        | —      | —    | —         | yes   | —        |
+|                                  | Recommend New Topics (page: "New Topic Recommendations") | `/topic-recommendations`      | —      | yes  | yes       | yes   | yes      |
+|                                  | Create Topic                                             | `/topics/create`              | —      | —    | —         | yes   | —        |
+|                                  | Topic Aliases                                            | `/topics/aliases`             | —      | —    | —         | yes   | —        |
+|                                  | RSS Feed Categories                                      | `/rss-feed-categories`        | —      | —    | —         | yes   | —        |
+|                                  | Curated Asides                                           | `/curated-asides/topics`      | —      | —    | —         | yes   | —        |
+| **Moderation / Copyright**       | Case Queue                                               | `/copyright/review-queue`     | —      | —§   | yes       | yes   | —        |
+|                                  | Email Intake                                             | `/copyright/email-review`     | —      | —§   | yes       | yes   | —        |
+| **Settings / Admin**             | Memberships                                              | `/memberships/grants`         | —      | —    | —         | yes   | —        |
+| **Engineering / Operations**     | Queues                                                   | `/admin/queues`               | —      | —    | —         | yes   | —        |
+|                                  | PostgreSQL                                               | `/admin/postgresql`           | —      | —    | —         | yes   | —        |
+|                                  | Valkey                                                   | `/admin/valkey`               | —      | —    | —         | yes   | —        |
+| **Engineering / Dynamic Config** | Dynamic Config                                           | `/admin/dynamic-config`       | —      | —‡   | yes       | yes   | yes      |
+|                                  | Vote Integrity                                           | `/vote-integrity/flags`       | —      | —    | —         | yes   | —        |
 
 ‡ Dynamic Config is role-gated, not available to every authenticated user. Administrators,
 moderators, developers, and investors can view it. Each namespace's authoritative
 `can_update` value controls writes; `feature-flags` specifically grants writes and local overrides
 to administrators and developers.
+
+§ The Copyright group sits in the Moderation intent and is role-gated to administrators and
+moderators, so it is hidden from other signed-in users. A moderator's Moderation landing is the Case
+Queue. [Navigation special cases](reference-navigation-special-cases.md#special-cases) covers the
+group's roles and how both routes resolve to the Moderation intent.
+
+The Moderator column is a signed-in user whose only elevated role is `moderator`, read from
+`web/lib/navigation/intents/`. The sidebar matches each group's explicit role list, so a role never
+implies another. Links without a role gate follow the Auth column.

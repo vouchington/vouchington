@@ -2711,6 +2711,271 @@
           ]
         }
       }
+    },
+    {
+      "id": "copyright-member-cases",
+      "title": "Copyright policy pages, member cases, notices, and responses",
+      "domain": "Account",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/moderation/COPYRIGHT-NOTICES.md",
+        "docs/requirements/api/v1/copyright-notices/README.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "copyright policy pages"
+        },
+        {
+          "table": "B",
+          "surface": "copyright cases (member)"
+        },
+        {
+          "table": "B",
+          "surface": "copyright notice filing"
+        },
+        {
+          "table": "B",
+          "surface": "copyright poster responses"
+        },
+        {
+          "table": "B",
+          "surface": "copyright guest filing"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/(public)/copyright/page.tsx",
+            "web/app/(public)/copyright/designated-agent/page.tsx",
+            "web/app/(public)/copyright/repeat-infringer-policy/page.tsx",
+            "web/app/(public)/copyright/counter-notice/page.tsx",
+            "web/app/(public)/copyright/notices/page.tsx",
+            "web/app/(public)/copyright/notices/[id]/page.tsx",
+            "web/app/(public)/copyright/notices/new/page.tsx",
+            "web/app/(public)/copyright/notices/[id]/appeal/page.tsx",
+            "web/app/(public)/copyright/notices/[id]/counter-notice/page.tsx",
+            "web/app/(public)/copyright/notices/[id]/guest/page.tsx",
+            "web/components/copyright/copyright-notice-detail.tsx",
+            "web/components/copyright/copyright-notice-form.tsx",
+            "web/components/copyright/copyright-appeal-form.tsx",
+            "web/components/copyright/copyright-response-forms.tsx",
+            "web/components/copyright/copyright-guest-filing-form.tsx"
+          ],
+          "behaviorTests": [
+            "web/app/(public)/copyright/page.mock.test.tsx",
+            "web/app/(public)/copyright/notices/[id]/guest/page.mock.test.tsx",
+            "web/components/copyright/copyright-notice-detail.test.tsx",
+            "web/components/copyright/copyright-notice-form.mock.test.tsx",
+            "web/components/copyright/copyright-notice-target-picker.mock.test.tsx",
+            "web/components/copyright/copyright-response-forms.mock.test.tsx",
+            "web/components/copyright/copyright-guest-filing-form.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET render no copyright policy page, case list or detail, notice form, appeal, counter-notice, or guest filing. Native claimant-profile consumption stays deferred to the linked related issues. The tracking issue is the interim DMCA native owner until a dedicated native copyright issue exists.",
+        "trackingIssue": "https://github.com/vouchington/vouchington/issues/1229",
+        "relatedIssues": ["vouchington/vouchington#853", "vouchington/vouchington#854"]
+      }
+    },
+    {
+      "id": "copyright-staff-review-queue",
+      "title": "Copyright staff review queue and case actions",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/moderation/COPYRIGHT-NOTICES.md",
+        "docs/requirements/api/v1/copyright-notices/README.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "copyright review queue (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/(public)/copyright/review-queue/page.tsx",
+            "web/components/copyright/copyright-staff-queue.tsx",
+            "web/components/copyright/copyright-staff-queue-status.tsx",
+            "web/components/copyright/copyright-staff-case.tsx",
+            "web/components/copyright/copyright-staff-case-detail.tsx",
+            "web/components/copyright/copyright-staff-case-appeal.tsx",
+            "web/components/copyright/copyright-staff-case-legal-hold.tsx",
+            "web/components/copyright/copyright-staff-review-buttons.tsx",
+            "web/components/copyright/copyright-repeat-infringer-actions.tsx"
+          ],
+          "behaviorTests": [
+            "web/components/copyright/copyright-staff-queue.mock.test.tsx",
+            "web/components/copyright/copyright-staff-queue.test.tsx",
+            "web/components/copyright/copyright-staff-review-buttons.test.tsx",
+            "web/components/copyright/copyright-staff-case-legal-hold.mock.test.tsx",
+            "web/components/copyright/copyright-repeat-infringer-actions.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET render no copyright review queue, staff case review, legal-hold, or repeat-infringer action. Staff mutation controls remain web-only staff tooling.",
+        "trackingIssue": "https://github.com/vouchington/vouchington/issues/1229"
+      }
+    },
+    {
+      "id": "copyright-staff-email-review",
+      "title": "Copyright staff email intake review",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/moderation/COPYRIGHT-NOTICES.md",
+        "docs/requirements/api/v1/copyright-notices/README.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "copyright email review (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/(public)/copyright/email-review/page.tsx",
+            "web/components/copyright/copyright-email-review.tsx",
+            "web/components/copyright/copyright-email-review-detail.tsx",
+            "web/components/copyright/copyright-email-approval-fields.tsx",
+            "web/components/copyright/copyright-email-correspondence-fields.tsx",
+            "web/components/copyright/copyright-email-reply-address-field.tsx"
+          ],
+          "behaviorTests": [
+            "web/components/copyright/copyright-email-review.mock.test.tsx",
+            "web/components/copyright/__tests__/copyright-email-review.pagination.mock.test.tsx",
+            "web/components/copyright/__tests__/copyright-email-review.parse-state.mock.test.tsx",
+            "web/components/copyright/__tests__/copyright-email-review.reply-address.mock.test.tsx",
+            "web/components/copyright/copyright-email-approval-fields.test.tsx",
+            "web/components/copyright/copyright-email-correspondence-fields.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET render no copyright email-intake queue, approval, rejection, or correspondence form. Email-intake review remains web-only staff tooling, and its rejection response fixtures have only the web consumer.",
+        "trackingIssue": "https://github.com/vouchington/vouchington/issues/1229"
+      }
+    },
+    {
+      "id": "copyright-staff-guest-capabilities",
+      "title": "Copyright staff guest-capability management",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/moderation/COPYRIGHT-NOTICES.md",
+        "docs/requirements/api/v1/copyright-notices/README.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "copyright guest capabilities (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/copyright/copyright-staff-guest-capability.tsx",
+            "web/components/copyright/copyright-staff-guest-capability-rows.tsx",
+            "web/components/copyright/copyright-staff-case.tsx"
+          ],
+          "behaviorTests": [
+            "web/components/copyright/copyright-staff-guest-capability.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET render no guest-capability issue, list, revoke, or information-request control. Guest-capability management remains web-only staff tooling, and its fixtures have only the web consumer.",
+        "trackingIssue": "https://github.com/vouchington/vouchington/issues/1229"
+      }
+    },
+    {
+      "id": "copyright-staff-ai-guidance",
+      "title": "Copyright staff AI form-screening guidance",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/moderation/COPYRIGHT-NOTICES.md",
+        "docs/requirements/api/v1/copyright-notices/README.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "copyright ai guidance (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/copyright/copyright-staff-form-guidance.tsx",
+            "web/components/copyright/copyright-staff-case-form-review.tsx"
+          ],
+          "behaviorTests": ["web/components/copyright/copyright-staff-form-guidance.test.tsx"]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET render no copyright form-screening guidance panel. The panel is advisory staff tooling on the web staff case.",
+        "trackingIssue": "https://github.com/vouchington/vouchington/issues/1229"
+      }
     }
   ]
 }

@@ -3,7 +3,7 @@
   "crossFormats": "typescript,tsx",
   "failOnEmpty": true,
   "similarity": 0.85,
-  "minLines": 100,
+  "minLines": 50,
   "exitCode": 1,
   "ignore": [
     "**/migrations/**",

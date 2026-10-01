@@ -70,7 +70,8 @@ export function initSentry({ lambdaName, beforeSend }: InitSentryOptions): void 
     initialScope: {
       tags: { lambda: lambdaName },
     },
-    // No request/response bodies or gen-AI prompts and completions (see sentry-data-collection.mts).
+    // Least-data policy: no client IP, cookies, query strings, bodies, DB values, stack locals
+    // or gen-AI content (see sentry-data-collection.mts).
     dataCollection: createSentryDataCollection(),
     // withSpikeProtection wraps the outer pipeline so a single recurring error can never again
     // consume a full month's Sentry error quota by itself (see sentry-spike-protection.mts).

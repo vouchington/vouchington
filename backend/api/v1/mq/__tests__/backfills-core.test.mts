@@ -3,13 +3,13 @@ import { describe, expect, it } from 'vitest'
 import { CORE_BACKFILLS } from '../backfills-core.mts'
 
 describe('CORE_BACKFILLS', () => {
-  it('registers post-classifier receipt recovery for operators', () => {
-    const backfill = CORE_BACKFILLS.find(entry => entry.id === 'post-classifier-applications')
+  it('registers classifier run recovery for operators', () => {
+    const backfill = CORE_BACKFILLS.find(entry => entry.id === 'classifier-runs')
 
     expect(backfill).toMatchObject({
       queue_name: 'ai_agents',
-      job_name: 'reconcile-post-classifier-applications',
-      source_table: 'post_classifier_applications',
+      job_name: 'reconcile-classifier-runs',
+      source_table: 'classifier_runs',
     })
     expect(typeof backfill?.trigger).toBe('function')
   })

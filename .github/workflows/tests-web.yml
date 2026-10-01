@@ -43,13 +43,14 @@ jobs:
 
   web-tests:
     needs: [prep]
-    runs-on: ubuntu-latest
+    # Native ARM64 matches the production image architecture and draws from a separate hosted pool.
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 32
     permissions:
       actions: read
       contents: read
     env:
-      # Pure web Vitest shards use all four vCPUs on public GitHub-hosted runners.
+      # Pure web Vitest shards use all four vCPUs on public GitHub-hosted runners (x64 and ARM64).
       VITEST_MAX_WORKERS: '4'
     strategy:
       fail-fast: false

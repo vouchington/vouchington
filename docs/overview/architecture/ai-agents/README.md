@@ -21,6 +21,7 @@ Shared safety, tool, testing, and orchestration guidance plus package-level agen
 - [Appeal Resolution](appeal-resolution/README.md)
 - [Autotagger](autotagger/README.md)
 - [Chat](chat/README.md)
+- [Classifier Runs](classifier-runs/README.md)
 - [Classifiers](classifiers/README.md)
 - [Community Moderation](community-moderation/README.md)
 - [Conversation Title](conversation-title/README.md)

@@ -124,7 +124,6 @@ describe('ModerationAnalyticsDashboard', () => {
           accepted: 0,
           reduced: 0,
           denied: 0,
-          dismissed: 0,
           success_rate: null,
         },
         automod_performance: {
@@ -218,7 +217,6 @@ function makeMetrics(overrides: Partial<ModerationAnalytics> = {}): ModerationAn
       accepted: 1,
       reduced: 0,
       denied: 3,
-      dismissed: 0,
       success_rate: 0.25,
     },
     new_user_friction: {

@@ -53,7 +53,8 @@ export function createSentryServerInitOptions(
     // Enable debug mode in development
     debug: false,
 
-    // No request/response bodies or gen-AI prompts and completions (see sentry-data-collection.mts).
+    // Least-data policy: no client IP, cookies, query strings, bodies, DB values, stack locals
+    // or gen-AI content (see sentry-data-collection.mts).
     dataCollection: createSentryDataCollection(),
 
     // Drop expected 4xx ApiError events — client errors are normal and not actionable.

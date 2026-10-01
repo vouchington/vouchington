@@ -359,7 +359,7 @@ exports backend/services/vote-integrity/config.mts VOTE_INTEGRITY_FLAG_TYPES
 exports backend/services/web-risk/state.mts configureWebRiskStateForTest
 exports backend/services/web-risk/state.mts resetWebRiskStateForTest
 exports backend/workers/account-data-requests/processors.mts publishTerminalStatus
-exports backend/workers/ai-agents/processors/process-reconcile-post-classifier-applications.mts POST_CLASSIFIER_RECEIPT_AGE_ALARM_MS
+exports backend/workers/ai-agents/processors/process-reconcile-classifier-runs.mts CLASSIFIER_RUN_AGE_ALARM_MS
 exports backend/workers/ai-agents/processors/spend-cap-recheck.mts getOpenAiSpendCapRecheckAt
 exports backend/workers/article-sync/processors.mts publishTerminalStatus
 exports backend/workers/bedrock-embeddings-batch/processors/reconciliation.mts processReconciliationPage
@@ -399,7 +399,6 @@ types backend/data-stores/valkey-rate-limiter/index.mts RetryRateLimiterSaturati
 types backend/data-stores/valkey/types.mts DynamicConfigField
 types backend/entrypoints/api/valkey-admin-command.mts ParsedValkeyAdminCommand
 types backend/entrypoints/api/verify-ipv6-egress-checks.mts HostResult
-types backend/modules/bluesky-oauth/index.mts Keyset
 types backend/modules/scheduled-job-manifest/index.mts ScheduledJobQueue
 types backend/modules/utils/http.mts httpUtils.ReadResponseBodyOptions
 types backend/services/ap-inbox-activities/durable-delivery-transition-contract.mts ActivityPubInboxDeliveryTransitionDimensions

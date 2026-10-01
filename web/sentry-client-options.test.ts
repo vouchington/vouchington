@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
 import {
   RUNTIME_PUBLIC_CONFIG_READY_EVENT,
   type RuntimePublicConfig,
@@ -71,17 +72,31 @@ describe('createSentryClientInitOptions', () => {
     expect(options.enabled).toBe(false)
   })
 
-  it('turns off HTTP body capture and gen-AI input and output recording', () => {
-    const expected: SentryInitOptions['dataCollection'] = {
-      httpBodies: [],
-      genAI: { inputs: false, outputs: false },
-    }
+  it('applies the shared least-data collection policy', () => {
+    const expected: SentryInitOptions['dataCollection'] = createSentryDataCollection()
+    const dataCollection = createSentryClientInitOptions({
+      getRuntimePublicConfig: () => ({ environment: 'production' }),
+    }).dataCollection
 
+    expect(dataCollection).toEqual(expected)
+    expect(dataCollection).toMatchObject({
+      userInfo: false,
+      cookies: false,
+      urlQueryParams: false,
+      databaseQueryData: false,
+      stackFrameVariables: false,
+      queues: false,
+      graphQL: { document: false, variables: false },
+    })
+  })
+
+  it('sets no replay sample rates because no replay integration is registered', () => {
     const options = createSentryClientInitOptions({
       getRuntimePublicConfig: () => ({ environment: 'production' }),
     })
 
-    expect(options.dataCollection).toEqual(expected)
+    expect(options).not.toHaveProperty('replaysSessionSampleRate')
+    expect(options).not.toHaveProperty('replaysOnErrorSampleRate')
   })
 })
 

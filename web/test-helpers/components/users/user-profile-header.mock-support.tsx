@@ -140,7 +140,7 @@ vi.mock(
 const baseUser: User = {
   id: 'user-abc',
   username: 'alice',
-  display_account: { id: 'display-1', name: 'Alice Example' },
+  display_account: { name: 'Alice Example' },
   profile_image_id: null,
   roles: [],
 }

@@ -84,7 +84,7 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Fencing token identifying the current exclusive claimant, compared only for equality on lease release; it intentionally identifies no durable relation.',
   ],
   [
-    'post_classifier_applications.lease_token',
+    'classifier_runs.lease_token',
     'Opaque fencing token rotated for the current exclusive claimant; it intentionally identifies no durable relation.',
   ],
   [

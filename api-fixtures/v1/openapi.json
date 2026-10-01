@@ -382,9 +382,6 @@
           "denied": {
             "type": "number"
           },
-          "dismissed": {
-            "type": "number"
-          },
           "reduced": {
             "type": "number"
           },
@@ -402,7 +399,7 @@
             "type": "number"
           }
         },
-        "required": ["accepted", "denied", "dismissed", "reduced", "success_rate", "total_closed"],
+        "required": ["accepted", "denied", "reduced", "success_rate", "total_closed"],
         "type": "object"
       },
       "ApplicationQuestionInput": {
@@ -14609,9 +14606,6 @@
       "PublicDisplayAccount": {
         "additionalProperties": false,
         "properties": {
-          "id": {
-            "type": "string"
-          },
           "name": {
             "anyOf": [
               {
@@ -14623,7 +14617,7 @@
             ]
           }
         },
-        "required": ["id", "name"],
+        "required": ["name"],
         "type": "object"
       },
       "PublicEntityRelationResult": {

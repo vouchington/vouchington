@@ -103,7 +103,6 @@ function makeMetrics(): ModerationAnalytics {
       accepted: 0,
       reduced: 0,
       denied: 0,
-      dismissed: 0,
       success_rate: null,
     },
     new_user_friction: {

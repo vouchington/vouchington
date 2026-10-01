@@ -6,6 +6,7 @@
 export const ALLOWED_OPAQUE_JSON = new Set([
   'agent_moderations.results',
   'apple_accounts.apple_user_data',
+  'classifier_runs.configuration_json',
   'communities.lingua_rs_results',
   'conversation_message_agentic_runs.input',
   'conversation_message_agentic_runs.output',
@@ -25,7 +26,6 @@ export const ALLOWED_OPAQUE_JSON = new Set([
   'microsoft_accounts.microsoft_user_data',
   'post_admission_reservations.response',
   'post_admission_reservations.retryable_failure',
-  'post_classifier_applications.configuration_json',
   'posts.lingua_rs_results',
   'rss_feed_crawls.feed_data',
   'rss_feed_items.data',

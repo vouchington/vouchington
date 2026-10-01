@@ -14,6 +14,7 @@ import { parseSesInboundMime, SesInboundTerminalError } from './processors/mime.
 import {
   processCopyrightInboundEmail,
   type CopyrightEmailDependencies,
+  type CopyrightSesInboundProcessJobData,
 } from './processors/copyright-email.mts'
 import {
   deleteSesInboundObject,
@@ -44,6 +45,7 @@ export async function processSesInboundEmail(
   dependencies?: Partial<ProcessDependencies>,
 ): Promise<void> {
   assertSesInboundProcessJobData(data)
+  assertCopyrightSesInboundJob(data)
   const deps = {
     copySesInboundObjectToCopyrightEvidence,
     createCopyrightEmailIntake,
@@ -107,4 +109,16 @@ async function enqueueAllInboundPages(
     continuationToken = page.nextContinuationToken
   } while (continuationToken)
   return enqueued
+}
+
+// Support intake is retired (#375), so this worker only handles copyright jobs. Reject any other
+// kind before any dependency call. Leave its source object where it is: moving it to `failed/`
+// deletes the original, and `failed/` expires after 30 days.
+function assertCopyrightSesInboundJob(
+  data: SesInboundProcessJobData,
+): asserts data is CopyrightSesInboundProcessJobData {
+  if (data.intakeKind === 'copyright') return
+  throw new UnrecoverableError(
+    `SES inbound intake kind ${data.intakeKind} is not processed; its source object is left in place`,
+  )
 }

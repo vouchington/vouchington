@@ -52,7 +52,8 @@
       // listener worker, so the API package does not have a direct static import for knip to see.
       "ignoreDependencies": [
         "@services/entity-listener-reconciliation",
-        // Required packaging edge; classifier execution is consumed by the AI worker, not routes.
+        // Required packaging edges; classifier runs are consumed by the AI worker, not routes.
+        "@services/classifier-runs",
         "@services/post-classifier",
       ],
     },
@@ -75,6 +76,7 @@
         "@modules/bluesky-oauth",
         "@services/bluesky-accounts",
         "@services/bluesky-follows",
+        "@services/classifier-runs",
         "@services/entity-listener-reconciliation",
         "@services/entity-relation-actions",
         // Required packaging edge; classifier execution is consumed by the AI worker, not routes.

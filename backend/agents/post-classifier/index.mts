@@ -1,2 +1,2 @@
 export { createPostClassifierOpenRouterClient } from './classifier-client.mts'
-export { executePostClassifierOutcomes } from './classifier-execute.mts'
+export { executePostClassifierRun } from './classifier-execute.mts'

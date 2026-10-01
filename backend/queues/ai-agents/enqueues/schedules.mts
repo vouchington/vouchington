@@ -8,7 +8,7 @@ import { ai_agents } from '../queues.mts'
 import { enqueueReconcileAutoDispatchJudgements } from './reconcile-auto-dispatch.mts'
 import { enqueueReconcileBackgroundResponses } from './reconcile-background-responses.mts'
 import { enqueueReconcileCopyrightAgentDispatches } from './reconcile-copyright-agent-dispatches.mts'
-import { enqueueReconcilePostClassifierApplications } from './reconcile-post-classifier-applications.mts'
+import { enqueueReconcileClassifierRuns } from './reconcile-classifier-runs.mts'
 
 function reconcilerOptions(name: keyof typeof AGENT_PRIORITY): JobOptions {
   return {
@@ -22,20 +22,20 @@ function reconcilerOptions(name: keyof typeof AGENT_PRIORITY): JobOptions {
 
 export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_NAME, [
   {
-    schedulerId: 'reconcilePostClassifierApplications',
+    schedulerId: 'reconcileClassifierRuns',
     repeat: { pattern: '*/5 * * * *' },
     template: {
-      name: 'reconcile-post-classifier-applications',
+      name: 'reconcile-classifier-runs',
       data: {},
-      opts: () => reconcilerOptions('reconcile-post-classifier-applications'),
+      opts: () => reconcilerOptions('reconcile-classifier-runs'),
     },
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'reconcilePostClassifierApplications',
+        id: 'reconcileClassifierRuns',
         schedule: '*/5 * * * *',
-        description: 'Re-enqueue incomplete post classifier applications',
-        trigger: enqueueReconcilePostClassifierApplications,
+        description: 'Re-enqueue incomplete classifier runs and dispatch unreserved requests',
+        trigger: enqueueReconcileClassifierRuns,
       },
     ],
   },

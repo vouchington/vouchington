@@ -31,7 +31,6 @@ export const webCommunityModeratorAnalyticsApiFixtureCases: ApiFixtureCase[] = [
         accepted: 0,
         reduced: 0,
         denied: 0,
-        dismissed: 0,
         success_rate: null,
       },
       moderator_workload: { moderators: [], users: {} },

@@ -67,7 +67,6 @@ const moderationMetrics: ModerationAnalytics = {
     accepted: 4,
     reduced: 2,
     denied: 6,
-    dismissed: 0,
     success_rate: 0.5,
   },
   new_user_friction: {
@@ -104,7 +103,6 @@ const emptyPeriod: ModerationAnalytics = {
     accepted: 0,
     reduced: 0,
     denied: 0,
-    dismissed: 0,
     success_rate: null,
   },
   new_user_friction: { first_posts: 0, rejected_first_posts: 0, rejection_rate: null },

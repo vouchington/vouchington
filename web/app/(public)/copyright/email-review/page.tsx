@@ -3,9 +3,10 @@ import { notFound } from 'next/navigation'
 import { CopyrightEmailReview } from '@/components/copyright/copyright-email-review'
 import { requireCurrentUser } from '@/lib/auth/require-current-user'
 import { getCopyrightEmailIntakeReviewQueue } from '@/lib/api/server/copyright-notices'
+import { createNoIndexMetadata } from '@/lib/seo/metadata'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { robots: { index: false, follow: false } }
+export const metadata: Metadata = createNoIndexMetadata('Copyright Email Review | Staff')
 
 export default async function CopyrightEmailReviewPage() {
   const currentUser = await requireCurrentUser()

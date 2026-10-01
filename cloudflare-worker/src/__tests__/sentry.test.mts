@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
 import { createSentryOptions, scrubSentrySpan } from '../sentry.mts'
 
 describe('createSentryOptions', () => {
@@ -29,13 +30,21 @@ describe('createSentryOptions', () => {
     },
   )
 
-  it('turns off HTTP body capture and gen-AI input and output recording', () => {
-    const expected: ReturnType<typeof createSentryOptions>['dataCollection'] = {
-      httpBodies: [],
-      genAI: { inputs: false, outputs: false },
-    }
+  it('applies the shared least-data collection policy', () => {
+    const expected: ReturnType<typeof createSentryOptions>['dataCollection'] =
+      createSentryDataCollection()
+    const dataCollection = createSentryOptions({ ENVIRONMENT: 'production' }).dataCollection
 
-    expect(createSentryOptions({ ENVIRONMENT: 'production' }).dataCollection).toEqual(expected)
+    expect(dataCollection).toEqual(expected)
+    expect(dataCollection).toMatchObject({
+      userInfo: false,
+      cookies: false,
+      urlQueryParams: false,
+      databaseQueryData: false,
+      stackFrameVariables: false,
+      queues: false,
+      graphQL: { document: false, variables: false },
+    })
   })
 
   it('returns enabled=false when ENVIRONMENT is unset', () => {

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
 import type { InitSentryOptions } from './sentry.mts'
 import { getBeforeSend } from './sentry.mock-fixtures.mts'
 
@@ -135,15 +136,23 @@ describe('initSentry', () => {
     )
   })
 
-  it('turns off HTTP body capture and gen-AI input and output recording', () => {
-    const expected: NonNullable<Parameters<typeof Sentry.init>[0]>['dataCollection'] = {
-      httpBodies: [],
-      genAI: { inputs: false, outputs: false },
-    }
+  it('applies the shared least-data collection policy', () => {
+    const expected: NonNullable<Parameters<typeof Sentry.init>[0]>['dataCollection'] =
+      createSentryDataCollection()
 
     initSentry({ lambdaName: 'test-lambda' })
+    const dataCollection = vi.mocked(Sentry.init).mock.lastCall?.[0]?.dataCollection
 
-    expect(vi.mocked(Sentry.init).mock.lastCall?.[0]?.dataCollection).toEqual(expected)
+    expect(dataCollection).toEqual(expected)
+    expect(dataCollection).toMatchObject({
+      userInfo: false,
+      cookies: false,
+      urlQueryParams: false,
+      databaseQueryData: false,
+      stackFrameVariables: false,
+      queues: false,
+      graphQL: { document: false, variables: false },
+    })
   })
 
   it('composes beforeSend with the default scrubber', async () => {
