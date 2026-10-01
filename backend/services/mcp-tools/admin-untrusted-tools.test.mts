@@ -101,8 +101,10 @@ describe('registered admin authored-content contracts', () => {
     const created = await invoke('add_user_mod_note', { userId: target.id, body })
     expect(created.isError).not.toBe(true)
     expect(created.structuredContent).toMatchObject({
-      note: { body: expect.stringContaining('<external-content') },
+      note: expect.stringContaining('<external-content'),
     })
+    expect(created.structuredContent!['note']).toContain(marker)
+    expect(created.structuredContent!['note']).toContain(target.id)
     const before = await readStaffActionHistory(admin.id)
     expect(before).toEqual([
       expect.objectContaining({ action_type: 'warn', target_user_id: target.id }),

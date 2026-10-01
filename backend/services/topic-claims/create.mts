@@ -39,10 +39,10 @@ export async function createTopicClaim(
       verified_at, verified_by_id, rejected_at, rejected_by_id, rejection_reason,
       revoked_at, revoked_by_id, revocation_reason,
       verification_hostname_id, verification_token_issued_at,
-      domain_verified_at, updated_at
+      domain_verified_at, created_at, updated_at
   `)
 
-  const result = rows[0] as (TopicClaim & { inserted: boolean; created_at?: Date }) | undefined
+  const result = rows[0] as (TopicClaim & { inserted: boolean }) | undefined
   assert(result, 500, 'Failed to create topic claim')
   const { inserted, ...claim } = result
   return { claim: claim as TopicClaim, isDuplicate: !inserted }

@@ -23,10 +23,8 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/graceful-shutdown": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/aws": "workspace:^",
-    "@modules/on-error": "workspace:^",
     "@modules/scheduled-job-manifest": "workspace:^",
     "@modules/worker-queue-inventory": "workspace:^",
     "@queues/account-data-requests": "workspace:^",

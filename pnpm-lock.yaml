@@ -783,21 +783,12 @@ importers:
       '@queues/activitypub-inbox':
         specifier: workspace:^
         version: link:../queues/activitypub-inbox
-      '@queues/admin-imports':
-        specifier: workspace:^
-        version: link:../queues/admin-imports
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../queues/ai-agents
       '@queues/article-sync':
         specifier: workspace:^
         version: link:../queues/article-sync
-      '@queues/ban-evasion':
-        specifier: workspace:^
-        version: link:../queues/ban-evasion
-      '@queues/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../queues/bedrock-embeddings
       '@queues/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../queues/bedrock-embeddings-batch
@@ -807,39 +798,21 @@ importers:
       '@queues/bluesky-follow-propagation':
         specifier: workspace:^
         version: link:../queues/bluesky-follow-propagation
-      '@queues/cache-purge':
-        specifier: workspace:^
-        version: link:../queues/cache-purge
       '@queues/crawl-boilerplate-removal':
         specifier: workspace:^
         version: link:../queues/crawl-boilerplate-removal
-      '@queues/crawl-browser':
-        specifier: workspace:^
-        version: link:../queues/crawl-browser
-      '@queues/crawl-embeds':
-        specifier: workspace:^
-        version: link:../queues/crawl-embeds
       '@queues/crawl-hostnames':
         specifier: workspace:^
         version: link:../queues/crawl-hostnames
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../queues/crawl-referral-links
-      '@queues/crawler':
-        specifier: workspace:^
-        version: link:../queues/crawler
       '@queues/elections':
         specifier: workspace:^
         version: link:../queues/elections
       '@queues/emails':
         specifier: workspace:^
         version: link:../queues/emails
-      '@queues/entity-listeners':
-        specifier: workspace:^
-        version: link:../queues/entity-listeners
-      '@queues/entity-metrics-cache-refresh':
-        specifier: workspace:^
-        version: link:../queues/entity-metrics-cache-refresh
       '@queues/find-your-friends':
         specifier: workspace:^
         version: link:../queues/find-your-friends
@@ -855,9 +828,6 @@ importers:
       '@queues/kagi-smallweb':
         specifier: workspace:^
         version: link:../queues/kagi-smallweb
-      '@queues/language-detection':
-        specifier: workspace:^
-        version: link:../queues/language-detection
       '@queues/memberships':
         specifier: workspace:^
         version: link:../queues/memberships
@@ -870,42 +840,18 @@ importers:
       '@queues/openai-moderation':
         specifier: workspace:^
         version: link:../queues/openai-moderation
-      '@queues/post-mentions':
-        specifier: workspace:^
-        version: link:../queues/post-mentions
       '@queues/post-publication':
         specifier: workspace:^
         version: link:../queues/post-publication
       '@queues/psql':
         specifier: workspace:^
         version: link:../queues/psql
-      '@queues/report-integrity':
-        specifier: workspace:^
-        version: link:../queues/report-integrity
-      '@queues/rss-feed-discoverability':
-        specifier: workspace:^
-        version: link:../queues/rss-feed-discoverability
-      '@queues/rss-feed-item-categories':
-        specifier: workspace:^
-        version: link:../queues/rss-feed-item-categories
       '@queues/rss-feeds':
         specifier: workspace:^
         version: link:../queues/rss-feeds
-      '@queues/ses-inbound':
-        specifier: workspace:^
-        version: link:../queues/ses-inbound
       '@queues/sitemaps':
         specifier: workspace:^
         version: link:../queues/sitemaps
-      '@queues/spam-detection':
-        specifier: workspace:^
-        version: link:../queues/spam-detection
-      '@queues/story-post-related-url-projections':
-        specifier: workspace:^
-        version: link:../queues/story-post-related-url-projections
-      '@queues/topic-aliases':
-        specifier: workspace:^
-        version: link:../queues/topic-aliases
       '@queues/topic-ratings':
         specifier: workspace:^
         version: link:../queues/topic-ratings
@@ -915,9 +861,6 @@ importers:
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../queues/urls-domains-blacklist
-      '@queues/user-deletions':
-        specifier: workspace:^
-        version: link:../queues/user-deletions
       '@queues/user-rss-feed-imports':
         specifier: workspace:^
         version: link:../queues/user-rss-feed-imports
@@ -8209,18 +8152,12 @@ importers:
 
   backend/services/queue-monitoring:
     dependencies:
-      '@data-stores/graceful-shutdown':
-        specifier: workspace:^
-        version: link:../../data-stores/graceful-shutdown
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
@@ -10816,9 +10753,6 @@ importers:
 
   backend/tools:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../data-stores/valkey-glide-mq
       '@jongleberry/vurst-prompt':
         specifier: ^0.4.3
         version: 0.4.3
@@ -10834,9 +10768,6 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
-      '@queues/article-sync':
-        specifier: workspace:^
-        version: link:../queues/article-sync
       '@queues/elections':
         specifier: workspace:^
         version: link:../queues/elections

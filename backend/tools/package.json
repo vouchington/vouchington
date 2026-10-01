@@ -14,13 +14,11 @@
     "./*/__tests__/*": null
   },
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
     "@jongleberry/vurst-prompt": "^0.4.3",
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/scopes": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@queues/article-sync": "workspace:^",
     "@queues/elections": "workspace:^",
     "@queues/vote-weight": "workspace:^",
     "@services/admin-imports": "workspace:^",

@@ -80,10 +80,10 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store,sharin
 # root .dockerignore also admits the web workspace for web/Dockerfile, but
 # backend builds should not invalidate this layer on unrelated web source edits.
 # @services/runtime-request-validation and @voucha/tools (MCP output schemas)
-# are the only production importers of @voucha/api-fixtures, and both load this
-# contract bundle alone. The rest of api-fixtures is test and client fixture
+# import @voucha/api-fixtures: request validation loads request-contracts.json,
+# and admin tool response schemas also load openapi.json. Other files are test and client fixture
 # payload; copying that tree would ship it through pnpm deploy into every image.
-COPY api-fixtures/v1/request-contracts.json ./api-fixtures/v1/request-contracts.json
+COPY api-fixtures/v1/request-contracts.json api-fixtures/v1/openapi.json ./api-fixtures/v1/
 COPY email-templates/ ./email-templates/
 COPY static-code-analysis/docker-deploy/ ./static-code-analysis/docker-deploy/
 COPY ts-shared/ ./ts-shared/
