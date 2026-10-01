@@ -91,8 +91,8 @@ Human provenance is the absence of a screening FK, including after the reviewer 
   obligation, and the reconciliation sweep recomputes it from the durable restrictions. Each
   restriction rechecks the assessment under the placement, form, notice and assessment locks, so a
   superseded or non-compliant assessment imposes nothing, and a failed imposition stays owed. A
-  target that has had a restriction, even one since lifted, is settled and is never restricted again
-  by an earlier assessment.
+  target that has had a restriction, even one since lifted, is settled for every assessment, so
+  enforcement never restricts it again.
 - `precheckCopyrightRestoration` is a non-authoritative pure helper.
   `createEligibleCopyrightRestoreIntent` locks the legal ledger and creates a preliminary fenced
   intent; it cannot authorize a media delivery change by itself.
