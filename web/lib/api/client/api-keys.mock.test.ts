@@ -31,7 +31,7 @@ describe('API key lifetime mutation wrappers', () => {
       mock: vi.mocked(clientApi.post),
       response: issuedKey,
       call: () => rotateApiKey(issuedKey.api_key.id),
-      expectedArgs: [`/api/v1/my/api-keys/${issuedKey.api_key.id}/rotate`, {}],
+      expectedArgs: [`/api/v1/my/api-keys/${issuedKey.api_key.id}/rotate`],
     })
   })
 })

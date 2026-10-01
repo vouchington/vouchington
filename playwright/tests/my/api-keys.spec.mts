@@ -1,10 +1,22 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { loginAsUser } from '../../helpers/auth.mts'
+import { requireTestValue } from '../../helpers/assertions.mts'
+import { createTestUser } from '../../../backend/test-helpers/index.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
 
+let ordinaryOwnerId = ''
+
 test.describe('My API Keys Page', () => {
+  test.beforeAll(async () => {
+    ordinaryOwnerId = requireTestValue(
+      await createTestUser(),
+      'Failed to create API-key lifetime owner',
+    ).id
+  })
+
   test.use({ storageState: AUTH_STATE })
 
   test.beforeEach(async ({ page }) => {
@@ -35,9 +47,20 @@ test.describe('My API Keys Page', () => {
     await expect(page.getByTestId('api-keys-create-confirm-button')).toBeVisible()
     await expect(page.getByTestId('api-keys-create-cancel-button')).toBeVisible()
     await expect(page.getByTestId('api-keys-create-label-input')).toBeVisible()
+    await expect(page.getByTestId('api-keys-lifetime-30')).toBeChecked()
+    await expect(page.getByTestId('api-keys-lifetime-90')).toBeVisible()
+    await expect(page.getByTestId('api-keys-lifetime-365')).toHaveCount(0)
+    await expect(page.getByTestId('api-keys-lifetime-none')).toHaveCount(0)
+  })
+
+  test('ordinary owners default to 90 days and can select no expiry', async ({ page }) => {
+    await loginAsUser(page, ordinaryOwnerId)
+    await navigateTo(page, '/my/api-keys')
+    await page.getByTestId('api-keys-create-button').click()
     await expect(page.getByTestId('api-keys-lifetime-90')).toBeChecked()
     await expect(page.getByTestId('api-keys-lifetime-365')).toBeVisible()
-    await expect(page.getByTestId('api-keys-lifetime-none')).toBeVisible()
+    await page.getByTestId('api-keys-lifetime-none').click()
+    await expect(page.getByTestId('api-keys-lifetime-none')).toBeChecked()
   })
 
   test('Create button is disabled when label is empty', async ({ page }) => {

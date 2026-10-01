@@ -31,5 +31,5 @@ export function revokeApiKey(id: string): Promise<void> {
 }
 
 export function rotateApiKey(id: string): Promise<{ api_key: ApiKey; raw_key: string }> {
-  return clientApi.post(`/api/v1/my/api-keys/${id}/rotate`, {})
+  return clientApi.post(`/api/v1/my/api-keys/${id}/rotate`)
 }
