@@ -1,6 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { assertNotSuspended } from '@services/users'
 import { bookmarkEntity, unbookmarkEntity } from '@services/bookmarks/upsert'
 import { getBookmarksForEntity } from '@services/bookmarks/get'
 import { entityRelationMetadatum } from '@services/entity-relations/metadata'
@@ -9,6 +10,7 @@ import type {
   EntityRelationPredicateType,
 } from '@services/entity-relations/config'
 import { isUUID } from '@modules/utils'
+import { currentUserCanBookmarkTarget } from '@services/entity-relation-actions/authorization'
 
 app.route('/api/v1/bookmarks/:entityType/:entityId').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/bookmarks/:entityType/:entityId')
@@ -42,6 +44,7 @@ app
       ctx,
       'PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate',
     )
+    assertNotSuspended(currentUser)
 
     validateRequestContract(ctx, 'PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate', {
       path: ctx.params,
@@ -49,6 +52,23 @@ app
     const { entityType, entityId, predicate } = ctx.params
 
     ctx.assert(isUUID(entityId!), 422, 'Invalid entity ID')
+    const isBookmarkable = entityRelationMetadatum.some(
+      relation =>
+        relation.subject_type === 'user' &&
+        relation.object_type === entityType &&
+        relation.predicate === predicate &&
+        relation.is_bookmark,
+    )
+    ctx.assert(isBookmarkable, 422, 'Invalid bookmark type.')
+    ctx.assert(
+      await currentUserCanBookmarkTarget(
+        currentUser,
+        entityType as EntityRelationEntityType,
+        entityId!,
+      ),
+      404,
+      'Entity not found',
+    )
     const entity = { id: entityId! }
 
     let relation
@@ -72,6 +92,7 @@ app
       ctx,
       'DELETE:/api/v1/bookmarks/:entityType/:entityId/:predicate',
     )
+    assertNotSuspended(currentUser)
 
     validateRequestContract(ctx, 'DELETE:/api/v1/bookmarks/:entityType/:entityId/:predicate', {
       path: ctx.params,

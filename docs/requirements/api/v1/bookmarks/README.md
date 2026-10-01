@@ -18,11 +18,15 @@ Returns all bookmark relations the current user has for the given entity.
 
 ## PUT /api/v1/bookmarks/:entityType/:entityId/:predicate
 
-Creates a bookmark relation. Returns `{ bookmark }`.
+Creates a bookmark relation for a target the caller can view using that entity type's detail-route
+authorization. Missing or invisible targets return `404 Entity not found`. Suspended users receive
+the standard account-suspended error. Returns `{ bookmark }` on success.
 
 ## DELETE /api/v1/bookmarks/:entityType/:entityId/:predicate
 
-Removes a bookmark relation. Returns `204 No Content`.
+Removes the caller's bookmark relation and returns `204 No Content`. The route does not require the
+target to remain visible, so users can clean up bookmarks after a target becomes private, hidden,
+or removed. Suspended users receive the standard account-suspended error.
 
 ## Performance
 
