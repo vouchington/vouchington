@@ -10,14 +10,15 @@ import {
   type BackgroundResponseLease,
 } from './background-response-context.mts'
 import { cancelOpenAIResponse } from './background-response-teardown.mts'
+import { streamWithOpenAIFlexFallback, withOpenAIFlexFallback } from './flex-fallback.mts'
 import { getOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
 import {
   OpenAIResponseNotCompletedError,
   OpenAIResponseStreamError,
-  OpenAIResponseStreamIterationError,
   shouldLatchUnknownBilledOpenAIAttempt,
 } from './response-errors.mts'
 import { createOpenAIResponseWithRetries } from './response-retry.mts'
+import { iterateOpenAIResponseStream } from './response-stream-iteration.mts'
 import { validateCompletedResponse, type OpenAIResponse } from './validate-completed-response.mts'
 
 export * from './background-response-context.mts'
@@ -48,8 +49,10 @@ export async function createOpenAIResponse(
   params: CreateResponseParams,
   options?: RawCreateOptions,
 ): Promise<OpenAIResponse> {
-  const response = await createOpenAIResponseStream(params, true, options)
-  return drainBackgroundOpenAIResponse(response.stream, response.requestStartedAt)
+  return withOpenAIFlexFallback(params, 'openai', async (attemptParams, priorAttempts) => {
+    const response = await createOpenAIResponseStream(attemptParams, true, options, priorAttempts)
+    return drainBackgroundOpenAIResponse(response.stream, response.requestStartedAt)
+  })
 }
 
 /* no-mistakes: integration=openai */
@@ -57,30 +60,40 @@ export function streamOpenAIResponse(
   params: CreateResponseParams,
   options?: RawCreateOptions,
 ): AsyncGenerator<{ delta: string }, OpenAIResponse> {
-  return (async function* () {
-    const response = await createOpenAIResponseStream(params, false, options)
-    try {
-      return yield* streamOpenAIResponseEvents(response.stream)
-    } catch (error) {
-      if (shouldLatchUnknownBilledOpenAIAttempt(error)) {
-        await getOpenAIResponseAttemptHooks()?.onUnknownBilledAttempt({
-          requestStartedAt: response.requestStartedAt,
-          error,
-        })
-      }
-      throw error
+  return streamWithOpenAIFlexFallback(params, 'openai', (attemptParams, priorAttempts) =>
+    streamOpenAIResponseAttempt(attemptParams, options, priorAttempts),
+  )
+}
+
+/* no-mistakes: integration=openai */
+async function* streamOpenAIResponseAttempt(
+  params: CreateResponseParams,
+  options: RawCreateOptions,
+  priorAttempts: number,
+): AsyncGenerator<{ delta: string }, OpenAIResponse> {
+  const response = await createOpenAIResponseStream(params, false, options, priorAttempts)
+  try {
+    return yield* streamOpenAIResponseEvents(response.stream)
+  } catch (error) {
+    if (shouldLatchUnknownBilledOpenAIAttempt(error)) {
+      await getOpenAIResponseAttemptHooks()?.onUnknownBilledAttempt({
+        requestStartedAt: response.requestStartedAt,
+        error,
+      })
     }
-  })()
+    throw error
+  }
 }
 
 /* no-mistakes: integration=openai */
 async function createOpenAIResponseStream(
   params: CreateResponseParams,
   background: boolean,
-  options?: RawCreateOptions,
+  options: RawCreateOptions,
+  priorAttempts: number,
 ): Promise<{ stream: ResponseStreamLike; requestStartedAt: Date }> {
   const streamParams: ResponseCreateParamsStreaming = { ...params, stream: true, background }
-  return createOpenAIResponseWithRetries(streamParams, options)
+  return createOpenAIResponseWithRetries(streamParams, options, priorAttempts)
 }
 
 export async function* streamOpenAIResponseEvents(
@@ -172,20 +185,4 @@ async function drainAsyncGenerator<Yielded, Returned>(
     result = await generator.next()
   }
   return result.value
-}
-
-async function* iterateOpenAIResponseStream(
-  stream: ResponseStreamLike,
-  hasEmittedTextDelta: () => boolean,
-): AsyncGenerator<ResponseStreamEvent> {
-  try {
-    for await (const event of stream) yield event
-  } catch (cause) {
-    if (
-      cause instanceof Error &&
-      ['AbortError', 'APIUserAbortError', 'TimeoutError'].includes(cause.name)
-    )
-      throw cause
-    throw new OpenAIResponseStreamIterationError(hasEmittedTextDelta(), { cause })
-  }
 }

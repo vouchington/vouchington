@@ -3,6 +3,8 @@ import { isExpectedCrawlerOperationalError } from './expected-crawler-operationa
 import { getOptionalRequestClientInfo } from '@modules/request-client-info'
 export { recordCopyrightReviewTargetBreach } from './copyright-review-target-breach.mts'
 export { recordOffAllowlistEgress } from './egress-guardrail.mts'
+export { recordOpenAiFlexFallback } from './openai-flex-fallback.mts'
+export type { OpenAiFlexFallbackContext } from './openai-flex-fallback.mts'
 export { recordOpenAiSpendCapBreach } from './openai-spend-cap-breach.mts'
 export { recordPostClassifierReceiptAlarm } from './post-classifier-receipt-alarm.mts'
 export { recordSqsConsumerConfigMissing } from './sqs-consumer-config-missing.mts'

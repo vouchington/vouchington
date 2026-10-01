@@ -6,8 +6,11 @@ import { parseEnvPositiveInt } from '@modules/queue-config'
  * `create-response.mts` disables SDK-internal retries and interprets `maxRetries` as an
  * application-owned budget. Only the positively known-unbilled flex `resource_unavailable` 429
  * may consume that budget; an ambiguous potentially billed failure latches accounting uncertainty
- * and stops instead of issuing another physical request. Two workload shapes still need a budget
- * different from the default 2 because free capacity failures affect their latency differently:
+ * and stops instead of issuing another physical request. Once this budget is spent (or flex
+ * capacity is reported as a streamed failure) a flex request is resent once on the default tier
+ * outside the budget (`@modules/openai-utils/flex-fallback`). Two workload shapes still need a
+ * budget different from the default 2 because free capacity failures affect their latency
+ * differently:
  *
  * - A user is waiting on this request synchronously (no queue behind it): fewer retries, because
  *   a slow failure is worse than a fast one.

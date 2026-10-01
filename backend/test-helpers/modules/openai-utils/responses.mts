@@ -76,3 +76,30 @@ export function makeResponseStream(
     },
   }
 }
+
+/**
+ * The terminal event a flex request receives when flex capacity is exhausted: a streamed
+ * `response.failed` / `server_error` that carries no usage because nothing ran.
+ */
+export function makeFlexCapacityFailedStream(
+  overrides: Partial<Response> = {},
+): AsyncIterable<ResponseStreamEvent> {
+  return makeResponseStream([
+    makeStreamEvent({
+      type: 'response.failed',
+      sequence_number: 1,
+      response: makeSdkResponse({
+        id: 'resp-flex-failed',
+        status: 'failed',
+        service_tier: 'flex',
+        // Providers send `usage: null` for a response that never ran; the SDK type omits null.
+        usage: null as unknown as Response['usage'],
+        error: {
+          code: 'server_error',
+          message: 'Flex processing is temporarily unavailable. Please try again later.',
+        },
+        ...overrides,
+      }),
+    }),
+  ])
+}

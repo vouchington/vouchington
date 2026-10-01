@@ -19,8 +19,9 @@ const response = await createOpenAIResponse({
 `options` (second parameter) accepts request options, most notably `{ maxRetries }`. The provider
 boundary always sends `maxRetries: 0` to the SDK and treats the caller's value as an
 application-owned budget for the known-unbilled flex `resource_unavailable` 429. Ambiguous
-potentially billed failures latch the request day and stop. The default budget (2) applies to any
-call that does not set it explicitly. Pick the value from
+potentially billed failures latch the request day and stop. Once that budget is spent, or flex
+capacity is reported as a streamed failure, a flex request is resent once on the default tier. The
+default budget (2) applies to any call that does not set it explicitly. Pick the value from
 `backend/agents/_shared/retry-policy.mts` matching the caller's workload —
 `CHAT_SUBAGENT_RETRY_POLICY` (5), `SYNCHRONOUS_REQUEST_RETRY_POLICY` (1), or
 `QUEUED_BACKGROUND_RETRY_POLICY` (2) — rather than leaving the free-capacity budget implicit. The

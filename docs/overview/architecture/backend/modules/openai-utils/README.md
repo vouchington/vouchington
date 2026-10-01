@@ -48,6 +48,20 @@ OpenAI API utilities — rate limit handling for glide-mq workers and response t
   responses that carry usage do not latch. Other stream errors without usage still latch because
   the stream event has no HTTP status. Flex retry delays from `retry-after-ms` / `Retry-After`
   are clamped to 8s, and the abort signal is rechecked after `beforeAttempt`.
+- `withOpenAIFlexFallback` / `streamWithOpenAIFlexFallback` (`flex-fallback.mts`) — the one-shot
+  default-tier resend shared by `createOpenAIResponse`, `streamOpenAIResponse` and
+  `createOpenRouterResponse`. A `service_tier: 'flex'` request that hits flex capacity exhaustion is
+  resent **once** with `service_tier: 'default'`, either after the 429 `resource_unavailable` outlasted
+  the free retry budget or immediately on a streamed `response.failed` whose `server_error` message is
+  "Flex processing is temporarily unavailable" and that carries no usage
+  (`isOpenAIFlexCapacityFailedResponseError`, `response-errors.mts`). Both are positively unbilled, so
+  the streamed form is not latched as `unknown_billed_attempt`, and the resend re-runs `beforeAttempt`
+  with `attempt > 1` so the spend cap is checked again before a call billed at the standard price
+  (about twice flex). The resend is outside the `maxRetries` budget, makes at most one extra physical
+  request, and a failed resend is rethrown unchanged; non-flex requests and every other error are
+  untouched. A foreground stream that already yielded a delta is rethrown instead of resent. The
+  fallback is reported through `recordOpenAiFlexFallback` (`@modules/on-error`), and the usage ledger
+  prices the resend from the served `default` tier.
 
 ### Background mode (#8836)
 
@@ -56,8 +70,9 @@ is a two-function fact baked into this file, not a per-caller choice:
 
 - `createOpenAIResponse(params, options?)` — always creates with `background: true` internally and
   drains the stream to a finished `OpenAIResponse`, discarding deltas. It makes one physical request
-  unless an unbilled flex `resource_unavailable` result consumes the explicit app retry budget;
-  callers and their test doubles are otherwise unaffected by the internal background/drain change.
+  unless an unbilled flex `resource_unavailable` result consumes the explicit app retry budget or
+  flex capacity triggers the single default-tier resend above; callers and their test doubles are
+  otherwise unaffected by the internal background/drain change.
   This is what gives every non-chat agent call durability against a worker crash, OOM-kill, or
   ECS rolling-deploy replacement mid-call.
 - `streamOpenAIResponse(params, options?)` — always creates in the **foreground** (`background`
