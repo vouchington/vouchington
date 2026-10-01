@@ -9,6 +9,7 @@ import { delayForOpenAiSpendCap } from '../processors/spend-cap-delay.mts'
 import {
   AI_AGENT_JOB_PRODUCES_SPEND,
   AI_AGENTS_QUEUE_NAME,
+  CLASSIFIER_RUN_BACKOFF,
   type AIAgentJobName,
 } from '@queues/ai-agents/config'
 import {
@@ -20,6 +21,7 @@ import {
   OpenAiSpendCapBreachError,
 } from '@services/ai-usage'
 import { processAIAgent } from '../processors.mts'
+import { classifierRunBackoffMs } from '../processors/classifier-run-backoff.mts'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { registerOpenAiSpendCapRecheck } from '../processors/spend-cap-recheck.mts'
 
@@ -150,6 +152,8 @@ export function createAIAgentsWorker(deps: Partial<AIAgentsWorkerDeps> = {}): Wo
       },
       lockDuration: 300_000,
       stalledInterval: 30_000,
+      // Only the `classifier-run` job names this strategy; every other job keeps its own backoff.
+      backoffStrategies: { [CLASSIFIER_RUN_BACKOFF.type]: classifierRunBackoffMs },
     },
   )
   return worker

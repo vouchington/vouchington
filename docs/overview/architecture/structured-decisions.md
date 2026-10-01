@@ -115,10 +115,12 @@ is the current caller. It shares validation, mapping, and persistence with the s
 base input type, but sends every binding as a single request instead of packing shards against a
 token budget: it makes no character, byte, or candidate-count estimate at all, rather than
 approximating one. The tradeoff this accepts: an oversized-context provider rejection is not
-caught or packed around ahead of time — it surfaces as an ordinary `StructuredDecisionError`, and
-the caller's own retry/queue semantics (for a classifier run, the lease expiring and the next
-counted attempt) are what recover from it, rather than the call layer itself ever splitting an
-over-budget request into shards.
+caught or packed around ahead of time — it surfaces as an ordinary `StructuredDecisionError`
+classified from its status (a 400 or 413 is permanent, so a classifier run ends terminal
+`provider-error` rather than retrying a request that can never fit), rather than the call layer
+itself ever splitting an over-budget request into shards. A transient failure is retried by the
+caller's own queue semantics; see
+[provider failures](backend/modules/structured-decisions/README.md#provider-failures).
 
 `prepareSingleCallClassifierDecision` performs that same configuration, binding, provider, and
 coverage validation but returns the fully bound persistence input without writing it. A caller

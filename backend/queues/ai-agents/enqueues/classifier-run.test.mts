@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import { removeClassifierRunJobForTest } from '@voucha/test-helpers/classifier-run-queue-jobs'
+import { AI_AGENTS_DEFAULTS, CLASSIFIER_RUN_ATTEMPTS, CLASSIFIER_RUN_BACKOFF } from '../config.mts'
 import { ai_agents } from '../queues.mts'
 import type { ClassifierRunJobData } from '../types.mts'
 import {
@@ -85,6 +86,9 @@ describe('classifier run enqueue', () => {
       removeOnComplete: true,
       removeOnFail: true,
       jobId: classifierRunDispatcherJobId(data),
+      // The dispatcher never calls a provider, so it keeps the shared queue defaults.
+      attempts: AI_AGENTS_DEFAULTS.attempts,
+      backoff: AI_AGENTS_DEFAULTS.backoff,
     })
   })
 
@@ -98,8 +102,10 @@ describe('classifier run enqueue', () => {
         candidate.name === 'classifier-run' &&
         (candidate.data as ClassifierRunJobData).runId === data.runId,
     )
+    // The receipt's attempt cap is this same constant, so a retry never outruns the receipt.
     expect(job?.opts).toMatchObject({
-      attempts: 3,
+      attempts: CLASSIFIER_RUN_ATTEMPTS,
+      backoff: CLASSIFIER_RUN_BACKOFF,
       removeOnComplete: true,
       removeOnFail: true,
       jobId: `classifier_run_${data.runId}`,

@@ -1,6 +1,8 @@
 import { isAmbiguousBilledHttpStatus, isNetworkError } from '@modules/utils/http'
 import type { Response } from 'undici'
 import { decodeResult } from './decode.mts'
+import { describeProviderErrorDetail, readProviderErrorDetail } from './provider-error-detail.mts'
+import { classifyProviderFailure, classifyProviderResponse } from './retry-classification.mts'
 import { createTransportRequest, fetchStructuredDecisionProvider } from './transport.mts'
 import {
   StructuredDecisionError,
@@ -76,7 +78,10 @@ async function attemptDecision(options: AttemptOptions): Promise<StructuredDecis
       'provider-error',
       'Structured-decision transport failed.',
       undefined,
-      { cause: error },
+      {
+        cause: error,
+        failure: { retryClass: classifyProviderFailure(options.transport, undefined, undefined) },
+      },
     )
   }
   if (!response.ok) return rejectResponse(response, options)
@@ -84,12 +89,16 @@ async function attemptDecision(options: AttemptOptions): Promise<StructuredDecis
 }
 
 async function rejectResponse(response: Response, options: AttemptOptions): Promise<never> {
+  // Never throws: an unreadable or non-JSON body leaves the status as the only signal.
+  const detail = await readProviderErrorDetail(response)
+  const failure = classifyProviderResponse(options.transport, response, detail)
+  const summary = detail && describeProviderErrorDetail(detail)
   const error = new StructuredDecisionError(
     'provider-error',
-    `Structured-decision provider returned HTTP ${response.status}.`,
+    `Structured-decision provider returned HTTP ${response.status}${summary ? ` (${summary})` : ''}.`,
     response.status,
+    { failure },
   )
-  await cancelBody(response)
   if (isAmbiguousBilledHttpStatus(response.status)) await latchUnknownBilledAttempt(options, error)
   throw error
 }
@@ -166,14 +175,6 @@ function isFiniteNonNegative(value: unknown): value is number {
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-async function cancelBody(response: Response): Promise<void> {
-  try {
-    await response.body?.cancel()
-  } catch {
-    // Best-effort connection cleanup must not replace the provider outcome.
-  }
 }
 
 function throwIfAborted(signal?: AbortSignal): void {

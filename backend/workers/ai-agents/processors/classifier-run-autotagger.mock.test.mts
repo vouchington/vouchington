@@ -3,7 +3,7 @@ import { Response } from 'undici'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createAutotaggerClient, executeAutotaggerRun } from '@agents/autotagger'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
-import { AI_AGENTS_DEFAULTS } from '@queues/ai-agents/config'
+import { CLASSIFIER_RUN_ATTEMPTS } from '@queues/ai-agents/config'
 import { openAiSpendCapConfig } from '@services/ai-usage'
 import { createAutotaggerRunAdapter } from '@services/autotagger'
 import { claimClassifierRun } from '@services/classifier-runs'
@@ -154,7 +154,7 @@ describe('C6 classifier run through the shared lifecycle (real PG, mocked provid
         {
           adapter,
           lease,
-          maxAttempts: AI_AGENTS_DEFAULTS.attempts,
+          maxAttempts: CLASSIFIER_RUN_ATTEMPTS,
           signal: AbortSignal.timeout(30_000),
         },
         {
@@ -227,12 +227,12 @@ describe('C6 classifier run through the shared lifecycle (real PG, mocked provid
         () => 'threw',
       )
 
-    const outcomes = await drain(attempt, AI_AGENTS_DEFAULTS.attempts + 1)
+    const outcomes = await drain(attempt, CLASSIFIER_RUN_ATTEMPTS + 1)
 
-    expect(provider).toHaveBeenCalledTimes(AI_AGENTS_DEFAULTS.attempts)
+    expect(provider).toHaveBeenCalledTimes(CLASSIFIER_RUN_ATTEMPTS)
     expect(outcomes.at(-1)).toBe('terminal')
     expect(await runFacts(fixture)).toMatchObject({
-      provider_attempts_started: AI_AGENTS_DEFAULTS.attempts,
+      provider_attempts_started: CLASSIFIER_RUN_ATTEMPTS,
       terminal_failure_kind: 'provider-error',
     })
   })

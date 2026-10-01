@@ -89,6 +89,8 @@ export async function failClassifierRunAttempt<C, L, E>(
     lease: ClassifierRunLease<C>
     maxAttempts: number
     failureKind: ClassifierRunFailureKind
+    /** The failure can never succeed on retry (a rejected key, a blocked request): end the run now. */
+    permanent?: boolean
     local?: L
   },
 ): Promise<'released' | 'terminal' | 'stale'> {
@@ -98,6 +100,7 @@ export async function failClassifierRunAttempt<C, L, E>(
   if (!locked || locked.row.outcomes_persisted_at) return 'stale'
   const terminal =
     locked.row.provider_attempts_started >= input.maxAttempts ||
+    input.permanent === true ||
     input.failureKind === 'context-rejected'
   if (terminal) {
     await terminateRun(adapter, query, input, input.failureKind)

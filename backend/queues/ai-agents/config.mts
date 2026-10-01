@@ -8,6 +8,26 @@ export const AI_AGENTS_DEFAULTS = {
   removeOnFail: 100,
 } as const
 
+/**
+ * A `classifier-run` job rides out a provider outage of minutes (#689), which the shared defaults
+ * above (3 attempts, about 3 seconds) cannot. Only this job uses it; every other ai-agents queue
+ * keeps `AI_AGENTS_DEFAULTS`.
+ *
+ * One number caps both the queue and the receipt: the job's `attempts` and the executor's
+ * `maxAttempts` are both `CLASSIFIER_RUN_ATTEMPTS`, so a retry can never reserve a provider attempt
+ * the receipt would refuse, and the recovery sweep can never buy an attempt beyond it. The backoff
+ * is `delay * 2^(n-1)` for the nth retry, so the 7 waits are 30s, 1m, 2m, 4m, 8m, 16m, 32m: about
+ * 63.5 minutes before jitter (up to about 79 with it). `classifierRunBackoffMs` also honours a
+ * provider `Retry-After` up to `CLASSIFIER_RUN_RETRY_AFTER_CEILING_MS`.
+ */
+export const CLASSIFIER_RUN_ATTEMPTS = 8
+export const CLASSIFIER_RUN_BACKOFF = {
+  type: 'classifier-run-outage' as const,
+  delay: 30_000,
+  jitter: 0.25,
+}
+export const CLASSIFIER_RUN_RETRY_AFTER_CEILING_MS = 10 * 60_000
+
 export type AIAgentJobName =
   | 'autotagger-rss-feed-item'
   | 'classifier-run-dispatcher'

@@ -4,7 +4,11 @@ import { Response } from 'undici'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { closeAndUnregisterGlideMQInstance, createWorker } from '@data-stores/valkey-glide-mq'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
-import { AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME } from '@queues/ai-agents/config'
+import {
+  AI_AGENTS_QUEUE_NAME,
+  CLASSIFIER_RUN_ATTEMPTS,
+  CLASSIFIER_RUN_BACKOFF,
+} from '@queues/ai-agents/config'
 import { classifierRunJobId, enqueueClassifierRun } from '@queues/ai-agents/enqueues/classifier-run'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { notifications } from '@queues/notifications/queues'
@@ -85,13 +89,13 @@ describe('classifier run processor (real GlideMQ)', () => {
       configurationSha256: run.configurationSha256,
       leaseSeconds: 60,
     }
-    for (let attempt = 0; attempt < AI_AGENTS_DEFAULTS.attempts; attempt++) {
+    for (let attempt = 0; attempt < CLASSIFIER_RUN_ATTEMPTS; attempt++) {
       const claim = await claimClassifierRun(adapter, target)
       if (claim.kind !== 'claimed') throw new Error(`Unexpected claim: ${claim.kind}`)
       await expect(
         startClassifierProviderAttempt(adapter, {
           lease: claim.lease,
-          maxAttempts: AI_AGENTS_DEFAULTS.attempts,
+          maxAttempts: CLASSIFIER_RUN_ATTEMPTS,
         }),
       ).resolves.toBe('started')
       await expireClassifierRunLeaseForTest(run.runId)
@@ -104,7 +108,7 @@ describe('classifier run processor (real GlideMQ)', () => {
     expect(request).not.toHaveBeenCalled()
     await expect(getClassifierRunFacts(post.id, POST_CLASSIFIER_SLUG)).resolves.toMatchObject([
       {
-        provider_attempts_started: AI_AGENTS_DEFAULTS.attempts,
+        provider_attempts_started: CLASSIFIER_RUN_ATTEMPTS,
         terminal_failure_kind: 'attempts-exhausted',
         terminal_failed_at: expect.any(Date),
       },
@@ -146,26 +150,36 @@ describe('classifier run processor (real GlideMQ)', () => {
     let attempts = 0
     let targetHandlerInvocations = 0
     const executionErrors: unknown[] = []
-    const worker = createWorker<ClassifierRunJobData>(AI_AGENTS_QUEUE_NAME, async job => {
-      if (job.data.runId !== data.runId) throw new Error('Unexpected test job')
-      targetHandlerInvocations++
-      if (unavailable) {
-        attempts++
-        throw new Error('Worker unavailable before provider execution')
-      }
-      try {
-        return await processClassifierRun(job)
-      } catch (error) {
-        executionErrors.push(error)
-        throw error
-      }
-    })
+    const worker = createWorker<ClassifierRunJobData>(
+      AI_AGENTS_QUEUE_NAME,
+      async job => {
+        if (job.data.runId !== data.runId) throw new Error('Unexpected test job')
+        targetHandlerInvocations++
+        if (unavailable) {
+          attempts++
+          throw new Error('Worker unavailable before provider execution')
+        }
+        try {
+          return await processClassifierRun(job)
+        } catch (error) {
+          executionErrors.push(error)
+          throw error
+        }
+      },
+      // The production outage backoff is minutes long; this test only needs the attempts to run out.
+      // A promoted retry is otherwise picked up on the scheduler's and worker's 5 second ticks.
+      {
+        promotionInterval: 100,
+        blockTimeout: 100,
+        backoffStrategies: { [CLASSIFIER_RUN_BACKOFF.type]: () => 50 },
+      },
+    )
     const jobId = classifierRunJobId(data.runId)
     const facts = async () => (await getClassifierRunFacts(setup.post.id, POST_CLASSIFIER_SLUG))[0]
     try {
       await enqueueClassifierRun(data)
       await enqueueClassifierRun(data)
-      await expect.poll(() => attempts, { timeout: 15_000 }).toBe(AI_AGENTS_DEFAULTS.attempts)
+      await expect.poll(() => attempts, { timeout: 15_000 }).toBe(CLASSIFIER_RUN_ATTEMPTS)
       await expect.poll(() => ai_agents.getJob(jobId), { timeout: 5_000 }).toBeNull()
       expect(request).not.toHaveBeenCalled()
       unavailable = false

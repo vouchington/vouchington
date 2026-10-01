@@ -52,20 +52,53 @@ export type StructuredDecisionResult = {
   usage: Readonly<Record<string, unknown>> | null
 }
 export type StructuredDecisionErrorCode = 'invalid-request' | 'invalid-response' | 'provider-error'
+/** Whether the same request may succeed later (`transient`) or never will (`permanent`). */
+export type StructuredDecisionRetryClass = 'transient' | 'permanent'
+/**
+ * What a provider's error body says, bounded and free of echoed user content. `flagged_input` and
+ * every metadata value outside the named keys are dropped before anything is kept.
+ */
+export type ProviderErrorDetail = {
+  code?: number | string
+  providerMessage?: string
+  errorType?: string
+  providerCode?: string
+  reasons?: readonly string[]
+  providerName?: string
+  modelSlug?: string
+  limitSource?: string
+  /** The provider's content-moderation flag fired (`reasons` or `flagged_input` was present). */
+  moderation: boolean
+  /** The provider's guardrail block fired (`patterns` was present). */
+  guardrail: boolean
+}
+export type StructuredDecisionProviderFailure = {
+  retryClass: StructuredDecisionRetryClass
+  /** Honoured from `Retry-After`, in milliseconds. */
+  retryAfterMs?: number
+  detail?: ProviderErrorDetail
+}
 export class StructuredDecisionError extends Error {
   readonly code: StructuredDecisionErrorCode
   readonly status: number | undefined
+  /** Set on every `provider-error`: the shared retry classification and the safe error detail. */
+  readonly retryClass: StructuredDecisionRetryClass | undefined
+  readonly retryAfterMs: number | undefined
+  readonly detail: ProviderErrorDetail | undefined
 
   constructor(
     code: StructuredDecisionErrorCode,
     message: string,
     status?: number,
-    options?: ErrorOptions,
+    options?: ErrorOptions & { failure?: StructuredDecisionProviderFailure },
   ) {
     super(message, options)
     this.name = 'StructuredDecisionError'
     this.code = code
     this.status = status
+    this.retryClass = options?.failure?.retryClass
+    this.retryAfterMs = options?.failure?.retryAfterMs
+    this.detail = options?.failure?.detail
   }
 }
 export type StructuredDecisionFetch = (
