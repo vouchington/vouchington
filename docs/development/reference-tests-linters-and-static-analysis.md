@@ -17,6 +17,13 @@ retains only the shared producer contracts those clients consume.
 and the file-universe check (`tsconfig-file-coverage`) that every tracked TypeScript file belongs
 to a compiler program.
 
+The `no-mistakes` `unconstructed-error-class` rule reports exported `Error` subclasses that no
+production code constructs or subclasses. A class that only `catch`, `instanceof`, or a type guard
+mentions is dead error handling, and Knip does not flag it while those production sites still
+import the class. Test files and the test-helper globs in [`.no-mistakes.yml`](../../.no-mistakes.yml)
+do not count as construction. Delete the class with those guards, or add the missing `throw`;
+removing a subclass can leave its base newly reported, so rerun until clean.
+
 `no-mistakes/no-inline-noop-promise-catch` is enforced for production `backend/**` and `web/**` in
 [`.oxlintrc.json`](../../.oxlintrc.json), excluding the four configured test/test-helper path forms.
 The 2026-09-10 inventory found 116 diagnostics in 70 production files (41 backend, 75 web), all
